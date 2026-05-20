@@ -1,6 +1,6 @@
-version=1.0.6
+version=1.0.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=إصلاح: تنسيق طباعة تقرير التقفيل اليومي (محاذاة عربية RTL)، وإزالة منطق إعادة التهيئة التلقائية من ملف reset.txt.
+changelog=إصلاح: إخفاء رسالة خطأ التحديث عند فشل الاتصال بالإنترنت، بدلاً من إزعاج المستخدم بها.
 
 
 

@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.6";
+        public const string CurrentVersion = "1.0.7";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -96,6 +96,7 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
+                WriteLog("CheckForUpdates failed", ex);
                 if (showNoUpdateMsg)
                 {
                     MessageBox.Show("فشل الاتصال بسيرفر التحديث للتأكد من وجود إصدار جديد:\n" + ex.Message, "خطأ في التحديث", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -103,56 +104,106 @@ namespace ChickenDist.Core
             }
         }
 
-        private static void PerformUpdate(string downloadUrl)
+        // ── كتابة سجل الأخطاء ─────────────────────────────────────────────────
+        private static void WriteLog(string context, Exception ex)
         {
             try
             {
-                string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
-                string currentDir = Path.GetDirectoryName(currentExePath);
-                string newExePath = Path.Combine(currentDir, "ChickenDist_New.exe");
-                string updaterBatPath = Path.Combine(currentDir, "updater.bat");
+                string logPath = Path.Combine(
+                    Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName),
+                    "update_log.txt");
+                string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{context}]\r\n" +
+                               $"  النوع: {ex.GetType().Name}\r\n" +
+                               $"  الرسالة: {ex.Message}\r\n" +
+                               $"  StackTrace: {ex.StackTrace}\r\n" +
+                               new string('-', 60) + "\r\n";
+                File.AppendAllText(logPath, entry, System.Text.Encoding.UTF8);
+            }
+            catch { /* لا نريد خطأ داخل معالج الخطأ */ }
+        }
 
-                // إظهار نافذة تحميل مبسطة
-                using (var progressForm = new Form())
+        private static void PerformUpdate(string downloadUrl)
+        {
+            string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
+            string currentDir    = Path.GetDirectoryName(currentExePath);
+            string newExePath    = Path.Combine(currentDir, "ChickenDist_New.exe");
+            string updaterBatPath = Path.Combine(currentDir, "updater.bat");
+
+            int maxRetries = 3;
+            bool downloaded = false;
+            Exception lastEx = null;
+
+            // إظهار نافذة تحميل
+            using (var progressForm = new Form())
+            {
+                progressForm.Text = "جاري تحميل التحديث...";
+                progressForm.Size = new System.Drawing.Size(400, 130);
+                progressForm.StartPosition = FormStartPosition.CenterScreen;
+                progressForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                progressForm.MaximizeBox = false;
+                progressForm.MinimizeBox = false;
+                progressForm.RightToLeft = RightToLeft.Yes;
+                progressForm.RightToLeftLayout = true;
+
+                var lbl = new Label
                 {
-                    progressForm.Text = "جاري تحميل التحديث...";
-                    progressForm.Size = new System.Drawing.Size(400, 130);
-                    progressForm.StartPosition = FormStartPosition.CenterScreen;
-                    progressForm.FormBorderStyle = FormBorderStyle.FixedDialog;
-                    progressForm.MaximizeBox = false;
-                    progressForm.MinimizeBox = false;
-                    progressForm.RightToLeft = RightToLeft.Yes;
-                    progressForm.RightToLeftLayout = true;
+                    Text = "جاري تحميل الملفات الجديدة من السيرفر، يرجى الانتظار...",
+                    AutoSize = true,
+                    Location = new System.Drawing.Point(20, 20)
+                };
+                var pb = new ProgressBar
+                {
+                    Width = 340,
+                    Height = 23,
+                    Location = new System.Drawing.Point(20, 50),
+                    Style = ProgressBarStyle.Marquee
+                };
 
-                    var lbl = new Label 
-                    { 
-                        Text = "جاري تحميل الملفات الجديدة من السيرفر، يرجى الانتظار...", 
-                        AutoSize = true, 
-                        Location = new System.Drawing.Point(20, 20) 
-                    };
-                    var pb = new ProgressBar 
-                    { 
-                        Width = 340, 
-                        Height = 23, 
-                        Location = new System.Drawing.Point(20, 50), 
-                        Style = ProgressBarStyle.Marquee 
-                    };
+                progressForm.Controls.Add(lbl);
+                progressForm.Controls.Add(pb);
+                progressForm.Show();
+                progressForm.Refresh();
 
-                    progressForm.Controls.Add(lbl);
-                    progressForm.Controls.Add(pb);
-                    progressForm.Show();
-                    progressForm.Refresh();
-
-                    using (var client = new WebClient())
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    try
                     {
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DownloadFile(downloadUrl, newExePath);
+                        lbl.Text = $"محاولة {attempt} من {maxRetries}...";
+                        progressForm.Refresh();
+
+                        using (var client = new WebClient())
+                        {
+                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                            client.DownloadFile(downloadUrl, newExePath);
+                        }
+                        downloaded = true;
+                        break;
                     }
-                    progressForm.Close();
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                        WriteLog($"Download attempt {attempt} failed", ex);
+                        System.Threading.Thread.Sleep(1500);
+                    }
                 }
 
-                // كتابة ملف الـ batch لاستبدال ملف الـ EXE القديم بالجديد
-                // يتم الانتظار لمدة ثانيتين لضمان إغلاق البرنامج بالكامل قبل محاولة الكتابة فوقه
+                progressForm.Close();
+            }
+
+            if (!downloaded)
+            {
+                MessageBox.Show(
+                    $"فشل تنزيل التحديث بعد {maxRetries} محاولات.\n\nالسبب: {lastEx?.Message}",
+                    "خطأ في التحديث",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                return;
+            }
+
+            try
+            {
                 string batContent = $@"@echo off
 echo.
 echo ====================================================
@@ -166,16 +217,14 @@ echo تم التحديث بنجاح! جاري تشغيل التطبيق...
 start """" ""{currentExePath}""
 del ""%~f0""
 ";
-
                 File.WriteAllText(updaterBatPath, batContent, System.Text.Encoding.Default);
 
-                // تشغيل ملف الـ bat وإغلاق التطبيق الحالي فوراً
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = updaterBatPath,
+                    FileName       = updaterBatPath,
                     CreateNoWindow = false,
                     UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Normal
+                    WindowStyle    = ProcessWindowStyle.Normal
                 };
 
                 Process.Start(startInfo);
@@ -183,7 +232,7 @@ del ""%~f0""
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل تنزيل أو تثبيت التحديث الجديد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل تثبيت التحديث:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
