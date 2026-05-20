@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         private decimal _selectedBookQty = 0;
         private string _selectedProductName = "";
         private string _selectedProductUnit = "";
+        private bool _isSelecting = false;
 
         // Tab Logs
         private DataGridView dgLogs;
@@ -267,8 +268,8 @@ namespace ChickenDist.Forms
                     r["Unit"],
                     Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
                     bookQty.ToString("N3"),
-                    bookQty.ToString("N3"),
-                    "0.000"
+                    "",   // ActualQty يبدأ فارغاً — المستخدم يُدخله يدوياً فقط للأصناف التي يجردها
+                    ""    // DiffQty يبدأ فارغاً
                 );
             }
             ClearAdjustmentForm();
@@ -305,27 +306,44 @@ namespace ChickenDist.Forms
             if (dgStock.SelectedRows.Count == 0) return;
             var r = dgStock.SelectedRows[0];
 
-            _selectedProductID = Convert.ToInt32(r.Cells["ProductID"].Value);
-            _selectedProductName = r.Cells["ProductName"].Value?.ToString();
-            _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
-            _selectedBookQty = Convert.ToDecimal(r.Cells["BookQty"].Value);
+            _isSelecting = true;
+            try
+            {
+                _selectedProductID = Convert.ToInt32(r.Cells["ProductID"].Value);
+                _selectedProductName = r.Cells["ProductName"].Value?.ToString();
+                _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
+                _selectedBookQty = decimal.TryParse(r.Cells["BookQty"].Value?.ToString(),
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out decimal bq) ? bq : 0;
 
-            lblSelectedProduct.Text = _selectedProductName;
-            lblBookQtyVal.Text = _selectedBookQty.ToString("N3") + " " + _selectedProductUnit;
-            
-            if (r.Cells["ActualQty"].Value != null && decimal.TryParse(r.Cells["ActualQty"].Value.ToString(), out decimal gridActual))
-            {
-                nudActualQty.Value = gridActual;
+                lblSelectedProduct.Text = _selectedProductName;
+                lblBookQtyVal.Text = _selectedBookQty.ToString("N3") + " " + _selectedProductUnit;
+
+                // إذا المستخدم سبق وأدخل رصيداً فعلياً لهذا الصنف، نعرضه — وإلا نعرض الرصيد الدفتري كقيمة مقترحة
+                string cellVal = r.Cells["ActualQty"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(cellVal) &&
+                    decimal.TryParse(cellVal, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out decimal gridActual))
+                {
+                    nudActualQty.Value = gridActual;
+                }
+                else
+                {
+                    nudActualQty.Value = _selectedBookQty;
+                }
+                UpdateDifference();
             }
-            else
+            finally
             {
-                nudActualQty.Value = _selectedBookQty;
+                _isSelecting = false;
             }
-            UpdateDifference();
         }
 
         private void NudActualQty_ValueChanged(object sender, EventArgs e)
         {
+            // تجاهل الحدث أثناء تحديد الصف لمنع الكتابة التلقائية في الخلية
+            if (_isSelecting) return;
+
             UpdateDifference();
 
             if (dgStock.SelectedRows.Count > 0)
@@ -350,8 +368,13 @@ namespace ChickenDist.Forms
             var row = dgStock.Rows[e.RowIndex];
             if (dgStock.Columns[e.ColumnIndex].Name == "ActualQty")
             {
-                decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal bookQty);
-                if (decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal actualQty))
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var numStyles = System.Globalization.NumberStyles.Any;
+                decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
+                string cellText = row.Cells["ActualQty"].Value?.ToString();
+
+                if (!string.IsNullOrWhiteSpace(cellText) &&
+                    decimal.TryParse(cellText, numStyles, inv, out decimal actualQty))
                 {
                     decimal diff = actualQty - bookQty;
                     row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
@@ -365,18 +388,24 @@ namespace ChickenDist.Forms
 
                     if (Convert.ToInt32(row.Cells["ProductID"].Value) == _selectedProductID)
                     {
+                        _isSelecting = true;
                         nudActualQty.Value = actualQty;
+                        _isSelecting = false;
                         UpdateDifference();
                     }
                 }
                 else
                 {
-                    row.Cells["ActualQty"].Value = bookQty.ToString("N3");
-                    row.Cells["DiffQty"].Value = "0.000";
+                    // المستخدم حذف القيمة — نعيدها فارغة (لم يُجرد هذا الصنف)
+                    row.Cells["ActualQty"].Value = "";
+                    row.Cells["DiffQty"].Value = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
+
                     if (Convert.ToInt32(row.Cells["ProductID"].Value) == _selectedProductID)
                     {
+                        _isSelecting = true;
                         nudActualQty.Value = bookQty;
+                        _isSelecting = false;
                         UpdateDifference();
                     }
                 }
@@ -418,21 +447,19 @@ namespace ChickenDist.Forms
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
-            // 1. تجميع كافة الأصناف التي تم تعديل رصيدها الفعلي في الجدول
+            // 1. تجميع كافة الأصناف التي أدخل المستخدم رصيدها الفعلي (غير فارغة)
             var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var numStyles = System.Globalization.NumberStyles.Any;
             foreach (DataGridViewRow row in dgStock.Rows)
             {
                 if (row.Cells["ProductID"].Value == null) continue;
-                
-                if (decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty) &&
-                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actualQty))
+                string cellVal = row.Cells["ActualQty"].Value?.ToString();
+                // فقط الأصناف التي أدخل المستخدم لها رصيداً فعلياً
+                if (!string.IsNullOrWhiteSpace(cellVal) &&
+                    decimal.TryParse(cellVal, numStyles, inv, out decimal actualQty))
                 {
-                    if (actualQty != bookQty)
-                    {
-                        modifiedRows.Add(row);
-                    }
+                    modifiedRows.Add(row);
                 }
             }
 
