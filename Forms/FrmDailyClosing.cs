@@ -380,13 +380,15 @@ namespace ChickenDist.Forms
 
                 // ─ Title
                 string title = $"تقرير التقفيل اليومي  –  {_dtpDate.Value:dd/MM/yyyy}";
+                var sfTitle = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var tsz = g.MeasureString(title, fTitle);
-                g.DrawString(title, fTitle, Brushes.DarkBlue, (pgW - tsz.Width) / 2f, y);
+                g.DrawString(title, fTitle, Brushes.DarkBlue, new RectangleF(20, y, pgW, tsz.Height), sfTitle);
                 y += (int)tsz.Height + 4;
 
                 string sub = $"إجمالي فواتير البيع: {_grandInvoice:N2}   |   إجمالي التوريد: {_grandPayment:N2}   |   إجمالي المديونية: {_grandBalance:N2}   ج.م";
+                var sfSub = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var ssz = g.MeasureString(sub, fHead);
-                g.DrawString(sub, fHead, Brushes.DarkGray, (pgW - ssz.Width) / 2f, y);
+                g.DrawString(sub, fHead, Brushes.DarkGray, new RectangleF(20, y, pgW, ssz.Height), sfSub);
                 y += (int)ssz.Height + 6;
 
                 g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pgW + 20, y);
@@ -399,17 +401,17 @@ namespace ChickenDist.Forms
                 // ─ Header row (only on first page)
                 if (pageRow == 0)
                 {
-                    int cx = 20;
+                    int cx = pgW + 20;
                     foreach (DataGridViewColumn col in _dg.Columns)
                     {
                         if (!col.Visible) continue;
                         int idx    = GetVisColIndex(col);
                         int cw     = widths[idx];
+                        cx -= cw;
                         var rect   = new RectangleF(cx, y, cw - 2, 22);
                         g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 75)), rect);
-                        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+                        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                         g.DrawString(col.HeaderText, fHead, Brushes.White, rect, sf);
-                        cx += cw;
                     }
                     y += 24;
                 }
@@ -427,18 +429,18 @@ namespace ChickenDist.Forms
                                   : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(248, 248, 252);
                     var rowFgClr  = isTotal ? Color.DarkGreen : Color.Black;
 
-                    int cx = 20;
+                    int cx = pgW + 20;
                     foreach (DataGridViewColumn col in _dg.Columns)
                     {
                         if (!col.Visible) continue;
                         int idx  = GetVisColIndex(col);
                         int cw   = widths[idx];
                         string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
+                        cx -= cw;
                         var rect = new RectangleF(cx, y, cw - 2, 18);
                         g.FillRectangle(new SolidBrush(rowBgClr), rect);
-                        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+                        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
                         g.DrawString(v, rowFont, new SolidBrush(rowFgClr), rect, sf);
-                        cx += cw;
                     }
 
                     // row separator

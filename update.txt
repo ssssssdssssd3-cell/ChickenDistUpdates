@@ -1,6 +1,6 @@
-version=1.0.5
+version=1.0.6
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=إصلاح: مشكلة تشغيل ملف التحديث الدفعي (باتش) بسبب المسارات العربية وتشفير UTF8، مما يضمن تثبيت التحديث بنجاح.
+changelog=إصلاح: تنسيق طباعة تقرير التقفيل اليومي (محاذاة عربية RTL)، وإزالة منطق إعادة التهيئة التلقائية من ملف reset.txt.
 
 
 

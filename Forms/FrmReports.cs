@@ -792,17 +792,17 @@ namespace ChickenDist.Forms
 
 				if (pageRow == 0)
 				{
-					int cx = 20;
+					int cx = pgW + 20;
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
 						int idx = GetDailyVisColIndex(col, dg);
 						int cw = widths[idx];
+						cx -= cw;
 						var rect = new RectangleF(cx, y, cw - 2, 22);
 						g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 75)), rect);
-						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 						g.DrawString(col.HeaderText, fHead, Brushes.White, rect, sf);
-						cx += cw;
 					}
 					y += 24;
 				}
@@ -819,18 +819,18 @@ namespace ChickenDist.Forms
 								  : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(248, 248, 252);
 					var rowFgClr = isTotal ? Color.DarkGreen : Color.Black;
 
-					int cx = 20;
+					int cx = pgW + 20;
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
 						int idx = GetDailyVisColIndex(col, dg);
 						int cw = widths[idx];
 						string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
+						cx -= cw;
 						var rect = new RectangleF(cx, y, cw - 2, 18);
 						g.FillRectangle(new SolidBrush(rowBgClr), rect);
-						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
 						g.DrawString(v, rowFont, new SolidBrush(rowFgClr), rect, sf);
-						cx += cw;
 					}
 
 					g.DrawLine(Pens.LightGray, 20, y + 18, pgW + 20, y + 18);

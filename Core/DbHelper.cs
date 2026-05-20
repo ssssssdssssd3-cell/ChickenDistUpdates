@@ -17,49 +17,6 @@ namespace ChickenDist.Core
 
         public static void EnsureDatabaseSchema()
         {
-            if (System.IO.File.Exists("reset.txt"))
-            {
-                try
-                {
-                    Execute("EXEC sp_MSforeachtable \"ALTER TABLE ? NOCHECK CONSTRAINT all\"");
-                    Execute("DELETE FROM SaleItems");
-                    Execute("DELETE FROM Sales");
-                    Execute("DELETE FROM SalesReturns");
-                    Execute("DELETE FROM ReturnItems");
-                    Execute("DELETE FROM ClientTransactions");
-                    Execute("DELETE FROM CashBox");
-                    Execute("DELETE FROM DriverLoadItems");
-                    Execute("DELETE FROM DriverLoads");
-                    Execute("DELETE FROM HandoverItems");
-                    Execute("DELETE FROM DriverHandovers");
-                    Execute("DELETE FROM Expenses");
-                    Execute("DELETE FROM StockAdjustments");
-                    Execute("DELETE FROM Products");
-
-                    Execute("DBCC CHECKIDENT ('Sales', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('Products', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('SaleItems', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('SalesReturns', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('ReturnItems', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('ClientTransactions', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('CashBox', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('DriverLoads', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('DriverLoadItems', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('DriverHandovers', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('HandoverItems', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('Expenses', RESEED, 0)");
-                    Execute("DBCC CHECKIDENT ('StockAdjustments', RESEED, 0)");
-
-                    Execute("EXEC sp_MSforeachtable \"ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all\"");
-                    System.IO.File.Delete("reset.txt");
-                    MessageBox.Show("✅ تم تصفير قاعدة البيانات بنجاح! الفواتير والأصناف ستبدأ الآن من رقم 1.", "نجاح التصفير", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("❌ فشل تصفير قاعدة البيانات:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
             try
             {
                 string sql = @"
