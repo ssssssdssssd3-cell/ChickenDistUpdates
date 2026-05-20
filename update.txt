@@ -1,3 +1,4 @@
-version=1.0.1
+version=1.0.2
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=تم إضافة شاشة تقفيل اليومية للمالك وإضافة زر التحديث التلقائي للبرنامج.
+changelog=تم تعديل شاشة جرد المخزن لاعتماد وحفظ الكميات الفعلية لجميع الأصناف المعدلة دفعة واحدة.
+

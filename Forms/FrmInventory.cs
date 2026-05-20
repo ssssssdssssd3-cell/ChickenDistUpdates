@@ -418,28 +418,101 @@ namespace ChickenDist.Forms
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
-            if (_selectedProductID == 0)
+            // 1. تجميع كافة الأصناف التي تم تعديل رصيدها الفعلي في الجدول
+            var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
+            foreach (DataGridViewRow row in dgStock.Rows)
             {
-                MessageBox.Show("من فضلك اختر صنفاً أولاً من جدول الجرد لتعديله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                if (row.Cells["ProductID"].Value == null) continue;
+                
+                if (decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), out decimal bookQty) &&
+                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), out decimal actualQty))
+                {
+                    if (actualQty != bookQty)
+                    {
+                        modifiedRows.Add(row);
+                    }
+                }
             }
 
-            decimal diff = nudActualQty.Value - _selectedBookQty;
-            // السماح بحفظ التسوية الجردية لتأكيد كمية الجرد كخط أساس مستقبلي حتى لو كان الفارق صفراً
-
-            string msg = $"هل أنت متأكد من حفظ تسوية كمية هذا الصنف؟\n\nالصنف: {_selectedProductName}\nالرصيد الدفتري الحالي: {_selectedBookQty:N3}\nالرصيد الفعلي المُدخل: {nudActualQty.Value:N3}\nالفارق الجردي: {(diff > 0 ? "+" : "")}{diff:N3}";
-            if (MessageBox.Show(msg, "تأكيد التسوية الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (modifiedRows.Count > 0)
             {
-                int id = InventoryDAL.SaveAdjustment(_selectedProductID, _selectedBookQty, nudActualQty.Value, txtNotes.Text);
-                if (id > 0)
+                // عرض قائمة الأصناف المعدلة للتأكيد
+                string msg = "هل أنت متأكد من حفظ تسوية كميات الأصناف التالية وتعديل أرصدتها في المخزن؟\n\n";
+                int count = 0;
+                foreach (var row in modifiedRows)
                 {
-                    MessageBox.Show("✅ تم حفظ وتطبيق التسوية الجردية وتعديل كمية المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadStock();
-                    LoadLogs();
+                    string name = row.Cells["ProductName"].Value?.ToString();
+                    decimal book = Convert.ToDecimal(row.Cells["BookQty"].Value);
+                    decimal actual = Convert.ToDecimal(row.Cells["ActualQty"].Value);
+                    decimal diff = actual - book;
+                    
+                    if (count < 10)
+                    {
+                        msg += $"• {name}: الدفتري ({book:N3}) ➔ الفعلي ({actual:N3}) [الفارق: {(diff > 0 ? "+" : "")}{diff:N3}]\n";
+                    }
+                    count++;
                 }
-                else
+
+                if (count > 10)
                 {
-                    MessageBox.Show("❌ حدث خطأ أثناء محاولة حفظ تسوية الجرد.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    msg += $"\n... وعدد {count - 10} أصناف أخرى.";
+                }
+
+                if (!string.IsNullOrEmpty(txtNotes.Text))
+                {
+                    msg += $"\n\nملاحظات التسوية: {txtNotes.Text}";
+                }
+
+                if (MessageBox.Show(msg, "تأكيد تسوية الكميات الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    int savedCount = 0;
+                    foreach (var row in modifiedRows)
+                    {
+                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                        decimal book = Convert.ToDecimal(row.Cells["BookQty"].Value);
+                        decimal actual = Convert.ToDecimal(row.Cells["ActualQty"].Value);
+                        
+                        int id = InventoryDAL.SaveAdjustment(pid, book, actual, txtNotes.Text);
+                        if (id > 0) savedCount++;
+                    }
+
+                    if (savedCount > 0)
+                    {
+                        MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف وتعديل كميات المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadStock();
+                        LoadLogs();
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ حدث خطأ أثناء محاولة حفظ تسوية الجرد.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            else
+            {
+                // في حال لم يتم تعديل أي صنف في الجدول، نتحقق من الصنف المحدد في القائمة الجانبية لحفظه (حتى لو كان الفارق صفراً كخط أساس)
+                if (_selectedProductID == 0)
+                {
+                    MessageBox.Show("لم يتم تعديل أي كمية فعلية في الجدول. من فضلك اختر صنفاً أولاً أو قم بتعديل رصيده الفعلي.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                decimal diff = nudActualQty.Value - _selectedBookQty;
+                string msg = $"هل أنت متأكد من حفظ تسوية كمية هذا الصنف كخط أساس جردي؟\n\nالصنف: {_selectedProductName}\nالرصيد الدفتري الحالي: {_selectedBookQty:N3}\nالرصيد الفعلي المُدخل: {nudActualQty.Value:N3}\nالفارق الجردي: {(diff > 0 ? "+" : "")}{diff:N3}";
+                
+                if (MessageBox.Show(msg, "تأكيد التسوية الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    int id = InventoryDAL.SaveAdjustment(_selectedProductID, _selectedBookQty, nudActualQty.Value, txtNotes.Text);
+                    if (id > 0)
+                    {
+                        MessageBox.Show("✅ تم حفظ وتطبيق التسوية الجردية وتعديل كمية المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadStock();
+                        LoadLogs();
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ حدث خطأ أثناء محاولة حفظ تسوية الجرد.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
