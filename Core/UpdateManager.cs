@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.3";
+        public const string CurrentVersion = "1.0.4";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -22,6 +22,7 @@ namespace ChickenDist.Core
                 {
                     // تفعيل بروتوكول TLS 1.2 للاتصال الآمن بـ GitHub
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                    client.Encoding = System.Text.Encoding.UTF8;
                     
                     // تحميل بيانات ملف التحديث
                     string rawData = client.DownloadString(UpdateUrl);

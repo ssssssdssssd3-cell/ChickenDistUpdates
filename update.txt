@@ -1,4 +1,5 @@
-version=1.0.3
+version=1.0.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=إصلاح: الرصيد الفعلي يصبح الرصيد الدفتري بعد التسوية الجردية. تحسين: رسالة التحديث تظهر الإصدار والتعديلات.
+changelog=إصلاح: مشكلة تشفير الحروف العربية في رسالة التحديث لكي تظهر النصوص بشكل صحيح ومقروء.
+
 
