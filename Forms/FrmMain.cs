@@ -30,6 +30,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgLight;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // ===== TopBar =====
             this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };

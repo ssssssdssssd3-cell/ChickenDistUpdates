@@ -27,13 +27,14 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.Primary;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // Logo/Header panel
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary };
             var lblLogo = new Label
             {
-                Text = "🐣",
-                Font = new Font("Segoe UI Emoji", 48f),
+                Text = "🚚",
+                Font = new Font("Segoe UI Emoji", 50f),
                 ForeColor = Theme.Accent,
                 AutoSize = false,
                 Size = new Size(480, 90),
