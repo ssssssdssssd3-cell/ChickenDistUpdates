@@ -763,90 +763,122 @@ namespace ChickenDist.Forms
 		{
 			var pd = new PrintDocument();
 			pd.DefaultPageSettings.Landscape = true;
-			pd.DefaultPageSettings.Margins = new Margins(20, 20, 30, 30);
+			pd.DefaultPageSettings.Margins = new Margins(30, 30, 40, 40);
 
 			int pageRow = 0;
 			pd.PrintPage += (s, ev) =>
 			{
 				var g = ev.Graphics;
-				g.PageUnit = GraphicsUnit.Pixel;
+				// لا نضبط PageUnit - نتركه على GraphicsUnit.Display (الافتراضي)
+				// حتى تتطابق الإحداثيات مع أبعاد الصفحة
 
-				var fTitle = new Font("Arial", 13f, FontStyle.Bold);
-				var fHead = new Font("Arial", 7.5f, FontStyle.Bold);
-				var fCell = new Font("Arial", 7f);
-				var fTotal = new Font("Arial", 8f, FontStyle.Bold);
+				var fTitle = new Font("Arial", 14f, FontStyle.Bold);
+				var fHead  = new Font("Arial", 8f,  FontStyle.Bold);
+				var fCell  = new Font("Arial", 7.5f);
+				var fTotal = new Font("Arial", 8.5f, FontStyle.Bold);
 
-				int pgW = (int)ev.PageBounds.Width - 40;
-				int y = 20;
+				int marginLeft  = ev.MarginBounds.Left;
+				int marginRight = ev.MarginBounds.Right;
+				int pgW = marginRight - marginLeft;   // عرض منطقة الطباعة
+				int y   = ev.MarginBounds.Top;
 
+				// ─── العنوان ───
 				string title = $"تقرير التقفيل اليومي  –  {dtpFrom.Value:dd/MM/yyyy}";
-				var tsz = g.MeasureString(title, fTitle);
-				g.DrawString(title, fTitle, Brushes.DarkBlue, (pgW - tsz.Width) / 2f, y);
-				y += (int)tsz.Height + 10;
+				SizeF tsz = g.MeasureString(title, fTitle);
+				g.DrawString(title, fTitle, Brushes.DarkBlue,
+					marginLeft + (pgW - tsz.Width) / 2f, y);
+				y += (int)tsz.Height + 6;
 
-				g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pgW + 20, y);
-				y += 6;
+				// الملخص الفرعي
+				string sub = $"إجمالي فواتير اليوم: {dg.Rows.Count - 2}  |  الأصناف: {dg.Columns.Count - 4}";
+				SizeF ssz = g.MeasureString(sub, fCell);
+				g.DrawString(sub, fCell, Brushes.DimGray,
+					marginLeft + (pgW - ssz.Width) / 2f, y);
+				y += (int)ssz.Height + 6;
 
+				g.DrawLine(new Pen(Color.DarkBlue, 1.5f), marginLeft, y, marginRight, y);
+				y += 8;
+
+				// ─── عرض الأعمدة ───
 				int visColCount = dg.Columns.GetColumnCount(DataGridViewElementStates.Visible);
 				int[] widths = ComputeDailyPrintWidths(pgW, visColCount, dg);
 
-				if (pageRow == 0)
+				// ─── رؤوس الأعمدة (تُرسم في كل صفحة) ───
+				const int ROW_H  = 20;
+				const int HEAD_H = 24;
+
+				int headY = y;
 				{
-					int cx = pgW + 20;
+					int cx = marginRight;   // RTL: نبدأ من اليمين
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
 						int idx = GetDailyVisColIndex(col, dg);
-						int cw = widths[idx];
+						int cw  = widths[idx];
 						cx -= cw;
-						var rect = new RectangleF(cx, y, cw - 2, 22);
-						g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 75)), rect);
-						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+						var rect = new RectangleF(cx, headY, cw - 1, HEAD_H);
+						g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 90)), rect);
+						var sf = new StringFormat
+						{
+							Alignment     = StringAlignment.Center,
+							LineAlignment = StringAlignment.Center,
+							Trimming      = StringTrimming.EllipsisCharacter,
+							FormatFlags   = StringFormatFlags.DirectionRightToLeft
+						};
 						g.DrawString(col.HeaderText, fHead, Brushes.White, rect, sf);
 					}
-					y += 24;
+					y += HEAD_H + 2;
 				}
 
+				// ─── صفوف البيانات ───
 				while (pageRow < dg.Rows.Count)
 				{
-					var dgRow = dg.Rows[pageRow];
+					var dgRow  = dg.Rows[pageRow];
 					bool isPrice = pageRow == 0;
 					bool isTotal = dgRow.Cells[0].Value?.ToString() == "الإجمالي الكلي";
 
-					var rowFont = isTotal || isPrice ? fTotal : fCell;
-					var rowBgClr = isPrice ? Color.FromArgb(220, 230, 245)
-								  : isTotal ? Color.FromArgb(220, 245, 220)
-								  : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(248, 248, 252);
-					var rowFgClr = isTotal ? Color.DarkGreen : Color.Black;
+					var rowFont  = isTotal || isPrice ? fTotal : fCell;
+					var rowBg    = isPrice ? Color.FromArgb(220, 230, 245)
+								 : isTotal ? Color.FromArgb(220, 245, 220)
+								 : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(245, 245, 250);
+					var rowFg    = isTotal ? Color.DarkGreen : Color.Black;
 
-					int cx = pgW + 20;
+					int cx = marginRight;
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
 						int idx = GetDailyVisColIndex(col, dg);
-						int cw = widths[idx];
+						int cw  = widths[idx];
 						string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
 						cx -= cw;
-						var rect = new RectangleF(cx, y, cw - 2, 18);
-						g.FillRectangle(new SolidBrush(rowBgClr), rect);
-						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
-						g.DrawString(v, rowFont, new SolidBrush(rowFgClr), rect, sf);
+						var rect = new RectangleF(cx, y, cw - 1, ROW_H);
+						g.FillRectangle(new SolidBrush(rowBg), rect);
+						var sf = new StringFormat
+						{
+							Alignment     = StringAlignment.Center,
+							LineAlignment = StringAlignment.Center,
+							Trimming      = StringTrimming.EllipsisCharacter,
+							FormatFlags   = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
+						};
+						g.DrawString(v, rowFont, new SolidBrush(rowFg), rect, sf);
 					}
 
-					g.DrawLine(Pens.LightGray, 20, y + 18, pgW + 20, y + 18);
-					y += 19;
+					g.DrawLine(Pens.LightGray, marginLeft, y + ROW_H, marginRight, y + ROW_H);
+					y += ROW_H;
 					pageRow++;
 
-					if (y > ev.PageBounds.Height - 50)
+					if (y > ev.MarginBounds.Bottom - ROW_H * 2)
 					{
 						ev.HasMorePages = true;
 						return;
 					}
 				}
 
-				g.DrawLine(new Pen(Color.Gray, 1f), 20, y + 4, pgW + 20, y + 4);
-				y += 8;
-				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fCell, Brushes.Gray, 20, y);
+				// ─── تذييل الصفحة ───
+				g.DrawLine(new Pen(Color.Gray, 1f), marginLeft, y + 6, marginRight, y + 6);
+				y += 10;
+				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}",
+					fCell, Brushes.Gray, marginLeft, y);
 
 				pageRow = 0;
 			};
@@ -854,8 +886,8 @@ namespace ChickenDist.Forms
 			var preview = new PrintPreviewDialog
 			{
 				Document = pd,
-				Width = 1100,
-				Height = 800
+				Width    = 1150,
+				Height   = 820
 			};
 			preview.ShowDialog();
 		}
