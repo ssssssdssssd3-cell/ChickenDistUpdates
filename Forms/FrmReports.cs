@@ -769,54 +769,64 @@ namespace ChickenDist.Forms
 			pd.PrintPage += (s, ev) =>
 			{
 				var g = ev.Graphics;
-				// لا نضبط PageUnit - نتركه على GraphicsUnit.Display (الافتراضي)
-				// حتى تتطابق الإحداثيات مع أبعاد الصفحة
 
-				var fTitle = new Font("Arial", 14f, FontStyle.Bold);
-				var fHead  = new Font("Arial", 8f,  FontStyle.Bold);
-				var fCell  = new Font("Arial", 7.5f);
-				var fTotal = new Font("Arial", 8.5f, FontStyle.Bold);
+				var fTitle = new Font("Arial", 13f, FontStyle.Bold);
+				var fSub   = new Font("Arial", 7.5f);
+				var fHead  = new Font("Arial", 7.5f, FontStyle.Bold);
+				var fCell  = new Font("Arial", 7f);
+				var fTotal = new Font("Arial", 8f, FontStyle.Bold);
 
-				int marginLeft  = ev.MarginBounds.Left;
-				int marginRight = ev.MarginBounds.Right;
-				int pgW = marginRight - marginLeft;   // عرض منطقة الطباعة
-				int y   = ev.MarginBounds.Top;
+				// منطقة الطباعة بالكامل
+				int mL = ev.MarginBounds.Left;
+				int mR = ev.MarginBounds.Right;
+				int mT = ev.MarginBounds.Top;
+				int mB = ev.MarginBounds.Bottom;
+				int pgW = mR - mL;   // العرض الكلي القابل للطباعة
 
-				// ─── العنوان ───
-				string title = $"تقرير التقفيل اليومي  –  {dtpFrom.Value:dd/MM/yyyy}";
-				SizeF tsz = g.MeasureString(title, fTitle);
-				g.DrawString(title, fTitle, Brushes.DarkBlue,
-					marginLeft + (pgW - tsz.Width) / 2f, y);
-				y += (int)tsz.Height + 6;
+				int y = mT;
 
-				// الملخص الفرعي
-				string sub = $"إجمالي فواتير اليوم: {dg.Rows.Count - 2}  |  الأصناف: {dg.Columns.Count - 4}";
-				SizeF ssz = g.MeasureString(sub, fCell);
-				g.DrawString(sub, fCell, Brushes.DimGray,
-					marginLeft + (pgW - ssz.Width) / 2f, y);
-				y += (int)ssz.Height + 6;
+				// ─── العنوان (الصفحة الأولى فقط) ───
+				if (pageRow == 0)
+				{
+					string title = $"تقرير التقفيل اليومي  –  {dtpFrom.Value:dd/MM/yyyy}";
+					SizeF tsz = g.MeasureString(title, fTitle);
+					g.DrawString(title, fTitle, Brushes.DarkBlue,
+						mL + (pgW - tsz.Width) / 2f, y);
+					y += (int)tsz.Height + 4;
 
-				g.DrawLine(new Pen(Color.DarkBlue, 1.5f), marginLeft, y, marginRight, y);
-				y += 8;
+					string sub = $"إجمالي فواتير اليوم: {dg.Rows.Count - 2}  |  عدد الأصناف: {dg.Columns.Count - 4}";
+					SizeF ssz = g.MeasureString(sub, fSub);
+					g.DrawString(sub, fSub, Brushes.DimGray,
+						mL + (pgW - ssz.Width) / 2f, y);
+					y += (int)ssz.Height + 4;
 
-				// ─── عرض الأعمدة ───
+					g.DrawLine(new Pen(Color.DarkBlue, 1.5f), mL, y, mR, y);
+					y += 6;
+				}
+
+				// ─── حساب عرض كل عمود بدقة ───
 				int visColCount = dg.Columns.GetColumnCount(DataGridViewElementStates.Visible);
 				int[] widths = ComputeDailyPrintWidths(pgW, visColCount, dg);
 
-				// ─── رؤوس الأعمدة (تُرسم في كل صفحة) ───
-				const int ROW_H  = 20;
-				const int HEAD_H = 24;
+				// التحقق من أن مجموع العروض يساوي pgW بالضبط
+				int totalW = 0;
+				foreach (int w in widths) totalW += w;
+				if (totalW != pgW && widths.Length > 0)
+					widths[widths.Length - 1] += pgW - totalW; // تصحيح الفرق في آخر عمود
 
-				int headY = y;
+				const int HEAD_H = 22;
+				const int ROW_H  = 18;
+
+				// ─── رؤوس الأعمدة (تُرسم في كل صفحة) ───
 				{
-					int cx = marginRight;   // RTL: نبدأ من اليمين
+					int cx = mR;   // RTL: نبدأ من اليمين
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
 						int idx = GetDailyVisColIndex(col, dg);
 						int cw  = widths[idx];
 						cx -= cw;
-						var rect = new RectangleF(cx, headY, cw - 1, HEAD_H);
+						var rect = new RectangleF(cx, y, cw, HEAD_H);
 						g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 90)), rect);
 						var sf = new StringFormat
 						{
@@ -838,12 +848,12 @@ namespace ChickenDist.Forms
 					bool isTotal = dgRow.Cells[0].Value?.ToString() == "الإجمالي الكلي";
 
 					var rowFont  = isTotal || isPrice ? fTotal : fCell;
-					var rowBg    = isPrice ? Color.FromArgb(220, 230, 245)
-								 : isTotal ? Color.FromArgb(220, 245, 220)
+					var rowBg    = isPrice  ? Color.FromArgb(220, 230, 245)
+								 : isTotal  ? Color.FromArgb(220, 245, 220)
 								 : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(245, 245, 250);
 					var rowFg    = isTotal ? Color.DarkGreen : Color.Black;
 
-					int cx = marginRight;
+					int cx = mR;
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
@@ -851,7 +861,7 @@ namespace ChickenDist.Forms
 						int cw  = widths[idx];
 						string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
 						cx -= cw;
-						var rect = new RectangleF(cx, y, cw - 1, ROW_H);
+						var rect = new RectangleF(cx, y, cw, ROW_H);
 						g.FillRectangle(new SolidBrush(rowBg), rect);
 						var sf = new StringFormat
 						{
@@ -863,11 +873,11 @@ namespace ChickenDist.Forms
 						g.DrawString(v, rowFont, new SolidBrush(rowFg), rect, sf);
 					}
 
-					g.DrawLine(Pens.LightGray, marginLeft, y + ROW_H, marginRight, y + ROW_H);
+					g.DrawLine(Pens.LightGray, mL, y + ROW_H, mR, y + ROW_H);
 					y += ROW_H;
 					pageRow++;
 
-					if (y > ev.MarginBounds.Bottom - ROW_H * 2)
+					if (y > mB - ROW_H * 2)
 					{
 						ev.HasMorePages = true;
 						return;
@@ -875,10 +885,9 @@ namespace ChickenDist.Forms
 				}
 
 				// ─── تذييل الصفحة ───
-				g.DrawLine(new Pen(Color.Gray, 1f), marginLeft, y + 6, marginRight, y + 6);
-				y += 10;
+				g.DrawLine(new Pen(Color.Gray, 1f), mL, y + 6, mR, y + 6);
 				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}",
-					fCell, Brushes.Gray, marginLeft, y);
+					fCell, Brushes.Gray, mL, y + 10);
 
 				pageRow = 0;
 			};
@@ -894,20 +903,25 @@ namespace ChickenDist.Forms
 
 		private int[] ComputeDailyPrintWidths(int pgW, int colCount, DataGridView dg)
 		{
+			// توزيع عرض الصفحة الكامل على الأعمدة بدقة
 			int clientW = (int)(pgW * 0.15);
-			int extraW = (int)(pgW * 0.09);
-			int usedW = clientW + extraW * 3;
+			int extraW  = (int)(pgW * 0.09);
+			int reservedW = clientW + extraW * 3;
 			int prodCount = colCount - 4;
-			int prodW = prodCount > 0 ? Math.Max(45, (pgW - usedW) / prodCount) : 60;
+			int prodW = prodCount > 0
+				? Math.Max(40, (pgW - reservedW) / prodCount)
+				: 60;
 
 			var ws = new int[colCount];
 			int vi = 0;
 			foreach (DataGridViewColumn col in dg.Columns)
 			{
 				if (!col.Visible) continue;
-				if (col.Name == "ClientName") ws[vi] = clientW;
-				else if (col.Name == "TotalInvoice" || col.Name == "LastPayment" || col.Name == "Balance") ws[vi] = extraW;
-				else ws[vi] = prodW;
+				if      (col.Name == "ClientName")    ws[vi] = clientW;
+				else if (col.Name == "TotalInvoice" ||
+				         col.Name == "LastPayment"   ||
+				         col.Name == "Balance")       ws[vi] = extraW;
+				else                                  ws[vi] = prodW;
 				vi++;
 			}
 			return ws;
