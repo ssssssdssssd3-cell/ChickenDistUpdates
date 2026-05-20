@@ -20,9 +20,10 @@ namespace ChickenDist.Core
             {
                 using (var client = new WebClient())
                 {
-                    // تفعيل بروتوكول TLS 1.2 للاتصال الآمن بـ GitHub
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                    // تفعيل بروتوكول TLS 1.2 والبروتوكولات الأخرى للاتصال الآمن بـ GitHub
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
                     client.Encoding = System.Text.Encoding.UTF8;
+                    client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
                     
                     // تحميل بيانات ملف التحديث
                     string rawData = client.DownloadString(UpdateUrl);
@@ -173,7 +174,8 @@ namespace ChickenDist.Core
 
                         using (var client = new WebClient())
                         {
-                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
+                            client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
                             client.DownloadFile(downloadUrl, newExePath);
                         }
                         downloaded = true;
