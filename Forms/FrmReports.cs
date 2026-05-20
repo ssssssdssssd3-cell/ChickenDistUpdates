@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Linq;
 using ChickenDist.Core;
 using ChickenDist.DAL;
+using System.Collections.Generic;
 
 namespace ChickenDist.Forms
 {
@@ -92,8 +93,9 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Font = Theme.FontMain
 			};
-			(string, string)[] array = new(string, string)[10]
+			(string, string)[] array = new(string, string)[11]
 			{
+				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
 				("🗓 مبيعات يومية تفصيلية", "SalesByDay"),
@@ -315,6 +317,10 @@ namespace ChickenDist.Forms
 						("Val", "القيمة المالية للنشاط")
 					}, dataGridView);
 					break;
+				case "DailyClosing":
+					_currentDt = new DataTable();
+					LoadDailyClosingReport(dataGridView);
+					break;
 				}
 				FillGrid(dataGridView);
 			}
@@ -517,6 +523,11 @@ namespace ChickenDist.Forms
 				MessageBox.Show("لا توجد بيانات متاحة للطباعة حاليا\u064b.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
+			if (tabReports.SelectedTab?.Tag?.ToString() == "DailyClosing")
+			{
+				PrintDailyClosing(dg);
+				return;
+			}
 			PrintDocument printDocument = new PrintDocument();
 			if (dg.Columns.Count > 5)
 			{
@@ -603,6 +614,283 @@ namespace ChickenDist.Forms
 			printPreviewDialog.Width = 950;
 			printPreviewDialog.Height = 750;
 			printPreviewDialog.ShowDialog();
+		}
+
+		private void LoadDailyClosingReport(DataGridView dg)
+		{
+			try
+			{
+				DateTime date = dtpFrom.Value.Date;
+
+				var products = ProductDAL.GetAll(activeOnly: true);
+				int productCount = products.Rows.Count;
+
+				var dtQty = ReportDAL.GetDailyClientProductSales(date);
+				var dtTotals = ReportDAL.GetDailyClientTotals(date);
+
+				var qtyMap = new Dictionary<int, Dictionary<int, decimal>>();
+				foreach (DataRow r in dtQty.Rows)
+				{
+					int cid = Convert.ToInt32(r["ClientID"]);
+					int pid = Convert.ToInt32(r["ProductID"]);
+					decimal q = Convert.ToDecimal(r["TotalQty"]);
+					if (!qtyMap.ContainsKey(cid)) qtyMap[cid] = new Dictionary<int, decimal>();
+					qtyMap[cid][pid] = q;
+				}
+
+				var totMap = new Dictionary<int, (string name, decimal inv, decimal pay, decimal bal)>();
+				var clientOrder = new List<int>();
+				foreach (DataRow r in dtTotals.Rows)
+				{
+					int cid = Convert.ToInt32(r["ClientID"]);
+					totMap[cid] = (
+						r["ClientName"].ToString(),
+						Convert.ToDecimal(r["TotalInvoice"]),
+						Convert.ToDecimal(r["LastPayment"]),
+						Convert.ToDecimal(r["Balance"])
+					);
+					if (!clientOrder.Contains(cid)) clientOrder.Add(cid);
+				}
+				foreach (int cid in qtyMap.Keys)
+					if (!clientOrder.Contains(cid)) clientOrder.Add(cid);
+
+				dg.Columns.Clear();
+				dg.Rows.Clear();
+
+				dg.Columns.Add(new DataGridViewTextBoxColumn
+				{
+					Name = "ClientName",
+					HeaderText = "اسم العميل",
+					MinimumWidth = 140,
+					DefaultCellStyle = new DataGridViewCellStyle
+					{
+						Alignment = DataGridViewContentAlignment.MiddleRight,
+						Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+					}
+				});
+
+				foreach (DataRow pr in products.Rows)
+				{
+					dg.Columns.Add(new DataGridViewTextBoxColumn
+					{
+						Name = "P_" + pr["ProductID"],
+						HeaderText = pr["ProductName"].ToString(),
+						MinimumWidth = 68,
+						Tag = pr
+					});
+				}
+
+				dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalInvoice", HeaderText = "إجمالي الفاتورة", MinimumWidth = 100,
+					DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Accent, Alignment = DataGridViewContentAlignment.MiddleCenter } });
+				dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastPayment", HeaderText = "آخر توريد", MinimumWidth = 100,
+					DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Success, Alignment = DataGridViewContentAlignment.MiddleCenter } });
+				dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "المديونية", MinimumWidth = 100,
+					DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
+
+				int totalCols = dg.Columns.Count;
+
+				var priceVals = new object[totalCols];
+				priceVals[0] = "السعر";
+				for (int i = 0; i < productCount; i++)
+				{
+					decimal price = Convert.ToDecimal(products.Rows[i]["SalePrice"]);
+					priceVals[i + 1] = price > 0 ? price.ToString("N2") : "-";
+				}
+				int priceRowIdx = dg.Rows.Add(priceVals);
+				StyleDailySpecialRow(dg.Rows[priceRowIdx], Color.FromArgb(26, 43, 90), Color.FromArgb(243, 156, 18), new Font("Segoe UI", 9.5f, FontStyle.Bold));
+
+				decimal grandInvoice = 0m, grandPayment = 0m, grandBalance = 0m;
+				bool alternate = false;
+
+				foreach (int cid in clientOrder)
+				{
+					var row = new object[totalCols];
+					string clientName = totMap.ContainsKey(cid) ? totMap[cid].name : "عميل";
+					row[0] = clientName;
+
+					for (int i = 0; i < productCount; i++)
+					{
+						int pid = Convert.ToInt32(products.Rows[i]["ProductID"]);
+						decimal qty = 0;
+						if (qtyMap.ContainsKey(cid) && qtyMap[cid].ContainsKey(pid))
+							qty = qtyMap[cid][pid];
+						row[i + 1] = qty > 0 ? qty.ToString("N0") : "";
+					}
+
+					decimal inv = 0, pay = 0, bal = 0;
+					if (totMap.ContainsKey(cid))
+						(_, inv, pay, bal) = totMap[cid];
+
+					row[productCount + 1] = inv.ToString("N2");
+					row[productCount + 2] = pay.ToString("N2");
+					row[productCount + 3] = bal.ToString("N2");
+
+					grandInvoice += inv;
+					grandPayment += pay;
+					grandBalance += bal;
+
+					int ri = dg.Rows.Add(row);
+					dg.Rows[ri].DefaultCellStyle.BackColor = alternate ? Color.FromArgb(40, 48, 65) : Theme.BgCard;
+					alternate = !alternate;
+				}
+
+				var totVals = new object[totalCols];
+				totVals[0] = "الإجمالي الكلي";
+				for (int i = 1; i <= productCount; i++) totVals[i] = "";
+				totVals[productCount + 1] = grandInvoice.ToString("N2");
+				totVals[productCount + 2] = grandPayment.ToString("N2");
+				totVals[productCount + 3] = grandBalance.ToString("N2");
+
+				int totRowIdx = dg.Rows.Add(totVals);
+				StyleDailySpecialRow(dg.Rows[totRowIdx], Color.FromArgb(30, 60, 30), Color.LightGreen, new Font("Segoe UI", 10.5f, FontStyle.Bold));
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("حدث خطأ أثناء تحميل تقرير التقفيل اليومي:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private static void StyleDailySpecialRow(DataGridViewRow row, Color bg, Color fg, Font font)
+		{
+			row.DefaultCellStyle.BackColor = bg;
+			row.DefaultCellStyle.ForeColor = fg;
+			row.DefaultCellStyle.Font = font;
+			row.DefaultCellStyle.SelectionBackColor = bg;
+			row.DefaultCellStyle.SelectionForeColor = fg;
+		}
+
+		private void PrintDailyClosing(DataGridView dg)
+		{
+			var pd = new PrintDocument();
+			pd.DefaultPageSettings.Landscape = true;
+			pd.DefaultPageSettings.Margins = new Margins(20, 20, 30, 30);
+
+			int pageRow = 0;
+			pd.PrintPage += (s, ev) =>
+			{
+				var g = ev.Graphics;
+				g.PageUnit = GraphicsUnit.Pixel;
+
+				var fTitle = new Font("Arial", 13f, FontStyle.Bold);
+				var fHead = new Font("Arial", 7.5f, FontStyle.Bold);
+				var fCell = new Font("Arial", 7f);
+				var fTotal = new Font("Arial", 8f, FontStyle.Bold);
+
+				int pgW = (int)ev.PageBounds.Width - 40;
+				int y = 20;
+
+				string title = $"تقرير التقفيل اليومي  –  {dtpFrom.Value:dd/MM/yyyy}";
+				var tsz = g.MeasureString(title, fTitle);
+				g.DrawString(title, fTitle, Brushes.DarkBlue, (pgW - tsz.Width) / 2f, y);
+				y += (int)tsz.Height + 10;
+
+				g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pgW + 20, y);
+				y += 6;
+
+				int visColCount = dg.Columns.GetColumnCount(DataGridViewElementStates.Visible);
+				int[] widths = ComputeDailyPrintWidths(pgW, visColCount, dg);
+
+				if (pageRow == 0)
+				{
+					int cx = 20;
+					foreach (DataGridViewColumn col in dg.Columns)
+					{
+						if (!col.Visible) continue;
+						int idx = GetDailyVisColIndex(col, dg);
+						int cw = widths[idx];
+						var rect = new RectangleF(cx, y, cw - 2, 22);
+						g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 75)), rect);
+						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+						g.DrawString(col.HeaderText, fHead, Brushes.White, rect, sf);
+						cx += cw;
+					}
+					y += 24;
+				}
+
+				while (pageRow < dg.Rows.Count)
+				{
+					var dgRow = dg.Rows[pageRow];
+					bool isPrice = pageRow == 0;
+					bool isTotal = dgRow.Cells[0].Value?.ToString() == "الإجمالي الكلي";
+
+					var rowFont = isTotal || isPrice ? fTotal : fCell;
+					var rowBgClr = isPrice ? Color.FromArgb(220, 230, 245)
+								  : isTotal ? Color.FromArgb(220, 245, 220)
+								  : (pageRow % 2 == 0) ? Color.White : Color.FromArgb(248, 248, 252);
+					var rowFgClr = isTotal ? Color.DarkGreen : Color.Black;
+
+					int cx = 20;
+					foreach (DataGridViewColumn col in dg.Columns)
+					{
+						if (!col.Visible) continue;
+						int idx = GetDailyVisColIndex(col, dg);
+						int cw = widths[idx];
+						string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
+						var rect = new RectangleF(cx, y, cw - 2, 18);
+						g.FillRectangle(new SolidBrush(rowBgClr), rect);
+						var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+						g.DrawString(v, rowFont, new SolidBrush(rowFgClr), rect, sf);
+						cx += cw;
+					}
+
+					g.DrawLine(Pens.LightGray, 20, y + 18, pgW + 20, y + 18);
+					y += 19;
+					pageRow++;
+
+					if (y > ev.PageBounds.Height - 50)
+					{
+						ev.HasMorePages = true;
+						return;
+					}
+				}
+
+				g.DrawLine(new Pen(Color.Gray, 1f), 20, y + 4, pgW + 20, y + 4);
+				y += 8;
+				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fCell, Brushes.Gray, 20, y);
+
+				pageRow = 0;
+			};
+
+			var preview = new PrintPreviewDialog
+			{
+				Document = pd,
+				Width = 1100,
+				Height = 800
+			};
+			preview.ShowDialog();
+		}
+
+		private int[] ComputeDailyPrintWidths(int pgW, int colCount, DataGridView dg)
+		{
+			int clientW = (int)(pgW * 0.15);
+			int extraW = (int)(pgW * 0.09);
+			int usedW = clientW + extraW * 3;
+			int prodCount = colCount - 4;
+			int prodW = prodCount > 0 ? Math.Max(45, (pgW - usedW) / prodCount) : 60;
+
+			var ws = new int[colCount];
+			int vi = 0;
+			foreach (DataGridViewColumn col in dg.Columns)
+			{
+				if (!col.Visible) continue;
+				if (col.Name == "ClientName") ws[vi] = clientW;
+				else if (col.Name == "TotalInvoice" || col.Name == "LastPayment" || col.Name == "Balance") ws[vi] = extraW;
+				else ws[vi] = prodW;
+				vi++;
+			}
+			return ws;
+		}
+
+		private int GetDailyVisColIndex(DataGridViewColumn col, DataGridView dg)
+		{
+			int idx = 0;
+			foreach (DataGridViewColumn c in dg.Columns)
+			{
+				if (!c.Visible) continue;
+				if (c.Name == col.Name) return idx;
+				idx++;
+			}
+			return 0;
 		}
 	}
 }
