@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.2";
+        public const string CurrentVersion = "1.0.3";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -59,10 +59,10 @@ namespace ChickenDist.Core
                     if (remote > local)
                     {
                         var result = MessageBox.Show(
-                            $"يوجد تحديث جديد متاح للبرنامج!\n\n" +
-                            $"الإصدار الحالي: {CurrentVersion}\n" +
-                            $"الإصدار الجديد: {remoteVersion}\n\n" +
-                            $"التغييرات الجديدة:\n{changelog}\n\n" +
+                            $"🔄 يوجد تحديث جديد متاح للبرنامج!\n\n" +
+                            $"الإصدار الحالي لديك:  {CurrentVersion}\n" +
+                            $"الإصدار الجديد المتاح: {remoteVersion}\n\n" +
+                            $"📝 ما الجديد في هذا الإصدار:\n{changelog}\n\n" +
                             $"هل ترغب في تنزيل التحديث وتثبيته الآن؟",
                             "تحديث جديد متاح",
                             MessageBoxButtons.YesNo,
@@ -80,7 +80,15 @@ namespace ChickenDist.Core
                     {
                         if (showNoUpdateMsg)
                         {
-                            MessageBox.Show("أنت تستخدم أحدث إصدار بالفعل.", "تحديث البرنامج", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                            MessageBox.Show(
+                                $"✅ أنت تستخدم أحدث إصدار بالفعل.\n\n" +
+                                $"إصدارك الحالي: {CurrentVersion}\n\n" +
+                                $"📝 آخر التحديثات في هذا الإصدار:\n{changelog}",
+                                "تحديث البرنامج",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                         }
                     }
                 }

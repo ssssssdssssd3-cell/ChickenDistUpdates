@@ -1,4 +1,4 @@
-version=1.0.2
+version=1.0.3
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=تم تعديل شاشة جرد المخزن لاعتماد وحفظ الكميات الفعلية لجميع الأصناف المعدلة دفعة واحدة.
+changelog=إصلاح: الرصيد الفعلي يصبح الرصيد الدفتري بعد التسوية الجردية. تحسين: رسالة التحديث تظهر الإصدار والتعديلات.
 

@@ -350,8 +350,8 @@ namespace ChickenDist.Forms
             var row = dgStock.Rows[e.RowIndex];
             if (dgStock.Columns[e.ColumnIndex].Name == "ActualQty")
             {
-                decimal bookQty = Convert.ToDecimal(row.Cells["BookQty"].Value);
-                if (decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), out decimal actualQty))
+                decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal bookQty);
+                if (decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal actualQty))
                 {
                     decimal diff = actualQty - bookQty;
                     row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
@@ -420,12 +420,14 @@ namespace ChickenDist.Forms
         {
             // 1. تجميع كافة الأصناف التي تم تعديل رصيدها الفعلي في الجدول
             var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var numStyles = System.Globalization.NumberStyles.Any;
             foreach (DataGridViewRow row in dgStock.Rows)
             {
                 if (row.Cells["ProductID"].Value == null) continue;
                 
-                if (decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), out decimal bookQty) &&
-                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), out decimal actualQty))
+                if (decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty) &&
+                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actualQty))
                 {
                     if (actualQty != bookQty)
                     {
@@ -442,8 +444,8 @@ namespace ChickenDist.Forms
                 foreach (var row in modifiedRows)
                 {
                     string name = row.Cells["ProductName"].Value?.ToString();
-                    decimal book = Convert.ToDecimal(row.Cells["BookQty"].Value);
-                    decimal actual = Convert.ToDecimal(row.Cells["ActualQty"].Value);
+                    decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
+                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                     decimal diff = actual - book;
                     
                     if (count < 10)
@@ -469,8 +471,8 @@ namespace ChickenDist.Forms
                     foreach (var row in modifiedRows)
                     {
                         int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                        decimal book = Convert.ToDecimal(row.Cells["BookQty"].Value);
-                        decimal actual = Convert.ToDecimal(row.Cells["ActualQty"].Value);
+                        decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
+                        decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                         
                         int id = InventoryDAL.SaveAdjustment(pid, book, actual, txtNotes.Text);
                         if (id > 0) savedCount++;
