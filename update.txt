@@ -1,5 +1,6 @@
-version=1.0.4
+version=1.0.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.exe
-changelog=إصلاح: مشكلة تشفير الحروف العربية في رسالة التحديث لكي تظهر النصوص بشكل صحيح ومقروء.
+changelog=إصلاح: مشكلة تشغيل ملف التحديث الدفعي (باتش) بسبب المسارات العربية وتشفير UTF8، مما يضمن تثبيت التحديث بنجاح.
+
 
 

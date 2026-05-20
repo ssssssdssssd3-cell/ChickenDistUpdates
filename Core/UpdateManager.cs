@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.4";
+        public const string CurrentVersion = "1.0.5";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -154,7 +154,6 @@ namespace ChickenDist.Core
                 // كتابة ملف الـ batch لاستبدال ملف الـ EXE القديم بالجديد
                 // يتم الانتظار لمدة ثانيتين لضمان إغلاق البرنامج بالكامل قبل محاولة الكتابة فوقه
                 string batContent = $@"@echo off
-chcp 65001 > nul
 echo.
 echo ====================================================
 echo             جاري تثبيت تحديث البرنامج...
@@ -168,7 +167,7 @@ start """" ""{currentExePath}""
 del ""%~f0""
 ";
 
-                File.WriteAllText(updaterBatPath, batContent, System.Text.Encoding.UTF8);
+                File.WriteAllText(updaterBatPath, batContent, System.Text.Encoding.Default);
 
                 // تشغيل ملف الـ bat وإغلاق التطبيق الحالي فوراً
                 var startInfo = new ProcessStartInfo
