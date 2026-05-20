@@ -12,8 +12,7 @@ namespace ChickenDist.Core
         public const string CurrentVersion = "1.0.0";
         
         // رابط ملف التحديث النصي على GitHub
-        // يمكنك تعديل الرابط لاحقاً بعد إنشاء المستودع ليكون مشيراً لمستودعك الخاص
-        private const string UpdateUrl = "https://raw.githubusercontent.com/islamwahba/ChickenDistUpdates/main/update.txt";
+        private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
 
         public static void CheckForUpdates(bool showNoUpdateMsg = false)
         {
