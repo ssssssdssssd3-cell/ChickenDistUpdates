@@ -13,6 +13,6 @@
     <Utf8Output>true</Utf8Output>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <Reference Include="System.Configuration" />
   </ItemGroup>
 </Project>

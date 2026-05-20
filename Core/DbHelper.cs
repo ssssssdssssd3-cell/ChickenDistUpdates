@@ -8,7 +8,21 @@ namespace ChickenDist.Core
 {
     public static class DbHelper
     {
-        private static string _connStr = ConfigurationManager.ConnectionStrings["MainDB"].ConnectionString;
+        private static string _connStr = GetInitialConnectionString();
+
+        private static string GetInitialConnectionString()
+        {
+            try
+            {
+                var connSetting = ConfigurationManager.ConnectionStrings["MainDB"];
+                if (connSetting != null && !string.IsNullOrEmpty(connSetting.ConnectionString))
+                {
+                    return connSetting.ConnectionString;
+                }
+            }
+            catch { }
+            return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
+        }
 
         public static void SetConnectionString(string connStr)
         {
