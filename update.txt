@@ -1,4 +1,4 @@
 ﻿version=1.0.11
-url=https://github.com/ssssssdssssd3-cell/ChickenDistUpdates/releases/download/v1.0.11/ChickenDist.bin
-changelog=1. إضافة شاشة الإعدادات وتغيير اسم الشركة. 
+url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
+changelog=1. إضافة شاشة الإعدادات وتغيير اسم الشركة.
 2. تفعيل ترتيب أعمدة التقفيل اليومي والطباعة بالترتيب الجديد.
