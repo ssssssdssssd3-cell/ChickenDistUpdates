@@ -209,10 +209,10 @@ namespace ChickenDist.Forms
                 int y = 30;
                 int pageW = 800; // Margins at 20px left and right
 
-                // Title
-                g.DrawString("تقرير كشف حركة صنف", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 30), center); y += 30;
-                g.DrawString("شركة توزيع الكتاكيت", bold, Brushes.Black, new RectangleF(20, y, pageW - 40, 22), center); y += 25;
-                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y); y += 15;
+                // ===== Header =====
+                g.DrawString($"حركة الصنف: {_productName}", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 30), center); y += 30;
+                g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(20, y, pageW - 40, 22), center); y += 25;
+                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y); y += 10;
 
                 // Meta Info
                 g.DrawString($"الصنف: {_productName} ({_productUnit})", bold, Brushes.Black, 20, y);

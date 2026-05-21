@@ -50,6 +50,8 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 
+		private Button btnWhatsApp;
+
 		private Button btnSearchProduct;
 
 		private DataGridView dgItems;
@@ -413,10 +415,12 @@ namespace ChickenDist.Forms
 			Button button = Theme.MakeButton("💵 توريد", 540, 50, 100, 32, Theme.Success);
 			btnNew = Theme.MakeButton("🆕 جديد", 450, 50, 80, 32, Color.FromArgb(80, 120, 80));
 			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 290, 50, 150, 32, Theme.Primary);
+			btnWhatsApp = Theme.MakeButton("📲 واتساب", 120, 50, 160, 32, Color.FromArgb(37, 211, 102));
 			btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 			button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 			btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 			btnSave.Click += BtnSave_Click;
 			button.Click += BtnTawreed_Click;
 			btnNew.Click += delegate
@@ -424,7 +428,8 @@ namespace ChickenDist.Forms
 				ResetForm();
 			};
 			btnPrint.Click += BtnPrint_Click;
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, button, btnNew, btnPrint });
+			btnWhatsApp.Click += BtnWhatsApp_Click;
+			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, button, btnNew, btnPrint, btnWhatsApp });
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
@@ -1014,6 +1019,94 @@ namespace ChickenDist.Forms
 			{
 				AccountDAL.SaveCashReceipt(comboItem.ID, result, dtpDate.Value, textBox2.Text);
 				MessageBox.Show("✅ تم تسجيل التوريد في الخزنة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+			}
+		}
+
+		private void BtnWhatsApp_Click(object sender, EventArgs e)
+		{
+			int saleID = _lastSaleID;
+			if (saleID == 0)
+			{
+				var lastObj = DbHelper.Scalar("SELECT COALESCE(MAX(SaleID), 0) FROM Sales");
+				if (lastObj != null) saleID = Convert.ToInt32(lastObj);
+			}
+			if (saleID == 0)
+			{
+				MessageBox.Show("لا توجد فاتورة محفوظة لإرسالها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			// جلب بيانات الفاتورة
+			var dt = DbHelper.Query(@"
+				SELECT s.SaleCode, s.SaleDate, s.SaleType, s.TotalAmount,
+				       COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
+				       COALESCE(c.ClientName, N'---') AS ClientName,
+				       COALESCE(c.Phone, '') AS ClientPhone
+				FROM Sales s
+				LEFT JOIN Clients c ON s.ClientID = c.ClientID
+				WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
+
+			if (dt.Rows.Count == 0) { MessageBox.Show("لم يتم العثور على الفاتورة!"); return; }
+			var saleRow = dt.Rows[0];
+			string phone = saleRow["ClientPhone"].ToString().Trim();
+
+			if (string.IsNullOrWhiteSpace(phone))
+			{
+				MessageBox.Show("العميل ليس لديه رقم هاتف مسجل!\nيرجى إضافة رقم الهاتف من شاشة إدارة العملاء.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			// جلب أصناف الفاتورة
+			var items = SaleDAL.GetItems(saleID);
+
+			// بناء نص الرسالة
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine("🧾 *فاتورة مبيعات*");
+			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+			sb.AppendLine("──────────────────────");
+			sb.AppendLine($"📌 رقم الفاتورة: {saleRow["SaleCode"]}");
+			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
+			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
+			sb.AppendLine($"🏷️ النوع: {typeLabel}");
+			sb.AppendLine("──────────────────────");
+
+			if (items != null)
+			{
+				foreach (DataRow r in items.Rows)
+				{
+					string name  = r["ProductName"].ToString();
+					decimal qty   = Convert.ToDecimal(r["Quantity"]);
+					decimal price = Convert.ToDecimal(r["UnitPrice"]);
+					decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
+					sb.AppendLine($"• {name}: {qty:N0} × {price:N2} = {tot:N2} ج");
+				}
+			}
+
+			sb.AppendLine("──────────────────────");
+			decimal discAmt = Convert.ToDecimal(saleRow["DiscountAmount"]);
+			if (discAmt > 0)
+				sb.AppendLine($"💸 الخصم: {discAmt:N2} ج");
+			sb.AppendLine($"💰 *صافي الفاتورة: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م*");
+			sb.AppendLine("──────────────────────");
+			sb.AppendLine("شكراً لتعاملكم معنا 🙏");
+
+			SendWhatsApp(phone, sb.ToString());
+		}
+
+		private static void SendWhatsApp(string phone, string message)
+		{
+			try
+			{
+				string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
+				string encoded = Uri.EscapeDataString(message);
+				string url = $"https://wa.me/{clean}?text={encoded}";
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 

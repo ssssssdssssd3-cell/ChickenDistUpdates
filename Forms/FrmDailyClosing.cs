@@ -83,7 +83,13 @@ namespace ChickenDist.Forms
             btnPrint.Dock   = DockStyle.Right;
             btnPrint.Click += BtnPrint_Click;
 
-            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint });
+            var btnWhatsApp = Theme.MakeButton("📲 واتساب التقفيل", Theme.Accent);
+            btnWhatsApp.Size   = new Size(140, 34);
+            btnWhatsApp.BackColor = Color.FromArgb(37, 211, 102);
+            btnWhatsApp.Dock   = DockStyle.Right;
+            btnWhatsApp.Click += BtnWhatsAppClosing_Click;
+
+            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp });
             Controls.Add(toolbar);
 
             // ── Summary footer ────────────────────────────────────────────────
@@ -123,6 +129,7 @@ namespace ChickenDist.Forms
                 BorderStyle                   = BorderStyle.None,
                 RowHeadersVisible             = false,
                 AllowUserToAddRows            = false,
+                AllowUserToOrderColumns       = true,
                 ReadOnly                      = true,
                 SelectionMode                 = DataGridViewSelectionMode.CellSelect,
                 RightToLeft                   = RightToLeft.Yes,
@@ -368,7 +375,7 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, ev) =>
             {
                 var g = ev.Graphics;
-                g.PageUnit = GraphicsUnit.Pixel;
+                // No PageUnit setting - allow Default GraphicUnit.Display (1/100 inch) to automatically match ev.PageBounds
 
                 var fTitle  = new Font("Arial", 13f, FontStyle.Bold);
                 var fHead   = new Font("Arial", 7.5f, FontStyle.Bold);
@@ -379,7 +386,7 @@ namespace ChickenDist.Forms
                 int y     = 20;
 
                 // ─ Title
-                string title = $"تقرير التقفيل اليومي  –  {_dtpDate.Value:dd/MM/yyyy}";
+                string title = $"{AppConfig.CompanyName}  -  تقرير التقفيل اليومي  –  {_dtpDate.Value:dd/MM/yyyy}";
                 var sfTitle = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var tsz = g.MeasureString(title, fTitle);
                 g.DrawString(title, fTitle, Brushes.DarkBlue, new RectangleF(20, y, pgW, tsz.Height), sfTitle);
@@ -394,19 +401,23 @@ namespace ChickenDist.Forms
                 g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pgW + 20, y);
                 y += 6;
 
+                var orderedCols = _dg.Columns.Cast<DataGridViewColumn>()
+                                    .Where(c => c.Visible)
+                                    .OrderBy(c => c.DisplayIndex)
+                                    .ToList();
+
                 // ─ Compute column widths proportionally
-                int visColCount = _dg.Columns.GetColumnCount(DataGridViewElementStates.Visible);
-                int[] widths = ComputePrintWidths(pgW, visColCount);
+                int visColCount = orderedCols.Count;
+                int[] widths = ComputePrintWidths(pgW, visColCount, orderedCols);
 
                 // ─ Header row (only on first page)
                 if (pageRow == 0)
                 {
                     int cx = pgW + 20;
-                    foreach (DataGridViewColumn col in _dg.Columns)
+                    for (int i = 0; i < orderedCols.Count; i++)
                     {
-                        if (!col.Visible) continue;
-                        int idx    = GetVisColIndex(col);
-                        int cw     = widths[idx];
+                        var col = orderedCols[i];
+                        int cw     = widths[i];
                         cx -= cw;
                         var rect   = new RectangleF(cx, y, cw - 2, 22);
                         g.FillRectangle(new SolidBrush(Color.FromArgb(26, 43, 75)), rect);
@@ -430,11 +441,10 @@ namespace ChickenDist.Forms
                     var rowFgClr  = isTotal ? Color.DarkGreen : Color.Black;
 
                     int cx = pgW + 20;
-                    foreach (DataGridViewColumn col in _dg.Columns)
+                    for (int i = 0; i < orderedCols.Count; i++)
                     {
-                        if (!col.Visible) continue;
-                        int idx  = GetVisColIndex(col);
-                        int cw   = widths[idx];
+                        var col = orderedCols[i];
+                        int cw   = widths[i];
                         string v = dgRow.Cells[col.Name].Value?.ToString() ?? "";
                         cx -= cw;
                         var rect = new RectangleF(cx, y, cw - 2, 18);
@@ -473,19 +483,19 @@ namespace ChickenDist.Forms
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
-        private int[] ComputePrintWidths(int pgW, int colCount)
+        private int[] ComputePrintWidths(int pgW, int colCount, System.Collections.Generic.List<DataGridViewColumn> orderedCols)
         {
             // client name = 12%, total/pay/bal cols = 8% each, product cols share the rest
             int clientW  = (int)(pgW * 0.12);
             int extraW   = (int)(pgW * 0.08);  // per extra col (3 extra cols)
             int usedW    = clientW + extraW * 3;
-            int prodW    = colCount > 4 ? Math.Max(45, (pgW - usedW) / (_productCount == 0 ? 1 : _productCount)) : 60;
+            int prodW    = colCount > 4 ? (pgW - usedW) / (_productCount == 0 ? 1 : _productCount) : 60;
+            if (prodW < 15) prodW = 15;
 
             var ws = new int[colCount];
             int vi = 0;
-            foreach (DataGridViewColumn col in _dg.Columns)
+            foreach (var col in orderedCols)
             {
-                if (!col.Visible) continue;
                 if (col.Name == "ClientName")         ws[vi] = clientW;
                 else if (col.Name == "TotalInvoice" ||
                          col.Name == "LastPayment"  ||
@@ -495,17 +505,82 @@ namespace ChickenDist.Forms
             }
             return ws;
         }
-
-        private int GetVisColIndex(DataGridViewColumn col)
+        private void BtnWhatsAppClosing_Click(object sender, EventArgs e)
         {
-            int idx = 0;
-            foreach (DataGridViewColumn c in _dg.Columns)
+            if (_dg.Rows.Count == 0)
             {
-                if (!c.Visible) continue;
-                if (c.Name == col.Name) return idx;
-                idx++;
+                MessageBox.Show("لا توجد بيانات للإرسال.", "تنبيه",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
             }
-            return 0;
+
+            // مربع حوار لإدخال رقم الهاتف
+            var dlg = new Form
+            {
+                Width = 420, Height = 190,
+                Text = "إرسال واتساب - التقفيل اليومي",
+                StartPosition = FormStartPosition.CenterParent,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Theme.BgCard,
+                Font = Theme.FontMain
+            };
+            var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
+            var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
+            var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
+            btnSend.Click   += (s2, e2) => { dlg.DialogResult = DialogResult.OK;     dlg.Close(); };
+            btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+            dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
+
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+            string phone = txt.Text.Trim();
+            if (string.IsNullOrWhiteSpace(phone)) return;
+
+            // بناء نص رسالة التقفيل
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("📋 *تقرير التقفيل اليومي*");
+            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+            sb.AppendLine($"📅 التاريخ: {_dtpDate.Value:dd/MM/yyyy}");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine($"💰 إجمالي فواتير البيع: {_grandInvoice:N2} ج.م");
+            sb.AppendLine($"✅ إجمالي التوريد: {_grandPayment:N2} ج.م");
+            sb.AppendLine($"📊 إجمالي المديونية: {_grandBalance:N2} ج.م");
+            sb.AppendLine("──────────────────────");
+
+            // تفاصيل كل عميل (تخطي صف السعر وصف الإجمالي)
+            foreach (DataGridViewRow row in _dg.Rows)
+            {
+                string clientName = row.Cells["ClientName"].Value?.ToString() ?? "";
+                if (string.IsNullOrWhiteSpace(clientName)) continue;
+                if (clientName == "السعر" || clientName == "الإجمالي الكلي") continue;
+
+                string inv = row.Cells["TotalInvoice"].Value?.ToString() ?? "0";
+                string pay = row.Cells["LastPayment"].Value?.ToString() ?? "0";
+                string bal = row.Cells["Balance"].Value?.ToString() ?? "0";
+                sb.AppendLine($"• {clientName}");
+                sb.AppendLine($"  فاتورة: {inv} | توريد: {pay} | مديونية: {bal} ج.م");
+            }
+
+            sb.AppendLine("──────────────────────");
+
+            SendWhatsApp(phone, sb.ToString());
+        }
+
+        private static void SendWhatsApp(string phone, string message)
+        {
+            try
+            {
+                string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+                if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
+                string encoded = Uri.EscapeDataString(message);
+                string url = $"https://wa.me/{clean}?text={encoded}";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

@@ -776,12 +776,12 @@ namespace ChickenDist.Forms
 				var fCell  = new Font("Arial", 7f);
 				var fTotal = new Font("Arial", 8f, FontStyle.Bold);
 
-				// منطقة الطباعة بالكامل
-				int mL = ev.MarginBounds.Left;
-				int mR = ev.MarginBounds.Right;
-				int mT = ev.MarginBounds.Top;
-				int mB = ev.MarginBounds.Bottom;
-				int pgW = mR - mL;   // العرض الكلي القابل للطباعة
+				// استخدام أبعاد ثابتة لصفحة A4 بالعرض (Landscape)
+				int mL = 20;
+				int mR = 1070;
+				int mT = 40;
+				int mB = 780;
+				int pgW = mR - mL;   // 1050
 
 				int y = mT;
 
@@ -811,7 +811,7 @@ namespace ChickenDist.Forms
 				// التحقق من أن مجموع العروض يساوي pgW بالضبط
 				int totalW = 0;
 				foreach (int w in widths) totalW += w;
-				if (totalW != pgW && widths.Length > 0)
+				if (totalW != pgW && widths.Length > 0 && widths[widths.Length - 1] + (pgW - totalW) > 0)
 					widths[widths.Length - 1] += pgW - totalW; // تصحيح الفرق في آخر عمود
 
 				const int HEAD_H = 22;
@@ -908,9 +908,10 @@ namespace ChickenDist.Forms
 			int extraW  = (int)(pgW * 0.09);
 			int reservedW = clientW + extraW * 3;
 			int prodCount = colCount - 4;
-			int prodW = prodCount > 0
-				? Math.Max(40, (pgW - reservedW) / prodCount)
-				: 60;
+			int prodW = prodCount > 0 ? (pgW - reservedW) / prodCount : 60;
+			
+			// لضمان عدم حدوث عرض سالب
+			if (prodW < 15) prodW = 15;
 
 			var ws = new int[colCount];
 			int vi = 0;

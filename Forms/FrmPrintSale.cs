@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
 
                 // ===== Header =====
                 g.DrawString("فاتورة مبيعات", boldBig, Brushes.DarkBlue, new RectangleF(0, y, pageW, 30), center); y += 30;
-                g.DrawString("شركة توزيع الكتاكيت", bold, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
+                g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
                 g.DrawLine(new Pen(Color.DarkBlue, 2), margin, y, pageW - margin, y); y += 10;
 
                 // ===== Sale Info (RTL: Info on right, Code on left) =====

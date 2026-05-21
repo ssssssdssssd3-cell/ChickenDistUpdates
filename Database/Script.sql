@@ -2,7 +2,10 @@ USE master
 GO
 
 IF EXISTS (SELECT name FROM sys.databases WHERE name = 'ChickenDist')
-    DROP DATABASE ChickenDist
+BEGIN
+    ALTER DATABASE ChickenDist SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE ChickenDist;
+END
 GO
 
 CREATE DATABASE ChickenDist

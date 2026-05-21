@@ -19,7 +19,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "تسجيل الدخول - شركة توزيع الكتاكيت";
+            this.Text = "تسجيل الدخول - " + AppConfig.CompanyName;
             this.Size = new Size(480, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -43,7 +43,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = "شركة توزيع الكتاكيت",
+                Text = AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 18f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
@@ -111,7 +111,7 @@ namespace ChickenDist.Forms
 
             var lblFooter = new Label
             {
-                Text = "© 2025 - شركة توزيع الكتاكيت",
+                Text = "© 2025 - " + AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(150, 180, 210),
                 AutoSize = false,

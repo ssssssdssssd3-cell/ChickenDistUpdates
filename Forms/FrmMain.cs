@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "شركة توزيع الكتاكيت - النظام الرئيسي";
+            this.Text = AppConfig.CompanyName + " - النظام الرئيسي";
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -36,7 +36,7 @@ namespace ChickenDist.Forms
             this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };
             this.lblCompany = new Label
             {
-                Text = "🐣  شركة توزيع الكتاكيت",
+                Text = "🐣  " + AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
@@ -110,6 +110,12 @@ namespace ChickenDist.Forms
             pnlContent.Padding = new Padding(0);
         }
 
+        public void UpdateCompanyName(string newName)
+        {
+            lblCompany.Text = $"🐣  {newName}";
+            this.Text = $"{newName} - النظام الرئيسي";
+        }
+
         private void BuildNavBar()
         {
             pnlNavBar.Controls.Clear();
@@ -130,6 +136,7 @@ namespace ChickenDist.Forms
                 ("📊", "التقارير",           "Reports",        () => NavigateTo(new FrmReports())),
                 ("📑", "تقفيل يومية",        "Reports",        () => NavigateTo(new FrmDailyClosing())),
                 ("👔", "الموظفين",           "Employees",      () => NavigateTo(new FrmEmployees())),
+                ("⚙️", "الإعدادات",         "",               () => new FrmSettings().ShowDialog()),
                 ("🔄", "تحديث البرنامج",     "",               () => UpdateManager.CheckForUpdates(true)),
             };
 
