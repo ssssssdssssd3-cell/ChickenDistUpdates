@@ -73,6 +73,7 @@ namespace ChickenDist.Forms
 		private List<SaleItemDTO> _items = new List<SaleItemDTO>();
 
 		private int _lastSaleID = 0;
+        private bool _isDirty = false;
 
 		public FrmSale()
 		{
@@ -89,6 +90,7 @@ namespace ChickenDist.Forms
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
+            this.FormClosing += FrmSale_FormClosing;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -324,8 +326,11 @@ namespace ChickenDist.Forms
 				FillWeight = 20f
 			};
 			dgItems.Columns.Add(dataGridViewColumn);
+			dgItems.Columns.Add(dataGridViewColumn);
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
+            dgItems.RowsAdded += (s, e) => _isDirty = true;
+            dgItems.RowsRemoved += (s, e) => _isDirty = true;
 			pnlItems.Controls.Add(dgItems);
 			pnlFooter = new Panel
 			{
@@ -411,17 +416,23 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 650, 50, 130, 32, Theme.Accent);
-			Button button = Theme.MakeButton("💵 توريد", 540, 50, 100, 32, Theme.Success);
-			btnNew = Theme.MakeButton("🆕 جديد", 450, 50, 80, 32, Color.FromArgb(80, 120, 80));
-			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 290, 50, 150, 32, Theme.Primary);
-			btnWhatsApp = Theme.MakeButton("📲 واتساب", 120, 50, 160, 32, Color.FromArgb(37, 211, 102));
-			btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-			button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-			btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 780, 50, 130, 32, Theme.Accent);
+            Button btnHold = Theme.MakeButton("⏸️ تعليق", 670, 50, 100, 32, Color.FromArgb(200, 140, 50));
+			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 560, 50, 100, 32, Color.FromArgb(100, 100, 150));
+			Button button = Theme.MakeButton("💵 توريد", 450, 50, 100, 32, Theme.Success);
+			btnNew = Theme.MakeButton("🆕 جديد", 360, 50, 80, 32, Color.FromArgb(80, 120, 80));
+			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 200, 50, 150, 32, Theme.Primary);
+			btnWhatsApp = Theme.MakeButton("📲 واتساب", 30, 50, 160, 32, Color.FromArgb(37, 211, 102));
+			btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnLoadHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			button.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnSave.Click += BtnSave_Click;
+            btnHold.Click += BtnHold_Click;
+            btnLoadHold.Click += BtnLoadHold_Click;
 			button.Click += BtnTawreed_Click;
 			btnNew.Click += delegate
 			{
@@ -429,10 +440,11 @@ namespace ChickenDist.Forms
 			};
 			btnPrint.Click += BtnPrint_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, button, btnNew, btnPrint, btnWhatsApp });
+			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, btnHold, btnLoadHold, button, btnNew, btnPrint, btnWhatsApp });
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
+            pnlItems.BringToFront();
 			ToggleType();
 		}
 
@@ -834,13 +846,24 @@ namespace ChickenDist.Forms
 			{
 				lblNetVal.Text = net.ToString("N2") + " ج";
 			}
+            _isDirty = true;
 		}
 
 		private void BtnSave_Click(object sender, EventArgs e)
 		{
+			SaveInvoiceLogic(isDraft: false);
+		}
+
+		private void BtnHold_Click(object sender, EventArgs e)
+		{
+			SaveInvoiceLogic(isDraft: true);
+		}
+
+		private void SaveInvoiceLogic(bool isDraft)
+		{
 			if (_items.Count == 0)
 			{
-				MessageBox.Show("أضف أصناف أولا\u064b");
+				MessageBox.Show("أضف أصناف أولاً");
 				return;
 			}
 			foreach (SaleItemDTO item in _items)
@@ -848,7 +871,7 @@ namespace ChickenDist.Forms
 				decimal productStock = InventoryDAL.GetProductStock(item.ProductID);
 				if (item.Quantity > productStock)
 				{
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كاف\u064d في المخزن حاليا\u064b لحفظ الفاتورة.\nالكمية المطلوبة: {item.Quantity:N2}\nالكمية المتاحة: {productStock:N2}", "عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لحفظ الفاتورة.\nالكمية المطلوبة: {item.Quantity:N2}\nالكمية المتاحة: {productStock:N2}", "عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
 			}
@@ -902,7 +925,7 @@ namespace ChickenDist.Forms
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
 
-			if (_invoiceType == "Credit" && clientID.HasValue)
+			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue)
 			{
 				DataRow byID = ClientDAL.GetByID(clientID.Value);
 				if (byID != null)
@@ -919,20 +942,202 @@ namespace ChickenDist.Forms
 					}
 				}
 			}
-			int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net, txtNotes.Text, _items, discountAmount, discountPct);
+			int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net, txtNotes.Text, _items, discountAmount, discountPct, isDraft);
 			if (num3 > 0)
 			{
 				_lastSaleID = num3;
-				DialogResult printResult = MessageBox.Show($"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟", "نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-				if (printResult == DialogResult.Yes)
+				_isDirty = false;
+				if (isDraft)
 				{
-					new FrmPrintSale(num3);
+					MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.", "تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				}
+				else
+				{
+					DialogResult printResult = MessageBox.Show($"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟", "نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+					if (printResult == DialogResult.Yes)
+					{
+						new FrmPrintSale(num3);
+					}
 				}
 				ResetForm();
 			}
 			else
 			{
 				MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+			}
+		}
+
+		private void BtnLoadHold_Click(object sender, EventArgs e)
+		{
+			DataTable dt = SaleDAL.GetDraftSales();
+			if (dt.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد فواتير معلقة حالياً.", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return;
+			}
+
+			var dlg = new Form
+			{
+				Width = 800, Height = 450,
+				Text = "📂 الفواتير المعلقة",
+				StartPosition = FormStartPosition.CenterParent,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true,
+				BackColor = Theme.BgCard,
+				Font = Theme.FontMain
+			};
+
+			var dgDrafts = new DataGridView
+			{
+				Dock = DockStyle.Fill,
+				DataSource = dt,
+				BackgroundColor = Theme.BgCard,
+				RowHeadersVisible = false,
+				ReadOnly = true,
+				AllowUserToAddRows = false,
+				SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+				DefaultCellStyle = new DataGridViewCellStyle { Font = Theme.FontMain, BackColor = Theme.BgCard, ForeColor = Theme.TextMain },
+				ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { Font = Theme.FontBold, BackColor = Theme.Primary, ForeColor = Color.White },
+				EnableHeadersVisualStyles = false,
+				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+			};
+
+			dlg.Load += (sl, el) =>
+			{
+				if (dgDrafts.Columns.Contains("SaleID")) dgDrafts.Columns["SaleID"].Visible = false;
+				if (dgDrafts.Columns.Contains("ClientID")) dgDrafts.Columns["ClientID"].Visible = false;
+				if (dgDrafts.Columns.Contains("DriverID")) dgDrafts.Columns["DriverID"].Visible = false;
+				if (dgDrafts.Columns.Contains("SaleType")) dgDrafts.Columns["SaleType"].Visible = false;
+				if (dgDrafts.Columns.Contains("DiscountAmount")) dgDrafts.Columns["DiscountAmount"].Visible = false;
+				if (dgDrafts.Columns.Contains("DiscountPct")) dgDrafts.Columns["DiscountPct"].Visible = false;
+				if (dgDrafts.Columns.Contains("SaleCode")) dgDrafts.Columns["SaleCode"].HeaderText = "كود الفاتورة";
+				if (dgDrafts.Columns.Contains("SaleDate")) dgDrafts.Columns["SaleDate"].HeaderText = "التاريخ";
+				if (dgDrafts.Columns.Contains("ClientName")) dgDrafts.Columns["ClientName"].HeaderText = "العميل";
+				if (dgDrafts.Columns.Contains("DriverName")) dgDrafts.Columns["DriverName"].HeaderText = "المندوب";
+				if (dgDrafts.Columns.Contains("TotalAmount")) dgDrafts.Columns["TotalAmount"].HeaderText = "الإجمالي";
+				if (dgDrafts.Columns.Contains("Notes")) dgDrafts.Columns["Notes"].HeaderText = "ملاحظات";
+			};
+
+			var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Theme.BgCard, Padding = new Padding(5) };
+
+			var btnLoad = Theme.MakeButton("✅ استدعاء الفاتورة", 0, 5, 180, 35, Theme.Success);
+			btnLoad.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnLoad.Click += (s2, e2) =>
+			{
+				if (dgDrafts.SelectedRows.Count == 0) return;
+				var row = (DataRowView)dgDrafts.SelectedRows[0].DataBoundItem;
+
+				if (_isDirty && _items.Count > 0)
+				{
+					if (MessageBox.Show("توجد فاتورة حالية قيد التسجيل، سيتم مسحها لتحميل الفاتورة المعلقة.\nهل أنت متأكد؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+						return;
+				}
+
+				int saleID = Convert.ToInt32(row["SaleID"]);
+				ResetForm();
+
+				string typeStr = row["SaleType"].ToString();
+				SetInvoiceType(typeStr);
+
+				if (row["ClientID"] != DBNull.Value)
+				{
+					int cid = Convert.ToInt32(row["ClientID"]);
+					for (int i = 0; i < cboClient.Items.Count; i++)
+					{
+						if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
+						{
+							cboClient.SelectedIndex = i;
+							break;
+						}
+					}
+				}
+				if (row["DriverID"] != DBNull.Value)
+				{
+					int did = Convert.ToInt32(row["DriverID"]);
+					for (int i = 0; i < cboDriver.Items.Count; i++)
+					{
+						if (cboDriver.Items[i] is ComboItem ci && ci.ID == did)
+						{
+							cboDriver.SelectedIndex = i;
+							break;
+						}
+					}
+				}
+
+				dtpDate.Value = Convert.ToDateTime(row["SaleDate"]);
+				txtNotes.Text = row["Notes"].ToString();
+
+				decimal discAmt = Convert.ToDecimal(row["DiscountAmount"]);
+				decimal discPctVal = Convert.ToDecimal(row["DiscountPct"]);
+				if (discPctVal > 0)
+				{
+					cboInvoiceDiscountType.SelectedIndex = 1;
+					txtInvoiceDiscount.Text = discPctVal.ToString("G29");
+				}
+				else
+				{
+					cboInvoiceDiscountType.SelectedIndex = 0;
+					txtInvoiceDiscount.Text = discAmt.ToString("G29");
+				}
+
+				var itemsDt = SaleDAL.GetItems(saleID);
+				_items.Clear();
+				foreach (DataRow iRow in itemsDt.Rows)
+				{
+					_items.Add(new SaleItemDTO
+					{
+						ProductID = Convert.ToInt32(iRow["ProductID"]),
+						ProductName = iRow["ProductName"].ToString(),
+						Quantity = Convert.ToDecimal(iRow["Quantity"]),
+						UnitPrice = Convert.ToDecimal(iRow["UnitPrice"]),
+						DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
+						DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"])
+					});
+				}
+				RefreshGrid();
+
+				// Delete draft from DB
+				SaleDAL.DeleteDraftSale(saleID);
+				_isDirty = true;
+
+				dlg.DialogResult = DialogResult.OK;
+				dlg.Close();
+			};
+
+			var btnDeleteDraft = Theme.MakeButton("❌ حذف المسودة", 190, 5, 150, 35, Color.FromArgb(180, 60, 60));
+			btnDeleteDraft.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnDeleteDraft.Click += (s2, e2) =>
+			{
+				if (dgDrafts.SelectedRows.Count == 0) return;
+				var row = (DataRowView)dgDrafts.SelectedRows[0].DataBoundItem;
+				if (MessageBox.Show("هل أنت متأكد من حذف هذه الفاتورة المعلقة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+				{
+					int saleID = Convert.ToInt32(row["SaleID"]);
+					SaleDAL.DeleteDraftSale(saleID);
+					dgDrafts.DataSource = SaleDAL.GetDraftSales();
+					if (((DataTable)dgDrafts.DataSource).Rows.Count == 0)
+					{
+						dlg.Close();
+					}
+				}
+			};
+
+			pnlBottom.Controls.Add(btnLoad);
+			pnlBottom.Controls.Add(btnDeleteDraft);
+			dlg.Controls.Add(dgDrafts);
+			dlg.Controls.Add(pnlBottom);
+			dlg.ShowDialog();
+		}
+
+		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
+		{
+			if (_isDirty && _items.Count > 0)
+			{
+				var res = MessageBox.Show("هناك تغييرات لم يتم حفظها في الفاتورة الحالية.\nهل تريد الخروج بدون حفظ؟", "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+				if (res == DialogResult.No)
+				{
+					e.Cancel = true;
+				}
 			}
 		}
 
@@ -1144,6 +1349,7 @@ namespace ChickenDist.Forms
 			}
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
+            _isDirty = false;
 		}
 	}
 	internal class ComboItem

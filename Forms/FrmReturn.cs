@@ -165,6 +165,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlGrid);
             this.Controls.Add(pnlFoot);
             this.Controls.Add(pnlInfo);
+            pnlGrid.BringToFront();
         }
 
         private void LoadCombos()

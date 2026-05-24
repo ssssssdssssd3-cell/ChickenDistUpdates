@@ -119,6 +119,7 @@ namespace ChickenDist.Forms
             lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.OrangeRed, Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
             this.Controls.Add(pnlFoot);
+            dgStatement.BringToFront();
         }
 
         private void LoadStatement()
@@ -330,6 +331,12 @@ namespace ChickenDist.Forms
                 }
                 
                 y += 15;
+                if (y + 100 > ev.PageBounds.Height)
+                {
+                    ev.HasMorePages = true;
+                    return;
+                }
+                
                 g.FillRectangle(new SolidBrush(Color.FromArgb(240, 244, 248)), 20, y, 780, 50);
                 g.DrawRectangle(new Pen(Color.FromArgb(200, 214, 228), 1.5f), 20, y, 780, 50);
                 

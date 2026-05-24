@@ -13,6 +13,8 @@ namespace ChickenDist.Forms
         private int _saleID;
         private DataRow _saleRow;
         private DataTable _items;
+        private int _printItemIndex = 0;
+        private decimal _runningTotal = 0;
 
         public FrmPrintSale(int saleID)
         {
@@ -42,6 +44,11 @@ namespace ChickenDist.Forms
         {
             var pd = new PrintDocument();
             pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
+            pd.BeginPrint += (s, e) => 
+            {
+                _printItemIndex = 0;
+                _runningTotal = 0;
+            };
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
@@ -104,10 +111,17 @@ namespace ChickenDist.Forms
                 g.DrawLine(Pens.Gray, margin, y, pageW - margin, y); y += 4;
 
                 // ===== Items =====
-                decimal itemsTotal = 0;
                 if (_items != null)
-                    foreach (DataRow r in _items.Rows)
+                {
+                    while (_printItemIndex < _items.Rows.Count)
                     {
+                        if (y + 150 > e.PageBounds.Height)
+                        {
+                            e.HasMorePages = true;
+                            return;
+                        }
+
+                        DataRow r = _items.Rows[_printItemIndex];
                         decimal qty   = Convert.ToDecimal(r["Quantity"]);
                         decimal price = Convert.ToDecimal(r["UnitPrice"]);
                         decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
@@ -125,15 +139,19 @@ namespace ChickenDist.Forms
                         DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y);
                         DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y);
                         DrawColCell(g, normal, r["ProductName"].ToString(), xProduct, colWProduct,  y);
-                        itemsTotal += tot; y += 18;
+                        _runningTotal += tot; y += 18;
+                        _printItemIndex++;
                     }
+                }
+                
+                e.HasMorePages = false;
 
                 g.DrawLine(new Pen(Color.DarkBlue, 1.5f), margin, y, pageW - margin, y); y += 8;
 
                 // Get invoice discount details
                 decimal invDiscountAmt = 0;
                 decimal invDiscountPct = 0;
-                decimal netAmount = itemsTotal;
+                decimal netAmount = _runningTotal;
                 if (_saleRow != null)
                 {
                     invDiscountAmt = Convert.ToDecimal(_saleRow["DiscountAmount"]);
@@ -143,7 +161,7 @@ namespace ChickenDist.Forms
 
                 if (invDiscountAmt > 0)
                 {
-                    g.DrawString($"إجمالي الأصناف: {itemsTotal:N2} جنيه",
+                    g.DrawString($"إجمالي الأصناف: {_runningTotal:N2} جنيه",
                         normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
                     g.DrawString($"خصم الفاتورة: {invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)",
                         normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
