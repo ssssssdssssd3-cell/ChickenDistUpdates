@@ -160,6 +160,38 @@ namespace ChickenDist.DAL
             return dt.Rows.Count > 0 ? Convert.ToDecimal(dt.Rows[0]["Balance"]) : 0;
         }
 
+        public class ClientFinancialStatus
+        {
+            public decimal Balance { get; set; }
+            public decimal MaxCreditLimit { get; set; }
+            public decimal OldDebt30 { get; set; }
+        }
+
+        public static ClientFinancialStatus GetFinancialStatus(int clientID)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT 
+                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    ISNULL(c.MaxCreditLimit, 0) AS MaxCreditLimit,
+                    ISNULL((SELECT SUM(Debit) FROM ClientTransactions WHERE ClientID=@id AND TransDate >= DATEADD(day, -30, GETDATE())), 0) AS RecentDebit
+                FROM Clients c
+                LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                WHERE c.ClientID = @id", DbHelper.P("@id", clientID));
+
+            if (dt.Rows.Count > 0)
+            {
+                decimal bal = Convert.ToDecimal(dt.Rows[0]["Balance"]);
+                decimal recentDebit = Convert.ToDecimal(dt.Rows[0]["RecentDebit"]);
+                return new ClientFinancialStatus
+                {
+                    Balance = bal,
+                    MaxCreditLimit = Convert.ToDecimal(dt.Rows[0]["MaxCreditLimit"]),
+                    OldDebt30 = bal > recentDebit ? bal - recentDebit : 0
+                };
+            }
+            return new ClientFinancialStatus();
+        }
+
         public static string GetNextClientCode()
         {
             var result = DbHelper.Scalar("SELECT COALESCE(MAX(ClientID), 0) + 1 FROM Clients");

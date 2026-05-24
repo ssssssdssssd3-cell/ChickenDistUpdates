@@ -577,7 +577,14 @@ namespace ChickenDist.Forms
 					{
 						cboDriver.SelectedIndex = 0;
 					}
+                    EvaluateClientFinancials(comboItem2.ID);
 				}
+                else
+                {
+                    this.BackColor = Theme.BgMain;
+                    pnlItems.Enabled = true;
+                    btnSave.Enabled = true;
+                }
 			};
 			DataTable drivers = EmployeeDAL.GetDrivers();
 			cboDriver.Items.Clear();
@@ -676,7 +683,45 @@ namespace ChickenDist.Forms
 			bool flag3 = _invoiceType == "Cash";
 			cboClient.Enabled = flag || flag3;
 			cboDriver.Enabled = true;
+
+            if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                EvaluateClientFinancials(ci.ID);
+            }
+            else
+            {
+                this.BackColor = Theme.BgMain;
+                pnlItems.Enabled = true;
+                btnSave.Enabled = true;
+            }
 		}
+
+        private void EvaluateClientFinancials(int clientID)
+        {
+            var status = ClientDAL.GetFinancialStatus(clientID);
+            
+            bool limitExceeded = status.MaxCreditLimit > 0 && status.Balance >= status.MaxCreditLimit;
+            bool oldDebtExists = status.OldDebt30 > 0;
+
+            if ((limitExceeded || oldDebtExists) && _invoiceType == "Credit")
+            {
+                this.BackColor = Color.FromArgb(255, 200, 200); // Light Red
+                pnlItems.Enabled = false; 
+                btnSave.Enabled = false;
+                
+                string msg = "⚠️ تحذير مالي ⚠️\n\n";
+                if (limitExceeded) msg += $"- تجاوز العميل الحد الائتماني ({status.MaxCreditLimit:N2} ج). رصيده: {status.Balance:N2} ج.\n";
+                if (oldDebtExists) msg += $"- ديون متأخرة (تجاوزت 30 يوم) بقيمة {status.OldDebt30:N2} ج لم تسدد.\n";
+                
+                MessageBox.Show(msg + "\nالبيع الآجل موقوف لهذا العميل حتى يتم السداد.", "إيقاف البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+            }
+            else
+            {
+                this.BackColor = Theme.BgMain;
+                pnlItems.Enabled = true;
+                btnSave.Enabled = true;
+            }
+        }
 
 		private void BtnSearchProduct_Click(object sender, EventArgs e)
 		{
