@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using ChickenDist.Core;
@@ -203,6 +203,19 @@ namespace ChickenDist.DAL
                   WHERE ClientID=@id AND CAST(TransDate AS DATE) BETWEEN @f AND @t
                   ORDER BY TransDate",
                 DbHelper.P("@id", clientID), DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+        }
+
+        public static decimal GetPreviousBalance(int clientID, DateTime beforeDate)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT 
+                    c.OpeningBalance + 
+                    ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID=@id AND CAST(TransDate AS DATE) < @dt), 0) AS PrevBal
+                FROM Clients c WHERE c.ClientID=@id", 
+                DbHelper.P("@id", clientID), DbHelper.P("@dt", beforeDate.Date));
+            if (dt.Rows.Count > 0 && dt.Rows[0]["PrevBal"] != DBNull.Value)
+                return Convert.ToDecimal(dt.Rows[0]["PrevBal"]);
+            return 0;
         }
 
         public static void AddPayment(int clientID, decimal amount, string notes)

@@ -230,9 +230,30 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
+			Button btnClientStatement = new Button
+			{
+				Text = "📋 كشف",
+				Location = new Point(10, 8),
+				Size = new Size(95, 28),
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Theme.Primary,
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
+			};
+			btnClientStatement.FlatAppearance.BorderSize = 0;
+			btnClientStatement.Click += (s, e) => {
+				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0) {
+					new FrmClientStatement(ci.ID, ci.Text).ShowDialog();
+				} else {
+					MessageBox.Show("الرجاء اختيار عميل أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				}
+			};
+
 			panel.Controls.AddRange(new Control[]
 			{
-				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, lblDriver, cboDriver,
+				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
 				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes
 			});
 			pnlItems = new Panel

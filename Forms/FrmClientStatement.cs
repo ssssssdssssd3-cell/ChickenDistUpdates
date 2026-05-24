@@ -126,10 +126,16 @@ namespace ChickenDist.Forms
         {
             _dt = ClientDAL.GetStatement(_clientID, dtpFrom.Value, dtpTo.Value);
             dgStatement.Rows.Clear();
-            _runBalance = 0;
+            decimal prevBalance = ClientDAL.GetPreviousBalance(_clientID, dtpFrom.Value);
+            _runBalance = prevBalance;
             _totalSales = 0;
             _totalReturns = 0;
             _totalPayments = 0;
+
+            if (prevBalance != 0)
+            {
+                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
+            }
 
             foreach (DataRow r in _dt.Rows)
             {
