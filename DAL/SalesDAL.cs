@@ -36,70 +36,76 @@ namespace ChickenDist.DAL
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false)
         {
-            string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
-            var nextSaleResult = DbHelper.Scalar("SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
-            string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
+            int returnedSaleID = -1;
 
-            int saleID = DbHelper.ExecuteInsert(
-                "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip)",
-                DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
-                DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
-                DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
-                DbHelper.P("@ip", !isDraft));
-
-            if (saleID <= 0) return -1;
-
-            foreach (var item in items)
+            DbHelper.RunInTransaction((con, trans) =>
             {
-                DbHelper.Execute(
-                    "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt)",
-                    DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
-                    DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
-                    DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
-                    DbHelper.P("@damt", item.DiscountAmt));
-            }
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
+                var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
 
-            if (!isDraft)
-            {
-                // آجل: أضف للحساب
-                if (typeStr == "Credit" && clientID.HasValue)
+                int saleID = DbHelper.ExecuteInsertTrans(trans,
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip)",
+                    DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
+                    DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
+                    DbHelper.P("@ip", !isDraft));
+
+                if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
+                returnedSaleID = saleID;
+
+                foreach (var item in items)
                 {
-                    DbHelper.Execute(
-                        "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
-                        DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                        DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع " + code),
-                        DbHelper.P("@by", Session.EmpID));
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt)",
+                        DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
+                        DbHelper.P("@damt", item.DiscountAmt));
                 }
 
-                // نقدي: أضف للخزنة
-                if (typeStr == "Cash")
+                if (!isDraft)
                 {
-                    DbHelper.Execute(
-                        "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
-                        DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
-                        DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID));
-                }
-
-                // تحميل مندوب: أنشئ سجل حمولة
-                if (typeStr == "DriverLoad" && driverID.HasValue)
-                {
-                    int loadID = DbHelper.ExecuteInsert(
-                        "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed) VALUES(@dt,@did,@sid,0)",
-                        DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID));
-
-                    foreach (var item in items)
+                    // آجل: أضف للحساب
+                    if (typeStr == "Credit" && clientID.HasValue)
                     {
-                        DbHelper.Execute(
-                            "INSERT INTO DriverLoadItems(LoadID,ProductID,LoadedQty,UnitPrice) VALUES(@lid,@pid,@qty,@up)",
-                            DbHelper.P("@lid", loadID), DbHelper.P("@pid", item.ProductID),
-                            DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice));
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع " + code),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+
+                    // نقدي: أضف للخزنة
+                    if (typeStr == "Cash")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
+                            DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID));
+                    }
+
+                    // تحميل مندوب: أنشئ سجل حمولة
+                    if (typeStr == "DriverLoad" && driverID.HasValue)
+                    {
+                        int loadID = DbHelper.ExecuteInsertTrans(trans,
+                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed) VALUES(@dt,@did,@sid,0)",
+                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID));
+
+                        foreach (var item in items)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO DriverLoadItems(LoadID,ProductID,LoadedQty,UnitPrice) VALUES(@lid,@pid,@qty,@up)",
+                                DbHelper.P("@lid", loadID), DbHelper.P("@pid", item.ProductID),
+                                DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice));
+                        }
                     }
                 }
-            }
+            });
 
-            return saleID;
+            return returnedSaleID;
         }
 
         public static DataTable GetDraftSales()
@@ -527,41 +533,50 @@ namespace ChickenDist.DAL
 
         public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items)
         {
-            var dtSale = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
-            string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
+            int returnedRetID = -1;
 
-            int retID = DbHelper.ExecuteInsert(
-                "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
-                DbHelper.P("@dt", DateTime.Now),
-                DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
-                DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
-
-            foreach (var item in items)
-                DbHelper.Execute(
-                    "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice) VALUES(@rid,@pid,@qty,@up,@tp)",
-                    DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
-                    DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
-                    DbHelper.P("@tp", item.TotalPrice));
-
-            if (saleType == "Cash")
+            DbHelper.RunInTransaction((con, trans) =>
             {
-                DbHelper.Execute(
-                    "INSERT INTO CashBox(TransType,AmountOut,RefID,Notes,CreatedBy) VALUES('ReturnOutcome',@amt,@ref,@n,@by)",
-                    DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
-                    DbHelper.P("@n", "مرتجع بيع نقدي لفاتورة رقم " + saleID),
-                    DbHelper.P("@by", Session.EmpID));
-            }
-            else if (clientID.HasValue)
-            {
-                DbHelper.Execute(
-                    "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Return',@amt,@ref,@n,@by)",
-                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                    DbHelper.P("@ref", retID), DbHelper.P("@n", "مرتجع بيع لفاتورة رقم " + saleID),
-                    DbHelper.P("@by", Session.EmpID));
-            }
+                var dtSale = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
 
-            return retID;
+                int retID = DbHelper.ExecuteInsertTrans(trans,
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
+                    DbHelper.P("@dt", DateTime.Now),
+                    DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
+                    DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+
+                returnedRetID = retID;
+
+                foreach (var item in items)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice) VALUES(@rid,@pid,@qty,@up,@tp)",
+                        DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice));
+                }
+
+                if (saleType == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransType,AmountOut,RefID,Notes,CreatedBy) VALUES('ReturnOutcome',@amt,@ref,@n,@by)",
+                        DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
+                        DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                else if (clientID.HasValue)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Return',@amt,@ref,@n,@by)",
+                        DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", retID), DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            return returnedRetID;
         }
     }
 

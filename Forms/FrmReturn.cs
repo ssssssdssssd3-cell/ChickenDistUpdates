@@ -25,6 +25,26 @@ namespace ChickenDist.Forms
             LoadCombos();
         }
 
+        private void FrmReturn_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F5)
+            {
+                if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
+                btnSave.PerformClick();
+                e.Handled = true;
+            }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Enter && dgItems.IsCurrentCellInEditMode)
+            {
+                dgItems.EndEdit();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         private void InitUI()
         {
             this.Text = "مرتجع مبيعات - إدخال مباشر";
@@ -34,6 +54,8 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.KeyPreview = true;
+            this.KeyDown += FrmReturn_KeyDown;
 
             // ===== 1. Filter bar (FlowLayoutPanel) =====
             var pnlInfo = new FlowLayoutPanel

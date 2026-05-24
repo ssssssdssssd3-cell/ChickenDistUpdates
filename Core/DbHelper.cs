@@ -222,5 +222,55 @@ namespace ChickenDist.Core
         {
             return new SqlParameter(name, value ?? DBNull.Value);
         }
+
+        public static void RunInTransaction(Action<SqlConnection, SqlTransaction> action)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var trans = con.BeginTransaction())
+                {
+                    try
+                    {
+                        action(con, trans);
+                        trans.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        MessageBox.Show("خطأ في قاعدة البيانات وتم التراجع عن العملية بأمان:\n" + ex.Message, "خطأ خطير", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public static int ExecuteTrans(SqlTransaction trans, string sql, params SqlParameter[] prms)
+        {
+            using (var cmd = new SqlCommand(sql, trans.Connection, trans))
+            {
+                if (prms != null) cmd.Parameters.AddRange(prms);
+                return cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static int ExecuteInsertTrans(SqlTransaction trans, string sql, params SqlParameter[] prms)
+        {
+            using (var cmd = new SqlCommand(sql + "; SELECT SCOPE_IDENTITY();", trans.Connection, trans))
+            {
+                if (prms != null) cmd.Parameters.AddRange(prms);
+                var result = cmd.ExecuteScalar();
+                return result == null ? -1 : Convert.ToInt32(result);
+            }
+        }
+
+        public static object ScalarTrans(SqlTransaction trans, string sql, params SqlParameter[] prms)
+        {
+            using (var cmd = new SqlCommand(sql, trans.Connection, trans))
+            {
+                if (prms != null) cmd.Parameters.AddRange(prms);
+                return cmd.ExecuteScalar();
+            }
+        }
     }
 }
