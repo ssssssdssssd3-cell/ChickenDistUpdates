@@ -473,6 +473,15 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_KeyDown(object sender, KeyEventArgs e)
 		{
+            // Force grid to commit any pending edits before processing hotkeys
+            if (e.KeyCode == Keys.F2 || e.KeyCode == Keys.F5 || e.KeyCode == Keys.F9)
+            {
+                if (dgItems.IsCurrentCellInEditMode)
+                {
+                    dgItems.EndEdit();
+                }
+            }
+
 			if (e.KeyCode == Keys.F2) { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }

@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
         {
             base.OnShown(e);
             nudPaid.Focus();
-            nudPaid.Select(0, nudPaid.Text.Length);
+            nudPaid.Select(0, nudPaid.Value.ToString().Length + 10);
         }
     }
 }
