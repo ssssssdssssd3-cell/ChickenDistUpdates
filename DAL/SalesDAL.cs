@@ -201,6 +201,7 @@ namespace ChickenDist.DAL
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal StockQty { get; set; } = 0m;
+        public decimal MinStockLimit { get; set; } = 0m;
         /// <summary>نسبة الخصم % على الصنف</summary>
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة الخصم بالجنيه على الصنف</summary>

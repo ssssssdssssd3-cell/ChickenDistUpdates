@@ -90,6 +90,8 @@ namespace ChickenDist.Forms
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
+            KeyPreview = true;
+            this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
 			Panel panel = new Panel
 			{
@@ -469,6 +471,25 @@ namespace ChickenDist.Forms
 			ToggleType();
 		}
 
+		private void FrmSale_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.F2) { btnNew.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+		}
+
+		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+		{
+			if (keyData == Keys.Enter && dgItems.IsCurrentCellInEditMode)
+			{
+				dgItems.EndEdit();
+				cboProduct.Focus();
+				return true; // prevent enter from moving to next row
+			}
+			return base.ProcessCmdKey(ref msg, keyData);
+		}
+
 		private Label MakeLabel(string text, int x, int y)
 		{
 			return new Label
@@ -563,7 +584,12 @@ namespace ChickenDist.Forms
 			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
-				cboProduct.Items.Add(new ComboItem((int)row3["ProductID"], row3["ProductName"].ToString(), (decimal)row3["SalePrice"]));
+				cboProduct.Items.Add(new ComboItem(
+                    (int)row3["ProductID"], 
+                    row3["ProductName"].ToString(), 
+                    (decimal)row3["SalePrice"], 
+                    row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m
+                ));
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -598,7 +624,8 @@ namespace ChickenDist.Forms
 						ProductName = comboItem.Text,
 						Quantity = 1.00m,
 						UnitPrice = comboItem.Price,
-						StockQty = stock
+						StockQty = stock,
+                        MinStockLimit = comboItem.MinStockLimit
 					});
 
 					RefreshGrid();
@@ -708,7 +735,8 @@ namespace ChickenDist.Forms
 				ProductName = comboItem.Text,
 				Quantity = value,
 				UnitPrice = result,
-				StockQty = productStock
+				StockQty = productStock,
+                MinStockLimit = comboItem.MinStockLimit
 			});
 			RefreshGrid();
 		}
@@ -820,7 +848,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			foreach (SaleItemDTO item in _items)
 			{
-				dgItems.Rows.Add(
+				int rIndex = dgItems.Rows.Add(
 					item.ProductName,
 					item.StockQty.ToString("F2"),
 					item.Quantity.ToString("F2"),
@@ -829,6 +857,21 @@ namespace ChickenDist.Forms
 					item.DiscountAmt.ToString("F2"),
 					item.TotalPrice.ToString("F2")
 				);
+                
+                var cell = dgItems.Rows[rIndex].Cells["StockQty"];
+                if (item.MinStockLimit > 0)
+                {
+                    if (item.StockQty <= item.MinStockLimit / 2m)
+                    {
+                        cell.Style.BackColor = Color.FromArgb(255, 100, 100); // Red
+                        cell.Style.ForeColor = Color.White;
+                    }
+                    else if (item.StockQty <= item.MinStockLimit)
+                    {
+                        cell.Style.BackColor = Color.FromArgb(255, 165, 0); // Orange
+                        cell.Style.ForeColor = Color.White;
+                    }
+                }
 			}
 			CalculateNet();
 		}
@@ -945,6 +988,17 @@ namespace ChickenDist.Forms
 				}
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
+
+			if (!isDraft && _invoiceType == "Cash")
+			{
+				using (var frm = new FrmQuickPayment(net))
+				{
+					if (frm.ShowDialog() != DialogResult.OK)
+					{
+						return; // Cancel saving
+					}
+				}
+			}
 
 			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue)
 			{
@@ -1380,12 +1434,15 @@ namespace ChickenDist.Forms
 		public string Text { get; }
 
 		public decimal Price { get; }
+        
+        public decimal MinStockLimit { get; }
 
-		public ComboItem(int id, string text, decimal price = 0m)
+		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m)
 		{
 			ID = id;
 			Text = text;
 			Price = price;
+            MinStockLimit = minStockLimit;
 		}
 
 		public override string ToString()
