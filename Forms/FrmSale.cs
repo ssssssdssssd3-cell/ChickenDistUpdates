@@ -463,7 +463,17 @@ namespace ChickenDist.Forms
 			};
 			btnPrint.Click += BtnPrint_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, btnHold, btnLoadHold, button, btnNew, btnPrint, btnWhatsApp });
+            Label lblHotkeys = new Label
+            {
+                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] بحث سريع عن صنف",
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Location = new Point(10, 65),
+                AutoSize = true,
+                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
+            };
+
+			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, btnHold, btnLoadHold, button, btnNew, btnPrint, btnWhatsApp, lblHotkeys });
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
@@ -1486,6 +1496,8 @@ namespace ChickenDist.Forms
 		public int ID { get; }
 
 		public string Text { get; }
+        
+        public decimal Extra { get; set; }
 
 		public decimal Price { get; }
         

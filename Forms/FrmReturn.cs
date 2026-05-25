@@ -181,7 +181,17 @@ namespace ChickenDist.Forms
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
             
-            pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave });
+            Label lblHotkeys = new Label
+            {
+                Text = "الاختصارات: [F5] حفظ المرتجع",
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Location = new Point(10, 20),
+                AutoSize = true,
+                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
+            };
+
+            pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave, lblHotkeys });
 
             // ===== 4. Add controls =====
             this.Controls.Add(pnlGrid);

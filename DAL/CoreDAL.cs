@@ -120,6 +120,55 @@ namespace ChickenDist.DAL
         }
     }
 
+    // =================== Supplier DAL ===================
+    public static class SupplierDAL
+    {
+        public static DataTable GetAll(bool activeOnly = false)
+        {
+            string sql = @"SELECT s.SupplierID, s.SupplierCode, s.SupplierName, s.Phone, s.Address,
+                           s.OpeningBalance, s.IsActive, ISNULL(sb.Balance, s.OpeningBalance) AS Balance
+                           FROM Suppliers s
+                           LEFT JOIN vw_SupplierBalance sb ON s.SupplierID = sb.SupplierID
+                           " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
+            return DbHelper.Query(sql);
+        }
+
+        public static string GetNextSupplierCode()
+        {
+            var result = DbHelper.Scalar("SELECT COALESCE(MAX(SupplierID), 0) + 1 FROM Suppliers");
+            return result != null ? result.ToString() : "1";
+        }
+
+        public static int Save(int id, string code, string name, string phone, string address, decimal opening, bool active)
+        {
+            if (id == 0)
+            {
+                int newID = DbHelper.ExecuteInsert(
+                    "INSERT INTO Suppliers(SupplierCode,SupplierName,Phone,Address,OpeningBalance,IsActive) VALUES(@c,@n,@ph,@a,@ob,@act)",
+                    DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone),
+                    DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active));
+                if (opening != 0)
+                    DbHelper.Execute(
+                        "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Opening',@ob,N'رصيد افتتاحي',@by)",
+                        DbHelper.P("@id", newID), DbHelper.P("@ob", opening), DbHelper.P("@by", Session.EmpID));
+                return newID;
+            }
+            else
+            {
+                DbHelper.Execute(
+                    "UPDATE Suppliers SET SupplierCode=@c,SupplierName=@n,Phone=@ph,Address=@a,IsActive=@act WHERE SupplierID=@id",
+                    DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone),
+                    DbHelper.P("@a", address), DbHelper.P("@act", active), DbHelper.P("@id", id));
+                return id;
+            }
+        }
+
+        public static void Delete(int id)
+        {
+            DbHelper.Execute("UPDATE Suppliers SET IsActive=0 WHERE SupplierID=@id", DbHelper.P("@id", id));
+        }
+    }
+
     // =================== Client DAL ===================
     public static class ClientDAL
     {

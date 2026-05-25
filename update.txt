@@ -1,4 +1,4 @@
-﻿version=1.0.11
+version=1.0.12
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. إضافة شاشة الإعدادات وتغيير اسم الشركة.
-2. تفعيل ترتيب أعمدة التقفيل اليومي والطباعة بالترتيب الجديد.
+changelog=1. إضافة شاشات المشتريات والموردين.
+2. تحسينات على شاشات المبيعات والمرتجعات وإصلاح بعض الأخطاء.

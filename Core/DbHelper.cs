@@ -109,6 +109,85 @@ namespace ChickenDist.Core
                     ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
                 END";
                 Execute(sqlSaleItemsDiscount);
+
+                // Add Purchases and Suppliers schema
+                string sqlPurchases = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Suppliers')
+                BEGIN
+                    CREATE TABLE Suppliers (
+                        SupplierID       INT IDENTITY(1,1) PRIMARY KEY,
+                        SupplierCode     NVARCHAR(20),
+                        SupplierName     NVARCHAR(100) NOT NULL,
+                        Phone            NVARCHAR(20),
+                        Address          NVARCHAR(200),
+                        OpeningBalance   DECIMAL(10,2) DEFAULT 0,
+                        IsActive         BIT DEFAULT 1,
+                        CreatedAt        DATETIME DEFAULT GETDATE()
+                    );
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SupplierTransactions')
+                BEGIN
+                    CREATE TABLE SupplierTransactions (
+                        TransID    INT IDENTITY(1,1) PRIMARY KEY,
+                        TransDate  DATETIME DEFAULT GETDATE(),
+                        SupplierID INT NOT NULL REFERENCES Suppliers(SupplierID),
+                        TransType  NVARCHAR(30),
+                        Debit      DECIMAL(10,2) DEFAULT 0,
+                        Credit     DECIMAL(10,2) DEFAULT 0,
+                        RefID      INT,
+                        Notes      NVARCHAR(500),
+                        CreatedBy  INT REFERENCES Employees(EmpID)
+                    );
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Purchases')
+                BEGIN
+                    CREATE TABLE Purchases (
+                        PurchaseID      INT IDENTITY(1,1) PRIMARY KEY,
+                        PurchaseCode    NVARCHAR(20),
+                        PurchaseDate    DATETIME DEFAULT GETDATE(),
+                        PurchaseType    NVARCHAR(20) NOT NULL,
+                        SupplierID      INT REFERENCES Suppliers(SupplierID),
+                        TotalAmount     DECIMAL(10,2) DEFAULT 0,
+                        DiscountAmount  DECIMAL(10,2) DEFAULT 0,
+                        DiscountPct     DECIMAL(5,2) DEFAULT 0,
+                        Notes           NVARCHAR(500),
+                        CreatedBy       INT REFERENCES Employees(EmpID),
+                        IsPosted        BIT DEFAULT 1
+                    );
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseItems')
+                BEGIN
+                    CREATE TABLE PurchaseItems (
+                        ItemID      INT IDENTITY(1,1) PRIMARY KEY,
+                        PurchaseID  INT NOT NULL REFERENCES Purchases(PurchaseID) ON DELETE CASCADE,
+                        ProductID   INT NOT NULL REFERENCES Products(ProductID),
+                        Quantity    DECIMAL(10,3),
+                        UnitPrice   DECIMAL(10,2),
+                        TotalPrice  DECIMAL(10,2),
+                        DiscountPct DECIMAL(5,2) DEFAULT 0,
+                        DiscountAmt DECIMAL(10,2) DEFAULT 0
+                    );
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance')
+                BEGIN
+                    EXEC('CREATE VIEW vw_SupplierBalance AS
+                    SELECT
+                        s.SupplierID,
+                        s.SupplierName,
+                        s.Phone,
+                        s.OpeningBalance,
+                        ISNULL(SUM(st.Debit),0)  AS TotalDebit,
+                        ISNULL(SUM(st.Credit),0) AS TotalCredit,
+                        s.OpeningBalance + ISNULL(SUM(st.Credit),0) - ISNULL(SUM(st.Debit),0) AS Balance
+                    FROM Suppliers s
+                    LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
+                    GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance')
+                END";
+                Execute(sqlPurchases);
             }
             catch {}
         }
