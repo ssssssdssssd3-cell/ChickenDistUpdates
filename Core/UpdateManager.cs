@@ -128,22 +128,8 @@ namespace ChickenDist.Core
             string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
             string currentDir    = Path.GetDirectoryName(currentExePath);
             
-            string tempDir = Path.Combine(Path.GetTempPath(), "ChickenDistUpdates");
-            if (!Directory.Exists(tempDir))
-                Directory.CreateDirectory(tempDir);
-                
-            foreach (var file in Directory.GetFiles(tempDir))
-            {
-                try
-                {
-                    File.Delete(file);
-                }
-                catch { }
-            }
-
-            string versionedExeName = $"ChickenDist_{remoteVersion}.exe";
-            string newExePath = Path.Combine(tempDir, versionedExeName);
-            string updaterBatPath = Path.Combine(tempDir, "updater.bat");
+            string updatesDir = Path.Combine(currentDir, "Updates");
+            string newExePath = Path.Combine(updatesDir, "ChickenDist.exe");
 
             int maxRetries = 3;
             bool downloaded = false;
@@ -179,6 +165,18 @@ namespace ChickenDist.Core
                 progressForm.Controls.Add(pb);
                 progressForm.Show();
                 progressForm.Refresh();
+
+                try
+                {
+                    if (!Directory.Exists(updatesDir))
+                        Directory.CreateDirectory(updatesDir);
+                }
+                catch (Exception ex)
+                {
+                    progressForm.Close();
+                    MessageBox.Show("فشل إنشاء مجلد التحديثات Updates:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
                 for (int attempt = 1; attempt <= maxRetries; attempt++)
                 {
@@ -251,53 +249,26 @@ namespace ChickenDist.Core
 
             try
             {
-                string batContent = @"@echo off
-chcp 65001 > nul
-echo.
-echo ====================================================
-echo             جاري تثبيت تحديث البرنامج...
-echo ====================================================
-echo.
+                MessageBox.Show(
+                    "✅ تم تحميل التحديث بنجاح!\n\n" +
+                    "📁 تم حفظ ملف البرنامج الجديد باسم ChickenDist.exe داخل مجلد (Updates) في مسار تثبيت البرنامج.\n\n" +
+                    "سيتم الآن فتح المجلد تلقائياً وإغلاق البرنامج الحالي لتتمكن من نقل (نسخ واستبدال) الملف الجديد بالملف الحالي بسهولة وتخطي أي قيود حماية.",
+                    "اكتمل تحميل التحديث",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading
+                );
 
-set PID=%3
-
-:waitloop
-tasklist /FI ""PID eq %PID%"" | find ""%PID%"" > nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak > nul
-    goto waitloop
-)
-
-move /y ""%~1"" ""%~2"" > nul
-
-if exist ""%~2"" (
-    echo تم التحديث بنجاح! جاري تشغيل التطبيق...
-    start """" ""%~2""
-) else (
-    echo فشل نقل الملف
-    pause
-)
-
-del ""%~f0""
-";
-                File.WriteAllText(updaterBatPath, batContent, new System.Text.UTF8Encoding(false));
-
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName       = updaterBatPath,
-                    Arguments      = $"\"{newExePath}\" \"{currentExePath}\" {Process.GetCurrentProcess().Id}",
-                    Verb           = "runas",
-                    CreateNoWindow = false,
-                    UseShellExecute = true,
-                    WindowStyle    = ProcessWindowStyle.Normal
-                };
-
-                Process.Start(startInfo);
+                // فتح المجلد في المستكشف
+                Process.Start("explorer.exe", $"\"{updatesDir}\"");
+                
+                // إغلاق البرنامج الحالي ليتسنى للمستخدم استبداله
                 Application.Exit();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل تثبيت التحديث:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل فتح مجلد التحديثات:\n" + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
     }
