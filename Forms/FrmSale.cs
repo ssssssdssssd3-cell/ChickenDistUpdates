@@ -358,6 +358,7 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Bottom,
 				Height = 95,
+				Width = 950,
 				BackColor = Theme.BgCard
 			};
 			Label label5 = new Label

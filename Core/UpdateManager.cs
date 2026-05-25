@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.17";
+        public const string CurrentVersion = "1.0.18";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -129,7 +129,8 @@ namespace ChickenDist.Core
             string currentDir    = Path.GetDirectoryName(currentExePath);
             
             string updatesDir = Path.Combine(currentDir, "Updates");
-            string newExePath = Path.Combine(updatesDir, "ChickenDist.exe");
+            string versionedExeName = $"ChickenDist_{remoteVersion}.exe";
+            string newExePath = Path.Combine(updatesDir, versionedExeName);
 
             int maxRetries = 3;
             bool downloaded = false;
@@ -251,8 +252,8 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show(
                     "✅ تم تحميل التحديث بنجاح!\n\n" +
-                    "📁 تم حفظ ملف البرنامج الجديد باسم ChickenDist.exe داخل مجلد (Updates) في مسار تثبيت البرنامج.\n\n" +
-                    "سيتم الآن فتح المجلد تلقائياً وإغلاق البرنامج الحالي لتتمكن من نقل (نسخ واستبدال) الملف الجديد بالملف الحالي بسهولة وتخطي أي قيود حماية.",
+                    $"📁 تم حفظ ملف البرنامج الجديد باسم {versionedExeName} داخل مجلد (Updates) في مسار تثبيت البرنامج.\n\n" +
+                    "سيتم الآن تحديد الملف الجديد تلقائياً وإغلاق البرنامج الحالي لتتمكن من نقل (نسخ واستبدال) الملف الجديد بالملف الحالي بسهولة.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information,
@@ -260,8 +261,8 @@ namespace ChickenDist.Core
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading
                 );
 
-                // فتح المجلد في المستكشف
-                Process.Start("explorer.exe", $"\"{updatesDir}\"");
+                // فتح المجلد في المستكشف وتحديد الملف
+                Process.Start("explorer.exe", $"/select,\"{newExePath}\"");
                 
                 // إغلاق البرنامج الحالي ليتسنى للمستخدم استبداله
                 Application.Exit();

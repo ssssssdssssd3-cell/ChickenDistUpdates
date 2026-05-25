@@ -147,10 +147,6 @@ namespace ChickenDist.DAL
                     "INSERT INTO Suppliers(SupplierCode,SupplierName,Phone,Address,OpeningBalance,IsActive) VALUES(@c,@n,@ph,@a,@ob,@act)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone),
                     DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active));
-                if (opening != 0)
-                    DbHelper.Execute(
-                        "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Opening',@ob,N'رصيد افتتاحي',@by)",
-                        DbHelper.P("@id", newID), DbHelper.P("@ob", opening), DbHelper.P("@by", Session.EmpID));
                 return newID;
             }
             else
@@ -257,10 +253,6 @@ namespace ChickenDist.DAL
                     DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes));
-                if (opening != 0)
-                    DbHelper.Execute(
-                        "INSERT INTO ClientTransactions(ClientID,TransType,Debit,Notes,CreatedBy) VALUES(@id,'Opening',@ob,N'رصيد افتتاحي',@by)",
-                        DbHelper.P("@id", newID), DbHelper.P("@ob", opening), DbHelper.P("@by", Session.EmpID));
                 return newID;
             }
             else

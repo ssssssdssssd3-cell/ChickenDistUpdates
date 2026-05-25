@@ -162,7 +162,7 @@ namespace ChickenDist.Forms
             pnlItems.Controls.Add(dgItems);
 
             // ===== Footer Panel =====
-            pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 95, BackColor = Theme.BgCard };
+            pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 95, Width = 1050, BackColor = Theme.BgCard };
 
             Label label5 = new Label { Text = "إجمالي الأصناف:", ForeColor = Theme.TextSub, Location = new Point(920, 15), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
             lblTotalVal = new Label { Text = "0.00 ج", ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Location = new Point(810, 13), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
