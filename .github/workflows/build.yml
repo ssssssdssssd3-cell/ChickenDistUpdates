@@ -1,0 +1,180 @@
+name: Build & Release ChickenDist
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'        # يُشغَّل فقط عند عمل tag مثل v1.0.20
+  workflow_dispatch:    # تشغيل يدوي من صفحة Actions عند الحاجة
+
+jobs:
+  # ─────────────────────────────────────────
+  # الخطوة 1: بناء الـ .exe على Windows
+  # ─────────────────────────────────────────
+  build:
+    name: Build EXE (Windows / .NET 4.8)
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      sha256:  ${{ steps.sha256.outputs.hash }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # استخراج رقم الإصدار من اسم الـ tag (v1.0.20 → 1.0.20)
+      - name: Extract version from tag
+        id: get_version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="dev-$(date +%Y%m%d)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      # تحديث رقم الإصدار في الكود تلقائياً بالـ tag
+      - name: Patch CurrentVersion in UpdateManager.cs
+        shell: pwsh
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          $file = "ChickenDist/Core/UpdateManager.cs"
+          (Get-Content $file) -replace 'CurrentVersion = "[\d.]+"', "CurrentVersion = `"$version`"" |
+            Set-Content $file -Encoding UTF8
+          Write-Host "Patched version to $version"
+
+      - name: Restore dependencies
+        run: dotnet restore ChickenDist/ChickenDist.csproj
+
+      - name: Build & Publish
+        run: >
+          dotnet publish ChickenDist/ChickenDist.csproj
+          -c Release
+          -f net48
+          -o publish/
+          --no-restore
+
+      # حساب SHA256 للـ .exe للتحقق من سلامة الملف عند التحديث
+      - name: Compute SHA256
+        id: sha256
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "publish/ChickenDist.exe" -Algorithm SHA256).Hash.ToLower()
+          echo "hash=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "SHA256: $hash"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChickenDist-${{ steps.get_version.outputs.version }}
+          path: publish/ChickenDist.exe
+          retention-days: 90
+
+  # ─────────────────────────────────────────
+  # الخطوة 2: نشر التحديث على repo التحديثات
+  # ─────────────────────────────────────────
+  deploy-update:
+    name: Deploy to Updates Repo
+    needs: build
+    runs-on: ubuntu-latest
+    # يعمل فقط عند وجود tag رسمي (مش dev build)
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download built EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: ChickenDist-${{ needs.build.outputs.version }}
+          path: dist/
+
+      # Checkout repo التحديثات (ssssssdssssd3-cell/ChickenDistUpdates)
+      - name: Checkout Updates Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ssssssdssssd3-cell/ChickenDistUpdates
+          token: ${{ secrets.UPDATES_REPO_TOKEN }}
+          path: updates-repo/
+
+      # نسخ الـ .exe الجديد للـ repo
+      - name: Copy new EXE to updates repo
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          cp dist/ChickenDist.exe updates-repo/ChickenDist.bin
+          echo "Copied EXE for version $VERSION"
+
+      # تحديث update.txt بالإصدار الجديد والـ SHA256 والـ changelog
+      - name: Update update.txt
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          SHA256="${{ needs.build.outputs.sha256 }}"
+          TAG_MSG=$(git -C . tag -l "v$VERSION" --format='%(contents)' 2>/dev/null || echo "إصلاحات وتحسينات عامة.")
+
+          cat > updates-repo/update.txt << EOF
+          version=$VERSION
+          url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
+          sha256=$SHA256
+          changelog=$TAG_MSG
+          EOF
+
+          echo "update.txt contents:"
+          cat updates-repo/update.txt
+
+      # رفع التغييرات لـ repo التحديثات
+      - name: Push to Updates Repo
+        run: |
+          cd updates-repo
+          git config user.name  "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add ChickenDist.bin update.txt
+          git commit -m "Release v${{ needs.build.outputs.version }}"
+          git push
+
+  # ─────────────────────────────────────────
+  # الخطوة 3: إنشاء GitHub Release رسمي
+  # ─────────────────────────────────────────
+  github-release:
+    name: Create GitHub Release
+    needs: [build, deploy-update]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download built EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: ChickenDist-${{ needs.build.outputs.version }}
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "ChickenDist v${{ needs.build.outputs.version }}"
+          body: |
+            ## 📦 إصدار v${{ needs.build.outputs.version }}
+
+            ### ✅ تم إصلاح المشاكل التالية في هذا الإصدار:
+            - إصلاح DeleteSale بدون Transaction (فساد بيانات محتمل)
+            - إصلاح AddPayment بدون Transaction (فجوة مالية صامتة)
+            - إصلاح SaveExpense/DeleteExpense لا يحدّث الخزنة
+            - إصلاح DiscountAmt getter يتجاهل الخصم اليدوي
+            - إصلاح SupplierDAL لا يحفظ الرصيد الافتتاحي عند التعديل
+            - إصلاح IsDriver cast غير آمن عند تسجيل الدخول
+            - تحسين GetProductQtyDetail بـ CTE لأداء أسرع
+            - تحسين UpdateManager بـ BackgroundWorker (UI لا يتجمد أثناء التحميل)
+            - إصلاح GetExpenses parameter bug
+            - إصلاح AppLogger race condition
+
+            ### 🔐 SHA256
+            `${{ needs.build.outputs.sha256 }}`
+
+            ### 📥 تثبيت التحديث
+            العملاء الحاليون سيحصلون على إشعار التحديث تلقائياً عند فتح البرنامج.
+          files: dist/ChickenDist.exe
+          draft: false
+          prerelease: false

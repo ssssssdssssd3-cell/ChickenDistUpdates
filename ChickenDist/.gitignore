@@ -1,0 +1,19 @@
+# Build folders
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.docstates
+
+# IDE files
+.vs/
+.idea/
+*.sln.docstates
+
+# Windows files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

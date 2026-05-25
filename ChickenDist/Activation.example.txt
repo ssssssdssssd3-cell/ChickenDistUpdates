@@ -1,0 +1,9 @@
+# Activation file for linking this machine as a sub-device
+# Place this file in the application's folder and rename to 'activation.txt' to activate.
+# Supported keys:
+# ConnectionString=Data Source=SERVER;Initial Catalog=ChickenDist;User ID=sa;Password=Your_password123!;Connect Timeout=30;
+# DeviceName=POS-Terminal-01
+
+#Example:
+#ConnectionString=Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;
+#DeviceName=Branch-PC-01

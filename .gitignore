@@ -1,0 +1,19 @@
+## Build outputs
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+
+## Logs
+*.log
+AppLogs/
+Updates/
+
+## Sensitive config (لا ترفع بيانات الاتصال الحقيقية)
+App.config
+
+## OS
+.DS_Store
+Thumbs.db
