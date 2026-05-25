@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.16";
+        public const string CurrentVersion = "1.0.17";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -132,6 +132,15 @@ namespace ChickenDist.Core
             if (!Directory.Exists(tempDir))
                 Directory.CreateDirectory(tempDir);
                 
+            foreach (var file in Directory.GetFiles(tempDir))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch { }
+            }
+
             string versionedExeName = $"ChickenDist_{remoteVersion}.exe";
             string newExePath = Path.Combine(tempDir, versionedExeName);
             string updaterBatPath = Path.Combine(tempDir, "updater.bat");
@@ -178,6 +187,15 @@ namespace ChickenDist.Core
                         lbl.Text = $"محاولة {attempt} من {maxRetries}...";
                         progressForm.Refresh();
 
+                        if (File.Exists(newExePath))
+                        {
+                            try
+                            {
+                                File.Delete(newExePath);
+                            }
+                            catch { }
+                        }
+
                         using (var client = new WebClient())
                         {
                             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
@@ -196,6 +214,27 @@ namespace ChickenDist.Core
                 }
 
                 progressForm.Close();
+            }
+
+            if (downloaded)
+            {
+                try
+                {
+                    if (!File.Exists(newExePath))
+                    {
+                        throw new Exception("فشل حفظ ملف التحديث");
+                    }
+                    FileInfo fi = new FileInfo(newExePath);
+                    if (fi.Length < 100000)
+                    {
+                        throw new Exception("ملف التحديث تالف أو غير مكتمل");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    downloaded = false;
+                    lastEx = ex;
+                }
             }
 
             if (!downloaded)
@@ -220,8 +259,10 @@ echo             جاري تثبيت تحديث البرنامج...
 echo ====================================================
 echo.
 
+set PID=%3
+
 :waitloop
-tasklist | find /i ""ChickenDist.exe"" > nul
+tasklist /FI ""PID eq %PID%"" | find ""%PID%"" > nul
 if not errorlevel 1 (
     timeout /t 1 /nobreak > nul
     goto waitloop
@@ -244,7 +285,7 @@ del ""%~f0""
                 var startInfo = new ProcessStartInfo
                 {
                     FileName       = updaterBatPath,
-                    Arguments      = $"\"{newExePath}\" \"{currentExePath}\"",
+                    Arguments      = $"\"{newExePath}\" \"{currentExePath}\" {Process.GetCurrentProcess().Id}",
                     Verb           = "runas",
                     CreateNoWindow = false,
                     UseShellExecute = true,
