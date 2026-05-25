@@ -1,4 +1,4 @@
-version=1.0.13
+version=1.0.14
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 changelog=1. حل مشكلة فشل تحديث البرنامج بسبب مسارات المجلدات العربية.
 2. إضافة شاشات المشتريات والموردين.

@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.13";
+        public const string CurrentVersion = "1.0.14";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -75,7 +75,7 @@ namespace ChickenDist.Core
 
                         if (result == DialogResult.Yes)
                         {
-                            PerformUpdate(downloadUrl);
+                            PerformUpdate(downloadUrl, remoteVersion);
                         }
                     }
                     else
@@ -123,12 +123,18 @@ namespace ChickenDist.Core
             catch { /* لا نريد خطأ داخل معالج الخطأ */ }
         }
 
-        private static void PerformUpdate(string downloadUrl)
+        private static void PerformUpdate(string downloadUrl, string remoteVersion)
         {
             string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
             string currentDir    = Path.GetDirectoryName(currentExePath);
-            string newExePath    = Path.Combine(currentDir, "ChickenDist_New.exe");
-            string updaterBatPath = Path.Combine(currentDir, "updater.bat");
+            
+            string tempDir = Path.Combine(Path.GetTempPath(), "ChickenDistUpdates");
+            if (!Directory.Exists(tempDir))
+                Directory.CreateDirectory(tempDir);
+                
+            string versionedExeName = $"ChickenDist_{remoteVersion}.exe";
+            string newExePath = Path.Combine(tempDir, versionedExeName);
+            string updaterBatPath = Path.Combine(tempDir, "updater.bat");
 
             int maxRetries = 3;
             bool downloaded = false;
@@ -214,8 +220,7 @@ echo             جاري تثبيت تحديث البرنامج...
 echo ====================================================
 echo.
 timeout /t 2 /nobreak > nul
-copy /y %1 %2 > nul
-del %1 > nul
+move /y %1 %2 > nul
 echo تم التحديث بنجاح! جاري تشغيل التطبيق...
 start """" %2
 del ""%~f0""
@@ -226,6 +231,7 @@ del ""%~f0""
                 {
                     FileName       = updaterBatPath,
                     Arguments      = $"\"{newExePath}\" \"{currentExePath}\"",
+                    Verb           = "runas",
                     CreateNoWindow = false,
                     UseShellExecute = true,
                     WindowStyle    = ProcessWindowStyle.Normal
