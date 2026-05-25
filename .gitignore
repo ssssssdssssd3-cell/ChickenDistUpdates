@@ -5,6 +5,7 @@ publish/
 *.user
 *.suo
 .vs/
+.idea/
 
 ## Logs
 *.log
@@ -17,3 +18,7 @@ App.config
 ## OS
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.userprefs
+*.docstates
