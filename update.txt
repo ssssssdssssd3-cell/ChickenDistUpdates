@@ -1,5 +1,4 @@
-version=1.0.18
+version=1.0.19
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. إصلاح مشكلة اختفاء الأزرار في شاشتي المبيعات والمشتريات.
-2. حل مشكلة تضاعف الرصيد الافتتاحي للعملاء والموردين.
-3. حفظ نسخة التحديث باسم الإصدار لمنع مشاكل الاستبدال.
+changelog=1. إصلاح مشكلة اختفاء الأزرار في شاشة الفواتير المعلقة.
+2. تحسينات عامة في واجهة المستخدم.

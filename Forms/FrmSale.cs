@@ -1157,7 +1157,7 @@ namespace ChickenDist.Forms
 				if (dgDrafts.Columns.Contains("Notes")) dgDrafts.Columns["Notes"].HeaderText = "ملاحظات";
 			};
 
-			var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Theme.BgCard, Padding = new Padding(5) };
+			var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 45, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(5) };
 
 			var btnLoad = Theme.MakeButton("✅ استدعاء الفاتورة", 0, 5, 180, 35, Theme.Success);
 			btnLoad.Anchor = AnchorStyles.Top | AnchorStyles.Right;
