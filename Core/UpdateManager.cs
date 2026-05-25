@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.11";
+        public const string CurrentVersion = "1.0.13";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -206,24 +206,26 @@ namespace ChickenDist.Core
 
             try
             {
-                string batContent = $@"@echo off
+                string batContent = @"@echo off
+chcp 65001 > nul
 echo.
 echo ====================================================
 echo             جاري تثبيت تحديث البرنامج...
 echo ====================================================
 echo.
 timeout /t 2 /nobreak > nul
-copy /y ""{newExePath}"" ""{currentExePath}"" > nul
-del ""{newExePath}"" > nul
+copy /y %1 %2 > nul
+del %1 > nul
 echo تم التحديث بنجاح! جاري تشغيل التطبيق...
-start """" ""{currentExePath}""
+start """" %2
 del ""%~f0""
 ";
-                File.WriteAllText(updaterBatPath, batContent, System.Text.Encoding.Default);
+                File.WriteAllText(updaterBatPath, batContent, new System.Text.UTF8Encoding(false));
 
                 var startInfo = new ProcessStartInfo
                 {
                     FileName       = updaterBatPath,
+                    Arguments      = $"\"{newExePath}\" \"{currentExePath}\"",
                     CreateNoWindow = false,
                     UseShellExecute = true,
                     WindowStyle    = ProcessWindowStyle.Normal

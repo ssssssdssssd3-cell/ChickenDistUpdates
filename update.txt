@@ -1,4 +1,4 @@
-version=1.0.12
+version=1.0.13
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. إضافة شاشات المشتريات والموردين.
-2. تحسينات على شاشات المبيعات والمرتجعات وإصلاح بعض الأخطاء.
+changelog=1. حل مشكلة فشل تحديث البرنامج بسبب مسارات المجلدات العربية.
+2. إضافة شاشات المشتريات والموردين.
