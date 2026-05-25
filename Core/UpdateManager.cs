@@ -9,7 +9,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.0.14";
+        public const string CurrentVersion = "1.0.15";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -219,10 +219,24 @@ echo ====================================================
 echo             جاري تثبيت تحديث البرنامج...
 echo ====================================================
 echo.
-timeout /t 2 /nobreak > nul
-move /y %1 %2 > nul
-echo تم التحديث بنجاح! جاري تشغيل التطبيق...
-start """" %2
+
+:waitloop
+tasklist | find /i ""ChickenDist.exe"" > nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak > nul
+    goto waitloop
+)
+
+move /y ""%~1"" ""%~2"" > nul
+
+if exist ""%~2"" (
+    echo تم التحديث بنجاح! جاري تشغيل التطبيق...
+    start """" ""%~2""
+) else (
+    echo فشل نقل الملف
+    pause
+)
+
 del ""%~f0""
 ";
                 File.WriteAllText(updaterBatPath, batContent, new System.Text.UTF8Encoding(false));
