@@ -1,4 +1,4 @@
-version=1.0.15
+version=1.0.16
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. حل مشكلة فشل تحديث البرنامج بسبب مسارات المجلدات العربية.
-2. إضافة شاشات المشتريات والموردين.
+changelog=1. حل مشكلة توقف شاشة المبيعات عند الفتح.
+2. إظهار شاشة فاتورة المشتريات وإدارة الموردين في الشريط العلوي وقائمة الصلاحيات.

@@ -349,7 +349,6 @@ namespace ChickenDist.Forms
 				FillWeight = 20f
 			};
 			dgItems.Columns.Add(dataGridViewColumn);
-			dgItems.Columns.Add(dataGridViewColumn);
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.RowsAdded += (s, e) => _isDirty = true;

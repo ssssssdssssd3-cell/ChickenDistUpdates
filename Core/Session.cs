@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace ChickenDist.Core
 {
@@ -59,7 +59,8 @@ namespace ChickenDist.Core
 
         public static readonly string[] AllScreens = {
             "Sales", "DriverHandover", "Clients", "Products",
-            "CashBox", "Expenses", "Reports", "Employees", "SalesReturn"
+            "CashBox", "Expenses", "Reports", "Employees", "Returns",
+            "Suppliers", "Purchases"
         };
     }
 
