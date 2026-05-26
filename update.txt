@@ -1,4 +1,4 @@
-version=1.0.20
+version=1.0.21
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=9856C174A1FE9DDEB149D089A72BAD1BBB96BD7607A627F568D38F55DD5C613B
-changelog=تحديث شامل - إصلاح جميع الأخطاء اللغوية وتحسين الأداء
+sha256=831C039E4A25F5EEB5A7FF32391B22348B11A356361574F85A3C07EB16DDB2A8
+changelog=تحديث شامل - إصلاح منطق الديون للرصيد الافتتاحي للعملاء
