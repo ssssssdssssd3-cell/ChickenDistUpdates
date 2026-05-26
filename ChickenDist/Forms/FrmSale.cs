@@ -1415,6 +1415,7 @@ namespace ChickenDist.Forms
 			var dt = DbHelper.Query(@"
 				SELECT s.SaleCode, s.SaleDate, s.SaleType, s.TotalAmount,
 				       COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
+				       s.ClientID,
 				       COALESCE(c.ClientName, N'---') AS ClientName,
 				       COALESCE(c.Phone, '') AS ClientPhone
 				FROM Sales s
@@ -1433,6 +1434,37 @@ namespace ChickenDist.Forms
 
 			// جلب أصناف الفاتورة
 			var items = SaleDAL.GetItems(saleID);
+
+			// جلب البيانات المالية للعميل
+			decimal prevBalance = 0m;
+			decimal currentBalance = 0m;
+			decimal lastPaymentAmt = 0m;
+			DateTime lastPaymentDate = DateTime.MinValue;
+
+			if (saleRow["ClientID"] != DBNull.Value)
+			{
+				int clientID = Convert.ToInt32(saleRow["ClientID"]);
+				DateTime saleDate = Convert.ToDateTime(saleRow["SaleDate"]);
+
+				// الرصيد السابق قبل هذه الفاتورة
+				prevBalance = ClientDAL.GetPreviousBalance(clientID, saleDate);
+
+				// الرصيد الحالي بعد الفاتورة
+				currentBalance = ClientDAL.GetClientBalance(clientID);
+
+				// آخر توريد (دفعة)
+				var lastPayDt = DbHelper.Query(@"
+					SELECT TOP 1 Credit, TransDate 
+					FROM ClientTransactions 
+					WHERE ClientID=@id AND TransType='Payment' AND Credit > 0
+					ORDER BY TransDate DESC, TransID DESC",
+					DbHelper.P("@id", clientID));
+				if (lastPayDt.Rows.Count > 0)
+				{
+					lastPaymentAmt  = Convert.ToDecimal(lastPayDt.Rows[0]["Credit"]);
+					lastPaymentDate = Convert.ToDateTime(lastPayDt.Rows[0]["TransDate"]);
+				}
+			}
 
 			// بناء نص الرسالة
 			var sb = new System.Text.StringBuilder();
@@ -1464,6 +1496,21 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"💸 الخصم: {discAmt:N2} ج");
 			sb.AppendLine($"💰 *صافي الفاتورة: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م*");
 			sb.AppendLine("──────────────────────");
+
+			// المعلومات المالية
+			if (saleRow["ClientID"] != DBNull.Value)
+			{
+				sb.AppendLine("📊 *الوضع المالي للحساب:*");
+				sb.AppendLine($"📋 الرصيد السابق:    {prevBalance:N2} ج");
+				sb.AppendLine($"🛒 الفاتورة الحالية:  {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج");
+				sb.AppendLine($"📈 *إجمالي المديونية: {currentBalance:N2} ج*");
+				if (lastPaymentAmt > 0)
+					sb.AppendLine($"✅ آخر توريد: {lastPaymentAmt:N2} ج  ({lastPaymentDate:dd/MM/yyyy})");
+				else
+					sb.AppendLine("✅ آخر توريد: لا يوجد");
+				sb.AppendLine("──────────────────────");
+			}
+
 			sb.AppendLine("شكراً لتعاملكم معنا 🙏");
 
 			SendWhatsApp(phone, sb.ToString());
