@@ -278,6 +278,7 @@ namespace ChickenDist.DAL
             var dt = DbHelper.Query(@"
                 SELECT 
                     ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    ISNULL(c.OpeningBalance, 0) AS OpeningBalance,
                     ISNULL(c.MaxCreditLimit, 0) AS MaxCreditLimit,
                     ISNULL((SELECT SUM(Debit) FROM ClientTransactions WHERE ClientID=@id AND TransDate >= DATEADD(day, -30, GETDATE())), 0) AS RecentDebit
                 FROM Clients c
@@ -287,12 +288,14 @@ namespace ChickenDist.DAL
             if (dt.Rows.Count > 0)
             {
                 decimal bal = Convert.ToDecimal(dt.Rows[0]["Balance"]);
+                decimal openingBal = Convert.ToDecimal(dt.Rows[0]["OpeningBalance"]);
                 decimal recentDebit = Convert.ToDecimal(dt.Rows[0]["RecentDebit"]);
+                decimal transBalance = bal - openingBal;
                 return new ClientFinancialStatus
                 {
                     Balance = bal,
                     MaxCreditLimit = Convert.ToDecimal(dt.Rows[0]["MaxCreditLimit"]),
-                    OldDebt30 = bal > recentDebit ? bal - recentDebit : 0
+                    OldDebt30 = transBalance > recentDebit ? transBalance - recentDebit : 0
                 };
             }
             return new ClientFinancialStatus();
