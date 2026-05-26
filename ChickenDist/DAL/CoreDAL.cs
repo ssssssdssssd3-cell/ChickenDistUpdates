@@ -449,6 +449,14 @@ namespace ChickenDist.DAL
                 int newID = -1;
                 DbHelper.RunInTransaction((con, trans) =>
                 {
+                    var cashResult = DbHelper.ScalarTrans(trans, 
+                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                    decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
+                    if (cashBalance < amount)
+                    {
+                        throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لتسجيل هذا المصروف بقيمة ({amount:N2} ج)!");
+                    }
+
                     newID = DbHelper.ExecuteInsertTrans(trans,
                         "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy) VALUES(@d,@t,@a,@n,@s,@v,@by)",
                         DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
@@ -461,10 +469,22 @@ namespace ChickenDist.DAL
                 return newID;
             }
 
-            // FIX: تعديل — يُحدَّث Expenses وقيد الخزنة معاً في Transaction واحد
-            // الكود القديم كان يُحدّث Expenses فقط ويترك قيد الخزنة بالمبلغ القديم
+            // FIX: تعديل — يُحدَّث Expenses وقيد الخزنة معاً في Transaction واحد ويتحقق من رصيد الخزنة
             DbHelper.RunInTransaction((con, trans) =>
             {
+                var oldAmountObj = DbHelper.ScalarTrans(trans, "SELECT Amount FROM Expenses WHERE ExpenseID=@id", DbHelper.P("@id", id));
+                decimal oldAmount = oldAmountObj != null ? Convert.ToDecimal(oldAmountObj) : 0;
+
+                var cashResult = DbHelper.ScalarTrans(trans, 
+                    "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
+
+                decimal diff = amount - oldAmount;
+                if (diff > 0 && cashBalance < diff)
+                {
+                    throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لتعديل قيمة المصروف بزيادة قدرها ({diff:N2} ج)!");
+                }
+
                 DbHelper.ExecuteTrans(trans,
                     "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v WHERE ExpenseID=@id",
                     DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),

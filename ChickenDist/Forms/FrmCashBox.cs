@@ -593,9 +593,18 @@ namespace ChickenDist.Forms
             int? vehicleID = null;
             if (cboExpVehicle.SelectedItem != null && cboExpVehicle.SelectedValue != null && int.TryParse(cboExpVehicle.SelectedValue.ToString(), out int vid) && vid > 0)
                 vehicleID = vid;
-            int id = AccountDAL.SaveExpense(_selectedExpID, dtpExpDate.Value, cboExpType.Text, nudExpAmount.Value, txtExpNotes.Text, supplierID, vehicleID);
-            if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedExpID = id; LoadExpenses(); LoadCashBox(); }
-            else MessageBox.Show("❌ فشل الحفظ");
+
+            try
+            {
+                int id = AccountDAL.SaveExpense(_selectedExpID, dtpExpDate.Value, cboExpType.Text, nudExpAmount.Value, txtExpNotes.Text, supplierID, vehicleID);
+                if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedExpID = id; LoadExpenses(); LoadCashBox(); }
+                else MessageBox.Show("❌ فشل الحفظ");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل حفظ المصروف", ex, "FrmCashBox.BtnSaveExp_Click");
+                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void BtnDelExp_Click(object sender, EventArgs e)

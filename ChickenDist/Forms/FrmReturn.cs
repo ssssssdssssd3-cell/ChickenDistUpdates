@@ -410,16 +410,24 @@ namespace ChickenDist.Forms
             int saleID = cs.ID;
             int? clientID = (cboClient.SelectedItem is ComboItem cc && cc.ID > 0) ? (int?)cc.ID : null;
 
-            int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems);
-            if (id > 0) 
-            { 
-                MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
-                txtNotes.Text = "";
-                cboSale.SelectedIndex = 0; // Trigger reload
-            }
-            else 
+            try
             {
-                MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems);
+                if (id > 0) 
+                { 
+                    MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                    txtNotes.Text = "";
+                    cboSale.SelectedIndex = 0; // Trigger reload
+                }
+                else 
+                {
+                    MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل حفظ مرتجع المبيعات", ex, "FrmReturn.BtnSave_Click");
+                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

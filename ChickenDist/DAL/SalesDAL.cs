@@ -551,6 +551,17 @@ namespace ChickenDist.DAL
                 var dtSale = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
                 string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
 
+                if (saleType == "Cash")
+                {
+                    var cashResult = DbHelper.ScalarTrans(trans, 
+                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                    decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
+                    if (cashBalance < total)
+                    {
+                        throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لرد قيمة المرتجع النقدي ({total:N2} ج)!\nيرجى توريد نقدية أولاً.");
+                    }
+                }
+
                 int retID = DbHelper.ExecuteInsertTrans(trans,
                     "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
                     DbHelper.P("@dt", DateTime.Now),

@@ -1,4 +1,4 @@
-version=1.0.23
+version=1.0.24
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=32A5A6CD4B8AB87B243C4A666A002F05F482F3F7E1B7532917E9E28662707A52
-changelog=إصلاح تداخل حقول شاشة المركبات + تحديث رسالة الواتساب لتشمل (آخر توريد، الرصيد السابق، المديونية، والرصيد الحالي)
+sha256=708676EEEB8498E57EDC36095B5B42B4A31138BE79574A8A08B21F101D1DFDAC
+changelog=تحديث الخزينة والمصروفات: منع تسجيل المصروفات أو مرتجع المبيعات النقدي بقيمة أكبر من الرصيد المتوفر لمنع تحول رصيد الخزنة إلى سالب.
