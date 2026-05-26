@@ -1,4 +1,4 @@
-version=1.0.24
+version=1.0.25
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=708676EEEB8498E57EDC36095B5B42B4A31138BE79574A8A08B21F101D1DFDAC
-changelog=تحديث الخزينة والمصروفات: منع تسجيل المصروفات أو مرتجع المبيعات النقدي بقيمة أكبر من الرصيد المتوفر لمنع تحول رصيد الخزنة إلى سالب.
+sha256=68DC588D27F29349843E5DDEB6E59A5D699ABF55F9F721D987C3FE3B96028B61
+changelog=تصميم شاشة المركبات بشكل احترافي ومتناسق بالكامل، وحل مشكلة تداخل العناصر وحجب الأزرار مع إضافة خاصية التمرير التلقائي لمنع أي اقتطاع.
