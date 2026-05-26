@@ -1,4 +1,4 @@
-version=1.0.21
+version=1.0.22
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=831C039E4A25F5EEB5A7FF32391B22348B11A356361574F85A3C07EB16DDB2A8
-changelog=تحديث شامل - إصلاح منطق الديون للرصيد الافتتاحي للعملاء
+sha256=D8927EB951E723BA9DE03AA2C86E74C211F9E76406AE3BCCABFDEFB52FFB6B53
+changelog=تحديث شامل - إصلاح منطق الديون للرصيد الافتتاحي وإظهار أزرار المصروفات

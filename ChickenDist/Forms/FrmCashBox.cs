@@ -303,19 +303,20 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(tblFields);
 
             // Bottom Actions (Absolute positioning inside pnlDetails)
-            btnNewExp = Theme.MakeButton("🆕 جديد", 20, 240, 85, 38, Color.FromArgb(60, 100, 60));
+            btnNewExp = Theme.MakeButton("🆕 جديد", 20, 330, 85, 38, Color.FromArgb(60, 100, 60));
             btnNewExp.Click += (s, e) => ClearExp();
 
-            btnSaveExp = Theme.MakeButton("💾 حفظ المصروف", 115, 240, 115, 38, Theme.Accent);
+            btnSaveExp = Theme.MakeButton("💾 حفظ المصروف", 115, 330, 115, 38, Theme.Accent);
             btnSaveExp.Click += BtnSaveExp_Click;
 
-            btnDelExp = Theme.MakeButton("🗑 حذف", 240, 240, 80, 38, Color.FromArgb(140, 40, 40));
+            btnDelExp = Theme.MakeButton("🗑 حذف", 240, 330, 80, 38, Color.FromArgb(140, 40, 40));
             btnDelExp.Click += BtnDelExp_Click;
 
             pnlDetails.Controls.AddRange(new Control[] { btnNewExp, btnSaveExp, btnDelExp });
             
-            // Bring tblFields to front so it stacks correctly at Top
-            tblFields.BringToFront();
+            btnNewExp.BringToFront();
+            btnSaveExp.BringToFront();
+            btnDelExp.BringToFront();
 
             tbl.Controls.Add(pnlDetails, 0, 0); // Right
             tbl.Controls.Add(pnlList, 1, 0);    // Left
