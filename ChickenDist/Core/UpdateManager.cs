@@ -142,6 +142,9 @@ namespace ChickenDist.Core
             // الكود القديم كان يُجمّد الـ UI Thread طوال مدة التحميل مع Thread.Sleep على UI
             // الحل: التحميل في background thread مع ProgressBar حقيقي يتحدث عبر ReportProgress
 
+            Exception downloadException = null;
+            bool downloadSuccess = false;
+
             using (var progressForm = new Form())
             using (var worker = new System.ComponentModel.BackgroundWorker())
             {
@@ -178,8 +181,6 @@ namespace ChickenDist.Core
                 };
                 progressForm.Controls.AddRange(new System.Windows.Forms.Control[] { lbl, pb, lblPct });
 
-                Exception downloadException = null;
-                bool downloadSuccess = false;
                 int maxRetries = 3;
 
                 worker.WorkerReportsProgress = true;
