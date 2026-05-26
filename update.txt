@@ -1,4 +1,4 @@
-version=1.0.19
+﻿version=1.0.20
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. إصلاح مشكلة اختفاء الأزرار في شاشة الفواتير المعلقة.
-2. تحسينات عامة في واجهة المستخدم.
+sha256=D15B0DC3A56E2B0729C3C81100558E5B3F9088831BD3F6F186BABE79DC07AFB3
+changelog=تحديث التعديلات الأخيرة على البرنامج.
