@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = AppConfig.CompanyName + " - Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ";
+            this.Text = AppConfig.CompanyName + " - النظام الرئيسي";
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -36,7 +36,7 @@ namespace ChickenDist.Forms
             this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };
             this.lblCompany = new Label
             {
-                Text = "ðŸ£  " + AppConfig.CompanyName,
+                Text = "🐣  " + AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
@@ -45,7 +45,7 @@ namespace ChickenDist.Forms
             };
             this.lblUserInfo = new Label
             {
-                Text = $"ðŸ‘¤ {Session.EmpName}  |  {Session.Role}",
+                Text = $"👤 {Session.EmpName}  |  {Session.Role}",
                 Font = Theme.FontSmall,
                 ForeColor = Color.FromArgb(200, 230, 255),
                 AutoSize = false,
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             };
             var btnLogoutTop = new Button
             {
-                Text = "Ø®Ø±ÙˆØ¬ â†©",
+                Text = "خروج ↩",
                 Width = 100,
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
@@ -66,7 +66,7 @@ namespace ChickenDist.Forms
                 Cursor = Cursors.Hand
             };
             btnLogoutTop.FlatAppearance.BorderSize = 0;
-            btnLogoutTop.Click += (s, e) => { if (MessageBox.Show("Ù‡Ù„ ØªØ±ÙŠØ¯ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬ØŸ", "ØªØ£ÙƒÙŠØ¯", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) { Session.Clear(); this.Close(); } };
+            btnLogoutTop.Click += (s, e) => { if (MessageBox.Show("هل تريد تسجيل الخروج؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) { Session.Clear(); this.Close(); } };
             this.pnlTopBar.Controls.AddRange(new Control[] { lblCompany, lblUserInfo, btnLogoutTop });
 
             // ===== NavBar (previously Sidebar) =====
@@ -112,8 +112,8 @@ namespace ChickenDist.Forms
 
         public void UpdateCompanyName(string newName)
         {
-            lblCompany.Text = $"ðŸ£  {newName}";
-            this.Text = $"{newName} - Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ";
+            lblCompany.Text = $"🐣  {newName}";
+            this.Text = $"{newName} - النظام الرئيسي";
         }
 
         private void BuildNavBar()
@@ -122,25 +122,25 @@ namespace ChickenDist.Forms
             
             var items = new (string icon, string label, string screen, Action action)[]
             {
-                ("ðŸ ", "Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©",          "",               () => NavigateTo(new FrmDashboard())),
-                ("ðŸ“¦", "Ø§Ù„Ø£ØµÙ†Ø§Ù",            "Products",       () => NavigateTo(new FrmProducts())),
-                ("âš–ï¸", "Ø¬Ø±Ø¯ Ø§Ù„Ù…Ø®Ø²Ù†",        "Products",       () => NavigateTo(new FrmInventory())),
-                ("ðŸ‘¥", "Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡",            "Clients",        () => NavigateTo(new FrmClients())),
-                ("ðŸš—", "Ø§Ù„Ù…Ø±ÙƒØ¨Ø§Øª",            "Vehicles",       () => NavigateTo(new FrmVehicles())),
-                ("ðŸ¤", "Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†",           "Suppliers",      () => NavigateTo(new FrmSuppliers())),
-                ("ðŸ›’", "ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª",      "Sales",          () => NavigateTo(new FrmSale())),
-                ("ðŸ“‹", "Ø³Ø¬Ù„ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª",       "Sales",          () => NavigateTo(new FrmSalesList())),
-                ("â†©", "Ù…Ø±ØªØ¬Ø¹ Ø¨ÙŠØ¹",          "Returns",        () => NavigateTo(new FrmReturn())),
-                ("ðŸ“¥", "ÙØ§ØªÙˆØ±Ø© Ù…Ø´ØªØ±ÙŠØ§Øª",     "Purchases",      () => NavigateTo(new FrmPurchase())),
-                ("ðŸšš", "Ø­Ù…ÙˆÙ„Ø© Ù…Ù†Ø¯ÙˆØ¨",       "DriverHandover", () => NavigateTo(new FrmDriverHandover())),
-                ("ðŸ–¥ï¸", "Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ù…Ù†Ø§Ø¯ÙŠØ¨",    "DriverHandover", () => NavigateTo(new FrmDriversMonitor())),
-                ("ðŸ“‹", "Ø¹Ù‡Ø¯Ø© Ø§Ù„Ù…Ù†Ø§Ø¯ÙŠØ¨",      "DriverHandover", () => NavigateTo(new FrmDriverCustody())),
-                ("ðŸ’°", "Ø§Ù„Ø®Ø²Ù†Ø©",             "CashBox",        () => NavigateTo(new FrmCashBox())),
-                ("ðŸ“Š", "Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±",           "Reports",        () => NavigateTo(new FrmReports())),
-                ("ðŸ“‘", "ØªÙ‚ÙÙŠÙ„ ÙŠÙˆÙ…ÙŠØ©",        "Reports",        () => NavigateTo(new FrmDailyClosing())),
-                ("ðŸ‘”", "Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ†",           "Employees",      () => NavigateTo(new FrmEmployees())),
-                ("âš™ï¸", "Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª",         "",               () => new FrmSettings().ShowDialog()),
-                ("ðŸ”„", "ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬",     "",               () => UpdateManager.CheckForUpdates(true)),
+                ("🏠", "الرئيسية",          "",               () => NavigateTo(new FrmDashboard())),
+                ("📦", "الأصناف",            "Products",       () => NavigateTo(new FrmProducts())),
+                ("⚖️", "جرد المخزن",        "Products",       () => NavigateTo(new FrmInventory())),
+                ("👥", "العملاء",            "Clients",        () => NavigateTo(new FrmClients())),
+                ("🚗", "المركبات",            "Vehicles",       () => NavigateTo(new FrmVehicles())),
+                ("🤝", "الموردين",           "Suppliers",      () => NavigateTo(new FrmSuppliers())),
+                ("🛒", "فاتورة مبيعات",      "Sales",          () => NavigateTo(new FrmSale())),
+                ("📋", "سجل المبيعات",       "Sales",          () => NavigateTo(new FrmSalesList())),
+                ("↩", "مرتجع بيع",          "Returns",        () => NavigateTo(new FrmReturn())),
+                ("📥", "فاتورة مشتريات",     "Purchases",      () => NavigateTo(new FrmPurchase())),
+                ("🚚", "حمولة مندوب",       "DriverHandover", () => NavigateTo(new FrmDriverHandover())),
+                ("🖥️", "مراقبة المناديب",    "DriverHandover", () => NavigateTo(new FrmDriversMonitor())),
+                ("📋", "عهدة المناديب",      "DriverHandover", () => NavigateTo(new FrmDriverCustody())),
+                ("💰", "الخزنة",             "CashBox",        () => NavigateTo(new FrmCashBox())),
+                ("📊", "التقارير",           "Reports",        () => NavigateTo(new FrmReports())),
+                ("📑", "تقفيل يومية",        "Reports",        () => NavigateTo(new FrmDailyClosing())),
+                ("👔", "الموظفين",           "Employees",      () => NavigateTo(new FrmEmployees())),
+                ("⚙️", "الإعدادات",         "",               () => new FrmSettings().ShowDialog()),
+                ("🔄", "تحديث البرنامج",     "",               () => UpdateManager.CheckForUpdates(true)),
             };
 
             foreach (var item in items)
@@ -214,7 +214,7 @@ namespace ChickenDist.Forms
             mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Dynamic content split
 
             // 1. Header
-            var pnlTitle = Theme.MakeTitleBar("Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… ÙˆØ§Ù„Ù…Ø¤Ø´Ø±Ø§Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©", $"Ù…Ø±Ø­Ø¨Ø§Ù‹ {Session.EmpName} ðŸ‘‹  |  ØªØ§Ø±ÙŠØ® Ø§Ù„ÙŠÙˆÙ…: {DateTime.Today:dd/MM/yyyy}");
+            var pnlTitle = Theme.MakeTitleBar("لوحة التحكم والمؤشرات اليومية", $"مرحباً {Session.EmpName} 👋  |  تاريخ اليوم: {DateTime.Today:dd/MM/yyyy}");
             pnlTitle.BackColor = Theme.BgCard;
             mainTbl.Controls.Add(pnlTitle, 0, 0);
 
@@ -235,9 +235,9 @@ namespace ChickenDist.Forms
                 decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
                 var openLoads = DriverDAL.GetOpenLoads();
 
-                pnlCards.Controls.Add(MakeCard("ðŸ’° Ø±ØµÙŠØ¯ Ø§Ù„Ø®Ø²Ù†Ø© Ø§Ù„Ø­Ø§Ù„ÙŠ", cashBal.ToString("N2") + " Ø¬", Theme.Success));
-                pnlCards.Controls.Add(MakeCard("ðŸ›’ Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„ÙŠÙˆÙ…", todaySales.ToString("N2") + " Ø¬", Theme.Accent));
-                pnlCards.Controls.Add(MakeCard("ðŸšš Ø­Ù…ÙˆÙ„Ø§Øª Ù…ÙØªÙˆØ­Ø© Ø­Ø§Ù„ÙŠØ§Ù‹", openLoads.Rows.Count + " Ø­Ù…ÙˆÙ„Ø©", Color.FromArgb(52, 152, 219)));
+                pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
+                pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
+                pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
             mainTbl.Controls.Add(pnlCards, 0, 1);
@@ -263,17 +263,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15),
                 Margin = new Padding(15, 0, 8, 15)
             };
-            var lblActTitle = new Label { Text = "⚡ الوصول السريع والعمليات", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
+            var lblActTitle = new Label { Text = "? ?????? ?????? ?????????", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
             pnlActions.Controls.Add(lblActTitle);
 
             int btnY = 55;
-            AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
-            AddQuickButton(pnlActions, "🚗 إدارة المركبات", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
-            AddQuickButton(pnlActions, "🚚 تقفيل حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
-            AddQuickButton(pnlActions, "💰 تسجيل حركة خزنة ومصروف", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
-            AddQuickButton(pnlActions, "⚖️ جرد كميات وتعديل المخزن", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
-            AddQuickButton(pnlActions, "👥 إدارة وبيانات العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
-            AddQuickButton(pnlActions, "📊 عرض التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
+            AddQuickButton(pnlActions, "?? ?????? ?????? ?????", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
+            AddQuickButton(pnlActions, "?? ????? ????????", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
+            AddQuickButton(pnlActions, "?? ????? ????? ?????", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
+            AddQuickButton(pnlActions, "?? ????? ???? ???? ??????", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
+            AddQuickButton(pnlActions, "?? ??? ????? ?????? ??????", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
+            AddQuickButton(pnlActions, "?? ????? ??????? ???????", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
+            AddQuickButton(pnlActions, "?? ??? ???????? ???????????", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 
@@ -285,7 +285,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15),
                 Margin = new Padding(8, 0, 15, 15)
             };
-            var lblRecTitle = new Label { Text = "ðŸ“‹ Ø£Ø­Ø¯Ø« Ù…Ø¨ÙŠØ¹Ø§Øª ÙˆØ­Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙŠÙˆÙ…", Font = Theme.FontHeader, ForeColor = Theme.TextMain, Location = new Point(15, 15), AutoSize = true };
+            var lblRecTitle = new Label { Text = "📋 أحدث مبيعات وحمولات اليوم", Font = Theme.FontHeader, ForeColor = Theme.TextMain, Location = new Point(15, 15), AutoSize = true };
             pnlRecent.Controls.Add(lblRecTitle);
 
             var dgRecent = new DataGridView
@@ -306,10 +306,10 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", HeaderText = "ÙƒÙˆØ¯ Ø§Ù„ÙØ§ØªÙˆØ±Ø©", FillWeight = 40 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", HeaderText = "Ø§Ù„Ù†ÙˆØ¹", FillWeight = 30 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "Ø§Ù„Ø¹Ù…ÙŠÙ„ / Ø§Ù„Ù…Ù†Ø¯ÙˆØ¨", FillWeight = 50 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ", FillWeight = 35 });
+            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", HeaderText = "كود الفاتورة", FillWeight = 40 });
+            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", HeaderText = "النوع", FillWeight = 30 });
+            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "العميل / المندوب", FillWeight = 50 });
+            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "المبلغ الإجمالي", FillWeight = 35 });
 
             try
             {
@@ -319,8 +319,8 @@ namespace ChickenDist.Forms
                 {
                     if (limit++ >= 8) break; // Display only last 8 sales
                     string clientOrDriver = r["SaleType"].ToString() == "DriverLoad" ? r["DriverName"].ToString() : r["ClientName"].ToString();
-                    string typeArabic = r["SaleType"].ToString() == "Cash" ? "Ù†Ù‚Ø¯ÙŠ" : r["SaleType"].ToString() == "Credit" ? "Ø¢Ø¬Ù„" : "ØªØ­Ù…ÙŠÙ„ Ù…Ù†Ø¯ÙˆØ¨";
-                    dgRecent.Rows.Add(r["SaleCode"], typeArabic, clientOrDriver, Convert.ToDecimal(r["TotalAmount"]).ToString("N2") + " Ø¬");
+                    string typeArabic = r["SaleType"].ToString() == "Cash" ? "نقدي" : r["SaleType"].ToString() == "Credit" ? "آجل" : "تحميل مندوب";
+                    dgRecent.Rows.Add(r["SaleCode"], typeArabic, clientOrDriver, Convert.ToDecimal(r["TotalAmount"]).ToString("N2") + " ج");
                 }
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load recent sales failed: " + ex.Message); }

@@ -1,4 +1,4 @@
 ﻿version=1.0.20
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=D15B0DC3A56E2B0729C3C81100558E5B3F9088831BD3F6F186BABE79DC07AFB3
-changelog=تحديث التعديلات الأخيرة على البرنامج.
+sha256=0D719E98A73984F1F3F95781CF51A6C3738EDD3B31D9E21BD949DBEFFB461CAD
+changelog=تحديث شامل - إصلاح جميع الأخطاء اللغوية وتحسين الأداء
