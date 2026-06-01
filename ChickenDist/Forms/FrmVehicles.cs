@@ -127,6 +127,8 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(pnlGrid, 1, 0);
 
             this.Controls.Add(tbl);
+            pnlTop.BringToFront();
+            tbl.SendToBack();
             Theme.ApplyFormRTL(this);
             LoadVehicles();
         }
