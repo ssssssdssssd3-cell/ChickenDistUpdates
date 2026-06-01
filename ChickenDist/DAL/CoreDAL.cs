@@ -237,13 +237,34 @@ namespace ChickenDist.DAL
         public static DataTable GetStatement(int supplierID, DateTime from, DateTime to)
         {
             return DbHelper.Query(
-                @"SELECT TransDate, TransType, Debit, Credit, Notes
+                @"SELECT TransDate, TransType, ISNULL(Debit,0) AS Debit, ISNULL(Credit,0) AS Credit,
+                         ISNULL(RefID,0) AS RefID, Notes
                   FROM SupplierTransactions
                   WHERE SupplierID=@id AND CAST(TransDate AS DATE) BETWEEN @f AND @t
                   ORDER BY TransDate",
                 DbHelper.P("@id", supplierID),
                 DbHelper.P("@f", from.Date),
                 DbHelper.P("@t", to.Date));
+        }
+
+        /// <summary>رصيد المورد قبل تاريخ معين (للرصيد الافتتاحي في الكشف)</summary>
+        public static decimal GetPreviousBalance(int supplierID, DateTime before)
+        {
+            // الرصيد = الرصيد الافتتاحي + مجموع Credit (مشتريات) - مجموع Debit (مدفوعات)
+            var openResult = DbHelper.Scalar(
+                "SELECT ISNULL(OpeningBalance,0) FROM Suppliers WHERE SupplierID=@id",
+                DbHelper.P("@id", supplierID));
+            decimal opening = openResult != null ? Convert.ToDecimal(openResult) : 0;
+
+            var txResult = DbHelper.Scalar(
+                @"SELECT ISNULL(SUM(Credit),0) - ISNULL(SUM(Debit),0)
+                  FROM SupplierTransactions
+                  WHERE SupplierID=@id AND CAST(TransDate AS DATE) < @d",
+                DbHelper.P("@id", supplierID),
+                DbHelper.P("@d", before.Date));
+            decimal txBalance = txResult != null ? Convert.ToDecimal(txResult) : 0;
+
+            return opening + txBalance;
         }
     }
 

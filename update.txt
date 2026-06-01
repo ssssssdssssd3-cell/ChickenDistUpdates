@@ -1,4 +1,4 @@
-version=1.0.26
+version=1.0.27
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=07969AF871E5A1856527302B28D6BAA14789986DEA8A814E0A93708F1EAF870C
-changelog=إضافة ميزة الصرف النقدي للمورد من شاشة الموردين مباشرة مع تسجيل القيد تلقائياً في مديونية المورد والخزنة بكود فريد (SPY-XXXX) والتحقق من رصيد الخزنة قبل الصرف.
+sha256=20565F86D677CF448CBDB441C131CC54324A124E9BD0BB5417DBC164FDD20916
+changelog=إصلاح ظهور اللغة العربية صح في لوحة التحكم + إضافة كشف حساب المورد التفصيلي مع المنطق المحاسبي الصحيح (مشتريات مدين - مدفوعات دائن - رصيد جاري).

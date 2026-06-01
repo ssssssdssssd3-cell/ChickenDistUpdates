@@ -263,17 +263,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15),
                 Margin = new Padding(15, 0, 8, 15)
             };
-            var lblActTitle = new Label { Text = "? ?????? ?????? ?????????", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
+            var lblActTitle = new Label { Text = "⚡ إجراءات سريعة", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
             pnlActions.Controls.Add(lblActTitle);
 
             int btnY = 55;
-            AddQuickButton(pnlActions, "?? ?????? ?????? ?????", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
-            AddQuickButton(pnlActions, "?? ????? ????????", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
-            AddQuickButton(pnlActions, "?? ????? ????? ?????", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
-            AddQuickButton(pnlActions, "?? ????? ???? ???? ??????", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
-            AddQuickButton(pnlActions, "?? ??? ????? ?????? ??????", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
-            AddQuickButton(pnlActions, "?? ????? ??????? ???????", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
-            AddQuickButton(pnlActions, "?? ??? ???????? ???????????", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
+            AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
+            AddQuickButton(pnlActions, "🚗 المركبات والتحميل", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
+            AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
+            AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
+            AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
+            AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
+            AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 
