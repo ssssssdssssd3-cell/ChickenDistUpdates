@@ -189,6 +189,62 @@ namespace ChickenDist.DAL
         {
             DbHelper.Execute("UPDATE Suppliers SET IsActive=0 WHERE SupplierID=@id", DbHelper.P("@id", id));
         }
+
+        /// <summary>
+        /// صرف نقدي للمورد - يسجل في حساب المورد (Debit يقلل المديونية) وفي الخزنة (AmountOut)
+        /// بكود قيد تلقائي مثل SPY-0001
+        /// </summary>
+        public static string AddSupplierPayment(int supplierID, decimal amount, string notes)
+        {
+            string payCode = "";
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // توليد كود القيد التسلسلي SPY-XXXX
+                var nextResult = DbHelper.ScalarTrans(trans,
+                    "SELECT COALESCE(MAX(TransID), 0) + 1 FROM SupplierTransactions");
+                int nextNum = nextResult != null ? Convert.ToInt32(nextResult) : 1;
+                payCode = "SPY-" + nextNum.ToString("D4");
+
+                // التحقق من رصيد الخزنة قبل الصرف
+                var cashResult = DbHelper.ScalarTrans(trans,
+                    "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
+                if (cashBalance < amount)
+                    throw new Exception(
+                        $"رصيد الخزنة ({cashBalance:N2} ج) لا يكفي للصرف ({amount:N2} ج).\nيرجى تحصيل نقدية أولاً.");
+
+                // تسجيل في حساب المورد: Debit يقلل المديونية (دفعنا له)
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO SupplierTransactions(SupplierID,TransType,Debit,Notes,CreatedBy) " +
+                    "VALUES(@sid,'Payment',@amt,@n,@by)",
+                    DbHelper.P("@sid", supplierID),
+                    DbHelper.P("@amt", amount),
+                    DbHelper.P("@n", payCode + " - " + notes),
+                    DbHelper.P("@by", Session.EmpID));
+
+                // خصم من الخزنة
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO CashBox(TransType,AmountOut,Notes,CreatedBy) " +
+                    "VALUES('SupplierPayment',@amt,@n,@by)",
+                    DbHelper.P("@amt", amount),
+                    DbHelper.P("@n", payCode + " - صرف للمورد - " + notes),
+                    DbHelper.P("@by", Session.EmpID));
+            });
+            return payCode;
+        }
+
+        /// <summary>كشف حساب المورد في فترة زمنية</summary>
+        public static DataTable GetStatement(int supplierID, DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT TransDate, TransType, Debit, Credit, Notes
+                  FROM SupplierTransactions
+                  WHERE SupplierID=@id AND CAST(TransDate AS DATE) BETWEEN @f AND @t
+                  ORDER BY TransDate",
+                DbHelper.P("@id", supplierID),
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date));
+        }
     }
 
     public static class VehicleDAL

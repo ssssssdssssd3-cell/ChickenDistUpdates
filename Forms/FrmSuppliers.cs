@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtAddress;
         private NumericUpDown nudOpening;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete;
+        private Button btnNew, btnSave, btnDelete, btnPaySupplier;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -137,6 +137,13 @@ namespace ChickenDist.Forms
 
             pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
 
+            // زر صرف للمورد
+            y += 40;
+            btnPaySupplier = Theme.MakeButton("💸 صرف للمورد", 10, y, 290, 38, Color.FromArgb(180, 100, 0));
+            btnPaySupplier.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+            btnPaySupplier.Click += BtnPaySupplier_Click;
+            pnlDetails.Controls.Add(btnPaySupplier);
+
             tbl.Controls.Add(pnlDetails, 0, 0);
             tbl.Controls.Add(pnlGrid, 1, 0);
             this.Controls.Add(tbl);
@@ -220,6 +227,67 @@ namespace ChickenDist.Forms
                 LoadSuppliers();
                 ClearDetail();
             }
+        }
+
+        private void BtnPaySupplier_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0)
+            {
+                MessageBox.Show("اختر مورداً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string supplierName = txtName.Text;
+            string balText = lblBalance.Text;
+
+            // نافذة الصرف
+            var dlg = new Form
+            {
+                Text = "صرف نقدي للمورد - " + supplierName,
+                Size = new Size(400, 280),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Theme.BgMain
+            };
+
+            int dy = 15;
+            dlg.Controls.Add(new Label { Text = "المورد: " + supplierName, Location = new Point(10, dy), Width = 360, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10, FontStyle.Bold) }); dy += 28;
+            dlg.Controls.Add(new Label { Text = balText, Location = new Point(10, dy), Width = 360, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10, FontStyle.Bold) }); dy += 32;
+
+            dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 4), Width = 170, ForeColor = Theme.TextMain });
+            var nudAmt = new NumericUpDown { Location = new Point(10, dy), Width = 185, Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            dlg.Controls.Add(nudAmt); dy += 38;
+
+            dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 4), Width = 170, ForeColor = Theme.TextMain });
+            var txtNote = new TextBox { Location = new Point(10, dy), Width = 185, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "سداد جزء من المديونية" };
+            dlg.Controls.Add(txtNote); dy += 38;
+
+            var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 200, dy, 170, 36, Color.FromArgb(180, 100, 0));
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 10, dy, 120, 36, Color.FromArgb(100, 40, 40));
+
+            btnOk.Click += (s2, e2) =>
+            {
+                if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                try
+                {
+                    string code = SupplierDAL.AddSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim());
+                    MessageBox.Show(
+                        $"✅ تم الصرف بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج\nالمورد: {supplierName}",
+                        "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                    LoadSuppliers();
+                }
+                catch { } // الخطأ بيتعرض تلقائياً من RunInTransaction
+            };
+            btnCancel.Click += (s2, e2) => dlg.Close();
+
+            dlg.Controls.Add(btnOk);
+            dlg.Controls.Add(btnCancel);
+            dlg.ShowDialog(this);
         }
     }
 }

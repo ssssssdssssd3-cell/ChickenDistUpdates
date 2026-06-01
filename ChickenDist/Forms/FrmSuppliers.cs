@@ -228,14 +228,86 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0)
             {
-                MessageBox.Show("اختر مورداً أولاً ثم اضغط صرف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("اختر مورداً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            using (var frm = new FrmCashBox(_selectedID, txtName.Text))
+            string supplierName = txtName.Text;
+            string balText = lblBalance.Text;
+
+            // نافذة الصرف
+            var dlg = new Form
             {
-                frm.ShowDialog();
-            }
+                Text = "💸 صرف نقدي للمورد - " + supplierName,
+                Size = new Size(420, 300),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Theme.BgMain,
+                Font = Theme.FontMain
+            };
+
+            int dy = 18;
+            dlg.Controls.Add(new Label
+            {
+                Text = "المورد: " + supplierName,
+                Location = new Point(10, dy), Width = 380,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            }); dy += 30;
+
+            dlg.Controls.Add(new Label
+            {
+                Text = balText,
+                Location = new Point(10, dy), Width = 380,
+                ForeColor = Theme.Accent,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            }); dy += 36;
+
+            dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+            var nudAmt = new NumericUpDown
+            {
+                Location = new Point(10, dy), Width = 185,
+                Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            dlg.Controls.Add(nudAmt); dy += 40;
+
+            dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+            var txtNote = new TextBox
+            {
+                Location = new Point(10, dy), Width = 185,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Text = "سداد جزء من المديونية"
+            };
+            dlg.Controls.Add(txtNote); dy += 40;
+
+            var btnOk     = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 175, 38, Color.FromArgb(140, 80, 0));
+            var btnCancel = Theme.MakeButton("❌ إلغاء",        10,  dy, 120, 38, Color.FromArgb(100, 40, 40));
+            btnOk.Font    = new Font("Segoe UI", 10, FontStyle.Bold);
+
+            btnOk.Click += (s2, e2) =>
+            {
+                if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                try
+                {
+                    string code = SupplierDAL.AddSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim());
+                    MessageBox.Show(
+                        $"✅ تم الصرف بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج\nالمورد: {supplierName}",
+                        "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                    LoadSuppliers(); // تحديث الرصيد في الجدول
+                }
+                catch { } // الخطأ بيتعرض تلقائياً من RunInTransaction
+            };
+            btnCancel.Click += (s2, e2) => dlg.Close();
+
+            dlg.Controls.Add(btnOk);
+            dlg.Controls.Add(btnCancel);
+            dlg.ShowDialog(this);
         }
     }
 }

@@ -1,4 +1,4 @@
-version=1.0.19
+version=1.0.26
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-changelog=1. إصلاح مشكلة اختفاء الأزرار في شاشة الفواتير المعلقة.
-2. تحسينات عامة في واجهة المستخدم.
+sha256=07969AF871E5A1856527302B28D6BAA14789986DEA8A814E0A93708F1EAF870C
+changelog=1. إضافة ميزة الصرف النقدي للمورد من شاشة الموردين مباشرة. 2. تسجيل قيد الصرف في مديونية المورد والخزنة تلقائياً بكود قيد فريد (SPY-XXXX). 3. التحقق من رصيد الخزنة قبل تنفيذ أي صرف للمورد.
