@@ -120,6 +120,7 @@ namespace ChickenDist.Forms
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
             this.Controls.Add(pnlFoot);
             dgStatement.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
         private void LoadStatement()

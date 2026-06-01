@@ -176,6 +176,7 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
             this.Controls.Add(tbl);
+            Theme.ApplyFormRTL(this);
         }
 
         private Panel MakeField(string label, ref int y, out TextBox txt)

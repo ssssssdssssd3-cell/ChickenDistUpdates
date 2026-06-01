@@ -162,6 +162,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlFoot);
 
             dgStatement.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
         private void LoadStatement()

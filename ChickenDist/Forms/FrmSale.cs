@@ -501,6 +501,7 @@ namespace ChickenDist.Forms
 			base.Controls.Add(panel);
             pnlItems.BringToFront();
 			ToggleType();
+			Theme.ApplyFormRTL(this);
 		}
 
 		private void FrmSale_KeyDown(object sender, KeyEventArgs e)
@@ -522,11 +523,39 @@ namespace ChickenDist.Forms
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			if (keyData == Keys.Enter && dgItems.IsCurrentCellInEditMode)
+			if (keyData == Keys.Enter)
 			{
-				dgItems.EndEdit();
-				cboProduct.Focus();
-				return true; // prevent enter from moving to next row
+				if (dgItems.Focused || dgItems.EditingControl != null)
+				{
+					var curCell = dgItems.CurrentCell;
+					if (curCell != null)
+					{
+						dgItems.EndEdit();
+						// Find next editable cell in the same row
+						int nextCol = -1;
+						for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
+						{
+							if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
+							{
+								nextCol = col;
+								break;
+							}
+						}
+
+						if (nextCol != -1)
+						{
+							dgItems.CurrentCell = dgItems.Rows[curCell.RowIndex].Cells[nextCol];
+							dgItems.BeginEdit(true);
+							return true;
+						}
+						else
+						{
+							// No more editable cells in this row, go to cboProduct
+							cboProduct.Focus();
+							return true;
+						}
+					}
+				}
 			}
 			return base.ProcessCmdKey(ref msg, keyData);
 		}

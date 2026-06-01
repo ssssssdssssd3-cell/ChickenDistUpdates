@@ -162,6 +162,7 @@ namespace ChickenDist.Forms
             toolbar.BringToFront();
             _dg.BringToFront();
             _pnlSummary.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
         private Label MakeSummaryLabel(string text, Color color)
