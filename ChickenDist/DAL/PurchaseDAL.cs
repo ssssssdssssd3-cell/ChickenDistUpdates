@@ -52,7 +52,7 @@ namespace ChickenDist.DAL
                          COALESCE(p.TaxPct,        0) AS TaxPct,
                          COALESCE(p.TaxAmount,     0) AS TaxAmount,
                          ISNULL((
-                             SELECT SUM(pri.ReturnedQty * pri.UnitPrice)
+                             SELECT SUM(pri.Quantity * pri.UnitPrice)
                              FROM PurchaseReturnItems pri
                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                              WHERE pr.PurchaseID = p.PurchaseID

@@ -1,4 +1,4 @@
-version=1.0.39
+version=1.0.40
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=AF3077F4B0804BBB50697A539835D282726DB2E85A1C83A006F7319E1F364864
-changelog=إصلاح خطأ في جلب بيانات المرتجع بقاعدة البيانات وتحديث حقول الإدخال والبحث لتتوافق مع أسماء الجداول الفعلية.
+sha256=25D92F385FA4699E390156AAA8F004EE384D257F1BE781752382EE183958DF82
+changelog=إصلاح خطأ في جلب بيانات مرتجع المشتريات بقاعدة البيانات وتحديث اسم العمود إلى الاسم الصحيح الفعلي.
