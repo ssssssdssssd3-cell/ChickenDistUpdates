@@ -409,8 +409,7 @@ namespace ChickenDist.Forms
                 returnItems.Add(new PurchaseItemDTO
                 {
                     ProductID = prodID, ProductName = name,
-                    Quantity = newQty, UnitPrice = price,
-                    TotalPrice = newQty * price
+                    Quantity = newQty, UnitPrice = price
                 });
                 totalReturnAmount += newQty * price;
             }

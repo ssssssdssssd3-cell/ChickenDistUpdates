@@ -289,6 +289,18 @@ namespace ChickenDist.Core
                     );
                 END";
                 Execute(sqlPurchaseReturns);
+
+                // إضافة حقلي ضريبة المشتريات للجدول Purchases
+                string sqlPurchasesTax = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'TaxPct')
+                BEGIN
+                    ALTER TABLE Purchases ADD TaxPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'TaxAmount')
+                BEGIN
+                    ALTER TABLE Purchases ADD TaxAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
+                END";
+                Execute(sqlPurchasesTax);
             }
             catch (Exception ex)
             {
