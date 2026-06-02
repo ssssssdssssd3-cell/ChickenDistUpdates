@@ -1,4 +1,4 @@
-version=1.0.33
+version=1.0.36
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=C5527FCD5CBD1FB4F6B3462D88EBE7A3D813C17A1069A42B1BB7B8754C58B91E
-changelog=إصلاح جذري لتداخل عناصر شاشة المركبات (الـ Buttons مع الـ TableLayoutPanel) لضمان ظهور حقل نوع المركبة بشكل سليم في جميع الشاشات.
+sha256=BBEA1A2F89F82AD2D40FF921463D90E51183E8E32785B373A139296C3B71CDD0
+changelog=إصلاح جذري لتداخل شاشة المركبات مع شريط العنوان لضمان ظهور حقل (نوع العربية) كاملاً، وتحديث شامل لنظام إدخال البيانات والتحكم بمفتاح Enter والتظليل التلقائي، وإصلاح مشكلة عدم خصم مرتجع المبيعات من تقرير التقفيل اليومي.
