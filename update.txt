@@ -1,4 +1,4 @@
-version=1.0.29
+version=1.0.30
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=2E5221E0972177800036301CEE946FD6BF8FB4A731F2AF0C686C298CDD021921
-changelog=حل مشكلة تداخل العناوين وظهور حقل "نوع العربية" وجدول البيانات بشكل صحيح وسليم في شاشة إدارة المركبات.
+sha256=8B6AC6F1C960F5BECEC139B5505BE79754FFD87AF022A714427FC413047A01FE
+changelog=إضافة شاشة مرتجع شراء متكاملة، وإضافة سجل مرتجع شراء وسجل مرتجع بيع في التقارير التفصيلية، وزر وصول سريع في القائمة الرئيسية.
