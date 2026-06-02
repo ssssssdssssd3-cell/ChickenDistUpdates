@@ -695,35 +695,45 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
 
-                /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري)</summary>
+                /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري) — مخصوماً منها المرتجعات</summary>
         public static DataTable GetDailyClientProductSales(DateTime date)
         {
             return DbHelper.Query(
                 @"SELECT
                     c.ClientID,
                     c.ClientName,
-                    si.ProductID,
-                    SUM(si.Quantity) AS TotalQty,
-                    MAX(si.UnitPrice) AS UnitPrice
-                  FROM SaleItems si
-                  JOIN Sales s   ON si.SaleID  = s.SaleID
-                  JOIN Clients c ON s.ClientID = c.ClientID
-                  WHERE CAST(s.SaleDate AS DATE) = @date
-                    AND s.IsPosted = 1
-                    AND s.SaleType IN ('Cash','Credit')
-                  GROUP BY c.ClientID, c.ClientName, si.ProductID
+                    t.ProductID,
+                    SUM(t.Qty) AS TotalQty,
+                    MAX(t.UnitPrice) AS UnitPrice
+                  FROM (
+                      SELECT s.ClientID, si.ProductID, si.Quantity AS Qty, si.UnitPrice
+                      FROM SaleItems si
+                      JOIN Sales s ON si.SaleID = s.SaleID
+                      WHERE CAST(s.SaleDate AS DATE) = @date
+                        AND s.IsPosted = 1
+                        AND s.SaleType IN ('Cash','Credit')
+                      
+                      UNION ALL
+                      
+                      SELECT sr.ClientID, ri.ProductID, -ri.Quantity AS Qty, ri.UnitPrice
+                      FROM ReturnItems ri
+                      JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                      WHERE CAST(sr.ReturnDate AS DATE) = @date
+                  ) t
+                  JOIN Clients c ON t.ClientID = c.ClientID
+                  GROUP BY c.ClientID, c.ClientName, t.ProductID
                   ORDER BY c.ClientName",
                 DbHelper.P("@date", date.Date));
         }
 
-        /// <summary>إجمالي الفاتورة وآخر توريد والمديونية لكل عميل في يوم معين</summary>
+        /// <summary>إجمالي الفاتورة وآخر توريد والمديونية لكل عميل في يوم معين — مخصوماً منها المرتجعات</summary>
         public static DataTable GetDailyClientTotals(DateTime date)
         {
             return DbHelper.Query(
                 @"SELECT
                     c.ClientID,
                     c.ClientName,
-                    SUM(s.TotalAmount) AS TotalInvoice,
+                    SUM(t.Amt) AS TotalInvoice,
                     ISNULL((
                         SELECT TOP 1 ct.Credit
                         FROM ClientTransactions ct
@@ -732,12 +742,21 @@ namespace ChickenDist.DAL
                         ORDER BY ct.TransDate DESC
                     ), 0) AS LastPayment,
                     ISNULL(cb.Balance, c.OpeningBalance) AS Balance
-                  FROM Sales s
-                  JOIN Clients c ON s.ClientID = c.ClientID
+                  FROM (
+                      SELECT ClientID, TotalAmount AS Amt
+                      FROM Sales
+                      WHERE CAST(SaleDate AS DATE) = @date
+                        AND IsPosted = 1
+                        AND SaleType IN ('Cash','Credit')
+
+                      UNION ALL
+
+                      SELECT ClientID, -TotalAmount AS Amt
+                      FROM SalesReturns
+                      WHERE CAST(ReturnDate AS DATE) = @date
+                  ) t
+                  JOIN Clients c ON t.ClientID = c.ClientID
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                  WHERE CAST(s.SaleDate AS DATE) = @date
-                    AND s.IsPosted = 1
-                    AND s.SaleType IN ('Cash','Credit')
                   GROUP BY c.ClientID, c.ClientName, c.OpeningBalance, cb.Balance
                   ORDER BY c.ClientName",
                 DbHelper.P("@date", date.Date));

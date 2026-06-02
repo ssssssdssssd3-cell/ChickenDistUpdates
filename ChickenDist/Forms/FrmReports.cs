@@ -728,7 +728,7 @@ namespace ChickenDist.Forms
 						decimal qty = 0;
 						if (qtyMap.ContainsKey(cid) && qtyMap[cid].ContainsKey(pid))
 							qty = qtyMap[cid][pid];
-						row[i + 1] = qty > 0 ? qty.ToString("N0") : "";
+						row[i + 1] = qty != 0 ? qty.ToString("N0") : "";
 					}
 
 					decimal inv = 0, pay = 0, bal = 0;
