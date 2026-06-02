@@ -1,4 +1,4 @@
-version=1.0.40
+version=1.0.41
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=25D92F385FA4699E390156AAA8F004EE384D257F1BE781752382EE183958DF82
-changelog=إصلاح خطأ في جلب بيانات مرتجع المشتريات بقاعدة البيانات وتحديث اسم العمود إلى الاسم الصحيح الفعلي.
+sha256=90A93B632518BA3E80D8E7A40AF9A7A6BD7041A89A6C5BDB8C78DEB1022F2CED
+changelog=تصحيح اتجاه شريط البحث والفلاتر (من اليمين إلى اليسار) ليعرض الأسماء والترشيحات والتسميات بشكل صحيح مع اتجاه اللغة العربية.

@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Top,
 				Height = 50,
-				FlowDirection = FlowDirection.RightToLeft,
+				FlowDirection = FlowDirection.LeftToRight,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 10, 10, 10),
 				WrapContents = false
