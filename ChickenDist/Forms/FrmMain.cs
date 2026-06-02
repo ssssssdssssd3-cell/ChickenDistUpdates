@@ -119,50 +119,70 @@ namespace ChickenDist.Forms
         private void BuildNavBar()
         {
             pnlNavBar.Controls.Clear();
-            
-            var items = new (string icon, string label, string screen, Action action)[]
+
+            // كل مجموعة: (icon, label, screen, action, groupColor)
+            // groupColor = null يعني الشفافية الافتراضية
+            var groups = new (string icon, string label, string screen, Action action, Color btnColor)[]
             {
-                ("🏠", "الرئيسية",          "",               () => NavigateTo(new FrmDashboard())),
-                ("📦", "الأصناف",            "Products",       () => NavigateTo(new FrmProducts())),
-                ("⚖️", "جرد المخزن",        "Products",       () => NavigateTo(new FrmInventory())),
-                ("👥", "العملاء",            "Clients",        () => NavigateTo(new FrmClients())),
-                ("🚗", "المركبات",            "Vehicles",       () => NavigateTo(new FrmVehicles())),
-                ("🤝", "الموردين",           "Suppliers",      () => NavigateTo(new FrmSuppliers())),
-                ("🛒", "فاتورة مبيعات",      "Sales",          () => NavigateTo(new FrmSale())),
-                ("📋", "سجل المبيعات",       "Sales",          () => NavigateTo(new FrmSalesList())),
-                ("↩", "مرتجع بيع",          "Returns",        () => NavigateTo(new FrmReturn())),
-                ("📥", "فاتورة مشتريات",     "Purchases",      () => NavigateTo(new FrmPurchase())),
-                ("↩", "مرتجع شراء",          "Purchases",      () => NavigateTo(new FrmPurchaseReturn())),
-                ("🚚", "حمولة مندوب",       "DriverHandover", () => NavigateTo(new FrmDriverHandover())),
-                ("🖥️", "مراقبة المناديب",    "DriverHandover", () => NavigateTo(new FrmDriversMonitor())),
-                ("📋", "عهدة المناديب",      "DriverHandover", () => NavigateTo(new FrmDriverCustody())),
-                ("💰", "الخزنة",             "CashBox",        () => NavigateTo(new FrmCashBox())),
-                ("📊", "التقارير",           "Reports",        () => NavigateTo(new FrmReports())),
-                ("📑", "تقفيل يومية",        "Reports",        () => NavigateTo(new FrmDailyClosing())),
-                ("👔", "الموظفين",           "Employees",      () => NavigateTo(new FrmEmployees())),
-                ("⚙️", "الإعدادات",         "",               () => new FrmSettings().ShowDialog()),
-                ("🔄", "تحديث البرنامج",     "",               () => UpdateManager.CheckForUpdates(true)),
+                // ── الرئيسية ──────────────────────────────────────────
+                ("🏠", "الرئيسية",        "",               () => NavigateTo(new FrmDashboard()),      Color.FromArgb(55, 65, 81)),
+
+                // ── البضاعة والمخزون ──────────────────────────────────
+                ("📦", "الأصناف",          "Products",       () => NavigateTo(new FrmProducts()),       Color.FromArgb(17, 94, 89)),
+                ("⚖️", "جرد المخزن",      "Products",       () => NavigateTo(new FrmInventory()),      Color.FromArgb(17, 94, 89)),
+
+                // ── العملاء والموردين ──────────────────────────────────
+                ("👥", "العملاء",          "Clients",        () => NavigateTo(new FrmClients()),        Color.FromArgb(30, 64, 175)),
+                ("🤝", "الموردين",         "Suppliers",      () => NavigateTo(new FrmSuppliers()),      Color.FromArgb(30, 64, 175)),
+                ("🚗", "المركبات",          "Vehicles",       () => NavigateTo(new FrmVehicles()),       Color.FromArgb(30, 64, 175)),
+
+                // ── المبيعات (مجموعة متكاملة) ─────────────────────────
+                ("🛒", "فاتورة بيع",       "Sales",          () => NavigateTo(new FrmSale()),           Color.FromArgb(5, 122, 85)),
+                ("↩", "مرتجع بيع",        "Returns",        () => NavigateTo(new FrmReturn()),         Color.FromArgb(5, 122, 85)),
+                ("📋", "سجل المبيعات",     "Sales",          () => NavigateTo(new FrmSalesList()),      Color.FromArgb(5, 122, 85)),
+
+                // ── المشتريات (مجموعة متكاملة) ───────────────────────
+                ("📥", "فاتورة شراء",      "Purchases",      () => NavigateTo(new FrmPurchase()),       Color.FromArgb(120, 53, 15)),
+                ("↩", "مرتجع شراء",       "Purchases",      () => NavigateTo(new FrmPurchaseReturn()), Color.FromArgb(120, 53, 15)),
+                ("📋", "سجل المشتريات",    "Purchases",      () => NavigateTo(new FrmPurchasesList()),  Color.FromArgb(120, 53, 15)),
+
+                // ── المناديب ──────────────────────────────────────────
+                ("🚚", "حمولة مندوب",     "DriverHandover", () => NavigateTo(new FrmDriverHandover()), Color.FromArgb(109, 40, 217)),
+                ("🖥️", "مراقبة المناديب", "DriverHandover", () => NavigateTo(new FrmDriversMonitor()), Color.FromArgb(109, 40, 217)),
+                ("📋", "عهدة المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverCustody()),  Color.FromArgb(109, 40, 217)),
+
+                // ── المالية ───────────────────────────────────────────
+                ("💰", "الخزنة",           "CashBox",        () => NavigateTo(new FrmCashBox()),        Color.FromArgb(159, 18, 57)),
+                ("📊", "التقارير",         "Reports",        () => NavigateTo(new FrmReports()),        Color.FromArgb(159, 18, 57)),
+                ("📑", "تقفيل يومية",      "Reports",        () => NavigateTo(new FrmDailyClosing()),   Color.FromArgb(159, 18, 57)),
+
+                // ── الإدارة ───────────────────────────────────────────
+                ("👔", "الموظفين",         "Employees",      () => NavigateTo(new FrmEmployees()),      Color.FromArgb(55, 65, 81)),
+                ("⚙️", "الإعدادات",       "",               () => new FrmSettings().ShowDialog(),      Color.FromArgb(55, 65, 81)),
+                ("🔄", "تحديث البرنامج",   "",               () => UpdateManager.CheckForUpdates(true), Color.FromArgb(55, 65, 81)),
             };
 
-            foreach (var item in items)
+            foreach (var item in groups)
             {
                 if (!string.IsNullOrEmpty(item.screen) && !Session.CanAccess(item.screen)) continue;
 
                 var btn = new Button
                 {
-                    Text = $"{item.icon} {item.label}",
-                    Size = new Size(130, 45),
+                    Text      = $"{item.icon}\n{item.label}",
+                    Size      = new Size(105, 52),
                     FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.Transparent,
+                    BackColor = item.btnColor,
                     ForeColor = Color.White,
-                    Font = Theme.FontArabic,
+                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Margin = new Padding(5),
-                    Cursor = Cursors.Hand
+                    Margin    = new Padding(3, 4, 3, 4),
+                    Cursor    = Cursors.Hand,
+                    ImageAlign = ContentAlignment.TopCenter
                 };
-                btn.FlatAppearance.BorderSize = 0;
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 255, 255, 255);
-                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(80, Theme.Accent.R, Theme.Accent.G, Theme.Accent.B);
+                btn.FlatAppearance.BorderSize          = 0;
+                btn.FlatAppearance.BorderColor          = Color.FromArgb(80, 255, 255, 255);
+                btn.FlatAppearance.MouseOverBackColor   = ControlPaint.Light(item.btnColor, 0.3f);
+                btn.FlatAppearance.MouseDownBackColor   = ControlPaint.Dark(item.btnColor, 0.1f);
                 var act = item.action;
                 btn.Click += (s, e) => act();
                 pnlNavBar.Controls.Add(btn);

@@ -1,4 +1,4 @@
-version=1.0.31
+version=1.0.32
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=154895EC3025BF52110D46F4B51A8BB6E1B84F5DE8767C2E335011D4C70B3F5F
-changelog=إصلاح جذري لشاشة المركبات: إعادة بناء لوحة التفاصيل باستخدام TableLayoutPanel بدلاً من المواضع الثابتة لإظهار حقل نوع العربية بشكل صحيح وتمكين حفظ المركبات الجديدة.
+sha256=417D7572A42C78079BD3C386B2D83C5C6142DC4561331DE9826B1AA9D596AFF5
+changelog=إضافة شاشة سجل المشتريات، إعادة ترتيب وتلوين أزرار القائمة الرئيسية بشكل منظم ومميز، وإضافة شاشة المركبات لصلاحيات الموظفين.

@@ -201,10 +201,10 @@ namespace ChickenDist.Forms
         private Button btnSave;
 
         private static readonly string[] Screens = {
-            "Sales", "DriverHandover", "Clients", "CashBox", "Products", "Returns", "Reports", "Employees", "Suppliers", "Purchases"
+            "Sales", "DriverHandover", "Clients", "CashBox", "Products", "Returns", "Reports", "Employees", "Suppliers", "Purchases", "Vehicles"
         };
         private static readonly string[] ScreenNames = {
-            "المبيعات", "تقفيل الحمولة", "العملاء", "الخزنة", "الأصناف", "المرتجع", "التقارير", "الموظفين", "الموردين", "المشتريات"
+            "المبيعات", "تقفيل الحمولة", "العملاء", "الخزنة", "الأصناف", "المرتجع", "التقارير", "الموظفين", "الموردين", "المشتريات", "المركبات"
         };
 
         public FrmPermissions(int empID, string empName)
