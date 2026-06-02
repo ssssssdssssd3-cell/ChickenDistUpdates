@@ -34,6 +34,8 @@ namespace ChickenDist.Forms
 		private Label lblCashSummary;
 		private Label lblCreditSummary;
 		private Label lblDriverSummary;
+		private ComboBox cboClientFilter;
+		private TextBox txtProductSearch;
 		private DataTable _allSalesDt;
 
 		public FrmSalesList()
@@ -108,6 +110,61 @@ namespace ChickenDist.Forms
 			cboTypeFilter.Items.AddRange(new object[4] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label3, cboTypeFilter });
+
+			Label labelClient = new Label
+			{
+				Text = "العميل:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(15, 5, 0, 0)
+			};
+			cboClientFilter = new ComboBox
+			{
+				Width = 130,
+				Height = 26,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
+			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
+			{
+				cboClientFilter.Items.Add(new ComboItem((int)row["ClientID"], row["ClientName"].ToString()));
+			}
+			cboClientFilter.DisplayMember = "Text";
+			cboClientFilter.SelectedIndex = 0;
+			cboClientFilter.SelectedIndexChanged += delegate
+			{
+				LoadSales();
+			};
+			flowLayoutPanel.Controls.AddRange(new Control[2] { labelClient, cboClientFilter });
+
+			Label labelProduct = new Label
+			{
+				Text = "بحث صنف:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(15, 5, 0, 0)
+			};
+			txtProductSearch = new TextBox
+			{
+				Width = 120,
+				Height = 26,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			txtProductSearch.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Enter)
+				{
+					LoadSales();
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+				}
+			};
+			flowLayoutPanel.Controls.AddRange(new Control[2] { labelProduct, txtProductSearch });
 			Label label4 = new Label
 			{
 				Text = "بحث:",
@@ -377,7 +434,13 @@ namespace ChickenDist.Forms
 		{
 			dgSales.Rows.Clear();
 			dgItems.Rows.Clear();
-			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+			int? clientID = null;
+			if (cboClientFilter != null && cboClientFilter.SelectedItem is ComboItem ci && ci.ID > 0)
+			{
+				clientID = ci.ID;
+			}
+			string productSearch = (txtProductSearch != null && !string.IsNullOrWhiteSpace(txtProductSearch.Text)) ? txtProductSearch.Text.Trim() : null;
+			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch);
 			FilterData();
 		}
 

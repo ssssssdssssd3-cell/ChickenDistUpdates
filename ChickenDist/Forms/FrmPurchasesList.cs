@@ -15,6 +15,8 @@ namespace ChickenDist.Forms
 		private DateTimePicker dtpTo;
 		private TextBox txtSearch;
 		private ComboBox cboTypeFilter;
+		private ComboBox cboSupplierFilter;
+		private TextBox txtProductSearch;
 		private Button btnLoad;
 		private Button btnNewPurchase;
 		private Label lblTotalSummary;
@@ -101,6 +103,61 @@ namespace ChickenDist.Forms
 			cboTypeFilter.SelectedIndex = 0;
 			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
 			filterPanel.Controls.AddRange(new Control[2] { lblType, cboTypeFilter });
+
+			Label lblSupplier = new Label
+			{
+				Text = "المورد:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(15, 5, 0, 0)
+			};
+			cboSupplierFilter = new ComboBox
+			{
+				Width = 130,
+				Height = 26,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			cboSupplierFilter.Items.Add(new ComboItem(0, "الكل"));
+			foreach (DataRow row in SupplierDAL.GetAll(true).Rows)
+			{
+				cboSupplierFilter.Items.Add(new ComboItem((int)row["SupplierID"], row["SupplierName"].ToString()));
+			}
+			cboSupplierFilter.DisplayMember = "Text";
+			cboSupplierFilter.SelectedIndex = 0;
+			cboSupplierFilter.SelectedIndexChanged += delegate
+			{
+				LoadPurchases();
+			};
+			filterPanel.Controls.AddRange(new Control[2] { lblSupplier, cboSupplierFilter });
+
+			Label lblProduct = new Label
+			{
+				Text = "بحث صنف:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(15, 5, 0, 0)
+			};
+			txtProductSearch = new TextBox
+			{
+				Width = 120,
+				Height = 26,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			txtProductSearch.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Enter)
+				{
+					LoadPurchases();
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+				}
+			};
+			filterPanel.Controls.AddRange(new Control[2] { lblProduct, txtProductSearch });
 
 			Label lblSearch = new Label
 			{
@@ -369,7 +426,13 @@ namespace ChickenDist.Forms
 		{
 			dgPurchases.Rows.Clear();
 			dgItems.Rows.Clear();
-			_allPurchasesDt = PurchaseDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+			int? supplierID = null;
+			if (cboSupplierFilter != null && cboSupplierFilter.SelectedItem is ComboItem ci && ci.ID > 0)
+			{
+				supplierID = ci.ID;
+			}
+			string productSearch = (txtProductSearch != null && !string.IsNullOrWhiteSpace(txtProductSearch.Text)) ? txtProductSearch.Text.Trim() : null;
+			_allPurchasesDt = PurchaseDAL.GetAll(dtpFrom.Value, dtpTo.Value, supplierID, productSearch);
 			FilterData();
 		}
 

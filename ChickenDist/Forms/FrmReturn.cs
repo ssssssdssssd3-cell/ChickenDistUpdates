@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     public class FrmReturn : Form
     {
         private ComboBox cboSale, cboClient;
-        private TextBox txtNotes;
+        private TextBox txtNotes, txtProductSearch;
         private DataGridView dgItems;
         private Button btnSave;
         private Label lblTotal;
@@ -133,10 +133,30 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain 
             };
 
+            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtProductSearch = new TextBox 
+            { 
+                Width = 150, 
+                Height = 26, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.Yes, 
+                BorderStyle = BorderStyle.FixedSingle 
+            };
+            txtProductSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    LoadSalesCombo();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+
             var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblSale, cboSale, lblClient, cboClient, lblNotes, txtNotes });
+            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
 
             // ===== 2. Grid panel =====
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 10, 10) };
@@ -230,16 +250,40 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
-        private void LoadCombos()
+        private void LoadSalesCombo()
         {
             cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
 
-            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date);
+            int? clientID = null;
+            if (cboClient.SelectedItem is ComboItem cc && cc.ID > 0)
+                clientID = cc.ID;
+
+            string prodSearch = txtProductSearch != null ? txtProductSearch.Text.Trim() : null;
+            if (string.IsNullOrEmpty(prodSearch)) prodSearch = null;
+
+            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, clientID, prodSearch);
             cboSale.Items.Clear();
             cboSale.Items.Add(new ComboItem(0, "-- اختر الفاتورة الأصلية لمرتجعاتها --"));
             foreach (DataRow r in dtS.Rows)
                 cboSale.Items.Add(new ComboItem((int)r["SaleID"], $"{r["SaleCode"]} | {r["ClientName"]}"));
             cboSale.DisplayMember = "Text";
+
+            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+            if (cboSale.Items.Count > 0)
+                cboSale.SelectedIndex = 0;
+        }
+
+        private void CboClient_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboSale.SelectedIndex <= 0)
+            {
+                LoadSalesCombo();
+            }
+        }
+
+        private void LoadCombos()
+        {
+            cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
 
             var dtC = ClientDAL.GetAll(true);
             cboClient.Items.Clear();
@@ -247,13 +291,11 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dtC.Rows)
                 cboClient.Items.Add(new ComboItem((int)r["ClientID"], r["ClientName"].ToString()));
             cboClient.DisplayMember = "Text";
+            cboClient.SelectedIndex = 0;
 
-            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
-            
-            if (cboSale.Items.Count > 0)
-                cboSale.SelectedIndex = 0;
-            if (cboClient.Items.Count > 0)
-                cboClient.SelectedIndex = 0;
+            cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
+
+            LoadSalesCombo();
         }
 
         private void CboSale_SelectedIndexChanged(object sender, EventArgs e)
@@ -270,6 +312,7 @@ namespace ChickenDist.Forms
                 if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
                 {
                     int clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                     foreach (ComboItem item in cboClient.Items)
                     {
                         if (item.ID == clientID)
@@ -278,12 +321,15 @@ namespace ChickenDist.Forms
                             break;
                         }
                     }
+                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
                     cboClient.Enabled = false; // Lock client selection
                 }
                 else
                 {
+                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                     if (cboClient.Items.Count > 0)
                         cboClient.SelectedIndex = 0;
+                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
                     cboClient.Enabled = true;
                 }
 
@@ -318,9 +364,11 @@ namespace ChickenDist.Forms
             }
             else
             {
+                cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                 cboClient.Enabled = true;
                 if (cboClient.Items.Count > 0)
                     cboClient.SelectedIndex = 0;
+                cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             }
 
             dgItems.CellValueChanged += DgItems_CellValueChanged;

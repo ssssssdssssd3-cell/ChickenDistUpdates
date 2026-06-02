@@ -10,6 +10,12 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(DateTime from, DateTime to)
         {
+            return GetAll(from, to, null, null);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch)
+        {
+            string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
                          ISNULL(c.ClientName,N'---') AS ClientName,
@@ -26,8 +32,18 @@ namespace ChickenDist.DAL
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    AND (@clientID IS NULL OR s.ClientID = @clientID)
+                    AND (@product IS NULL OR EXISTS (
+                        SELECT 1 FROM SaleItems si2
+                        JOIN Products pr ON si2.ProductID = pr.ProductID
+                        WHERE si2.SaleID = s.SaleID
+                          AND (pr.ProductName LIKE N'%' + @product + N'%'
+                            OR pr.ProductCode LIKE N'%' + @product + N'%')
+                    ))
                   ORDER BY s.SaleDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value));
         }
 
         public static DataTable GetItems(int saleID)

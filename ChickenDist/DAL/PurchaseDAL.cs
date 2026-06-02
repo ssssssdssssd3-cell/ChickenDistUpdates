@@ -37,6 +37,12 @@ namespace ChickenDist.DAL
         // ─── قراءة الفواتير المؤكدة ──────────────────────────────────────────────
         public static DataTable GetAll(DateTime from, DateTime to)
         {
+            return GetAll(from, to, null, null);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? supplierID, string productSearch)
+        {
+            string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
                 @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, N'---') AS SupplierName,
@@ -55,8 +61,18 @@ namespace ChickenDist.DAL
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
+                    AND (@supplierID IS NULL OR p.SupplierID = @supplierID)
+                    AND (@product IS NULL OR EXISTS (
+                        SELECT 1 FROM PurchaseItems pi2
+                        JOIN Products pr ON pi2.ProductID = pr.ProductID
+                        WHERE pi2.PurchaseID = p.PurchaseID
+                          AND (pr.ProductName LIKE N'%' + @product + N'%'
+                            OR pr.ProductCode LIKE N'%' + @product + N'%')
+                    ))
                   ORDER BY p.PurchaseDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value));
         }
 
         // ─── أصناف فاتورة معينة ──────────────────────────────────────────────────

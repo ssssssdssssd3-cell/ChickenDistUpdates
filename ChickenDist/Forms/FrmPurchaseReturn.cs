@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     public class FrmPurchaseReturn : Form
     {
         private ComboBox cboPurchase, cboSupplier;
-        private TextBox txtNotes;
+        private TextBox txtNotes, txtProductSearch;
         private DataGridView dgItems;
         private Button btnSave;
         private Label lblTotal;
@@ -139,6 +139,27 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
 
+            // بحث صنف
+            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtProductSearch = new TextBox 
+            { 
+                Width = 150, 
+                Height = 26, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.Yes, 
+                BorderStyle = BorderStyle.FixedSingle 
+            };
+            txtProductSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    LoadPurchasesCombo();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+
             // ملاحظات
             var lblNotes = new Label { Text = "ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
@@ -147,6 +168,7 @@ namespace ChickenDist.Forms
                 lblFrom, dtpFrom, lblTo, dtpTo, btnSearch,
                 lblPur, cboPurchase, lblPurchaseInfo,
                 lblSup, cboSupplier,
+                lblProduct, txtProductSearch,
                 lblNotes, txtNotes
             });
 
@@ -249,18 +271,41 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
-        private void LoadCombos()
+        private void LoadPurchasesCombo()
         {
             cboPurchase.SelectedIndexChanged -= CboPurchase_SelectedIndexChanged;
 
-            var dtP = PurchaseDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date);
+            int? supplierID = null;
+            if (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0)
+                supplierID = cs.ID;
+
+            string prodSearch = txtProductSearch != null ? txtProductSearch.Text.Trim() : null;
+            if (string.IsNullOrEmpty(prodSearch)) prodSearch = null;
+
+            var dtP = PurchaseDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, supplierID, prodSearch);
             cboPurchase.Items.Clear();
             cboPurchase.Items.Add(new ComboItem(0, "-- اختر فاتورة الشراء الأصلية --"));
             foreach (DataRow r in dtP.Rows)
                 cboPurchase.Items.Add(new ComboItem((int)r["PurchaseID"],
                     $"{r["PurchaseCode"]} | {r["SupplierName"]} | {Convert.ToDecimal(r["TotalAmount"]):N2} ج"));
             cboPurchase.DisplayMember = "Text";
-            cboPurchase.SelectedIndex = 0;
+
+            cboPurchase.SelectedIndexChanged += CboPurchase_SelectedIndexChanged;
+            if (cboPurchase.Items.Count > 0)
+                cboPurchase.SelectedIndex = 0;
+        }
+
+        private void CboSupplier_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboPurchase.SelectedIndex <= 0)
+            {
+                LoadPurchasesCombo();
+            }
+        }
+
+        private void LoadCombos()
+        {
+            cboSupplier.SelectedIndexChanged -= CboSupplier_SelectedIndexChanged;
 
             var dtS = SupplierDAL.GetAll(true);
             cboSupplier.Items.Clear();
@@ -270,7 +315,9 @@ namespace ChickenDist.Forms
             cboSupplier.DisplayMember = "Text";
             cboSupplier.SelectedIndex = 0;
 
-            cboPurchase.SelectedIndexChanged += CboPurchase_SelectedIndexChanged;
+            cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
+
+            LoadPurchasesCombo();
         }
 
         private void CboPurchase_SelectedIndexChanged(object sender, EventArgs e)
@@ -279,7 +326,15 @@ namespace ChickenDist.Forms
             lblTotal.Text = "الإجمالي: 0.00 ج";
             lblPurchaseInfo.Text = "";
 
-            if (!(cboPurchase.SelectedItem is ComboItem ci) || ci.ID == 0) return;
+            if (!(cboPurchase.SelectedItem is ComboItem ci) || ci.ID == 0)
+            {
+                cboSupplier.SelectedIndexChanged -= CboSupplier_SelectedIndexChanged;
+                cboSupplier.Enabled = true;
+                if (cboSupplier.Items.Count > 0)
+                    cboSupplier.SelectedIndex = 0;
+                cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
+                return;
+            }
 
             int purchaseID = ci.ID;
 
@@ -295,9 +350,20 @@ namespace ChickenDist.Forms
                 if (dtPur.Rows[0]["SupplierID"] != DBNull.Value)
                 {
                     int sid = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+                    cboSupplier.SelectedIndexChanged -= CboSupplier_SelectedIndexChanged;
                     for (int i = 0; i < cboSupplier.Items.Count; i++)
                         if (cboSupplier.Items[i] is ComboItem item && item.ID == sid)
                         { cboSupplier.SelectedIndex = i; break; }
+                    cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
+                    cboSupplier.Enabled = false; // Lock supplier selection
+                }
+                else
+                {
+                    cboSupplier.SelectedIndexChanged -= CboSupplier_SelectedIndexChanged;
+                    if (cboSupplier.Items.Count > 0)
+                        cboSupplier.SelectedIndex = 0;
+                    cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
+                    cboSupplier.Enabled = true;
                 }
             }
 
