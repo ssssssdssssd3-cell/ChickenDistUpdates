@@ -110,11 +110,12 @@ namespace ChickenDist.Forms
             formTbl.Controls.Add(lblActive, 0, 4);
             formTbl.Controls.Add(chkActive, 1, 4);
             formTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // ====== أزرار الحفظ ======
             var pnlBtns = new FlowLayoutPanel
             {
-                Dock          = DockStyle.Top,
+                Dock          = DockStyle.Bottom,
                 FlowDirection = FlowDirection.LeftToRight,
                 AutoSize      = true,
                 BackColor     = Theme.BgCard,
@@ -133,11 +134,9 @@ namespace ChickenDist.Forms
 
             pnlBtns.Controls.AddRange(new Control[] { btnNewVehicle, btnSaveVehicle, btnDeleteVehicle });
 
-            pnlDetails.Controls.Add(pnlBtns);
+            formTbl.Dock = DockStyle.Fill;
             pnlDetails.Controls.Add(formTbl);
-            // ملاحظة: Controls تُعرض من الأسفل للأعلى في Panel—نضيف الأزرار قبل الجدول
-            // لكن بسبب Dock.Top سيظهر formTbl أولاً ثم pnlBtns—لذا نستخدم SendToBack
-            pnlBtns.BringToFront();
+            pnlDetails.Controls.Add(pnlBtns);
 
             dgVehicles = new DataGridView
             {
