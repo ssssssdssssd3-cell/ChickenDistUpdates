@@ -30,70 +30,114 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
+            // ====== Title Bar ======
             var pnlTop = Theme.MakeTitleBar("🚗 المركبات", "سجل المركبات وأنواع العربيات للمصروفات والمهام اللوجستية");
-            this.Controls.Add(pnlTop);
+            pnlTop.Dock = DockStyle.Top;
 
-            var tbl = new TableLayoutPanel
+            // ====== Main Split: Left = details, Right = grid ======
+            var splitMain = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                Dock      = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 1,
-                Padding = new Padding(10),
-                BackColor = Theme.BgMain
+                RowCount   = 1,
+                Padding    = new Padding(8),
+                BackColor  = Theme.BgMain
             };
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f));
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60f));
+            splitMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 340f)); // عمود التفاصيل
+            splitMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // عمود الجدول
 
-            // Details Panel with absolute positioning and auto-scroll to avoid layout bugs
-            var pnlDetails = new Panel 
-            { 
-                Dock = DockStyle.Fill, 
+            // ====== Details Panel (TableLayoutPanel بدلاً من absolute) ======
+            var pnlDetails = new Panel
+            {
+                Dock      = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15),
-                AutoScroll = true
+                Padding   = new Padding(12)
             };
 
-            int y = 25;
+            // نبني TableLayoutPanel للحقول بداخل Panel العادي
+            var formTbl = new TableLayoutPanel
+            {
+                Dock        = DockStyle.Top,
+                AutoSize    = true,
+                ColumnCount = 2,
+                RowCount    = 6,
+                BackColor   = Theme.BgCard,
+                Padding     = new Padding(0),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+            };
+            formTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f));   // عمود الليبل
+            formTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));   // عمود الإنبوت
 
-            // Row 0: نوع العربية
-            pnlDetails.Controls.Add(new Label { Text = "نوع العربية:", Location = new Point(230, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtVehicleType = new TextBox { Location = new Point(20, y - 3), Width = 200, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlDetails.Controls.Add(txtVehicleType);
-            y += 45;
+            // دالة مساعدة لإضافة صف Label + Control
+            Action<string, Control, int> addRow = (labelText, ctrl, rowIdx) =>
+            {
+                var lbl = new Label
+                {
+                    Text      = labelText,
+                    AutoSize  = false,
+                    Dock      = DockStyle.Fill,
+                    ForeColor = Theme.TextMain,
+                    Font      = Theme.FontBold,
+                    TextAlign = System.Drawing.ContentAlignment.MiddleRight,
+                    Padding   = new Padding(0, 0, 6, 0)
+                };
+                ctrl.Dock = DockStyle.Fill;
+                formTbl.Controls.Add(lbl,  0, rowIdx);
+                formTbl.Controls.Add(ctrl, 1, rowIdx);
+                formTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            };
 
-            // Row 1: اسم المركبة
-            pnlDetails.Controls.Add(new Label { Text = "اسم المركبة:", Location = new Point(230, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtVehicleName = new TextBox { Location = new Point(20, y - 3), Width = 200, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlDetails.Controls.Add(txtVehicleName);
-            y += 45;
+            txtVehicleType   = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Height = 28 };
+            txtVehicleName   = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Height = 28 };
+            txtLicensePlate  = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Height = 28 };
+            txtNotes         = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Multiline = true, Height = 70 };
+            chkActive        = new CheckBox { Text = "نشطة ✅", ForeColor = Theme.TextMain, Font = Theme.FontBold, Checked = true, Dock = DockStyle.Fill };
 
-            // Row 2: رقم اللوحة
-            pnlDetails.Controls.Add(new Label { Text = "رقم اللوحة:", Location = new Point(230, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtLicensePlate = new TextBox { Location = new Point(20, y - 3), Width = 200, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlDetails.Controls.Add(txtLicensePlate);
-            y += 45;
+            formTbl.RowStyles.Clear();
+            addRow("نوع العربية:", txtVehicleType,  0);
+            addRow("اسم المركبة:", txtVehicleName,  1);
+            addRow("رقم اللوحة:", txtLicensePlate, 2);
 
-            // Row 3: ملاحظات
-            pnlDetails.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(230, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtNotes = new TextBox { Location = new Point(20, y - 3), Width = 200, Height = 80, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlDetails.Controls.Add(txtNotes);
-            y += 95;
+            // ملاحظات (صف أطول)
+            var lblNotes = new Label { Text = "ملاحظات:", AutoSize = false, Dock = DockStyle.Fill, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = System.Drawing.ContentAlignment.MiddleRight, Padding = new Padding(0, 0, 6, 0) };
+            txtNotes.Dock = DockStyle.Fill;
+            formTbl.Controls.Add(lblNotes, 0, 3);
+            formTbl.Controls.Add(txtNotes, 1, 3);
+            formTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 80f));
 
-            // Row 4: نشط
-            chkActive = new CheckBox { Text = "المركبة نشطة", Location = new Point(110, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true, Font = Theme.FontBold };
-            pnlDetails.Controls.Add(chkActive);
-            y += 45;
+            // صف المربع نشطة
+            var lblActive = new Label { Text = "الحالة:", AutoSize = false, Dock = DockStyle.Fill, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = System.Drawing.ContentAlignment.MiddleRight, Padding = new Padding(0, 0, 6, 0) };
+            formTbl.Controls.Add(lblActive, 0, 4);
+            formTbl.Controls.Add(chkActive, 1, 4);
+            formTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
 
-            // Buttons: New, Save, Delete
-            btnNewVehicle = Theme.MakeButton("🆕 جديد", 240, y, 80, 35, Color.FromArgb(60, 100, 60));
-            btnSaveVehicle = Theme.MakeButton("💾 حفظ المركبة", 100, y, 130, 35, Theme.Accent);
-            btnDeleteVehicle = Theme.MakeButton("🗑 حذف", 15, y, 75, 35, Color.FromArgb(140, 40, 40));
+            // ====== أزرار الحفظ ======
+            var pnlBtns = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Top,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize      = true,
+                BackColor     = Theme.BgCard,
+                Padding       = new Padding(0, 10, 0, 0)
+            };
 
-            btnNewVehicle.Click += (s, e) => ClearVehicle();
-            btnSaveVehicle.Click += BtnSaveVehicle_Click;
+            btnNewVehicle    = new Button { Text = "🆕 جديد",         Width = 90,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(60,100,60),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
+            btnSaveVehicle   = new Button { Text = "💾 حفظ المركبة",   Width = 140, Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent,                ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
+            btnDeleteVehicle = new Button { Text = "🗑 حذف",           Width = 80,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(140,40,40),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand };
+            foreach (var b in new[] { btnNewVehicle, btnSaveVehicle, btnDeleteVehicle })
+                b.FlatAppearance.BorderSize = 0;
+
+            btnNewVehicle.Click    += (s, e) => ClearVehicle();
+            btnSaveVehicle.Click   += BtnSaveVehicle_Click;
             btnDeleteVehicle.Click += BtnDeleteVehicle_Click;
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNewVehicle, btnSaveVehicle, btnDeleteVehicle });
+            pnlBtns.Controls.AddRange(new Control[] { btnNewVehicle, btnSaveVehicle, btnDeleteVehicle });
+
+            pnlDetails.Controls.Add(pnlBtns);
+            pnlDetails.Controls.Add(formTbl);
+            // ملاحظة: Controls تُعرض من الأسفل للأعلى في Panel—نضيف الأزرار قبل الجدول
+            // لكن بسبب Dock.Top سيظهر formTbl أولاً ثم pnlBtns—لذا نستخدم SendToBack
+            pnlBtns.BringToFront();
 
             dgVehicles = new DataGridView
             {
@@ -120,15 +164,15 @@ namespace ChickenDist.Forms
             dgVehicles.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات" });
             dgVehicles.SelectionChanged += DgVehicles_SelectionChanged;
 
-            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 0, 0) };
+            var pnlGrid = new Panel { Dock = DockStyle.Fill };
             pnlGrid.Controls.Add(dgVehicles);
 
-            tbl.Controls.Add(pnlDetails, 0, 0);
-            tbl.Controls.Add(pnlGrid, 1, 0);
+            splitMain.Controls.Add(pnlDetails, 0, 0);
+            splitMain.Controls.Add(pnlGrid,    1, 0);
 
-            this.Controls.Add(tbl);
+            this.Controls.Add(splitMain);
+            this.Controls.Add(pnlTop);
             pnlTop.BringToFront();
-            tbl.SendToBack();
             Theme.ApplyFormRTL(this);
             LoadVehicles();
         }
