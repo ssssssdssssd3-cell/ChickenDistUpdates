@@ -18,6 +18,8 @@ namespace ChickenDist.Forms
 		private Button btnLoad;
 		private Button btnNewPurchase;
 		private Label lblTotalSummary;
+		private Label lblReturnSummary;
+		private Label lblNetSummary;
 		private Label lblCashSummary;
 		private Label lblCreditSummary;
 		private DataTable _allPurchasesDt;
@@ -185,9 +187,23 @@ namespace ChickenDist.Forms
 			});
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "ReturnAmount",
+				HeaderText = "المرتجع ↩",
+				FillWeight = 55f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter }
+			});
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "NetAmount",
+				HeaderText = "الصافي ✔",
+				FillWeight = 55f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
+			});
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "Notes",
 				HeaderText = "الملاحظات",
-				FillWeight = 150f
+				FillWeight = 130f
 			});
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
 			masterPanel.Controls.Add(dgPurchases);
@@ -256,21 +272,25 @@ namespace ChickenDist.Forms
 			TableLayoutPanel summaryTbl = new TableLayoutPanel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 65,
-				ColumnCount = 3,
+				Height = 70,
+				ColumnCount = 5,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 5, 10, 5)
 			};
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
 			summaryTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-			lblTotalSummary = AddDashboardCard(summaryTbl, "إجمالي مشتريات الفترة:", "0.00 ج", Theme.Accent, 0);
-			lblCashSummary = AddDashboardCard(summaryTbl, "المشتريات النقدية:", "0.00 ج", Theme.Success, 1);
-			lblCreditSummary = AddDashboardCard(summaryTbl, "المشتريات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
+			lblTotalSummary  = AddDashboardCard(summaryTbl, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                         0);
+			lblReturnSummary = AddDashboardCard(summaryTbl, "إجمالي المرتجعات: ↩",   "0.00 ج", Color.FromArgb(231, 76, 60),          1);
+			lblNetSummary    = AddDashboardCard(summaryTbl, "الصافي بعد المرتجع: ✔", "0.00 ج", Color.FromArgb(46, 204, 113),         2);
+			lblCashSummary   = AddDashboardCard(summaryTbl, "المشتريات النقدية:",      "0.00 ج", Theme.Success,                        3);
+			lblCreditSummary = AddDashboardCard(summaryTbl, "المشتريات الآجلة:",      "0.00 ج", Color.FromArgb(52, 152, 219),         4);
 
 			base.Controls.Add(detailPanel);
 			base.Controls.Add(masterPanel);
@@ -359,7 +379,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (_allPurchasesDt == null || _allPurchasesDt.Rows.Count == 0)
 			{
-				UpdateSummary(0m, 0m, 0m);
+				UpdateSummary(0m, 0m, 0m, 0m);
 				return;
 			}
 
@@ -367,6 +387,7 @@ namespace ChickenDist.Forms
 			string typeFilter = cboTypeFilter.SelectedItem?.ToString() ?? "الكل";
 
 			decimal total = 0m;
+			decimal ret   = 0m;
 			decimal cash = 0m;
 			decimal credit = 0m;
 
@@ -391,13 +412,19 @@ namespace ChickenDist.Forms
 						continue;
 				}
 
-				decimal amount = Convert.ToDecimal(row["TotalAmount"]);
+				decimal amount    = Convert.ToDecimal(row["TotalAmount"]);
+				decimal returnAmt = row.Table.Columns.Contains("ReturnAmount") && row["ReturnAmount"] != DBNull.Value
+				                    ? Convert.ToDecimal(row["ReturnAmount"]) : 0m;
+				decimal netAmt    = amount - returnAmt;
+
 				total += amount;
+				ret   += returnAmt;
 
 				if (pType == "Cash") cash += amount;
 				else if (pType == "Credit") credit += amount;
 
 				string displayType = (pType == "Credit") ? "آجل" : "نقدي";
+				string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 				dgPurchases.Rows.Add(
 					row["PurchaseID"],
 					row["PurchaseCode"],
@@ -405,18 +432,22 @@ namespace ChickenDist.Forms
 					displayType,
 					supplier,
 					amount.ToString("N2") + " ج",
+					retStr,
+					netAmt.ToString("N2") + " ج",
 					row["Notes"]
 				);
 			}
 
-			UpdateSummary(total, cash, credit);
+			UpdateSummary(total, ret, cash, credit);
 		}
 
-		private void UpdateSummary(decimal total, decimal cash, decimal credit)
+		private void UpdateSummary(decimal total, decimal ret, decimal cash, decimal credit)
 		{
-			lblTotalSummary.Text = total.ToString("N2") + " ج";
-			lblCashSummary.Text = cash.ToString("N2") + " ج";
-			lblCreditSummary.Text = credit.ToString("N2") + " ج";
+			lblTotalSummary.Text  = total.ToString("N2") + " ج";
+			lblReturnSummary.Text = ret.ToString("N2")   + " ج";
+			lblNetSummary.Text    = (total - ret).ToString("N2") + " ج";
+			lblCashSummary.Text   = cash.ToString("N2")  + " ج";
+			lblCreditSummary.Text = credit.ToString("N2")+ " ج";
 		}
 
 		private void DgPurchases_SelectionChanged(object sender, EventArgs e)

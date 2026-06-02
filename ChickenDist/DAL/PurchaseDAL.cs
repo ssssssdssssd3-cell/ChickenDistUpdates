@@ -44,7 +44,13 @@ namespace ChickenDist.DAL
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
-                         COALESCE(p.TaxAmount,     0) AS TaxAmount
+                         COALESCE(p.TaxAmount,     0) AS TaxAmount,
+                         ISNULL((
+                             SELECT SUM(pri.ReturnedQty * pri.UnitPrice)
+                             FROM PurchaseReturnItems pri
+                             JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                             WHERE pr.PurchaseID = p.PurchaseID
+                         ), 0) AS ReturnAmount
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t

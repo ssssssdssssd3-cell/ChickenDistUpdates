@@ -14,7 +14,14 @@ namespace ChickenDist.DAL
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
                          ISNULL(c.ClientName,N'---') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
-                         s.TotalAmount, s.Notes
+                         s.TotalAmount, s.Notes,
+                         ISNULL((
+                             SELECT SUM(ri.NewReturnedQty * si.UnitPrice)
+                             FROM Returns r
+                             JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                             JOIN SaleItems si ON ri.SaleItemID = si.ItemID
+                             WHERE r.SaleID = s.SaleID
+                         ), 0) AS ReturnAmount
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID

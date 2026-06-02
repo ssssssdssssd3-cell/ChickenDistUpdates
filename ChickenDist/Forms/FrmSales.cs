@@ -29,13 +29,11 @@ namespace ChickenDist.Forms
 		private Button btnNewSale;
 
 		private Label lblTotalSummary;
-
+		private Label lblReturnSummary;
+		private Label lblNetSummary;
 		private Label lblCashSummary;
-
 		private Label lblCreditSummary;
-
 		private Label lblDriverSummary;
-
 		private DataTable _allSalesDt;
 
 		public FrmSalesList()
@@ -192,9 +190,23 @@ namespace ChickenDist.Forms
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "ReturnAmount",
+				HeaderText = "المرتجع ↩",
+				FillWeight = 50f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "NetAmount",
+				HeaderText = "الصافي ✔",
+				FillWeight = 50f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "Notes",
 				HeaderText = "الملاحظات",
-				FillWeight = 120f
+				FillWeight = 100f
 			});
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
 			panel.Controls.Add(dgSales);
@@ -268,22 +280,26 @@ namespace ChickenDist.Forms
 			TableLayoutPanel tableLayoutPanel = new TableLayoutPanel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 65,
-				ColumnCount = 4,
+				Height = 70,
+				ColumnCount = 6,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 5, 10, 5)
 			};
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-			lblTotalSummary = AddDashboardCard(tableLayoutPanel, "إجمالي مبيعات الفترة:", "0.00 ج", Theme.Accent, 0);
-			lblCashSummary = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:", "0.00 ج", Theme.Success, 1);
-			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
-			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:", "0.00 ج", Color.FromArgb(155, 89, 182), 3);
+			lblTotalSummary  = AddDashboardCard(tableLayoutPanel, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                  0);
+			lblReturnSummary = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات: ↩",   "0.00 ج", Color.FromArgb(231, 76, 60),   1);
+			lblNetSummary    = AddDashboardCard(tableLayoutPanel, "الصافي بعد المرتجع: ✔", "0.00 ج", Color.FromArgb(46, 204, 113),  2);
+			lblCashSummary   = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:",       "0.00 ج", Theme.Success,                 3);
+			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:",       "0.00 ج", Color.FromArgb(52, 152, 219),  4);
+			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
 			base.Controls.Add(panel2);
 			base.Controls.Add(panel);
 			base.Controls.Add(flowLayoutPanel);
@@ -371,15 +387,16 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (_allSalesDt == null || _allSalesDt.Rows.Count == 0)
 			{
-				UpdateSummary(0m, 0m, 0m, 0m);
+				UpdateSummary(0m, 0m, 0m, 0m, 0m);
 				return;
 			}
 			string value = txtSearch.Text.Trim().ToLower();
 			string text = cboTypeFilter.SelectedItem?.ToString() ?? "الكل";
-			decimal tot = default(decimal);
-			decimal cash = default(decimal);
-			decimal credit = default(decimal);
-			decimal driver = default(decimal);
+			decimal tot    = 0m;
+			decimal ret    = 0m;
+			decimal cash   = 0m;
+			decimal credit = 0m;
+			decimal driver = 0m;
 			foreach (DataRow row in _allSalesDt.Rows)
 			{
 				string text2 = row["SaleCode"].ToString().ToLower();
@@ -389,38 +406,46 @@ namespace ChickenDist.Forms
 				string text6 = row["Notes"].ToString().ToLower();
 				string text7 = text3;
 				if (text5 == "DriverLoad" && text4 != "---")
-				{
 					text7 = text4;
-				}
+
 				if ((!(text != "الكل") || ((!text.Contains("نقدي") || !(text5 != "Cash")) && (!text.Contains("آجل") || !(text5 != "Credit")) && (!text.Contains("تحميل") || !(text5 != "DriverLoad")))) && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
 					decimal num = Convert.ToDecimal(row["TotalAmount"]);
+					decimal returnAmt = row.Table.Columns.Contains("ReturnAmount") && row["ReturnAmount"] != DBNull.Value
+					                    ? Convert.ToDecimal(row["ReturnAmount"]) : 0m;
+					decimal netAmt = num - returnAmt;
+
 					tot += num;
+					ret += returnAmt;
 					switch (text5)
 					{
-					case "Cash":
-						cash += num;
-						break;
-					case "Credit":
-						credit += num;
-						break;
-					case "DriverLoad":
-						driver += num;
-						break;
+						case "Cash":       cash   += num; break;
+						case "Credit":     credit += num; break;
+						case "DriverLoad": driver += num; break;
 					}
-					string text8 = ((text5 == "Credit") ? "آجل" : ((text5 == "Cash") ? "نقدي" : "تحميل مندوب"));
-					dgSales.Rows.Add(row["SaleID"], row["SaleCode"], Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"), text8, text7, num.ToString("N2") + " ج", row["Notes"]);
+					string text8 = (text5 == "Credit") ? "آجل" : (text5 == "Cash") ? "نقدي" : "تحميل مندوب";
+					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
+					dgSales.Rows.Add(
+						row["SaleID"], row["SaleCode"],
+						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
+						text8, text7,
+						num.ToString("N2") + " ج",
+						retStr,
+						netAmt.ToString("N2") + " ج",
+						row["Notes"]);
 				}
 			}
-			UpdateSummary(tot, cash, credit, driver);
+			UpdateSummary(tot, ret, cash, credit, driver);
 		}
 
-		private void UpdateSummary(decimal tot, decimal cash, decimal credit, decimal driver)
+		private void UpdateSummary(decimal tot, decimal ret, decimal cash, decimal credit, decimal driver)
 		{
-			lblTotalSummary.Text = tot.ToString("N2") + " ج";
-			lblCashSummary.Text = cash.ToString("N2") + " ج";
-			lblCreditSummary.Text = credit.ToString("N2") + " ج";
-			lblDriverSummary.Text = driver.ToString("N2") + " ج";
+			lblTotalSummary.Text  = tot.ToString("N2")         + " ج";
+			lblReturnSummary.Text = ret.ToString("N2")         + " ج";
+			lblNetSummary.Text    = (tot - ret).ToString("N2") + " ج";
+			lblCashSummary.Text   = cash.ToString("N2")        + " ج";
+			lblCreditSummary.Text = credit.ToString("N2")      + " ج";
+			lblDriverSummary.Text = driver.ToString("N2")      + " ج";
 		}
 
 		private void DgSales_SelectionChanged(object sender, EventArgs e)
