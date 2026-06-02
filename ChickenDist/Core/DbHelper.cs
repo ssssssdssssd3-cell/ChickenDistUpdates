@@ -262,6 +262,33 @@ namespace ChickenDist.Core
                     ALTER TABLE Expenses ADD CONSTRAINT FK_Expenses_Vehicles FOREIGN KEY (VehicleID) REFERENCES Vehicles(VehicleID);
                 END";
                 Execute(sqlExpensesVehicle);
+
+                // جداول مرتجع المشتريات
+                string sqlPurchaseReturns = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseReturns')
+                BEGIN
+                    CREATE TABLE PurchaseReturns (
+                        ReturnID    INT IDENTITY(1,1) PRIMARY KEY,
+                        ReturnDate  DATETIME DEFAULT GETDATE(),
+                        PurchaseID  INT REFERENCES Purchases(PurchaseID),
+                        SupplierID  INT REFERENCES Suppliers(SupplierID),
+                        TotalAmount DECIMAL(10,2) DEFAULT 0,
+                        Notes       NVARCHAR(500),
+                        CreatedBy   INT REFERENCES Employees(EmpID)
+                    );
+                END
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseReturnItems')
+                BEGIN
+                    CREATE TABLE PurchaseReturnItems (
+                        RItemID    INT IDENTITY(1,1) PRIMARY KEY,
+                        ReturnID   INT NOT NULL REFERENCES PurchaseReturns(ReturnID) ON DELETE CASCADE,
+                        ProductID  INT NOT NULL REFERENCES Products(ProductID),
+                        Quantity   DECIMAL(10,3),
+                        UnitPrice  DECIMAL(10,2),
+                        TotalPrice DECIMAL(10,2)
+                    );
+                END";
+                Execute(sqlPurchaseReturns);
             }
             catch (Exception ex)
             {

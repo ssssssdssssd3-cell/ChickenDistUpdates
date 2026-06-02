@@ -132,6 +132,7 @@ namespace ChickenDist.Forms
                 ("📋", "سجل المبيعات",       "Sales",          () => NavigateTo(new FrmSalesList())),
                 ("↩", "مرتجع بيع",          "Returns",        () => NavigateTo(new FrmReturn())),
                 ("📥", "فاتورة مشتريات",     "Purchases",      () => NavigateTo(new FrmPurchase())),
+                ("↩", "مرتجع شراء",          "Purchases",      () => NavigateTo(new FrmPurchaseReturn())),
                 ("🚚", "حمولة مندوب",       "DriverHandover", () => NavigateTo(new FrmDriverHandover())),
                 ("🖥️", "مراقبة المناديب",    "DriverHandover", () => NavigateTo(new FrmDriversMonitor())),
                 ("📋", "عهدة المناديب",      "DriverHandover", () => NavigateTo(new FrmDriverCustody())),

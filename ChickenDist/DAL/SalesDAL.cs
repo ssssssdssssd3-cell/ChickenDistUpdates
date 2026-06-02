@@ -548,19 +548,12 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var dtSale = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                var dtSale = DbHelper.Query("SELECT SaleType, ClientID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
                 string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
 
-                if (saleType == "Cash")
-                {
-                    var cashResult = DbHelper.ScalarTrans(trans, 
-                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
-                    decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
-                    if (cashBalance < total)
-                    {
-                        throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لرد قيمة المرتجع النقدي ({total:N2} ج)!\nيرجى توريد نقدية أولاً.");
-                    }
-                }
+                // استخدم clientID من الفاتورة الأصلية إذا لم يُحدَّد في الشاشة
+                if (!clientID.HasValue && dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
+                    clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
 
                 int retID = DbHelper.ExecuteInsertTrans(trans,
                     "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
@@ -568,6 +561,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+
+                if (retID <= 0) throw new Exception("فشل إنشاء سجل المرتجع.");
 
                 returnedRetID = retID;
 
@@ -580,10 +575,15 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp", item.TotalPrice));
                 }
 
+                // المنطق المحاسبي السليم:
+                // بيع نقدي → رد نقدي من الخزنة (AmountOut)
+                // بيع آجل أو حمولة مندوب → تخفيض دين العميل (Credit في ClientTransactions)
                 if (saleType == "Cash")
                 {
+                    // تسجيل خروج نقدية من الخزنة (رد مبلغ المرتجع للعميل)
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransType,AmountOut,RefID,Notes,CreatedBy) VALUES('ReturnOutcome',@amt,@ref,@n,@by)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
                         DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
                         DbHelper.P("@by", Session.EmpID));

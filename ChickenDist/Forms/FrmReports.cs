@@ -93,11 +93,12 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Font = Theme.FontMain
 			};
-			(string, string)[] array = new(string, string)[11]
+			(string, string)[] array = new(string, string)[12]
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
+				("🔄 سجل مرتجعات المشتريات", "DetailedPurchaseReturns"),
 				("🗓 مبيعات يومية تفصيلية", "SalesByDay"),
 				("🚚 مبيعات المناديب", "SalesByDriver"),
 				("👥 مبيعات العملاء الشاملة", "SalesByClient"),
@@ -197,6 +198,19 @@ namespace ChickenDist.Forms
 						("ReturnDate", "التاريخ والوقت"),
 						("SaleCode", "الفاتورة الأصلية"),
 						("ClientName", "العميل"),
+						("TotalAmount", "قيمة المرتجع"),
+						("Notes", "البيان / الملاحظات"),
+						("ReturnID", "معرف المرتجع")
+					}, dataGridView);
+					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
+					break;
+				case "DetailedPurchaseReturns":
+					_currentDt = PurchaseReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+					SetupGrid(new(string, string)[6]
+					{
+						("ReturnDate", "التاريخ والوقت"),
+						("PurchaseCode", "الفاتورة الأصلية"),
+						("SupplierName", "المورد"),
 						("TotalAmount", "قيمة المرتجع"),
 						("Notes", "البيان / الملاحظات"),
 						("ReturnID", "معرف المرتجع")

@@ -99,13 +99,111 @@ namespace ChickenDist.DAL
                 if (purchaseType == "Cash")
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransType,AmountOut,RefID,Notes,CreatedBy) VALUES('PurchaseExpense',@amt,@ref,@n,@by)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", purchaseID),
                         DbHelper.P("@n", "مشتريات نقدية " + code), DbHelper.P("@by", Session.EmpID));
                 }
             });
 
             return returnedID;
+        }
+    }
+
+    /// <summary>مرتجع مشتريات — القيد المحاسبي السليم</summary>
+    public static class PurchaseReturnDAL
+    {
+        public static DataTable GetAll(DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT pr.ReturnID, pr.ReturnDate,
+                         ISNULL(p.PurchaseCode, N'---') AS PurchaseCode,
+                         ISNULL(s.SupplierName, N'---') AS SupplierName,
+                         pr.TotalAmount, pr.Notes
+                  FROM PurchaseReturns pr
+                  LEFT JOIN Purchases p  ON pr.PurchaseID  = p.PurchaseID
+                  LEFT JOIN Suppliers s  ON pr.SupplierID  = s.SupplierID
+                  WHERE CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t
+                  ORDER BY pr.ReturnDate DESC",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+        }
+
+        public static DataTable GetItems(int returnID)
+        {
+            return DbHelper.Query(
+                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice
+                  FROM PurchaseReturnItems pri
+                  JOIN Products p ON pri.ProductID = p.ProductID
+                  WHERE pri.ReturnID = @id",
+                DbHelper.P("@id", returnID));
+        }
+
+        /// <summary>
+        /// حفظ مرتجع شراء مع القيد المحاسبي الصحيح:
+        /// - شراء نقدي → يُعاد المبلغ للخزنة (AmountIn)
+        /// - شراء آجل  → يُقلَّل ما يستحقه المورد (Debit في SupplierTransactions)
+        /// </summary>
+        public static int SavePurchaseReturn(int purchaseID, int? supplierID, decimal total,
+            string notes, List<PurchaseItemDTO> items)
+        {
+            int returnedRetID = -1;
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // جلب نوع الفاتورة الأصلية والمورد منها إذا لم يُحدَّد
+                var dtPur = DbHelper.Query(
+                    "SELECT PurchaseType, SupplierID FROM Purchases WHERE PurchaseID=@pid",
+                    DbHelper.P("@pid", purchaseID));
+                string purType = dtPur.Rows.Count > 0 ? dtPur.Rows[0]["PurchaseType"].ToString() : "Credit";
+
+                if (!supplierID.HasValue && dtPur.Rows.Count > 0 && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
+                    supplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+
+                // تسجيل المرتجع
+                int retID = DbHelper.ExecuteInsertTrans(trans,
+                    "INSERT INTO PurchaseReturns(ReturnDate,PurchaseID,SupplierID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@pid,@sid,@tot,@n,@by)",
+                    DbHelper.P("@dt", DateTime.Now),
+                    DbHelper.P("@pid", purchaseID > 0 ? (object)purchaseID : DBNull.Value),
+                    DbHelper.P("@sid", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+
+                if (retID <= 0) throw new Exception("فشل إنشاء سجل مرتجع الشراء.");
+                returnedRetID = retID;
+
+                foreach (var item in items)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice) VALUES(@rid,@pid,@qty,@up,@tp)",
+                        DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice));
+                }
+
+                // القيد المحاسبي السليم:
+                // شراء نقدي → مرتجعه يُعيد النقدية للخزنة (AmountIn)
+                // شراء آجل  → مرتجعه يُقلّل الدين للمورد (Debit في SupplierTransactions)
+                if (purType == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) VALUES(@dt,'PurchaseReturn',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", DateTime.Now),
+                        DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
+                        DbHelper.P("@n", "مرتجع شراء نقدي — فاتورة رقم " + purchaseID),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                else if (supplierID.HasValue)
+                {
+                    // Debit في حساب المورد = يُقلّل ما يستحقه (يُقلّل الدين علينا)
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO SupplierTransactions(SupplierID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@sid,'PurchaseReturn',@amt,@ref,@n,@by)",
+                        DbHelper.P("@sid", supplierID.Value), DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", retID),
+                        DbHelper.P("@n", "مرتجع شراء — فاتورة رقم " + purchaseID),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            return returnedRetID;
         }
     }
 }
