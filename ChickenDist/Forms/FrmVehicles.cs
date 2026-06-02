@@ -169,9 +169,9 @@ namespace ChickenDist.Forms
             splitMain.Controls.Add(pnlDetails, 0, 0);
             splitMain.Controls.Add(pnlGrid,    1, 0);
 
-            this.Controls.Add(splitMain);
             this.Controls.Add(pnlTop);
-            pnlTop.BringToFront();
+            this.Controls.Add(splitMain);
+            splitMain.BringToFront();
             Theme.ApplyFormRTL(this);
             LoadVehicles();
         }
