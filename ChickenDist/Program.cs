@@ -23,6 +23,9 @@ namespace ChickenDist
             // تطبيق RTL على كل الشاشات التي ستُفتح
             Application.AddMessageFilter(new RtlMessageFilter());
 
+            // تحويل مفتاح Enter إلى Tab للتنقل بين الخانات تلقائياً
+            Application.AddMessageFilter(new EnterKeyFilter());
+
             // ===== فحص اتصال قاعدة البيانات قبل أي شيء =====
             if (!CheckDatabaseConnection())
                 return;
@@ -137,5 +140,70 @@ namespace ChickenDist
     internal class RtlMessageFilter : IMessageFilter
     {
         public bool PreFilterMessage(ref Message m) => false;
+    }
+
+    /// <summary>
+    /// مرشح رسائل عالمي لتحويل مفتاح Enter إلى Tab
+    /// لتسهيل التنقل بين خانات الإدخال في كافة شاشات البرنامج
+    /// </summary>
+    internal class EnterKeyFilter : IMessageFilter
+    {
+        private const int WM_KEYDOWN = 0x0100;
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg == WM_KEYDOWN)
+            {
+                Keys keyCode = (Keys)(int)m.WParam & Keys.KeyCode;
+                if (keyCode == Keys.Enter)
+                {
+                    Control ctrl = Control.FromHandle(m.HWnd);
+                    if (ctrl != null)
+                    {
+                        Control activeControl = GetActiveControl(ctrl);
+                        if (activeControl != null)
+                        {
+                            // استثناء الأزرار، جداول البيانات، والنصوص متعددة الأسطر
+                            if (activeControl is Button || 
+                                activeControl is DataGridView || 
+                                (activeControl is TextBox txt && txt.Multiline))
+                            {
+                                return false;
+                            }
+
+                            // استثناء أي عنصر يقع داخل جدول بيانات (مثل خلايا التعديل)
+                            Control parent = activeControl.Parent;
+                            while (parent != null)
+                            {
+                                if (parent is DataGridView)
+                                    return false;
+                                parent = parent.Parent;
+                            }
+
+                            // الانتقال للعنصر التالي
+                            var form = activeControl.FindForm();
+                            if (form != null)
+                            {
+                                // استخدام SelectNextControl للانتقال الطبيعي
+                                form.SelectNextControl(activeControl, true, true, true, true);
+                                return true; // إلغاء معالجة المفتاح الافتراضية لمنع صوت التنبيه (Beep)
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private Control GetActiveControl(Control c)
+        {
+            if (c == null) return null;
+            var container = c as IContainerControl;
+            if (container != null && container.ActiveControl != null)
+            {
+                return GetActiveControl(container.ActiveControl);
+            }
+            return c;
+        }
     }
 }

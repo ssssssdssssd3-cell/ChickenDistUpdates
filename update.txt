@@ -1,4 +1,4 @@
-version=1.0.48
+version=1.0.49
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=061978428CDCB5191C925BA56B80974BEDC3B1C163F1D0937432DCDFB214F64E
-changelog=v1.0.48: (1) إصلاح خطأ استعلام InventoryItems غير الموجودة واستبداله بالدالة المخصصة لحساب المخزون الفعلي (GetProductStock).
+sha256=47F1B9F561AD480B06F1C428C3993065B1680AD550654451B26BABE55DB18ACE
+changelog=v1.0.49: (1) تحويل مفتاح Enter ليعمل كبديل لمفتاح Tab للتنقل التلقائي والسلس بين حقول الإدخال في كافة شاشات البرنامج.
