@@ -129,7 +129,7 @@ namespace ChickenDist.Forms
 
                 // ── البضاعة والمخزون ──────────────────────────────────
                 ("📦", "الأصناف",          "Products",       () => NavigateTo(new FrmProducts()),       Color.FromArgb(17, 94, 89)),
-                ("⚖️", "جرد المخزن",      "Products",       () => NavigateTo(new FrmInventory()),      Color.FromArgb(17, 94, 89)),
+                ("⚖️", "جرد المخزن",      "Inventory",      () => NavigateTo(new FrmInventory()),      Color.FromArgb(17, 94, 89)),
 
                 // ── العملاء والموردين ──────────────────────────────────
                 ("👥", "العملاء",          "Clients",        () => NavigateTo(new FrmClients()),        Color.FromArgb(30, 64, 175)),
@@ -148,6 +148,8 @@ namespace ChickenDist.Forms
 
                 // ── المناديب ──────────────────────────────────────────
                 ("🚚", "حمولة مندوب",     "DriverHandover", () => NavigateTo(new FrmDriverHandover()), Color.FromArgb(109, 40, 217)),
+                ("📱", "بيع المندوب",      "DriverSales",    () => OpenDriverSalesHtml(),               Color.FromArgb(109, 40, 217)),
+                ("📥", "استيراد CSV",     "ImportPreview",  () => OpenImportPreviewDialog(),          Color.FromArgb(109, 40, 217)),
                 ("🖥️", "مراقبة المناديب", "DriverHandover", () => NavigateTo(new FrmDriversMonitor()), Color.FromArgb(109, 40, 217)),
                 ("📋", "عهدة المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverCustody()),  Color.FromArgb(109, 40, 217)),
                 ("🏆", "أداء المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverLeaderboard()), Color.FromArgb(80, 30, 190)),
@@ -205,6 +207,88 @@ namespace ChickenDist.Forms
             pnlContent.Controls.Add(form);
             form.Show();
             form.BringToFront();
+        }
+
+        private void OpenDriverSalesHtml()
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms", "driver_sales.html");
+                if (!System.IO.File.Exists(path))
+                {
+                    path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "driver_sales.html");
+                }
+                if (System.IO.File.Exists(path))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = path,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    MessageBox.Show("لم يتم العثور على ملف صفحة المندوب driver_sales.html.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل فتح صفحة المندوب الميداني:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenImportPreviewDialog()
+        {
+            try
+            {
+                using (var openDlg = new OpenFileDialog())
+                {
+                    openDlg.Title = "اختر ملف CSV للمندوب";
+                    openDlg.Filter = "CSV Files|*.csv|All Files|*.*";
+                    if (openDlg.ShowDialog() == DialogResult.OK)
+                    {
+                        using (var driverDlg = new Form())
+                        {
+                            driverDlg.Text = "اختر المندوب";
+                            driverDlg.Size = new Size(350, 180);
+                            driverDlg.StartPosition = FormStartPosition.CenterParent;
+                            driverDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                            driverDlg.MaximizeBox = false;
+                            driverDlg.MinimizeBox = false;
+                            driverDlg.RightToLeft = RightToLeft.Yes;
+                            driverDlg.BackColor = Theme.BgMain;
+
+                            var lbl = new Label { Text = "اختر المندوب للاستيراد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                            var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                            var dt = EmployeeDAL.GetDrivers();
+                            foreach (DataRow r in dt.Rows)
+                                cbo.Items.Add(new ComboItem((int)r["EmpID"], r["EmpName"].ToString()));
+                            cbo.DisplayMember = "Text";
+                            if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
+
+                            var btnOk = Theme.MakeButton("📥 بدء الاستيراد", 180, 90, 130, 32, Theme.Accent);
+                            btnOk.Click += (senderDlg, eDlg) => {
+                                if (cbo.SelectedItem is ComboItem ci)
+                                {
+                                    driverDlg.DialogResult = DialogResult.OK;
+                                    driverDlg.Close();
+
+                                    var preview = new FrmImportPreview(openDlg.FileName, DateTime.Today, ci.ID, ci.Text);
+                                    NavigateTo(preview);
+                                }
+                            };
+
+                            driverDlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                            driverDlg.ShowDialog(this);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل بدء الاستيراد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 

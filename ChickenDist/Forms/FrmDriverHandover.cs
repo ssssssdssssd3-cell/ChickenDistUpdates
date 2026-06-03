@@ -34,6 +34,7 @@ namespace ChickenDist.Forms
         {
             InitUI();
             LoadDrivers();
+            ApplyPermissions();
         }
 
         private void InitUI()
@@ -283,6 +284,12 @@ namespace ChickenDist.Forms
                 cboDriver.Items.Add(new ComboItem((int)r["EmpID"], r["EmpName"].ToString()));
             cboDriver.DisplayMember = "Text";
             cboDriver.SelectedIndex = 0;
+        }
+
+        private void ApplyPermissions()
+        {
+            btnExportJson.Visible = Session.CanAccess("DriverSales");
+            btnImportCsv.Visible = Session.CanAccess("ImportPreview");
         }
 
         private void CboDriver_SelectedIndexChanged(object sender, EventArgs e)

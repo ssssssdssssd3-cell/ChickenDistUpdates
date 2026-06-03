@@ -30,6 +30,9 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // استخراج صفحة المندوب من الموارد المضمنة
+            ExtractDriverSalesHtml();
+
             // Show Login
             var login = new FrmLogin();
             if (login.ShowDialog() != DialogResult.OK)
@@ -95,6 +98,37 @@ namespace ChickenDist
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                 return false;
+            }
+        }
+
+        private static void ExtractDriverSalesHtml()
+        {
+            try
+            {
+                string formsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms");
+                if (!System.IO.Directory.Exists(formsDir))
+                {
+                    System.IO.Directory.CreateDirectory(formsDir);
+                }
+                string path = System.IO.Path.Combine(formsDir, "driver_sales.html");
+
+                var assembly = typeof(Program).Assembly;
+                string resourceName = "ChickenDist.Forms.driver_sales.html";
+
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream != null)
+                    {
+                        using (var fileStream = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                        {
+                            stream.CopyTo(fileStream);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to extract driver_sales.html: " + ex.Message);
             }
         }
     }
