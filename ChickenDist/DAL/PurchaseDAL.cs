@@ -16,6 +16,8 @@ namespace ChickenDist.DAL
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة خصم الصنف — تُستخدم فقط إذا كانت DiscountPct = 0</summary>
         public decimal DiscountAmt { get; set; } = 0m;
+        /// <summary>سعر البيع المقترح</summary>
+        public decimal? SuggestedSalePrice { get; set; } = null;
 
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
@@ -81,7 +83,8 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT pi.ProductID, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
                          COALESCE(pi.DiscountPct, 0) AS DiscountPct,
-                         COALESCE(pi.DiscountAmt, 0) AS DiscountAmt
+                         COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
+                         pi.SuggestedSalePrice
                   FROM PurchaseItems pi
                   JOIN Products pr ON pi.ProductID = pr.ProductID
                   WHERE pi.PurchaseID = @id",
@@ -173,15 +176,16 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt)",
+                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice)
+                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
                         DbHelper.P("@up",     item.UnitPrice),
                         DbHelper.P("@tp",     item.TotalPrice),
                         DbHelper.P("@dpct",   item.DiscountPct),
-                        DbHelper.P("@damt",   item.DiscountAmt));
+                        DbHelper.P("@damt",   item.DiscountAmt),
+                        DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value));
                 }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────

@@ -337,6 +337,32 @@ namespace ChickenDist.Core
                     GROUP BY e.EmpID, e.EmpName, e.Phone')
                 END";
                 Execute(sqlEmployeeBalanceView);
+
+                // ===== أعمدة السعر المعلق وهامش الربح على Products =====
+                string sqlProductPricing = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'CostPrice')
+                BEGIN
+                    ALTER TABLE Products ADD CostPrice DECIMAL(10,3) NOT NULL DEFAULT 0;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingSalePrice')
+                BEGIN
+                    ALTER TABLE Products ADD PendingSalePrice DECIMAL(10,3) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingQtyThreshold')
+                BEGIN
+                    -- الكمية القديمة المتبقية عند تسجيل السعر المعلق
+                    -- عندما يصل المخزون إلى هذا الرقم أو أقل → يتفعل السعر الجديد
+                    ALTER TABLE Products ADD PendingQtyThreshold DECIMAL(10,3) NULL;
+                END";
+                Execute(sqlProductPricing);
+
+                // ===== عمود سعر البيع المقترح في بنود الشراء =====
+                string sqlPurchaseItemsSalePrice = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PurchaseItems') AND name = 'SuggestedSalePrice')
+                BEGIN
+                    ALTER TABLE PurchaseItems ADD SuggestedSalePrice DECIMAL(10,3) NULL;
+                END";
+                Execute(sqlPurchaseItemsSalePrice);
             }
             catch (Exception ex)
             {

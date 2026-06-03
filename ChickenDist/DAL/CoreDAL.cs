@@ -143,6 +143,147 @@ namespace ChickenDist.DAL
         {
             DbHelper.Execute("UPDATE Products SET IsActive=0 WHERE ProductID=@id", DbHelper.P("@id", id));
         }
+
+        /// <summary>
+        /// تسجيل سعر بيع مقترح كـ"سعر معلق" بناءً على الكمية الحالية بالمخزون.
+        /// يتفعّل تلقائياً عندما يصل المخزون إلى الحد المحدد أو أقل.
+        /// </summary>
+        /// <param name="productID">الصنف</param>
+        /// <param name="pendingPrice">السعر الجديد المقترح</param>
+        /// <param name="costPrice">تكلفة الشراء الجديدة</param>
+        /// <param name="applyNow">true = طبّق فوراً | false = علّق حتى نفاد المخزون القديم</param>
+        public static void SetPendingPrice(int productID, decimal pendingPrice, decimal costPrice, bool applyNow)
+        {
+            if (applyNow)
+            {
+                // طبّق فوراً على الكل — امسح أي سعر معلق سابق
+                DbHelper.Execute(
+                    @"UPDATE Products
+                      SET SalePrice            = @sp,
+                          CostPrice            = @cp,
+                          PurchasePrice        = @cp,
+                          PendingSalePrice     = NULL,
+                          PendingQtyThreshold  = NULL
+                      WHERE ProductID = @id",
+                    DbHelper.P("@sp", pendingPrice),
+                    DbHelper.P("@cp", costPrice),
+                    DbHelper.P("@id", productID));
+            }
+            else
+            {
+                // احسب المخزون الحالي كـ Threshold للتفعيل التلقائي لاحقاً
+                var r = DbHelper.Scalar(
+                    @"SELECT ISNULL(SUM(ii.Quantity),0)
+                      FROM InventoryItems ii
+                      JOIN Inventory i ON ii.InventoryID = i.InventoryID
+                      WHERE ii.ProductID = @id AND i.IsLatest = 1",
+                    DbHelper.P("@id", productID));
+                decimal currentStock = r != null ? Convert.ToDecimal(r) : 0;
+
+                DbHelper.Execute(
+                    @"UPDATE Products
+                      SET CostPrice            = @cp,
+                          PurchasePrice        = @cp,
+                          PendingSalePrice     = @psp,
+                          PendingQtyThreshold  = @pqt
+                      WHERE ProductID = @id",
+                    DbHelper.P("@cp", costPrice),
+                    DbHelper.P("@psp", pendingPrice),
+                    DbHelper.P("@pqt", currentStock),
+                    DbHelper.P("@id", productID));
+            }
+
+            AppLogger.Audit("تحديث سعر الصنف",
+                $"ProductID:{productID} NewPrice:{pendingPrice:N3} Cost:{costPrice:N3} ApplyNow:{applyNow}");
+        }
+
+        /// <summary>
+        /// تفعيل السعر المعلق يدوياً (زر "فعّل السعر الجديد" من شاشة الأصناف).
+        /// </summary>
+        public static void ActivatePendingPrice(int productID)
+        {
+            DbHelper.Execute(
+                @"UPDATE Products
+                  SET SalePrice           = PendingSalePrice,
+                      PendingSalePrice    = NULL,
+                      PendingQtyThreshold = NULL
+                  WHERE ProductID = @id AND PendingSalePrice IS NOT NULL",
+                DbHelper.P("@id", productID));
+
+            AppLogger.Audit("تفعيل سعر معلق", $"ProductID:{productID}");
+        }
+
+        /// <summary>
+        /// يُستدعى تلقائياً بعد كل عملية بيع للتحقق هل يجب تفعيل السعر المعلق.
+        /// إذا أصبح المخزون ≤ PendingQtyThreshold → يُفعَّل السعر الجديد.
+        /// </summary>
+        public static void CheckAndActivatePendingPrice(int productID)
+        {
+            // جلب الصنف لمعرفة هل عنده سعر معلق
+            var dt = DbHelper.Query(
+                "SELECT PendingSalePrice, PendingQtyThreshold FROM Products WHERE ProductID=@id AND PendingSalePrice IS NOT NULL",
+                DbHelper.P("@id", productID));
+
+            if (dt.Rows.Count == 0) return; // لا يوجد سعر معلق
+
+            decimal threshold = Convert.ToDecimal(dt.Rows[0]["PendingQtyThreshold"]);
+
+            // احسب المخزون الحالي
+            var rStock = DbHelper.Scalar(
+                @"SELECT ISNULL(SUM(ii.Quantity),0)
+                  FROM InventoryItems ii
+                  JOIN Inventory i ON ii.InventoryID = i.InventoryID
+                  WHERE ii.ProductID = @id AND i.IsLatest = 1",
+                DbHelper.P("@id", productID));
+            decimal currentStock = rStock != null ? Convert.ToDecimal(rStock) : 0;
+
+            // إذا المخزون وصل للحد أو أقل → فعّل السعر الجديد
+            if (currentStock <= 0 || currentStock <= threshold)
+            {
+                ActivatePendingPrice(productID);
+                AppLogger.Audit("تفعيل سعر معلق تلقائي",
+                    $"ProductID:{productID} Stock:{currentStock:N2} Threshold:{threshold:N2}");
+            }
+        }
+
+        /// <summary>
+        /// تقرير هامش الربح — مقارنة سعر البيع بالتكلفة لكل صنف.
+        /// </summary>
+        public static DataTable GetProfitMarginReport(DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    p.CostPrice,
+                    p.SalePrice,
+                    CASE WHEN p.CostPrice > 0
+                         THEN ROUND((p.SalePrice - p.CostPrice) / p.CostPrice * 100, 2)
+                         ELSE 0 END                                     AS MarginPct,
+                    p.SalePrice - p.CostPrice                           AS ProfitPerUnit,
+                    ISNULL(SUM(si.Quantity), 0)                         AS TotalQtySold,
+                    ISNULL(SUM(si.Quantity * p.CostPrice), 0)           AS TotalCost,
+                    ISNULL(SUM(si.TotalPrice), 0)                       AS TotalRevenue,
+                    ISNULL(SUM(si.TotalPrice), 0)
+                        - ISNULL(SUM(si.Quantity * p.CostPrice), 0)     AS TotalProfit,
+                    CASE WHEN p.PendingSalePrice IS NOT NULL
+                         THEN p.PendingSalePrice ELSE NULL END           AS PendingSalePrice,
+                    CASE WHEN p.PendingQtyThreshold IS NOT NULL
+                         THEN p.PendingQtyThreshold ELSE NULL END        AS PendingQtyThreshold
+                  FROM Products p
+                  LEFT JOIN SaleItems si ON si.ProductID = p.ProductID
+                  LEFT JOIN Sales s      ON si.SaleID = s.SaleID
+                                       AND s.IsPosted = 1
+                                       AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                                       AND s.SaleType IN ('Cash','Credit','DriverLoad')
+                  WHERE p.IsActive = 1
+                  GROUP BY p.ProductID, p.ProductCode, p.ProductName, p.Unit,
+                           p.CostPrice, p.SalePrice, p.PendingSalePrice, p.PendingQtyThreshold
+                  ORDER BY TotalProfit DESC",
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date));
+        }
     }
 
     // =================== Supplier DAL ===================

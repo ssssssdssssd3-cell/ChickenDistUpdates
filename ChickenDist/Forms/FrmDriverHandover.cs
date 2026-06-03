@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -19,7 +20,8 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private DataGridView dgItems;
-        private Button btnLoadItems, btnSave, btnWhatsApp;
+        private Button btnLoadItems, btnSave, btnWhatsApp, btnExportJson, btnImportCsv;
+        private DateTimePicker dtpImport;
         private TextBox txtNotes, txtCashCollected;
         private Label lblTotLoad, lblTotRet, lblTotDead, lblTotExtra, lblTotDef, lblExpCash;
         private Label lblDeficitValue; // بطاقة القيمة المالية للعجز الكلي
@@ -211,7 +213,21 @@ namespace ChickenDist.Forms
             btnWhatsApp.Margin = new Padding(15, 0, 0, 0);
             btnWhatsApp.Click += BtnWhatsApp_Click;
 
-            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp });
+            // ===== أزرار تصدير/استيراد الجوال =====
+            var lblImportDate = new Label { Text = "تاريخ الاستيراد:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
+            dtpImport = new DateTimePicker { Width = 110, Height = 28, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Margin = new Padding(0, 6, 0, 0) };
+
+            btnExportJson = Theme.MakeButton("📱 تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
+            btnExportJson.Size = new Size(170, 32);
+            btnExportJson.Margin = new Padding(20, 0, 0, 0);
+            btnExportJson.Click += BtnExportJson_Click;
+
+            btnImportCsv = Theme.MakeButton("📥 استيراد مبيعات CSV", Color.FromArgb(20, 150, 90));
+            btnImportCsv.Size = new Size(170, 32);
+            btnImportCsv.Margin = new Padding(10, 0, 0, 0);
+            btnImportCsv.Click += BtnImportCsv_Click;
+
+            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv });
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
@@ -549,6 +565,70 @@ namespace ChickenDist.Forms
                 pnl.Controls.AddRange(new Control[] { lblTitle, lblSub, btnAdvance, btnCompany, btnDeduct, btnSkip });
                 dlg.Controls.Add(pnl);
                 dlg.ShowDialog(this);
+            }
+        }
+
+        // =====================================================================
+        // تصدير data.json للمندوب على الجوال
+        // =====================================================================
+        private void BtnExportJson_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string json = DriverDAL.BuildDriverExportJson();
+                string dateStr = DateTime.Today.ToString("yyyy_MM_dd");
+                string defaultName = $"data_{dateStr}.json";
+
+                using (var dlg = new SaveFileDialog())
+                {
+                    dlg.Title = "حفظ بيانات الجوال";
+                    dlg.FileName = defaultName;
+                    dlg.Filter = "JSON Files|*.json|All Files|*.*";
+                    dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                    File.WriteAllText(dlg.FileName, json, System.Text.Encoding.UTF8);
+                    MessageBox.Show(
+                        $"✅ تم تصدير الملف بنجاح!\n{dlg.FileName}\n\nأرسل هذا الملف للمندوب على الجوال.",
+                        "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ أثناء التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // =====================================================================
+        // استيراد مبيعات CSV من المندوب
+        // =====================================================================
+        private void BtnImportCsv_Click(object sender, EventArgs e)
+        {
+            if (!(_driverID > 0))
+            {
+                MessageBox.Show("اختر المندوب أولاً قبل الاستيراد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = "اختر ملف CSV للمندوب";
+                dlg.Filter = "CSV Files|*.csv|All Files|*.*";
+                dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                string driverName = cboDriver.SelectedItem is ComboItem ci ? ci.Text : "مندوب";
+                try
+                {
+                    var preview = new FrmImportPreview(dlg.FileName, dtpImport.Value.Date, _driverID, driverName);
+                    preview.ShowDialog(this);
+                    // بعد إغلاق نافذة الاستيراد — تحديث قائمة الحمولات
+                    CboDriver_SelectedIndexChanged(null, null);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("❌ خطأ في قراءة الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 

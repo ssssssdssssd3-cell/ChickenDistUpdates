@@ -127,6 +127,21 @@ namespace ChickenDist.DAL
                 }
             });
 
+            if (returnedSaleID > 0 && !isDraft)
+            {
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
+                    }
+                }
+            }
+
             return returnedSaleID;
         }
 
@@ -641,6 +656,169 @@ namespace ChickenDist.DAL
                 "SELECT ISNULL(SUM(Debit),0)-ISNULL(SUM(Credit),0) FROM EmployeeTransactions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
             return r != null ? Convert.ToDecimal(r) : 0;
+        }
+
+        // =====================================================================
+        //  تصدير بيانات الجوال (data.json) — قائمة العملاء والأصناف والمناديب
+        // =====================================================================
+        /// <summary>
+        /// يُولّد كائن JSON للمندوب يحتوي على قوائم العملاء والأصناف والمناديب النشطين.
+        /// يُستخدم بواسطة FrmDriverHandover لتصدير ملف data.json للجوال.
+        /// </summary>
+        public static string BuildDriverExportJson()
+        {
+            // جلب العملاء النشطين
+            var clients = DbHelper.Query(
+                "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+
+            // جلب الأصناف النشطة
+            var products = DbHelper.Query(
+                "SELECT ProductID, ProductName, SalePrice, ISNULL(Unit,'وحدة') AS Unit FROM Products WHERE IsActive=1 ORDER BY ProductName");
+
+            // جلب المناديب النشطين
+            var drivers = DbHelper.Query(
+                "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append("{");
+
+            // clients array
+            sb.Append("\"clients\":[");
+            bool firstC = true;
+            foreach (System.Data.DataRow r in clients.Rows)
+            {
+                if (!firstC) sb.Append(",");
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"phone\":\"{2}\"}}",
+                    r["ClientID"],
+                    EscapeJson(r["ClientName"].ToString()),
+                    EscapeJson(r["Phone"].ToString()));
+                firstC = false;
+            }
+            sb.Append("],");
+
+            // products array
+            sb.Append("\"products\":[");
+            bool firstP = true;
+            foreach (System.Data.DataRow r in products.Rows)
+            {
+                if (!firstP) sb.Append(",");
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"price\":{2},\"unit\":\"{3}\"}}",
+                    r["ProductID"],
+                    EscapeJson(r["ProductName"].ToString()),
+                    Convert.ToDecimal(r["SalePrice"]).ToString("F4", System.Globalization.CultureInfo.InvariantCulture),
+                    EscapeJson(r["Unit"].ToString()));
+                firstP = false;
+            }
+            sb.Append("],");
+
+            // drivers array
+            sb.Append("\"drivers\":[");
+            bool firstD = true;
+            foreach (System.Data.DataRow r in drivers.Rows)
+            {
+                if (!firstD) sb.Append(",");
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\"}}",
+                    r["EmpID"],
+                    EscapeJson(r["EmpName"].ToString()));
+                firstD = false;
+            }
+            sb.Append("]");
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string EscapeJson(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"")
+                    .Replace("\r", "").Replace("\n", " ");
+        }
+
+        // =====================================================================
+        //  استيراد فاتورة واحدة من CSV (يُستدعى من FrmImportPreview)
+        // =====================================================================
+        /// <summary>
+        /// يحفظ مجموعة بنود (تمثل فاتورة واحدة) كفاتورة رسمية في السيستم.
+        /// يستخدم نفس SaveSale الرئيسي تماماً.
+        /// </summary>
+        /// <param name="clientID">رقم العميل (0 = عميل غير محدد)</param>
+        /// <param name="driverID">رقم المندوب</param>
+        /// <param name="paymentType">Cash أو Credit</param>
+        /// <param name="saleDate">تاريخ البيع من الـ CSV</param>
+        /// <param name="notes">ملاحظات الفاتورة</param>
+        /// <param name="items">بنود الفاتورة</param>
+        /// <returns>SaleID الجديد أو -1 عند الفشل</returns>
+        public static int ImportDriverSaleRow(int clientID, int driverID, string paymentType,
+            DateTime saleDate, string notes, List<SaleItemDTO> items)
+        {
+            if (items == null || items.Count == 0) return -1;
+            decimal total = 0;
+            foreach (var it in items) total += it.Quantity * it.UnitPrice;
+
+            int returnedID = -1;
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                var nextResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                string code = nextResult?.ToString() ?? "1";
+
+                int saleID = DbHelper.ExecuteInsertTrans(trans,
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) " +
+                    "VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,0,0,1)",
+                    DbHelper.P("@code", code),
+                    DbHelper.P("@dt", saleDate),
+                    DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
+                    DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                    DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
+                    DbHelper.P("@tot", total),
+                    DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب"),
+                    DbHelper.P("@by", Session.EmpID));
+
+                if (saleID <= 0) throw new Exception("فشل في إنشاء الفاتورة المستوردة.");
+                returnedID = saleID;
+
+                foreach (var it in items)
+                {
+                    decimal lineTotal = it.Quantity * it.UnitPrice;
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
+                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0)",
+                        DbHelper.P("@sid", saleID),
+                        DbHelper.P("@pid", it.ProductID),
+                        DbHelper.P("@qty", it.Quantity),
+                        DbHelper.P("@up", it.UnitPrice),
+                        DbHelper.P("@tot", lineTotal));
+                }
+
+                // قيد العميل (Credit) إن كانت آجل
+                if (paymentType != "Cash" && clientID > 0)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ClientTransactions(ClientID,TransDate,TransType,Debit,RefID,Notes,CreatedBy) " +
+                        "VALUES(@cid,@dt,'Sale',@amt,@ref,@n,@by)",
+                        DbHelper.P("@cid", clientID),
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", saleID),
+                        DbHelper.P("@n", "استيراد مبيعات مندوب — فاتورة #" + code),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                // قيد خزنة (Cash)
+                else if (paymentType == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) " +
+                        "VALUES(@dt,'DriverSaleImport',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", saleID),
+                        DbHelper.P("@n", "استيراد نقدي مندوب — فاتورة #" + code),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            AppLogger.Audit("استيراد فاتورة مندوب", $"SaleID:{returnedID} Client:{clientID} Driver:{driverID} Total:{total:N2}");
+            return returnedID;
         }
     }
 

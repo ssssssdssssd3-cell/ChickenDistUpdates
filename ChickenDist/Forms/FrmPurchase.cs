@@ -22,7 +22,8 @@ namespace ChickenDist.Forms
         private Label lblCashBalance;
 
         // ── حقول إضافة صنف ─────────────────────────────────────────────────────
-        private NumericUpDown nudQty, nudPrice, nudItemDisc;
+        private NumericUpDown nudQty, nudPrice, nudItemDisc, nudSalePrice;
+        private Label lblMarginPct; // عرض هامش الربح أثناء الإدخال
         private Button btnAddItem;
 
         // ── جدول الأصناف ───────────────────────────────────────────────────────
@@ -267,6 +268,28 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
                 Margin = new Padding(2, 4, 6, 0)
             };
+            nudPrice.ValueChanged += (s, e) => UpdateMarginLabel();
+
+            var lblSalePrice = makeLblInline("سعر البيع:");
+            nudSalePrice = new NumericUpDown
+            {
+                Width = 80, Height = 28,
+                DecimalPlaces = 2, Minimum = 0, Maximum = 9999999,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Margin = new Padding(2, 4, 6, 0)
+            };
+            nudSalePrice.ValueChanged += (s, e) => UpdateMarginLabel();
+
+            lblMarginPct = new Label
+            {
+                Text = "0.0%",
+                AutoSize = false,
+                Width = 60, Height = 30,
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Margin = new Padding(2, 4, 6, 0)
+            };
 
             var lblItemDiscLbl = makeLblInline("خصم%:");
             nudItemDisc = new NumericUpDown
@@ -286,6 +309,9 @@ namespace ChickenDist.Forms
             flowAdd.Controls.Add(btnAddItem);
             flowAdd.Controls.Add(nudItemDisc);
             flowAdd.Controls.Add((Label)lblItemDiscLbl);
+            flowAdd.Controls.Add(lblMarginPct);
+            flowAdd.Controls.Add(nudSalePrice);
+            flowAdd.Controls.Add(lblSalePrice);
             flowAdd.Controls.Add(nudPrice);
             flowAdd.Controls.Add((Label)lblPrice);
             flowAdd.Controls.Add(nudQty);
@@ -333,6 +359,8 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
 
@@ -663,7 +691,8 @@ namespace ChickenDist.Forms
             {
                 var ci = new ComboItem(
                     Convert.ToInt32(r["ProductID"]),
-                    r["ProductName"].ToString());
+                    r["ProductName"].ToString(),
+                    r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m);
                 ci.Extra = r["PurchasePrice"] != DBNull.Value
                     ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
                 cboProduct.Items.Add(ci);
@@ -673,7 +702,17 @@ namespace ChickenDist.Forms
             cboProduct.SelectedIndexChanged += (s, e) =>
             {
                 if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
                     nudPrice.Value = ci.Extra;
+                    nudSalePrice.Value = ci.Price;
+                    UpdateMarginLabel();
+                }
+                else
+                {
+                    nudPrice.Value = 0;
+                    nudSalePrice.Value = 0;
+                    lblMarginPct.Text = "0.0%";
+                }
             };
         }
 
@@ -688,6 +727,7 @@ namespace ChickenDist.Forms
             decimal qty   = nudQty.Value;
             decimal price = nudPrice.Value;
             decimal disc  = nudItemDisc.Value;
+            decimal salePrice = nudSalePrice.Value;
 
             if (qty <= 0 || price <= 0)
             {
@@ -701,6 +741,7 @@ namespace ChickenDist.Forms
                 {
                     item.Quantity   += qty;
                     if (disc > 0) item.DiscountPct = disc; // تحديث الخصم
+                    item.SuggestedSalePrice = salePrice; // تحديث سعر البيع المقترح
                     RefreshGrid();
                     ResetAddRow();
                     return;
@@ -713,7 +754,8 @@ namespace ChickenDist.Forms
                 ProductName = ci.Text,
                 Quantity    = qty,
                 UnitPrice   = price,
-                DiscountPct = disc
+                DiscountPct = disc,
+                SuggestedSalePrice = salePrice
             });
 
             RefreshGrid();
@@ -726,7 +768,28 @@ namespace ChickenDist.Forms
             cboProduct.SelectedIndex = 0;
             nudQty.Value   = 1;
             nudItemDisc.Value = 0;
+            nudSalePrice.Value = 0;
+            lblMarginPct.Text = "0.0%";
             cboProduct.Focus();
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // ── 🔗 طريقة تحديث هامش الربح للإدخال المباشر ─────────────────────────────
+        private void UpdateMarginLabel()
+        {
+            decimal buy = nudPrice.Value;
+            decimal sell = nudSalePrice.Value;
+            if (buy > 0)
+            {
+                decimal margin = (sell - buy) / buy * 100m;
+                lblMarginPct.Text = margin.ToString("F1") + "%";
+                lblMarginPct.ForeColor = margin >= 0 ? Color.FromArgb(46, 204, 113) : Color.FromArgb(231, 76, 60);
+            }
+            else
+            {
+                lblMarginPct.Text = "0.0%";
+                lblMarginPct.ForeColor = Theme.TextSub;
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -737,13 +800,19 @@ namespace ChickenDist.Forms
             dgItems.Rows.Clear();
             foreach (var item in _items)
             {
+                decimal buy = item.UnitPrice;
+                decimal sell = item.SuggestedSalePrice ?? 0m;
+                decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
+
                 dgItems.Rows.Add(
                     item.ProductID,
                     item.ProductName,
                     item.Quantity.ToString("F3"),
                     item.UnitPrice.ToString("F2"),
                     item.DiscountPct.ToString("F2"),
-                    item.TotalPrice.ToString("F2"));
+                    item.TotalPrice.ToString("F2"),
+                    sell.ToString("F2"),
+                    margin.ToString("F1") + "%");
             }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
             RecalcTotals();
@@ -768,7 +837,12 @@ namespace ChickenDist.Forms
             else if (colName == "UnitPrice")
             {
                 if (decimal.TryParse(cellVal, out decimal p) && p > 0)
+                {
                     item.UnitPrice = p;
+                    decimal sell = item.SuggestedSalePrice ?? 0m;
+                    decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
+                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                }
                 else
                     dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
             }
@@ -781,6 +855,18 @@ namespace ChickenDist.Forms
                 }
                 else
                     dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
+            }
+            else if (colName == "SuggestedSalePrice")
+            {
+                if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
+                {
+                    item.SuggestedSalePrice = s;
+                    decimal buy = item.UnitPrice;
+                    decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
+                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                }
+                else
+                    dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = (item.SuggestedSalePrice ?? 0m).ToString("F2");
             }
 
             // تحديث عمود الإجمالي
@@ -1042,7 +1128,8 @@ namespace ChickenDist.Forms
                         Quantity    = Convert.ToDecimal(iRow["Quantity"]),
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
                         DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
-                        DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"])
+                        DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+                        SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null
                     });
                 }
                 RefreshGrid();
@@ -1099,6 +1186,42 @@ namespace ChickenDist.Forms
             decimal gross, discAmt, discPct, net, taxPct, taxAmt;
             CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt);
 
+            // 1. تحقق من تعديل أسعار البيع المقترحة للأصناف
+            var changedPricesList = new List<string>();
+            var itemsToUpdate = new List<PurchaseItemDTO>();
+            
+            foreach (var item in _items)
+            {
+                if (item.SuggestedSalePrice.HasValue)
+                {
+                    var currentPriceObj = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
+                    decimal currentPrice = currentPriceObj != null ? Convert.ToDecimal(currentPriceObj) : 0m;
+                    
+                    if (item.SuggestedSalePrice.Value != currentPrice)
+                    {
+                        changedPricesList.Add($"• {item.ProductName}: السعر الحالي {currentPrice:N2} ج -> المقترح {item.SuggestedSalePrice.Value:N2} ج");
+                        itemsToUpdate.Add(item);
+                    }
+                }
+            }
+
+            string priceDecision = "Ignore";
+            if (itemsToUpdate.Count > 0)
+            {
+                using (var dlg = new FrmPriceUpdateDecision(string.Join("\r\n", changedPricesList)))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        priceDecision = dlg.Decision;
+                    }
+                    else
+                    {
+                        // نلغي عملية الحفظ بالكامل لو أغلق المستخدم الشاشة لتجنب حفظ خاطئ
+                        return;
+                    }
+                }
+            }
+
             // إذا كنا نحفظ مسودة محملة — نحذفها أولاً
             if (_draftPurchaseID > 0)
             {
@@ -1115,10 +1238,38 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
+                    // تطبيق قرار تعديل أسعار البيع
+                    if (priceDecision == "ApplyNow")
+                    {
+                        foreach (var item in itemsToUpdate)
+                        {
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true);
+                        }
+                    }
+                    else if (priceDecision == "Pending")
+                    {
+                        foreach (var item in itemsToUpdate)
+                        {
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false);
+                        }
+                    }
+                    else
+                    {
+                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير) لكل صنف
+                        foreach (var item in _items)
+                        {
+                            DbHelper.Execute(
+                                "UPDATE Products SET CostPrice = @cp, PurchasePrice = @cp WHERE ProductID = @id",
+                                DbHelper.P("@cp", item.UnitPrice),
+                                DbHelper.P("@id", item.ProductID));
+                        }
+                    }
+
                     _lastPurchaseID = id;
                     MessageBox.Show(
                         $"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: PUR-{id}" +
-                        (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : ""),
+                        (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : "") +
+                        (priceDecision == "Pending" ? "\n⚠️ تم تعليق أسعار البيع الجديدة وسوف تتفعل تلقائياً عند نفاد الكميات الحالية." : ""),
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ClearInvoice();
                     LoadCombos();
@@ -1174,6 +1325,64 @@ namespace ChickenDist.Forms
             taxAmt = Math.Round(afterDisc * taxPct / 100m, 2);
 
             net = afterDisc + taxAmt;
+        }
+    }
+
+    /// <summary>نافذة حوار منسقة لاختيار طريقة تعديل أسعار البيع</summary>
+    public class FrmPriceUpdateDecision : Form
+    {
+        public string Decision { get; private set; } = "Ignore"; // "ApplyNow", "Pending", "Ignore"
+
+        public FrmPriceUpdateDecision(string itemsText)
+        {
+            this.Text = "تحديث أسعار البيع";
+            this.Size = new Size(500, 350);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.RightToLeft = RightToLeft.Yes;
+            this.RightToLeftLayout = true;
+            this.BackColor = Theme.BgCard;
+            this.Font = Theme.FontMain;
+
+            var lblMsg = new Label
+            {
+                Text = "تم تغيير أسعار البيع المقترحة للأصناف التالية:",
+                Location = new Point(15, 15),
+                Size = new Size(460, 25),
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+
+            var txtItems = new TextBox
+            {
+                Text = itemsText,
+                Location = new Point(15, 45),
+                Size = new Size(460, 140),
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            var btnApplyNow = Theme.MakeButton("⚡ تطبيق فوري", 15, 205, 130, 35, Theme.Success);
+            var btnPending = Theme.MakeButton("⏳ سعر معلق (حسب الكمية)", 155, 205, 190, 35, Theme.Accent);
+            var btnIgnore = Theme.MakeButton("❌ تجاهل التغييرات", 355, 205, 120, 35, Color.FromArgb(120, 120, 120));
+
+            btnApplyNow.Click += (s, e) => { Decision = "ApplyNow"; this.DialogResult = DialogResult.OK; this.Close(); };
+            btnPending.Click += (s, e) => { Decision = "Pending"; this.DialogResult = DialogResult.OK; this.Close(); };
+            btnIgnore.Click += (s, e) => { Decision = "Ignore"; this.DialogResult = DialogResult.OK; this.Close(); };
+
+            this.Controls.Add(lblMsg);
+            this.Controls.Add(txtItems);
+            this.Controls.Add(btnApplyNow);
+            this.Controls.Add(btnPending);
+            this.Controls.Add(btnIgnore);
+            
+            Theme.ApplyFormRTL(this);
         }
     }
 }
