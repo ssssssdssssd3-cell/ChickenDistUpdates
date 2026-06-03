@@ -1,4 +1,4 @@
-version=1.0.49
+version=1.0.50
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=47F1B9F561AD480B06F1C428C3993065B1680AD550654451B26BABE55DB18ACE
-changelog=v1.0.49: (1) تحويل مفتاح Enter ليعمل كبديل لمفتاح Tab للتنقل التلقائي والسلس بين حقول الإدخال في كافة شاشات البرنامج.
+sha256=FDBB4FE229FC56FBF89452F2F8AB0DD233C8B8AA28BB2E81DFE73D7BCFAA8CF2
+changelog=v1.0.50: (1) عرض السعر الأساسي والمعلق معاً بجانب اسم الصنف في قائمة اختيار الأصناف داخل شاشة المبيعات (مثال: كتكوت لحم (12.00 | المعلق: 15.00)).

@@ -666,12 +666,21 @@ namespace ChickenDist.Forms
 			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
+				string name = row3["ProductName"].ToString();
+				decimal price = (decimal)row3["SalePrice"];
+				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
+
+				string displayText = pendingPrice > 0 
+					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
+					: $"{name} ({price:N2})";
+
 				cboProduct.Items.Add(new ComboItem(
-                    (int)row3["ProductID"], 
-                    row3["ProductName"].ToString(), 
-                    (decimal)row3["SalePrice"], 
-                    row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m
-                ));
+					(int)row3["ProductID"], 
+					name,
+					displayText,
+					price, 
+					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m
+				));
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -695,7 +704,7 @@ namespace ChickenDist.Forms
 					decimal stock = _stockCache.TryGetValue(comboItem.ID, out var cached1) ? cached1 : 0m;
 					if (stock <= 0)
 					{
-						MessageBox.Show($"❌ عجز: الصنف '{comboItem.Text}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						MessageBox.Show($"❌ عجز: الصنف '{comboItem.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						cboProduct.SelectedIndex = 0;
 						return;
 					}
@@ -704,11 +713,11 @@ namespace ChickenDist.Forms
 					_items.Add(new SaleItemDTO
 					{
 						ProductID = comboItem.ID,
-						ProductName = comboItem.Text,
+						ProductName = comboItem.Name,
 						Quantity = 1.00m,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
-                        MinStockLimit = comboItem.MinStockLimit
+						MinStockLimit = comboItem.MinStockLimit
 					});
 
 					RefreshGrid();
@@ -1602,6 +1611,8 @@ namespace ChickenDist.Forms
 	{
 		public int ID { get; }
 
+		public string Name { get; }
+
 		public string Text { get; }
         
         public decimal Extra { get; set; }
@@ -1613,9 +1624,19 @@ namespace ChickenDist.Forms
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m)
 		{
 			ID = id;
+			Name = text;
 			Text = text;
 			Price = price;
-            MinStockLimit = minStockLimit;
+			MinStockLimit = minStockLimit;
+		}
+
+		public ComboItem(int id, string name, string text, decimal price, decimal minStockLimit = 0m)
+		{
+			ID = id;
+			Name = name;
+			Text = text;
+			Price = price;
+			MinStockLimit = minStockLimit;
 		}
 
 		public override string ToString()

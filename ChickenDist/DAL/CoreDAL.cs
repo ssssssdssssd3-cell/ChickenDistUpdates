@@ -112,8 +112,8 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(bool activeOnly = false)
         {
             string sql = activeOnly
-                ? "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description FROM Products WHERE IsActive=1 ORDER BY ProductName"
-                : "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,IsActive FROM Products ORDER BY ProductName";
+                ? "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,PendingSalePrice FROM Products WHERE IsActive=1 ORDER BY ProductName"
+                : "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,PendingSalePrice,IsActive FROM Products ORDER BY ProductName";
             return DbHelper.Query(sql);
         }
 
