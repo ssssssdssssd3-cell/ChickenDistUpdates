@@ -150,6 +150,7 @@ namespace ChickenDist.Forms
                 ("🚚", "حمولة مندوب",     "DriverHandover", () => NavigateTo(new FrmDriverHandover()), Color.FromArgb(109, 40, 217)),
                 ("🖥️", "مراقبة المناديب", "DriverHandover", () => NavigateTo(new FrmDriversMonitor()), Color.FromArgb(109, 40, 217)),
                 ("📋", "عهدة المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverCustody()),  Color.FromArgb(109, 40, 217)),
+                ("🏆", "أداء المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverLeaderboard()), Color.FromArgb(80, 30, 190)),
 
                 // ── المالية ───────────────────────────────────────────
                 ("💰", "الخزنة",           "CashBox",        () => NavigateTo(new FrmCashBox()),        Color.FromArgb(159, 18, 57)),

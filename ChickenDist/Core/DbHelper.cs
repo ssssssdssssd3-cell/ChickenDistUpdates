@@ -301,6 +301,42 @@ namespace ChickenDist.Core
                     ALTER TABLE Purchases ADD TaxAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
                 END";
                 Execute(sqlPurchasesTax);
+
+                // ===== جدول حركات الموظفين (عجز، سلفة، تسوية) =====
+                string sqlEmployeeTransactions = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EmployeeTransactions')
+                BEGIN
+                    CREATE TABLE EmployeeTransactions (
+                        TransID    INT IDENTITY(1,1) PRIMARY KEY,
+                        TransDate  DATETIME DEFAULT GETDATE(),
+                        EmpID      INT NOT NULL REFERENCES Employees(EmpID),
+                        TransType  NVARCHAR(30) NOT NULL,
+                        Debit      DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        Credit     DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        RefID      INT NULL,
+                        Notes      NVARCHAR(500) NULL,
+                        CreatedBy  INT REFERENCES Employees(EmpID)
+                    );
+                END";
+                Execute(sqlEmployeeTransactions);
+
+                // ===== عرض أرصدة الموظفين =====
+                string sqlEmployeeBalanceView = @"
+                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_EmployeeBalance')
+                BEGIN
+                    EXEC('CREATE VIEW vw_EmployeeBalance AS
+                    SELECT
+                        e.EmpID,
+                        e.EmpName,
+                        e.Phone,
+                        ISNULL(SUM(et.Debit),0)  AS TotalDebit,
+                        ISNULL(SUM(et.Credit),0) AS TotalCredit,
+                        ISNULL(SUM(et.Debit),0) - ISNULL(SUM(et.Credit),0) AS Balance
+                    FROM Employees e
+                    LEFT JOIN EmployeeTransactions et ON e.EmpID = et.EmpID
+                    GROUP BY e.EmpID, e.EmpName, e.Phone')
+                END";
+                Execute(sqlEmployeeBalanceView);
             }
             catch (Exception ex)
             {

@@ -517,6 +517,131 @@ namespace ChickenDist.DAL
                 WHERE dl.IsClosed = 0
                 ORDER BY e.EmpName, dl.LoadDate DESC");
         }
+
+        /// <summary>تسوية العجز المالي عند التقفيل — 3 خيارات: سلفة، مصروف شركة، خصم</summary>
+        public static void SettleDeficit(int driverID, int loadID, decimal deficitValue, string settlementType, string notes)
+        {
+            // settlementType: "Advance" = سلفة على المندوب | "CompanyExpense" = مصروف شركة | "Deduction" = خصم
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                if (settlementType == "Advance" || settlementType == "Deduction")
+                {
+                    // تسجيل مديونية/خصم على المندوب في EmployeeTransactions
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO EmployeeTransactions(EmpID, TransType, Debit, RefID, Notes, CreatedBy)
+                          VALUES(@eid, @type, @amt, @ref, @n, @by)",
+                        DbHelper.P("@eid", driverID),
+                        DbHelper.P("@type", settlementType == "Advance" ? "DeficitCharge" : "Deduction"),
+                        DbHelper.P("@amt", deficitValue),
+                        DbHelper.P("@ref", loadID),
+                        DbHelper.P("@n", notes),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                else if (settlementType == "CompanyExpense")
+                {
+                    // تحميل العجز على الشركة كمصروف تشغيلي
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO Expenses(ExpenseDate, ExpenseType, Amount, Notes, CreatedBy)
+                          VALUES(GETDATE(), N'عجز حمولة مندوب', @amt, @n, @by)",
+                        DbHelper.P("@amt", deficitValue),
+                        DbHelper.P("@n", notes),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            AppLogger.Audit("تسوية عجز حمولة", $"DriverID:{driverID} LoadID:{loadID} Value:{deficitValue:N2} Type:{settlementType}");
+        }
+
+        /// <summary>كشف التحصيل اليومي للمندوب — قائمة عملاء بديونهم لإرسالها عبر واتساب</summary>
+        public static DataTable GetDriverCollectionList(int driverID, DateTime date)
+        {
+            return DbHelper.Query(
+                @"SELECT
+                    c.ClientName,
+                    ISNULL(c.Phone, N'---') AS Phone,
+                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    ISNULL((
+                        SELECT SUM(TotalAmount)
+                        FROM Sales
+                        WHERE DriverID = @did AND ClientID = c.ClientID
+                          AND CAST(SaleDate AS DATE) = @dt AND IsPosted = 1
+                          AND SaleType IN ('Cash','Credit')
+                    ), 0) AS TodaySales
+                  FROM Clients c
+                  LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                  WHERE c.DriverID = @did AND c.IsActive = 1
+                    AND ISNULL(cb.Balance, c.OpeningBalance) > 0
+                  ORDER BY Balance DESC",
+                DbHelper.P("@did", driverID),
+                DbHelper.P("@dt", date.Date));
+        }
+
+        /// <summary>بيانات لوحة أداء ومنافسة المناديب</summary>
+        public static DataTable GetLeaderboard(DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT
+                    e.EmpID,
+                    e.EmpName                                          AS DriverName,
+                    ISNULL(e.Phone, N'---')                             AS Phone,
+                    -- إجمالي المبيعات
+                    ISNULL((
+                        SELECT SUM(s.TotalAmount)
+                        FROM Sales s
+                        WHERE s.DriverID = e.EmpID AND s.IsPosted = 1
+                          AND s.SaleType IN ('Cash','Credit')
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalSales,
+                    -- النقدية المحصلة (مبيعات نقدية + ما حُصّل عند التقفيل)
+                    ISNULL((
+                        SELECT SUM(s.TotalAmount)
+                        FROM Sales s
+                        WHERE s.DriverID = e.EmpID AND s.IsPosted = 1
+                          AND s.SaleType = 'Cash'
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS CashSales,
+                    -- إجمالي النافق
+                    ISNULL((
+                        SELECT SUM(dh.TotalDead)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalDead,
+                    -- إجمالي العجز (بعد قاعدة النافق = عجز)
+                    ISNULL((
+                        SELECT SUM(dh.TotalDeficit)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalDeficit,
+                    -- عدد الحمولات المقفلة
+                    ISNULL((
+                        SELECT COUNT(*)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS HandoverCount,
+                    -- رصيد المديونية على المندوب
+                    ISNULL((
+                        SELECT SUM(et.Debit) - SUM(et.Credit)
+                        FROM EmployeeTransactions et
+                        WHERE et.EmpID = e.EmpID
+                    ), 0) AS DebtBalance
+                  FROM Employees e
+                  WHERE e.IsDriver = 1 AND e.IsActive = 1
+                  ORDER BY TotalSales DESC",
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date));
+        }
+
+        /// <summary>رصيد مديونية مندوب معين</summary>
+        public static decimal GetEmployeeBalance(int empID)
+        {
+            var r = DbHelper.Scalar(
+                "SELECT ISNULL(SUM(Debit),0)-ISNULL(SUM(Credit),0) FROM EmployeeTransactions WHERE EmpID=@id",
+                DbHelper.P("@id", empID));
+            return r != null ? Convert.ToDecimal(r) : 0;
+        }
     }
 
     public class HandoverItemDTO
@@ -529,11 +654,14 @@ namespace ChickenDist.DAL
         public decimal DeadQty { get; set; }
         public decimal UnitPrice { get; set; }
 
+        // ✅ قاعدة: النافق = عجز — لا يخصم النافق من المتوقع، فكل نافق يحاسب عليه المندوب
+        // المتوقع = المحمل - المرتجع فقط (النافق لا يُعفي المندوب)
+        // عجز الكمية = المتوقع - المباع (إذا كان المتوقع > المباع)
         public decimal DeficitQty
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
                 return expected > SoldQty ? expected - SoldQty : 0;
             }
         }
@@ -542,10 +670,16 @@ namespace ChickenDist.DAL
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
                 return SoldQty > expected ? SoldQty - expected : 0;
             }
         }
+
+        /// <summary>القيمة المالية للعجز (كمية العجز × سعر الوحدة)</summary>
+        public decimal DeficitValue => DeficitQty * UnitPrice;
+
+        /// <summary>القيمة المالية للنافق (كمية النافق × سعر الوحدة)</summary>
+        public decimal DeadValue => DeadQty * UnitPrice;
     }
 
 
