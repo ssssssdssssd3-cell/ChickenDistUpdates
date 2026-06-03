@@ -41,6 +41,9 @@ namespace ChickenDist
             if (login.ShowDialog() != DialogResult.OK)
                 return;
 
+            // فحص النسخ الاحتياطي — يعرض تحذير إذا مضى أكثر من 24 ساعة
+            ChickenDist.Core.BackupManager.CheckAndWarnIfOverdue();
+
             // Open Main
             Application.Run(new FrmMain());
         }

@@ -33,13 +33,13 @@ namespace ChickenDist.Core
 
         // ===== دوال القراءة والكتابة =====
 
-        private static string Get(string key, string defaultValue)
+        public static string Get(string key, string defaultValue)
         {
             EnsureLoaded();
             return _cache.TryGetValue(key, out string val) ? val : defaultValue;
         }
 
-        private static void Set(string key, string value)
+        public static void Set(string key, string value)
         {
             EnsureLoaded();
             _cache[key] = value ?? "";
