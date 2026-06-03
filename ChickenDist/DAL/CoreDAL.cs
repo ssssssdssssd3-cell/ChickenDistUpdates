@@ -172,13 +172,7 @@ namespace ChickenDist.DAL
             else
             {
                 // احسب المخزون الحالي كـ Threshold للتفعيل التلقائي لاحقاً
-                var r = DbHelper.Scalar(
-                    @"SELECT ISNULL(SUM(ii.Quantity),0)
-                      FROM InventoryItems ii
-                      JOIN Inventory i ON ii.InventoryID = i.InventoryID
-                      WHERE ii.ProductID = @id AND i.IsLatest = 1",
-                    DbHelper.P("@id", productID));
-                decimal currentStock = r != null ? Convert.ToDecimal(r) : 0;
+                decimal currentStock = InventoryDAL.GetProductStock(productID);
 
                 DbHelper.Execute(
                     @"UPDATE Products
@@ -229,13 +223,7 @@ namespace ChickenDist.DAL
             decimal threshold = Convert.ToDecimal(dt.Rows[0]["PendingQtyThreshold"]);
 
             // احسب المخزون الحالي
-            var rStock = DbHelper.Scalar(
-                @"SELECT ISNULL(SUM(ii.Quantity),0)
-                  FROM InventoryItems ii
-                  JOIN Inventory i ON ii.InventoryID = i.InventoryID
-                  WHERE ii.ProductID = @id AND i.IsLatest = 1",
-                DbHelper.P("@id", productID));
-            decimal currentStock = rStock != null ? Convert.ToDecimal(rStock) : 0;
+            decimal currentStock = InventoryDAL.GetProductStock(productID);
 
             // إذا المخزون وصل للحد أو أقل → فعّل السعر الجديد
             if (currentStock <= 0 || currentStock <= threshold)

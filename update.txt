@@ -1,4 +1,4 @@
-version=1.0.47
+version=1.0.48
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=E1EF3639763A08C6987B246F89306C18F961F090CDF811C9FFF5888C8B343838
-changelog=v1.0.47: (1) إضافة أزرار شاشات بيع المندوب واستيراد CSV في القائمة الرئيسية. (2) تصحيح كود فحص صلاحية شاشة جرد المخزن. (3) تضمين واستخراج صفحة المندوب driver_sales.html تلقائياً عند التشغيل لضمان تحديثها وسهولة الوصول إليها. (4) ربط إظهار أزرار التصدير والاستيراد في شاشة تقفيل الحمولة بصلاحيات المستخدم.
+sha256=061978428CDCB5191C925BA56B80974BEDC3B1C163F1D0937432DCDFB214F64E
+changelog=v1.0.48: (1) إصلاح خطأ استعلام InventoryItems غير الموجودة واستبداله بالدالة المخصصة لحساب المخزون الفعلي (GetProductStock).
