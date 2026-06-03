@@ -59,6 +59,17 @@ namespace ChickenDist.Core
             _connStr = connStr;
         }
 
+        /// <summary>
+        /// يُرجع نسخة من الاتصال بفاصل زمني صغير (5 ثواني) لاختبار الاتصال سريعاً عند بدء التشغيل.
+        /// </summary>
+        public static string GetConnectionStringForCheck()
+        {
+            // نستخدم الاتصال الحالي ونغيّر الفاصل إلى 5 ثواني فقط
+            var builder = new System.Data.SqlClient.SqlConnectionStringBuilder(_connStr);
+            builder.ConnectTimeout = 5;
+            return builder.ConnectionString;
+        }
+
         public static void EnsureDatabaseSchema()
         {
             try
