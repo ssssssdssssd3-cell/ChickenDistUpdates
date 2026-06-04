@@ -168,8 +168,7 @@ namespace ChickenDist.Core
         // ======================== الرفع السحابي ========================
 
         /// <summary>
-        /// يرفع JSON البيانات إلى dpaste.org ويُرجع الرمز القصير (مثل ABC12)
-        /// صالح 24 ساعة ويُحذف تلقائياً
+        /// يرفع JSON البيانات إلى pastes.dev ويُرجع الرمز التعريفي الفريد
         /// </summary>
         public static string UploadToCloud()
         {
@@ -178,23 +177,24 @@ namespace ChickenDist.Core
             using (var wc = new WebClient())
             {
                 wc.Encoding = Encoding.UTF8;
-                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                wc.Headers[HttpRequestHeader.Accept]      = "text/plain";
+                wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
+                wc.Headers[HttpRequestHeader.UserAgent]   = "ChickenDistApp (contact@chickendist.com)";
 
-                // expires=86400 = 24 ساعة
-                string payload = "content=" + Uri.EscapeDataString(json)
-                                + "&expires=86400"
-                                + "&format=url"
-                                + "&lexer=json";
+                string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", json);
 
-                string result = wc.UploadString("https://dpaste.org/api/", "POST", payload);
+                // النتيجة عبارة عن JSON يحتوي على الـ key، مثل: {"key": "aSn51xltLu"}
+                string code = "";
+                var match = System.Text.RegularExpressions.Regex.Match(responseStr, @"""key""\s*:\s*""([^""]+)""");
+                if (match.Success)
+                {
+                    code = match.Groups[1].Value;
+                }
+                else
+                {
+                    code = responseStr.Trim(); // Fallback
+                }
 
-                // النتيجة: https://dpaste.org/XXXXX
-                string code = result.Trim().TrimEnd('/');
-                if (code.Contains("/"))
-                    code = code.Substring(code.LastIndexOf('/') + 1);
-
-                _lastCloudCode  = code.ToUpper();
+                _lastCloudCode  = code; // لا نقوم بعمل ToUpper() لأن الرموز في pastes.dev حساسة لحالة الأحرف
                 _cloudCodeExpiry = DateTime.Now.AddHours(24);
                 return _lastCloudCode;
             }
