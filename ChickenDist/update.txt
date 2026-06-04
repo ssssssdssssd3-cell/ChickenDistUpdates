@@ -1,4 +1,4 @@
-version=1.0.50
+version=1.0.60
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=FDBB4FE229FC56FBF89452F2F8AB0DD233C8B8AA28BB2E81DFE73D7BCFAA8CF2
-changelog=v1.0.50: (1) عرض السعر الأساسي والمعلق معاً بجانب اسم الصنف في قائمة اختيار الأصناف داخل شاشة المبيعات (مثال: كتكوت لحم (12.00 | المعلق: 15.00)).
+sha256=96e0ae34aab96d23d4f2c2fae3a7c0fafebd43201bab6ec19493d96ad8097e36
+changelog=v1.0.60: (1) شاشة تعديل الفاتورة مع سجل تدقيق وسجل الحركات التاريخي للأصناف (2) مستويات أسعار المنتجات (قطاعي/نصف جملة/جملة) وتطبيقها تلقائياً حسب نوع تسعير العميل (3) نسخ الفاتورة كمسودة جديدة وتحديث تاريخها (4) إصلاح مشاكل الـ Transaction وحفظ سعر البيع الفعلي للمنتجات.
