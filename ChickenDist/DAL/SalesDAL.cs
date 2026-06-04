@@ -667,9 +667,9 @@ namespace ChickenDist.DAL
         /// </summary>
         public static string BuildDriverExportJson()
         {
-            // جلب العملاء النشطين
+            // جلب العملاء النشطين مع DriverID
             var clients = DbHelper.Query(
-                "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+                "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 ORDER BY ClientName");
 
             // جلب الأصناف النشطة
             var products = DbHelper.Query(
@@ -678,6 +678,14 @@ namespace ChickenDist.DAL
             // جلب المناديب النشطين
             var drivers = DbHelper.Query(
                 "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+
+            // جلب الحمولات المفتوحة
+            var loads = DbHelper.Query(@"
+                SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
+                FROM DriverLoads dl
+                JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
+                WHERE dl.IsClosed = 0
+                GROUP BY dl.DriverID, dli.ProductID");
 
             var sb = new System.Text.StringBuilder();
             sb.Append("{");
@@ -688,10 +696,12 @@ namespace ChickenDist.DAL
             foreach (System.Data.DataRow r in clients.Rows)
             {
                 if (!firstC) sb.Append(",");
-                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"phone\":\"{2}\"}}",
+                string driverVal = r["DriverID"] == DBNull.Value ? "null" : r["DriverID"].ToString();
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"phone\":\"{2}\",\"driverId\":{3}}}",
                     r["ClientID"],
                     EscapeJson(r["ClientName"].ToString()),
-                    EscapeJson(r["Phone"].ToString()));
+                    EscapeJson(r["Phone"].ToString()),
+                    driverVal);
                 firstC = false;
             }
             sb.Append("],");
@@ -708,6 +718,20 @@ namespace ChickenDist.DAL
                     Convert.ToDecimal(r["SalePrice"]).ToString("F4", System.Globalization.CultureInfo.InvariantCulture),
                     EscapeJson(r["Unit"].ToString()));
                 firstP = false;
+            }
+            sb.Append("],");
+
+            // loads array
+            sb.Append("\"loads\":[");
+            bool firstL = true;
+            foreach (System.Data.DataRow r in loads.Rows)
+            {
+                if (!firstL) sb.Append(",");
+                sb.AppendFormat("{{\"driverId\":{0},\"productId\":{1},\"qty\":{2}}}",
+                    r["DriverID"],
+                    r["ProductID"],
+                    Convert.ToDecimal(r["LoadedQty"]).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                firstL = false;
             }
             sb.Append("],");
 

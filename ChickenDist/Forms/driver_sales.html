@@ -248,8 +248,12 @@
   <div id="tabNew" class="section active">
     <div class="card">
       <div class="card-title">👤 العميل</div>
-      <div class="search-bar">
+      <div class="search-bar" style="flex-direction: column; gap: 8px; align-items: stretch;">
         <input type="text" id="clientSearch" placeholder="ابحث باسم العميل..." oninput="filterClients()" autocomplete="off">
+        <label id="lblAllClients" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-top: 4px; font-size: 13px; color: var(--sub);">
+          <input type="checkbox" id="chkAllClients" onchange="filterClients()" style="width: 17px; height: 17px; cursor: pointer;">
+          <span>البحث في جميع العملاء (وليس المربوطين بي فقط)</span>
+        </label>
       </div>
       <div class="scroll-list" id="clientList"></div>
       <div id="selectedClientBadge" style="display:none; margin-top:10px; background: rgba(79,142,247,0.1); border: 1px solid var(--accent); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:8px;">
@@ -351,6 +355,7 @@
         </div>
       </div>
       <button class="btn btn-primary" onclick="exportCSV()">📥 تحميل ملف CSV للمحاسب</button>
+      <button class="btn btn-green" onclick="shareToWhatsApp()" style="margin-top: 10px; background-color: #25D366; color: white;">📲 إرسال الكشف للمحاسب عبر واتساب</button>
       <div class="sep"></div>
       <button class="btn btn-ghost" onclick="clearAll()" style="color:var(--red)">🗑️ مسح كل الفواتير وبدء يوم جديد</button>
     </div>
@@ -372,12 +377,13 @@
 
 <script>
 // =================== STATE ===================
-let appData = { clients: [], products: [], drivers: [] };
+let appData = { clients: [], products: [], loads: [], drivers: [] };
 let invoices = [];
 let currentItems = [];
 let selectedClient = null;
 let paymentType = 'Cash';
 let driverName = '';
+let driverId = null;
 
 // =================== INIT ===================
 window.onload = () => {
@@ -511,9 +517,10 @@ function loadFromStorageSilent() {
   const saved = localStorage.getItem('driver_appData');
   const savedInv = localStorage.getItem('driver_invoices');
   const savedDriver = localStorage.getItem('driver_name');
+  const savedDriverId = localStorage.getItem('driver_id');
   if (saved) {
     try { appData = JSON.parse(saved); }
-    catch(e) { localStorage.removeItem('driver_appData'); appData = { clients: [], products: [], drivers: [] }; }
+    catch(e) { localStorage.removeItem('driver_appData'); appData = { clients: [], products: [], loads: [], drivers: [] }; }
   }
   if (savedInv) {
     try { invoices = JSON.parse(savedInv); }
@@ -521,6 +528,7 @@ function loadFromStorageSilent() {
   }
   if (savedDriver) {
     driverName = savedDriver;
+    driverId = savedDriverId ? parseInt(savedDriverId) : null;
     // auto launch app if driver known
     if (driverName && appData.clients && appData.clients.length > 0) {
       launchApp();
@@ -533,21 +541,34 @@ function showStep2() {
   const sel = document.getElementById('selDriver');
   sel.innerHTML = '<option value="">-- اختر --</option>';
   (appData.drivers || []).forEach(d => {
-    sel.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+    sel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
   });
 }
 
 function onDriverChange() {
-  const v = document.getElementById('selDriver').value;
-  if (v) document.getElementById('txtDriverName').value = v;
+  const sel = document.getElementById('selDriver');
+  const v = sel.value;
+  if (v) {
+    document.getElementById('txtDriverName').value = sel.options[sel.selectedIndex].text;
+  }
 }
 
 function confirmSetup() {
-  const name = document.getElementById('txtDriverName').value.trim() ||
-               document.getElementById('selDriver').value.trim();
+  const sel = document.getElementById('selDriver');
+  const selectedId = sel.value;
+  const name = selectedId ? sel.options[sel.selectedIndex].text : document.getElementById('txtDriverName').value.trim();
+  
   if (!name) { toast('❌ أدخل اسم المندوب', 'error'); return; }
+  
   driverName = name;
+  driverId = selectedId ? parseInt(selectedId) : null;
+  
   localStorage.setItem('driver_name', name);
+  if (driverId) {
+    localStorage.setItem('driver_id', driverId);
+  } else {
+    localStorage.removeItem('driver_id');
+  }
   launchApp();
 }
 
@@ -556,6 +577,10 @@ function launchApp() {
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('headerDriver').textContent = 'المندوب: ' + driverName;
   document.getElementById('headerDate').textContent = todayDisplay();
+  
+  // إخفاء خيار البحث في جميع العملاء إذا تم الدخول يدوياً بدون تحديد معرف المندوب
+  document.getElementById('lblAllClients').style.display = driverId ? 'flex' : 'none';
+  
   renderClients();
   renderProducts();
   renderInvoices();
@@ -565,9 +590,11 @@ function launchApp() {
 // =================== CLIENTS ===================
 function renderClients(filter = '') {
   const list = document.getElementById('clientList');
-  const clients = (appData.clients || []).filter(c =>
-    !filter || c.name.includes(filter) || (c.phone||'').includes(filter)
-  );
+  const searchAll = document.getElementById('chkAllClients')?.checked || !driverId;
+  const clients = (appData.clients || []).filter(c => {
+    if (!searchAll && c.driverId !== driverId) return false;
+    return !filter || c.name.includes(filter) || (c.phone||'').includes(filter);
+  });
   list.innerHTML = clients.slice(0,40).map(c => `
     <div class="list-item" onclick="selectClient(${c.id})">
       <div class="item-avatar">${c.name.charAt(0)}</div>
@@ -610,21 +637,68 @@ function clearClient() {
 }
 
 // =================== PRODUCTS ===================
+function getProductRemainingQty(productId) {
+  if (!driverId) return Infinity;
+  const load = (appData.loads || []).find(l => l.driverId === driverId && l.productId === productId);
+  if (!load) return 0;
+  
+  let sold = 0;
+  invoices.forEach(inv => {
+    inv.items.forEach(item => {
+      if (item.productId === productId) {
+        sold += item.qty;
+      }
+    });
+  });
+  return Math.max(0, load.qty - sold);
+}
+
 function renderProducts(filter = '') {
   const list = document.getElementById('productList');
-  const prods = (appData.products || []).filter(p =>
-    !filter || p.name.includes(filter)
-  );
-  list.innerHTML = prods.slice(0,50).map(p => `
-    <div class="list-item" onclick="addProduct(${p.id})">
-      <div class="item-avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a)">📦</div>
-      <div class="item-info">
-        <strong>${p.name}</strong>
-        <span>${p.price.toFixed(2)} ج / ${p.unit || 'وحدة'}</span>
+  
+  let prods = [];
+  if (driverId) {
+    const driverLoads = (appData.loads || []).filter(l => l.driverId === driverId && l.qty > 0);
+    const loadedProductIds = driverLoads.map(l => l.productId);
+    prods = (appData.products || []).filter(p => loadedProductIds.includes(p.id));
+  } else {
+    prods = appData.products || [];
+  }
+  
+  if (filter) {
+    prods = prods.filter(p => p.name.includes(filter));
+  }
+  
+  const isFiltered = !!filter;
+  const displayProds = isFiltered ? prods : prods.slice(0, 5);
+  
+  if (driverId && (appData.loads || []).filter(l => l.driverId === driverId).length === 0) {
+    list.innerHTML = '<div style="padding:16px;color:var(--red);text-align:center;font-weight:bold">⚠️ لا توجد حمولة مفتوحة لك حالياً في النظام!</div>';
+    return;
+  }
+  
+  list.innerHTML = displayProds.map(p => {
+    const remaining = getProductRemainingQty(p.id);
+    const qtyText = driverId ? ` (المتبقي: ${remaining} ${p.unit || 'وحدة'})` : '';
+    const isDisabled = driverId && remaining <= 0;
+    
+    return `
+      <div class="list-item" style="${isDisabled ? 'opacity: 0.5; pointer-events: none;' : ''}" onclick="addProduct(${p.id})">
+        <div class="item-avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a)">📦</div>
+        <div class="item-info">
+          <strong>${p.name}</strong>
+          <span>${p.price.toFixed(2)} ج / ${p.unit || 'وحدة'}${qtyText}</span>
+        </div>
+        <span style="color:${isDisabled ? 'var(--sub)' : 'var(--accent)'}; font-weight:700; font-size:13px">
+          ${isDisabled ? 'نفذت الكمية' : '+ إضافة'}
+        </span>
       </div>
-      <span style="color:var(--accent); font-weight:700; font-size:13px">+ إضافة</span>
+    `;
+  }).join('') + (!isFiltered && prods.length > 5 ? `
+    <div style="padding:10px;color:var(--sub);text-align:center;font-size:12px;border-top:1px solid var(--border)">
+      💡 يظهر أول 5 أصناف فقط. اكتب في صندوق البحث أعلاه للبحث عن باقي الأصناف...
     </div>
-  `).join('') || '<div style="padding:16px;color:var(--sub);text-align:center">لا يوجد أصناف</div>';
+  ` : '') || '<div style="padding:16px;color:var(--sub);text-align:center">لا يوجد أصناف مطابقة</div>';
 }
 
 function filterProducts() {
@@ -634,7 +708,16 @@ function filterProducts() {
 function addProduct(id) {
   const prod = (appData.products || []).find(p => p.id === id);
   if (!prod) return;
+  
+  const remaining = getProductRemainingQty(id);
   const existing = currentItems.find(i => i.productId === id);
+  const currentQty = existing ? existing.qty : 0;
+  
+  if (driverId && currentQty + 1 > remaining) {
+    toast(`❌ عذراً! لا يمكن إضافة المزيد. المتبقي بالسيارة هو ${remaining} فقط.`, 'error');
+    return;
+  }
+  
   if (existing) {
     existing.qty += 1;
   } else {
@@ -670,13 +753,31 @@ function renderItemsList() {
 }
 
 function changeQty(idx, delta) {
-  currentItems[idx].qty = Math.max(0.5, currentItems[idx].qty + delta);
+  const item = currentItems[idx];
+  const remaining = getProductRemainingQty(item.productId);
+  const newQty = item.qty + delta;
+  
+  if (driverId && newQty > remaining) {
+    toast(`❌ عذراً! المتبقي بالسيارة هو ${remaining} فقط.`, 'error');
+    return;
+  }
+  currentItems[idx].qty = Math.max(0.5, newQty);
   renderItemsList();
 }
 
 function setQty(idx, val) {
   const v = parseFloat(val);
-  if (!isNaN(v) && v > 0) currentItems[idx].qty = v;
+  if (isNaN(v) || v <= 0) return;
+  
+  const item = currentItems[idx];
+  const remaining = getProductRemainingQty(item.productId);
+  
+  if (driverId && v > remaining) {
+    toast(`❌ عذراً! المتبقي بالسيارة هو ${remaining} فقط.`, 'error');
+    renderItemsList();
+    return;
+  }
+  currentItems[idx].qty = v;
   renderItemsList();
 }
 
@@ -724,6 +825,7 @@ function saveInvoice() {
   document.querySelectorAll('.pay-opt').forEach((el, i) => { el.classList.toggle('active', i===0); });
 
   renderInvoices();
+  renderProducts();
   updateExportStats();
   document.getElementById('invCountBadge').textContent = invoices.length;
   switchTab('tabList');
@@ -772,6 +874,7 @@ function deleteInvoice(id) {
   invoices = invoices.filter(i => i.id !== id);
   localStorage.setItem('driver_invoices', JSON.stringify(invoices));
   renderInvoices();
+  renderProducts();
   updateExportStats();
 }
 
@@ -832,12 +935,105 @@ function exportCSV() {
   toast('✅ تم تحميل الملف: ' + filename, 'success');
 }
 
+// =================== SHARE TO WHATSAPP ===================
+function shareToWhatsApp() {
+  if (invoices.length === 0) { toast('❌ لا توجد فواتير للإرسال', 'error'); return; }
+  const dateStr = document.getElementById('exportDate').value.replace(/-/g, '_');
+  const safeDriver = driverName.replace(/[^a-zA-Z\u0600-\u06FF0-9]/g, '_');
+  const filename = `sales_${safeDriver}_${dateStr}.csv`;
+
+  // BOM for Arabic support in Excel
+  let csv = '\uFEFF';
+  csv += 'رقم_الفاتورة,تاريخ,وقت,اسم_العميل,هاتف_العميل,اسم_المندوب,كود_الصنف,اسم_الصنف,الكمية,سعر_الوحدة,الإجمالي,نوع_الدفع,ملاحظات\n';
+
+  invoices.forEach(inv => {
+    const d = new Date(inv.time);
+    const dateVal = d.toLocaleDateString('en-GB');
+    const timeVal = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    inv.items.forEach(item => {
+      const row = [
+        inv.id,
+        dateVal,
+        timeVal,
+        `"${inv.clientName}"`,
+        inv.clientPhone,
+        `"${inv.driverName}"`,
+        item.productId,
+        `"${item.name}"`,
+        item.qty,
+        item.price.toFixed(2),
+        (item.qty * item.price).toFixed(2),
+        inv.paymentType,
+        `"${inv.notes || ''}"`
+      ];
+      csv += row.join(',') + '\n';
+    });
+  });
+
+  // Try Web Share API first
+  if (navigator.canShare && navigator.share) {
+    try {
+      const file = new File([csv], filename, { type: 'text/csv;charset=utf-8;' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: `كشف مبيعات - ${driverName}`,
+          text: `كشف مبيعات المندوب ${driverName} بتاريخ ${dateStr.replace(/_/g, '-')}`
+        }).then(() => {
+          toast('✅ تم مشاركة الكشف بنجاح', 'success');
+        }).catch(err => {
+          if (err.name !== 'AbortError') {
+            sendWhatsAppTextMessage();
+          }
+        });
+        return;
+      }
+    } catch (e) {
+      console.log('Web Share API error:', e);
+    }
+  }
+
+  sendWhatsAppTextMessage();
+}
+
+function sendWhatsAppTextMessage() {
+  const cash = invoices.filter(i => i.paymentType === 'Cash').reduce((s, i) => s + i.total, 0);
+  const credit = invoices.filter(i => i.paymentType === 'Credit').reduce((s, i) => s + i.total, 0);
+  const total = cash + credit;
+
+  let msg = `📊 *كشف مبيعات اليوم للمندوب:* ${driverName}\n`;
+  msg += `📅 *التاريخ:* ${document.getElementById('exportDate').value}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `💰 *إجمالي المبيعات:* ${total.toFixed(2)} ج\n`;
+  msg += `💵 *نقدي:* ${cash.toFixed(2)} ج\n`;
+  msg += `📋 *آجل:* ${credit.toFixed(2)} ج\n`;
+  msg += `🔢 *عدد الفواتير:* ${invoices.length}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
+  msg += `📝 *تفاصيل الفواتير:*\n`;
+
+  invoices.forEach((inv, index) => {
+    const timeVal = new Date(inv.time).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    msg += `${index + 1}. *العميل:* ${inv.clientName} (${inv.paymentType === 'Cash' ? '💵 نقدي' : '📋 آجل'})\n`;
+    msg += `   *الوقت:* ${timeVal} | *الإجمالي:* ${inv.total.toFixed(2)} ج\n`;
+    inv.items.forEach(item => {
+      msg += `   • ${item.name} × ${item.qty} (${item.price.toFixed(2)} ج)\n`;
+    });
+    if (inv.notes) msg += `   *ملاحظة:* ${inv.notes}\n`;
+    msg += `   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n`;
+  });
+
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  window.open(whatsappUrl, '_blank');
+  toast('📲 تم فتح واتساب لإرسال التقرير النصي', 'success');
+}
+
 // =================== CLEAR ALL ===================
 function clearAll() {
   if (!confirm('هل تريد مسح كل فواتير اليوم والبدء من جديد؟\nهذا الإجراء لا يمكن التراجع عنه!')) return;
   invoices = [];
   localStorage.removeItem('driver_invoices');
   renderInvoices();
+  renderProducts();
   updateExportStats();
   toast('🗑 تم مسح كل الفواتير', 'success');
 }
