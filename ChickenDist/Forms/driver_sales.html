@@ -707,18 +707,18 @@ function renderProducts(filter = '') {
   }
   
   if (filter) {
-    prods = prods.filter(p => p.name.includes(filter));
+    // بحث مرن: يتحقق من أي جزء من الاسم بغض النظر عن حالة الأحرف
+    const q = filter.trim();
+    prods = prods.filter(p => p.name.includes(q) || (p.unit || '').includes(q));
   }
-  
-  const isFiltered = !!filter;
-  const displayProds = isFiltered ? prods : prods.slice(0, 5);
   
   if (driverId && (appData.loads || []).filter(l => l.driverId === driverId).length === 0) {
     list.innerHTML = '<div style="padding:16px;color:var(--red);text-align:center;font-weight:bold">⚠️ لا توجد حمولة مفتوحة لك حالياً في النظام!</div>';
     return;
   }
   
-  list.innerHTML = displayProds.map(p => {
+  // عرض كل الأصناف دائماً (بدون حد أقصى)
+  list.innerHTML = prods.map(p => {
     const remaining = getProductRemainingQty(p.id);
     const qtyText = driverId ? ` (المتبقي: ${remaining} ${p.unit || 'وحدة'})` : '';
     const isDisabled = driverId && remaining <= 0;
@@ -735,11 +735,7 @@ function renderProducts(filter = '') {
         </span>
       </div>
     `;
-  }).join('') + (!isFiltered && prods.length > 5 ? `
-    <div style="padding:10px;color:var(--sub);text-align:center;font-size:12px;border-top:1px solid var(--border)">
-      💡 يظهر أول 5 أصناف فقط. اكتب في صندوق البحث أعلاه للبحث عن باقي الأصناف...
-    </div>
-  ` : '') || '<div style="padding:16px;color:var(--sub);text-align:center">لا يوجد أصناف مطابقة</div>';
+  }).join('') || '<div style="padding:16px;color:var(--sub);text-align:center">لا يوجد أصناف مطابقة</div>';
 }
 
 function filterProducts() {
@@ -977,95 +973,115 @@ function exportCSV() {
 }
 
 // =================== SHARE TO WHATSAPP ===================
-function shareToWhatsApp() {
-  if (invoices.length === 0) { toast('❌ لا توجد فواتير للإرسال', 'error'); return; }
+function buildCSV() {
   const dateStr = document.getElementById('exportDate').value.replace(/-/g, '_');
   const safeDriver = driverName.replace(/[^a-zA-Z\u0600-\u06FF0-9]/g, '_');
   const filename = `sales_${safeDriver}_${dateStr}.csv`;
 
-  // BOM for Arabic support in Excel
   let csv = '\uFEFF';
   csv += 'رقم_الفاتورة,تاريخ,وقت,اسم_العميل,هاتف_العميل,اسم_المندوب,كود_الصنف,اسم_الصنف,الكمية,سعر_الوحدة,الإجمالي,نوع_الدفع,ملاحظات\n';
-
   invoices.forEach(inv => {
     const d = new Date(inv.time);
     const dateVal = d.toLocaleDateString('en-GB');
     const timeVal = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
     inv.items.forEach(item => {
       const row = [
-        inv.id,
-        dateVal,
-        timeVal,
-        `"${inv.clientName}"`,
-        inv.clientPhone,
-        `"${inv.driverName}"`,
-        item.productId,
-        `"${item.name}"`,
-        item.qty,
-        item.price.toFixed(2),
-        (item.qty * item.price).toFixed(2),
-        inv.paymentType,
-        `"${inv.notes || ''}"`
+        inv.id, dateVal, timeVal,
+        `"${inv.clientName}"`, inv.clientPhone,
+        `"${inv.driverName}"`, item.productId,
+        `"${item.name}"`, item.qty,
+        item.price.toFixed(2), (item.qty * item.price).toFixed(2),
+        inv.paymentType, `"${inv.notes || ''}"`
       ];
       csv += row.join(',') + '\n';
     });
   });
-
-  // Try Web Share API first
-  if (navigator.canShare && navigator.share) {
-    try {
-      const file = new File([csv], filename, { type: 'text/csv;charset=utf-8;' });
-      if (navigator.canShare({ files: [file] })) {
-        navigator.share({
-          files: [file],
-          title: `كشف مبيعات - ${driverName}`,
-          text: `كشف مبيعات المندوب ${driverName} بتاريخ ${dateStr.replace(/_/g, '-')}`
-        }).then(() => {
-          toast('✅ تم مشاركة الكشف بنجاح', 'success');
-        }).catch(err => {
-          if (err.name !== 'AbortError') {
-            sendWhatsAppTextMessage();
-          }
-        });
-        return;
-      }
-    } catch (e) {
-      console.log('Web Share API error:', e);
-    }
-  }
-
-  sendWhatsAppTextMessage();
+  return { csv, filename };
 }
 
-function sendWhatsAppTextMessage() {
-  const cash = invoices.filter(i => i.paymentType === 'Cash').reduce((s, i) => s + i.total, 0);
-  const credit = invoices.filter(i => i.paymentType === 'Credit').reduce((s, i) => s + i.total, 0);
-  const total = cash + credit;
+function shareToWhatsApp() {
+  if (invoices.length === 0) { toast('❌ لا توجد فواتير للإرسال', 'error'); return; }
+  const { csv, filename } = buildCSV();
 
-  let msg = `📊 *كشف مبيعات اليوم للمندوب:* ${driverName}\n`;
-  msg += `📅 *التاريخ:* ${document.getElementById('exportDate').value}\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💰 *إجمالي المبيعات:* ${total.toFixed(2)} ج\n`;
-  msg += `💵 *نقدي:* ${cash.toFixed(2)} ج\n`;
-  msg += `📋 *آجل:* ${credit.toFixed(2)} ج\n`;
-  msg += `🔢 *عدد الفواتير:* ${invoices.length}\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
-  msg += `📝 *تفاصيل الفواتير:*\n`;
+  // ── الخطوة 1: تحميل ملف CSV على الجهاز أولاً ──
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(blobUrl);
 
-  invoices.forEach((inv, index) => {
-    const timeVal = new Date(inv.time).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-    msg += `${index + 1}. *العميل:* ${inv.clientName} (${inv.paymentType === 'Cash' ? '💵 نقدي' : '📋 آجل'})\n`;
-    msg += `   *الوقت:* ${timeVal} | *الإجمالي:* ${inv.total.toFixed(2)} ج\n`;
-    inv.items.forEach(item => {
-      msg += `   • ${item.name} × ${item.qty} (${item.price.toFixed(2)} ج)\n`;
-    });
-    if (inv.notes) msg += `   *ملاحظة:* ${inv.notes}\n`;
-    msg += `   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n`;
-  });
+  // ── الخطوة 2: محاولة Web Share API (يدعم إرسال ملفات عبر واتساب على أندرويد/iOS) ──
+  setTimeout(() => {
+    if (navigator.canShare && navigator.share) {
+      try {
+        const file = new File([csv], filename, { type: 'text/csv' });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: `كشف مبيعات - ${driverName}`,
+            text: `كشف مبيعات المندوب ${driverName}`
+          }).then(() => {
+            toast('✅ تم إرسال الملف بنجاح', 'success');
+          }).catch(err => {
+            if (err.name !== 'AbortError') openWhatsAppAppWithGuide(filename);
+          });
+          return;
+        }
+      } catch(e) {}
+    }
+    openWhatsAppAppWithGuide(filename);
+  }, 600);
+}
 
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-  window.open(whatsappUrl, '_blank');
-  toast('📲 تم فتح واتساب لإرسال التقرير النصي', 'success');
+function openWhatsAppAppWithGuide(filename) {
+  // فتح تطبيق واتساب مباشرةً (بدون رابط ويب)
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    // intent URI يفتح واتساب مباشرة على أندرويد
+    window.location.href = 'intent://send/#Intent;package=com.whatsapp;scheme=whatsapp;end';
+  } else if (isIOS) {
+    window.location.href = 'whatsapp://';
+  } else {
+    window.open('https://web.whatsapp.com/', '_blank');
+  }
+
+  // إظهار تعليمات للمستخدم
+  showShareGuideModal(filename);
+}
+
+function showShareGuideModal(filename) {
+  // إزالة أي modal قديم
+  const old = document.getElementById('shareGuideModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'shareGuideModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#1a1d27;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:560px;border-top:2px solid #25D366">
+      <div style="width:40px;height:4px;background:#2d3348;border-radius:2px;margin:0 auto 20px"></div>
+      <div style="font-size:40px;text-align:center;margin-bottom:12px">📎</div>
+      <div style="font-size:17px;font-weight:800;text-align:center;margin-bottom:8px">إرسال الكشف على واتساب</div>
+      <p style="color:#94a3b8;font-size:13px;text-align:center;margin-bottom:20px">تم تحميل الملف تلقائياً. اتبع الخطوات:</p>
+      <div style="background:#22263a;border-radius:12px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;line-height:2;color:#e2e8f0">
+          <div>1️⃣ افتح <strong style="color:#25D366">واتساب</strong></div>
+          <div>2️⃣ افتح محادثة <strong>المحاسب</strong></div>
+          <div>3️⃣ اضغط أيقونة 📎 <strong>(مرفق)</strong></div>
+          <div>4️⃣ اختر <strong>مستنداتي / ملفاتي</strong></div>
+          <div>5️⃣ ابحث عن الملف: <code style="color:#4f8ef7;font-size:12px">${filename}</code></div>
+          <div>6️⃣ اضغط <strong>إرسال</strong> ✅</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('shareGuideModal').remove()" style="width:100%;padding:14px;background:#25D366;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer">✅ فهمت</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 // =================== CLEAR ALL ===================

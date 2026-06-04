@@ -376,23 +376,24 @@ namespace ChickenDist.Core
                 Execute(sqlPurchaseItemsSalePrice);
 
                 // ===== جدول الإصدار لعدم تشغيل إصدارات قديمة =====
-                string sqlVersionTable = @"
+                // 1. إنشاء الجدول بالأعمدة الأساسية إن لم يكن موجوداً
+                string sqlVersionTableCreate = @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'version')
                 BEGIN
                     CREATE TABLE [version] (
-                        [version] NVARCHAR(50) NOT NULL,
-                        [UpdatedAt] DATETIME NULL
+                        [version] NVARCHAR(50) NOT NULL
                     );
-                    INSERT INTO [version] ([version], [UpdatedAt]) VALUES ('1.0.0', GETDATE());
-                END
-                ELSE
-                BEGIN
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('version') AND name = 'UpdatedAt')
-                    BEGIN
-                        ALTER TABLE [version] ADD [UpdatedAt] DATETIME NULL;
-                    END
+                    INSERT INTO [version] ([version]) VALUES ('1.0.0');
                 END";
-                Execute(sqlVersionTable);
+                Execute(sqlVersionTableCreate);
+
+                // 2. إضافة عمود وقت التحديث بشكل منفصل لتفادي خطأ التجميع في SQL Server
+                string sqlVersionTableAlter = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('version') AND name = 'UpdatedAt')
+                BEGIN
+                    ALTER TABLE [version] ADD [UpdatedAt] DATETIME NULL;
+                END";
+                Execute(sqlVersionTableAlter);
             }
             catch (Exception ex)
             {
