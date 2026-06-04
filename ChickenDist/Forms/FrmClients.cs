@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private DataGridView dgClients;
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtPhone2, txtAddress, txtNotes;
         private NumericUpDown nudOpening, nudCreditLimit;
-        private ComboBox cmbDriver;
+        private ComboBox cmbDriver, cmbPriceTier;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment;
         private Label lblBalance;
@@ -151,6 +151,13 @@ namespace ChickenDist.Forms
             cmbDriver = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             pnlDetails.Controls.Add(cmbDriver); y += 36;
 
+            var lblPriceTier = new Label { Text = "فئة السعر الافتراضية:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            pnlDetails.Controls.Add(lblPriceTier);
+            cmbPriceTier = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cmbPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
+            cmbPriceTier.SelectedIndex = 0;
+            pnlDetails.Controls.Add(cmbPriceTier); y += 36;
+
             pnlDetails.Controls.Add(MakeField("ملاحظات:", ref y, out txtNotes));
 
             chkActive = new CheckBox { Text = "نشط", Location = new Point(110, y), Width = 185, ForeColor = Theme.TextMain, Checked = true, RightToLeft = RightToLeft.Yes }; y += 36;
@@ -226,6 +233,9 @@ namespace ChickenDist.Forms
             else
                 cmbDriver.SelectedValue = dr["DriverID"];
             txtNotes.Text = dr["Notes"].ToString();
+            cmbPriceTier.Text = dr.Table.Columns.Contains("DefaultPriceTier") && dr["DefaultPriceTier"] != DBNull.Value
+                ? dr["DefaultPriceTier"].ToString()
+                : "قطاعي";
             lblBalance.Text = "الرصيد: " + row.Cells["Balance"].Value;
         }
 
@@ -257,6 +267,7 @@ namespace ChickenDist.Forms
             nudCreditLimit.Value = 0;
             nudOpening.Value = 0; chkActive.Checked = true;
             if (cmbDriver.Items.Count > 0) cmbDriver.SelectedIndex = 0;
+            if (cmbPriceTier.Items.Count > 0) cmbPriceTier.SelectedIndex = 0;
             txtNotes.Clear();
             lblBalance.Text = "الرصيد الحالي: ---";
         }
@@ -269,7 +280,7 @@ namespace ChickenDist.Forms
                 driverID = Convert.ToInt32(cmbDriver.SelectedValue);
 
             int id = ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
-                txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text);
+                txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text);
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
@@ -284,7 +295,7 @@ namespace ChickenDist.Forms
                     driverID = Convert.ToInt32(cmbDriver.SelectedValue);
 
                 ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
-                    txtAddress.Text, nudOpening.Value, false, driverID, nudCreditLimit.Value, txtNotes.Text);
+                    txtAddress.Text, nudOpening.Value, false, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text);
                 LoadClients();
                 ClearDetail();
             }

@@ -24,8 +24,9 @@ namespace ChickenDist.Forms
 		private Button btnLoad;
 
 		private Button btnPrint;
-
-
+		private Button btnEdit;
+		private Button btnDelete;
+		private Button btnCopy;
 		private Button btnNewSale;
 
 		private Label lblTotalSummary;
@@ -281,16 +282,29 @@ namespace ChickenDist.Forms
 				Padding = new Padding(15),
 				WrapContents = false
 			};
-			btnPrint = Theme.MakeButton("\ud83d\udda8 طباعة الفاتورة", Theme.Primary);
-			btnPrint.Size = new Size(190, 42);
-			btnPrint.Margin = new Padding(0, 0, 0, 10);
+			btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Theme.Primary);
+			btnPrint.Size = new Size(190, 36);
+			btnPrint.Margin = new Padding(0, 0, 0, 8);
 			btnPrint.Click += BtnPrint_Click;
 			flowLayoutPanel2.Controls.Add(btnPrint);
-			// btnDelete = Theme.MakeButton("\ud83d\uddd1 إلغاء وحذف الفاتورة", Theme.Danger);
-			// btnDelete.Size = new Size(190, 42);
-			// btnDelete.Margin = new Padding(0, 0, 0, 15);
-			// btnDelete.Click += BtnDelete_Click;
-			// flowLayoutPanel2.Controls.Add(btnDelete);
+
+			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+			btnEdit.Size = new Size(190, 36);
+			btnEdit.Margin = new Padding(0, 0, 0, 8);
+			btnEdit.Click += BtnEdit_Click;
+			flowLayoutPanel2.Controls.Add(btnEdit);
+
+			btnDelete = Theme.MakeButton("🗑️ إلغاء وحذف الفاتورة", Theme.Danger);
+			btnDelete.Size = new Size(190, 36);
+			btnDelete.Margin = new Padding(0, 0, 0, 8);
+			btnDelete.Click += BtnDelete_Click;
+			flowLayoutPanel2.Controls.Add(btnDelete);
+
+			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+			btnCopy.Size = new Size(190, 36);
+			btnCopy.Margin = new Padding(0, 0, 0, 15);
+			btnCopy.Click += BtnCopy_Click;
+			flowLayoutPanel2.Controls.Add(btnCopy);
 			Label value = new Label
 			{
 				Text = "تفاصيل الأصناف بالفاتورة المحددة",
@@ -590,6 +604,48 @@ namespace ChickenDist.Forms
 					MessageBox.Show("❌ فشل عملية الحذف، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 				}
 			}
+		}
+
+		private void BtnEdit_Click(object sender, EventArgs e)
+		{
+			if (dgSales.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد تعديلها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			if (!Session.CanEditSalesInvoice())
+			{
+				MessageBox.Show("عذراً، ليس لديك صلاحية تعديل فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+				return;
+			}
+
+			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+
+			if (!SaleDAL.CanEditSale(saleID, out string reason))
+			{
+				MessageBox.Show(reason, "لا يمكن التعديل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			FrmSale frmSale = new FrmSale(saleID, isCopyMode: false);
+			frmSale.ShowDialog();
+			LoadSales();
+		}
+
+		private void BtnCopy_Click(object sender, EventArgs e)
+		{
+			if (dgSales.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد نسخها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+
+			FrmSale frmSale = new FrmSale(saleID, isCopyMode: true);
+			frmSale.ShowDialog();
+			LoadSales();
 		}
 	}
 }

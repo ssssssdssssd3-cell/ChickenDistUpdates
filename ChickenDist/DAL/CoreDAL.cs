@@ -84,19 +84,19 @@ namespace ChickenDist.DAL
         // Permissions
         public static DataTable GetPermissions(int empID)
         {
-            return DbHelper.Query("SELECT ScreenName,CanAccess,CanEditPrice FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            return DbHelper.Query("SELECT ScreenName,CanAccess,CanEditPrice,COALESCE(CanEditSalesInvoice,0) AS CanEditSalesInvoice FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
         }
 
-        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice)
+        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canEditSalesInvoice)
         {
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
                 DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             if (Convert.ToInt32(exists) > 0)
-                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep WHERE EmpID=@e AND ScreenName=@s",
-                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
+                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanEditSalesInvoice=@cesi WHERE EmpID=@e AND ScreenName=@s",
+                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
-                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice) VALUES(@e,@s,@a,@ep)",
-                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice));
+                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice) VALUES(@e,@s,@a,@ep,@cesi)",
+                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice));
         }
     }
 
@@ -113,12 +113,14 @@ namespace ChickenDist.DAL
         {
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation 
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation,
+                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive 
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive,
+                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     ORDER BY p.ProductName";
@@ -136,25 +138,27 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description,
-            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation)
+            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation) 
-                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl)",
+                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice) 
+                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
-                    DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation));
+                    DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
+                    DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice));
             else
             {
                 DbHelper.Execute(
                     @"UPDATE Products 
                       SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,
-                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl 
+                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp 
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
+                    DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
                     DbHelper.P("@id", id));
                 return id;
             }
@@ -476,6 +480,7 @@ namespace ChickenDist.DAL
         {
             string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
                            c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
+                           COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
                            ISNULL(cb.Balance, c.OpeningBalance) AS Balance
                            FROM Clients c
                            LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
@@ -487,6 +492,7 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address, c.DriverID, c.MaxCreditLimit, c.Notes,
+                  COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
                   ISNULL(cb.Balance, c.OpeningBalance) AS Balance
                   FROM Clients c LEFT JOIN vw_ClientBalance cb ON c.ClientID=cb.ClientID
                   WHERE c.ClientName LIKE @t OR c.Phone LIKE @t OR c.ClientCode LIKE @t OR c.Phone2 LIKE @t",
@@ -550,26 +556,26 @@ namespace ChickenDist.DAL
             return result != null ? result.ToString() : "1";
         }
 
-        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes)
+        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي")
         {
             if (id == 0)
             {
                 int newID = DbHelper.ExecuteInsert(
-                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes)",
+                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes,DefaultPriceTier) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes,@dpt)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes));
+                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier));
                 return newID;
             }
             else
             {
                 DbHelper.Execute(
-                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes WHERE ClientID=@id",
+                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt WHERE ClientID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes),
+                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
                     DbHelper.P("@id", id));
                 return id;
             }

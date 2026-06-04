@@ -76,11 +76,25 @@ namespace ChickenDist.Forms
 
 		private int _lastSaleID = 0;
         private bool _isDirty = false;
+        private int _editSaleID = 0;
+        private bool _isCopyMode = false;
+        private ComboBox cboPricingType;
+        private Label lblPricingType;
 
-		public FrmSale()
+		public FrmSale() : this(0, false)
 		{
+		}
+
+		public FrmSale(int saleID, bool isCopyMode = false)
+		{
+			_editSaleID = isCopyMode ? 0 : saleID;
+			_isCopyMode = isCopyMode;
 			InitUI();
 			LoadCombos();
+			if (saleID > 0)
+			{
+				LoadInvoiceForEdit(saleID);
+			}
 		}
 
 		private void InitUI()
@@ -227,13 +241,31 @@ namespace ChickenDist.Forms
 			txtNotes = new TextBox
 			{
 				Location = new Point(110, 80),
-				Width = 720,
+				Width = 530,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
+			// --- شريحة السعر (Pricing Tier) ---
+			lblPricingType = MakeLabel("فئة السعر :", 840, 84);
+			lblPricingType.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			cboPricingType = new ComboBox
+			{
+				Location = new Point(660, 80),
+				Width = 110,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			cboPricingType.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
+			cboPricingType.SelectedIndex = 0;
+			cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
+
 			Button btnClientStatement = new Button
 			{
 				Text = "📋 كشف",
@@ -258,7 +290,7 @@ namespace ChickenDist.Forms
 			panel.Controls.AddRange(new Control[]
 			{
 				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
-				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes
+				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes, lblPricingType, cboPricingType
 			});
 			pnlItems = new Panel
 			{
@@ -643,6 +675,17 @@ namespace ChickenDist.Forms
 					{
 						cboDriver.SelectedIndex = 0;
 					}
+                    // تطبيق فئة السعر الافتراضية للعميل
+                    if (byID != null && byID["DefaultPriceTier"] != DBNull.Value)
+                    {
+                        string clientTier = byID["DefaultPriceTier"].ToString();
+                        int tierIdx = cboPricingType.Items.IndexOf(clientTier);
+                        if (tierIdx >= 0 && cboPricingType.SelectedIndex != tierIdx)
+                        {
+                            // سيشغّل CboPricingType_SelectedIndexChanged تلقائياً
+                            cboPricingType.SelectedIndex = tierIdx;
+                        }
+                    }
                     EvaluateClientFinancials(comboItem2.ID);
 				}
                 else
@@ -738,6 +781,58 @@ namespace ChickenDist.Forms
 			};
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
+		}
+
+		/// <summary>
+		/// يُطبِّق فئة السعر على جميع البنود الموجودة في الجدول عند تغيير الفئة.
+		/// </summary>
+		private void CboPricingType_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (_items.Count == 0 || cboPricingType == null) return;
+
+			string newTier = cboPricingType.SelectedItem?.ToString() ?? "قطاعي";
+
+			// جلب أسعار الأصناف الموجودة بالجدول دفعة واحدة
+			var prodIDs = new System.Text.StringBuilder();
+			foreach (var it in _items) prodIDs.Append(it.ProductID + ",");
+			string ids = prodIDs.ToString().TrimEnd(',');
+			if (string.IsNullOrEmpty(ids)) return;
+
+			var dtPrices = DbHelper.Query(
+				$"SELECT ProductID, SalePrice, SemiWholesalePrice, WholesalePrice FROM Products WHERE ProductID IN ({ids})");
+
+			// بناء قاموس السعر لكل صنف
+			var priceMap = new System.Collections.Generic.Dictionary<int, decimal>();
+			foreach (DataRow r in dtPrices.Rows)
+			{
+				int pid = Convert.ToInt32(r["ProductID"]);
+				decimal price = newTier == "جملة"
+					? (r["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"]) : Convert.ToDecimal(r["SalePrice"]))
+					: newTier == "نصف جملة"
+						? (r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : Convert.ToDecimal(r["SalePrice"]))
+						: Convert.ToDecimal(r["SalePrice"]);
+				priceMap[pid] = price;
+			}
+
+			var res = MessageBox.Show(
+				$"هل تريد تحديث أسعار جميع الأصناف وفق فئة السعر \"{newTier}\"؟",
+				"تغيير فئة السعر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+			if (res == DialogResult.Yes)
+			{
+				foreach (var item in _items)
+				{
+					if (priceMap.TryGetValue(item.ProductID, out decimal np) && np > 0)
+					{
+						item.UnitPrice = np;
+						item.PriceTier = newTier;
+						// إعادة حساب الخصم بالنسبة
+						decimal gross = item.Quantity * item.UnitPrice;
+						item.DiscountAmt = Math.Round(gross * item.DiscountPct / 100m, 2);
+					}
+				}
+				RefreshGrid();
+			}
 		}
 
 		private void SetInvoiceType(string type)
@@ -1056,6 +1151,106 @@ namespace ChickenDist.Forms
 			SaveInvoiceLogic(isDraft: true);
 		}
 
+		/// <summary>
+		/// يحمّل فاتورة موجودة لغرض التعديل أو النسخ.
+		/// </summary>
+		private void LoadInvoiceForEdit(int saleID)
+		{
+			var dtSale = DbHelper.Query(
+				@"SELECT s.SaleType, s.SaleDate, s.ClientID, s.DriverID, s.Notes,
+				         COALESCE(s.DiscountAmount,0) AS DiscountAmount,
+				         COALESCE(s.DiscountPct,0)    AS DiscountPct,
+				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier
+				  FROM Sales s WHERE s.SaleID=@id",
+				DbHelper.P("@id", saleID));
+
+			if (dtSale.Rows.Count == 0)
+			{
+				MessageBox.Show("لم يتم العثور على الفاتورة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				return;
+			}
+
+			var row = dtSale.Rows[0];
+
+			// نوع الفاتورة
+			string typeStr = row["SaleType"].ToString();
+			SetInvoiceType(typeStr);
+
+			// التاريخ
+			dtpDate.Value = _isCopyMode ? DateTime.Today : Convert.ToDateTime(row["SaleDate"]);
+
+			// العميل
+			if (row["ClientID"] != DBNull.Value)
+			{
+				int cid = Convert.ToInt32(row["ClientID"]);
+				for (int i = 0; i < cboClient.Items.Count; i++)
+					if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
+						{ cboClient.SelectedIndex = i; break; }
+			}
+
+			// المندوب
+			if (row["DriverID"] != DBNull.Value)
+			{
+				int did = Convert.ToInt32(row["DriverID"]);
+				for (int i = 0; i < cboDriver.Items.Count; i++)
+					if (cboDriver.Items[i] is ComboItem ci2 && ci2.ID == did)
+						{ cboDriver.SelectedIndex = i; break; }
+			}
+
+			// ملاحظات
+			txtNotes.Text = row["Notes"].ToString();
+
+			// الخصم
+			decimal discPct = Convert.ToDecimal(row["DiscountPct"]);
+			decimal discAmt = Convert.ToDecimal(row["DiscountAmount"]);
+			if (discPct > 0)
+			{
+				cboInvoiceDiscountType.SelectedIndex = 1;
+				txtInvoiceDiscount.Text = discPct.ToString("G29");
+			}
+			else
+			{
+				cboInvoiceDiscountType.SelectedIndex = 0;
+				txtInvoiceDiscount.Text = discAmt.ToString("G29");
+			}
+
+			// فئة السعر
+			string tier = row["PriceTier"].ToString();
+			int tierIdx = cboPricingType.Items.IndexOf(tier);
+			// لا نريد تشغيل حوار تغيير السعر هنا لأننا نحمّل فاتورة محفوظة
+			cboPricingType.SelectedIndexChanged -= CboPricingType_SelectedIndexChanged;
+			cboPricingType.SelectedIndex = tierIdx >= 0 ? tierIdx : 0;
+			cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
+
+			// البنود
+			var dtItems = SaleDAL.GetItems(saleID);
+			_items.Clear();
+			foreach (DataRow iRow in dtItems.Rows)
+			{
+				decimal stock = _stockCache.TryGetValue(Convert.ToInt32(iRow["ProductID"]), out var st) ? st : 0m;
+				_items.Add(new SaleItemDTO
+				{
+					ProductID   = Convert.ToInt32(iRow["ProductID"]),
+					ProductName = iRow["ProductName"].ToString(),
+					Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+					UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
+					DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
+					DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+					PriceTier   = iRow["PriceTier"].ToString(),
+					StockQty    = stock
+				});
+			}
+			RefreshGrid();
+
+			// عنوان النافذة
+			if (_isCopyMode)
+				Text = "نسخة من الفاتورة";
+			else
+				Text = $"تعديل الفاتورة رقم {saleID}";
+
+			_isDirty = false;
+		}
+
 		private void SaveInvoiceLogic(bool isDraft)
 		{
 			if (_items.Count == 0)
@@ -1063,16 +1258,37 @@ namespace ChickenDist.Forms
 				MessageBox.Show("أضف أصناف أولاً");
 				return;
 			}
+
+			// ─── التحقق من صلاحية تعديل الفاتورة ───
+			if (_editSaleID > 0)
+			{
+				if (!Session.CanEditSalesInvoice())
+				{
+					MessageBox.Show("❌ ليس لديك صلاحية تعديل الفواتير.\nراجع مسؤول النظام.",
+						"صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+					return;
+				}
+				if (!SaleDAL.CanEditSale(_editSaleID, out string editReason))
+				{
+					MessageBox.Show($"❌ لا يمكن تعديل الفاتورة:\n{editReason}",
+						"تعديل مرفوض", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+					return;
+				}
+			}
+
+			// ─── التحقق من المخزون ───
 			foreach (SaleItemDTO item in _items)
 			{
 				decimal productStock = InventoryDAL.GetProductStock(item.ProductID);
 				if (item.Quantity > productStock)
 				{
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لحفظ الفاتورة.\nالكمية المطلوبة: {item.Quantity:N2}\nالكمية المتاحة: {productStock:N2}", "عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لحفظ الفاتورة.\nالكمية المطلوبة: {item.Quantity:N2}\nالكمية المتاحة: {productStock:N2}",
+						"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
 			}
-			int saleType = ((!(_invoiceType == "Credit")) ? ((_invoiceType == "DriverLoad") ? 1 : 2) : 0);
+
+			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : 2;
 			int? clientID = null;
 			int? driverID = null;
 			if (_invoiceType == "Credit" || _invoiceType == "Cash")
@@ -1084,9 +1300,7 @@ namespace ChickenDist.Forms
 				}
 				clientID = comboItem.ID;
 				if (cboDriver.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
-				{
 					driverID = comboItem2.ID;
-				}
 			}
 			else if (_invoiceType == "DriverLoad")
 			{
@@ -1097,11 +1311,10 @@ namespace ChickenDist.Forms
 				}
 				driverID = comboItem3.ID;
 			}
+
 			decimal gross = 0m;
-			foreach (SaleItemDTO item2 in _items)
-			{
-				gross += item2.TotalPrice;
-			}
+			foreach (SaleItemDTO item2 in _items) gross += item2.TotalPrice;
+
 			decimal discountAmount = 0m;
 			decimal discountPct = 0m;
 			if (txtInvoiceDiscount != null && decimal.TryParse(txtInvoiceDiscount.Text, out decimal discount) && discount > 0)
@@ -1114,64 +1327,89 @@ namespace ChickenDist.Forms
 				else // قيمة
 				{
 					discountAmount = discount;
-					if (gross > 0)
-					{
-						discountPct = Math.Round((discountAmount / gross) * 100m, 2);
-					}
+					if (gross > 0) discountPct = Math.Round((discountAmount / gross) * 100m, 2);
 				}
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
+			string priceTier = cboPricingType?.SelectedItem?.ToString() ?? "قطاعي";
 
-			if (!isDraft && _invoiceType == "Cash")
+			// ─── إشعار الدفع النقدي ───
+			if (!isDraft && _invoiceType == "Cash" && _editSaleID == 0)
 			{
 				using (var frm = new FrmQuickPayment(net))
-				{
-					if (frm.ShowDialog() != DialogResult.OK)
-					{
-						return; // Cancel saving
-					}
-				}
+					if (frm.ShowDialog() != DialogResult.OK) return;
 			}
 
-			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue)
+			// ─── التحقق من حد الائتمان ───
+			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue && _editSaleID == 0)
 			{
 				DataRow byID = ClientDAL.GetByID(clientID.Value);
 				if (byID != null)
 				{
-					decimal num2 = Convert.ToDecimal((byID["MaxCreditLimit"] == DBNull.Value) ? ((object)0) : byID["MaxCreditLimit"]);
-					if (num2 > 0m)
+					decimal maxCredit = Convert.ToDecimal(byID["MaxCreditLimit"] == DBNull.Value ? 0 : byID["MaxCreditLimit"]);
+					if (maxCredit > 0m)
 					{
 						decimal clientBalance = ClientDAL.GetClientBalance(clientID.Value);
-						if (clientBalance + net > num2)
+						if (clientBalance + net > maxCredit)
 						{
-							MessageBox.Show($"❌ خطأ: الرصيد الحالي للعميل ({clientBalance:N2} ج) بالإضافة إلى قيمة الفاتورة الحالية ({net:N2} ج) يساوي ({clientBalance + net:N2} ج)، وهو ما يتجاوز حد المديونية الأقصى المسموح به لهذا العميل ({num2:N2} ج)!\n\nيرجى تحصيل دفعة من العميل أولاً لحفظ الفاتورة.", "تنبيه - تجاوز حد المديونية الأقصى", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+							MessageBox.Show($"❌ الرصيد الحالي ({clientBalance:N2} ج) + الفاتورة ({net:N2} ج) = ({clientBalance + net:N2} ج) يتجاوز الحد الأقصى ({maxCredit:N2} ج)!\n\nيرجى تحصيل دفعة أولاً.",
+								"تجاوز حد المديونية", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 							return;
 						}
 					}
 				}
 			}
-			int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net, txtNotes.Text, _items, discountAmount, discountPct, isDraft);
-			if (num3 > 0)
+
+			// ─── الحفظ أو التعديل ───
+			if (_editSaleID > 0)
 			{
-				_lastSaleID = num3;
-				_isDirty = false;
-				if (isDraft)
+				// وضع التعديل
+				bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
+					net, txtNotes.Text, _items, discountAmount, discountPct,
+					isDraft: false, warehouseID: null, priceTier: priceTier);
+				if (updated)
 				{
-					MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.", "تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					_isDirty = false;
+					DialogResult pr = MessageBox.Show(
+						$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
+						"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+					if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID);
+					this.Close();
 				}
 				else
 				{
-					DialogResult printResult = MessageBox.Show($"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟", "نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-					if (printResult == DialogResult.Yes)
-					{
-						new FrmPrintSale(num3);
-					}
+					MessageBox.Show("❌ فشل التعديل، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 				}
-				ResetForm();
 			}
 			else
 			{
-				MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+				// وضع الإنشاء الجديد (أو نسخ)
+				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
+					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
+					warehouseID: null, priceTier: priceTier);
+				if (num3 > 0)
+				{
+					_lastSaleID = num3;
+					_isDirty = false;
+					if (isDraft)
+					{
+						MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.",
+							"تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+					else
+					{
+						DialogResult printResult = MessageBox.Show(
+							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
+							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+						if (printResult == DialogResult.Yes) new FrmPrintSale(num3);
+					}
+					if (!_isCopyMode) ResetForm();
+					else this.Close();
+				}
+				else
+				{
+					MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+				}
 			}
 		}
 
@@ -1575,36 +1813,27 @@ namespace ChickenDist.Forms
 			_items.Clear();
 			dgItems.Rows.Clear();
 			lblTotalVal.Text = "0.00 ج";
-			if (txtInvoiceDiscount != null)
-			{
-				txtInvoiceDiscount.Text = "0";
-			}
-			if (cboInvoiceDiscountType != null)
-			{
-				cboInvoiceDiscountType.SelectedIndex = 0;
-			}
-			if (lblNetVal != null)
-			{
-				lblNetVal.Text = "0.00 ج";
-			}
+			if (txtInvoiceDiscount != null) txtInvoiceDiscount.Text = "0";
+			if (cboInvoiceDiscountType != null) cboInvoiceDiscountType.SelectedIndex = 0;
+			if (lblNetVal != null) lblNetVal.Text = "0.00 ج";
 			txtNotes.Clear();
 			txtPrice.Clear();
 			nudQty.Value = 1m;
-			if (cboClient.Items.Count > 0)
+			if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
+			if (cboDriver.Items.Count > 0) cboDriver.SelectedIndex = 0;
+			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
+			if (cboPricingType != null)
 			{
-				cboClient.SelectedIndex = 0;
-			}
-			if (cboDriver.Items.Count > 0)
-			{
-				cboDriver.SelectedIndex = 0;
-			}
-			if (cboProduct.Items.Count > 0)
-			{
-				cboProduct.SelectedIndex = 0;
+				cboPricingType.SelectedIndexChanged -= CboPricingType_SelectedIndexChanged;
+				cboPricingType.SelectedIndex = 0; // قطاعي
+				cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
 			}
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
-            _isDirty = false;
+			Text = "شاشة المبيعات";
+			_editSaleID = 0;
+			_isCopyMode = false;
+			_isDirty = false;
 		}
 	}
 	internal class ComboItem

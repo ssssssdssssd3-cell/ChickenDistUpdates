@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private DataGridView dgProducts;
         private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation;
         private ComboBox cboCategory;
-        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit;
+        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete;
         private int _selectedID = 0;
@@ -96,9 +96,17 @@ namespace ChickenDist.Forms
             nudPurchasePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             split.Panel1.Controls.Add(nudPurchasePrice); y += 40;
 
-            split.Panel1.Controls.Add(new Label { Text = "سعر البيع:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            split.Panel1.Controls.Add(new Label { Text = "سعر قطاعي:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             nudPrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             split.Panel1.Controls.Add(nudPrice); y += 40;
+
+            split.Panel1.Controls.Add(new Label { Text = "سعر نصف الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            nudSemiWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            split.Panel1.Controls.Add(nudSemiWholesalePrice); y += 40;
+
+            split.Panel1.Controls.Add(new Label { Text = "سعر الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            nudWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            split.Panel1.Controls.Add(nudWholesalePrice); y += 40;
 
             split.Panel1.Controls.Add(new Label { Text = "حد الطلب:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             nudMinStockLimit = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 3, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
@@ -173,6 +181,8 @@ namespace ChickenDist.Forms
             txtUnit.Text = dr["Unit"].ToString();
             nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
             nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
+            nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
+            nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
             nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
             txtDescription.Text = dr["Description"].ToString();
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
@@ -209,6 +219,8 @@ namespace ChickenDist.Forms
             txtUnit.Text = "قطعة";
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
+            nudWholesalePrice.Value = 0;
+            nudSemiWholesalePrice.Value = 0;
             nudMinStockLimit.Value = 0;
             txtDescription.Clear();
             chkActive.Checked = true;
@@ -226,7 +238,8 @@ namespace ChickenDist.Forms
 
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
-                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim());
+                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
+                nudWholesalePrice.Value, nudSemiWholesalePrice.Value);
             
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadProducts(); }
             else MessageBox.Show("❌ فشل الحفظ");

@@ -213,7 +213,7 @@ namespace ChickenDist.Forms
         {
             _empID = empID;
             this.Text = "صلاحيات: " + empName;
-            this.Size = new Size(480, 450);
+            this.Size = new Size(580, 450);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.RightToLeft = RightToLeft.Yes;
@@ -223,7 +223,7 @@ namespace ChickenDist.Forms
             dgPerms = new DataGridView
             {
                 Location = new Point(10, 10),
-                Size = new Size(445, 340),
+                Size = new Size(545, 340),
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -238,10 +238,11 @@ namespace ChickenDist.Forms
             dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "الشاشة", ReadOnly = true, FillWeight = 60 });
             dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "وصول", FillWeight = 30 });
             dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "تعديل سعر", FillWeight = 30 });
+            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "تعديل فاتورة", FillWeight = 30 });
             dgPerms.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.Controls.Add(dgPerms);
 
-            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات", 150, 360, 160, 34, Theme.Accent);
+            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات", 200, 360, 160, 34, Theme.Accent);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
@@ -254,11 +255,16 @@ namespace ChickenDist.Forms
             dgPerms.Rows.Clear();
             for (int i = 0; i < Screens.Length; i++)
             {
-                bool access = false, editPrice = false;
+                bool access = false, editPrice = false, editInvoice = false;
                 foreach (DataRow r in dt.Rows)
                     if (r["ScreenName"].ToString() == Screens[i])
-                    { access = Convert.ToBoolean(r["CanAccess"]); editPrice = Convert.ToBoolean(r["CanEditPrice"]); break; }
-                dgPerms.Rows.Add(Screens[i], ScreenNames[i], access, editPrice);
+                    {
+                        access = Convert.ToBoolean(r["CanAccess"]);
+                        editPrice = Convert.ToBoolean(r["CanEditPrice"]);
+                        editInvoice = r.Table.Columns.Contains("CanEditSalesInvoice") && r["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanEditSalesInvoice"]);
+                        break;
+                    }
+                dgPerms.Rows.Add(Screens[i], ScreenNames[i], access, editPrice, editInvoice);
             }
         }
 
@@ -269,7 +275,8 @@ namespace ChickenDist.Forms
                 string screen = row.Cells["Screen"].Value?.ToString();
                 bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
                 bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                EmployeeDAL.SavePermissions(_empID, screen, access, editP);
+                bool editI = Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
+                EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI);
             }
             MessageBox.Show("✅ تم حفظ الصلاحيات");
             this.Close();

@@ -528,6 +528,68 @@ namespace ChickenDist.Core
                     );
                 END";
                 Execute(sqlTransfersTable);
+
+                // 7. ترحيلات تعديل الفواتير وشرائح الأسعار والأرشفة
+                string sqlInvoiceEditingAndTiers = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanEditSalesInvoice')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanEditSalesInvoice BIT DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
+                BEGIN
+                    ALTER TABLE Products ADD WholesalePrice DECIMAL(10,2) DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'SemiWholesalePrice')
+                BEGIN
+                    ALTER TABLE Products ADD SemiWholesalePrice DECIMAL(10,2) DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'PriceTier')
+                BEGIN
+                    ALTER TABLE Sales ADD PriceTier NVARCHAR(20) DEFAULT N'قطاعي';
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'PriceTier')
+                BEGIN
+                    ALTER TABLE SaleItems ADD PriceTier NVARCHAR(20) DEFAULT N'قطاعي';
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'DefaultPriceTier')
+                BEGIN
+                    ALTER TABLE Clients ADD DefaultPriceTier NVARCHAR(20) DEFAULT N'قطاعي';
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SalesAudit')
+                BEGIN
+                    CREATE TABLE SalesAudit (
+                        AuditID INT IDENTITY(1,1) PRIMARY KEY,
+                        SaleID INT NOT NULL,
+                        UserID INT NOT NULL REFERENCES Employees(EmpID),
+                        EditDate DATETIME DEFAULT GETDATE(),
+                        OldTotal DECIMAL(10,2) NOT NULL,
+                        NewTotal DECIMAL(10,2) NOT NULL,
+                        Notes NVARCHAR(500) NULL
+                    );
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItemsHistory')
+                BEGIN
+                    CREATE TABLE SaleItemsHistory (
+                        HistoryID INT IDENTITY(1,1) PRIMARY KEY,
+                        AuditID INT NOT NULL REFERENCES SalesAudit(AuditID) ON DELETE CASCADE,
+                        SaleID INT NOT NULL,
+                        ProductID INT NOT NULL REFERENCES Products(ProductID),
+                        Quantity DECIMAL(10,3) NOT NULL,
+                        UnitPrice DECIMAL(10,2) NOT NULL,
+                        TotalPrice DECIMAL(10,2) NOT NULL,
+                        DiscountPct DECIMAL(5,2) DEFAULT 0,
+                        DiscountAmt DECIMAL(10,2) DEFAULT 0,
+                        PriceTier NVARCHAR(20) NULL
+                    );
+                END";
+                Execute(sqlInvoiceEditingAndTiers);
             }
             catch (Exception ex)
             {
@@ -700,6 +762,22 @@ namespace ChickenDist.Core
             {
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 return cmd.ExecuteScalar();
+            }
+        }
+
+        /// <summary>
+        /// تنفيذ SELECT داخل Transaction قائمة وإرجاع DataTable.
+        /// تُستخدم لقراءة بيانات قبل تعديلها ضمن نفس الـ Transaction.
+        /// </summary>
+        public static DataTable QueryTrans(SqlTransaction trans, string sql, params SqlParameter[] prms)
+        {
+            using (var cmd = new SqlCommand(sql, trans.Connection, trans))
+            {
+                if (prms != null) cmd.Parameters.AddRange(prms);
+                var dt = new DataTable();
+                using (var adapter = new SqlDataAdapter(cmd))
+                    adapter.Fill(dt);
+                return dt;
             }
         }
 
