@@ -374,6 +374,17 @@ namespace ChickenDist.Core
                     ALTER TABLE PurchaseItems ADD SuggestedSalePrice DECIMAL(10,3) NULL;
                 END";
                 Execute(sqlPurchaseItemsSalePrice);
+
+                // ===== جدول الإصدار لعدم تشغيل إصدارات قديمة =====
+                string sqlVersionTable = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'version')
+                BEGIN
+                    CREATE TABLE [version] (
+                        [version] NVARCHAR(50) NOT NULL
+                    );
+                    INSERT INTO [version] ([version]) VALUES ('1.0.0');
+                END";
+                Execute(sqlVersionTable);
             }
             catch (Exception ex)
             {
@@ -546,6 +557,56 @@ namespace ChickenDist.Core
             {
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 return cmd.ExecuteScalar();
+            }
+        }
+
+        /// <summary>
+        /// يتحقق من توافق إصدار التطبيق الحالي مع إصدار قاعدة البيانات.
+        /// ويمنع التشغيل إذا كانت قاعدة البيانات قد تم ترقيتها بإصدار أحدث.
+        /// </summary>
+        public static bool CheckAndEnforceVersion(string currentAppVersion)
+        {
+            try
+            {
+                // قراءة الإصدار الحالي من جدول version
+                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [version]");
+                if (dbVerObj == null || dbVerObj == DBNull.Value)
+                {
+                    // إذا كان الجدول فارغاً لسبب ما، نضع الإصدار الحالي ونسمح بالدخول
+                    Execute("DELETE FROM [version]; INSERT INTO [version] ([version]) VALUES (@ver)", P("@ver", currentAppVersion));
+                    return true;
+                }
+
+                string dbVersionStr = dbVerObj.ToString().Trim();
+                Version appVer = new Version(currentAppVersion);
+                Version dbVer = new Version(dbVersionStr);
+
+                if (appVer >= dbVer)
+                {
+                    // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات
+                    if (appVer > dbVer)
+                    {
+                        Execute("DELETE FROM [version]; INSERT INTO [version] ([version]) VALUES (@ver)", P("@ver", currentAppVersion));
+                    }
+                    return true;
+                }
+                else
+                {
+                    // إذا كان إصدار البرنامج الحالي أقدم من قاعدة البيانات
+                    string errorMsg = $"⚠️ هذا الإصدار من البرنامج قديم جداً وغير متوافق مع قاعدة البيانات الحالية المحدثة.\n\n" +
+                                      $"إصدار البرنامج الحالي: {currentAppVersion}\n" +
+                                      $"إصدار قاعدة البيانات المحدث: {dbVersionStr}\n\n" +
+                                      $"لقد تم تحديث البرنامج سابقاً. يرجى فتح البرنامج من الأيقونة الجديدة المحدثة (في مجلد Updates أو الاختصار الجديد).";
+
+                    MessageBox.Show(errorMsg, "تنبيه توافق الإصدار", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("CheckAndEnforceVersion failed", ex, "DbHelper");
+                // في حالة حدوث خطأ غير متوقع في المقارنة، نسمح بالمرور منعاً لتعطيل العمل
+                return true;
             }
         }
     }

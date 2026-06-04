@@ -12,6 +12,31 @@ namespace ChickenDist
         [STAThread]
         static void Main()
         {
+            // ===== تحميل QRCoder.dll من داخل الـ EXE نفسه (لازم قبل أي شيء) =====
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+            {
+                if (args.Name != null && args.Name.StartsWith("QRCoder", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var asm = typeof(Program).Assembly;
+                        // اسم المورد المضمّن
+                        string resName = "ChickenDist.QRCoder.dll";
+                        using (var stream = asm.GetManifestResourceStream(resName))
+                        {
+                            if (stream != null)
+                            {
+                                byte[] data = new byte[stream.Length];
+                                stream.Read(data, 0, data.Length);
+                                return System.Reflection.Assembly.Load(data);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                return null;
+            };
+
             // ===== إعداد اللغة العربية RTL على مستوى التطبيق كله =====
             var arCulture = new CultureInfo("ar-EG");
             Thread.CurrentThread.CurrentCulture   = arCulture;
@@ -32,6 +57,12 @@ namespace ChickenDist
 
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
+
+            // التحقق من إصدار البرنامج وقاعدة البيانات لمنع الأيقونات القديمة
+            if (!ChickenDist.Core.DbHelper.CheckAndEnforceVersion(ChickenDist.Core.UpdateManager.CurrentVersion))
+            {
+                return; // إنهاء التطبيق فوراً
+            }
 
             // استخراج صفحة المندوب من الموارد المضمنة
             ExtractDriverSalesHtml();
