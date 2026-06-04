@@ -1,0 +1,222 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ChickenDist.Core
+{
+    /// <summary>
+    /// بوابة المندوب — خادم HTTP محلي خفيف + خدمة الرفع السحابي
+    /// يتيح للمندوب سحب بيانات اليوم بطريقتين:
+    ///   أ) Wi-Fi محلي (نفس الشبكة) عبر IP الكمبيوتر
+    ///   ب) الإنترنت العام عبر رمز مكون من 5 حروف
+    /// </summary>
+    public static class DriverPortalServer
+    {
+        // ======================== حالة الخادم ========================
+        private static TcpListener    _listener;
+        private static CancellationTokenSource _cts;
+        private static bool           _running;
+        private static int            _port;
+        private static string         _lastCloudCode;
+        private static DateTime       _cloudCodeExpiry;
+
+        public static bool  IsRunning       => _running;
+        public static int   Port            => _port;
+        public static string LastCloudCode  => _lastCloudCode;
+        public static DateTime CloudCodeExpiry => _cloudCodeExpiry;
+
+        // حدث يُطلق في كل طلب يصل من الموبايل
+        public static event Action<string> OnRequestReceived;
+
+        // ======================== الخادم المحلي ========================
+
+        /// <summary>يبدأ الاستماع على المنفذ المحدد</summary>
+        public static void Start(int port = 8080)
+        {
+            if (_running) return;
+            _port = port;
+            _cts  = new CancellationTokenSource();
+
+            try
+            {
+                _listener = new TcpListener(IPAddress.Any, port);
+                _listener.Start();
+                _running = true;
+                Task.Run(() => AcceptLoop(_cts.Token));
+            }
+            catch (Exception ex)
+            {
+                _running = false;
+                throw new Exception($"تعذّر تشغيل الخادم على المنفذ {port}:\n{ex.Message}\nجرّب منفذاً آخر مثل 8181 أو 9090.");
+            }
+        }
+
+        /// <summary>يوقف الخادم بأمان</summary>
+        public static void Stop()
+        {
+            _cts?.Cancel();
+            try { _listener?.Stop(); } catch { }
+            _running  = false;
+            _listener = null;
+        }
+
+        private static async Task AcceptLoop(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var client = await _listener.AcceptTcpClientAsync();
+                    _ = Task.Run(() => HandleClient(client));
+                }
+                catch { break; }
+            }
+        }
+
+        private static void HandleClient(TcpClient client)
+        {
+            try
+            {
+                using (client)
+                using (var stream = client.GetStream())
+                {
+                    // قراءة طلب HTTP
+                    var buf = new byte[4096];
+                    int n   = stream.Read(buf, 0, buf.Length);
+                    string req = Encoding.UTF8.GetString(buf, 0, n);
+
+                    string firstLine = req.Split('\n')[0].Trim();
+                    string path = "/";
+                    if (firstLine.Split(' ').Length >= 2)
+                        path = firstLine.Split(' ')[1].Split('?')[0].ToLower();
+
+                    string ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
+                    OnRequestReceived?.Invoke($"[{DateTime.Now:HH:mm:ss}] طلب من {ip} — المسار: {path}");
+
+                    if (path == "/data.json")
+                    {
+                        // تقديم بيانات JSON للمندوب
+                        string json = DAL.DriverDAL.BuildDriverExportJson();
+                        SendResponse(stream, "200 OK", "application/json; charset=utf-8", json);
+                    }
+                    else if (path == "/" || path == "/index.html" || path == "/driver_sales.html")
+                    {
+                        // حقن البيانات مباشرة داخل صفحة الـ HTML
+                        string html = GetDriverSalesHtmlWithData();
+                        SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
+                    }
+                    else
+                    {
+                        SendResponse(stream, "404 Not Found", "text/plain", "404 Not Found");
+                    }
+                }
+            }
+            catch { /* تجاهل أخطاء الاتصال المؤقتة */ }
+        }
+
+        private static void SendResponse(NetworkStream stream, string status, string contentType, string body)
+        {
+            byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
+            string headers   =
+                $"HTTP/1.1 {status}\r\n" +
+                $"Content-Type: {contentType}\r\n" +
+                $"Content-Length: {bodyBytes.Length}\r\n" +
+                "Access-Control-Allow-Origin: *\r\n" +
+                "Access-Control-Allow-Methods: GET\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+            byte[] headerBytes = Encoding.UTF8.GetBytes(headers);
+            stream.Write(headerBytes, 0, headerBytes.Length);
+            stream.Write(bodyBytes,   0, bodyBytes.Length);
+        }
+
+        /// <summary>يقرأ driver_sales.html ويحقن JSON البيانات بداخله مباشرة</summary>
+        private static string GetDriverSalesHtmlWithData()
+        {
+            string html = GetEmbeddedHtml();
+            string json = DAL.DriverDAL.BuildDriverExportJson();
+            // نحقن البيانات كمتغير JS في أول السكريبت
+            string injection = $"\n<script>window.__SERVER_DATA__ = {json};</script>\n";
+            // ندرجها قبل نهاية الـ </head>
+            return html.Replace("</head>", injection + "</head>");
+        }
+
+        private static string GetEmbeddedHtml()
+        {
+            // أولاً: حاول القراءة من الملف المستخرج
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms", "driver_sales.html");
+            if (File.Exists(filePath))
+                return File.ReadAllText(filePath, Encoding.UTF8);
+
+            // ثانياً: قراءة من الـ Embedded Resource
+            var asm = typeof(DriverPortalServer).Assembly;
+            using (var s = asm.GetManifestResourceStream("ChickenDist.Forms.driver_sales.html"))
+            {
+                if (s != null)
+                    using (var r = new StreamReader(s, Encoding.UTF8))
+                        return r.ReadToEnd();
+            }
+            return "<html><body>driver_sales.html not found</body></html>";
+        }
+
+        // ======================== الرفع السحابي ========================
+
+        /// <summary>
+        /// يرفع JSON البيانات إلى dpaste.org ويُرجع الرمز القصير (مثل ABC12)
+        /// صالح 24 ساعة ويُحذف تلقائياً
+        /// </summary>
+        public static string UploadToCloud()
+        {
+            string json = DAL.DriverDAL.BuildDriverExportJson();
+
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+                wc.Headers[HttpRequestHeader.Accept]      = "text/plain";
+
+                // expires=86400 = 24 ساعة
+                string payload = "content=" + Uri.EscapeDataString(json)
+                                + "&expires=86400"
+                                + "&format=url"
+                                + "&lexer=json";
+
+                string result = wc.UploadString("https://dpaste.org/api/", "POST", payload);
+
+                // النتيجة: https://dpaste.org/XXXXX
+                string code = result.Trim().TrimEnd('/');
+                if (code.Contains("/"))
+                    code = code.Substring(code.LastIndexOf('/') + 1);
+
+                _lastCloudCode  = code.ToUpper();
+                _cloudCodeExpiry = DateTime.Now.AddHours(24);
+                return _lastCloudCode;
+            }
+        }
+
+        // ======================== عناوين الـ IP ========================
+
+        /// <summary>يُرجع قائمة عناوين IPv4 النشطة على هذا الجهاز</summary>
+        public static List<string> GetLocalIPs()
+        {
+            var result = new List<string>();
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (ni.OperationalStatus != OperationalStatus.Up) continue;
+                if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                foreach (var ip in ni.GetIPProperties().UnicastAddresses)
+                {
+                    if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                        result.Add(ip.Address.ToString());
+                }
+            }
+            return result;
+        }
+    }
+}

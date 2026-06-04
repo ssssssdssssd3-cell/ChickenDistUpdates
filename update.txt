@@ -1,4 +1,4 @@
-version=1.0.52
+version=1.0.53
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=65803F9B391165A715B62DF4A4C7F6EC71DB223D0DC424A08095C27C849C3A98
-changelog=v1.0.52: إصلاح خطأ "Trailing content after the root JSON value" في صفحة المندوب — كانت البيانات الفاسدة في localStorage توقف التطبيق، الآن يتم مسح البيانات التالفة تلقائياً واستمرار العمل بشكل طبيعي.
+sha256=4C9295C527CAA5E7AD27F5ADA98F3B9CE805B35098F9B1E4BC85EECF18E3BE26
+changelog=v1.0.53: (1) بوابة مزامنة المندوب الجديدة - سحب بيانات اليوم بـ 3 طرق (2) رمز سحابي 5 حروف عبر الإنترنت بدون Wi-Fi (3) سحب مباشر من شبكة المحل + QR Code (4) المندوب يكتب الرمز في التطبيق ويبدأ البيع فوراً

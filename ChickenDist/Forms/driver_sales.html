@@ -170,17 +170,47 @@
       <p>سجّل مبيعاتك بدون إنترنت وصدّر الكشف للمحاسب</p>
     </div>
 
-    <!-- Step 1: Load data.json -->
+    <!-- Step 1: 3 sync options -->
     <div id="step1" class="card">
-      <div class="card-title">📂 الخطوة 1 — تحميل بيانات اليوم</div>
-      <div class="file-drop" onclick="document.getElementById('fileInput').click()">
-        <div class="drop-icon">📄</div>
-        <p>اضغط لاختيار ملف <strong>data.json</strong><br>الذي أرسله لك المحاسب</p>
-        <input type="file" id="fileInput" accept=".json" onchange="loadDataFile(event)">
+      <div class="card-title">📡 الخطوة 1 — تحميل بيانات اليوم</div>
+
+      <!-- ── خيار 1: رمز الإنترنت السحابي ── -->
+      <div style="background:linear-gradient(135deg,#0a2540,#0d3060);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(79,142,247,0.4)">
+        <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">🌐 سحب من الإنترنت (رمز المحاسب)</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">المحاسب يرسل لك رمز مكون من 5 حروف على واتساب</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="txtCloudCode" placeholder="اكتب الرمز هنا (مثال: ABC12)"
+            style="flex:1;text-transform:uppercase;font-size:18px;font-weight:700;text-align:center;letter-spacing:4px;padding:10px"
+            maxlength="8" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn btn-primary btn-sm" style="padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromCloud()">⬇ سحب</button>
+        </div>
+        <div id="cloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
       </div>
+
+      <!-- ── خيار 2: Wi-Fi محلي ── -->
+      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">📶 سحب من شبكة المحل (Wi-Fi)</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">لو موبايلك على نفس شبكة المحل — اكتب رقم الكمبيوتر</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="txtWifiIP" placeholder="مثال: 192.168.1.100"
+            style="flex:1;font-size:14px;direction:ltr;text-align:left" id="txtWifiIP">
+          <button class="btn btn-sm" style="background:var(--green);color:#fff;padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromWifi()">⬇ سحب</button>
+        </div>
+        <div id="wifiStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
+      </div>
+
+      <!-- ── خيار 3: ملف يدوي ── -->
+      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 ملف JSON (احتياطي)</div>
+        <div class="file-drop" style="padding:14px 10px" onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon" style="font-size:28px">📄</div>
+          <p style="font-size:12px">اضغط لاختيار ملف <strong>data.json</strong></p>
+          <input type="file" id="fileInput" accept=".json" onchange="loadDataFile(event)">
+        </div>
+      </div>
+
       <div class="sep"></div>
-      <p style="text-align:center; color: var(--sub); font-size:13px;">أو إذا كنت عندك بيانات محفوظة من قبل</p>
-      <button class="btn btn-ghost" style="margin-top:10px" onclick="loadFromStorage()">⚡ تحميل آخر بيانات محفوظة</button>
+      <button class="btn btn-ghost" style="margin-top:6px" onclick="loadFromStorage()">⚡ تحميل آخر بيانات محفوظة</button>
     </div>
 
     <!-- Step 2: Enter driver name -->
@@ -352,7 +382,27 @@ let driverName = '';
 // =================== INIT ===================
 window.onload = () => {
   document.getElementById('exportDate').value = todayStr();
-  loadFromStorageSilent();
+  // لو الصفحة فُتحت من خادم المندوب المحلي — البيانات محقونة مسبقاً
+  if (window.__SERVER_DATA__) {
+    appData = window.__SERVER_DATA__;
+    localStorage.setItem('driver_appData', JSON.stringify(appData));
+    // حفظ آخر IP مستخدم
+    try {
+      const host = window.location.hostname;
+      if (host && host !== 'localhost') {
+        localStorage.setItem('driver_last_ip', host + ':' + window.location.port);
+      }
+    } catch(e) {}
+    loadFromStorageSilent();
+    toast('✅ تم تحميل البيانات تلقائياً من شبكة المحل', 'success');
+  } else {
+    // استرجاع آخر IP وآخر رمز
+    const lastIP   = localStorage.getItem('driver_last_ip') || '';
+    const lastCode = localStorage.getItem('driver_last_code') || '';
+    if (lastIP)   document.getElementById('txtWifiIP').value  = lastIP;
+    if (lastCode) document.getElementById('txtCloudCode').value = lastCode;
+    loadFromStorageSilent();
+  }
 };
 
 function todayStr() {
@@ -381,6 +431,67 @@ function loadDataFile(event) {
     }
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+// ── سحب من الإنترنت بالرمز السحابي ──
+async function fetchFromCloud() {
+  const code = (document.getElementById('txtCloudCode').value || '').trim().toUpperCase();
+  if (!code) { toast('❌ اكتب الرمز أولاً', 'error'); return; }
+  const statusEl = document.getElementById('cloudStatus');
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '⏳ جاري السحب من الإنترنت...';
+  try {
+    // dpaste.org/<CODE>/raw يعطي النص الخام مباشرة
+    const url = 'https://dpaste.org/' + code + '/raw';
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('الرمز غير صحيح أو انتهت صلاحيته');
+    const text = await res.text();
+    const data = JSON.parse(text.trim());
+    appData = data;
+    localStorage.setItem('driver_appData', JSON.stringify(data));
+    localStorage.setItem('driver_last_code', code);
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✅ تم السحب بنجاح!';
+    showStep2();
+    toast('✅ تم تحميل ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف', 'success');
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '❌ ' + err.message;
+    toast('❌ ' + err.message, 'error');
+  }
+}
+
+// ── سحب من شبكة Wi-Fi المحلي ──
+async function fetchFromWifi() {
+  let ip = (document.getElementById('txtWifiIP').value || '').trim();
+  if (!ip) { toast('❌ اكتب عنوان IP أولاً', 'error'); return; }
+  if (!ip.includes(':')) ip = ip + ':8080';
+  const statusEl = document.getElementById('wifiStatus');
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '⏳ جاري الاتصال بشبكة المحل...';
+  try {
+    const url  = 'http://' + ip + '/data.json';
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res   = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('لم يستجب الخادم');
+    const data  = await res.json();
+    appData = data;
+    localStorage.setItem('driver_appData', JSON.stringify(data));
+    localStorage.setItem('driver_last_ip', ip);
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✅ تم الاتصال والسحب بنجاح!';
+    showStep2();
+    toast('✅ تم تحميل البيانات من شبكة المحل', 'success');
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    if (err.name === 'AbortError')
+      statusEl.textContent = '❌ انتهت مهلة الاتصال — تأكد من الـ IP وأن الخادم يعمل';
+    else
+      statusEl.textContent = '❌ ' + err.message;
+    toast('❌ فشل الاتصال بشبكة المحل', 'error');
+  }
 }
 
 function loadFromStorage() {

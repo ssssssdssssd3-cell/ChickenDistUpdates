@@ -31,6 +31,18 @@ namespace ChickenDist.Core
             set => Set("ReceiptPrintMode", value);
         }
 
+        public static int DriverPortalPort
+        {
+            get => int.TryParse(Get("DriverPortalPort", "8080"), out int p) ? p : 8080;
+            set => Set("DriverPortalPort", value.ToString());
+        }
+
+        public static bool DriverPortalAutoStart
+        {
+            get => Get("DriverPortalAutoStart", "false") == "true";
+            set => Set("DriverPortalAutoStart", value ? "true" : "false");
+        }
+
         // ===== دوال القراءة والكتابة =====
 
         public static string Get(string key, string defaultValue)

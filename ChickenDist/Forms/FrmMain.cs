@@ -148,7 +148,7 @@ namespace ChickenDist.Forms
 
                 // ── المناديب ──────────────────────────────────────────
                 ("🚚", "حمولة مندوب",     "DriverHandover", () => NavigateTo(new FrmDriverHandover()), Color.FromArgb(109, 40, 217)),
-                ("📱", "بيع المندوب",      "DriverSales",    () => OpenDriverSalesHtml(),               Color.FromArgb(109, 40, 217)),
+                ("📡", "بوابة المندوب",    "DriverSales",    () => NavigateTo(new FrmDriverPortal()),    Color.FromArgb(109, 40, 217)),
                 ("📥", "استيراد CSV",     "ImportPreview",  () => OpenImportPreviewDialog(),          Color.FromArgb(109, 40, 217)),
                 ("🖥️", "مراقبة المناديب", "DriverHandover", () => NavigateTo(new FrmDriversMonitor()), Color.FromArgb(109, 40, 217)),
                 ("📋", "عهدة المناديب",   "DriverHandover", () => NavigateTo(new FrmDriverCustody()),  Color.FromArgb(109, 40, 217)),
@@ -209,32 +209,11 @@ namespace ChickenDist.Forms
             form.BringToFront();
         }
 
-        private void OpenDriverSalesHtml()
+        protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            try
-            {
-                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms", "driver_sales.html");
-                if (!System.IO.File.Exists(path))
-                {
-                    path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "driver_sales.html");
-                }
-                if (System.IO.File.Exists(path))
-                {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = path,
-                        UseShellExecute = true
-                    });
-                }
-                else
-                {
-                    MessageBox.Show("لم يتم العثور على ملف صفحة المندوب driver_sales.html.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("فشل فتح صفحة المندوب الميداني:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
+            Core.DriverPortalServer.Stop();
+            base.OnFormClosed(e);
         }
 
         private void OpenImportPreviewDialog()
