@@ -79,8 +79,10 @@ namespace ChickenDist.Forms
         private int _editSaleID = 0;
         private bool _isCopyMode = false;
         private DateTime _loadedLastModified;
-        private ComboBox cboPricingType;
-        private Label lblPricingType;
+		private Button btnTierRetail;
+		private Button btnTierSemi;
+		private Button btnTierWholesale;
+		private string _selectedTier = "قطاعي";
 
 		public FrmSale() : this(0, false)
 		{
@@ -113,7 +115,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 120,
+				Height = 125,
 				Width = 950,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10)
@@ -249,23 +251,57 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-			// --- شريحة السعر (Pricing Tier) ---
-			lblPricingType = MakeLabel("فئة السعر :", 840, 84);
-			lblPricingType.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			cboPricingType = new ComboBox
+			
+			// الألوان: قطاعي=أزرق، نصف جملة=بنفسجي، جملة=برتقالي
+			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
+			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
+			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
+			Color clrOff         = Theme.BgInput;
+
+			btnTierRetail = new Button
 			{
-				Location = new Point(660, 80),
-				Width = 110,
-				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				Text = "🟦 قطاعي",
+				Location = new Point(300, 44),
+				Size = new Size(70, 28),
+				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				BackColor = clrRetailOn,
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
 			};
-			cboPricingType.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
-			cboPricingType.SelectedIndex = 0;
-			cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
+			btnTierRetail.FlatAppearance.BorderSize = 0;
+			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
+
+			btnTierSemi = new Button
+			{
+				Text = "🟣 نصف ج",
+				Location = new Point(225, 44),
+				Size = new Size(70, 28),
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = clrOff,
+				ForeColor = Theme.TextMain,
+				Cursor = Cursors.Hand,
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
+			};
+			btnTierSemi.FlatAppearance.BorderSize = 0;
+			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+
+			btnTierWholesale = new Button
+			{
+				Text = "🟠 جملة",
+				Location = new Point(150, 44),
+				Size = new Size(70, 28),
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = clrOff,
+				ForeColor = Theme.TextMain,
+				Cursor = Cursors.Hand,
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
+			};
+			btnTierWholesale.FlatAppearance.BorderSize = 0;
+			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
 
 			Button btnClientStatement = new Button
 			{
@@ -291,7 +327,8 @@ namespace ChickenDist.Forms
 			panel.Controls.AddRange(new Control[]
 			{
 				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
-				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes, lblPricingType, cboPricingType
+				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes,
+				btnTierRetail, btnTierSemi, btnTierWholesale
 			});
 			pnlItems = new Panel
 			{
@@ -680,12 +717,8 @@ namespace ChickenDist.Forms
                     if (byID != null && byID["DefaultPriceTier"] != DBNull.Value)
                     {
                         string clientTier = byID["DefaultPriceTier"].ToString();
-                        int tierIdx = cboPricingType.Items.IndexOf(clientTier);
-                        if (tierIdx >= 0 && cboPricingType.SelectedIndex != tierIdx)
-                        {
-                            // سيشغّل CboPricingType_SelectedIndexChanged تلقائياً
-                            cboPricingType.SelectedIndex = tierIdx;
-                        }
+                        if (clientTier != _selectedTier)
+                            SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
                     }
                     EvaluateClientFinancials(comboItem2.ID);
 				}
@@ -787,22 +820,23 @@ namespace ChickenDist.Forms
 		/// <summary>
 		/// يُطبِّق فئة السعر على جميع البنود الموجودة في الجدول عند تغيير الفئة.
 		/// </summary>
-		private void CboPricingType_SelectedIndexChanged(object sender, EventArgs e)
+		/// <summary>
+		/// يُطبِّق فئة السعر المختارة: يُحدِّث الأزرار ويسأل عن تحديث الأصناف إن وُجدت.
+		/// </summary>
+		private void ApplyTierChange(string newTier)
 		{
-			if (_items.Count == 0 || cboPricingType == null) return;
+			SetTierButtons(newTier);
+			if (_items.Count == 0) return;
 
-			string newTier = cboPricingType.SelectedItem?.ToString() ?? "قطاعي";
-
-			// جلب أسعار الأصناف الموجودة بالجدول دفعة واحدة
-			var prodIDs = new System.Text.StringBuilder();
-			foreach (var it in _items) prodIDs.Append(it.ProductID + ",");
-			string ids = prodIDs.ToString().TrimEnd(',');
+			// جلب الأسعار دفعةً واحدة
+			var sb = new System.Text.StringBuilder();
+			foreach (var it in _items) sb.Append(it.ProductID + ",");
+			string ids = sb.ToString().TrimEnd(',');
 			if (string.IsNullOrEmpty(ids)) return;
 
 			var dtPrices = DbHelper.Query(
 				$"SELECT ProductID, SalePrice, SemiWholesalePrice, WholesalePrice FROM Products WHERE ProductID IN ({ids})");
 
-			// بناء قاموس السعر لكل صنف
 			var priceMap = new System.Collections.Generic.Dictionary<int, decimal>();
 			foreach (DataRow r in dtPrices.Rows)
 			{
@@ -815,11 +849,9 @@ namespace ChickenDist.Forms
 				priceMap[pid] = price;
 			}
 
-			var res = MessageBox.Show(
-				$"هل تريد تحديث أسعار جميع الأصناف وفق فئة السعر \"{newTier}\"؟",
-				"تغيير فئة السعر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-			if (res == DialogResult.Yes)
+			if (MessageBox.Show(
+				$"هل تريد تحديث أسعار جميع الأصناف وفق فئة \"{newTier}\"؟",
+				"تغيير فئة السعر", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 			{
 				foreach (var item in _items)
 				{
@@ -827,13 +859,33 @@ namespace ChickenDist.Forms
 					{
 						item.UnitPrice = np;
 						item.PriceTier = newTier;
-						// إعادة حساب الخصم بالنسبة
 						decimal gross = item.Quantity * item.UnitPrice;
 						item.DiscountAmt = Math.Round(gross * item.DiscountPct / 100m, 2);
 					}
 				}
 				RefreshGrid();
 			}
+		}
+
+		/// <summary>
+		/// يُحدِّث مظهر أزرار فئة السعر ليُبرز المحدود منها.
+		/// </summary>
+		private void SetTierButtons(string tier)
+		{
+			_selectedTier = tier;
+			if (btnTierRetail == null) return;
+
+			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
+			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
+			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
+			Color clrOff         = Theme.BgInput;
+
+			btnTierRetail.BackColor    = tier == "قطاعي"    ? clrRetailOn    : clrOff;
+			btnTierRetail.ForeColor    = tier == "قطاعي"    ? Color.White    : Theme.TextMain;
+			btnTierSemi.BackColor      = tier == "نصف جملة" ? clrSemiOn      : clrOff;
+			btnTierSemi.ForeColor      = tier == "نصف جملة" ? Color.White    : Theme.TextMain;
+			btnTierWholesale.BackColor = tier == "جملة"     ? clrWholesaleOn : clrOff;
+			btnTierWholesale.ForeColor = tier == "جملة"     ? Color.White    : Theme.TextMain;
 		}
 
 		private void SetInvoiceType(string type)
@@ -1221,11 +1273,8 @@ namespace ChickenDist.Forms
 
 			// فئة السعر
 			string tier = row["PriceTier"].ToString();
-			int tierIdx = cboPricingType.Items.IndexOf(tier);
-			// لا نريد تشغيل حوار تغيير السعر هنا لأننا نحمّل فاتورة محفوظة
-			cboPricingType.SelectedIndexChanged -= CboPricingType_SelectedIndexChanged;
-			cboPricingType.SelectedIndex = tierIdx >= 0 ? tierIdx : 0;
-			cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
+			// تعيين فئة السعر أثناء تحميل الفاتورة (بدون سؤال)
+			SetTierButtons(!string.IsNullOrEmpty(tier) ? tier : "قطاعي");
 
 			// البنود
 			var dtItems = SaleDAL.GetItems(saleID);
@@ -1360,7 +1409,7 @@ namespace ChickenDist.Forms
 				}
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
-			string priceTier = cboPricingType?.SelectedItem?.ToString() ?? "قطاعي";
+			string priceTier = _selectedTier ?? "قطاعي";
 
 			// ─── إشعار الدفع النقدي ───
 			if (!isDraft && _invoiceType == "Cash" && _editSaleID == 0)
@@ -1876,12 +1925,7 @@ namespace ChickenDist.Forms
 			if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
 			if (cboDriver.Items.Count > 0) cboDriver.SelectedIndex = 0;
 			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
-			if (cboPricingType != null)
-			{
-				cboPricingType.SelectedIndexChanged -= CboPricingType_SelectedIndexChanged;
-				cboPricingType.SelectedIndex = 0; // قطاعي
-				cboPricingType.SelectedIndexChanged += CboPricingType_SelectedIndexChanged;
-			}
+			SetTierButtons("قطاعي");
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
 			Text = "شاشة المبيعات";

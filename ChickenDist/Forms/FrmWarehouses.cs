@@ -25,59 +25,26 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "إدارة المخازن";
-            this.Size = new Size(850, 500);
+            this.Size = new Size(900, 520);
+            this.MinimumSize = new Size(750, 450);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var split = new SplitContainer
+            // TableLayoutPanel: عمودان - الأيمن: الجريد | الأيسر: بيانات المخزن
+            var tbl = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                FixedPanel = FixedPanel.Panel1,
-                SplitterDistance = 320
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(6)
             };
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f)); // جريد
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f)); // فورم
 
-            // Right Panel: Form Fields (Panel1 in C# RTL is layout-right)
-            split.Panel1.BackColor = Theme.BgCard;
-            split.Panel1.Padding = new Padding(15);
-
-            int y = 20;
-            AddLabel("اسم المخزن:", split.Panel1, y);
-            txtName = AddTextBox(split.Panel1, ref y);
-
-            AddLabel("الموقع:", split.Panel1, y);
-            txtLocation = AddTextBox(split.Panel1, ref y);
-
-            AddLabel("ملاحظات:", split.Panel1, y);
-            txtNotes = AddTextBox(split.Panel1, ref y, true);
-            txtNotes.Height = 70;
-            y += 40;
-
-            chkActive = new CheckBox
-            {
-                Text = "مخزن نشط",
-                Location = new Point(190, y),
-                Size = new Size(100, 24),
-                ForeColor = Theme.TextMain,
-                Checked = true
-            };
-            split.Panel1.Controls.Add(chkActive);
-            y += 40;
-
-            btnNew = Theme.MakeButton("🆕 جديد", 210, y, 80, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("💾 حفظ", 115, y, 85, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑️ إيقاف", 20, y, 85, 32, Color.FromArgb(140, 40, 40));
-
-            btnNew.Click += (s, e) => ClearDetail();
-            btnSave.Click += BtnSave_Click;
-            btnDelete.Click += BtnDelete_Click;
-
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
-
-            // Left Panel: Grid View (Panel2)
+            // ─── الجريد ───
             dgWarehouses = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -88,7 +55,6 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
-                RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -113,10 +79,128 @@ namespace ChickenDist.Forms
             dgWarehouses.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "حالة النشاط", FillWeight = 40 });
             dgWarehouses.SelectionChanged += DgWarehouses_SelectionChanged;
 
-            split.Panel2.Controls.Add(dgWarehouses);
+            tbl.Controls.Add(dgWarehouses, 0, 0);
 
-            this.Controls.Add(split);
-            Theme.ApplyFormRTL(this);
+            // ─── لوحة بيانات المخزن ───
+            var pnlForm = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(16)
+            };
+
+            // عنوان اللوحة
+            var lblTitle = new Label
+            {
+                Text = "بيانات المخزن",
+                Dock = DockStyle.Top,
+                Height = 34,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Primary,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            pnlForm.Controls.Add(lblTitle);
+
+            // حاوية الحقول بـ FlowLayout لتجنب التداخل
+            var flow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                Padding = new Padding(0, 4, 0, 0)
+            };
+
+            flow.Controls.Add(MakeFieldLabel("اسم المخزن:"));
+            txtName = MakeFieldTextBox(flow, false);
+
+            flow.Controls.Add(MakeFieldLabel("الموقع:"));
+            txtLocation = MakeFieldTextBox(flow, false);
+
+            flow.Controls.Add(MakeFieldLabel("ملاحظات:"));
+            txtNotes = MakeFieldTextBox(flow, true);
+
+            chkActive = new CheckBox
+            {
+                Text = "✔ مخزن نشط",
+                AutoSize = false,
+                Size = new Size(240, 28),
+                Margin = new Padding(0, 8, 0, 8),
+                ForeColor = Theme.TextMain,
+                Checked = true,
+                Font = Theme.FontMain
+            };
+            flow.Controls.Add(chkActive);
+
+            // أزرار الإجراءات
+            var pnlBtns = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.RightToLeft,
+                Margin = new Padding(0, 6, 0, 0),
+                Width = 250
+            };
+            btnNew    = MakeActionBtn("🆕 جديد",  Color.FromArgb(55, 110, 55));
+            btnSave   = MakeActionBtn("💾 حفظ",   Theme.Accent);
+            btnDelete = MakeActionBtn("🗑️ إيقاف", Color.FromArgb(160, 40, 40));
+            btnNew.Click    += (s, e) => ClearDetail();
+            btnSave.Click   += BtnSave_Click;
+            btnDelete.Click += BtnDelete_Click;
+            pnlBtns.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+            flow.Controls.Add(pnlBtns);
+
+            pnlForm.Controls.Add(flow);
+            tbl.Controls.Add(pnlForm, 1, 0);
+
+            this.Controls.Add(tbl);
+        }
+
+        private Label MakeFieldLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = false,
+                Size = new Size(240, 22),
+                Margin = new Padding(0, 6, 0, 2),
+                ForeColor = Theme.TextSub,
+                Font = Theme.FontMain,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+        }
+
+        private TextBox MakeFieldTextBox(FlowLayoutPanel parent, bool multiline)
+        {
+            var txt = new TextBox
+            {
+                Width = 240,
+                Multiline = multiline,
+                Height = multiline ? 65 : 26,
+                Margin = new Padding(0, 0, 0, 4),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes
+            };
+            parent.Controls.Add(txt);
+            return txt;
+        }
+
+        private Button MakeActionBtn(string text, Color back)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(80, 32),
+                Margin = new Padding(4, 0, 0, 0),
+                BackColor = back,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontBold,
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            return btn;
         }
 
         private void AddLabel(string text, Panel panel, int y)
