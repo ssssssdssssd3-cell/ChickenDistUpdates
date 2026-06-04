@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = AppConfig.CompanyName + " - النظام الرئيسي";
+            this.Text = AppConfig.CompanyName + " - النظام الرئيسي | الإصدار: " + UpdateManager.CurrentVersion;
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;

@@ -169,8 +169,10 @@ namespace ChickenDist.Forms
             {
                 if (!string.IsNullOrEmpty(DriverPortalServer.LastCloudCode))
                 {
-                    string msg = $"🔑 رمز مزامنة بيانات اليوم: {DriverPortalServer.LastCloudCode}\n" +
-                                 $"افتح تطبيق البيع → سحب من الإنترنت → اكتب الرمز\n" +
+                    string msg = $"🔑 رمز مزامنة بيانات اليوم: {DriverPortalServer.LastCloudCode}\n\n" +
+                                 $"رابط صفحة البيع للمندوب:\n" +
+                                 $"https://raw.githack.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist/Forms/driver_sales.html\n\n" +
+                                 $"افتح الرابط ← سحب من الإنترنت ← اكتب الرمز\n" +
                                  $"⏰ صالح حتى {DriverPortalServer.CloudCodeExpiry:hh:mm tt}";
                     Clipboard.SetText(msg);
                     MessageBox.Show("✅ تم نسخ رسالة واتساب الجاهزة!\nافتح واتساب ويب وألصق النص.",
@@ -179,6 +181,44 @@ namespace ChickenDist.Forms
                 }
             };
             page.Controls.Add(btnWhatsApp);
+
+            y += 48;
+
+            // ── رابط صفحة المندوب ──────────────────────────────────────
+            var lblDriverLinkTitle = new Label
+            {
+                Text      = "🔗 رابط صفحة المندوب (افتح منها واكتب الرمز):",
+                Location  = new Point(14, y),
+                Size      = new Size(645, 20),
+                ForeColor = Theme.TextSub,
+                Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            page.Controls.Add(lblDriverLinkTitle);
+            y += 24;
+
+            var txtDriverLink = new TextBox
+            {
+                Text      = "https://raw.githack.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist/Forms/driver_sales.html",
+                Location  = new Point(14, y),
+                Size      = new Size(500, 28),
+                ReadOnly  = true,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font      = new Font("Segoe UI", 9f),
+                RightToLeft = RightToLeft.No
+            };
+            page.Controls.Add(txtDriverLink);
+
+            var btnCopyLink = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(70, 80, 95));
+            btnCopyLink.Location = new Point(524, y - 1);
+            btnCopyLink.Size     = new Size(135, 28);
+            btnCopyLink.Font     = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnCopyLink.Click   += (s, e) =>
+            {
+                Clipboard.SetText("https://raw.githack.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist/Forms/driver_sales.html");
+                MessageBox.Show("✅ تم نسخ رابط صفحة المندوب إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            page.Controls.Add(btnCopyLink);
 
             return page;
         }

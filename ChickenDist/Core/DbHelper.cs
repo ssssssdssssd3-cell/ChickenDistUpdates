@@ -380,9 +380,17 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'version')
                 BEGIN
                     CREATE TABLE [version] (
-                        [version] NVARCHAR(50) NOT NULL
+                        [version] NVARCHAR(50) NOT NULL,
+                        [UpdatedAt] DATETIME NULL
                     );
-                    INSERT INTO [version] ([version]) VALUES ('1.0.0');
+                    INSERT INTO [version] ([version], [UpdatedAt]) VALUES ('1.0.0', GETDATE());
+                END
+                ELSE
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('version') AND name = 'UpdatedAt')
+                    BEGIN
+                        ALTER TABLE [version] ADD [UpdatedAt] DATETIME NULL;
+                    END
                 END";
                 Execute(sqlVersionTable);
             }
@@ -573,7 +581,7 @@ namespace ChickenDist.Core
                 if (dbVerObj == null || dbVerObj == DBNull.Value)
                 {
                     // إذا كان الجدول فارغاً لسبب ما، نضع الإصدار الحالي ونسمح بالدخول
-                    Execute("DELETE FROM [version]; INSERT INTO [version] ([version]) VALUES (@ver)", P("@ver", currentAppVersion));
+                    Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
                     return true;
                 }
 
@@ -586,7 +594,7 @@ namespace ChickenDist.Core
                     // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات
                     if (appVer > dbVer)
                     {
-                        Execute("DELETE FROM [version]; INSERT INTO [version] ([version]) VALUES (@ver)", P("@ver", currentAppVersion));
+                        Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
                     }
                     return true;
                 }

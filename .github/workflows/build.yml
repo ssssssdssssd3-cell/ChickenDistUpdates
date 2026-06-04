@@ -6,6 +6,9 @@ on:
       - 'v*.*.*'        # يُشغَّل فقط عند عمل tag مثل v1.0.20
   workflow_dispatch:    # تشغيل يدوي من صفحة Actions عند الحاجة
 
+permissions:
+  contents: write
+
 jobs:
   # ─────────────────────────────────────────
   # الخطوة 1: بناء الـ .exe على Windows
@@ -98,7 +101,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ssssssdssssd3-cell/ChickenDistUpdates
-          token: ${{ secrets.UPDATES_REPO_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: updates-repo/
 
       # نسخ الـ .exe الجديد للـ repo
