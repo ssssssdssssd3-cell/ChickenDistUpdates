@@ -1214,9 +1214,23 @@ namespace ChickenDist.DAL
                                       JOIN DriverHandovers dh2 ON hi2.HandoverID=dh2.HandoverID
                                       WHERE hi2.ProductID=p2.ProductID
                                         AND (adj2.AdjDate IS NULL OR dh2.HandoverDate > adj2.AdjDate)), 0)
+                           -- Incoming: Purchases since adjustment
+                           + ISNULL((SELECT SUM(pi2.Quantity) FROM PurchaseItems pi2
+                                      JOIN Purchases pu2 ON pi2.PurchaseID = pu2.PurchaseID
+                                      WHERE pi2.ProductID = p2.ProductID
+                                        AND pu2.IsPosted = 1
+                                        AND (adj2.AdjDate IS NULL OR pu2.PurchaseDate > adj2.AdjDate)), 0)
+                           -- Outgoing: Purchase Returns since adjustment
+                           - ISNULL((SELECT SUM(pri2.Quantity) FROM PurchaseReturnItems pri2
+                                      JOIN PurchaseReturns pr2 ON pri2.ReturnID = pr2.ReturnID
+                                      WHERE pri2.ProductID = p2.ProductID
+                                        AND (adj2.AdjDate IS NULL OR pr2.ReturnDate > adj2.AdjDate)), 0)
+                           -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
                            - ISNULL((SELECT SUM(si2.Quantity) FROM SaleItems si2
                                       JOIN Sales s2 ON si2.SaleID=s2.SaleID
                                       WHERE si2.ProductID=p2.ProductID
+                                        AND s2.IsPosted = 1
+                                        AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit') AND s2.DriverID IS NULL))
                                         AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)), 0)
                            AS CurrentStock
                     FROM Products p2

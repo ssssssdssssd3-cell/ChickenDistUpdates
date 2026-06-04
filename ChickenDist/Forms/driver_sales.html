@@ -174,6 +174,13 @@
     <div id="step1" class="card">
       <div class="card-title">📡 الخطوة 1 — تحميل بيانات اليوم</div>
 
+      <!-- 🔑 رمز الشركة / النشاط -->
+      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px">🔑 رمز الشركة / النشاط (Tenant Key)</label>
+        <input type="text" id="txtTenantKey" placeholder="اتركه فارغاً إلا إذا حدده المحاسب (مثال: CompanyA)"
+          style="font-size:14px;padding:10px" oninput="onTenantKeyChange()">
+      </div>
+
       <!-- ── خيار 1: رمز الإنترنت السحابي ── -->
       <div style="background:linear-gradient(135deg,#0a2540,#0d3060);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(79,142,247,0.4)">
         <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">🌐 سحب من الإنترنت (رمز المحاسب)</div>
@@ -199,7 +206,18 @@
         <div id="wifiStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
       </div>
 
-      <!-- ── خيار 3: ملف يدوي ── -->
+      <!-- ── خيار 3: لصق كود البيانات (بدون إنترنت) ── -->
+      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات (بدون إنترنت)</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">الصق الكود المرسل من المحاسب هنا لتحديث الأصناف</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <textarea id="txtPasteCode" placeholder="الصق كود البيانات المشفر هنا..." 
+                    style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
+          <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="loadFromPastedCode()">⬇ تحميل البيانات</button>
+        </div>
+      </div>
+
+      <!-- ── خيار 4: ملف يدوي ── -->
       <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border)">
         <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 ملف JSON (احتياطي)</div>
         <div class="file-drop" style="padding:14px 10px" onclick="document.getElementById('fileInput').click()">
@@ -343,6 +361,10 @@
         <label>تاريخ اليوم</label>
         <input type="date" id="exportDate">
       </div>
+      <div class="form-row">
+        <label>رقم هاتف المحاسب (واتساب)</label>
+        <input type="text" id="accountantPhone" placeholder="مثال: 01001234567">
+      </div>
       <div style="background:var(--card2); border-radius:10px; padding:12px 14px; margin-bottom:14px; border:1px solid var(--border);">
         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
           <span style="color:var(--sub)">عدد الفواتير</span>
@@ -359,6 +381,7 @@
       </div>
       <button class="btn btn-primary" onclick="exportCSV()">📥 تحميل ملف CSV للمحاسب</button>
       <button class="btn btn-green" onclick="shareToWhatsApp()" style="margin-top: 10px; background-color: #25D366; color: white;">📲 إرسال الكشف للمحاسب عبر واتساب</button>
+      <button class="btn btn-orange" onclick="shareToWhatsAppOffline()" style="margin-top: 10px; background-color: #f39c12; color: white;">📲 إرسال كود واتساب (بدون إنترنت)</button>
       <div class="sep"></div>
       <button class="btn btn-ghost" onclick="clearAll()" style="color:var(--red)">🗑️ مسح كل الفواتير وبدء يوم جديد</button>
     </div>
@@ -394,6 +417,16 @@
       <div id="refreshCloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
     </div>
 
+    <!-- كود البيانات بدون إنترنت -->
+    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات (بدون إنترنت)</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="txtRefreshPasteCode" placeholder="الصق كود البيانات المشفر الجديد هنا..." 
+                  style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
+        <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="refreshFromPastedCode()">⬇ تحديث البيانات</button>
+      </div>
+    </div>
+
     <!-- ملف JSON -->
     <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
       <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 أو حمّل ملف data.json جديد</div>
@@ -424,6 +457,21 @@ let driverId = null;
 // =================== INIT ===================
 window.onload = () => {
   document.getElementById('exportDate').value = todayStr();
+  
+  // تهيئة مفتاح الشركة
+  const tenantInput = document.getElementById('txtTenantKey');
+  if (tenantInput) {
+    if (window.__XOR_KEY__) {
+      const baseKey = "ChickenDistSecureKey2026";
+      if (window.__XOR_KEY__.startsWith(baseKey)) {
+        tenantInput.value = window.__XOR_KEY__.substring(baseKey.length);
+      }
+      tenantInput.disabled = true;
+    } else {
+      tenantInput.value = localStorage.getItem('driver_tenant_key') || '';
+    }
+  }
+
   // لو الصفحة فُتحت من خادم المندوب المحلي — البيانات محقونة مسبقاً
   if (window.__SERVER_DATA__) {
     appData = window.__SERVER_DATA__;
@@ -446,6 +494,11 @@ window.onload = () => {
     loadFromStorageSilent();
   }
 };
+
+function onTenantKeyChange() {
+  const tenant = (document.getElementById('txtTenantKey').value || '').trim();
+  localStorage.setItem('driver_tenant_key', tenant);
+}
 
 function todayStr() {
   const d = new Date();
@@ -493,7 +546,8 @@ async function fetchFromCloud() {
     const res  = await fetch(url);
     if (!res.ok) throw new Error('الرمز غير صحيح أو انتهت صلاحيته');
     const text = await res.text();
-    const data = safeParseJSON(text);
+    const decryptedText = decryptIfNeeded(text);
+    const data = safeParseJSON(decryptedText);
     appData = data;
     localStorage.setItem('driver_appData', JSON.stringify(data));
     localStorage.setItem('driver_last_code', code);
@@ -574,6 +628,10 @@ function loadFromStorageSilent() {
     if (driverName && appData.clients && appData.clients.length > 0) {
       launchApp();
     }
+  }
+  const savedPhone = localStorage.getItem('driver_accountant_phone');
+  if (savedPhone && document.getElementById('accountantPhone')) {
+    document.getElementById('accountantPhone').value = savedPhone;
   }
 }
 
@@ -999,40 +1057,153 @@ function buildCSV() {
   return { csv, filename };
 }
 
-function shareToWhatsApp() {
+function getEffectiveXorKey() {
+  if (window.__XOR_KEY__) {
+    return window.__XOR_KEY__;
+  }
+  const localTenant = localStorage.getItem('driver_tenant_key') || '';
+  if (localTenant.trim()) {
+    return "ChickenDistSecureKey2026" + localTenant.trim();
+  }
+  return "ChickenDistSecureKey2026";
+}
+
+function encryptData(plainText) {
+  const bytes = new TextEncoder().encode(plainText);
+  const keyBytes = new TextEncoder().encode(getEffectiveXorKey());
+  const encryptedBytes = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    encryptedBytes[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+  }
+  let binaryString = '';
+  for (let i = 0; i < encryptedBytes.length; i++) {
+    binaryString += String.fromCharCode(encryptedBytes[i]);
+  }
+  return btoa(binaryString);
+}
+
+function decryptData(cipherText) {
+  const binaryString = atob(cipherText);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const keyBytes = new TextEncoder().encode(getEffectiveXorKey());
+  const decryptedBytes = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    decryptedBytes[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+  }
+  return new TextDecoder().decode(decryptedBytes);
+}
+
+function decryptIfNeeded(text) {
+  text = text.trim();
+  if (text.startsWith('{') || text.startsWith('[')) {
+    return text;
+  }
+  return decryptData(text);
+}
+
+function shareToWhatsAppOffline() {
   if (invoices.length === 0) { toast('❌ لا توجد فواتير للإرسال', 'error'); return; }
+  
+  let phone = document.getElementById('accountantPhone').value.trim();
+  if (!phone) { toast('❌ يرجى إدخال رقم هاتف المحاسب أولاً', 'error'); return; }
+  
+  phone = phone.replace(/\D/g, '');
+  if (phone.startsWith('0')) {
+    phone = '2' + phone;
+  }
+  
+  localStorage.setItem('driver_accountant_phone', document.getElementById('accountantPhone').value.trim());
+  
+  const { csv, filename } = buildCSV();
+  try {
+    const encryptedCsv = encryptData(csv);
+    
+    // وضع البيانات في رسالة منسقة
+    const msg = `📋 كشف مبيعات اليوم للمندوب *${driverName}* (أوفلاين)\n` +
+                `📅 التاريخ: ${document.getElementById('exportDate').value}\n` +
+                `=== كود المبيعات المشفر ===\n${encryptedCsv}`;
+
+    // نسخ النص إلى الحافظة تلقائياً لتسهيل اللصق
+    navigator.clipboard.writeText(msg).then(() => {
+      toast('✅ تم نسخ كود المبيعات المشفر للحافظة تلقائياً!', 'success');
+    }).catch(() => {
+      const textArea = document.createElement("textarea");
+      textArea.value = msg;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    });
+
+    alert("💡 تم نسخ كود المبيعات المشفر بنجاح!\nسيفتح واتساب الآن. اذهب لمحادثة المحاسب، قم بعمل 'لصق' (Paste) ثم إرسال.");
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}`;
+    window.location.href = whatsappUrl;
+  } catch (err) {
+    toast('❌ خطأ في تشفير البيانات: ' + err.message, 'error');
+  }
+}
+
+async function shareToWhatsApp() {
+  if (invoices.length === 0) { toast('❌ لا توجد فواتير للإرسال', 'error'); return; }
+  
+  let phone = document.getElementById('accountantPhone').value.trim();
+  if (!phone) { toast('❌ يرجى إدخال رقم هاتف المحاسب أولاً', 'error'); return; }
+  
+  phone = phone.replace(/\D/g, '');
+  if (phone.startsWith('0')) {
+    phone = '2' + phone;
+  }
+  
+  localStorage.setItem('driver_accountant_phone', document.getElementById('accountantPhone').value.trim());
+  toast('⏳ جاري الرفع السحابي وتجهيز الواتساب...', 'info');
+
   const { csv, filename } = buildCSV();
 
-  // ── الخطوة 1: تحميل ملف CSV على الجهاز أولاً ──
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const blobUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(blobUrl);
+  try {
+    const encryptedCsv = encryptData(csv);
+    const res = await fetch('https://api.pastes.dev/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: encryptedCsv
+    });
 
-  // ── الخطوة 2: محاولة Web Share API (يدعم إرسال ملفات عبر واتساب على أندرويد/iOS) ──
-  setTimeout(() => {
-    if (navigator.canShare && navigator.share) {
-      try {
-        const file = new File([csv], filename, { type: 'text/csv' });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({
-            files: [file],
-            title: `كشف مبيعات - ${driverName}`,
-            text: `كشف مبيعات المندوب ${driverName}`
-          }).then(() => {
-            toast('✅ تم إرسال الملف بنجاح', 'success');
-          }).catch(err => {
-            if (err.name !== 'AbortError') openWhatsAppAppWithGuide(filename);
-          });
-          return;
-        }
-      } catch(e) {}
-    }
-    openWhatsAppAppWithGuide(filename);
-  }, 600);
+    if (!res.ok) throw new Error('فشل رفع البيانات إلى خادم السحاب');
+
+    const resJson = await res.json();
+    const code = resJson.key;
+
+    if (!code) throw new Error('لم يرجع السحاب رمزاً صالحاً');
+
+    const msg = `📋 كشف مبيعات اليوم للمندوب *${driverName}*\n` +
+                `📅 التاريخ: ${document.getElementById('exportDate').value}\n` +
+                `🔑 رمز الاستيراد السحابي: *${code}*\n` +
+                `🔗 رابط التحميل المشفر المباشر:\n` +
+                `https://api.pastes.dev/raw/${code}\n\n` +
+                `من فضلك افتح شاشة "تقفيل حمولة مندوب" في البرنامج، واضغط على "استيراد من السحاب" واكتب الرمز: *${code}*`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    window.location.href = whatsappUrl;
+    toast('✅ تم الرفع سحابياً وفتح محادثة واتساب!', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('⚠️ فشل الرفع السحابي، جاري التحميل يدوياً...', 'error');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+
+    setTimeout(() => {
+      openWhatsAppAppWithGuide(filename);
+    }, 1000);
+  }
 }
 
 function openWhatsAppAppWithGuide(filename) {
@@ -1123,7 +1294,8 @@ async function refreshFromCloud() {
     const res  = await fetch(url);
     if (!res.ok) throw new Error('الرمز غير صحيح أو انتهت صلاحيته');
     const text = await res.text();
-    const data = safeParseJSON(text);
+    const decryptedText = decryptIfNeeded(text);
+    const data = safeParseJSON(decryptedText);
     appData = data;
     localStorage.setItem('driver_appData', JSON.stringify(data));
     localStorage.setItem('driver_last_code', code);
@@ -1160,6 +1332,38 @@ function refreshFromFile(event) {
     }
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+function loadFromPastedCode() {
+  const code = (document.getElementById('txtPasteCode').value || '').trim();
+  if (!code) { toast('❌ الصق الكود أولاً', 'error'); return; }
+  try {
+    const decryptedText = decryptIfNeeded(code);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('driver_appData', JSON.stringify(data));
+    showStep2();
+    toast('✅ تم تحميل ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف بنجاح!', 'success');
+  } catch(err) {
+    toast('❌ كود غير صحيح أو مشفر بمفتاح شركة آخر: ' + err.message, 'error');
+  }
+}
+
+function refreshFromPastedCode() {
+  const code = (document.getElementById('txtRefreshPasteCode').value || '').trim();
+  if (!code) { toast('❌ الصق الكود أولاً', 'error'); return; }
+  try {
+    const decryptedText = decryptIfNeeded(code);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('driver_appData', JSON.stringify(data));
+    renderClients();
+    renderProducts();
+    closeRefreshModal();
+    toast('✅ تم تحديث البيانات: ' + (data.clients?.length||0) + ' عميل، ' + (data.products?.length||0) + ' صنف', 'success');
+  } catch(err) {
+    toast('❌ كود غير صحيح أو مشفر بمفتاح شركة آخر: ' + err.message, 'error');
+  }
 }
 
 // =================== TABS ===================

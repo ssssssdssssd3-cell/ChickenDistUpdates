@@ -36,20 +36,27 @@ namespace ChickenDist.DAL
                             FROM HandoverItems hi 
                             JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                             WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    -- FIX: مشتريات تضاف للمخزون (تمت إزالة علامة الطرح الخاطئة قبل +)
-                    + ISNULL((SELECT SUM(pi.Quantity)
+                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0) +
+                    -- Incoming: Purchases since adjustment
+                    ISNULL((SELECT SUM(pi.Quantity)
                               FROM PurchaseItems pi
                               JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                               WHERE pi.ProductID = p.ProductID
                                 AND pu.IsPosted = 1
-                                AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0) -
-                    -- Outgoing since adjustment: ALL Sales
-                    ISNULL((SELECT SUM(si.Quantity) 
+                                AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    -- Outgoing: Purchase Returns since adjustment
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
+                    - ISNULL((SELECT SUM(si.Quantity) 
                             FROM SaleItems si 
                             JOIN Sales s ON si.SaleID = s.SaleID
                             WHERE si.ProductID = p.ProductID 
                               AND s.IsPosted = 1
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
                               AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0) AS BookQty
                 FROM Products p
                 OUTER APPLY (
@@ -79,20 +86,27 @@ namespace ChickenDist.DAL
                             FROM HandoverItems hi 
                             JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                             WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    -- FIX: مشتريات تضاف للمخزون (تمت إزالة علامة الطرح الخاطئة قبل +)
-                    + ISNULL((SELECT SUM(pi.Quantity)
+                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0) +
+                    -- Incoming: Purchases since adjustment
+                    ISNULL((SELECT SUM(pi.Quantity)
                               FROM PurchaseItems pi
                               JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                               WHERE pi.ProductID = p.ProductID
                                 AND pu.IsPosted = 1
-                                AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0) -
-                    -- Outgoing since adjustment: ALL Sales
-                    ISNULL((SELECT SUM(si.Quantity) 
+                                AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    -- Outgoing: Purchase Returns since adjustment
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
+                    - ISNULL((SELECT SUM(si.Quantity) 
                             FROM SaleItems si 
                             JOIN Sales s ON si.SaleID = s.SaleID
                             WHERE si.ProductID = p.ProductID 
                               AND s.IsPosted = 1
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
                               AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0) AS BookQty
                 FROM Products p
                 OUTER APPLY (
@@ -169,12 +183,12 @@ namespace ChickenDist.DAL
                     QtyOut,
                     Notes
                 FROM (
-                    -- 1. Direct Sales / Driver Loads (Outgoing)
+                    -- 1. Direct Sales from Warehouse & Driver Loads (Outgoing)
                     SELECT 
                         s.SaleDate AS MovDate,
                         CASE s.SaleType 
-                            WHEN 'Cash' THEN N'بيع نقدي' 
-                            WHEN 'Credit' THEN N'بيع آجل' 
+                            WHEN 'Cash' THEN N'بيع نقدي (مستودع)' 
+                            WHEN 'Credit' THEN N'بيع آجل (مستودع)' 
                             ELSE N'تحميل حمولة مندوب' 
                         END AS MovType,
                         s.SaleCode AS RefCode,
@@ -190,6 +204,8 @@ namespace ChickenDist.DAL
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     LEFT JOIN Employees e ON s.DriverID = e.EmpID
                     WHERE si.ProductID = @pid
+                      AND s.IsPosted = 1
+                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
 
                     UNION ALL
 
@@ -240,6 +256,42 @@ namespace ChickenDist.DAL
                     FROM StockAdjustments sa
                     LEFT JOIN Employees e ON sa.CreatedBy = e.EmpID
                     WHERE sa.ProductID = @pid
+
+                    UNION ALL
+
+                    -- 5. Purchases (Incoming)
+                    SELECT 
+                        pu.PurchaseDate AS MovDate,
+                        CASE pu.PurchaseType 
+                            WHEN 'Cash' THEN N'شراء نقدي' 
+                            WHEN 'Credit' THEN N'شراء آجل' 
+                            ELSE N'فاتورة شراء' 
+                        END AS MovType,
+                        pu.PurchaseCode AS RefCode,
+                        ISNULL(sup.SupplierName, N'---') AS PersonName,
+                        pi.Quantity AS QtyIn,
+                        0.00 AS QtyOut,
+                        pu.Notes
+                    FROM PurchaseItems pi
+                    JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
+                    WHERE pi.ProductID = @pid AND pu.IsPosted = 1
+
+                    UNION ALL
+
+                    -- 6. Purchase Returns (Outgoing)
+                    SELECT 
+                        pr.ReturnDate AS MovDate,
+                        N'مرتجع مشتريات' AS MovType,
+                        N'مرتجع #' + CAST(pr.ReturnID AS NVARCHAR(20)) AS RefCode,
+                        ISNULL(sup.SupplierName, N'---') AS PersonName,
+                        0.00 AS QtyIn,
+                        pri.Quantity AS QtyOut,
+                        pr.Notes
+                    FROM PurchaseReturnItems pri
+                    JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    LEFT JOIN Suppliers sup ON pr.SupplierID = sup.SupplierID
+                    WHERE pri.ProductID = @pid
                 ) AS Movements
                 ORDER BY MovDate ASC";
 

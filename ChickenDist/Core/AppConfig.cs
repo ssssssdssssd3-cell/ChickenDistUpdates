@@ -43,6 +43,17 @@ namespace ChickenDist.Core
             set => Set("DriverPortalAutoStart", value ? "true" : "false");
         }
 
+        /// <summary>
+        /// رمز عزل النشاط — يستخدم كجزء من مفتاح التشفير لضمان عدم تداخل بيانات الأنشطة المختلفة.
+        /// يجب أن يكون فريداً لكل نشاط/شركة (مثال: ABC123 أو ChickenKing2026).
+        /// يُحفظ في app_settings.ini ولا يتغير عند التحديث.
+        /// </summary>
+        public static string TenantKey
+        {
+            get => Get("TenantKey", "");
+            set => Set("TenantKey", value);
+        }
+
         // ===== دوال القراءة والكتابة =====
 
         public static string Get(string key, string defaultValue)

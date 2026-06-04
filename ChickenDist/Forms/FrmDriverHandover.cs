@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private DataGridView dgItems;
-        private Button btnLoadItems, btnSave, btnWhatsApp, btnExportJson, btnImportCsv;
+        private Button btnLoadItems, btnSave, btnWhatsApp, btnExportJson, btnImportCsv, btnImportCloud, btnImportClipboard;
         private DateTimePicker dtpImport;
         private TextBox txtNotes, txtCashCollected;
         private Label lblTotLoad, lblTotRet, lblTotDead, lblTotExtra, lblTotDef, lblExpCash;
@@ -228,7 +228,17 @@ namespace ChickenDist.Forms
             btnImportCsv.Margin = new Padding(10, 0, 0, 0);
             btnImportCsv.Click += BtnImportCsv_Click;
 
-            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv });
+            btnImportCloud = Theme.MakeButton("☁️ استيراد من السحاب", Color.FromArgb(30, 120, 200));
+            btnImportCloud.Size = new Size(170, 32);
+            btnImportCloud.Margin = new Padding(10, 0, 0, 0);
+            btnImportCloud.Click += BtnImportCloud_Click;
+
+            btnImportClipboard = Theme.MakeButton("📋 استيراد من الحافظة", Color.FromArgb(142, 68, 173));
+            btnImportClipboard.Size = new Size(170, 32);
+            btnImportClipboard.Margin = new Padding(10, 0, 0, 0);
+            btnImportClipboard.Click += BtnImportClipboard_Click;
+
+            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv, btnImportCloud, btnImportClipboard });
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
@@ -290,6 +300,8 @@ namespace ChickenDist.Forms
         {
             btnExportJson.Visible = Session.CanAccess("DriverSales");
             btnImportCsv.Visible = Session.CanAccess("ImportPreview");
+            btnImportCloud.Visible = Session.CanAccess("ImportPreview");
+            btnImportClipboard.Visible = Session.CanAccess("ImportPreview");
         }
 
         private void CboDriver_SelectedIndexChanged(object sender, EventArgs e)
@@ -583,21 +595,32 @@ namespace ChickenDist.Forms
             try
             {
                 string json = DriverDAL.BuildDriverExportJson();
-                string dateStr = DateTime.Today.ToString("yyyy_MM_dd");
-                string defaultName = $"data_{dateStr}.json";
+                string encryptedJson = SecurityHelper.Encrypt(json);
+                
+                // نسخ الكود المشفر للحافظة
+                Clipboard.SetText(encryptedJson);
 
-                using (var dlg = new SaveFileDialog())
+                MessageBox.Show(
+                    "✅ تم نسخ كود البيانات المشفر للمندوب بنجاح!\n\n" +
+                    "الآن الكود موجود في الحافظة (Clipboard)، افتح محادثة المندوب على واتساب وألصق الرسالة (Ctrl+V) ليرسل له كود البيانات مباشرة دون حاجة لملفات.",
+                    "تم النسخ بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // خيار إضافي لحفظ الملف كـ JSON لو رغب في ذلك
+                var askSave = MessageBox.Show("هل ترغب في حفظ نسخة احتياطية كملف JSON على الكمبيوتر أيضاً؟", "حفظ كملف", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (askSave == DialogResult.Yes)
                 {
-                    dlg.Title = "حفظ بيانات الجوال";
-                    dlg.FileName = defaultName;
-                    dlg.Filter = "JSON Files|*.json|All Files|*.*";
-                    dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                    if (dlg.ShowDialog() != DialogResult.OK) return;
-
-                    File.WriteAllText(dlg.FileName, json, System.Text.Encoding.UTF8);
-                    MessageBox.Show(
-                        $"✅ تم تصدير الملف بنجاح!\n{dlg.FileName}\n\nأرسل هذا الملف للمندوب على الجوال.",
-                        "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    string dateStr = DateTime.Today.ToString("yyyy_MM_dd");
+                    using (var dlg = new SaveFileDialog())
+                    {
+                        dlg.Title = "حفظ بيانات الجوال";
+                        dlg.FileName = $"data_{dateStr}.json";
+                        dlg.Filter = "JSON/Text Files|*.json;*.txt|All Files|*.*";
+                        if (dlg.ShowDialog() == DialogResult.OK)
+                        {
+                            File.WriteAllText(dlg.FileName, json, System.Text.Encoding.UTF8);
+                            MessageBox.Show("✅ تم حفظ الملف بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -687,6 +710,178 @@ namespace ChickenDist.Forms
                 $"✅ تم نسخ كشف التحصيل ({dt.Rows.Count} عملاء — إجمالي {totalBalance:N2} ج)\n\n" +
                 "الكشف موجود في الحافظة (Clipboard)، افتح واتساب ويب أو أي تطبيق وألصق النص مباشرةً.",
                 "كشف واتساب جاهز", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnImportCloud_Click(object sender, EventArgs e)
+        {
+            if (!(_driverID > 0))
+            {
+                MessageBox.Show("اختر المندوب أولاً قبل الاستيراد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string code = "";
+            if (ShowInputDialog("☁️ استيراد مبيعات المندوب من السحاب", "أدخل رمز الاستيراد المكون من 5 حروف أو أكثر:", ref code))
+            {
+                code = code.Trim();
+                if (string.IsNullOrEmpty(code)) return;
+
+                string tempFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scratch", $"temp_import_{code}.csv");
+                try
+                {
+                    string scratchDir = Path.GetDirectoryName(tempFile);
+                    if (!Directory.Exists(scratchDir)) Directory.CreateDirectory(scratchDir);
+
+                    string csvContent = "";
+                    using (var wc = new System.Net.WebClient())
+                    {
+                        wc.Encoding = System.Text.Encoding.UTF8;
+                        wc.Headers[System.Net.HttpRequestHeader.UserAgent] = "ChickenDistApp";
+                        
+                        string downloadUrl = $"https://api.pastes.dev/raw/{code}";
+                        try
+                        {
+                            csvContent = wc.DownloadString(downloadUrl);
+                        }
+                        catch
+                        {
+                            csvContent = wc.DownloadString($"https://api.pastes.dev/{code}");
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(csvContent) || csvContent.Contains("{\"error\""))
+                    {
+                        throw new Exception("الرمز غير صحيح، أو انتهت صلاحيته.");
+                    }
+
+                    string decryptedCsv = SecurityHelper.Decrypt(csvContent);
+
+                    if (string.IsNullOrWhiteSpace(decryptedCsv) || !decryptedCsv.Contains("رقم_الفاتورة"))
+                    {
+                        throw new Exception("الملف المحمل ليس كشف مبيعات صالح.");
+                    }
+
+                    File.WriteAllText(tempFile, decryptedCsv, System.Text.Encoding.UTF8);
+
+                    string driverName = cboDriver.SelectedItem is ComboItem ci ? ci.Text : "مندوب";
+                    var preview = new FrmImportPreview(tempFile, dtpImport.Value.Date, _driverID, driverName);
+                    preview.ShowDialog(this);
+                    
+                    try { File.Delete(tempFile); } catch { }
+
+                    CboDriver_SelectedIndexChanged(null, null);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("❌ خطأ أثناء تحميل البيانات من السحاب:\n" + ex.Message, "خطأ الاستيراد السحابي", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void BtnImportClipboard_Click(object sender, EventArgs e)
+        {
+            if (!(_driverID > 0))
+            {
+                MessageBox.Show("اختر المندوب أولاً قبل الاستيراد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string copiedText = Clipboard.GetText()?.Trim();
+            if (string.IsNullOrEmpty(copiedText))
+            {
+                MessageBox.Show("الحافظة فارغة! قم بنسخ رسالة كود مبيعات المندوب من واتساب أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // لو المندوب نسخ الرسالة كاملة، نحاول استخراج كود التشفير منها
+            string encryptedData = copiedText;
+            if (copiedText.Contains("=== كود المبيعات المشفر ==="))
+            {
+                int startIdx = copiedText.IndexOf("=== كود المبيعات المشفر ===") + "=== كود المبيعات المشفر ===".Length;
+                encryptedData = copiedText.Substring(startIdx).Trim();
+            }
+
+            string tempFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scratch", $"temp_import_clip.csv");
+            try
+            {
+                string scratchDir = Path.GetDirectoryName(tempFile);
+                if (!Directory.Exists(scratchDir)) Directory.CreateDirectory(scratchDir);
+
+                string decryptedCsv = SecurityHelper.Decrypt(encryptedData);
+
+                if (string.IsNullOrWhiteSpace(decryptedCsv) || !decryptedCsv.Contains("رقم_الفاتورة"))
+                {
+                    throw new Exception("النص المنسوخ ليس كود مبيعات صالح أو مشفر بمفتاح نشاط آخر.");
+                }
+
+                File.WriteAllText(tempFile, decryptedCsv, System.Text.Encoding.UTF8);
+
+                string driverName = cboDriver.SelectedItem is ComboItem ci ? ci.Text : "مندوب";
+                var preview = new FrmImportPreview(tempFile, dtpImport.Value.Date, _driverID, driverName);
+                preview.ShowDialog(this);
+
+                try { File.Delete(tempFile); } catch { }
+
+                CboDriver_SelectedIndexChanged(null, null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ فشل قراءة أو فك تشفير البيانات من الحافظة:\n" + ex.Message, "خطأ الاستيراد من الحافظة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static bool ShowInputDialog(string title, string promptText, ref string value)
+        {
+            Form form = new Form();
+            Label label = new Label();
+            TextBox textBox = new TextBox();
+            Button buttonOk = new Button();
+            Button buttonCancel = new Button();
+
+            form.Text = title;
+            label.Text = promptText;
+            textBox.Text = value;
+
+            buttonOk.Text = "موافق";
+            buttonCancel.Text = "إلغاء";
+            buttonOk.DialogResult = DialogResult.OK;
+            buttonCancel.DialogResult = DialogResult.Cancel;
+
+            label.SetBounds(9, 20, 372, 13);
+            textBox.SetBounds(12, 36, 372, 20);
+            buttonOk.SetBounds(228, 72, 75, 23);
+            buttonCancel.SetBounds(309, 72, 75, 23);
+
+            label.AutoSize = true;
+            textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
+            buttonOk.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+            form.ClientSize = new Size(396, 107);
+            form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
+            form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
+            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+            form.StartPosition = FormStartPosition.CenterParent;
+            form.MinimizeBox = false;
+            form.MaximizeBox = false;
+            form.AcceptButton = buttonOk;
+            form.CancelButton = buttonCancel;
+            
+            form.RightToLeft = RightToLeft.Yes;
+            form.RightToLeftLayout = true;
+            form.Font = Theme.FontMain;
+            form.BackColor = Theme.BgMain;
+            label.ForeColor = Theme.TextMain;
+            textBox.BackColor = Theme.BgInput;
+            textBox.ForeColor = Theme.TextMain;
+            buttonOk.BackColor = Theme.Accent;
+            buttonOk.ForeColor = Color.White;
+            buttonCancel.BackColor = Theme.BgCard;
+            buttonCancel.ForeColor = Theme.TextMain;
+
+            DialogResult dialogResult = form.ShowDialog();
+            value = textBox.Text;
+            return dialogResult == DialogResult.OK;
         }
     }
 }

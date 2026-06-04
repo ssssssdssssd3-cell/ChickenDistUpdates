@@ -141,8 +141,9 @@ namespace ChickenDist.Core
         {
             string html = GetEmbeddedHtml();
             string json = DAL.DriverDAL.BuildDriverExportJson();
+            string key = SecurityHelper.GetEffectiveKeyForJs();
             // نحقن البيانات كمتغير JS في أول السكريبت
-            string injection = $"\n<script>window.__SERVER_DATA__ = {json};</script>\n";
+            string injection = $"\n<script>\n  window.__SERVER_DATA__ = {json};\n  window.__XOR_KEY__ = \"{key}\";\n</script>\n";
             // ندرجها قبل نهاية الـ </head>
             return html.Replace("</head>", injection + "</head>");
         }
@@ -173,6 +174,7 @@ namespace ChickenDist.Core
         public static string UploadToCloud()
         {
             string json = DAL.DriverDAL.BuildDriverExportJson();
+            string encryptedJson = SecurityHelper.Encrypt(json);
 
             using (var wc = new WebClient())
             {
@@ -180,7 +182,7 @@ namespace ChickenDist.Core
                 wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
                 wc.Headers[HttpRequestHeader.UserAgent]   = "ChickenDistApp (contact@chickendist.com)";
 
-                string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", json);
+                string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", encryptedJson);
 
                 // النتيجة عبارة عن JSON يحتوي على الـ key، مثل: {"key": "aSn51xltLu"}
                 string code = "";

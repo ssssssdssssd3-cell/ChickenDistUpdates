@@ -148,12 +148,12 @@ namespace ChickenDist.Forms
 
             // 2. Add Opening Balance row if date filter starts later
             dgMovement.Rows.Add(
-                "---",
-                "رصيد ما قبل الفترة",
-                "---",
-                "---",
+                dtpFrom.Value.Date.ToString("dd/MM/yyyy"),
+                "رصيد أول المدة",
                 "---",
                 "---",
+                openingBalance >= 0 ? openingBalance.ToString("N2") : "",
+                openingBalance < 0 ? Math.Abs(openingBalance).ToString("N2") : "",
                 openingBalance.ToString("N2"),
                 $"الرصيد الدفتري المتراكم قبل تاريخ {dtpFrom.Value:dd/MM/yyyy}"
             );
@@ -240,13 +240,13 @@ namespace ChickenDist.Forms
                         break;
                     }
 
-                    string date = row.Cells["TransDate"].Value?.ToString();
-                    string type = row.Cells["TransType"].Value?.ToString();
-                    string refCode = row.Cells["RefCode"].Value?.ToString();
-                    string party = row.Cells["PersonName"].Value?.ToString();
-                    string qtyIn = row.Cells["QtyIn"].Value?.ToString();
-                    string qtyOut = row.Cells["QtyOut"].Value?.ToString();
-                    string balance = row.Cells["Balance"].Value?.ToString();
+                    string date = row.Cells["TransDate"].Value?.ToString() ?? "";
+                    string type = row.Cells["TransType"].Value?.ToString() ?? "";
+                    string refCode = row.Cells["RefCode"].Value?.ToString() ?? "";
+                    string party = row.Cells["PersonName"].Value?.ToString() ?? "---";
+                    string qtyIn = row.Cells["QtyIn"].Value?.ToString() ?? "";
+                    string qtyOut = row.Cells["QtyOut"].Value?.ToString() ?? "";
+                    string balance = row.Cells["Balance"].Value?.ToString() ?? "";
 
                     g.DrawString(date, normal, Brushes.Black, xCols[0], y);
                     g.DrawString(type, normal, Brushes.Black, xCols[1], y);
