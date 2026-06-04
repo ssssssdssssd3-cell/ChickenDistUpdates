@@ -31,6 +31,41 @@ namespace ChickenDist.Core
             set => Set("ReceiptPrintMode", value);
         }
 
+        public static string ReceiptPrinterName
+        {
+            get => Get("ReceiptPrinterName", "");
+            set => Set("ReceiptPrinterName", value);
+        }
+
+        public static string A4PrinterName
+        {
+            get => Get("A4PrinterName", "");
+            set => Set("A4PrinterName", value);
+        }
+
+        public static string DefaultInvoiceFormat
+        {
+            get => Get("DefaultInvoiceFormat", "Receipt");
+            set => Set("DefaultInvoiceFormat", value);
+        }
+
+        public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
+        {
+            if (string.IsNullOrEmpty(printerName)) return;
+            try
+            {
+                foreach (string p in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                {
+                    if (string.Equals(p, printerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        pd.PrinterSettings.PrinterName = p;
+                        break;
+                    }
+                }
+            }
+            catch { /* Ignored */ }
+        }
+
         public static int DriverPortalPort
         {
             get => int.TryParse(Get("DriverPortalPort", "8080"), out int p) ? p : 8080;

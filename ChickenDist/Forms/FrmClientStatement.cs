@@ -244,6 +244,7 @@ namespace ChickenDist.Forms
         private void BtnPrint_Click(object sender, EventArgs e)
         {
             var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             int currentRowIndex = 0;
             
             pd.BeginPrint += (s, ev) =>

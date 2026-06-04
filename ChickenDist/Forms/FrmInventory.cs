@@ -607,6 +607,7 @@ namespace ChickenDist.Forms
         private void PrintStocktakeReport()
         {
             var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
             
             pd.PrintPage += (s, e) =>
@@ -675,6 +676,7 @@ namespace ChickenDist.Forms
         private void PrintAdjustmentsLog()
         {
             var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
             
             pd.PrintPage += (s, e) =>

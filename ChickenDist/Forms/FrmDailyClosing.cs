@@ -369,6 +369,7 @@ namespace ChickenDist.Forms
             }
 
             var pd  = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.Landscape = true;
             pd.DefaultPageSettings.Margins   = new Margins(20, 20, 30, 30);
 

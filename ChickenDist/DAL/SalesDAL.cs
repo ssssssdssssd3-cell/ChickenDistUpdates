@@ -50,7 +50,8 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT si.ItemID, si.ProductID, p.ProductName, si.Quantity, si.UnitPrice, si.TotalPrice,
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
-                          COALESCE(si.PriceTier, N'قطاعي') AS PriceTier
+                          COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
+                          COALESCE(p.PurchasePrice, 0) AS PurchasePrice
                   FROM SaleItems si JOIN Products p ON si.ProductID=p.ProductID
                   WHERE si.SaleID=@id",
                 DbHelper.P("@id", saleID));
@@ -514,6 +515,7 @@ namespace ChickenDist.DAL
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+        public decimal PurchasePrice { get; set; } = 0m;
         public decimal StockQty { get; set; } = 0m;
         public decimal MinStockLimit { get; set; } = 0m;
         /// <summary>نسبة الخصم % على الصنف</summary>

@@ -536,6 +536,11 @@ namespace ChickenDist.Core
                     ALTER TABLE Permissions ADD CanEditSalesInvoice BIT DEFAULT 0;
                 END
                 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewCost')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanViewCost BIT DEFAULT 0;
+                END
+                
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
                 BEGIN
                     ALTER TABLE Products ADD WholesalePrice DECIMAL(10,2) DEFAULT 0;

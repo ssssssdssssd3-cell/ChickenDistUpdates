@@ -193,6 +193,7 @@ namespace ChickenDist.Forms
         private void PrintMovement()
         {
             var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.Landscape = false;
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169); // A4 standard portrait
             

@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
 
@@ -9,13 +10,16 @@ namespace ChickenDist.Forms
     {
         private TextBox txtCompanyName;
         private ComboBox cboReceiptPrintMode;
+        private ComboBox cboReceiptPrinter;
+        private ComboBox cboA4Printer;
+        private ComboBox cboInvoiceFormat;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
 
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            this.Size = new Size(560, 560);
+            this.Size = new Size(560, 780);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -60,6 +64,78 @@ namespace ChickenDist.Forms
             });
             cboReceiptPrintMode.SelectedIndex = AppConfig.ReceiptPrintMode == "Compact" ? 1 : 0;
             this.Controls.Add(cboReceiptPrintMode);
+            y += 40;
+
+            // ── طابعة الريسيت الافتراضية ──────────────────────────
+            AddLabel("طابعة الريسيت الافتراضية:", 20, ref y, 15);
+            cboReceiptPrinter = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboReceiptPrinter.Items.Add("(طابعة النظام الافتراضية)");
+            try
+            {
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    cboReceiptPrinter.Items.Add(printer);
+                }
+            }
+            catch { }
+            cboReceiptPrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.ReceiptPrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.ReceiptPrinterName;
+            if (cboReceiptPrinter.SelectedIndex == -1 && cboReceiptPrinter.Items.Count > 0)
+                cboReceiptPrinter.SelectedIndex = 0;
+            this.Controls.Add(cboReceiptPrinter);
+            y += 40;
+
+            // ── طابعة A4 الافتراضية ──────────────────────────────
+            AddLabel("طابعة A4 / التقارير الافتراضية:", 20, ref y, 15);
+            cboA4Printer = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboA4Printer.Items.Add("(طابعة النظام الافتراضية)");
+            try
+            {
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    cboA4Printer.Items.Add(printer);
+                }
+            }
+            catch { }
+            cboA4Printer.SelectedItem = string.IsNullOrEmpty(AppConfig.A4PrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.A4PrinterName;
+            if (cboA4Printer.SelectedIndex == -1 && cboA4Printer.Items.Count > 0)
+                cboA4Printer.SelectedIndex = 0;
+            this.Controls.Add(cboA4Printer);
+            y += 40;
+
+            // ── الحجم الافتراضي لطباعة الفاتورة ───────────────────
+            AddLabel("حجم طباعة الفاتورة الافتراضي:", 20, ref y, 15);
+            cboInvoiceFormat = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboInvoiceFormat.Items.AddRange(new object[]
+            {
+                "ريسيت حراري (Receipt 80mm)",
+                "ورق عادي (A4/A5)"
+            });
+            cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : 1;
+            this.Controls.Add(cboInvoiceFormat);
             y += 40;
 
             // ── فاصل ──────────────────────────────────────────────
@@ -163,6 +239,9 @@ namespace ChickenDist.Forms
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
+                AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
+                AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
+                AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
                 SaveBackupFolder();
 
                 MessageBox.Show(

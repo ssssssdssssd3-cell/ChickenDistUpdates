@@ -27,7 +27,7 @@ namespace ChickenDist.Core
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
@@ -40,7 +40,8 @@ namespace ChickenDist.Core
                     {
                         CanAccess    = row["CanAccess"]    != DBNull.Value && Convert.ToBoolean(row["CanAccess"]),
                         CanEditPrice = row["CanEditPrice"] != DBNull.Value && Convert.ToBoolean(row["CanEditPrice"]),
-                        CanEditSalesInvoice = row["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanEditSalesInvoice"])
+                        CanEditSalesInvoice = row["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanEditSalesInvoice"]),
+                        CanViewCost  = row["CanViewCost"]  != DBNull.Value && Convert.ToBoolean(row["CanViewCost"])
                     };
                 }
                 catch (Exception ex)
@@ -69,6 +70,12 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanEditSalesInvoice;
         }
 
+        public static bool CanViewCost(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanViewCost;
+        }
+
         public static void Clear()
         {
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
@@ -87,5 +94,6 @@ namespace ChickenDist.Core
         public bool CanAccess { get; set; }
         public bool CanEditPrice { get; set; }
         public bool CanEditSalesInvoice { get; set; }
+        public bool CanViewCost { get; set; }
     }
 }

@@ -574,7 +574,25 @@ namespace ChickenDist.Forms
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
-			new FrmPrintSale(saleID);
+
+			var menu = new ContextMenuStrip();
+			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
+			itemReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt");
+            
+			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
+			itemA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4");
+
+			menu.Items.Add(itemReceipt);
+			menu.Items.Add(itemA4);
+
+			if (sender is Control ctrl)
+			{
+				menu.Show(ctrl, new Point(0, ctrl.Height));
+			}
+			else
+			{
+				menu.Show(Cursor.Position);
+			}
 		}
 
 		private void BtnDelete_Click(object sender, EventArgs e)

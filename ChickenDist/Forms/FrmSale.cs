@@ -63,6 +63,10 @@ namespace ChickenDist.Forms
 		private TextBox txtInvoiceDiscount;
 
 		private Label lblNetVal;
+		private Label lblCostTitle;
+		private Label lblCostVal;
+		private Label lblProfitTitle;
+		private Label lblProfitVal;
 
 		private ComboBox cboProduct;
 
@@ -83,6 +87,7 @@ namespace ChickenDist.Forms
 		private Button btnTierSemi;
 		private Button btnTierWholesale;
 		private string _selectedTier = "قطاعي";
+		private ComboBox cboWarehouse;
 
 		public FrmSale() : this(0, false)
 		{
@@ -115,7 +120,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 125,
+				Height = 155,
 				Width = 950,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10)
@@ -239,30 +244,50 @@ namespace ChickenDist.Forms
 			txtPrice = new TextBox();
 			btnAddItem = new Button();
 
+			// ─── الصف الثالث: ملاحظات + مُختار المخزن ───
 			lblNotes = MakeLabel("ملاحظات :", 840, 84);
 			lblNotes.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			txtNotes = new TextBox
 			{
 				Location = new Point(110, 80),
-				Width = 530,
+				Width = 340,  // مُقصَّر لإفساح المكان للمخزن
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-			
-			// الألوان: قطاعي=أزرق، نصف جملة=بنفسجي، جملة=برتقالي
+
+			// مُختار المخزن (صف 3 - يمين)
+			var lblWarehouse = MakeLabel("المخزن :", 670, 84);
+			lblWarehouse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			cboWarehouse = new ComboBox
+			{
+				Location = new Point(460, 80),
+				Width = 200,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+
+			// ─── الصف الرابع: أزرار فئة السعر ───
 			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
 			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
 			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
 			Color clrOff         = Theme.BgInput;
 
+			var lblTierRow = MakeLabel("فئة السعر :", 840, 122);
+			lblTierRow.ForeColor = Theme.TextSub;
+			lblTierRow.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
 			btnTierRetail = new Button
 			{
-				Text = "🟦 قطاعي",
-				Location = new Point(300, 44),
-				Size = new Size(70, 28),
+				Text = "🔵 قطاعي",
+				Location = new Point(640, 118),
+				Size = new Size(95, 28),
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = clrRetailOn,
@@ -275,9 +300,9 @@ namespace ChickenDist.Forms
 
 			btnTierSemi = new Button
 			{
-				Text = "🟣 نصف ج",
-				Location = new Point(225, 44),
-				Size = new Size(70, 28),
+				Text = "🟣 نصف جملة",
+				Location = new Point(530, 118),
+				Size = new Size(105, 28),
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = clrOff,
@@ -291,8 +316,8 @@ namespace ChickenDist.Forms
 			btnTierWholesale = new Button
 			{
 				Text = "🟠 جملة",
-				Location = new Point(150, 44),
-				Size = new Size(70, 28),
+				Location = new Point(420, 118),
+				Size = new Size(105, 28),
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = clrOff,
@@ -327,8 +352,8 @@ namespace ChickenDist.Forms
 			panel.Controls.AddRange(new Control[]
 			{
 				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
-				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes,
-				btnTierRetail, btnTierSemi, btnTierWholesale
+				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes, lblWarehouse, cboWarehouse,
+				lblTierRow, btnTierRetail, btnTierSemi, btnTierWholesale
 			});
 			pnlItems = new Panel
 			{
@@ -411,6 +436,22 @@ namespace ChickenDist.Forms
 				HeaderText = "الإجمالي",
 				ReadOnly = true,
 				FillWeight = 50f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "PurchasePrice",
+				HeaderText = "سعر التكلفة",
+				ReadOnly = true,
+				FillWeight = 40f,
+				Visible = Session.CanViewCost("Sales")
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "CostTotal",
+				HeaderText = "إجمالي التكلفة",
+				ReadOnly = true,
+				FillWeight = 50f,
+				Visible = Session.CanViewCost("Sales")
 			});
 			DataGridViewButtonColumn dataGridViewColumn = new DataGridViewButtonColumn
 			{
@@ -511,6 +552,44 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
+			lblCostTitle = new Label
+			{
+				Text = "إجمالي التكلفة:",
+				ForeColor = Theme.TextSub,
+				Location = new Point(830, 42),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			lblCostVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.TextMain,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Location = new Point(740, 40),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			lblProfitTitle = new Label
+			{
+				Text = "صافي الربح:",
+				ForeColor = Theme.TextSub,
+				Location = new Point(660, 42),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			lblProfitVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.Success,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Location = new Point(570, 40),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
 			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 130, 32, Theme.Accent);
             Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 100, 32, Color.FromArgb(200, 140, 50));
 			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 100, 32, Color.FromArgb(100, 100, 150));
@@ -565,7 +644,7 @@ namespace ChickenDist.Forms
             btnSave.Margin = new Padding(5, 5, 5, 5);
             pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave });
 
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, pnlFooterButtons, lblHotkeys });
+			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, lblCostTitle, lblCostVal, lblProfitTitle, lblProfitVal, pnlFooterButtons, lblHotkeys });
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
@@ -746,6 +825,7 @@ namespace ChickenDist.Forms
 				string name = row3["ProductName"].ToString();
 				decimal price = (decimal)row3["SalePrice"];
 				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
+				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
 
 				string displayText = pendingPrice > 0 
 					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
@@ -756,7 +836,8 @@ namespace ChickenDist.Forms
 					name,
 					displayText,
 					price, 
-					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m
+					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+					purchasePrice
 				));
 			}
 			cboProduct.DisplayMember = "Text";
@@ -794,7 +875,8 @@ namespace ChickenDist.Forms
 						Quantity = 1.00m,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
-						MinStockLimit = comboItem.MinStockLimit
+						MinStockLimit = comboItem.MinStockLimit,
+						PurchasePrice = comboItem.PurchasePrice
 					});
 
 					RefreshGrid();
@@ -815,6 +897,25 @@ namespace ChickenDist.Forms
 			};
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
+
+			// تحميل المخازن
+			try
+			{
+				var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+				cboWarehouse.Items.Clear();
+				cboWarehouse.DisplayMember = "Text";
+				cboWarehouse.ValueMember = "Value";
+				foreach (DataRow whRow in whDt.Rows)
+				{
+					cboWarehouse.Items.Add(new ComboItem(
+						Convert.ToInt32(whRow["WarehouseID"]),
+						whRow["WarehouseName"].ToString()
+					));
+				}
+				cboWarehouse.DisplayMember = "Text";
+				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+			}
+			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
 		}
 
 		/// <summary>
@@ -1015,7 +1116,8 @@ namespace ChickenDist.Forms
 				Quantity = value,
 				UnitPrice = result,
 				StockQty = productStock,
-                MinStockLimit = comboItem.MinStockLimit
+				MinStockLimit = comboItem.MinStockLimit,
+				PurchasePrice = comboItem.PurchasePrice
 			});
 			RefreshGrid();
 		}
@@ -1129,6 +1231,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			foreach (SaleItemDTO item in _items)
 			{
+				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
 					item.ProductName,
 					item.StockQty.ToString("F2"),
@@ -1136,7 +1239,9 @@ namespace ChickenDist.Forms
 					item.UnitPrice.ToString("F2"),
 					item.DiscountPct.ToString("F2"),
 					item.DiscountAmt.ToString("F2"),
-					item.TotalPrice.ToString("F2")
+					item.TotalPrice.ToString("F2"),
+					item.PurchasePrice.ToString("F2"),
+					costTotal.ToString("F2")
 				);
                 
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
@@ -1160,9 +1265,11 @@ namespace ChickenDist.Forms
 		private void CalculateNet()
 		{
 			decimal gross = 0m;
+			decimal totalCost = 0m;
 			foreach (SaleItemDTO item in _items)
 			{
 				gross += item.TotalPrice;
+				totalCost += item.PurchasePrice * item.Quantity;
 			}
 			lblTotalVal.Text = gross.ToString("N2") + " ج";
 
@@ -1190,6 +1297,15 @@ namespace ChickenDist.Forms
 			if (lblNetVal != null)
 			{
 				lblNetVal.Text = net.ToString("N2") + " ج";
+			}
+
+			// Cost & Profit (only if user has CanViewCost permission)
+			if (lblCostVal != null && Session.CanViewCost("Sales"))
+			{
+				decimal profit = net - totalCost;
+				lblCostVal.Text = totalCost.ToString("N2") + " ج";
+				lblProfitVal.Text = profit.ToString("N2") + " ج";
+				lblProfitVal.ForeColor = profit >= 0 ? Theme.Success : Color.FromArgb(220, 60, 60);
 			}
             _isDirty = true;
 		}
@@ -1302,7 +1418,8 @@ namespace ChickenDist.Forms
 					DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
 					DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
 					PriceTier   = iRow["PriceTier"].ToString(),
-					StockQty    = stock
+					StockQty    = stock,
+					PurchasePrice = iRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["PurchasePrice"]) : 0m
 				});
 			}
 			RefreshGrid();
@@ -1456,7 +1573,7 @@ namespace ChickenDist.Forms
 				{
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
-						isDraft: false, warehouseID: null, priceTier: priceTier,
+						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 						loadedLastModified: _loadedLastModified);
 					if (updated)
 					{
@@ -1489,7 +1606,7 @@ namespace ChickenDist.Forms
 				// وضع الإنشاء الجديد (أو نسخ)
 				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
 					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
-					warehouseID: null, priceTier: priceTier);
+					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -1705,10 +1822,26 @@ namespace ChickenDist.Forms
 			if (printID == 0)
 			{
 				MessageBox.Show("لا توجد فواتير مسجلة لطباعتها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			var menu = new ContextMenuStrip();
+			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
+			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt");
+            
+			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
+			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4");
+
+			menu.Items.Add(itemReceipt);
+			menu.Items.Add(itemA4);
+
+			if (sender is Control ctrl)
+			{
+				menu.Show(ctrl, new Point(0, ctrl.Height));
 			}
 			else
 			{
-				new FrmPrintSale(printID);
+				menu.Show(Cursor.Position);
 			}
 		}
 
@@ -1933,6 +2066,13 @@ namespace ChickenDist.Forms
 			_isCopyMode = false;
 			_isDirty = false;
 		}
+
+		private int? GetSelectedWarehouseID()
+		{
+			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
+				return wh.ID;
+			return null;
+		}
 	}
 	internal class ComboItem
 	{
@@ -1942,28 +2082,32 @@ namespace ChickenDist.Forms
 
 		public string Text { get; }
         
-        public decimal Extra { get; set; }
+		public decimal Extra { get; set; }
 
 		public decimal Price { get; }
         
-        public decimal MinStockLimit { get; }
+		public decimal MinStockLimit { get; }
 
-		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m)
+		public decimal PurchasePrice { get; }
+
+		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{
 			ID = id;
 			Name = text;
 			Text = text;
 			Price = price;
 			MinStockLimit = minStockLimit;
+			PurchasePrice = purchasePrice;
 		}
 
-		public ComboItem(int id, string name, string text, decimal price, decimal minStockLimit = 0m)
+		public ComboItem(int id, string name, string text, decimal price, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{
 			ID = id;
 			Name = name;
 			Text = text;
 			Price = price;
 			MinStockLimit = minStockLimit;
+			PurchasePrice = purchasePrice;
 		}
 
 		public override string ToString()
