@@ -1,4 +1,4 @@
-version=1.0.55
+version=1.0.57
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=E44CB35D200E244E42E3629431AD88D5E4CC4DCE43DA27F76DC74098F8E06A2B
-changelog=v1.0.55: (1) تغيير خادم المزامنة السحابية للمندوب إلى pastes.dev لحل مشكلة الخطأ 405 (2) الحفاظ على حالة الأحرف للرموز عند السحب من الإنترنت (3) الحماية بقفل إصدار قاعدة البيانات.
+sha256=E272F145268F7CFF79E8B878210EB6BAA08094DA0C9AE748AB51F10991E14373
+changelog=v1.0.57: (1) إضافة رابط بوابة المندوب المباشر في شاشة الإعدادات ونسخه للواتساب (2) إصلاح تحليل JSON في الهواتف وحل مشكلة Invalid JSON (3) تسجيل وقت تحديث الإصدار بقاعدة البيانات وتوثيق تاريخه.
