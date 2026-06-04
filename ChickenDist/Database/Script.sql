@@ -1,18 +1,18 @@
 USE master
 GO
 
-IF EXISTS (SELECT name FROM sys.databases WHERE name = 'ChickenDist')
+IF EXISTS (SELECT name FROM sys.databases WHERE name = 'PartsDist')
 BEGIN
-    ALTER DATABASE ChickenDist SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE ChickenDist;
+    ALTER DATABASE PartsDist SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE PartsDist;
 END
 GO
 
-CREATE DATABASE ChickenDist
+CREATE DATABASE PartsDist
     COLLATE Arabic_CI_AS
 GO
 
-USE ChickenDist
+USE PartsDist
 GO
 
 -- ========================================
@@ -238,11 +238,11 @@ CREATE TABLE ReturnItems (
 INSERT INTO Employees (EmpName, UserName, Password, Role, IsActive)
 VALUES (N'مدير النظام', '1', '1', 'Admin', 1)
 
--- صنف تجريبي
+-- أصناف تجريبية لقطع الغيار
 INSERT INTO Products (ProductCode, ProductName, Unit, SalePrice)
-VALUES ('P001', N'كتكوت بياض', N'كتكوت', 15.00),
-       ('P002', N'كتكوت لحم', N'كتكوت', 12.00),
-       ('P003', N'كتكوت ملون', N'كتكوت', 10.00)
+VALUES ('P001', N'تيل فرامل أمامي', N'طقم', 150.00),
+       ('P002', N'بوجيهات ليزر', N'قطعة', 45.00),
+       ('P003', N'زيت موتور 5W-30', N'جركن', 750.00)
 
 GO
 

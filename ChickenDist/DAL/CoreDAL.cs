@@ -112,29 +112,50 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(bool activeOnly = false)
         {
             string sql = activeOnly
-                ? "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,PendingSalePrice FROM Products WHERE IsActive=1 ORDER BY ProductName"
-                : "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,PendingSalePrice,IsActive FROM Products ORDER BY ProductName";
+                ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation 
+                    FROM Products p
+                    LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                    WHERE p.IsActive=1 ORDER BY p.ProductName"
+                : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive 
+                    FROM Products p
+                    LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                    ORDER BY p.ProductName";
             return DbHelper.Query(sql);
         }
 
         public static DataRow GetByID(int id)
         {
-            var dt = DbHelper.Query("SELECT * FROM Products WHERE ProductID=@id", DbHelper.P("@id", id));
+            var dt = DbHelper.Query(
+                @"SELECT p.*, c.CategoryName 
+                  FROM Products p 
+                  LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                  WHERE p.ProductID=@id", DbHelper.P("@id", id));
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
-        public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description)
+        public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description,
+            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description) VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d)",
+                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation) 
+                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
-                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description));
+                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
+                    DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation));
             else
             {
-                DbHelper.Execute("UPDATE Products SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d WHERE ProductID=@id",
+                DbHelper.Execute(
+                    @"UPDATE Products 
+                      SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,
+                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl 
+                      WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
-                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description), DbHelper.P("@id", id));
+                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
+                    DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
+                    DbHelper.P("@id", id));
                 return id;
             }
         }
@@ -142,6 +163,22 @@ namespace ChickenDist.DAL
         public static void Delete(int id)
         {
             DbHelper.Execute("UPDATE Products SET IsActive=0 WHERE ProductID=@id", DbHelper.P("@id", id));
+        }
+
+        /// <summary>
+        /// بحث عن صنف عن طريق الباركود أو كود الصنف أو رقم القطعة (PartNumber).
+        /// يُستخدم للقراءة السريعة بجهاز السكنر.
+        /// </summary>
+        public static DataTable FindByCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return new DataTable();
+            return DbHelper.Query(
+                @"SELECT TOP 1 p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, 
+                         p.SalePrice, p.PurchasePrice, p.MinStockLimit
+                  FROM Products p
+                  WHERE p.IsActive = 1
+                    AND (p.ProductCode = @code OR p.PartNumber = @code)",
+                DbHelper.P("@code", code));
         }
 
         /// <summary>

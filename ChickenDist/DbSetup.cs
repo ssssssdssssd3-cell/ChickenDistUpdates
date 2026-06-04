@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data.SqlClient;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -11,7 +11,7 @@ namespace ChickenDist
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.WriteLine("========================================");
-            Console.WriteLine("🐣 معالج تهيئة قاعدة بيانات شركة توزيع الكتاكيت");
+            Console.WriteLine("⚙️ معالج تهيئة قاعدة بيانات نظام موزع قطع الغيار والمخازن");
             Console.WriteLine("========================================");
 
             string masterConnStr = "Data Source=.;Initial Catalog=master;Integrated Security=True;Connect Timeout=15;";

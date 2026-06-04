@@ -197,10 +197,11 @@ namespace ChickenDist
                         Control activeControl = GetActiveControl(ctrl);
                         if (activeControl != null)
                         {
-                            // استثناء الأزرار، جداول البيانات، والنصوص متعددة الأسطر
+                            // استثناء الأزرار، جداول البيانات، النصوص متعددة الأسطر، وحقول الباركود/الاسكنر
                             if (activeControl is Button || 
                                 activeControl is DataGridView || 
-                                (activeControl is TextBox txt && txt.Multiline))
+                                (activeControl is TextBox txt && txt.Multiline) ||
+                                (activeControl.Name != null && activeControl.Name.IndexOf("Barcode", StringComparison.OrdinalIgnoreCase) >= 0))
                             {
                                 return false;
                             }

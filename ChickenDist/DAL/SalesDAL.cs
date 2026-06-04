@@ -56,7 +56,7 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
-            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false)
+            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null)
         {
             int returnedSaleID = -1;
 
@@ -65,15 +65,16 @@ namespace ChickenDist.DAL
                 string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
+                int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
-                    DbHelper.P("@ip", !isDraft));
+                    DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -113,8 +114,9 @@ namespace ChickenDist.DAL
                     if (typeStr == "DriverLoad" && driverID.HasValue)
                     {
                         int loadID = DbHelper.ExecuteInsertTrans(trans,
-                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed) VALUES(@dt,@did,@sid,0)",
-                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID));
+                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed,WarehouseID) VALUES(@dt,@did,@sid,0,@wid)",
+                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID),
+                            DbHelper.P("@wid", targetWarehouse));
 
                         foreach (var item in items)
                         {

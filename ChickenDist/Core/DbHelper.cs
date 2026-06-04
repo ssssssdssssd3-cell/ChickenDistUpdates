@@ -51,7 +51,7 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show("فشل قراءة إعدادات الاتصال من App.config:\n" + ex.Message, "خطأ في الإعدادات", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
+            return "Data Source=.;Initial Catalog=PartsDist;Integrated Security=True;Connect Timeout=30;";
         }
 
         public static void SetConnectionString(string connStr)
@@ -394,6 +394,140 @@ namespace ChickenDist.Core
                     ALTER TABLE [version] ADD [UpdatedAt] DATETIME NULL;
                 END";
                 Execute(sqlVersionTableAlter);
+
+                // --- ترحيلات نظام المخازن وقطع الغيار ---
+
+                // 1. تكبير طول كود الصنف ليستوعب الباركود الطويل
+                string sqlUpgradeProductCode = @"
+                IF EXISTS (
+                    SELECT * FROM sys.columns
+                    WHERE object_id = OBJECT_ID('Products') AND name = 'ProductCode'
+                      AND max_length < 100
+                )
+                BEGIN
+                    ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(50) NULL;
+                END";
+                Execute(sqlUpgradeProductCode);
+
+                // 2. إنشاء جدول المخازن Warehouses
+                string sqlWarehousesTable = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Warehouses')
+                BEGIN
+                    CREATE TABLE Warehouses (
+                        WarehouseID INT IDENTITY(1,1) PRIMARY KEY,
+                        WarehouseName NVARCHAR(100) NOT NULL,
+                        Location NVARCHAR(200) NULL,
+                        Notes NVARCHAR(500) NULL,
+                        IsActive BIT DEFAULT 1,
+                        CreatedAt DATETIME DEFAULT GETDATE()
+                    );
+                    -- إدخال المخزن الرئيسي الافتراضي
+                    INSERT INTO Warehouses (WarehouseName, Location, Notes, IsActive)
+                    VALUES (N'المخزن الرئيسي', N'المقر الرئيسي', N'المخزن الأساسي للنظام', 1);
+                END";
+                Execute(sqlWarehousesTable);
+
+                // 3. إنشاء جدول التصنيفات Categories لقطع الغيار
+                string sqlCategoriesTable = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Categories')
+                BEGIN
+                    CREATE TABLE Categories (
+                        CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+                        CategoryName NVARCHAR(100) NOT NULL,
+                        IsActive BIT DEFAULT 1
+                    );
+                END";
+                Execute(sqlCategoriesTable);
+
+                // 4. إضافة حقول قطع الغيار لجدول الأصناف Products
+                string sqlProductsPartsFields = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PartNumber')
+                BEGIN
+                    ALTER TABLE Products ADD PartNumber NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'CategoryID')
+                BEGIN
+                    ALTER TABLE Products ADD CategoryID INT NULL FOREIGN KEY REFERENCES Categories(CategoryID);
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'CarModel')
+                BEGIN
+                    ALTER TABLE Products ADD CarModel NVARCHAR(200) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Brand')
+                BEGIN
+                    ALTER TABLE Products ADD Brand NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ShelfLocation')
+                BEGIN
+                    ALTER TABLE Products ADD ShelfLocation NVARCHAR(100) NULL;
+                END";
+                Execute(sqlProductsPartsFields);
+
+                // 5. إضافة معرف المخزن WarehouseID لجداول الحركات وربطه
+                string sqlAddWarehouseID = @"
+                -- Purchases
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE Purchases ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE Purchases SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END
+                -- Sales
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE Sales ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE Sales SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END
+                -- SalesReturns
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SalesReturns') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE SalesReturns ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE SalesReturns SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END
+                -- PurchaseReturns
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PurchaseReturns') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE PurchaseReturns ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE PurchaseReturns SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END
+                -- StockAdjustments
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('StockAdjustments') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE StockAdjustments ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE StockAdjustments SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END
+                -- DriverLoads
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('DriverLoads') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE DriverLoads ADD WarehouseID INT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID);
+                    EXEC('UPDATE DriverLoads SET WarehouseID = 1 WHERE WarehouseID IS NULL');
+                END";
+                Execute(sqlAddWarehouseID);
+
+                // 6. إنشاء جداول التحويلات بين المخازن WarehouseTransfers & WarehouseTransferItems
+                string sqlTransfersTable = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WarehouseTransfers')
+                BEGIN
+                    CREATE TABLE WarehouseTransfers (
+                        TransferID INT IDENTITY(1,1) PRIMARY KEY,
+                        TransferCode NVARCHAR(20) NOT NULL,
+                        TransferDate DATETIME DEFAULT GETDATE(),
+                        FromWarehouseID INT NOT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID),
+                        ToWarehouseID INT NOT NULL FOREIGN KEY REFERENCES Warehouses(WarehouseID),
+                        Notes NVARCHAR(500) NULL,
+                        CreatedBy INT REFERENCES Employees(EmpID),
+                        IsPosted BIT DEFAULT 1
+                    );
+                END
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WarehouseTransferItems')
+                BEGIN
+                    CREATE TABLE WarehouseTransferItems (
+                        ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        TransferID INT NOT NULL FOREIGN KEY REFERENCES WarehouseTransfers(TransferID) ON DELETE CASCADE,
+                        ProductID INT NOT NULL FOREIGN KEY REFERENCES Products(ProductID),
+                        Quantity DECIMAL(10,3) NOT NULL
+                    );
+                END";
+                Execute(sqlTransfersTable);
             }
             catch (Exception ex)
             {

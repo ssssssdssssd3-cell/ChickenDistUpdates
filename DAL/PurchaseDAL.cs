@@ -44,7 +44,7 @@ namespace ChickenDist.DAL
         }
 
         public static int SavePurchase(string purchaseType, int? supplierID, decimal total, string notes,
-            List<PurchaseItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m)
+            List<PurchaseItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, int? warehouseID = null)
         {
             int returnedID = -1;
 
@@ -66,11 +66,12 @@ namespace ChickenDist.DAL
                 }
 
                 int purchaseID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Purchases(PurchaseCode,PurchaseDate,PurchaseType,SupplierID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted) VALUES(@code,@dt,@typ,@sid,@tot,@discAmt,@discPct,@n,@by,1)",
+                    "INSERT INTO Purchases(PurchaseCode,PurchaseDate,PurchaseType,SupplierID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID) VALUES(@code,@dt,@typ,@sid,@tot,@discAmt,@discPct,@n,@by,1,@wid)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", purchaseType),
                     DbHelper.P("@sid", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
-                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
 
                 if (purchaseID <= 0) throw new Exception("فشل في استخراج رقم فاتورة المشتريات الجديدة.");
                 returnedID = purchaseID;

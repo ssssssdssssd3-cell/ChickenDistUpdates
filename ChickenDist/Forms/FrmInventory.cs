@@ -16,6 +16,7 @@ namespace ChickenDist.Forms
         // Tab Stock
         private DataGridView dgStock;
         private TextBox txtSearch;
+        private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock;
 
         // Adjustment Form Controls
@@ -33,11 +34,14 @@ namespace ChickenDist.Forms
         private DataGridView dgLogs;
         private DateTimePicker dtpFrom, dtpTo;
         private TextBox txtSearchLog;
+        private ComboBox cboLogWarehouse;
         private Button btnLoadLogs, btnPrintLogs;
 
         public FrmInventory()
         {
             InitUI();
+            LoadWarehouses();
+            LoadLogWarehouses();
             LoadStock();
             LoadLogs();
         }
@@ -70,6 +74,11 @@ namespace ChickenDist.Forms
             var pnlLeft = new Panel { Dock = DockStyle.Fill };
 
             var pnlF = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(8) };
+
+            pnlF.Controls.Add(new Label { Text = "المخزن:", Location = new Point(920, 15), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
+            cboWarehouse = new ComboBox { Location = new Point(720, 11), Width = 190, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
+            pnlF.Controls.Add(cboWarehouse);
             
             pnlF.Controls.Add(new Label { Text = "بحث عن صنف:", Location = new Point(600, 15), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
             
@@ -212,29 +221,38 @@ namespace ChickenDist.Forms
 
         private void BuildLogsTab()
         {
-            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
+            var pnlTop = new FlowLayoutPanel 
+            { 
+                Dock = DockStyle.Top, 
+                Height = 55, 
+                BackColor = Theme.BgCard, 
+                Padding = new Padding(10, 10, 10, 10),
+                FlowDirection = FlowDirection.RightToLeft
+            };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(940, 18) };
-            dtpFrom = new DateTimePicker { Location = new Point(800, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
+            dtpFrom = new DateTimePicker { Width = 120, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
             
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(750, 18) };
-            dtpTo = new DateTimePicker { Location = new Point(610, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
+            dtpTo = new DateTimePicker { Width = 120, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
 
-            var lblSearchLog = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(560, 18) };
-            txtSearchLog = new TextBox { Location = new Point(380, 14), Width = 170 };
+            var lblLogWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
+            cboLogWarehouse = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboLogWarehouse.SelectedIndexChanged += (s, e) => LoadLogs();
+
+            var lblSearchLog = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
+            txtSearchLog = new TextBox { Width = 140 };
             txtSearchLog.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
 
             btnLoadLogs = Theme.MakeButton("🔍 عرض السجل", Color.FromArgb(60, 100, 60));
-            btnLoadLogs.Location = new Point(250, 11);
-            btnLoadLogs.Size = new Size(120, 32);
+            btnLoadLogs.Size = new Size(110, 30);
             btnLoadLogs.Click += (s, e) => LoadLogs();
 
-            btnPrintLogs = Theme.MakeButton("🖨 طباعة سجل التسويات", Theme.Accent);
-            btnPrintLogs.Location = new Point(20, 11);
-            btnPrintLogs.Size = new Size(160, 32);
+            btnPrintLogs = Theme.MakeButton("🖨 طباعة السجل", Theme.Accent);
+            btnPrintLogs.Size = new Size(110, 30);
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
-            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });
+            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });
             tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
@@ -257,7 +275,12 @@ namespace ChickenDist.Forms
         private void LoadStock()
         {
             dgStock.Rows.Clear();
-            var dt = InventoryDAL.GetStock(txtSearch.Text);
+            int? wid = null;
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                wid = ci.ID;
+            }
+            var dt = InventoryDAL.GetStock(wid, txtSearch.Text);
             foreach (DataRow r in dt.Rows)
             {
                 decimal bookQty = Convert.ToDecimal(r["BookQty"]);
@@ -278,7 +301,12 @@ namespace ChickenDist.Forms
         private void LoadLogs()
         {
             dgLogs.Rows.Clear();
-            var dt = InventoryDAL.GetAdjustments(dtpFrom.Value, dtpTo.Value, txtSearchLog.Text);
+            int? wid = null;
+            if (cboLogWarehouse != null && cboLogWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                wid = ci.ID;
+            }
+            var dt = InventoryDAL.GetAdjustments(dtpFrom.Value, dtpTo.Value, wid, txtSearchLog.Text);
             foreach (DataRow r in dt.Rows)
             {
                 decimal diff = Convert.ToDecimal(r["DiffQty"]);
@@ -447,6 +475,19 @@ namespace ChickenDist.Forms
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
+            int? selectedWid = null;
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                selectedWid = ci.ID;
+            }
+
+            if (!selectedWid.HasValue)
+            {
+                MessageBox.Show("من فضلك اختر مستودعاً محدداً أولاً لإجراء التسوية الجردية فيه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            int wid = selectedWid.Value;
+
             // 1. تجميع كافة الأصناف التي أدخل المستخدم رصيدها الفعلي (غير فارغة)
             var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -501,7 +542,7 @@ namespace ChickenDist.Forms
                         decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
                         decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                         
-                        int id = InventoryDAL.SaveAdjustment(pid, book, actual, txtNotes.Text);
+                        int id = InventoryDAL.SaveAdjustment(pid, wid, book, actual, txtNotes.Text);
                         if (id > 0) savedCount++;
                     }
 
@@ -531,7 +572,7 @@ namespace ChickenDist.Forms
                 
                 if (MessageBox.Show(msg, "تأكيد التسوية الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    int id = InventoryDAL.SaveAdjustment(_selectedProductID, _selectedBookQty, nudActualQty.Value, txtNotes.Text);
+                    int id = InventoryDAL.SaveAdjustment(_selectedProductID, wid, _selectedBookQty, nudActualQty.Value, txtNotes.Text);
                     if (id > 0)
                     {
                         MessageBox.Show("✅ تم حفظ وتطبيق التسوية الجردية وتعديل كمية المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -697,6 +738,54 @@ namespace ChickenDist.Forms
                 Text = "طباعة سجل التسويات الجردية"
             };
             preview.ShowDialog();
+        }
+
+        private void LoadWarehouses()
+        {
+            try
+            {
+                var dt = WarehouseDAL.GetAll(true);
+                cboWarehouse.Items.Clear();
+                cboWarehouse.Items.Add(new ComboItem(0, "--- كل المخازن ---"));
+                foreach (DataRow r in dt.Rows)
+                {
+                    cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+                }
+                cboWarehouse.DisplayMember = "Text";
+                cboWarehouse.ValueMember = "ID";
+                if (cboWarehouse.Items.Count > 0)
+                {
+                    cboWarehouse.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل تحميل قائمة المخازن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadLogWarehouses()
+        {
+            try
+            {
+                var dt = WarehouseDAL.GetAll(true);
+                cboLogWarehouse.Items.Clear();
+                cboLogWarehouse.Items.Add(new ComboItem(0, "--- كل المخازن ---"));
+                foreach (DataRow r in dt.Rows)
+                {
+                    cboLogWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+                }
+                cboLogWarehouse.DisplayMember = "Text";
+                cboLogWarehouse.ValueMember = "ID";
+                if (cboLogWarehouse.Items.Count > 0)
+                {
+                    cboLogWarehouse.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل تحميل قائمة المخازن في السجل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private DataGridView MakeGrid()

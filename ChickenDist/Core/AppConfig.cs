@@ -21,7 +21,7 @@ namespace ChickenDist.Core
 
         public static string CompanyName
         {
-            get => Get("CompanyName", "شركة توزيع الكتاكيت");
+            get => Get("CompanyName", "موزع قطع الغيار والمخازن");
             set => Set("CompanyName", value);
         }
 
@@ -111,7 +111,7 @@ namespace ChickenDist.Core
             {
                 var lines = new List<string>
                 {
-                    "; ملف إعدادات تطبيق توزيع الكتاكيت",
+                    "; ملف إعدادات تطبيق موزع قطع الغيار والمخازن",
                     "; لا تحذف هذا الملف — يحفظ إعدادات الشركة وتبقى بعد التحديث",
                     ""
                 };

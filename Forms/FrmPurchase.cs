@@ -8,14 +8,14 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة فاتورة المشتريات الاحترافية</summary>
+    /// <summary>شاشة فاتورة المشتريات مع دعم المخزن والباركود</summary>
     public class FrmPurchase : Form
     {
         private Button btnTypeCredit, btnTypeCash;
         private string _purchaseType = "Credit";
-        private ComboBox cboSupplier, cboProduct;
+        private ComboBox cboSupplier, cboProduct, cboWarehouse;
         private DateTimePicker dtpDate;
-        private TextBox txtNotes;
+        private TextBox txtNotes, txtBarcode;
         private DataGridView dgItems;
         private Panel pnlFooter, pnlItems;
         private Label lblTotalVal, lblNetVal, lblDiscType, lblDiscVal, lblNetTitle;
@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "فاتورة مشتريات - شراء بضاعة";
-            this.Size = new Size(1050, 700);
+            this.Size = new Size(1050, 730);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -57,8 +57,8 @@ namespace ChickenDist.Forms
             Panel panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 140,
-                Width = 950,
+                Height = 170,
+                Width = 1050,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10)
             };
@@ -66,10 +66,9 @@ namespace ChickenDist.Forms
             // Purchase Type Buttons
             Label lblType = MakeLabel("نوع الفاتورة:", 940, 12);
             btnTypeCredit = Theme.MakeButton("📋 آجل", 830, 8, 100, 30, Theme.Primary);
-            btnTypeCash = Theme.MakeButton("💵 نقدي", 720, 8, 100, 30, Color.FromArgb(60, 60, 60));
-
+            btnTypeCash   = Theme.MakeButton("💵 نقدي", 720, 8, 100, 30, Color.FromArgb(60, 60, 60));
             btnTypeCredit.Click += (s, e) => { _purchaseType = "Credit"; ToggleType(); };
-            btnTypeCash.Click += (s, e) => { _purchaseType = "Cash"; ToggleType(); };
+            btnTypeCash.Click   += (s, e) => { _purchaseType = "Cash";   ToggleType(); };
 
             // Supplier
             Label lblSupp = MakeLabel("المورد:", 940, 48);
@@ -98,25 +97,82 @@ namespace ChickenDist.Forms
             Label lblNotes = MakeLabel("ملاحظات:", 940, 84);
             txtNotes = new TextBox { Location = new Point(640, 80), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            // Product Selection Row
-            Label lblProd = MakeLabel("الصنف:", 560, 84);
-            cboProduct = new ComboBox
+            // ===== ROW 2: Barcode + Warehouse + Product + Qty + Price =====
+
+            // Barcode field (السكنر يكتب هنا وبعدها Enter)
+            Label lblBarcode = MakeLabel("باركود / كود:", 940, 122);
+            txtBarcode = new TextBox
             {
-                Location = new Point(320, 80), Width = 230,
+                Name = "txtBarcode",          // يحتوي "Barcode" → يُعفى من EnterKeyFilter
+                Location = new Point(750, 118),
+                Width = 180,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+            txtBarcode.KeyDown += TxtBarcode_KeyDown;
+
+            // Warehouse selector
+            Label lblWarehouse = MakeLabel("المخزن:", 700, 122);
+            cboWarehouse = new ComboBox
+            {
+                Location = new Point(530, 118), Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat
             };
 
-            Label lblQty = MakeLabel("الكمية:", 290, 84);
-            nudQty = new NumericUpDown { Location = new Point(200, 78), Width = 80, DecimalPlaces = 3, Minimum = 0.001m, Maximum = 999999, Value = 1, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            // Product combo
+            Label lblProd = MakeLabel("الصنف:", 490, 84);
+            cboProduct = new ComboBox
+            {
+                Location = new Point(260, 80), Width = 220,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat
+            };
 
-            Label lblPrice = MakeLabel("السعر:", 170, 84);
-            nudPrice = new NumericUpDown { Location = new Point(80, 78), Width = 80, DecimalPlaces = 2, Minimum = 0, Maximum = 999999, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            Label lblQty = MakeLabel("الكمية:", 230, 122);
+            nudQty = new NumericUpDown
+            {
+                Location = new Point(150, 116), Width = 75,
+                DecimalPlaces = 3, Minimum = 0.001m, Maximum = 999999, Value = 1,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
 
-            btnAddItem = Theme.MakeButton("➕ إضافة", 5, 76, 70, 30, Theme.Accent);
+            Label lblPrice = MakeLabel("السعر:", 120, 122);
+            nudPrice = new NumericUpDown
+            {
+                Location = new Point(35, 116), Width = 80,
+                DecimalPlaces = 2, Minimum = 0, Maximum = 999999,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+
+            btnAddItem = Theme.MakeButton("➕ إضافة", 270, 114, 80, 30, Theme.Accent);
             btnAddItem.Click += BtnAddItem_Click;
 
-            panel.Controls.AddRange(new Control[] { lblType, btnTypeCredit, btnTypeCash, lblSupp, cboSupplier, lblDate, dtpDate, lblCashBalance, lblNotes, txtNotes, lblProd, cboProduct, lblQty, nudQty, lblPrice, nudPrice, btnAddItem });
+            // Label hotkeys row 2
+            Label lblHint = new Label
+            {
+                Text = "💡 اسحب الباركود بالسكنر أو اكتب الكود ثم اضغط Enter للإضافة الفورية",
+                ForeColor = Color.FromArgb(100, 180, 100),
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+                Location = new Point(10, 148),
+                AutoSize = true
+            };
+
+            panel.Controls.AddRange(new Control[]
+            {
+                lblType, btnTypeCredit, btnTypeCash,
+                lblSupp, cboSupplier,
+                lblDate, dtpDate, lblCashBalance,
+                lblNotes, txtNotes,
+                lblProd, cboProduct,
+                lblBarcode, txtBarcode,
+                lblWarehouse, cboWarehouse,
+                lblQty, nudQty,
+                lblPrice, nudPrice,
+                btnAddItem,
+                lblHint
+            });
 
             // ===== Grid Panel =====
             pnlItems = new Panel { Dock = DockStyle.Fill };
@@ -148,24 +204,24 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 40 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر الشراء", FillWeight = 50 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50 });
-            dgItems.Columns.Add(new DataGridViewButtonColumn { Name = "Delete", HeaderText = "حذف", Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 25 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",       ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",      FillWeight = 40 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الشراء", FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",      HeaderText = "حذف", Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 25 });
 
             dgItems.CellValueChanged += DgItems_CellValueChanged;
-            dgItems.CellClick += DgItems_CellClick;
-            dgItems.CellEndEdit += (s, e) => RecalcTotals();
+            dgItems.CellClick        += DgItems_CellClick;
+            dgItems.CellEndEdit      += (s, e) => RecalcTotals();
 
             pnlItems.Controls.Add(dgItems);
 
             // ===== Footer Panel =====
-            pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 95, Width = 1050, BackColor = Theme.BgCard };
+            pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 95, BackColor = Theme.BgCard };
 
             Label label5 = new Label { Text = "إجمالي الأصناف:", ForeColor = Theme.TextSub, Location = new Point(920, 15), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
-            lblTotalVal = new Label { Text = "0.00 ج", ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Location = new Point(810, 13), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
+            lblTotalVal  = new Label { Text = "0.00 ج", ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Location = new Point(810, 13), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
 
             lblDiscType = MakeLabel("خصم:", 710, 15);
             cboInvoiceDiscountType = new ComboBox { Location = new Point(635, 12), Width = 65, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
@@ -178,7 +234,7 @@ namespace ChickenDist.Forms
             txtInvoiceDiscount.TextChanged += (s, e) => RecalcTotals();
 
             lblNetTitle = MakeLabel("الصافي:", 400, 15);
-            lblNetVal = new Label { Text = "0.00 ج", ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 13f, FontStyle.Bold), Location = new Point(280, 11), AutoSize = true };
+            lblNetVal   = new Label { Text = "0.00 ج", ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 13f, FontStyle.Bold), Location = new Point(280, 11), AutoSize = true };
 
             btnSave = Theme.MakeButton("💾 حفظ الفاتورة [F5]", Theme.Accent);
             btnSave.Size = new Size(160, 35);
@@ -196,7 +252,7 @@ namespace ChickenDist.Forms
 
             Label lblHotkeys = new Label
             {
-                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F12] بحث سريع عن صنف",
+                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F12] تركيز على الباركود",
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Location = new Point(10, 65),
@@ -213,6 +269,57 @@ namespace ChickenDist.Forms
             ToggleType();
         }
 
+        // ===== حدث الباركود - Enter يضيف الصنف مباشرة =====
+        private void TxtBarcode_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                string code = txtBarcode.Text.Trim();
+                if (string.IsNullOrEmpty(code)) return;
+
+                DataRow row = WarehouseDAL.GetProductByBarcode(code);
+                if (row == null)
+                {
+                    MessageBox.Show($"❌ لم يُعثر على صنف بالكود: {code}", "باركود غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtBarcode.SelectAll();
+                    return;
+                }
+
+                int prodID   = Convert.ToInt32(row["ProductID"]);
+                string name  = row["ProductName"].ToString();
+                decimal price = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
+
+                // إذا كان الصنف موجود مسبقاً أضف الكمية
+                foreach (var item in _items)
+                {
+                    if (item.ProductID == prodID)
+                    {
+                        item.Quantity += nudQty.Value;
+                        item.TotalPrice = item.Quantity * item.UnitPrice;
+                        RefreshGrid();
+                        txtBarcode.Clear();
+                        txtBarcode.Focus();
+                        return;
+                    }
+                }
+
+                _items.Add(new PurchaseItemDTO
+                {
+                    ProductID   = prodID,
+                    ProductName = name,
+                    Quantity    = nudQty.Value,
+                    UnitPrice   = price > 0 ? price : nudPrice.Value,
+                    TotalPrice  = nudQty.Value * (price > 0 ? price : nudPrice.Value)
+                });
+
+                RefreshGrid();
+                txtBarcode.Clear();
+                txtBarcode.Focus();
+            }
+        }
+
         private void FrmPurchase_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F2 || e.KeyCode == Keys.F5)
@@ -220,9 +327,9 @@ namespace ChickenDist.Forms
                 if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
             }
 
-            if (e.KeyCode == Keys.F2) { ClearInvoice(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F5) { BtnSave_Click(null, null); e.Handled = true; }
-            else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+            if      (e.KeyCode == Keys.F2)  { ClearInvoice(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F5)  { BtnSave_Click(null, null); e.Handled = true; }
+            else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -239,15 +346,14 @@ namespace ChickenDist.Forms
         private void ToggleType()
         {
             bool isCredit = _purchaseType == "Credit";
-            btnTypeCredit.BackColor = isCredit ? Theme.Primary : Color.FromArgb(60, 60, 60);
-            btnTypeCash.BackColor = !isCredit ? Theme.Accent : Color.FromArgb(60, 60, 60);
+            btnTypeCredit.BackColor = isCredit  ? Theme.Primary : Color.FromArgb(60, 60, 60);
+            btnTypeCash.BackColor   = !isCredit ? Theme.Accent  : Color.FromArgb(60, 60, 60);
 
-            // Show cash balance when Cash type selected
             if (!isCredit)
             {
                 var cashResult = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
                 decimal cashBal = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
-                lblCashBalance.Text = $"💰 رصيد الخزنة: {cashBal:N2} ج";
+                lblCashBalance.Text      = $"💰 رصيد الخزنة: {cashBal:N2} ج";
                 lblCashBalance.ForeColor = cashBal > 0 ? Color.FromArgb(100, 180, 100) : Color.OrangeRed;
             }
             else
@@ -282,10 +388,16 @@ namespace ChickenDist.Forms
             cboProduct.SelectedIndexChanged += (s, e) =>
             {
                 if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
-                {
                     nudPrice.Value = ci.Extra;
-                }
             };
+
+            // Warehouses
+            DataTable dtWh = WarehouseDAL.GetAll(true);
+            cboWarehouse.Items.Clear();
+            foreach (DataRow r in dtWh.Rows)
+                cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+            cboWarehouse.DisplayMember = "Text";
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
         }
 
         private void BtnAddItem_Click(object sender, EventArgs e)
@@ -295,19 +407,18 @@ namespace ChickenDist.Forms
                 MessageBox.Show("اختر صنفاً أولاً"); return;
             }
 
-            decimal qty = nudQty.Value;
+            decimal qty   = nudQty.Value;
             decimal price = nudPrice.Value;
             if (qty <= 0 || price <= 0)
             {
                 MessageBox.Show("أدخل كمية وسعر صحيحين"); return;
             }
 
-            // Check if item already exists
             foreach (var item in _items)
             {
                 if (item.ProductID == ci.ID)
                 {
-                    item.Quantity += qty;
+                    item.Quantity  += qty;
                     item.TotalPrice = item.Quantity * item.UnitPrice;
                     RefreshGrid();
                     cboProduct.SelectedIndex = 0;
@@ -319,11 +430,11 @@ namespace ChickenDist.Forms
 
             _items.Add(new PurchaseItemDTO
             {
-                ProductID = ci.ID,
+                ProductID   = ci.ID,
                 ProductName = ci.Text,
-                Quantity = qty,
-                UnitPrice = price,
-                TotalPrice = qty * price
+                Quantity    = qty,
+                UnitPrice   = price,
+                TotalPrice  = qty * price
             });
 
             RefreshGrid();
@@ -337,9 +448,7 @@ namespace ChickenDist.Forms
             dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             foreach (var item in _items)
-            {
                 dgItems.Rows.Add(item.ProductID, item.ProductName, item.Quantity.ToString("F3"), item.UnitPrice.ToString("F2"), item.TotalPrice.ToString("F2"));
-            }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
             RecalcTotals();
         }
@@ -351,14 +460,14 @@ namespace ChickenDist.Forms
             if (dgItems.Columns[e.ColumnIndex].Name == "Quantity")
             {
                 decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Quantity"].Value?.ToString(), out decimal q);
-                item.Quantity = q;
+                item.Quantity   = q;
                 item.TotalPrice = q * item.UnitPrice;
                 dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
             }
             else if (dgItems.Columns[e.ColumnIndex].Name == "UnitPrice")
             {
                 decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value?.ToString(), out decimal p);
-                item.UnitPrice = p;
+                item.UnitPrice  = p;
                 item.TotalPrice = item.Quantity * p;
                 dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
             }
@@ -392,13 +501,15 @@ namespace ChickenDist.Forms
         {
             _items.Clear();
             RefreshGrid();
-            if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
-            if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
+            if (cboSupplier.Items.Count  > 0) cboSupplier.SelectedIndex  = 0;
+            if (cboProduct.Items.Count   > 0) cboProduct.SelectedIndex   = 0;
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
             txtNotes.Clear();
+            txtBarcode.Clear();
             txtInvoiceDiscount.Text = "0";
-            nudQty.Value = 1;
+            nudQty.Value   = 1;
             nudPrice.Value = 0;
-            _purchaseType = "Credit";
+            _purchaseType  = "Credit";
             ToggleType();
         }
 
@@ -415,18 +526,22 @@ namespace ChickenDist.Forms
                 MessageBox.Show("اختر المورد أولاً للفواتير الآجلة"); return;
             }
 
+            int? warehouseID = null;
+            if (cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
+                warehouseID = wh.ID;
+
             decimal total = 0;
             foreach (var item in _items) total += item.TotalPrice;
 
             decimal disc = 0;
             decimal.TryParse(txtInvoiceDiscount.Text, out disc);
-            decimal discPct = cboInvoiceDiscountType.SelectedIndex == 1 ? disc : 0;
+            decimal discPct    = cboInvoiceDiscountType.SelectedIndex == 1 ? disc : 0;
             decimal discAmount = cboInvoiceDiscountType.SelectedIndex == 1 ? total * disc / 100 : disc;
-            decimal net = total - discAmount;
+            decimal net        = total - discAmount;
 
             try
             {
-                int id = PurchaseDAL.SavePurchase(_purchaseType, supplierID, net, txtNotes.Text, _items, discAmount, discPct);
+                int id = PurchaseDAL.SavePurchase(_purchaseType, supplierID, net, txtNotes.Text, _items, discAmount, discPct, warehouseID);
 
                 if (id > 0)
                 {
@@ -440,9 +555,9 @@ namespace ChickenDist.Forms
                     MessageBox.Show("❌ فشل حفظ الفاتورة");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Transaction rollback message already shown by DbHelper
+                // Transaction rollback already shown by DbHelper
             }
         }
     }

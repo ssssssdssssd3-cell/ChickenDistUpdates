@@ -97,7 +97,7 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, N'---') AS SupplierName,
-                         p.TotalAmount, p.Notes, p.SupplierID,
+                         p.TotalAmount, p.Notes, p.SupplierID, p.WarehouseID,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
@@ -123,7 +123,7 @@ namespace ChickenDist.DAL
             List<PurchaseItemDTO> items,
             decimal discountAmount = 0m, decimal discountPct = 0m,
             decimal taxPct = 0m, decimal taxAmount = 0m,
-            bool isDraft = false)
+            bool isDraft = false, int? warehouseID = 1)
         {
             int returnedID = -1;
 
@@ -149,11 +149,11 @@ namespace ChickenDist.DAL
                     @"INSERT INTO Purchases
                         (PurchaseCode, PurchaseDate, PurchaseType, SupplierID,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
-                         Notes, CreatedBy, IsPosted)
+                         Notes, CreatedBy, IsPosted, WarehouseID)
                       VALUES
                         (@code, @dt, @typ, @sid,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
-                         @n, @by, @ip)",
+                         @n, @by, @ip, @wid)",
                     DbHelper.P("@code",    code),
                     DbHelper.P("@dt",      DateTime.Now),
                     DbHelper.P("@typ",     purchaseType),
@@ -165,7 +165,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@taxAmt",  taxAmount),
                     DbHelper.P("@n",       notes),
                     DbHelper.P("@by",      Session.EmpID),
-                    DbHelper.P("@ip",      isDraft ? 0 : 1));
+                    DbHelper.P("@ip",      isDraft ? 0 : 1),
+                    DbHelper.P("@wid",     warehouseID.HasValue ? (object)warehouseID.Value : 1));
 
                 if (purchaseID <= 0)
                     throw new Exception("فشل في استخراج رقم فاتورة المشتريات الجديدة.");
@@ -266,23 +267,25 @@ namespace ChickenDist.DAL
             {
                 // جلب نوع الفاتورة الأصلية والمورد منها إذا لم يُحدَّد
                 var dtPur = DbHelper.Query(
-                    "SELECT PurchaseType, SupplierID FROM Purchases WHERE PurchaseID=@pid",
+                    "SELECT PurchaseType, SupplierID, WarehouseID FROM Purchases WHERE PurchaseID=@pid",
                     DbHelper.P("@pid", purchaseID));
                 string purType = dtPur.Rows.Count > 0 ? dtPur.Rows[0]["PurchaseType"].ToString() : "Credit";
+                int whID = (dtPur.Rows.Count > 0 && dtPur.Rows[0]["WarehouseID"] != DBNull.Value) ? Convert.ToInt32(dtPur.Rows[0]["WarehouseID"]) : 1;
 
                 if (!supplierID.HasValue && dtPur.Rows.Count > 0 && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
                     supplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
 
                 // تسجيل المرتجع
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO PurchaseReturns(ReturnDate,PurchaseID,SupplierID,TotalAmount,Notes,CreatedBy)" +
-                    " VALUES(@dt,@pid,@sid,@tot,@n,@by)",
+                    "INSERT INTO PurchaseReturns(ReturnDate,PurchaseID,SupplierID,TotalAmount,Notes,CreatedBy,WarehouseID)" +
+                    " VALUES(@dt,@pid,@sid,@tot,@n,@by,@wid)",
                     DbHelper.P("@dt",  DateTime.Now),
                     DbHelper.P("@pid", purchaseID > 0 ? (object)purchaseID : DBNull.Value),
                     DbHelper.P("@sid", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
                     DbHelper.P("@tot", total),
                     DbHelper.P("@n",   notes),
-                    DbHelper.P("@by",  Session.EmpID));
+                    DbHelper.P("@by",  Session.EmpID),
+                    DbHelper.P("@wid", whID));
 
                 if (retID <= 0) throw new Exception("فشل إنشاء سجل مرتجع الشراء.");
                 returnedRetID = retID;

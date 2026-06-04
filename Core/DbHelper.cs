@@ -188,6 +188,72 @@ namespace ChickenDist.Core
                     GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance')
                 END";
                 Execute(sqlPurchases);
+
+                // ===== Warehouses & Barcode & Categories =====
+                string sqlWarehouses = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Warehouses')
+                BEGIN
+                    CREATE TABLE Warehouses (
+                        WarehouseID   INT IDENTITY(1,1) PRIMARY KEY,
+                        WarehouseName NVARCHAR(100) NOT NULL,
+                        Location      NVARCHAR(200),
+                        IsActive      BIT DEFAULT 1,
+                        CreatedAt     DATETIME DEFAULT GETDATE()
+                    );
+                    INSERT INTO Warehouses(WarehouseName, Location) VALUES(N'المخزن الرئيسي', N'المقر الرئيسي');
+                END";
+                Execute(sqlWarehouses);
+
+                string sqlCategories = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Categories')
+                BEGIN
+                    CREATE TABLE Categories (
+                        CategoryID   INT IDENTITY(1,1) PRIMARY KEY,
+                        CategoryName NVARCHAR(100) NOT NULL,
+                        IsActive     BIT DEFAULT 1
+                    );
+                END";
+                Execute(sqlCategories);
+
+                // Add Barcode & spare-parts fields to Products
+                string sqlProductsBarcode = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Barcode')
+                BEGIN
+                    ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PartNumber')
+                BEGIN
+                    ALTER TABLE Products ADD PartNumber NVARCHAR(50) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'CategoryID')
+                BEGIN
+                    ALTER TABLE Products ADD CategoryID INT NULL REFERENCES Categories(CategoryID);
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'CarModel')
+                BEGIN
+                    ALTER TABLE Products ADD CarModel NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Brand')
+                BEGIN
+                    ALTER TABLE Products ADD Brand NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ShelfLocation')
+                BEGIN
+                    ALTER TABLE Products ADD ShelfLocation NVARCHAR(50) NULL;
+                END";
+                Execute(sqlProductsBarcode);
+
+                // Add WarehouseID to Purchases and Sales
+                string sqlWarehouseIDs = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE Purchases ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'WarehouseID')
+                BEGIN
+                    ALTER TABLE Sales ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
+                END";
+                Execute(sqlWarehouseIDs);
             }
             catch {}
         }

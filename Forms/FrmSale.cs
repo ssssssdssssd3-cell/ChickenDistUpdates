@@ -70,6 +70,10 @@ namespace ChickenDist.Forms
 
 		private TextBox txtPrice;
 
+        private ComboBox cboWarehouse;
+
+        private TextBox txtBarcode;
+
 		private List<SaleItemDTO> _items = new List<SaleItemDTO>();
 
 		private int _lastSaleID = 0;
@@ -84,7 +88,7 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(950, 680);
+			base.Size = new Size(1050, 720);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
@@ -96,8 +100,8 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 120,
-				Width = 950,
+				Height = 155,
+				Width = 1050,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10)
 			};
@@ -253,10 +257,45 @@ namespace ChickenDist.Forms
 				}
 			};
 
+			// ===== ROW 3: Barcode + Warehouse =====
+			Label lblBarcode = MakeLabel("باركود / كود:", 940, 122);
+			lblBarcode.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			txtBarcode = new TextBox
+			{
+				Name = "txtBarcode",
+				Location = new Point(700, 118),
+				Width = 230,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
+			};
+			txtBarcode.KeyDown += TxtBarcode_KeyDown;
+
+			Label lblWarehouse = MakeLabel("المخزن:", 640, 122);
+			lblWarehouse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			cboWarehouse = new ComboBox
+			{
+				Location = new Point(460, 118), Width = 170,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
+				Anchor = AnchorStyles.Top | AnchorStyles.Right
+			};
+
+			Label lblHintBarcode = new Label
+			{
+				Text = "💡 امسح الباركود بالسكنر أو اكتب الكود ثم Enter للإضافة الفورية  |  [F12] تركيز على الباركود",
+				ForeColor = Color.FromArgb(100, 180, 100),
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
+				Location = new Point(10, 137),
+				AutoSize = true
+			};
+
 			panel.Controls.AddRange(new Control[]
 			{
 				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
-				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes
+				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes,
+				lblBarcode, txtBarcode, lblWarehouse, cboWarehouse, lblHintBarcode
 			});
 			pnlItems = new Panel
 			{
@@ -495,7 +534,7 @@ namespace ChickenDist.Forms
 			if (e.KeyCode == Keys.F2) { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -560,6 +599,73 @@ namespace ChickenDist.Forms
 				cbo.SelectionLength = 0;
 				cbo.DroppedDown = true;
 			};
+		}
+
+		private void TxtBarcode_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode != Keys.Enter) return;
+			e.Handled = true;
+			e.SuppressKeyPress = true;
+
+			string code = txtBarcode.Text.Trim();
+			if (string.IsNullOrEmpty(code)) return;
+
+			DataRow row = WarehouseDAL.GetProductByBarcode(code);
+			if (row == null)
+			{
+				MessageBox.Show($"❌ لم يُعثر على صنف بالكود: {code}", "باركود غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				txtBarcode.SelectAll();
+				return;
+			}
+
+			int prodID = Convert.ToInt32(row["ProductID"]);
+			string name = row["ProductName"].ToString();
+			decimal price = Convert.ToDecimal(row["SalePrice"]);
+			decimal minLimit = row["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row["MinStockLimit"]) : 0m;
+
+			// Check if already in list
+			foreach (SaleItemDTO item in _items)
+			{
+				if (item.ProductID == prodID)
+				{
+					MessageBox.Show("الصنف موجود مسبقاً بالفاتورة، عدّل الكمية مباشرة في الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					txtBarcode.Clear();
+					txtBarcode.Focus();
+					return;
+				}
+			}
+
+			decimal stock = InventoryDAL.GetProductStock(prodID);
+			if (stock <= 0)
+			{
+				MessageBox.Show($"❌ الصنف '{name}' رصيده صفر في المخزن!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				txtBarcode.SelectAll();
+				return;
+			}
+
+			_items.Add(new SaleItemDTO
+			{
+				ProductID = prodID,
+				ProductName = name,
+				Quantity = 1m,
+				UnitPrice = price,
+				StockQty = stock,
+				MinStockLimit = minLimit
+			});
+
+			RefreshGrid();
+
+			// Focus on the new row Quantity cell
+			int rowIndex = _items.Count - 1;
+			if (rowIndex >= 0)
+			{
+				dgItems.Focus();
+				dgItems.ClearSelection();
+				dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells["Quantity"];
+				dgItems.BeginEdit(true);
+			}
+
+			txtBarcode.Clear();
 		}
 
 		private void LoadCombos()
@@ -670,6 +776,15 @@ namespace ChickenDist.Forms
 					cboProduct.SelectedIndex = 0;
 				}
 			};
+
+			// Warehouses
+			DataTable dtWh = WarehouseDAL.GetAll(true);
+			cboWarehouse.Items.Clear();
+			foreach (DataRow rwh in dtWh.Rows)
+				cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(rwh["WarehouseID"]), rwh["WarehouseName"].ToString()));
+			cboWarehouse.DisplayMember = "Text";
+			if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
 		}
@@ -1081,7 +1196,11 @@ namespace ChickenDist.Forms
 					}
 				}
 			}
-			int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net, txtNotes.Text, _items, discountAmount, discountPct, isDraft);
+			int? warehouseID = null;
+			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
+				warehouseID = wh.ID;
+
+			int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net, txtNotes.Text, _items, discountAmount, discountPct, isDraft, warehouseID);
 			if (num3 > 0)
 			{
 				_lastSaleID = num3;

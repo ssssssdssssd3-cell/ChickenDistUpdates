@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -8,11 +8,12 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة إدارة الأصناف</summary>
+    /// <summary>شاشة إدارة الأصناف المتوافقة مع قطع الغيار</summary>
     public class FrmProducts : Form
     {
         private DataGridView dgProducts;
-        private TextBox txtCode, txtName, txtUnit, txtDescription;
+        private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation;
+        private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete;
@@ -21,6 +22,7 @@ namespace ChickenDist.Forms
         public FrmProducts()
         {
             InitUI();
+            LoadCategoriesCombo();
             LoadProducts();
             ClearDetail();
         }
@@ -28,14 +30,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "إدارة الأصناف";
-            this.Size = new Size(900, 600);
+            this.Size = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
-
-            // header handled by main form's top bar
 
             var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, FixedPanel = FixedPanel.Panel1 };
 
@@ -58,10 +58,12 @@ namespace ChickenDist.Forms
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف" });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "السعر", FillWeight = 40 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 40 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 60 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 110 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 50 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             split.Panel2.Controls.Add(dgProducts);
@@ -75,6 +77,19 @@ namespace ChickenDist.Forms
             AddField(split.Panel1, "كود الصنف:", ref y, out txtCode);
             txtCode.ReadOnly = true;
             AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
+            AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
+
+            // ComboBox للتصنيف مع زر إضافة
+            split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            cboCategory = new ComboBox { Location = new Point(50, y - 2), Width = 145, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            var btnAddCat = new Button { Text = "➕", Location = new Point(15, y - 2), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
+            split.Panel1.Controls.AddRange(new Control[] { cboCategory, btnAddCat });
+            y += 38;
+
+            AddField(split.Panel1, "الموديل المتوافق:", ref y, out txtCarModel);
+            AddField(split.Panel1, "الماركة:", ref y, out txtBrand);
+            AddField(split.Panel1, "موقع الرف:", ref y, out txtShelfLocation);
             AddField(split.Panel1, "الوحدة:", ref y, out txtUnit);
 
             split.Panel1.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
@@ -111,9 +126,22 @@ namespace ChickenDist.Forms
         private void AddField(Control parent, string label, ref int y, out TextBox txt)
         {
             parent.Controls.Add(new Label { Text = label, Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            txt = new TextBox { Location = new Point(15, y - 2), Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txt = new TextBox { Location = new Point(15, y - 2), Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             parent.Controls.Add(txt);
             y += 38;
+        }
+
+        private void LoadCategoriesCombo()
+        {
+            cboCategory.Items.Clear();
+            cboCategory.Items.Add(new ComboItem(0, "-- بدون تصنيف --"));
+            DataTable dt = CategoryDAL.GetAll(true);
+            foreach (DataRow r in dt.Rows)
+            {
+                cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+            }
+            cboCategory.DisplayMember = "Text";
+            cboCategory.SelectedIndex = 0;
         }
 
         private void LoadProducts()
@@ -123,7 +151,8 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dt.Rows)
             {
                 bool active = Convert.ToBoolean(r["IsActive"]);
-                var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["ProductName"],
+                var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
+                    r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
                     r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
                 if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
             }
@@ -137,19 +166,47 @@ namespace ChickenDist.Forms
             if (dr == null) return;
             txtCode.Text = dr["ProductCode"].ToString();
             txtName.Text = dr["ProductName"].ToString();
+            txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
+            txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
+            txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
+            txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
             txtUnit.Text = dr["Unit"].ToString();
             nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
             nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
             nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
             txtDescription.Text = dr["Description"].ToString();
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
+
+            // تحديد التصنيف في الـ ComboBox
+            if (dr["CategoryID"] != DBNull.Value)
+            {
+                int catID = Convert.ToInt32(dr["CategoryID"]);
+                for (int i = 0; i < cboCategory.Items.Count; i++)
+                {
+                    if (cboCategory.Items[i] is ComboItem item && item.ID == catID)
+                    {
+                        cboCategory.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                cboCategory.SelectedIndex = 0;
+            }
         }
 
         private void ClearDetail()
         {
             _selectedID = 0;
             txtCode.Text = ProductDAL.GetNextProductCode();
-            txtName.Clear(); txtUnit.Text = "رأس";
+            txtName.Clear(); 
+            txtPartNumber.Clear();
+            txtCarModel.Clear();
+            txtBrand.Clear();
+            txtShelfLocation.Clear();
+            if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
+            txtUnit.Text = "قطعة";
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
             nudMinStockLimit.Value = 0;
@@ -160,8 +217,17 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
+            
+            int? categoryID = null;
+            if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                categoryID = ci.ID;
+            }
+
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
-                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text);
+                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
+                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim());
+            
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadProducts(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
@@ -172,5 +238,5 @@ namespace ChickenDist.Forms
             if (MessageBox.Show("إيقاف الصنف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { ProductDAL.Delete(_selectedID); LoadProducts(); ClearDetail(); }
         }
-    }}
-
+    }
+}
