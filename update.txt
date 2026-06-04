@@ -1,4 +1,4 @@
-version=1.0.51
+version=1.0.52
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=53206EA95C88A8735738707E02066DB92EB6BD67C62D683B038A3F5EA5FE7133
-changelog=v1.0.51: (1) رسالة تحذير عند فتح البرنامج إذا مضى أكثر من 24 ساعة على آخر نسخة احتياطية. (2) قسم كامل للنسخ الاحتياطي في الإعدادات (تحديد المجلد + نسخ الآن + فتح المجلد). (3) إصلاح: التحديث لا يمسح اسم الشركة من الإعدادات.
+sha256=65803F9B391165A715B62DF4A4C7F6EC71DB223D0DC424A08095C27C849C3A98
+changelog=v1.0.52: إصلاح خطأ "Trailing content after the root JSON value" في صفحة المندوب — كانت البيانات الفاسدة في localStorage توقف التطبيق، الآن يتم مسح البيانات التالفة تلقائياً واستمرار العمل بشكل طبيعي.

@@ -386,17 +386,28 @@ function loadDataFile(event) {
 function loadFromStorage() {
   const saved = localStorage.getItem('driver_appData');
   if (!saved) { toast('⚠️ لا توجد بيانات محفوظة', 'error'); return; }
-  appData = JSON.parse(saved);
-  showStep2();
-  toast('✅ تم تحميل آخر بيانات محفوظة', 'success');
+  try {
+    appData = JSON.parse(saved);
+    showStep2();
+    toast('✅ تم تحميل آخر بيانات محفوظة', 'success');
+  } catch(e) {
+    localStorage.removeItem('driver_appData');
+    toast('❌ بيانات تالفة — تم مسحها، أعد تحميل ملف data.json', 'error');
+  }
 }
 
 function loadFromStorageSilent() {
   const saved = localStorage.getItem('driver_appData');
   const savedInv = localStorage.getItem('driver_invoices');
   const savedDriver = localStorage.getItem('driver_name');
-  if (saved) appData = JSON.parse(saved);
-  if (savedInv) invoices = JSON.parse(savedInv);
+  if (saved) {
+    try { appData = JSON.parse(saved); }
+    catch(e) { localStorage.removeItem('driver_appData'); appData = { clients: [], products: [], drivers: [] }; }
+  }
+  if (savedInv) {
+    try { invoices = JSON.parse(savedInv); }
+    catch(e) { localStorage.removeItem('driver_invoices'); invoices = []; }
+  }
   if (savedDriver) {
     driverName = savedDriver;
     // auto launch app if driver known
