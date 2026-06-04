@@ -11,12 +11,14 @@
     <StartupObject>ChickenDist.Program</StartupObject>
     <CodePage>65001</CodePage>
     <Utf8Output>true</Utf8Output>
+    <AppConfig>app.config</AppConfig>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Configuration" />
     <EmbeddedResource Include="Forms\driver_sales.html" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
     <EmbeddedResource Include="QRCoder.dll" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.4.3" />

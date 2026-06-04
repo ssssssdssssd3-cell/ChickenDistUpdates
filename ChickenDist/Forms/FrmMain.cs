@@ -144,6 +144,7 @@ namespace ChickenDist.Forms
                 ("🛒", "فاتورة بيع",       "Sales",          () => NavigateTo(new FrmSale()),           Color.FromArgb(5, 122, 85)),
                 ("↩", "مرتجع بيع",        "Returns",        () => NavigateTo(new FrmReturn()),         Color.FromArgb(5, 122, 85)),
                 ("📋", "سجل المبيعات",     "Sales",          () => NavigateTo(new FrmSalesList()),      Color.FromArgb(5, 122, 85)),
+                ("📑", "سجل التعديلات",    "Sales",          () => NavigateTo(new FrmSalesAuditList()), Color.FromArgb(5, 122, 85)),
 
                 // ── المشتريات (مجموعة متكاملة) ───────────────────────
                 ("📥", "فاتورة شراء",      "Purchases",      () => NavigateTo(new FrmPurchase()),       Color.FromArgb(120, 53, 15)),

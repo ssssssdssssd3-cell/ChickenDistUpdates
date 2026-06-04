@@ -78,6 +78,7 @@ namespace ChickenDist.Forms
         private bool _isDirty = false;
         private int _editSaleID = 0;
         private bool _isCopyMode = false;
+        private DateTime _loadedLastModified;
         private ComboBox cboPricingType;
         private Label lblPricingType;
 
@@ -1160,7 +1161,8 @@ namespace ChickenDist.Forms
 				@"SELECT s.SaleType, s.SaleDate, s.ClientID, s.DriverID, s.Notes,
 				         COALESCE(s.DiscountAmount,0) AS DiscountAmount,
 				         COALESCE(s.DiscountPct,0)    AS DiscountPct,
-				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier
+				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier,
+				         s.LastModifiedDate
 				  FROM Sales s WHERE s.SaleID=@id",
 				DbHelper.P("@id", saleID));
 
@@ -1171,6 +1173,9 @@ namespace ChickenDist.Forms
 			}
 
 			var row = dtSale.Rows[0];
+
+			// Concurrency Token
+			_loadedLastModified = row["LastModifiedDate"] != DBNull.Value ? Convert.ToDateTime(row["LastModifiedDate"]) : Convert.ToDateTime(row["SaleDate"]);
 
 			// نوع الفاتورة
 			string typeStr = row["SaleType"].ToString();
@@ -1227,12 +1232,23 @@ namespace ChickenDist.Forms
 			_items.Clear();
 			foreach (DataRow iRow in dtItems.Rows)
 			{
-				decimal stock = _stockCache.TryGetValue(Convert.ToInt32(iRow["ProductID"]), out var st) ? st : 0m;
+				int pid = Convert.ToInt32(iRow["ProductID"]);
+				decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+				// نضيف الكمية للـ cache في وضع التعديل (وليس النسخ) لكي يعتبرها رصيداً متاحاً في الجريد أثناء التعديل
+				if (!_isCopyMode)
+				{
+					if (_stockCache.ContainsKey(pid))
+						_stockCache[pid] += qty;
+					else
+						_stockCache[pid] = qty;
+				}
+
+				decimal stock = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
 				_items.Add(new SaleItemDTO
 				{
-					ProductID   = Convert.ToInt32(iRow["ProductID"]),
+					ProductID   = pid,
 					ProductName = iRow["ProductName"].ToString(),
-					Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+					Quantity    = qty,
 					UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
 					DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
 					DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
@@ -1250,6 +1266,7 @@ namespace ChickenDist.Forms
 
 			_isDirty = false;
 		}
+
 
 		private void SaveInvoiceLogic(bool isDraft)
 		{
@@ -1280,9 +1297,21 @@ namespace ChickenDist.Forms
 			foreach (SaleItemDTO item in _items)
 			{
 				decimal productStock = InventoryDAL.GetProductStock(item.ProductID);
-				if (item.Quantity > productStock)
+				decimal quantityToCheck = item.Quantity;
+
+				if (_editSaleID > 0)
 				{
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لحفظ الفاتورة.\nالكمية المطلوبة: {item.Quantity:N2}\nالكمية المتاحة: {productStock:N2}",
+					// في حال التعديل، نقوم بالتحقق من الفارق فقط
+					var oldQtyObj = DbHelper.Scalar("SELECT Quantity FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID));
+					decimal oldQty = oldQtyObj != null ? Convert.ToDecimal(oldQtyObj) : 0m;
+					
+					quantityToCheck = item.Quantity - oldQty;
+				}
+
+				if (quantityToCheck > 0 && quantityToCheck > productStock)
+				{
+					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2}\nالكمية المتاحة بالمخزن: {productStock:N2}",
 						"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
@@ -1341,7 +1370,7 @@ namespace ChickenDist.Forms
 			}
 
 			// ─── التحقق من حد الائتمان ───
-			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue && _editSaleID == 0)
+			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue)
 			{
 				DataRow byID = ClientDAL.GetByID(clientID.Value);
 				if (byID != null)
@@ -1350,9 +1379,19 @@ namespace ChickenDist.Forms
 					if (maxCredit > 0m)
 					{
 						decimal clientBalance = ClientDAL.GetClientBalance(clientID.Value);
-						if (clientBalance + net > maxCredit)
+						decimal valueToCompare = clientBalance + net;
+
+						if (_editSaleID > 0)
 						{
-							MessageBox.Show($"❌ الرصيد الحالي ({clientBalance:N2} ج) + الفاتورة ({net:N2} ج) = ({clientBalance + net:N2} ج) يتجاوز الحد الأقصى ({maxCredit:N2} ج)!\n\nيرجى تحصيل دفعة أولاً.",
+							// في وضع التعديل، نطرح قيمة الفاتورة القديمة أولاً
+							var oldTotalObj = DbHelper.Scalar("SELECT TotalAmount FROM Sales WHERE SaleID=@id", DbHelper.P("@id", _editSaleID));
+							decimal oldTotal = oldTotalObj != null ? Convert.ToDecimal(oldTotalObj) : 0m;
+							valueToCompare = clientBalance - oldTotal + net;
+						}
+
+						if (valueToCompare > maxCredit)
+						{
+							MessageBox.Show($"❌ الرصيد المتوقع بعد الحفظ ({valueToCompare:N2} ج) يتجاوز الحد الأقصى للائتمان المسموح به لهذا العميل ({maxCredit:N2} ج)!\n\nيرجى تحصيل دفعة نقدية أولاً.",
 								"تجاوز حد المديونية", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 							return;
 						}
@@ -1364,21 +1403,36 @@ namespace ChickenDist.Forms
 			if (_editSaleID > 0)
 			{
 				// وضع التعديل
-				bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
-					net, txtNotes.Text, _items, discountAmount, discountPct,
-					isDraft: false, warehouseID: null, priceTier: priceTier);
-				if (updated)
+				try
 				{
-					_isDirty = false;
-					DialogResult pr = MessageBox.Show(
-						$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
-						"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-					if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID);
-					this.Close();
+					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
+						net, txtNotes.Text, _items, discountAmount, discountPct,
+						isDraft: false, warehouseID: null, priceTier: priceTier,
+						loadedLastModified: _loadedLastModified);
+					if (updated)
+					{
+						_isDirty = false;
+						DialogResult pr = MessageBox.Show(
+							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
+							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID);
+						this.Close();
+					}
+					else
+					{
+						MessageBox.Show("❌ فشل التعديل، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					}
 				}
-				else
+				catch (Exception ex)
 				{
-					MessageBox.Show("❌ فشل التعديل، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					if (ex.Message.Contains("CONCURRENCY_ERROR"))
+					{
+						MessageBox.Show(ex.Message.Replace("CONCURRENCY_ERROR: ", ""), "خطأ تعديل متزامن", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+					else
+					{
+						MessageBox.Show("❌ حدث خطأ أثناء التعديل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
 				}
 			}
 			else

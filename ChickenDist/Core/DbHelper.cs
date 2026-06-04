@@ -51,7 +51,7 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show("فشل قراءة إعدادات الاتصال من App.config:\n" + ex.Message, "خطأ في الإعدادات", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            return "Data Source=.;Initial Catalog=PartsDist;Integrated Security=True;Connect Timeout=30;";
+            return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
         }
 
         public static void SetConnectionString(string connStr)
@@ -588,7 +588,23 @@ namespace ChickenDist.Core
                         DiscountAmt DECIMAL(10,2) DEFAULT 0,
                         PriceTier NVARCHAR(20) NULL
                     );
-                END";
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SalesAudit') AND name = 'MachineName')
+                BEGIN
+                    ALTER TABLE SalesAudit ADD MachineName NVARCHAR(100) NULL;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SalesAudit') AND name = 'ActionType')
+                BEGIN
+                    ALTER TABLE SalesAudit ADD ActionType NVARCHAR(50) NOT NULL DEFAULT 'EDIT';
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'LastModifiedDate')
+                BEGIN
+                    ALTER TABLE Sales ADD LastModifiedDate DATETIME NULL;
+                END
+                EXEC('UPDATE Sales SET LastModifiedDate = GETDATE() WHERE LastModifiedDate IS NULL');";
                 Execute(sqlInvoiceEditingAndTiers);
             }
             catch (Exception ex)
