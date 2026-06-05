@@ -189,9 +189,9 @@ namespace ChickenDist.Forms
 				return;
 			}
 			int? warehouseID = null;
-			if (cboWarehouse != null && cboWarehouse.SelectedValue != null && cboWarehouse.SelectedValue != DBNull.Value)
+			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
 			{
-				warehouseID = Convert.ToInt32(cboWarehouse.SelectedValue);
+				warehouseID = wh.ID;
 			}
 			DataGridView dataGridView = tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 			if (dataGridView != null)
@@ -986,14 +986,13 @@ namespace ChickenDist.Forms
 			try
 			{
 				DataTable dt = WarehouseDAL.GetAll(activeOnly: true);
-				DataRow row = dt.NewRow();
-				row["WarehouseID"] = DBNull.Value;
-				row["WarehouseName"] = "كل المخازن";
-				dt.Rows.InsertAt(row, 0);
-
-				cboWarehouse.DataSource = dt;
-				cboWarehouse.DisplayMember = "WarehouseName";
-				cboWarehouse.ValueMember = "WarehouseID";
+				cboWarehouse.Items.Clear();
+				cboWarehouse.Items.Add(new ComboItem(0, "كل المخازن"));
+				foreach (DataRow r in dt.Rows)
+				{
+					cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+				}
+				cboWarehouse.DisplayMember = "Text";
 				cboWarehouse.SelectedIndex = 0;
 				
 				cboWarehouse.SelectedIndexChanged += delegate
