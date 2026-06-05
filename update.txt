@@ -1,4 +1,4 @@
 version=1.0.67
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=FB817F551A8F2C21777D00CE654DAA1C7E34E63647AA864B30B642466BEB73BA
-changelog=v1.0.67: (1) إضافة فلتر المخزن في شاشة التقارير — جميع التبويبات تدعم الفلترة بالمخزن (2) إضافة فلتر المخزن في شاشة الجرد (3) تحديث جميع استعلامات DAL لدعم warehouseID اختياري (SaleDAL, ReturnDAL, PurchaseReturnDAL, ReportDAL, DriverDAL) (4) تحسين تخطيط شاشة المبيعات باستخدام TableLayoutPanel (5) تحسين تخطيط فلاتر شاشة الجرد باستخدام FlowLayoutPanel
+sha256=1A64E8C0AC97F825E80156A5F63D1F5B1BEF1596FDA08B5CD5E338D313DAE3F9
+changelog=v1.0.67: (1) إعادة ترتيب هيدر شاشة المبيعات باستخدام TableLayoutPanel (2) إعادة ترتيب فلاتر شاشة الجرد باستخدام FlowLayoutPanel (3) إضافة فلتر المخازن في شاشة التقارير وتطبيقه على جميع تقارير المبيعات والمرتجع وتقفيل المناديب اليومي

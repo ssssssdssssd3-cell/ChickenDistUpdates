@@ -241,7 +241,8 @@ namespace ChickenDist.DAL
                   WHERE CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t
                     AND (@warehouseID IS NULL OR pr.WarehouseID = @warehouseID)
                   ORDER BY pr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
