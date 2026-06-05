@@ -10,10 +10,15 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(DateTime from, DateTime to)
         {
-            return GetAll(from, to, null, null);
+            return GetAll(from, to, null, null, null);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch)
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
+        {
+            return GetAll(from, to, null, null, warehouseID);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
@@ -32,6 +37,7 @@ namespace ChickenDist.DAL
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     AND (@product IS NULL OR EXISTS (
                         SELECT 1 FROM SaleItems si2
                         JOIN Products pr ON si2.ProductID = pr.ProductID
@@ -42,7 +48,8 @@ namespace ChickenDist.DAL
                   ORDER BY s.SaleDate DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                DbHelper.P("@product", (object)productFilter ?? DBNull.Value));
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static DataTable GetItems(int saleID)
@@ -672,7 +679,7 @@ namespace ChickenDist.DAL
             return hvID;
         }
 
-        public static DataTable GetHandovers(DateTime from, DateTime to)
+        public static DataTable GetHandovers(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT dh.HandoverID, dh.HandoverDate, e.EmpName AS DriverName,
@@ -680,10 +687,13 @@ namespace ChickenDist.DAL
                           dh.Notes, creator.EmpName AS CreatedBy
                   FROM DriverHandovers dh
                   JOIN Employees e ON dh.DriverID = e.EmpID
+                  JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
                   LEFT JOIN Employees creator ON dh.CreatedBy = creator.EmpID
                   WHERE CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
                   ORDER BY dh.HandoverDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         /// <summary>ملخص عهدة المناديب الحاليين (الحمولات المفتوحة فقط)</summary>
@@ -1128,7 +1138,7 @@ namespace ChickenDist.DAL
 
     public static class ReturnDAL
     {
-        public static DataTable GetAll(DateTime from, DateTime to)
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT sr.ReturnID, sr.ReturnDate, s.SaleCode,
@@ -1137,8 +1147,10 @@ namespace ChickenDist.DAL
                   LEFT JOIN Sales s ON sr.SaleID=s.SaleID
                   LEFT JOIN Clients c ON sr.ClientID=c.ClientID
                   WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ORDER BY sr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items)
@@ -1203,7 +1215,7 @@ namespace ChickenDist.DAL
 
     public static class ReportDAL
     {
-        public static DataTable SalesByDay(DateTime from, DateTime to)
+        public static DataTable SalesByDay(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
@@ -1215,12 +1227,14 @@ namespace ChickenDist.DAL
                     SUM(TotalAmount) AS Total
                   FROM Sales
                   WHERE CAST(SaleDate AS DATE) BETWEEN @f AND @t AND IsPosted=1
+                    AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                   GROUP BY CAST(SaleDate AS DATE)
                   ORDER BY SaleDay",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByDriver(DateTime from, DateTime to)
+        public static DataTable SalesByDriver(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
@@ -1232,12 +1246,14 @@ namespace ChickenDist.DAL
                   FROM Sales s 
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                   GROUP BY e.EmpName
                   ORDER BY Total DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByClient(DateTime from, DateTime to)
+        public static DataTable SalesByClient(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
@@ -1247,7 +1263,7 @@ namespace ChickenDist.DAL
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                     SUM(CASE WHEN s.SaleType = 'Credit' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total,
-                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS ReturnsTotal,
+                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsTotal,
                     ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
                     (c.OpeningBalance + 
                      ISNULL((SELECT SUM(ct.Debit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0) - 
@@ -1256,14 +1272,15 @@ namespace ChickenDist.DAL
                   FROM Sales s 
                   JOIN Clients c ON s.ClientID = c.ClientID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                   GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance
                   ORDER BY Total DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByProduct(DateTime from, DateTime to)
+        public static DataTable SalesByProduct(DateTime from, DateTime to, int? warehouseID = null)
         {
-            // FIX: استخدام CTE بدلاً من subqueries متكررة (3x) لنفس ReturnedQty
             return DbHelper.Query(
                 @";WITH ReturnTotals AS (
                     SELECT ri.ProductID,
@@ -1272,6 +1289,7 @@ namespace ChickenDist.DAL
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                     GROUP BY ri.ProductID
                 )
                 SELECT 
@@ -1289,13 +1307,15 @@ namespace ChickenDist.DAL
                 JOIN Products p ON si.ProductID = p.ProductID
                 LEFT JOIN ReturnTotals rt ON rt.ProductID = p.ProductID
                 WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted = 1
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                 GROUP BY p.ProductID, p.ProductName, p.Unit, rt.ReturnedQty, rt.ReturnedAmount
                 ORDER BY TotalQty DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-                /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري) — مخصوماً منها المرتجعات</summary>
-        public static DataTable GetDailyClientProductSales(DateTime date)
+        /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري) — مخصوماً منها المرتجعات</summary>
+        public static DataTable GetDailyClientProductSales(DateTime date, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT
@@ -1311,6 +1331,7 @@ namespace ChickenDist.DAL
                       WHERE CAST(s.SaleDate AS DATE) = @date
                         AND s.IsPosted = 1
                         AND s.SaleType IN ('Cash','Credit')
+                        AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                       
                       UNION ALL
                       
@@ -1318,15 +1339,17 @@ namespace ChickenDist.DAL
                       FROM ReturnItems ri
                       JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                       WHERE CAST(sr.ReturnDate AS DATE) = @date
+                        AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ) t
                   JOIN Clients c ON t.ClientID = c.ClientID
                   GROUP BY c.ClientID, c.ClientName, t.ProductID
                   ORDER BY c.ClientName",
-                DbHelper.P("@date", date.Date));
+                DbHelper.P("@date", date.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         /// <summary>إجمالي الفاتورة وآخر توريد والمديونية لكل عميل في يوم معين — مخصوماً منها المرتجعات</summary>
-        public static DataTable GetDailyClientTotals(DateTime date)
+        public static DataTable GetDailyClientTotals(DateTime date, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT
@@ -1347,34 +1370,37 @@ namespace ChickenDist.DAL
                       WHERE CAST(SaleDate AS DATE) = @date
                         AND IsPosted = 1
                         AND SaleType IN ('Cash','Credit')
+                        AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
 
                       UNION ALL
 
                       SELECT ClientID, -TotalAmount AS Amt
                       FROM SalesReturns
                       WHERE CAST(ReturnDate AS DATE) = @date
+                        AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                   ) t
                   JOIN Clients c ON t.ClientID = c.ClientID
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                   GROUP BY c.ClientID, c.ClientName, c.OpeningBalance, cb.Balance
                   ORDER BY c.ClientName",
-                DbHelper.P("@date", date.Date));
+                DbHelper.P("@date", date.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable GetFinancialSummary(DateTime from, DateTime to)
+        public static DataTable GetFinancialSummary(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
                     -- Total Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS TotalSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalSales,
                     -- Cash Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS CashSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CashSales,
                     -- Credit Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Credit' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS CreditSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Credit' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CreditSales,
                     -- Driver Loads Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS DriverLoadsSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS DriverLoadsSales,
                     -- Returns
-                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS TotalReturns,
+                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalReturns,
                     -- Client Payments
                     ISNULL((SELECT SUM(Credit) FROM ClientTransactions WHERE TransType='Payment' AND CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS ClientPayments,
                     -- Expenses
@@ -1383,7 +1409,8 @@ namespace ChickenDist.DAL
                     ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashInflow,
                     -- Cashbox Outflow (Expenses + Handover returned or other outflows)
                     ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashOutflow",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static DataTable ClientsReport()
@@ -1407,7 +1434,7 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>
-        public static DataTable GetProductQtyDetail(DateTime from, DateTime to)
+        public static DataTable GetProductQtyDetail(DateTime from, DateTime to, int? warehouseID = null)
         {
             // FIX: استخدام CTE لحساب SoldQty, ReturnedQty, DriverReturnQty مرة واحدة
             // الكود القديم كان يُعيد حساب نفس الـ subqueries 3 مرات في NetSoldQty و CurrentStock
@@ -1425,6 +1452,7 @@ namespace ChickenDist.DAL
                     JOIN Sales s ON si.SaleID = s.SaleID
                     WHERE s.IsPosted = 1
                       AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     GROUP BY si.ProductID
                 ),
                 ReturnsPeriod AS (
@@ -1433,6 +1461,7 @@ namespace ChickenDist.DAL
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                     GROUP BY ri.ProductID
                 ),
                 DriverReturnsPeriod AS (
@@ -1440,8 +1469,10 @@ namespace ChickenDist.DAL
                            SUM(hi.ReturnedQty) AS DriverReturnQty
                     FROM HandoverItems hi
                     JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                    JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
                     WHERE CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
                       AND hi.ReturnedQty > 0
+                      AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
                     GROUP BY hi.ProductID
                 ),
                 StockSinceAdj AS (
@@ -1450,35 +1481,42 @@ namespace ChickenDist.DAL
                            + ISNULL((SELECT SUM(ri2.Quantity) FROM ReturnItems ri2
                                       JOIN SalesReturns sr2 ON ri2.ReturnID=sr2.ReturnID
                                       WHERE ri2.ProductID=p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR sr2.ReturnDate > adj2.AdjDate)), 0)
+                                        AND (adj2.AdjDate IS NULL OR sr2.ReturnDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR sr2.WarehouseID = @warehouseID)), 0)
                            + ISNULL((SELECT SUM(hi2.ReturnedQty) FROM HandoverItems hi2
                                       JOIN DriverHandovers dh2 ON hi2.HandoverID=dh2.HandoverID
+                                      JOIN DriverLoads dl2 ON dh2.LoadID = dl2.LoadID
                                       WHERE hi2.ProductID=p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR dh2.HandoverDate > adj2.AdjDate)), 0)
+                                        AND (adj2.AdjDate IS NULL OR dh2.HandoverDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR dl2.WarehouseID = @warehouseID)), 0)
                            -- Incoming: Purchases since adjustment
                            + ISNULL((SELECT SUM(pi2.Quantity) FROM PurchaseItems pi2
                                       JOIN Purchases pu2 ON pi2.PurchaseID = pu2.PurchaseID
                                       WHERE pi2.ProductID = p2.ProductID
                                         AND pu2.IsPosted = 1
-                                        AND (adj2.AdjDate IS NULL OR pu2.PurchaseDate > adj2.AdjDate)), 0)
+                                        AND (adj2.AdjDate IS NULL OR pu2.PurchaseDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR pu2.WarehouseID = @warehouseID)), 0)
                            -- Outgoing: Purchase Returns since adjustment
                            - ISNULL((SELECT SUM(pri2.Quantity) FROM PurchaseReturnItems pri2
                                       JOIN PurchaseReturns pr2 ON pri2.ReturnID = pr2.ReturnID
                                       WHERE pri2.ProductID = p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR pr2.ReturnDate > adj2.AdjDate)), 0)
+                                        AND (adj2.AdjDate IS NULL OR pr2.ReturnDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR pr2.WarehouseID = @warehouseID)), 0)
                            -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
                            - ISNULL((SELECT SUM(si2.Quantity) FROM SaleItems si2
                                       JOIN Sales s2 ON si2.SaleID=s2.SaleID
                                       WHERE si2.ProductID=p2.ProductID
                                         AND s2.IsPosted = 1
                                         AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit') AND s2.DriverID IS NULL))
-                                        AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)), 0)
+                                        AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR s2.WarehouseID = @warehouseID)), 0)
                            AS CurrentStock
                     FROM Products p2
                     OUTER APPLY (
                         SELECT TOP 1 sa2.AdjDate, sa2.ActualQty
                         FROM StockAdjustments sa2
                         WHERE sa2.ProductID = p2.ProductID
+                          AND (@warehouseID IS NULL OR sa2.WarehouseID = @warehouseID)
                         ORDER BY sa2.AdjDate DESC
                     ) adj2
                     WHERE p2.IsActive = 1
@@ -1494,6 +1532,7 @@ namespace ChickenDist.DAL
                         FROM StockAdjustments sa
                         WHERE sa.ProductID = p.ProductID
                           AND sa.AdjDate <= DATEADD(DAY, 1, @t)
+                          AND (@warehouseID IS NULL OR sa.WarehouseID = @warehouseID)
                         ORDER BY sa.AdjDate DESC
                     ), 0)                                                   AS LastAdjQty,
 
@@ -1521,7 +1560,8 @@ namespace ChickenDist.DAL
                 LEFT JOIN StockSinceAdj      sca ON sca.ProductID = p.ProductID
                 WHERE p.IsActive = 1
                 ORDER BY p.ProductName",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
     }
 }

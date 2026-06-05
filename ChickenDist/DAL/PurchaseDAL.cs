@@ -228,7 +228,7 @@ namespace ChickenDist.DAL
     /// <summary>مرتجع مشتريات — القيد المحاسبي السليم</summary>
     public static class PurchaseReturnDAL
     {
-        public static DataTable GetAll(DateTime from, DateTime to)
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT pr.ReturnID, pr.ReturnDate,
@@ -239,8 +239,10 @@ namespace ChickenDist.DAL
                   LEFT JOIN Purchases p  ON pr.PurchaseID  = p.PurchaseID
                   LEFT JOIN Suppliers s  ON pr.SupplierID  = s.SupplierID
                   WHERE CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR pr.WarehouseID = @warehouseID)
                   ORDER BY pr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static DataTable GetItems(int returnID)

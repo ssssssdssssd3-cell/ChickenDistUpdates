@@ -22,6 +22,8 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 
+		private ComboBox cboWarehouse;
+
 		private DataTable _currentDt;
 
 		public FrmReports()
@@ -86,7 +88,32 @@ namespace ChickenDist.Forms
 			btnPrint.Size = new Size(160, 32);
 			btnPrint.Margin = new Padding(10, 0, 0, 0);
 			btnPrint.Click += BtnPrint_Click;
-			panel.Controls.AddRange(new Control[6] { label, dtpFrom, label2, dtpTo, btnLoad, btnPrint });
+			// ── فلتر المخزن ──
+			Label lblWh = new Label
+			{
+				Text = "المخزن:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Font = Theme.FontBold,
+				Margin = new Padding(20, 8, 0, 0)
+			};
+			cboWarehouse = new ComboBox
+			{
+				Width = 150,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				Margin = new Padding(5, 4, 0, 0),
+				Font = Theme.FontMain
+			};
+			cboWarehouse.Items.Add(new WarehouseItem(null, "كل المخازن"));
+			try
+			{
+				var dtWh = WarehouseDAL.GetAll(activeOnly: true);
+				foreach (System.Data.DataRow rw in dtWh.Rows)
+					cboWarehouse.Items.Add(new WarehouseItem(Convert.ToInt32(rw["WarehouseID"]), rw["WarehouseName"].ToString()));
+			}
+			catch { }
+			cboWarehouse.SelectedIndex = 0;
+			panel.Controls.AddRange(new Control[8] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
@@ -162,6 +189,9 @@ namespace ChickenDist.Forms
 			LoadCurrentTab();
 		}
 
+		private int? SelectedWarehouseID =>
+			(cboWarehouse?.SelectedItem as WarehouseItem)?.ID;
+
 		private void LoadCurrentTab()
 		{
 			if (tabReports.SelectedTab == null)
@@ -172,12 +202,13 @@ namespace ChickenDist.Forms
 			if (dataGridView != null)
 			{
 				string text = tabReports.SelectedTab.Tag?.ToString();
+				int? wid = SelectedWarehouseID;
 				dataGridView.Columns.Clear();
 				dataGridView.Rows.Clear();
 				switch (text)
 				{
 				case "DetailedSales":
-					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[8]
 					{
 						("SaleCode", "رقم الفاتورة"),
@@ -192,7 +223,7 @@ namespace ChickenDist.Forms
 					if (dataGridView.Columns["SaleID"] != null) dataGridView.Columns["SaleID"].Visible = false;
 					break;
 				case "DetailedReturns":
-					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[6]
 					{
 						("ReturnDate", "التاريخ والوقت"),
@@ -205,7 +236,7 @@ namespace ChickenDist.Forms
 					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
 					break;
 				case "DetailedPurchaseReturns":
-					_currentDt = PurchaseReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value);
+					_currentDt = PurchaseReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[6]
 					{
 						("ReturnDate", "التاريخ والوقت"),
@@ -218,7 +249,7 @@ namespace ChickenDist.Forms
 					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
 					break;
 				case "SalesByDay":
-					_currentDt = ReportDAL.SalesByDay(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.SalesByDay(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[6]
 					{
 						("SaleDay", "اليوم"),
@@ -230,7 +261,7 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "SalesByDriver":
-					_currentDt = ReportDAL.SalesByDriver(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.SalesByDriver(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[5]
 					{
 						("DriverName", "المندوب"),
@@ -241,7 +272,7 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "SalesByClient":
-					_currentDt = ReportDAL.SalesByClient(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.SalesByClient(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[9]
 					{
 						("ClientName", "العميل"),
@@ -256,7 +287,7 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "SalesByProduct":
-					_currentDt = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[9]
 					{
 						("ProductName", "الصنف"),
@@ -271,7 +302,7 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "ProductQtyDetail":
-					_currentDt = ReportDAL.GetProductQtyDetail(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.GetProductQtyDetail(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[12]
 					{
 						("ProductCode",    "كود الصنف"),
@@ -293,7 +324,7 @@ namespace ChickenDist.Forms
 					dataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock",  HeaderText = "الرصيد الحالي" });
 					break;
 				case "Handovers":
-					_currentDt = DriverDAL.GetHandovers(dtpFrom.Value, dtpTo.Value);
+					_currentDt = DriverDAL.GetHandovers(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[9]
 					{
 						("HandoverDate", "التاريخ والوقت"),
@@ -324,7 +355,7 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "FinancialSummary":
-					_currentDt = ReportDAL.GetFinancialSummary(dtpFrom.Value, dtpTo.Value);
+					_currentDt = ReportDAL.GetFinancialSummary(dtpFrom.Value, dtpTo.Value, wid);
 					SetupGrid(new(string, string)[2]
 					{
 						("Indicator", "المؤشر المالي والتشغيلي"),
@@ -333,7 +364,7 @@ namespace ChickenDist.Forms
 					break;
 				case "DailyClosing":
 					_currentDt = new DataTable();
-					LoadDailyClosingReport(dataGridView);
+					LoadDailyClosingReport(dataGridView, wid);
 					break;
 				}
 				FillGrid(dataGridView);
@@ -631,7 +662,7 @@ namespace ChickenDist.Forms
 			printPreviewDialog.ShowDialog();
 		}
 
-		private void LoadDailyClosingReport(DataGridView dg)
+		private void LoadDailyClosingReport(DataGridView dg, int? warehouseID = null)
 		{
 			try
 			{
@@ -640,8 +671,8 @@ namespace ChickenDist.Forms
 				var products = ProductDAL.GetAll(activeOnly: true);
 				int productCount = products.Rows.Count;
 
-				var dtQty = ReportDAL.GetDailyClientProductSales(date);
-				var dtTotals = ReportDAL.GetDailyClientTotals(date);
+				var dtQty = ReportDAL.GetDailyClientProductSales(date, warehouseID);
+				var dtTotals = ReportDAL.GetDailyClientTotals(date, warehouseID);
 
 				var qtyMap = new Dictionary<int, Dictionary<int, decimal>>();
 				foreach (DataRow r in dtQty.Rows)
@@ -955,5 +986,14 @@ namespace ChickenDist.Forms
 			}
 			return 0;
 		}
+	}
+
+	/// <summary>عنصر مساعد لعرض المخزن في ComboBox</summary>
+	internal class WarehouseItem
+	{
+		public int? ID { get; }
+		private readonly string _name;
+		public WarehouseItem(int? id, string name) { ID = id; _name = name; }
+		public override string ToString() => _name;
 	}
 }

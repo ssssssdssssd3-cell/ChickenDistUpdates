@@ -120,225 +120,61 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 175,
+				Height = 185,
 				Width = 950,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10)
+				Padding = new Padding(12, 8, 12, 8)
 			};
-			Label label = MakeLabel("نوع الفاتورة :", 850, 12);
-			label.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			btnTypeCredit = new Button
+			var tbl = new TableLayoutPanel
 			{
-				Text = "آجل",
-				Location = new Point(765, 8),
-				Size = new Size(80, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				RowCount = 4,
+				ColumnCount = 6,
+				BackColor = Color.Transparent,
+				CellBorderStyle = TableLayoutPanelCellBorderStyle.None
 			};
-			btnTypeCredit.FlatAppearance.BorderSize = 0;
-			btnTypeCredit.Click += delegate
-			{
-				SetInvoiceType("Credit");
-			};
-			btnTypeCash = new Button
-			{
-				Text = "نقدي",
-				Location = new Point(680, 8),
-				Size = new Size(80, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			btnTypeCash.FlatAppearance.BorderSize = 0;
-			btnTypeCash.Click += delegate
-			{
-				SetInvoiceType("Cash");
-			};
-			btnTypeDriverLoad = new Button
-			{
-				Text = "تحميل مندوب",
-				Location = new Point(570, 8),
-				Size = new Size(105, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
-			btnTypeDriverLoad.Click += delegate
-			{
-				SetInvoiceType("DriverLoad");
-			};
-			lblDate = MakeLabel("التاريخ :", 530, 12);
-			lblDate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			dtpDate = new DateTimePicker
-			{
-				Location = new Point(400, 8),
-				Width = 120,
-				Format = DateTimePickerFormat.Short,
-				RightToLeft = RightToLeft.Yes,
-				RightToLeftLayout = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			lblClient = MakeLabel("العميل :", 330, 12);
-			lblClient.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // col0: label
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));  // col1: control
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col2: label
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));  // col3: control
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
+
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+			// Row 0: Client & Statement, Date, Type Buttons
+			lblClient = MakeLabel("العميل :", 0, 0);
+			lblClient.Dock = DockStyle.Fill;
+			lblClient.TextAlign = ContentAlignment.MiddleRight;
+			lblClient.Margin = new Padding(2);
+
+			var pnlClient = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
 			cboClient = new ComboBox
 			{
-				Location = new Point(110, 8),
-				Width = 210,
+				Dock = DockStyle.Fill,
 				DropDownStyle = ComboBoxStyle.DropDown,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboClient);
-			lblDriver = MakeLabel("المندوب :", 840, 48);
-			lblDriver.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			cboDriver = new ComboBox
-			{
-				Location = new Point(630, 44),
-				Width = 200,
-				DropDownStyle = ComboBoxStyle.DropDown,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			SetupSearchableCombo(cboDriver);
-			Label label2 = MakeLabel("الصنف :", 560, 48);
-			label2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			cboProduct = new ComboBox
-			{
-				Location = new Point(50, 44),
-				Width = 500,
-				DropDownStyle = ComboBoxStyle.DropDown,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			SetupSearchableCombo(cboProduct);
-			btnSearchProduct = new Button
-			{
-				Text = "🔍",
-				Location = new Point(10, 43),
-				Size = new Size(35, 24),
-				BackColor = Theme.Accent,
-				ForeColor = Color.White,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			btnSearchProduct.FlatAppearance.BorderSize = 0;
-			btnSearchProduct.Click += BtnSearchProduct_Click;
-
-			// Background initialization to prevent NullReferenceException:
-			nudQty = new NumericUpDown { Value = 1m };
-			txtPrice = new TextBox();
-			btnAddItem = new Button();
-
-			// ─── الصف الثالث: ملاحظات + مُختار المخزن ───
-			lblNotes = MakeLabel("ملاحظات :", 840, 84);
-			lblNotes.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			txtNotes = new TextBox
-			{
-				Location = new Point(110, 80),
-				Width = 340,  // مُقصَّر لإفساح المكان للمخزن
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				BorderStyle = BorderStyle.FixedSingle,
-				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-
-			// مُختار المخزن (صف 3 - يمين)
-			var lblWarehouse = MakeLabel("المخزن :", 670, 84);
-			lblWarehouse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			cboWarehouse = new ComboBox
-			{
-				Location = new Point(460, 80),
-				Width = 200,
-				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-
-			// ─── الصف الرابع: أزرار فئة السعر ───
-			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
-			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
-			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
-			Color clrOff         = Theme.BgInput;
-
-			var lblTierRow = MakeLabel("فئة السعر :", 840, 122);
-			lblTierRow.ForeColor = Theme.TextSub;
-			lblTierRow.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-			btnTierRetail = new Button
-			{
-				Text = "🔵 قطاعي",
-				Location = new Point(640, 118),
-				Size = new Size(95, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrRetailOn,
-				ForeColor = Color.White,
-				Cursor = Cursors.Hand,
-				Anchor = AnchorStyles.Top | AnchorStyles.Right
-			};
-			btnTierRetail.FlatAppearance.BorderSize = 0;
-			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
-
-			btnTierSemi = new Button
-			{
-				Text = "🟣 نصف جملة",
-				Location = new Point(530, 118),
-				Size = new Size(105, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrOff,
-				ForeColor = Theme.TextMain,
-				Cursor = Cursors.Hand,
-				Anchor = AnchorStyles.Top | AnchorStyles.Right
-			};
-			btnTierSemi.FlatAppearance.BorderSize = 0;
-			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
-
-			btnTierWholesale = new Button
-			{
-				Text = "🟠 جملة",
-				Location = new Point(420, 118),
-				Size = new Size(105, 28),
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrOff,
-				ForeColor = Theme.TextMain,
-				Cursor = Cursors.Hand,
-				Anchor = AnchorStyles.Top | AnchorStyles.Right
-			};
-			btnTierWholesale.FlatAppearance.BorderSize = 0;
-			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
 
 			Button btnClientStatement = new Button
 			{
 				Text = "📋 كشف",
-				Location = new Point(10, 8),
-				Size = new Size(95, 28),
+				Width = 65,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = Theme.Primary,
 				ForeColor = Color.White,
 				Cursor = Cursors.Hand,
-				Anchor = AnchorStyles.Top | AnchorStyles.Right
+				Dock = DockStyle.Left,
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			btnClientStatement.FlatAppearance.BorderSize = 0;
 			btnClientStatement.Click += (s, e) => {
@@ -348,13 +184,272 @@ namespace ChickenDist.Forms
 					MessageBox.Show("الرجاء اختيار عميل أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				}
 			};
+			pnlClient.Controls.Add(cboClient);
+			pnlClient.Controls.Add(btnClientStatement);
 
-			panel.Controls.AddRange(new Control[]
+			lblDate = MakeLabel("التاريخ :", 0, 0);
+			lblDate.Dock = DockStyle.Fill;
+			lblDate.TextAlign = ContentAlignment.MiddleRight;
+			lblDate.Margin = new Padding(2);
+
+			dtpDate = new DateTimePicker
 			{
-				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
-				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes, lblWarehouse, cboWarehouse,
-				lblTierRow, btnTierRetail, btnTierSemi, btnTierWholesale
-			});
+				Dock = DockStyle.Fill,
+				Format = DateTimePickerFormat.Short,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			Label label = MakeLabel("نوع الفاتورة :", 0, 0);
+			label.Dock = DockStyle.Fill;
+			label.TextAlign = ContentAlignment.MiddleRight;
+			label.Margin = new Padding(2);
+
+			btnTypeCredit = new Button
+			{
+				Text = "آجل",
+				Width = 65,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTypeCredit.FlatAppearance.BorderSize = 0;
+			btnTypeCredit.Click += delegate
+			{
+				SetInvoiceType("Credit");
+			};
+
+			btnTypeCash = new Button
+			{
+				Text = "نقدي",
+				Width = 65,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTypeCash.FlatAppearance.BorderSize = 0;
+			btnTypeCash.Click += delegate
+			{
+				SetInvoiceType("Cash");
+			};
+
+			btnTypeDriverLoad = new Button
+			{
+				Text = "تحميل مندوب",
+				Width = 90,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
+			btnTypeDriverLoad.Click += delegate
+			{
+				SetInvoiceType("DriverLoad");
+			};
+
+			var pnlTypeBtns = new FlowLayoutPanel
+			{
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Color.Transparent,
+				Dock = DockStyle.Fill,
+				WrapContents = false,
+				Margin = new Padding(0, 4, 0, 0)
+			};
+			pnlTypeBtns.Controls.Add(btnTypeDriverLoad);
+			pnlTypeBtns.Controls.Add(btnTypeCash);
+			pnlTypeBtns.Controls.Add(btnTypeCredit);
+
+			// Row 1: Driver, Product & Search (spanning 3 columns)
+			lblDriver = MakeLabel("المندوب :", 0, 0);
+			lblDriver.Dock = DockStyle.Fill;
+			lblDriver.TextAlign = ContentAlignment.MiddleRight;
+			lblDriver.Margin = new Padding(2);
+
+			cboDriver = new ComboBox
+			{
+				Dock = DockStyle.Fill,
+				DropDownStyle = ComboBoxStyle.DropDown,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+			SetupSearchableCombo(cboDriver);
+
+			Label label2 = MakeLabel("الصنف :", 0, 0);
+			label2.Dock = DockStyle.Fill;
+			label2.TextAlign = ContentAlignment.MiddleRight;
+			label2.Margin = new Padding(2);
+
+			var pnlProduct = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
+			cboProduct = new ComboBox
+			{
+				Dock = DockStyle.Fill,
+				DropDownStyle = ComboBoxStyle.DropDown,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+			SetupSearchableCombo(cboProduct);
+
+			btnSearchProduct = new Button
+			{
+				Text = "🔍",
+				Width = 35,
+				Height = 28,
+				BackColor = Theme.Accent,
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+			btnSearchProduct.FlatAppearance.BorderSize = 0;
+			btnSearchProduct.Click += BtnSearchProduct_Click;
+
+			pnlProduct.Controls.Add(cboProduct);
+			pnlProduct.Controls.Add(btnSearchProduct);
+
+			// Background initialization to prevent NullReferenceException:
+			nudQty = new NumericUpDown { Value = 1m };
+			txtPrice = new TextBox();
+			btnAddItem = new Button();
+
+			// Row 2: Notes, Warehouse
+			lblNotes = MakeLabel("ملاحظات :", 0, 0);
+			lblNotes.Dock = DockStyle.Fill;
+			lblNotes.TextAlign = ContentAlignment.MiddleRight;
+			lblNotes.Margin = new Padding(2);
+
+			txtNotes = new TextBox
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
+			lblWarehouse.Dock = DockStyle.Fill;
+			lblWarehouse.TextAlign = ContentAlignment.MiddleRight;
+			lblWarehouse.Margin = new Padding(2);
+
+			cboWarehouse = new ComboBox
+			{
+				Dock = DockStyle.Fill,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			// Row 3: Price Tiers (spanning 5 columns)
+			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
+			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
+			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
+			Color clrOff         = Theme.BgInput;
+
+			var lblTierRow = MakeLabel("فئة السعر :", 0, 0);
+			lblTierRow.Dock = DockStyle.Fill;
+			lblTierRow.TextAlign = ContentAlignment.MiddleRight;
+			lblTierRow.ForeColor = Theme.TextSub;
+			lblTierRow.Margin = new Padding(2);
+
+			btnTierRetail = new Button
+			{
+				Text = "🔵 قطاعي",
+				Width = 95,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = clrRetailOn,
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTierRetail.FlatAppearance.BorderSize = 0;
+			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
+
+			btnTierSemi = new Button
+			{
+				Text = "🟣 نصف جملة",
+				Width = 105,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = clrOff,
+				ForeColor = Theme.TextMain,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTierSemi.FlatAppearance.BorderSize = 0;
+			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+
+			btnTierWholesale = new Button
+			{
+				Text = "🟠 جملة",
+				Width = 105,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = clrOff,
+				ForeColor = Theme.TextMain,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTierWholesale.FlatAppearance.BorderSize = 0;
+			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
+
+			var pnlTierBtns = new FlowLayoutPanel
+			{
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Color.Transparent,
+				Dock = DockStyle.Fill,
+				WrapContents = false,
+				Margin = new Padding(0, 4, 0, 0)
+			};
+			pnlTierBtns.Controls.Add(btnTierWholesale);
+			pnlTierBtns.Controls.Add(btnTierSemi);
+			pnlTierBtns.Controls.Add(btnTierRetail);
+
+			// Add to TableLayoutPanel
+			tbl.Controls.Add(lblClient, 0, 0);
+			tbl.Controls.Add(pnlClient, 1, 0);
+			tbl.Controls.Add(lblDate, 2, 0);
+			tbl.Controls.Add(dtpDate, 3, 0);
+			tbl.Controls.Add(label, 4, 0);
+			tbl.Controls.Add(pnlTypeBtns, 5, 0);
+
+			tbl.Controls.Add(lblDriver, 0, 1);
+			tbl.Controls.Add(cboDriver, 1, 1);
+			tbl.Controls.Add(label2, 2, 1);
+			tbl.Controls.Add(pnlProduct, 3, 1);
+			tbl.SetColumnSpan(pnlProduct, 3);
+
+			tbl.Controls.Add(lblNotes, 0, 2);
+			tbl.Controls.Add(txtNotes, 1, 2);
+			tbl.Controls.Add(lblWarehouse, 2, 2);
+			tbl.Controls.Add(cboWarehouse, 3, 2);
+
+			tbl.Controls.Add(lblTierRow, 0, 3);
+			tbl.Controls.Add(pnlTierBtns, 1, 3);
+			tbl.SetColumnSpan(pnlTierBtns, 5);
+
+			panel.Controls.Add(tbl);
 			pnlItems = new Panel
 			{
 				Dock = DockStyle.Fill,

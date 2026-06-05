@@ -73,38 +73,40 @@ namespace ChickenDist.Forms
             // Panel Left: Grid and filters (Dock Fill)
             var pnlLeft = new Panel { Dock = DockStyle.Fill };
 
-            var pnlF = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(8) };
+            var pnlF = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 55,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10, 10, 10, 10),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false
+            };
 
-            pnlF.Controls.Add(new Label { Text = "المخزن:", Location = new Point(920, 15), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
-            cboWarehouse = new ComboBox { Location = new Point(720, 11), Width = 190, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(5, 8, 5, 0) };
+            cboWarehouse = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
             cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
-            pnlF.Controls.Add(cboWarehouse);
-            
-            pnlF.Controls.Add(new Label { Text = "بحث عن صنف:", Location = new Point(600, 15), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
-            
-            txtSearch = new TextBox { Location = new Point(400, 11), Width = 190, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+
+            var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
+            txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(5, 4, 5, 0) };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadStock(); };
-            pnlF.Controls.Add(txtSearch);
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
-            btnSearch.Location = new Point(310, 8);
-            btnSearch.Size = new Size(80, 32);
-            btnSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnSearch.Size = new Size(80, 30);
+            btnSearch.Margin = new Padding(5, 0, 5, 0);
             btnSearch.Click += (s, e) => LoadStock();
-            pnlF.Controls.Add(btnSearch);
 
             btnMovement = Theme.MakeButton("📊 كشف حركة الصنف", Theme.Primary);
-            btnMovement.Location = new Point(130, 8);
-            btnMovement.Size = new Size(170, 32);
-            btnMovement.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnMovement.Size = new Size(150, 30);
+            btnMovement.Margin = new Padding(5, 0, 5, 0);
             btnMovement.Click += BtnMovement_Click;
-            pnlF.Controls.Add(btnMovement);
 
             btnPrintStock = Theme.MakeButton("🖨 طباعة ورقة الجرد", Theme.Accent);
-            btnPrintStock.Location = new Point(10, 8);
-            btnPrintStock.Size = new Size(110, 32);
+            btnPrintStock.Size = new Size(130, 30);
+            btnPrintStock.Margin = new Padding(5, 0, 5, 0);
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
-            pnlF.Controls.Add(btnPrintStock);
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblSch, txtSearch, btnSearch, btnMovement, btnPrintStock });
 
             dgStock = MakeGrid();
             dgStock.ReadOnly = false;
