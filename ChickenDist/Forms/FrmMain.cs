@@ -166,6 +166,7 @@ namespace ChickenDist.Forms
 
                 // ── الإدارة ───────────────────────────────────────────
                 ("👔", "الموظفين",         "Employees",      () => NavigateTo(new FrmEmployees()),      Color.FromArgb(55, 65, 81)),
+                ("💰", "حسابات الموظفين",  "Employees",      () => NavigateTo(new FrmEmployeeTransactions()), Color.FromArgb(55, 65, 81)),
                 ("⚙️", "الإعدادات",       "",               () => new FrmSettings().ShowDialog(),      Color.FromArgb(55, 65, 81)),
                 ("🔄", "تحديث البرنامج",   "",               () => UpdateManager.CheckForUpdates(true), Color.FromArgb(55, 65, 81)),
             };

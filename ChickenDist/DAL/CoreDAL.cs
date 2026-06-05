@@ -98,6 +98,112 @@ namespace ChickenDist.DAL
                 DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice) VALUES(@e,@s,@a,@ep,@cesi)",
                     DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice));
         }
+
+        public static DataTable GetTransactions(int empID, DateTime from, DateTime to, string typeFilter)
+        {
+            string sql = @"
+                SELECT et.TransID, et.TransDate, et.TransType, et.Debit, et.Credit, et.RefID, et.Notes,
+                       creator.EmpName AS CreatedByName
+                FROM EmployeeTransactions et
+                LEFT JOIN Employees creator ON et.CreatedBy = creator.EmpID
+                WHERE et.EmpID = @empID
+                  AND CAST(et.TransDate AS DATE) BETWEEN @from AND @to";
+            
+            System.Collections.Generic.List<SqlParameter> pList = new System.Collections.Generic.List<SqlParameter> {
+                DbHelper.P("@empID", empID),
+                DbHelper.P("@from", from.Date),
+                DbHelper.P("@to", to.Date)
+            };
+
+            if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All")
+            {
+                sql += " AND et.TransType = @type";
+                pList.Add(DbHelper.P("@type", typeFilter));
+            }
+
+            sql += " ORDER BY et.TransDate DESC, et.TransID DESC";
+            return DbHelper.Query(sql, pList.ToArray());
+        }
+
+        public static decimal GetBalance(int empID)
+        {
+            var result = DbHelper.Scalar(
+                "SELECT Balance FROM vw_EmployeeBalance WHERE EmpID = @id",
+                DbHelper.P("@id", empID));
+            return result != null && result != DBNull.Value ? Convert.ToDecimal(result) : 0m;
+        }
+
+        public static int SaveTransaction(int empID, DateTime date, string transType, decimal debit, decimal credit, string notes, bool affectCash)
+        {
+            int transID = -1;
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. Insert into EmployeeTransactions
+                transID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO EmployeeTransactions(EmpID, TransDate, TransType, Debit, Credit, Notes, CreatedBy)
+                      VALUES(@empID, @date, @type, @debit, @credit, @notes, @by)",
+                    DbHelper.P("@empID", empID),
+                    DbHelper.P("@date", date),
+                    DbHelper.P("@type", transType),
+                    DbHelper.P("@debit", debit),
+                    DbHelper.P("@credit", credit),
+                    DbHelper.P("@notes", notes),
+                    DbHelper.P("@by", Session.EmpID));
+
+                if (transID <= 0) throw new Exception("فشل في حفظ حركة الموظف.");
+
+                // 2. If it affects cash, insert into CashBox
+                if (affectCash)
+                {
+                    decimal amtIn = 0;
+                    decimal amtOut = 0;
+                    string cashType = "";
+
+                    if (debit > 0)
+                    {
+                        amtOut = debit;
+                        cashType = transType == "Advance" ? "EmpAdvance" : "EmpPaymentOut";
+                    }
+                    else if (credit > 0)
+                    {
+                        amtIn = credit;
+                        cashType = "EmpPaymentIn";
+                    }
+
+                    if (amtIn > 0 || amtOut > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO CashBox(TransDate, TransType, AmountIn, AmountOut, RefID, Notes, CreatedBy)
+                              VALUES(@date, @cashType, @amtIn, @amtOut, @ref, @notes, @by)",
+                            DbHelper.P("@date", date),
+                            DbHelper.P("@cashType", cashType),
+                            DbHelper.P("@amtIn", amtIn),
+                            DbHelper.P("@amtOut", amtOut),
+                            DbHelper.P("@ref", transID),
+                            DbHelper.P("@notes", notes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
+            });
+
+            return transID;
+        }
+
+        public static void DeleteTransaction(int transID)
+        {
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. Delete from CashBox first
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('EmpAdvance', 'EmpPaymentOut', 'EmpPaymentIn')",
+                    DbHelper.P("@id", transID));
+
+                // 2. Delete from EmployeeTransactions
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM EmployeeTransactions WHERE TransID=@id",
+                    DbHelper.P("@id", transID));
+            });
+        }
     }
 
     // =================== Product DAL ===================

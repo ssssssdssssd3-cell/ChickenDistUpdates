@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         private Panel pnlStock;
         private Label lblStockHeader;
         private TextBox txtProductSearch;
+        private CheckBox chkQtyOnly;
         private DataGridView dgStock;
         private Label lblTotals;
         private Button btnRefreshStock;
@@ -62,8 +63,8 @@ namespace ChickenDist.Forms
                 RowCount = 1,
                 Padding = new Padding(6)
             };
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62f)); // محتوى المخازن + الكميات
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38f)); // نموذج التعديل
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // محتوى المخازن + الكميات
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f)); // نموذج التعديل
 
             // ══════ العمود الأيسر: قائمة المخازن + لوحة الكميات ══════
             var pnlLeft = new Panel { Dock = DockStyle.Fill };
@@ -141,7 +142,7 @@ namespace ChickenDist.Forms
                 Text = "📦 كميات المخزن",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Theme.Primary,
-                Location = new Point(400, 12), AutoSize = true
+                Location = new Point(560, 12), AutoSize = true
             };
             var lblProdSearch = new Label
             {
@@ -177,7 +178,17 @@ namespace ChickenDist.Forms
             btnLowStock.FlatAppearance.BorderSize = 0;
             btnLowStock.Click += (s, e) => LoadStock(lowStockOnly: true);
 
-            pnlStockHeader.Controls.AddRange(new Control[] { lblStockHeader, lblProdSearch, txtProductSearch, btnRefreshStock, btnLowStock });
+            chkQtyOnly = new CheckBox
+            {
+                Text = "كميات متوفرة فقط",
+                Location = new Point(400, 12), Size = new Size(150, 26),
+                ForeColor = Theme.TextMain,
+                Checked = true,
+                Font = Theme.FontMain
+            };
+            chkQtyOnly.CheckedChanged += (s, e) => LoadStock();
+
+            pnlStockHeader.Controls.AddRange(new Control[] { lblStockHeader, lblProdSearch, txtProductSearch, btnRefreshStock, btnLowStock, chkQtyOnly });
 
             // جريد الكميات
             dgStock = new DataGridView
@@ -389,6 +400,9 @@ namespace ChickenDist.Forms
                     bool    isLow    = minStock > 0 && qty < minStock;
 
                     if (lowStockOnly && !isLow) continue;
+                    
+                    bool qtyOnly = chkQtyOnly != null && chkQtyOnly.Checked;
+                    if (qtyOnly && qty <= 0m) continue;
 
                     int ri = dgStock.Rows.Add(
                         row["ProductCode"],

@@ -492,6 +492,34 @@ namespace ChickenDist.Forms
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "PartNumber",
+				HeaderText = "رقم القطعة",
+				ReadOnly = true,
+				FillWeight = 40f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "CarModel",
+				HeaderText = "الموديل",
+				ReadOnly = true,
+				FillWeight = 40f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "Brand",
+				HeaderText = "الماركة",
+				ReadOnly = true,
+				FillWeight = 40f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "ShelfLocation",
+				HeaderText = "الرف",
+				ReadOnly = true,
+				FillWeight = 30f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "StockQty",
 				HeaderText = "الرصيد الفعلي",
 				ReadOnly = true,
@@ -926,14 +954,19 @@ namespace ChickenDist.Forms
 					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
 					: $"{name} ({price:N2})";
 
-				cboProduct.Items.Add(new ComboItem(
+				var comboItem = new ComboItem(
 					(int)row3["ProductID"], 
 					name,
 					displayText,
 					price, 
 					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 					purchasePrice
-				));
+				);
+				comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
+				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
+				comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+				cboProduct.Items.Add(comboItem);
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -971,7 +1004,11 @@ namespace ChickenDist.Forms
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
 						MinStockLimit = comboItem.MinStockLimit,
-						PurchasePrice = comboItem.PurchasePrice
+						PurchasePrice = comboItem.PurchasePrice,
+						PartNumber = comboItem.PartNumber,
+						CarModel = comboItem.CarModel,
+						Brand = comboItem.Brand,
+						ShelfLocation = comboItem.ShelfLocation
 					});
 
 					RefreshGrid();
@@ -1207,12 +1244,16 @@ namespace ChickenDist.Forms
 			_items.Add(new SaleItemDTO
 			{
 				ProductID = comboItem.ID,
-				ProductName = comboItem.Text,
+				ProductName = comboItem.Name,
 				Quantity = value,
 				UnitPrice = result,
 				StockQty = productStock,
 				MinStockLimit = comboItem.MinStockLimit,
-				PurchasePrice = comboItem.PurchasePrice
+				PurchasePrice = comboItem.PurchasePrice,
+				PartNumber = comboItem.PartNumber,
+				CarModel = comboItem.CarModel,
+				Brand = comboItem.Brand,
+				ShelfLocation = comboItem.ShelfLocation
 			});
 			RefreshGrid();
 		}
@@ -1329,6 +1370,10 @@ namespace ChickenDist.Forms
 				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
 					item.ProductName,
+					item.PartNumber,
+					item.CarModel,
+					item.Brand,
+					item.ShelfLocation,
 					item.StockQty.ToString("F2"),
 					item.Quantity.ToString("F2"),
 					item.UnitPrice.ToString("F2"),
@@ -1514,7 +1559,11 @@ namespace ChickenDist.Forms
 					DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
 					PriceTier   = iRow["PriceTier"].ToString(),
 					StockQty    = stock,
-					PurchasePrice = iRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["PurchasePrice"]) : 0m
+					PurchasePrice = iRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["PurchasePrice"]) : 0m,
+					PartNumber  = iRow["PartNumber"]?.ToString() ?? "",
+					CarModel    = iRow["CarModel"]?.ToString() ?? "",
+					Brand       = iRow["Brand"]?.ToString() ?? "",
+					ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? ""
 				});
 			}
 			RefreshGrid();
@@ -1852,7 +1901,12 @@ namespace ChickenDist.Forms
 						Quantity = Convert.ToDecimal(iRow["Quantity"]),
 						UnitPrice = Convert.ToDecimal(iRow["UnitPrice"]),
 						DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
-						DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"])
+						DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+						PartNumber = iRow["PartNumber"]?.ToString() ?? "",
+						CarModel = iRow["CarModel"]?.ToString() ?? "",
+						Brand = iRow["Brand"]?.ToString() ?? "",
+						ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? "",
+						PurchasePrice = iRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["PurchasePrice"]) : 0m
 					});
 				}
 				RefreshGrid();
@@ -2184,6 +2238,11 @@ namespace ChickenDist.Forms
 		public decimal MinStockLimit { get; }
 
 		public decimal PurchasePrice { get; }
+
+		public string PartNumber { get; set; } = "";
+		public string CarModel { get; set; } = "";
+		public string Brand { get; set; } = "";
+		public string ShelfLocation { get; set; } = "";
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{
