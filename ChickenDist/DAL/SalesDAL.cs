@@ -615,7 +615,8 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveHandover(int loadID, int driverID,
-            List<HandoverItemDTO> items, string notes, decimal cashCollected)
+            List<HandoverItemDTO> items, string notes, decimal cashCollected,
+            string settlementType = null, decimal deficitValue = 0m, string settlementNotes = null)
         {
             decimal totLoaded = 0, totRet = 0, totDead = 0, totExtra = 0, totDef = 0;
             decimal totalSoldValue = 0;
@@ -675,11 +676,36 @@ namespace ChickenDist.DAL
                         DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID}) — مبيعات ({totalSoldValue:N2})"),
                         DbHelper.P("@by", Session.EmpID));
                 }
+
+                // 5. تسوية العجز المالي المباشرة داخل الـ Transaction لضمان سلامة البيانات
+                if (deficitValue > 0.009m && !string.IsNullOrEmpty(settlementType) && settlementType != "Skip")
+                {
+                    if (settlementType == "Advance" || settlementType == "Deduction")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO EmployeeTransactions(EmpID, TransType, Debit, RefID, Notes, CreatedBy)
+                              VALUES(@eid, @type, @amt, @ref, @n, @by)",
+                            DbHelper.P("@eid", driverID),
+                            DbHelper.P("@type", settlementType == "Advance" ? "DeficitCharge" : "Deduction"),
+                            DbHelper.P("@amt", deficitValue),
+                            DbHelper.P("@ref", loadID),
+                            DbHelper.P("@n", settlementNotes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                    else if (settlementType == "CompanyExpense")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO Expenses(ExpenseDate, ExpenseType, Amount, Notes, CreatedBy)
+                              VALUES(GETDATE(), N'عجز حمولة مندوب', @amt, @n, @by)",
+                            DbHelper.P("@amt", deficitValue),
+                            DbHelper.P("@n", settlementNotes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
             });
             // ===== نهاية Transaction الأساسي =====
-            // قيد الخزنة (cashCollected) تم داخل Transaction الأساسي أعلاه بشكل آمن
 
-            AppLogger.Audit("تقفيل حمولة مندوب", $"LoadID: {loadID}, DriverID: {driverID}, HandoverID: {hvID}, كاش محصل: {cashCollected:N2}");
+            AppLogger.Audit("تقفيل حمولة مندوب", $"LoadID: {loadID}, DriverID: {driverID}, HandoverID: {hvID}, كاش محصل: {cashCollected:N2}, تسوية العجز: {settlementType}");
 
             return hvID;
         }
@@ -1164,19 +1190,21 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var dtSale = DbHelper.Query("SELECT SaleType, ClientID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                var dtSale = DbHelper.Query("SELECT SaleType, ClientID, WarehouseID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
                 string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
+                int whID = (dtSale.Rows.Count > 0 && dtSale.Rows[0]["WarehouseID"] != DBNull.Value) ? Convert.ToInt32(dtSale.Rows[0]["WarehouseID"]) : 1;
 
                 // استخدم clientID من الفاتورة الأصلية إذا لم يُحدَّد في الشاشة
                 if (!clientID.HasValue && dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
                     clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
 
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid)",
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@wid", whID));
 
                 if (retID <= 0) throw new Exception("فشل إنشاء سجل المرتجع.");
 

@@ -1606,7 +1606,7 @@ namespace ChickenDist.Forms
 			// ─── التحقق من المخزون ───
 			foreach (SaleItemDTO item in _items)
 			{
-				decimal productStock = InventoryDAL.GetProductStock(item.ProductID);
+				decimal productStock = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
 				decimal quantityToCheck = item.Quantity;
 
 				if (_editSaleID > 0)

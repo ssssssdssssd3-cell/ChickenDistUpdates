@@ -394,9 +394,23 @@ namespace ChickenDist.Forms
             UpdateTotals();
         }
 
+        private bool BulletproofTryParse(string input, out decimal result)
+        {
+            result = 0m;
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            if (decimal.TryParse(input, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out result))
+                return true;
+            if (decimal.TryParse(input, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out result))
+                return true;
+            string normalized = input.Replace(',', '.');
+            if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out result))
+                return true;
+            return false;
+        }
+
         private void TryParse(DataGridViewRow row, string col, Action<decimal> setter)
         {
-            if (decimal.TryParse(row.Cells[col].Value?.ToString(), out decimal v))
+            if (BulletproofTryParse(row.Cells[col].Value?.ToString(), out decimal v))
             {
                 if (v < 0) v = 0;
                 setter(v);
@@ -436,10 +450,16 @@ namespace ChickenDist.Forms
                 txtCashCollected.Text = tCash.ToString("N2");
         }
 
+        private class DeficitSettlementResult
+        {
+            public string Type { get; set; }
+            public string Notes { get; set; }
+        }
+
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (_loadID == 0 || _items.Count == 0) { MessageBox.Show("لا توجد بيانات للحفظ"); return; }
-            if (!decimal.TryParse(txtCashCollected.Text, out decimal cashCollected) || cashCollected < 0)
+            if (!BulletproofTryParse(txtCashCollected.Text, out decimal cashCollected) || cashCollected < 0)
             {
                 MessageBox.Show("يرجى إدخال المبلغ المحصل بشكل صحيح");
                 return;
@@ -466,44 +486,56 @@ namespace ChickenDist.Forms
                 }
             }
 
-            if (MessageBox.Show("هل تريد تقفيل الحمولة وإغلاقها نهائياً؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-
-            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected);
-            if (hvID <= 0)
-            {
-                MessageBox.Show("❌ فشل الحفظ", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            // ===== معالجة العجز المالي الذكي =====
             decimal totalDeficitValue = 0;
             foreach (var it in _items)
                 totalDeficitValue += it.DeficitValue;
 
+            string settlementType = "Skip";
+            string settlementNotes = "";
+
             if (totalDeficitValue > 0.01m)
             {
-                ShowDeficitSettlementDialog(totalDeficitValue, _loadID);
+                var settlement = ShowDeficitSettlementDialog(totalDeficitValue);
+                if (settlement == null)
+                {
+                    MessageBox.Show("❌ تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                settlementType = settlement.Type;
+                settlementNotes = settlement.Notes;
             }
 
-            MessageBox.Show(
-                $"✅ تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة.",
-                "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (MessageBox.Show("هل تريد تقفيل الحمولة وإغلاقها نهائياً؟", "تأكيد التقفيل", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            CboDriver_SelectedIndexChanged(null, null);
-            dgItems.Rows.Clear();
-            _items.Clear();
-            _loadID = 0;
-            txtNotes.Clear();
-            txtCashCollected.Text = "0.00";
+            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected, settlementType, totalDeficitValue, settlementNotes);
+            if (hvID > 0)
+            {
+                string extraMsg = "";
+                if (totalDeficitValue > 0.01m && settlementType != "Skip")
+                {
+                    if (settlementType == "Advance") extraMsg = "\nتم تسجيل العجز كمديونية/سلفة على المندوب.";
+                    else if (settlementType == "Deduction") extraMsg = "\nتم خصم العجز من مستحقات المندوب.";
+                    else if (settlementType == "CompanyExpense") extraMsg = "\nتم تحميل العجز على الشركة كمصروف تشغيلي.";
+                }
+
+                MessageBox.Show($"✅ تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة.{extraMsg}", "تم التقفيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CboDriver_SelectedIndexChanged(null, null);
+                dgItems.Rows.Clear();
+                _items.Clear();
+                _loadID = 0;
+                txtNotes.Clear();
+                txtCashCollected.Text = "0.00";
+            }
+            else MessageBox.Show("❌ فشل الحفظ، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        /// <summary>نافذة تسوية العجز المالي — 3 خيارات للمحاسب</summary>
-        private void ShowDeficitSettlementDialog(decimal deficitValue, int loadID)
+        private DeficitSettlementResult ShowDeficitSettlementDialog(decimal deficitValue)
         {
+            DeficitSettlementResult result = null;
             using (var dlg = new Form())
             {
                 dlg.Text = "💰 تسوية العجز المالي";
-                dlg.Size = new Size(500, 320);
+                dlg.Size = new Size(500, 340);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -543,9 +575,12 @@ namespace ChickenDist.Forms
                 btnAdvance.Margin = new Padding(0, 0, 0, 8);
                 btnAdvance.Click += (s, ev) =>
                 {
-                    DriverDAL.SettleDeficit(_driverID, loadID, deficitValue, "Advance",
-                        $"عجز حمولة #{loadID} — قيمة {deficitValue:N2} ج");
-                    MessageBox.Show("✅ تم تسجيل العجز كسلفة على المندوب.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    result = new DeficitSettlementResult
+                    {
+                        Type = "Advance",
+                        Notes = $"عجز حمولة #{_loadID} — قيمة {deficitValue:N2} ج"
+                    };
+                    dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
 
@@ -554,9 +589,12 @@ namespace ChickenDist.Forms
                 btnCompany.Margin = new Padding(0, 0, 0, 8);
                 btnCompany.Click += (s, ev) =>
                 {
-                    DriverDAL.SettleDeficit(_driverID, loadID, deficitValue, "CompanyExpense",
-                        $"عجز تشغيلي — حمولة #{loadID} — مندوب #{_driverID} — {deficitValue:N2} ج");
-                    MessageBox.Show("✅ تم تحميل العجز على الشركة كمصروف تشغيلي.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    result = new DeficitSettlementResult
+                    {
+                        Type = "CompanyExpense",
+                        Notes = $"عجز تشغيلي — حمولة #{_loadID} — مندوب #{_driverID} — {deficitValue:N2} ج"
+                    };
+                    dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
 
@@ -565,9 +603,12 @@ namespace ChickenDist.Forms
                 btnDeduct.Margin = new Padding(0, 0, 0, 8);
                 btnDeduct.Click += (s, ev) =>
                 {
-                    DriverDAL.SettleDeficit(_driverID, loadID, deficitValue, "Deduction",
-                        $"خصم عجز حمولة #{loadID} — {deficitValue:N2} ج");
-                    MessageBox.Show("✅ تم تسجيل الخصم من مستحقات المندوب.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    result = new DeficitSettlementResult
+                    {
+                        Type = "Deduction",
+                        Notes = $"خصم عجز حمولة #{_loadID} — {deficitValue:N2} ج"
+                    };
+                    dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
 
@@ -579,11 +620,25 @@ namespace ChickenDist.Forms
                     ForeColor = Theme.TextSub,
                     BackColor = Theme.BgCard
                 };
-                btnSkip.Click += (s, ev) => dlg.Close();
+                btnSkip.Click += (s, ev) =>
+                {
+                    result = new DeficitSettlementResult
+                    {
+                        Type = "Skip",
+                        Notes = ""
+                    };
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
 
                 pnl.Controls.AddRange(new Control[] { lblTitle, lblSub, btnAdvance, btnCompany, btnDeduct, btnSkip });
                 dlg.Controls.Add(pnl);
-                dlg.ShowDialog(this);
+                
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    return result;
+                }
+                return null;
             }
         }
 
