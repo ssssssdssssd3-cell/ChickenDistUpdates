@@ -611,6 +611,77 @@ namespace ChickenDist.Core
                 END
                 EXEC('UPDATE Sales SET LastModifiedDate = GETDATE() WHERE LastModifiedDate IS NULL');";
                 Execute(sqlInvoiceEditingAndTiers);
+
+                // ===== جدول رصيد الأصناف لكل مخزن (ProductStock) =====
+                string sqlProductStock = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductStock')
+                BEGIN
+                    CREATE TABLE ProductStock (
+                        StockID     INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID   INT NOT NULL REFERENCES Products(ProductID) ON DELETE CASCADE,
+                        WarehouseID INT NOT NULL REFERENCES Warehouses(WarehouseID),
+                        Quantity    DECIMAL(10,3) NOT NULL DEFAULT 0,
+                        LastUpdated DATETIME DEFAULT GETDATE(),
+                        CONSTRAINT UQ_ProductStock UNIQUE (ProductID, WarehouseID)
+                    );
+                END";
+                Execute(sqlProductStock);
+
+                // ===== عرض رصيد العملاء vw_ClientBalance =====
+                string sqlClientBalanceView = @"
+                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance')
+                BEGIN
+                    EXEC('CREATE VIEW vw_ClientBalance AS
+                    SELECT
+                        c.ClientID,
+                        c.ClientName,
+                        c.Phone,
+                        c.OpeningBalance,
+                        ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
+                        ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
+                        c.OpeningBalance
+                            + ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0)
+                            - ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS Balance
+                    FROM Clients c
+                    LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
+                    GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance')
+                END";
+                Execute(sqlClientBalanceView);
+
+                // ===== عرض رصيد الخزنة vw_CashBalance =====
+                string sqlCashBalanceView = @"
+                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CashBalance')
+                BEGIN
+                    EXEC('CREATE VIEW vw_CashBalance AS
+                    SELECT
+                        ISNULL(SUM(AmountIn),0)  AS TotalIn,
+                        ISNULL(SUM(AmountOut),0) AS TotalOut,
+                        ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) AS Balance
+                    FROM CashBox')
+                END";
+                Execute(sqlCashBalanceView);
+
+                // ===== عرض مخزون الأصناف vw_ProductStock =====
+                string sqlProductStockView = @"
+                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ProductStock')
+                BEGIN
+                    EXEC('CREATE VIEW vw_ProductStock AS
+                    SELECT
+                        p.ProductID,
+                        p.ProductCode,
+                        p.ProductName,
+                        p.PartNumber,
+                        p.MinStockLimit,
+                        w.WarehouseID,
+                        w.WarehouseName,
+                        ISNULL(ps.Quantity, 0) AS StockQty,
+                        CASE WHEN ISNULL(ps.Quantity, 0) <= p.MinStockLimit THEN 1 ELSE 0 END AS IsBelowMin
+                    FROM Products p
+                    CROSS JOIN Warehouses w
+                    LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
+                    WHERE p.IsActive = 1 AND w.IsActive = 1')
+                END";
+                Execute(sqlProductStockView);
             }
             catch (Exception ex)
             {

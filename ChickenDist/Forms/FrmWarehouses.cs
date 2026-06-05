@@ -231,9 +231,9 @@ namespace ChickenDist.Forms
             pnlStock.Controls.Add(lblTotals);
             pnlStock.Controls.Add(pnlStockHeader);
 
-            pnlLeft.Controls.Add(pnlStock);
-            pnlLeft.Controls.Add(pnlWGrid);
             pnlLeft.Controls.Add(pnlWFilter);
+            pnlLeft.Controls.Add(pnlWGrid);
+            pnlLeft.Controls.Add(pnlStock);
 
             // ══════ العمود الأيمن: نموذج التعديل ══════
             var pnlForm = new Panel

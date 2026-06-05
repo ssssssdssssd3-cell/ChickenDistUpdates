@@ -49,7 +49,9 @@ namespace ChickenDist.Forms
             {
                 Text = "اسم التصنيف:",
                 Location = new Point(160, y),
-                AutoSize = true,
+                Width = 110,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontMain
             });

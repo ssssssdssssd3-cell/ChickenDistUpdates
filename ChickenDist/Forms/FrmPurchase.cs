@@ -16,10 +16,11 @@ namespace ChickenDist.Forms
         private string _purchaseType = "Credit";
 
         // ── حقول الرأس ─────────────────────────────────────────────────────────
-        private ComboBox cboSupplier, cboProduct;
+        private ComboBox cboSupplier, cboProduct, cboWarehouse;
         private DateTimePicker dtpDate;
         private TextBox txtNotes;
         private Label lblCashBalance;
+        private Button btnSearchProduct;
 
         // ── حقول إضافة صنف ─────────────────────────────────────────────────────
         private NumericUpDown nudQty, nudPrice, nudItemDisc, nudSalePrice;
@@ -90,7 +91,7 @@ namespace ChickenDist.Forms
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
-                Height  = 160,
+                Height  = 205,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12, 8, 12, 8)
             };
@@ -99,7 +100,7 @@ namespace ChickenDist.Forms
             var tbl = new TableLayoutPanel
             {
                 Dock        = DockStyle.Fill,
-                RowCount    = 3,
+                RowCount    = 4,
                 ColumnCount = 6,
                 BackColor   = Color.Transparent,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None
@@ -115,6 +116,7 @@ namespace ChickenDist.Forms
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
 
             // ── صف 0: نوع الفاتورة | المورد | التاريخ ────────────────────────
             // أزرار نوع الفاتورة (col5 صف 0)
@@ -217,14 +219,65 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(lblCashBalance, 4, 1);
             tbl.SetColumnSpan(lblCashBalance, 2);
 
-            // ── صف 2: الكمية | السعر | خصم% | زر إضافة ──────────────────────
+            // ── صف 2: المخزن | زر بحث الأصناف ───────────────────────────────────
+            var lblWarehouse = MakeLabel("المخزن:", 0, 0);
+            lblWarehouse.Dock = DockStyle.Fill;
+            lblWarehouse.TextAlign = ContentAlignment.MiddleRight;
+            lblWarehouse.Margin = new Padding(2);
+            cboWarehouse = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 6, 2, 6)
+            };
+
+            btnSearchProduct = new Button
+            {
+                Text = "🔍 بحث صنف",
+                Dock = DockStyle.Fill,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 6, 2, 6),
+                Font = Theme.FontBold
+            };
+            btnSearchProduct.FlatAppearance.BorderSize = 0;
+            btnSearchProduct.Click += (s, e) =>
+            {
+                // فتح نافذة بحث الأصناف
+                using (var dlgSearch = new FrmProductSearch())
+                {
+                    if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
+                    {
+                        // تحديد الصنف في الكومبو
+                        for (int si = 0; si < cboProduct.Items.Count; si++)
+                        {
+                            if (cboProduct.Items[si] is ComboItem ci && ci.ID == dlgSearch.SelectedProductID)
+                            {
+                                cboProduct.SelectedIndex = si;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+
+            // إضافة — صف 2
+            tbl.Controls.Add(lblWarehouse, 0, 2);
+            tbl.Controls.Add(cboWarehouse, 1, 2);
+            tbl.Controls.Add(btnSearchProduct, 2, 2);
+            tbl.SetColumnSpan(btnSearchProduct, 2);
+
+            // ── صف 3: الكمية | السعر | خصم% | زر إضافة ──────────────────────
             var pnlAddRow = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.Transparent,
                 Margin = new Padding(0)
             };
-            tbl.Controls.Add(pnlAddRow, 0, 2);
+            tbl.Controls.Add(pnlAddRow, 0, 3);
             tbl.SetColumnSpan(pnlAddRow, 6);
 
             // عناصر صف الإضافة بداخل pnlAddRow بـ FlowLayoutPanel
@@ -714,6 +767,18 @@ namespace ChickenDist.Forms
                     lblMarginPct.Text = "0.0%";
                 }
             };
+
+            // المخازن
+            try
+            {
+                var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+                cboWarehouse.Items.Clear();
+                cboWarehouse.DisplayMember = "Text";
+                foreach (DataRow whRow in whDt.Rows)
+                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+            }
+            catch { /* تجاهل لو مافيش مخازن */ }
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -956,11 +1021,14 @@ namespace ChickenDist.Forms
             decimal gross, discAmt, discPct, net, taxPct, taxAmt;
             CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt);
 
+            int? warehouseID = null;
+            if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
+
             try
             {
                 int draftID = PurchaseDAL.SavePurchase(
                     _purchaseType, supplierID, net, txtNotes.Text, _items,
-                    discAmt, discPct, taxPct, taxAmt, isDraft: true);
+                    discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID);
 
                 if (draftID > 0)
                 {
@@ -1232,9 +1300,12 @@ namespace ChickenDist.Forms
 
             try
             {
+                int? warehouseID = null;
+                if (cboWarehouse.SelectedItem is ComboItem wci2) warehouseID = wci2.ID;
+
                 int id = PurchaseDAL.SavePurchase(
                     _purchaseType, supplierID, net, txtNotes.Text, _items,
-                    discAmt, discPct, taxPct, taxAmt, isDraft: false);
+                    discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
 
                 if (id > 0)
                 {

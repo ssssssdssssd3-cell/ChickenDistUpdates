@@ -120,7 +120,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 155,
+				Height = 175,
 				Width = 950,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10)
