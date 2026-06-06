@@ -756,15 +756,36 @@ namespace ChickenDist.Forms
             {
                 if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
-                    nudPrice.Value = ci.Extra;
-                    nudSalePrice.Value = ci.Price;
+                    nudPrice.Value     = ci.Extra;   // سعر الشراء
+                    nudSalePrice.Value = ci.Price;   // سعر البيع
                     UpdateMarginLabel();
+
+                    // ── إضافة تلقائية فور اختيار الصنف ──────────────────────
+                    // نؤخر قليلاً لضمان تحديث الـ UI قبل الإضافة
+                    var timer = new System.Windows.Forms.Timer { Interval = 50 };
+                    timer.Tick += (ts, te) =>
+                    {
+                        timer.Stop();
+                        timer.Dispose();
+                        BtnAddItem_Click(null, null);
+                    };
+                    timer.Start();
                 }
                 else
                 {
-                    nudPrice.Value = 0;
+                    nudPrice.Value     = 0;
                     nudSalePrice.Value = 0;
-                    lblMarginPct.Text = "0.0%";
+                    lblMarginPct.Text  = "0.0%";
+                }
+            };
+
+            // ── Enter على الكومبو = إضافة + رجوع للكومبو ─────────────────────
+            cboProduct.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    BtnAddItem_Click(null, null);
                 }
             };
 

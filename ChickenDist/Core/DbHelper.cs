@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text;
 using System.Windows.Forms;
 
 namespace ChickenDist.Core
@@ -12,46 +13,93 @@ namespace ChickenDist.Core
 
         private static string GetInitialConnectionString()
         {
-            // First check for local activation file that can override connection string
-            try
+            return GetConnectionStringFromIni();
+        }
+
+        private static string GetConnectionStringFromIni()
+        {
+            string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
+            if (!System.IO.File.Exists(iniPath))
             {
-                string actPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "activation.txt");
-                if (System.IO.File.Exists(actPath))
+                try
                 {
-                    var lines = System.IO.File.ReadAllLines(actPath);
-                    foreach (var line in lines)
-                    {
-                        if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#")) continue;
-                        var idx = line.IndexOf('=');
-                        if (idx <= 0) continue;
-                        var key = line.Substring(0, idx).Trim();
-                        var val = line.Substring(idx + 1).Trim();
-                        if (key.Equals("ConnectionString", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(val))
-                        {
-                            return val;
-                        }
-                    }
+                    System.IO.File.WriteAllText(iniPath, 
+                        "; ChickenDist Configuration\r\n" +
+                        "[Database]\r\n" +
+                        "Server=.\r\n" +
+                        "Database=ChickenDist\r\n" +
+                        "IntegratedSecurity=True\r\n" +
+                        "User=\r\n" +
+                        "Password=\r\n" +
+                        "[General]\r\n" +
+                        "Installed=True\r\n", Encoding.Unicode);
                 }
-            }
-            catch (Exception ex)
-            {
-                // non-fatal: show debug info
-                System.Diagnostics.Debug.WriteLine("Activation file read failed: " + ex.Message);
+                catch {}
             }
 
             try
             {
-                var connSetting = ConfigurationManager.ConnectionStrings["MainDB"];
-                if (connSetting != null && !string.IsNullOrEmpty(connSetting.ConnectionString))
+                string server = ReadIniDirect(iniPath, "Database", "Server", ".");
+                string db = ReadIniDirect(iniPath, "Database", "Database", "ChickenDist");
+                string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
+                string user = ReadIniDirect(iniPath, "Database", "User", "");
+                string pass = ReadIniDirect(iniPath, "Database", "Password", "");
+
+                var builder = new SqlConnectionStringBuilder
                 {
-                    return connSetting.ConnectionString;
+                    DataSource = server,
+                    InitialCatalog = db,
+                    IntegratedSecurity = intSec.Equals("True", StringComparison.OrdinalIgnoreCase),
+                    TrustServerCertificate = true,
+                    ConnectTimeout = 30
+                };
+
+                if (!builder.IntegratedSecurity)
+                {
+                    builder.UserID = user;
+                    builder.Password = pass;
+                }
+
+                return builder.ToString();
+            }
+            catch
+            {
+                return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
+            }
+        }
+
+        private static string ReadIniDirect(string filePath, string section, string key, string defaultValue)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(filePath)) return defaultValue;
+                string currentSection = "";
+                foreach (var line in System.IO.File.ReadAllLines(filePath))
+                {
+                    string t = line.Trim();
+                    if (string.IsNullOrEmpty(t) || t.StartsWith(";")) continue;
+                    if (t.StartsWith("[") && t.EndsWith("]"))
+                    {
+                        currentSection = t.Substring(1, t.Length - 2).Trim();
+                        continue;
+                    }
+                    if (currentSection.Equals(section, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int idx = t.IndexOf('=');
+                        if (idx > 0)
+                        {
+                            string k = t.Substring(0, idx).Trim();
+                            string v = t.Substring(idx + 1).Trim();
+                            if (k.Equals(key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return v;
+                            }
+                        }
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("فشل قراءة إعدادات الاتصال من App.config:\n" + ex.Message, "خطأ في الإعدادات", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
+            catch {}
+            return defaultValue;
         }
 
         public static void SetConnectionString(string connStr)

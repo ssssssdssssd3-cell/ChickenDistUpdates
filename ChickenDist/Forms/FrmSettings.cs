@@ -254,6 +254,72 @@ namespace ChickenDist.Forms
                     main.UpdateCompanyName(AppConfig.CompanyName);
             };
             this.Controls.Add(btnSave);
+
+            // ── فاصل ──────────────────────────────────────────────
+            y += 55;
+            var sep2 = new Panel
+            {
+                Location  = new Point(20, y),
+                Size      = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sep2);
+            y += 12;
+
+            // ── معلومات الترخيص ──────────────────────────────────
+            var lblLicTitle = new Label
+            {
+                Text      = "🔑 معلومات ترخيص البرنامج",
+                Location  = new Point(20, y),
+                AutoSize  = true,
+                Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblLicTitle);
+            y += 30;
+
+            string machineId = LicenseManager.GetCurrentMachineId();
+            string hddSerial = LicenseManager.GetCurrentHddSerial();
+
+            string expiryTxt = LicenseManager.IsActivated
+                ? (LicenseManager.ExpiryDate == DateTime.MaxValue
+                    ? "✅ ترخيص دائم"
+                    : $"✅ صالح حتى: {LicenseManager.ExpiryDate:yyyy-MM-dd}")
+                : "⛔ غير مفعّل";
+
+            var lblLicInfo = new Label
+            {
+                Text      = $"الحالة: {expiryTxt}\n" +
+                            $"الجهاز: {LicenseManager.DeviceName}\n" +
+                            $"Machine ID: {machineId}\n" +
+                            $"HDD Serial:   {hddSerial}",
+                Location  = new Point(20, y),
+                AutoSize  = false,
+                Width     = 390,
+                Height    = 75,
+                Font      = new Font("Consolas", 9.5f),
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Theme.BgInput,
+                Padding   = new Padding(5)
+            };
+            this.Controls.Add(lblLicInfo);
+
+            var btnCopyIds = Theme.MakeButton("📋 نسخ المعرّفات", 420, y, 110, 38, Color.FromArgb(55, 65, 81));
+            btnCopyIds.Font = new Font("Segoe UI", 9f);
+            btnCopyIds.Click += (s, e) =>
+            {
+                string info = $"Machine ID: {machineId}\nHDD Serial: {hddSerial}";
+                System.Windows.Forms.Clipboard.SetText(info);
+                MessageBox.Show("✅ تم نسخ معرّفات الجهاز!\nأرسلها للمطور للحصول على ملف التفعيل.",
+                    "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+            };
+            this.Controls.Add(btnCopyIds);
+            y += 85;
+
+            this.Height = y + 60;
         }
 
         private void AddLabel(string text, int x, ref int y, int extraTop)

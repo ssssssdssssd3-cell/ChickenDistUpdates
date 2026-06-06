@@ -88,6 +88,7 @@ namespace ChickenDist.Forms
 		private Button btnTierWholesale;
 		private string _selectedTier = "قطاعي";
 		private ComboBox cboWarehouse;
+		private Button btnCustomizeCols; // زر تخصيص الأعمدة
 
 		public FrmSale() : this(0, false)
 		{
@@ -590,6 +591,27 @@ namespace ChickenDist.Forms
             dgItems.RowsAdded += (s, e) => _isDirty = true;
             dgItems.RowsRemoved += (s, e) => _isDirty = true;
 			pnlItems.Controls.Add(dgItems);
+
+			// ── زر تخصيص الأعمدة ⚙️ (يظهر في زاوية الجدول) ─────────────────────
+			btnCustomizeCols = new Button
+			{
+				Text      = "⚙️ الأعمدة",
+				Size      = new Size(90, 26),
+				Anchor    = AnchorStyles.Top | AnchorStyles.Left,
+				Location  = new Point(5, 5),
+				BackColor = Color.FromArgb(55, 65, 81),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				Cursor    = Cursors.Hand
+			};
+			btnCustomizeCols.FlatAppearance.BorderSize = 0;
+			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
+			pnlItems.Controls.Add(btnCustomizeCols);
+			btnCustomizeCols.BringToFront();
+
+			// تحميل إعدادات الأعمدة المحفوظة
+			LoadColumnSettings();
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
@@ -2222,6 +2244,191 @@ namespace ChickenDist.Forms
 				return wh.ID;
 			return null;
 		}
+
+        // ══════════════════════════════════════════════════════════════════════
+        // ── تخصيص أعمدة الجدول ────────────────────────────────────────────────
+        // ══════════════════════════════════════════════════════════════════════
+
+        /// <summary>يفتح نافذة تخصيص الأعمدة (إظهار/إخفاء + ترتيب)</summary>
+        private void ShowColumnCustomizer()
+        {
+            var dlg = new Form
+            {
+                Text            = "⚙️ تخصيص أعمدة الفاتورة",
+                Size            = new Size(360, 480),
+                StartPosition   = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                RightToLeft     = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor       = Color.FromArgb(30, 30, 45),
+                Font            = new Font("Segoe UI", 10f)
+            };
+
+            var lblHint = new Label
+            {
+                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Dock      = DockStyle.Top,
+                Height    = 32,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(150, 200, 255),
+                Font      = new Font("Segoe UI", 9f)
+            };
+
+            var clb = new CheckedListBox
+            {
+                Dock            = DockStyle.Fill,
+                CheckOnClick    = true,
+                BackColor       = Color.FromArgb(40, 42, 58),
+                ForeColor       = Color.White,
+                BorderStyle     = BorderStyle.None,
+                Font            = new Font("Segoe UI", 10f),
+                RightToLeft     = RightToLeft.Yes
+            };
+
+            // ملء القائمة بالأعمدة (ما عدا عمود الحذف)
+            foreach (DataGridViewColumn col in dgItems.Columns)
+            {
+                if (col.Name == "Delete") continue;
+                clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
+            }
+
+            // أزرار ▲▼
+            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
+
+            btnUp.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i <= 0) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i - 1, item);
+                clb.SetItemChecked(i - 1, chk);
+                clb.SelectedIndex = i - 1;
+            };
+            btnDown.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i < 0 || i >= clb.Items.Count - 1) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i + 1, item);
+                clb.SetItemChecked(i + 1, chk);
+                clb.SelectedIndex = i + 1;
+            };
+
+            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
+
+            var pnlArrows = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 40,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlArrows.Controls.AddRange(new Control[] { btnDown, btnUp });
+
+            var pnlFooter = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 44,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlFooter.Controls.AddRange(new Control[] { btnCancel, btnOk });
+
+            dlg.Controls.Add(clb);
+            dlg.Controls.Add(pnlArrows);
+            dlg.Controls.Add(pnlFooter);
+            dlg.Controls.Add(lblHint);
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                // تطبيق الترتيب والإظهار على الجدول
+                int displayIndex = 0;
+                var hiddenNames  = new System.Collections.Generic.List<string>();
+                var orderedNames = new System.Collections.Generic.List<string>();
+
+                for (int i = 0; i < clb.Items.Count; i++)
+                {
+                    if (!(clb.Items[i] is ColEntry ce)) continue;
+                    orderedNames.Add(ce.ColName);
+                    bool visible = clb.GetItemChecked(i);
+                    if (!visible) hiddenNames.Add(ce.ColName);
+
+                    if (dgItems.Columns.Contains(ce.ColName))
+                    {
+                        dgItems.Columns[ce.ColName].Visible      = visible;
+                        dgItems.Columns[ce.ColName].DisplayIndex = displayIndex++;
+                    }
+                }
+                // عمود الحذف دائماً في الآخر
+                if (dgItems.Columns.Contains("Delete"))
+                    dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
+
+                SaveColumnSettings(orderedNames, hiddenNames);
+            }
+        }
+
+        /// <summary>يحفظ ترتيب الأعمدة وما هو مخفي في Settings.ini</summary>
+        private void SaveColumnSettings(
+            System.Collections.Generic.List<string> ordered,
+            System.Collections.Generic.List<string> hidden)
+        {
+            try
+            {
+                Core.LicenseManager.WriteIniValue("SaleGridColumns", "Order",  string.Join(",", ordered));
+                Core.LicenseManager.WriteIniValue("SaleGridColumns", "Hidden", string.Join(",", hidden));
+            }
+            catch { }
+        }
+
+        /// <summary>يحمّل ترتيب الأعمدة من Settings.ini عند بداية التشغيل</summary>
+        private void LoadColumnSettings()
+        {
+            try
+            {
+                string orderVal  = Core.LicenseManager.ReadIniValue("SaleGridColumns", "Order",  "");
+                string hiddenVal = Core.LicenseManager.ReadIniValue("SaleGridColumns", "Hidden", "");
+
+                if (string.IsNullOrWhiteSpace(orderVal)) return;
+
+                var ordered = new System.Collections.Generic.List<string>(
+                    orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+                var hidden  = new System.Collections.Generic.List<string>(
+                    string.IsNullOrEmpty(hiddenVal) ? new string[0]
+                    : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                int displayIndex = 0;
+                foreach (string colName in ordered)
+                {
+                    if (!dgItems.Columns.Contains(colName)) continue;
+                    dgItems.Columns[colName].Visible      = !hidden.Contains(colName);
+                    dgItems.Columns[colName].DisplayIndex = displayIndex++;
+                }
+                if (dgItems.Columns.Contains("Delete"))
+                    dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
+            }
+            catch { }
+        }
+
+        // مساعد: تمثيل عمود في القائمة
+        private class ColEntry
+        {
+            public string ColName    { get; }
+            public string HeaderText { get; }
+            public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
+            public override string ToString() => HeaderText;
+        }
 	}
 	internal class ComboItem
 	{

@@ -171,12 +171,15 @@ namespace ChickenDist.Forms
                 ("🔄", "تحديث البرنامج",   "",               () => UpdateManager.CheckForUpdates(true), Color.FromArgb(55, 65, 81)),
             };
 
+            var buttonsList = new System.Collections.Generic.List<Button>();
+
             foreach (var item in groups)
             {
                 if (!string.IsNullOrEmpty(item.screen) && !Session.CanAccess(item.screen)) continue;
 
                 var btn = new Button
                 {
+                    Name      = item.label,
                     Text      = $"{item.icon}\n{item.label}",
                     Size      = new Size(105, 52),
                     FlatStyle = FlatStyle.Flat,
@@ -192,10 +195,122 @@ namespace ChickenDist.Forms
                 btn.FlatAppearance.BorderColor          = Color.FromArgb(80, 255, 255, 255);
                 btn.FlatAppearance.MouseOverBackColor   = ControlPaint.Light(item.btnColor, 0.3f);
                 btn.FlatAppearance.MouseDownBackColor   = ControlPaint.Dark(item.btnColor, 0.1f);
+                
                 var act = item.action;
                 btn.Click += (s, e) => act();
+
+                // ── تفعيل السحب والإفلات (Drag & Drop) لإعادة ترتيب الأيقونات ──
+                Point dragStartPoint = Point.Empty;
+
+                btn.MouseDown += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        dragStartPoint = e.Location;
+                    }
+                };
+
+                btn.MouseMove += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left && dragStartPoint != Point.Empty)
+                    {
+                        int dragWidth = SystemInformation.DragSize.Width;
+                        int dragHeight = SystemInformation.DragSize.Height;
+                        Rectangle dragRect = new Rectangle(
+                            dragStartPoint.X - dragWidth / 2,
+                            dragStartPoint.Y - dragHeight / 2,
+                            dragWidth,
+                            dragHeight);
+                        if (!dragRect.Contains(e.Location))
+                        {
+                            btn.DoDragDrop(btn, DragDropEffects.Move);
+                            dragStartPoint = Point.Empty;
+                        }
+                    }
+                };
+
+                btn.MouseUp += (s, e) =>
+                {
+                    dragStartPoint = Point.Empty;
+                };
+
+                btn.AllowDrop = true;
+
+                btn.DragEnter += (s, e) =>
+                {
+                    if (e.Data.GetDataPresent(typeof(Button)))
+                    {
+                        e.Effect = DragDropEffects.Move;
+                    }
+                };
+
+                btn.DragOver += (s, e) =>
+                {
+                    if (e.Data.GetDataPresent(typeof(Button)))
+                    {
+                        e.Effect = DragDropEffects.Move;
+                    }
+                };
+
+                btn.DragDrop += (s, e) =>
+                {
+                    if (e.Data.GetData(typeof(Button)) is Button dragged && dragged != btn)
+                    {
+                        int targetIndex = pnlNavBar.Controls.GetChildIndex(btn);
+                        pnlNavBar.Controls.SetChildIndex(dragged, targetIndex);
+                        SaveNavBarOrder();
+                    }
+                };
+
+                buttonsList.Add(btn);
+            }
+
+            // تحميل الترتيب المخصص للأيقونات من Settings.ini
+            try
+            {
+                string savedOrder = LicenseManager.ReadIniValue("NavBarOrder", "Order", "");
+                if (!string.IsNullOrWhiteSpace(savedOrder))
+                {
+                    var orderedNames = savedOrder.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    var orderedList = new System.Collections.Generic.List<Button>();
+
+                    foreach (var name in orderedNames)
+                    {
+                        var btn = buttonsList.Find(b => b.Name == name.Trim());
+                        if (btn != null)
+                        {
+                            orderedList.Add(btn);
+                            buttonsList.Remove(btn);
+                        }
+                    }
+                    orderedList.AddRange(buttonsList); // إضافة أي أزرار متبقية أو جديدة
+                    buttonsList = orderedList;
+                }
+            }
+            catch { }
+
+            // إضافة الأزرار إلى الشريط
+            foreach (var btn in buttonsList)
+            {
                 pnlNavBar.Controls.Add(btn);
             }
+        }
+
+        private void SaveNavBarOrder()
+        {
+            try
+            {
+                var names = new System.Collections.Generic.List<string>();
+                foreach (Control ctrl in pnlNavBar.Controls)
+                {
+                    if (ctrl is Button btn && !string.IsNullOrEmpty(btn.Name))
+                    {
+                        names.Add(btn.Name);
+                    }
+                }
+                LicenseManager.WriteIniValue("NavBarOrder", "Order", string.Join(",", names));
+            }
+            catch { }
         }
 
         public void NavigateTo(Form form)

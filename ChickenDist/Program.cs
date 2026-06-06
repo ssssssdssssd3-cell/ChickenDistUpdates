@@ -55,6 +55,10 @@ namespace ChickenDist
             if (!CheckDatabaseConnection())
                 return;
 
+            // ===== فحص ترخيص البرنامج =====
+            if (!ChickenDist.Core.LicenseManager.CheckLicense())
+                return;
+
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
