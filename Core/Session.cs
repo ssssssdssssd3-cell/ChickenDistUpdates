@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ChickenDist.Core
@@ -21,12 +22,12 @@ namespace ChickenDist.Core
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true };
+                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanShowCostProfit = true };
                 return;
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, CanEditPrice FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanShowCostProfit, 0) AS CanShowCostProfit FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
@@ -34,7 +35,8 @@ namespace ChickenDist.Core
                 _perms[row["ScreenName"].ToString()] = new PermInfo
                 {
                     CanAccess    = (bool)row["CanAccess"],
-                    CanEditPrice = (bool)row["CanEditPrice"]
+                    CanEditPrice = (bool)row["CanEditPrice"],
+                    CanShowCostProfit = row.Table.Columns.Contains("CanShowCostProfit") && row["CanShowCostProfit"] != DBNull.Value && Convert.ToBoolean(row["CanShowCostProfit"])
                 };
             }
         }
@@ -49,6 +51,12 @@ namespace ChickenDist.Core
         {
             if (Role == "Admin") return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanEditPrice;
+        }
+
+        public static bool CanShowCostProfit(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanShowCostProfit;
         }
 
         public static void Clear()
@@ -68,5 +76,6 @@ namespace ChickenDist.Core
     {
         public bool CanAccess { get; set; }
         public bool CanEditPrice { get; set; }
+        public bool CanShowCostProfit { get; set; }
     }
 }

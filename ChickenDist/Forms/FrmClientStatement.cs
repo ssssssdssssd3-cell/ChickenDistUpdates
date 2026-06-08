@@ -77,6 +77,7 @@ namespace ChickenDist.Forms
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين", FillWeight = 40 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن", FillWeight = 40 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الجاري", FillWeight = 55 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "القائم بالعمل", FillWeight = 50 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "تفاصيل الأصناف والبيان المالي للحساب", FillWeight = 170 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID", Visible = false });
@@ -135,7 +136,7 @@ namespace ChickenDist.Forms
 
             if (prevBalance != 0)
             {
-                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
+                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "---", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
             }
 
             foreach (DataRow r in _dt.Rows)
@@ -198,12 +199,14 @@ namespace ChickenDist.Forms
                     _totalSales += deb;
                 }
 
+                string createdBy = r.Table.Columns.Contains("CreatedByName") && r["CreatedByName"] != DBNull.Value ? r["CreatedByName"].ToString() : "---";
                 var rowIdx = dgStatement.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
                     TransTypeName(typeStr),
                     deb > 0 ? deb.ToString("N2") : "",
                     cred > 0 ? cred.ToString("N2") : "",
                     _runBalance.ToString("N2") + " ج",
+                    createdBy,
                     detailedNotes,
                     typeStr,
                     refID,
@@ -319,7 +322,13 @@ namespace ChickenDist.Forms
                     g.DrawString(row.Cells["Debit"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[2], y);
                     g.DrawString(row.Cells["Credit"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[3], y);
                     g.DrawString(row.Cells["Balance"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[4], y);
-                    g.DrawString(row.Cells["BaseNotes"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[5], y);
+                    string printNotes = row.Cells["BaseNotes"].Value?.ToString() ?? "";
+                    string createdByStr = row.Cells["CreatedByName"].Value?.ToString();
+                    if (!string.IsNullOrEmpty(createdByStr) && createdByStr != "---")
+                    {
+                        printNotes += $" (بواسطة: {createdByStr})";
+                    }
+                    g.DrawString(printNotes, dataFont, Brushes.Black, cols[5], y);
                     y += 18;
                     
                     if (dtItems != null && itemsCount > 0)

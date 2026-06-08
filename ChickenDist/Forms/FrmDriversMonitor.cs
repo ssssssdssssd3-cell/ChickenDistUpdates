@@ -85,20 +85,20 @@ namespace ChickenDist.Forms
             string sql = @"
                 SELECT dl.LoadID, dl.LoadDate, e.EmpID, e.EmpName AS DriverName,
                        s.SaleCode, s.TotalAmount AS LoadedValue,
-                       ISNULL((
-                           SELECT SUM(s2.TotalAmount)
-                           FROM Sales s2
-                           WHERE s2.DriverID = dl.DriverID
-                             AND s2.SaleType IN ('Cash', 'Credit')
-                             AND s2.SaleDate >= dl.LoadDate
-                       ), 0) AS ActiveSalesValue,
-                       ISNULL((
-                           SELECT SUM(s2.TotalAmount)
-                           FROM Sales s2
-                           WHERE s2.DriverID = dl.DriverID
-                             AND s2.SaleType = 'Cash'
-                             AND s2.SaleDate >= dl.LoadDate
-                       ), 0) AS ActiveCashCollected
+                        ISNULL((
+                            SELECT SUM(s2.TotalAmount)
+                            FROM Sales s2
+                            WHERE s2.DriverID = dl.DriverID
+                              AND s2.SaleType IN ('Cash', 'Credit')
+                              AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
+                        ), 0) AS ActiveSalesValue,
+                        ISNULL((
+                            SELECT SUM(s2.TotalAmount)
+                            FROM Sales s2
+                            WHERE s2.DriverID = dl.DriverID
+                              AND s2.SaleType = 'Cash'
+                              AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
+                        ), 0) AS ActiveCashCollected
                 FROM DriverLoads dl
                 JOIN Employees e ON dl.DriverID = e.EmpID
                 JOIN Sales s ON dl.SaleID = s.SaleID

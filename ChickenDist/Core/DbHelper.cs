@@ -200,6 +200,18 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlSalesDiscount);
 
+                // Add CloudID to Sales table for idempotency check on Cloud Import
+                string sqlSalesCloudID = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CloudID')
+                BEGIN
+                    ALTER TABLE Sales ADD CloudID BIGINT NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_CloudID' AND object_id = OBJECT_ID('Sales'))
+                BEGIN
+                    CREATE INDEX IX_Sales_CloudID ON Sales(CloudID);
+                END";
+                Execute(sqlSalesCloudID);
+
                 string sqlSaleItemsDiscount = @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
                 BEGIN
@@ -273,21 +285,19 @@ namespace ChickenDist.Core
                     );
                 END
                 
-                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance')
-                BEGIN
-                    EXEC('CREATE VIEW vw_SupplierBalance AS
-                    SELECT
-                        s.SupplierID,
-                        s.SupplierName,
-                        s.Phone,
-                        s.OpeningBalance,
-                        ISNULL(SUM(st.Debit),0)  AS TotalDebit,
-                        ISNULL(SUM(st.Credit),0) AS TotalCredit,
-                        s.OpeningBalance + ISNULL(SUM(st.Credit),0) - ISNULL(SUM(st.Debit),0) AS Balance
-                    FROM Suppliers s
-                    LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
-                    GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance')
-                END";
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance') DROP VIEW vw_SupplierBalance;
+                EXEC('CREATE VIEW vw_SupplierBalance AS
+                SELECT
+                    s.SupplierID,
+                    s.SupplierName,
+                    s.Phone,
+                    s.OpeningBalance,
+                    ISNULL(SUM(st.Debit),0)  AS TotalDebit,
+                    ISNULL(SUM(st.Credit),0) AS TotalCredit,
+                    s.OpeningBalance + ISNULL(SUM(st.Credit),0) - ISNULL(SUM(st.Debit),0) AS Balance
+                FROM Suppliers s
+                LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
+                GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance');";
                 Execute(sqlPurchases);
 
                 // Add SupplierID to Expenses (optional link to Suppliers)
@@ -381,20 +391,18 @@ namespace ChickenDist.Core
 
                 // ===== عرض أرصدة الموظفين =====
                 string sqlEmployeeBalanceView = @"
-                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_EmployeeBalance')
-                BEGIN
-                    EXEC('CREATE VIEW vw_EmployeeBalance AS
-                    SELECT
-                        e.EmpID,
-                        e.EmpName,
-                        e.Phone,
-                        ISNULL(SUM(et.Debit),0)  AS TotalDebit,
-                        ISNULL(SUM(et.Credit),0) AS TotalCredit,
-                        ISNULL(SUM(et.Debit),0) - ISNULL(SUM(et.Credit),0) AS Balance
-                    FROM Employees e
-                    LEFT JOIN EmployeeTransactions et ON e.EmpID = et.EmpID
-                    GROUP BY e.EmpID, e.EmpName, e.Phone')
-                END";
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_EmployeeBalance') DROP VIEW vw_EmployeeBalance;
+                EXEC('CREATE VIEW vw_EmployeeBalance AS
+                SELECT
+                    e.EmpID,
+                    e.EmpName,
+                    e.Phone,
+                    ISNULL(SUM(et.Debit),0)  AS TotalDebit,
+                    ISNULL(SUM(et.Credit),0) AS TotalCredit,
+                    ISNULL(SUM(et.Debit),0) - ISNULL(SUM(et.Credit),0) AS Balance
+                FROM Employees e
+                LEFT JOIN EmployeeTransactions et ON e.EmpID = et.EmpID
+                GROUP BY e.EmpID, e.EmpName, e.Phone');";
                 Execute(sqlEmployeeBalanceView);
 
                 // ===== أعمدة السعر المعلق وهامش الربح على Products =====
@@ -589,6 +597,16 @@ namespace ChickenDist.Core
                     ALTER TABLE Permissions ADD CanViewCost BIT DEFAULT 0;
                 END
                 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanDeleteSalesInvoice')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanDeleteSalesInvoice BIT DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanCopySalesInvoice')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanCopySalesInvoice BIT DEFAULT 0;
+                END
+                
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
                 BEGIN
                     ALTER TABLE Products ADD WholesalePrice DECIMAL(10,2) DEFAULT 0;
@@ -677,58 +695,52 @@ namespace ChickenDist.Core
 
                 // ===== عرض رصيد العملاء vw_ClientBalance =====
                 string sqlClientBalanceView = @"
-                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance')
-                BEGIN
-                    EXEC('CREATE VIEW vw_ClientBalance AS
-                    SELECT
-                        c.ClientID,
-                        c.ClientName,
-                        c.Phone,
-                        c.OpeningBalance,
-                        ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
-                        ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
-                        c.OpeningBalance
-                            + ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0)
-                            - ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS Balance
-                    FROM Clients c
-                    LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
-                    GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance')
-                END";
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance') DROP VIEW vw_ClientBalance;
+                EXEC('CREATE VIEW vw_ClientBalance AS
+                SELECT
+                    c.ClientID,
+                    c.ClientName,
+                    c.Phone,
+                    c.OpeningBalance,
+                    ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
+                    ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
+                    c.OpeningBalance
+                        + ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0)
+                        - ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS Balance
+                FROM Clients c
+                LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
+                GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');";
                 Execute(sqlClientBalanceView);
 
                 // ===== عرض رصيد الخزنة vw_CashBalance =====
                 string sqlCashBalanceView = @"
-                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CashBalance')
-                BEGIN
-                    EXEC('CREATE VIEW vw_CashBalance AS
-                    SELECT
-                        ISNULL(SUM(AmountIn),0)  AS TotalIn,
-                        ISNULL(SUM(AmountOut),0) AS TotalOut,
-                        ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) AS Balance
-                    FROM CashBox')
-                END";
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CashBalance') DROP VIEW vw_CashBalance;
+                EXEC('CREATE VIEW vw_CashBalance AS
+                SELECT
+                    ISNULL(SUM(AmountIn),0)  AS TotalIn,
+                    ISNULL(SUM(AmountOut),0) AS TotalOut,
+                    ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) AS Balance
+                FROM CashBox');";
                 Execute(sqlCashBalanceView);
 
                 // ===== عرض مخزون الأصناف vw_ProductStock =====
                 string sqlProductStockView = @"
-                IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ProductStock')
-                BEGIN
-                    EXEC('CREATE VIEW vw_ProductStock AS
-                    SELECT
-                        p.ProductID,
-                        p.ProductCode,
-                        p.ProductName,
-                        p.PartNumber,
-                        p.MinStockLimit,
-                        w.WarehouseID,
-                        w.WarehouseName,
-                        ISNULL(ps.Quantity, 0) AS StockQty,
-                        CASE WHEN ISNULL(ps.Quantity, 0) <= p.MinStockLimit THEN 1 ELSE 0 END AS IsBelowMin
-                    FROM Products p
-                    CROSS JOIN Warehouses w
-                    LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
-                    WHERE p.IsActive = 1 AND w.IsActive = 1')
-                END";
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ProductStock') DROP VIEW vw_ProductStock;
+                EXEC('CREATE VIEW vw_ProductStock AS
+                SELECT
+                    p.ProductID,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.PartNumber,
+                    p.MinStockLimit,
+                    w.WarehouseID,
+                    w.WarehouseName,
+                    ISNULL(ps.Quantity, 0) AS StockQty,
+                    CASE WHEN ISNULL(ps.Quantity, 0) <= p.MinStockLimit THEN 1 ELSE 0 END AS IsBelowMin
+                FROM Products p
+                CROSS JOIN Warehouses w
+                LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
+                WHERE p.IsActive = 1 AND w.IsActive = 1');";
                 Execute(sqlProductStockView);
             }
             catch (Exception ex)

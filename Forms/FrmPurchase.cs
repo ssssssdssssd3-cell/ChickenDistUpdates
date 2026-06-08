@@ -547,6 +547,7 @@ namespace ChickenDist.Forms
                 {
                     _lastPurchaseID = id;
                     MessageBox.Show($"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: PUR-{id}", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    PromptBarcodePrintAfterPurchase();
                     ClearInvoice();
                     LoadCombos();
                 }
@@ -558,6 +559,108 @@ namespace ChickenDist.Forms
             catch (Exception)
             {
                 // Transaction rollback already shown by DbHelper
+            }
+        }
+
+        private void PromptBarcodePrintAfterPurchase()
+        {
+            var itemsToPrint = new List<PurchaseItemDTO>();
+            foreach (var item in _items)
+            {
+                var dr = ProductDAL.GetByID(item.ProductID);
+                if (dr != null)
+                {
+                    bool hasBarcode = dr["HasBarcode"] == DBNull.Value || Convert.ToBoolean(dr["HasBarcode"]);
+                    if (hasBarcode)
+                    {
+                        itemsToPrint.Add(item);
+                    }
+                }
+            }
+
+            if (itemsToPrint.Count == 0) return;
+
+            if (MessageBox.Show("📦 تم اكتشاف أصناف لها باركود في الفاتورة.\n\nهل تريد طباعة ملصقات باركود لهذه الأصناف الآن؟", 
+                "طباعة باركود الأصناف المشتراة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                foreach (var item in itemsToPrint)
+                {
+                    int labelQty = (int)Math.Max(1, Math.Ceiling(item.Quantity));
+                    var dr = ProductDAL.GetByID(item.ProductID);
+                    if (dr != null)
+                    {
+                        string codeToPrint = dr["InternationalBarcode"] != DBNull.Value && !string.IsNullOrWhiteSpace(dr["InternationalBarcode"].ToString())
+                            ? dr["InternationalBarcode"].ToString()
+                            : dr["ProductCode"].ToString();
+
+                        PrintBarcodeLabels(
+                            codeToPrint, 
+                            dr["ProductName"].ToString(), 
+                            Convert.ToDecimal(dr["SalePrice"]), 
+                            labelQty
+                        );
+                    }
+                }
+            }
+        }
+
+        private void PrintBarcodeLabels(string code, string name, decimal price, int qty)
+        {
+            try
+            {
+                var pd = new System.Drawing.Printing.PrintDocument();
+                if (AppConfig.ThermalPrinterEnabled && !string.IsNullOrEmpty(AppConfig.ThermalPrinterName))
+                {
+                    pd.PrinterSettings.PrinterName = AppConfig.ThermalPrinterName;
+                }
+                
+                pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("BarcodeLabel", 180, 100);
+                pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(5, 5, 5, 5);
+
+                int printedCount = 0;
+                pd.PrintPage += (s, ev) =>
+                {
+                    var g = ev.Graphics;
+                    var nameFont = new Font("Arial", 8, FontStyle.Bold);
+                    var codeFont = new Font("Arial", 10, FontStyle.Bold);
+                    var priceFont = new Font("Arial", 8);
+
+                    int pageW = ev.PageBounds.Width;
+                    int pageH = ev.PageBounds.Height;
+                    
+                    var center = new StringFormat { Alignment = StringAlignment.Center };
+
+                    g.DrawString(AppConfig.CompanyName, priceFont, Brushes.Black, new RectangleF(0, 5, pageW, 14), center);
+                    g.DrawString(name, nameFont, Brushes.Black, new RectangleF(0, 20, pageW, 16), center);
+                    g.DrawString($"* {code} *", codeFont, Brushes.Black, new RectangleF(0, 40, pageW, 20), center);
+                    
+                    // Simulated barcode lines
+                    int startX = 30;
+                    int endX = pageW - 30;
+                    int barY = 60;
+                    int barH = 15;
+                    Pen thinPen = new Pen(Color.Black, 1.5f);
+                    Pen thickPen = new Pen(Color.Black, 3f);
+                    
+                    for (int x = startX; x < endX; x += 4)
+                    {
+                        if (x % 3 == 0)
+                            g.DrawLine(thickPen, x, barY, x, barY + barH);
+                        else
+                            g.DrawLine(thinPen, x, barY, x, barY + barH);
+                    }
+
+                    g.DrawString($"السعر: {price:N2} ج", nameFont, Brushes.Black, new RectangleF(0, 80, pageW, 16), center);
+
+                    printedCount++;
+                    ev.HasMorePages = printedCount < qty;
+                };
+
+                pd.Print();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ فشلت طباعة الباركود للصنف '{name}':\n{ex.Message}", "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

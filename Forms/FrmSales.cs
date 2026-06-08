@@ -36,6 +36,8 @@ namespace ChickenDist.Forms
 
 		private Label lblDriverSummary;
 
+		private Label lblProfitSummary;
+
 		private DataTable _allSalesDt;
 
 		public FrmSalesList()
@@ -196,6 +198,11 @@ namespace ChickenDist.Forms
 				HeaderText = "الملاحظات",
 				FillWeight = 120f
 			});
+			if (Session.CanShowCostProfit("Sales"))
+			{
+				dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "التكلفة", FillWeight = 50f });
+				dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalProfit", HeaderText = "الربح", FillWeight = 50f });
+			}
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
 			panel.Controls.Add(dgSales);
 			Panel panel2 = new Panel
@@ -263,27 +270,48 @@ namespace ChickenDist.Forms
 				HeaderText = "الإجمالي",
 				FillWeight = 60f
 			});
+			if (Session.CanShowCostProfit("Sales"))
+			{
+				dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemCost", HeaderText = "التكلفة", FillWeight = 50f });
+				dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemProfit", HeaderText = "الربح", FillWeight = 50f });
+			}
 			panel2.Controls.Add(flowLayoutPanel2);
 			panel2.Controls.Add(dgItems);
+			bool showProfit = Session.CanShowCostProfit("Sales");
 			TableLayoutPanel tableLayoutPanel = new TableLayoutPanel
 			{
 				Dock = DockStyle.Bottom,
 				Height = 65,
-				ColumnCount = 4,
+				ColumnCount = showProfit ? 5 : 4,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 5, 10, 5)
 			};
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+			if (showProfit)
+			{
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			}
+			else
+			{
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+			}
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			lblTotalSummary = AddDashboardCard(tableLayoutPanel, "إجمالي مبيعات الفترة:", "0.00 ج", Theme.Accent, 0);
 			lblCashSummary = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:", "0.00 ج", Theme.Success, 1);
 			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:", "0.00 ج", Color.FromArgb(155, 89, 182), 3);
+			if (showProfit)
+			{
+				lblProfitSummary = AddDashboardCard(tableLayoutPanel, "إجمالي أرباح الفترة:", "0.00 ج", Color.FromArgb(46, 204, 113), 4);
+			}
 			base.Controls.Add(panel2);
 			base.Controls.Add(panel);
 			base.Controls.Add(flowLayoutPanel);
@@ -371,7 +399,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (_allSalesDt == null || _allSalesDt.Rows.Count == 0)
 			{
-				UpdateSummary(0m, 0m, 0m, 0m);
+				UpdateSummary(0m, 0m, 0m, 0m, 0m);
 				return;
 			}
 			string value = txtSearch.Text.Trim().ToLower();
@@ -380,6 +408,7 @@ namespace ChickenDist.Forms
 			decimal cash = default(decimal);
 			decimal credit = default(decimal);
 			decimal driver = default(decimal);
+			decimal profit = default(decimal);
 			foreach (DataRow row in _allSalesDt.Rows)
 			{
 				string text2 = row["SaleCode"].ToString().ToLower();
@@ -396,6 +425,10 @@ namespace ChickenDist.Forms
 				{
 					decimal num = Convert.ToDecimal(row["TotalAmount"]);
 					tot += num;
+					if (_allSalesDt.Columns.Contains("TotalProfit") && row["TotalProfit"] != DBNull.Value)
+					{
+						profit += Convert.ToDecimal(row["TotalProfit"]);
+					}
 					switch (text5)
 					{
 					case "Cash":
@@ -409,18 +442,31 @@ namespace ChickenDist.Forms
 						break;
 					}
 					string text8 = ((text5 == "Credit") ? "آجل" : ((text5 == "Cash") ? "نقدي" : "تحميل مندوب"));
-					dgSales.Rows.Add(row["SaleID"], row["SaleCode"], Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"), text8, text7, num.ToString("N2") + " ج", row["Notes"]);
+					if (Session.CanShowCostProfit("Sales"))
+					{
+						decimal tCost = row.Table.Columns.Contains("TotalCost") && row["TotalCost"] != DBNull.Value ? Convert.ToDecimal(row["TotalCost"]) : 0m;
+						decimal tProfit = row.Table.Columns.Contains("TotalProfit") && row["TotalProfit"] != DBNull.Value ? Convert.ToDecimal(row["TotalProfit"]) : 0m;
+						dgSales.Rows.Add(row["SaleID"], row["SaleCode"], Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"), text8, text7, num.ToString("N2") + " ج", row["Notes"], tCost.ToString("N2") + " ج", tProfit.ToString("N2") + " ج");
+					}
+					else
+					{
+						dgSales.Rows.Add(row["SaleID"], row["SaleCode"], Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"), text8, text7, num.ToString("N2") + " ج", row["Notes"]);
+					}
 				}
 			}
-			UpdateSummary(tot, cash, credit, driver);
+			UpdateSummary(tot, cash, credit, driver, profit);
 		}
 
-		private void UpdateSummary(decimal tot, decimal cash, decimal credit, decimal driver)
+		private void UpdateSummary(decimal tot, decimal cash, decimal credit, decimal driver, decimal profit = 0m)
 		{
 			lblTotalSummary.Text = tot.ToString("N2") + " ج";
 			lblCashSummary.Text = cash.ToString("N2") + " ج";
 			lblCreditSummary.Text = credit.ToString("N2") + " ج";
 			lblDriverSummary.Text = driver.ToString("N2") + " ج";
+			if (lblProfitSummary != null)
+			{
+				lblProfitSummary.Text = profit.ToString("N2") + " ج";
+			}
 		}
 
 		private void DgSales_SelectionChanged(object sender, EventArgs e)
@@ -454,13 +500,36 @@ namespace ChickenDist.Forms
 					discText = itemDiscAmt.ToString("N2");
 				}
 
-				dgItems.Rows.Add(
-					row["ProductName"], 
-					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
-					Convert.ToDecimal(row["UnitPrice"]).ToString("N2"), 
-					discText,
-					Convert.ToDecimal(row["TotalPrice"]).ToString("N2")
-				);
+				decimal qty = Convert.ToDecimal(row["Quantity"]);
+				decimal unitPrice = Convert.ToDecimal(row["UnitPrice"]);
+				decimal totalPrice = Convert.ToDecimal(row["TotalPrice"]);
+
+				if (Session.CanShowCostProfit("Sales"))
+				{
+					decimal pPrice = row.Table.Columns.Contains("PurchasePrice") && row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
+					decimal cost = qty * pPrice;
+					decimal profit = totalPrice - cost;
+
+					dgItems.Rows.Add(
+						row["ProductName"], 
+						qty.ToString("N2"), 
+						unitPrice.ToString("N2"), 
+						discText,
+						totalPrice.ToString("N2"),
+						cost.ToString("N2") + " ج",
+						profit.ToString("N2") + " ج"
+					);
+				}
+				else
+				{
+					dgItems.Rows.Add(
+						row["ProductName"], 
+						qty.ToString("N2"), 
+						unitPrice.ToString("N2"), 
+						discText,
+						totalPrice.ToString("N2")
+					);
+				}
 			}
 		}
 

@@ -262,6 +262,12 @@ namespace ChickenDist.Forms
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "CreatedByName",
+				HeaderText = "القائم بالحركة",
+				FillWeight = 65f
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "Notes",
 				HeaderText = "الملاحظات",
 				FillWeight = 100f
@@ -509,6 +515,7 @@ namespace ChickenDist.Forms
 						num.ToString("N2") + " ج",
 						retStr,
 						netAmt.ToString("N2") + " ج",
+						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
 				}
 			}
@@ -597,6 +604,12 @@ namespace ChickenDist.Forms
 
 		private void BtnDelete_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanDeleteSalesInvoice())
+			{
+				MessageBox.Show("عذراً، ليس لديك صلاحية حذف وإلغاء فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+				return;
+			}
+
 			if (dgSales.SelectedRows.Count == 0)
 			{
 				MessageBox.Show("من فضلك اختر الفاتورة المراد حذفها أولا\u064b.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -653,6 +666,12 @@ namespace ChickenDist.Forms
 
 		private void BtnCopy_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanCopySalesInvoice())
+			{
+				MessageBox.Show("عذراً، ليس لديك صلاحية نسخ فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+				return;
+			}
+
 			if (dgSales.SelectedRows.Count == 0)
 			{
 				MessageBox.Show("من فضلك اختر الفاتورة المراد نسخها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);

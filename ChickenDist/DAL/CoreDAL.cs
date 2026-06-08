@@ -84,19 +84,19 @@ namespace ChickenDist.DAL
         // Permissions
         public static DataTable GetPermissions(int empID)
         {
-            return DbHelper.Query("SELECT ScreenName,CanAccess,CanEditPrice,COALESCE(CanEditSalesInvoice,0) AS CanEditSalesInvoice FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            return DbHelper.Query("SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
         }
 
-        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canEditSalesInvoice)
+        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canEditSalesInvoice, bool canDeleteSalesInvoice, bool canCopySalesInvoice, bool canViewCost)
         {
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
                 DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             if (Convert.ToInt32(exists) > 0)
-                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanEditSalesInvoice=@cesi WHERE EmpID=@e AND ScreenName=@s",
-                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
+                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanEditSalesInvoice=@cesi,CanDeleteSalesInvoice=@cdsi,CanCopySalesInvoice=@ccsi,CanViewCost=@cvc WHERE EmpID=@e AND ScreenName=@s",
+                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
-                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice) VALUES(@e,@s,@a,@ep,@cesi)",
-                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice));
+                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice,CanDeleteSalesInvoice,CanCopySalesInvoice,CanViewCost) VALUES(@e,@s,@a,@ep,@cesi,@cdsi,@ccsi,@cvc)",
+                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost));
         }
 
         public static DataTable GetTransactions(int empID, DateTime from, DateTime to, string typeFilter)
@@ -690,10 +690,12 @@ namespace ChickenDist.DAL
         public static DataTable GetStatement(int clientID, DateTime from, DateTime to)
         {
             return DbHelper.Query(
-                @"SELECT TransDate, TransType, Debit, Credit, Notes, RefID
-                  FROM ClientTransactions
-                  WHERE ClientID=@id AND CAST(TransDate AS DATE) BETWEEN @f AND @t
-                  ORDER BY TransDate",
+                @"SELECT ct.TransDate, ct.TransType, ct.Debit, ct.Credit, ct.Notes, ct.RefID,
+                         ISNULL(e.EmpName, N'---') AS CreatedByName
+                  FROM ClientTransactions ct
+                  LEFT JOIN Employees e ON ct.CreatedBy = e.EmpID
+                  WHERE ct.ClientID=@id AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t
+                  ORDER BY ct.TransDate",
                 DbHelper.P("@id", clientID), DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
 

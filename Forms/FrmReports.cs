@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Font = Theme.FontMain
 			};
-			(string, string)[] array = new(string, string)[11]
+			var tabsList = new System.Collections.Generic.List<(string, string)>
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
@@ -104,15 +104,17 @@ namespace ChickenDist.Forms
 				("⚖️ أرصدة وبيانات العملاء", "ClientBalances"),
 				("📦 مبيعات الأصناف والصافي", "SalesByProduct"),
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
-				("📋 سجل تقفيل المناديب", "Handovers"),
-				("📈 الملخص المالي والتشغيلي", "FinancialSummary")
+				("📋 سجل تقفيل المناديب", "Handovers")
 			};
-			(string, string)[] array2 = array;
-			for (int i = 0; i < array2.Length; i++)
+			if (Session.CanShowCostProfit("Reports"))
 			{
-				(string, string) tuple = array2[i];
-				string item = tuple.Item1;
-				string item2 = tuple.Item2;
+				tabsList.Add(("📈 الملخص المالي والتشغيلي", "FinancialSummary"));
+			}
+
+			foreach (var tabInfo in tabsList)
+			{
+				string item = tabInfo.Item1;
+				string item2 = tabInfo.Item2;
 				TabPage tabPage = new TabPage(item)
 				{
 					Tag = item2,

@@ -26,6 +26,7 @@ namespace ChickenDist.DAL
                          ISNULL(c.ClientName,N'---') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes,
+                         ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL((
                              SELECT SUM(ri.Quantity * ri.UnitPrice)
                              FROM SalesReturns r
@@ -35,6 +36,7 @@ namespace ChickenDist.DAL
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                  LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
@@ -42,8 +44,8 @@ namespace ChickenDist.DAL
                         SELECT 1 FROM SaleItems si2
                         JOIN Products pr ON si2.ProductID = pr.ProductID
                         WHERE si2.SaleID = s.SaleID
-                          AND (pr.ProductName LIKE N'%' + @product + N'%'
-                            OR pr.ProductCode LIKE N'%' + @product + N'%')
+                        AND (pr.ProductName LIKE N'%' + @product + N'%'
+                          OR pr.ProductCode LIKE N'%' + @product + N'%')
                     ))
                   ORDER BY s.SaleDate DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
@@ -751,7 +753,7 @@ namespace ChickenDist.DAL
                         JOIN Sales s2 ON si.SaleID = s2.SaleID
                         WHERE s2.DriverID = dl.DriverID
                           AND s2.SaleType IN ('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldQty,
                     -- قيمة المبيعات
@@ -760,7 +762,7 @@ namespace ChickenDist.DAL
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
                           AND s2.SaleType IN ('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldValue,
                     -- منها نقدي (محصل فعلاً)
@@ -769,7 +771,7 @@ namespace ChickenDist.DAL
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
                           AND s2.SaleType = 'Cash'
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS CashCollected,
                     -- منها آجل (غير محصل)
@@ -778,7 +780,7 @@ namespace ChickenDist.DAL
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
                           AND s2.SaleType = 'Credit'
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS CreditSold,
                     -- الكميات المرتجعة من العملاء في نفس الفترة
@@ -788,7 +790,7 @@ namespace ChickenDist.DAL
                         JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                         JOIN Sales s2 ON sr.SaleID = s2.SaleID
                         WHERE s2.DriverID = dl.DriverID
-                          AND sr.ReturnDate >= dl.LoadDate
+                          AND CAST(sr.ReturnDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                     ), 0)                                   AS ReturnedQty,
                     -- المتبقي بعهدته (محمل - مباع + مرتجع)
                     ISNULL((
@@ -799,14 +801,14 @@ namespace ChickenDist.DAL
                         SELECT SUM(si.Quantity)
                         FROM SaleItems si JOIN Sales s2 ON si.SaleID=s2.SaleID
                         WHERE s2.DriverID=dl.DriverID AND s2.SaleType IN('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate AND s2.IsPosted=1
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE) AND s2.IsPosted=1
                     ), 0)
                     + ISNULL((
                         SELECT SUM(ri.Quantity)
                         FROM ReturnItems ri
                         JOIN SalesReturns sr ON ri.ReturnID=sr.ReturnID
                         JOIN Sales s2 ON sr.SaleID=s2.SaleID
-                        WHERE s2.DriverID=dl.DriverID AND sr.ReturnDate >= dl.LoadDate
+                        WHERE s2.DriverID=dl.DriverID AND CAST(sr.ReturnDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                     ), 0)                                   AS RemainingQty
                 FROM DriverLoads dl
                 JOIN Employees e ON dl.DriverID = e.EmpID
@@ -1055,8 +1057,8 @@ namespace ChickenDist.DAL
         /// <param name="notes">ملاحظات الفاتورة</param>
         /// <param name="items">بنود الفاتورة</param>
         /// <returns>SaleID الجديد أو -1 عند الفشل</returns>
-        public static int ImportDriverSaleRow(int clientID, int driverID, string paymentType,
-            DateTime saleDate, string notes, List<SaleItemDTO> items)
+               public static int ImportDriverSaleRow(int clientID, int driverID, string paymentType,
+            DateTime saleDate, string notes, List<SaleItemDTO> items, long? cloudID = null)
         {
             if (items == null || items.Count == 0) return -1;
             decimal total = 0;
@@ -1065,23 +1067,74 @@ namespace ChickenDist.DAL
             int returnedID = -1;
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var nextResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
-                string code = nextResult?.ToString() ?? "1";
+                // Resolve warehouse from driver's open load
+                int targetWarehouse = 1;
+                object activeLoadWh = DbHelper.ScalarTrans(trans,
+                    "SELECT TOP 1 WarehouseID FROM DriverLoads WHERE DriverID = @did AND IsClosed = 0 ORDER BY LoadDate DESC",
+                    DbHelper.P("@did", driverID));
+                if (activeLoadWh != null && activeLoadWh != DBNull.Value)
+                {
+                    targetWarehouse = Convert.ToInt32(activeLoadWh);
+                }
 
-                int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) " +
-                    "VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,0,0,1)",
-                    DbHelper.P("@code", code),
-                    DbHelper.P("@dt", saleDate),
-                    DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
-                    DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
-                    DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
-                    DbHelper.P("@tot", total),
-                    DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب"),
-                    DbHelper.P("@by", Session.EmpID));
+                // Check for existing cloud import (idempotency)
+                if (cloudID.HasValue && cloudID.Value > 0)
+                {
+                    object existing = DbHelper.ScalarTrans(trans, "SELECT SaleID FROM Sales WHERE CloudID = @cloudID", DbHelper.P("@cloudID", cloudID.Value));
+                    if (existing != null && existing != DBNull.Value)
+                    {
+                        int saleID = Convert.ToInt32(existing);
+                        
+                        // Delete old transactions and items so we can overwrite/update them
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID = @sid", DbHelper.P("@sid", saleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID = @sid AND TransType = 'Sale'", DbHelper.P("@sid", saleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID = @sid AND TransType = 'DriverSaleImport'", DbHelper.P("@sid", saleID));
+                        
+                        // Update main invoice header
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE Sales SET SaleDate=@dt, SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, WarehouseID=@wid, LastModifiedDate=GETDATE() WHERE SaleID=@sid",
+                            DbHelper.P("@dt", saleDate),
+                            DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
+                            DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                            DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
+                            DbHelper.P("@tot", total),
+                            DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب (محدث)"),
+                            DbHelper.P("@wid", targetWarehouse),
+                            DbHelper.P("@sid", saleID));
 
-                if (saleID <= 0) throw new Exception("فشل في إنشاء الفاتورة المستوردة.");
-                returnedID = saleID;
+                        returnedID = saleID;
+                    }
+                }
+
+                string code = "1";
+                if (returnedID <= 0)
+                {
+                    var nextResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                    code = nextResult?.ToString() ?? "1";
+
+                    int saleID = DbHelper.ExecuteInsertTrans(trans,
+                        "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,CloudID,LastModifiedDate) " +
+                        "VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,0,0,1,@wid,@cloud,GETDATE())",
+                        DbHelper.P("@code", code),
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
+                        DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                        DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
+                        DbHelper.P("@tot", total),
+                        DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب"),
+                        DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@wid", targetWarehouse),
+                        DbHelper.P("@cloud", cloudID.HasValue ? (object)cloudID.Value : DBNull.Value));
+
+                    if (saleID <= 0) throw new Exception("فشل في إنشاء الفاتورة المستوردة.");
+                    returnedID = saleID;
+                }
+                else
+                {
+                    // If we updated, let's load the existing code for audit/logging or transactions
+                    object existingCode = DbHelper.ScalarTrans(trans, "SELECT SaleCode FROM Sales WHERE SaleID = @sid", DbHelper.P("@sid", returnedID));
+                    if (existingCode != null && existingCode != DBNull.Value) code = existingCode.ToString();
+                }
 
                 foreach (var it in items)
                 {
@@ -1089,7 +1142,7 @@ namespace ChickenDist.DAL
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
                         "VALUES(@sid,@pid,@qty,@up,@tot,0,0)",
-                        DbHelper.P("@sid", saleID),
+                        DbHelper.P("@sid", returnedID),
                         DbHelper.P("@pid", it.ProductID),
                         DbHelper.P("@qty", it.Quantity),
                         DbHelper.P("@up", it.UnitPrice),
@@ -1105,7 +1158,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@cid", clientID),
                         DbHelper.P("@dt", saleDate),
                         DbHelper.P("@amt", total),
-                        DbHelper.P("@ref", saleID),
+                        DbHelper.P("@ref", returnedID),
                         DbHelper.P("@n", "استيراد مبيعات مندوب — فاتورة #" + code),
                         DbHelper.P("@by", Session.EmpID));
                 }
@@ -1117,7 +1170,7 @@ namespace ChickenDist.DAL
                         "VALUES(@dt,'DriverSaleImport',@amt,@ref,@n,@by)",
                         DbHelper.P("@dt", saleDate),
                         DbHelper.P("@amt", total),
-                        DbHelper.P("@ref", saleID),
+                        DbHelper.P("@ref", returnedID),
                         DbHelper.P("@n", "استيراد نقدي مندوب — فاتورة #" + code),
                         DbHelper.P("@by", Session.EmpID));
                 }

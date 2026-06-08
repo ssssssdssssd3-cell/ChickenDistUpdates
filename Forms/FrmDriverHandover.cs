@@ -20,6 +20,7 @@ namespace ChickenDist.Forms
         private DataGridView dgItems;
         private Button btnLoadItems, btnSave;
         private TextBox txtNotes, txtCashCollected;
+        private ComboBox cboDeadTreatment;
         private Label lblTotLoad, lblTotRet, lblTotDead, lblTotExtra, lblTotDef, lblExpCash;
 
         private int _loadID = 0;
@@ -186,17 +187,35 @@ namespace ChickenDist.Forms
             };
 
             var lblCashL = new Label { Text = "المبلغ المحصل نقداً:", AutoSize = true, ForeColor = Theme.Primary, Font = new Font("Segoe UI", 12, FontStyle.Bold), Margin = new Padding(0, 5, 5, 0) };
-            txtCashCollected = new TextBox { Width = 150, Height = 32, Font = new Font("Segoe UI", 14, FontStyle.Bold), BackColor = Color.LightYellow, ForeColor = Color.DarkGreen, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Text = "0.00" };
+            txtCashCollected = new TextBox { Width = 130, Height = 32, Font = new Font("Segoe UI", 14, FontStyle.Bold), BackColor = Color.LightYellow, ForeColor = Color.DarkGreen, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Text = "0.00" };
 
-            var lblNotesL = new Label { Text = "ملاحظات التقفيل:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(30, 10, 5, 0) };
-            txtNotes = new TextBox { Width = 300, Height = 32, Font = new Font("Segoe UI", 11), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var lblDeadT = new Label { Text = "معالجة النافق:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 8, 5, 0) };
+            cboDeadTreatment = new ComboBox
+            {
+                Width = 180,
+                Height = 32,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboDeadTreatment.Items.AddRange(new object[] {
+                "تحميل الخزنة (مصروف عام)",
+                "سلفة على المندوب",
+                "خصم من مستحقات المندوب"
+            });
+            cboDeadTreatment.SelectedIndex = 0;
+
+            var lblNotesL = new Label { Text = "ملاحظات التقفيل:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 8, 5, 0) };
+            txtNotes = new TextBox { Width = 200, Height = 32, Font = new Font("Segoe UI", 11), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
             btnSave = Theme.MakeButton("💾 حفظ التقفيل", Theme.Accent);
             btnSave.Size = new Size(140, 32);
-            btnSave.Margin = new Padding(30, 0, 0, 0);
+            btnSave.Margin = new Padding(20, 0, 0, 0);
             btnSave.Click += BtnSave_Click;
 
-            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave });
+            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblDeadT, cboDeadTreatment, lblNotesL, txtNotes, btnSave });
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
@@ -413,7 +432,8 @@ namespace ChickenDist.Forms
 
             if (MessageBox.Show("هل تريد تقفيل الحمولة وإغلاقها نهائياً؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected);
+            int deadTreatment = cboDeadTreatment.SelectedIndex;
+            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected, deadTreatment);
             if (hvID > 0)
             {
                 MessageBox.Show($"✅ تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة كمبيعات نقدية.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -423,6 +443,7 @@ namespace ChickenDist.Forms
                 _loadID = 0;
                 txtNotes.Clear();
                 txtCashCollected.Text = "0.00";
+                cboDeadTreatment.SelectedIndex = 0;
             }
             else MessageBox.Show("❌ فشل الحفظ", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }

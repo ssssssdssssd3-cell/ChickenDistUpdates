@@ -148,7 +148,28 @@ namespace ChickenDist.Forms
                         : clientName;
 
                     DateTime saleDate = _importDate;
-                    if (DateTime.TryParse(cols[COL_DATE], out DateTime d)) saleDate = d;
+                    if (cols.Length > COL_TIME && !string.IsNullOrWhiteSpace(cols[COL_TIME]))
+                    {
+                        string dateTimeStr = cols[COL_DATE].Trim() + " " + cols[COL_TIME].Trim();
+                        string[] formats = { "dd/MM/yyyy HH:mm", "dd/MM/yyyy H:mm", "yyyy-MM-dd HH:mm", "yyyy-MM-dd H:mm", "dd/MM/yyyy hh:mm tt", "yyyy-MM-dd hh:mm tt" };
+                        if (!DateTime.TryParseExact(dateTimeStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out saleDate))
+                        {
+                            if (!DateTime.TryParse(dateTimeStr, out saleDate))
+                            {
+                                if (!DateTime.TryParse(cols[COL_DATE], out saleDate))
+                                {
+                                    saleDate = _importDate;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!DateTime.TryParse(cols[COL_DATE], out saleDate))
+                        {
+                            saleDate = _importDate;
+                        }
+                    }
 
                     inv = new DraftInvoice
                     {
@@ -645,7 +666,7 @@ namespace ChickenDist.Forms
 
                     int saleID = DriverDAL.ImportDriverSaleRow(
                         inv.ClientID, _driverID, inv.PaymentType,
-                        inv.SaleDate, inv.Notes, items);
+                        inv.SaleDate, inv.Notes, items, inv.CsvInvoiceID);
 
                     if (saleID > 0)
                     {

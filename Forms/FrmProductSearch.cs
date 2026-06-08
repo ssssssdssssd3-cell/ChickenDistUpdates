@@ -11,6 +11,8 @@ namespace ChickenDist.Forms
     public class FrmProductSearch : Form
     {
         private TextBox txtSearch;
+        private ComboBox cboCategory;
+        private CheckBox chkShowZeroStock;
         private DataGridView dgProducts;
         private Button btnSelect, btnCancel;
         private DataTable _dtProducts;
@@ -21,13 +23,14 @@ namespace ChickenDist.Forms
         public FrmProductSearch()
         {
             InitUI();
+            LoadCategories();
             LoadProducts();
         }
 
         private void InitUI()
         {
             this.Text = "🔍 بحث عن صنف";
-            this.Size = new Size(720, 500);
+            this.Size = new Size(720, 520);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -38,12 +41,29 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Top panel (Search)
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Theme.BgCard, Padding = new Padding(12) };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 125, BackColor = Theme.BgCard, Padding = new Padding(12) };
+            
             var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(440, 20), AutoSize = true, ForeColor = Theme.TextMain };
             txtSearch = new TextBox { Location = new Point(20, 16), Width = 400, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11) };
             txtSearch.TextChanged += TxtSearch_TextChanged;
             txtSearch.KeyDown += TxtSearch_KeyDown;
-            pnlSearch.Controls.AddRange(new Control[] { lblSearch, txtSearch });
+            
+            var lblCat = new Label { Text = "التصنيف:", Location = new Point(440, 56), AutoSize = true, ForeColor = Theme.TextMain };
+            cboCategory = new ComboBox { Location = new Point(20, 52), Width = 400, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboCategory.SelectedIndexChanged += CboCategory_SelectedIndexChanged;
+
+            chkShowZeroStock = new CheckBox
+            {
+                Text = "إظهار الأصناف ذات الرصيد الصفري",
+                Location = new Point(20, 88),
+                Width = 400,
+                Height = 24,
+                ForeColor = Theme.TextMain,
+                Checked = false
+            };
+            chkShowZeroStock.CheckedChanged += ChkShowZeroStock_CheckedChanged;
+            
+            pnlSearch.Controls.AddRange(new Control[] { lblSearch, txtSearch, lblCat, cboCategory, chkShowZeroStock });
 
             // Grid Panel
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
@@ -78,8 +98,9 @@ namespace ChickenDist.Forms
             };
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 25 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 55 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 50 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 18 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 30 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 25 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", FillWeight = 27 });
             
@@ -104,6 +125,23 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void LoadCategories()
+        {
+            try
+            {
+                DataTable dt = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive = 1 ORDER BY CategoryName");
+                cboCategory.Items.Clear();
+                cboCategory.Items.Add(new ComboItem(0, "-- كل التصنيفات --"));
+                foreach (DataRow r in dt.Rows)
+                {
+                    cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+                }
+                cboCategory.DisplayMember = "Text";
+                cboCategory.SelectedIndex = 0;
+            }
+            catch { }
+        }
+
         private void LoadProducts()
         {
             _dtProducts = ProductDAL.GetAll(true);
@@ -119,9 +157,18 @@ namespace ChickenDist.Forms
                 var row = drv.Row;
                 int pid = Convert.ToInt32(row["ProductID"]);
                 decimal stock = InventoryDAL.GetProductStock(pid);
+                
+                if (!chkShowZeroStock.Checked && stock <= 0)
+                {
+                    continue;
+                }
+                
+                string catName = row.Table.Columns.Contains("CategoryName") && row["CategoryName"] != DBNull.Value ? row["CategoryName"].ToString() : "";
+                
                 int rowIdx = dgProducts.Rows.Add(row["ProductID"], row["ProductCode"], row["ProductName"], row["Unit"],
-                    Convert.ToDecimal(row["SalePrice"]).ToString("F2"), stock.ToString("F2"));
-                // تلوين الرصيد: أحمر إذا صفر، برتقالي إذا أقل من 10، أخضر إذا طبيعي
+                    catName, Convert.ToDecimal(row["SalePrice"]).ToString("F2"), stock.ToString("F2"));
+                
+                // Colorize stock
                 var cell = dgProducts.Rows[rowIdx].Cells["StockQty"];
                 if (stock <= 0)
                     cell.Style.ForeColor = System.Drawing.Color.FromArgb(220, 70, 70);
@@ -132,18 +179,42 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        private void ChkShowZeroStock_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshGrid();
+        }
+
+        private void ApplyFilter()
         {
             string term = txtSearch.Text.Trim().Replace("'", "''");
-            if (string.IsNullOrEmpty(term))
+            int catID = 0;
+            if (cboCategory.SelectedItem is ComboItem ci)
+                catID = ci.ID;
+
+            string filter = "";
+            if (!string.IsNullOrEmpty(term))
             {
-                _dvProducts.RowFilter = "";
+                filter = $"(ProductName LIKE '%{term}%' OR ProductCode LIKE '%{term}%')";
             }
-            else
+
+            if (catID > 0)
             {
-                _dvProducts.RowFilter = $"ProductName LIKE '%{term}%' OR ProductCode LIKE '%{term}%'";
+                if (!string.IsNullOrEmpty(filter)) filter += " AND ";
+                filter += $"CategoryID = {catID}";
             }
+
+            _dvProducts.RowFilter = filter;
             RefreshGrid();
+        }
+
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
+            ApplyFilter();
+        }
+
+        private void CboCategory_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ApplyFilter();
         }
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)

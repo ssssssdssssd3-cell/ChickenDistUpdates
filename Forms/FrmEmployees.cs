@@ -233,9 +233,10 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false
             };
             dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "الشاشة", ReadOnly = true, FillWeight = 60 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "وصول", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "تعديل سعر", FillWeight = 30 });
+            dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "الشاشة", ReadOnly = true, FillWeight = 50 });
+            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "وصول", FillWeight = 25 });
+            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "تعديل سعر", FillWeight = 25 });
+            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanShowCostProfit", HeaderText = "إظهار الربح/التكلفة", FillWeight = 35 });
             dgPerms.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.Controls.Add(dgPerms);
 
@@ -252,11 +253,16 @@ namespace ChickenDist.Forms
             dgPerms.Rows.Clear();
             for (int i = 0; i < Screens.Length; i++)
             {
-                bool access = false, editPrice = false;
+                bool access = false, editPrice = false, showCostProfit = false;
                 foreach (DataRow r in dt.Rows)
                     if (r["ScreenName"].ToString() == Screens[i])
-                    { access = Convert.ToBoolean(r["CanAccess"]); editPrice = Convert.ToBoolean(r["CanEditPrice"]); break; }
-                dgPerms.Rows.Add(Screens[i], ScreenNames[i], access, editPrice);
+                    { 
+                        access = Convert.ToBoolean(r["CanAccess"]); 
+                        editPrice = Convert.ToBoolean(r["CanEditPrice"]); 
+                        showCostProfit = r.Table.Columns.Contains("CanShowCostProfit") && r["CanShowCostProfit"] != DBNull.Value && Convert.ToBoolean(r["CanShowCostProfit"]);
+                        break; 
+                    }
+                dgPerms.Rows.Add(Screens[i], ScreenNames[i], access, editPrice, showCostProfit);
             }
         }
 
@@ -267,7 +273,8 @@ namespace ChickenDist.Forms
                 string screen = row.Cells["Screen"].Value?.ToString();
                 bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
                 bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                EmployeeDAL.SavePermissions(_empID, screen, access, editP);
+                bool showCP = Convert.ToBoolean(row.Cells["CanShowCostProfit"].Value);
+                EmployeeDAL.SavePermissions(_empID, screen, access, editP, showCP);
             }
             MessageBox.Show("✅ تم حفظ الصلاحيات");
             this.Close();

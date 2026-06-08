@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         private ComboBox cboExpSupplier;
         private ComboBox cboExpVehicleType;
         private ComboBox cboExpVehicle;
+        private ComboBox cboExpVehicleFilter;
         private TextBox txtExpNotes;
         private NumericUpDown nudExpAmount;
         private DateTimePicker dtpExpDate;
@@ -191,7 +192,7 @@ namespace ChickenDist.Forms
             pnlF.Controls.Add(cboExpVehicleType);
 
             pnlF.Controls.Add(new Label { Text = "اسم العربية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0) });
-            cboExpVehicle = new ComboBox
+            cboExpVehicleFilter = new ComboBox
             {
                 Width = 170,
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -199,7 +200,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Margin = new Padding(10, 4, 0, 0)
             };
-            pnlF.Controls.Add(cboExpVehicle);
+            pnlF.Controls.Add(cboExpVehicleFilter);
             
             btnLoadExp = Theme.MakeButton("عرض", Theme.Accent);
             btnLoadExp.Size = new Size(80, 32);
@@ -523,7 +524,7 @@ namespace ChickenDist.Forms
             dgExpenses.Rows.Clear();
             int? selectedVehicleID = null;
             string selectedVehicleType = null;
-            if (cboExpVehicle.SelectedValue != null && int.TryParse(cboExpVehicle.SelectedValue.ToString(), out int vid) && vid > 0)
+            if (cboExpVehicleFilter.SelectedValue != null && int.TryParse(cboExpVehicleFilter.SelectedValue.ToString(), out int vid) && vid > 0)
                 selectedVehicleID = vid;
             else if (cboExpVehicleType.SelectedIndex > 0)
                 selectedVehicleType = cboExpVehicleType.SelectedItem?.ToString();
@@ -656,13 +657,26 @@ namespace ChickenDist.Forms
                     cboExpVehicleType.Items.Add(type);
                 cboExpVehicleType.SelectedIndex = 0;
 
-                var dt = _vehiclesForExpenseFilter.Copy();
-                var emptyRow = dt.NewRow();
-                emptyRow["VehicleID"] = DBNull.Value;
-                emptyRow["VehicleType"] = DBNull.Value;
-                emptyRow["VehicleName"] = "--- الكل ---";
-                dt.Rows.InsertAt(emptyRow, 0);
-                cboExpVehicle.DataSource = dt;
+                // Load filter combo with "--- الكل ---"
+                var dtFilter = _vehiclesForExpenseFilter.Copy();
+                var emptyFilterRow = dtFilter.NewRow();
+                emptyFilterRow["VehicleID"] = DBNull.Value;
+                emptyFilterRow["VehicleType"] = DBNull.Value;
+                emptyFilterRow["VehicleName"] = "--- الكل ---";
+                dtFilter.Rows.InsertAt(emptyFilterRow, 0);
+                cboExpVehicleFilter.DataSource = dtFilter;
+                cboExpVehicleFilter.DisplayMember = "VehicleName";
+                cboExpVehicleFilter.ValueMember = "VehicleID";
+                cboExpVehicleFilter.SelectedIndex = 0;
+
+                // Load details combo with "--- لا يوجد ---"
+                var dtDetails = _vehiclesForExpenseFilter.Copy();
+                var emptyDetailsRow = dtDetails.NewRow();
+                emptyDetailsRow["VehicleID"] = DBNull.Value;
+                emptyDetailsRow["VehicleType"] = DBNull.Value;
+                emptyDetailsRow["VehicleName"] = "--- لا يوجد ---";
+                dtDetails.Rows.InsertAt(emptyDetailsRow, 0);
+                cboExpVehicle.DataSource = dtDetails;
                 cboExpVehicle.DisplayMember = "VehicleName";
                 cboExpVehicle.ValueMember = "VehicleID";
                 cboExpVehicle.SelectedIndex = 0;
@@ -688,8 +702,8 @@ namespace ChickenDist.Forms
             emptyRow["VehicleType"] = DBNull.Value;
             emptyRow["VehicleName"] = "--- الكل ---";
             dt.Rows.InsertAt(emptyRow, 0);
-            cboExpVehicle.DataSource = dt;
-            cboExpVehicle.SelectedIndex = 0;
+            cboExpVehicleFilter.DataSource = dt;
+            cboExpVehicleFilter.SelectedIndex = 0;
         }
 
         private void SelectSupplierInExpenseCombo(int supplierID)

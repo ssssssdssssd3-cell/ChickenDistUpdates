@@ -56,6 +56,14 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlClientsDriver);
 
+                // Add CanShowCostProfit migration to Permissions table if not exists
+                string sqlPermissionsExtra = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanShowCostProfit')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanShowCostProfit BIT NOT NULL DEFAULT 0;
+                END";
+                Execute(sqlPermissionsExtra);
+
                 // Add Phone2, MaxCreditLimit, Notes to Clients
                 string sqlClientsExtra = @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'Phone2')
@@ -240,6 +248,14 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ShelfLocation')
                 BEGIN
                     ALTER TABLE Products ADD ShelfLocation NVARCHAR(50) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'InternationalBarcode')
+                BEGIN
+                    ALTER TABLE Products ADD InternationalBarcode NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'HasBarcode')
+                BEGIN
+                    ALTER TABLE Products ADD HasBarcode BIT DEFAULT 1;
                 END";
                 Execute(sqlProductsBarcode);
 
@@ -254,8 +270,63 @@ namespace ChickenDist.Core
                     ALTER TABLE Sales ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
                 END";
                 Execute(sqlWarehouseIDs);
+
+                // ===== Indexes لتسريع الاستعلامات =====
+                string sqlIndexes = @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_SaleDate' AND object_id = OBJECT_ID('Sales'))
+                    CREATE INDEX IX_Sales_SaleDate ON Sales(SaleDate);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_ClientID' AND object_id = OBJECT_ID('Sales'))
+                    CREATE INDEX IX_Sales_ClientID ON Sales(ClientID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_DriverID' AND object_id = OBJECT_ID('Sales'))
+                    CREATE INDEX IX_Sales_DriverID ON Sales(DriverID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_SaleID' AND object_id = OBJECT_ID('SaleItems'))
+                    CREATE INDEX IX_SaleItems_SaleID ON SaleItems(SaleID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_ProductID' AND object_id = OBJECT_ID('SaleItems'))
+                    CREATE INDEX IX_SaleItems_ProductID ON SaleItems(ProductID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTransactions_ClientID' AND object_id = OBJECT_ID('ClientTransactions'))
+                    CREATE INDEX IX_ClientTransactions_ClientID ON ClientTransactions(ClientID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTransactions_TransDate' AND object_id = OBJECT_ID('ClientTransactions'))
+                    CREATE INDEX IX_ClientTransactions_TransDate ON ClientTransactions(TransDate);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CashBox_TransDate' AND object_id = OBJECT_ID('CashBox'))
+                    CREATE INDEX IX_CashBox_TransDate ON CashBox(TransDate);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DriverLoads_DriverID' AND object_id = OBJECT_ID('DriverLoads'))
+                    CREATE INDEX IX_DriverLoads_DriverID ON DriverLoads(DriverID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_HandoverItems_HandoverID' AND object_id = OBJECT_ID('HandoverItems'))
+                    CREATE INDEX IX_HandoverItems_HandoverID ON HandoverItems(HandoverID);";
+                Execute(sqlIndexes);
+
+                // ===== UNIQUE constraint: منع تكرار تقفيل نفس الحمولة =====
+                string sqlUniqueHandover = @"
+                IF NOT EXISTS (
+                    SELECT * FROM sys.indexes 
+                    WHERE name = 'UQ_DriverHandovers_LoadID' AND object_id = OBJECT_ID('DriverHandovers')
+                )
+                BEGIN
+                    -- نحذف التكرارات الموجودة إن وجدت قبل إضافة القيد
+                    WITH CTE AS (
+                        SELECT HandoverID,
+                               ROW_NUMBER() OVER (PARTITION BY LoadID ORDER BY HandoverID DESC) AS rn
+                        FROM DriverHandovers
+                    )
+                    DELETE FROM CTE WHERE rn > 1;
+
+                    ALTER TABLE DriverHandovers
+                        ADD CONSTRAINT UQ_DriverHandovers_LoadID UNIQUE (LoadID);
+                END";
+                Execute(sqlUniqueHandover);
             }
-            catch {}
+            catch (Exception ex)
+            {
+                // تسجيل الخطأ - لا نكتم الأخطاء بصمت
+                System.Diagnostics.Debug.WriteLine("[EnsureDatabaseSchema ERROR] " + ex.Message);
+                try
+                {
+                    System.IO.File.AppendAllText(
+                        System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "schema_errors.log"),
+                        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex.Message}{Environment.NewLine}");
+                }
+                catch { /* لو ما قدرناش نكتب الـ log، خلّي البرنامج يشتغل بدونه */ }
+            }
         }
 
         public static SqlConnection GetConnection()

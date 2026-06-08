@@ -22,18 +22,16 @@ namespace ChickenDist.Core
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanEditSalesInvoice = true };
+                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true };
                 return;
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
             {
-                // FIX: استخدام Convert.ToBoolean بدلاً من (bool)cast المباشر
-                // الـ cast المباشر يرمي InvalidCastException لو كانت القيمة null أو نوع غلط
                 try
                 {
                     _perms[row["ScreenName"].ToString()] = new PermInfo
@@ -41,6 +39,8 @@ namespace ChickenDist.Core
                         CanAccess    = row["CanAccess"]    != DBNull.Value && Convert.ToBoolean(row["CanAccess"]),
                         CanEditPrice = row["CanEditPrice"] != DBNull.Value && Convert.ToBoolean(row["CanEditPrice"]),
                         CanEditSalesInvoice = row["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanEditSalesInvoice"]),
+                        CanDeleteSalesInvoice = row.Table.Columns.Contains("CanDeleteSalesInvoice") && row["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanDeleteSalesInvoice"]),
+                        CanCopySalesInvoice = row.Table.Columns.Contains("CanCopySalesInvoice") && row["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanCopySalesInvoice"]),
                         CanViewCost  = row["CanViewCost"]  != DBNull.Value && Convert.ToBoolean(row["CanViewCost"])
                     };
                 }
@@ -70,6 +70,18 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanEditSalesInvoice;
         }
 
+        public static bool CanDeleteSalesInvoice(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanDeleteSalesInvoice;
+        }
+
+        public static bool CanCopySalesInvoice(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanCopySalesInvoice;
+        }
+
         public static bool CanViewCost(string screen = "Sales")
         {
             if (Role == "Admin") return true;
@@ -94,6 +106,8 @@ namespace ChickenDist.Core
         public bool CanAccess { get; set; }
         public bool CanEditPrice { get; set; }
         public bool CanEditSalesInvoice { get; set; }
+        public bool CanDeleteSalesInvoice { get; set; }
+        public bool CanCopySalesInvoice { get; set; }
         public bool CanViewCost { get; set; }
     }
 }

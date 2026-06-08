@@ -129,7 +129,7 @@ namespace ChickenDist.Forms
 
                 // ── البضاعة والمخزون ──────────────────────────────────
                 ("📦", "الأصناف",          "Products",       () => NavigateTo(new FrmProducts()),       Color.FromArgb(17, 94, 89)),
-                ("🏷️", "التصنيفات",        "Products",       () => NavigateTo(new FrmCategories()),     Color.FromArgb(17, 94, 89)),
+                // ("🏷️", "التصنيفات",        "Products",       () => NavigateTo(new FrmCategories()),     Color.FromArgb(17, 94, 89)),
                 ("🏢", "المخازن",          "Inventory",      () => NavigateTo(new FrmWarehouses()),     Color.FromArgb(17, 94, 89)),
                 ("⚖️", "جرد المخزن",      "Inventory",      () => NavigateTo(new FrmInventory()),      Color.FromArgb(17, 94, 89)),
                 ("🔄", "تحويل مخزني",      "Inventory",      () => NavigateTo(new FrmWarehouseTransfer()), Color.FromArgb(17, 94, 89)),

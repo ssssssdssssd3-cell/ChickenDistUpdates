@@ -78,6 +78,7 @@ namespace ChickenDist.Forms
 
 		private int _lastSaleID = 0;
         private bool _isDirty = false;
+        private Label lblLiveWeight;
 
 		public FrmSale()
 		{
@@ -291,11 +292,25 @@ namespace ChickenDist.Forms
 				AutoSize = true
 			};
 
+			lblLiveWeight = new Label
+			{
+				Name = "lblLiveWeight",
+				Text = "⚖️ الميزان: 0.000 كجم (غير متصل)",
+				Location = new Point(10, 115),
+				Width = 350,
+				Height = 25,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				ForeColor = Theme.Accent,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Anchor = AnchorStyles.Top | AnchorStyles.Left,
+				Visible = AppConfig.ScaleEnabled
+			};
+
 			panel.Controls.AddRange(new Control[]
 			{
 				label, btnTypeCredit, btnTypeCash, btnTypeDriverLoad, lblDate, dtpDate, lblClient, cboClient, btnClientStatement, lblDriver, cboDriver,
 				label2, cboProduct, btnSearchProduct, lblNotes, txtNotes,
-				lblBarcode, txtBarcode, lblWarehouse, cboWarehouse, lblHintBarcode
+				lblBarcode, txtBarcode, lblWarehouse, cboWarehouse, lblHintBarcode, lblLiveWeight
 			});
 			pnlItems = new Panel
 			{
@@ -504,7 +519,7 @@ namespace ChickenDist.Forms
 			btnWhatsApp.Click += BtnWhatsApp_Click;
             Label lblHotkeys = new Label
             {
-                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] بحث سريع عن صنف",
+                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F8] قراءة الوزن  |  [F12] بحث سريع عن صنف",
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Location = new Point(10, 65),
@@ -534,6 +549,7 @@ namespace ChickenDist.Forms
 			if (e.KeyCode == Keys.F2) { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F8) { ReadWeightToSelectedRow(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
 		}
 
@@ -610,7 +626,34 @@ namespace ChickenDist.Forms
 			string code = txtBarcode.Text.Trim();
 			if (string.IsNullOrEmpty(code)) return;
 
-			DataRow row = WarehouseDAL.GetProductByBarcode(code);
+			decimal parsedWeight = 0m;
+			string productLookupCode = code;
+			bool isScaleBarcode = false;
+
+			// التحقق من باركود الميزان المطبوع (ملصق الميزان)
+			// الباركود القياسي للميزان يبدأ بـ 2 وطوله 13 رقماً (مثل: 2000123025008)
+			if (code.Length == 13 && code.StartsWith("2") && decimal.TryParse(code, out _))
+			{
+				string productCode = code.Substring(2, 5); // كود الصنف (5 أرقام)
+				string weightStr = code.Substring(7, 5);     // الوزن بالجرام (5 أرقام)
+				
+				if (decimal.TryParse(weightStr, out decimal grams))
+				{
+					parsedWeight = grams / 1000m; // تحويل من جرام لكيلو (مثال: 02500 = 2.500 كجم)
+					productLookupCode = productCode;
+					isScaleBarcode = true;
+				}
+			}
+
+			// البحث عن المنتج
+			DataRow row = WarehouseDAL.GetProductByBarcode(productLookupCode);
+			
+			// إذا لم يجد المنتج بالكود الصفري (مثلاً: "00123")، نجرب تحويله لرقم عادي (مثلاً: "123")
+			if (row == null && isScaleBarcode && int.TryParse(productLookupCode, out int numericCode))
+			{
+				row = WarehouseDAL.GetProductByBarcode(numericCode.ToString());
+			}
+
 			if (row == null)
 			{
 				MessageBox.Show($"❌ لم يُعثر على صنف بالكود: {code}", "باركود غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -643,11 +686,22 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			// تحديد الكمية الابتدائية (الوزن المستخرج من الملصق، أو الوزن من الميزان المباشر، أو 1.00 افتراضي)
+			decimal initialQty = 1.00m;
+			if (isScaleBarcode)
+			{
+				initialQty = parsedWeight;
+			}
+			else if (AppConfig.ScaleEnabled && ScaleService.Instance.IsConnected && ScaleService.Instance.CurrentWeight > 0m)
+			{
+				initialQty = ScaleService.Instance.CurrentWeight;
+			}
+
 			_items.Add(new SaleItemDTO
 			{
 				ProductID = prodID,
 				ProductName = name,
-				Quantity = 1m,
+				Quantity = initialQty,
 				UnitPrice = price,
 				StockQty = stock,
 				MinStockLimit = minLimit
@@ -672,7 +726,7 @@ namespace ChickenDist.Forms
 		{
 			DataTable all = ClientDAL.GetAll(activeOnly: true);
 			cboClient.Items.Clear();
-			cboClient.Items.Add(new ComboItem(0, "-- اختر عميل --"));
+			cboClient.Items.Add(new ComboItem(0, "-- عميل نقدي عشوائي --"));
 			foreach (DataRow row in all.Rows)
 			{
 				cboClient.Items.Add(new ComboItem((int)row["ClientID"], row["ClientName"].ToString()));
@@ -749,12 +803,18 @@ namespace ChickenDist.Forms
 						return;
 					}
 
+					decimal initialQty = 1.00m;
+					if (AppConfig.ScaleEnabled && ScaleService.Instance.IsConnected && ScaleService.Instance.CurrentWeight > 0m)
+					{
+						initialQty = ScaleService.Instance.CurrentWeight;
+					}
+
 					// Add to items list with default Quantity = 1
 					_items.Add(new SaleItemDTO
 					{
 						ProductID = comboItem.ID,
 						ProductName = comboItem.Text,
-						Quantity = 1.00m,
+						Quantity = initialQty,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
                         MinStockLimit = comboItem.MinStockLimit
@@ -787,6 +847,8 @@ namespace ChickenDist.Forms
 
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
+
+			InitializeScale();
 		}
 
 		private void SetInvoiceType(string type)
@@ -1121,14 +1183,25 @@ namespace ChickenDist.Forms
 			int saleType = ((!(_invoiceType == "Credit")) ? ((_invoiceType == "DriverLoad") ? 1 : 2) : 0);
 			int? clientID = null;
 			int? driverID = null;
-			if (_invoiceType == "Credit" || _invoiceType == "Cash")
+			if (_invoiceType == "Credit")
 			{
 				if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 				{
-					MessageBox.Show("اختر العميل");
+					MessageBox.Show("❌ يجب اختيار عميل مسجل للبيع الآجل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					return;
 				}
 				clientID = comboItem.ID;
+				if (cboDriver.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
+				{
+					driverID = comboItem2.ID;
+				}
+			}
+			else if (_invoiceType == "Cash")
+			{
+				if (cboClient.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
+				{
+					clientID = comboItem.ID;
+				}
 				if (cboDriver.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
 				{
 					driverID = comboItem2.ID;
@@ -1214,7 +1287,7 @@ namespace ChickenDist.Forms
 					DialogResult printResult = MessageBox.Show($"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟", "نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 					if (printResult == DialogResult.Yes)
 					{
-						new FrmPrintSale(num3);
+						new FrmPrintSale(num3, AppConfig.ThermalPrinterEnabled);
 					}
 				}
 				ResetForm();
@@ -1417,7 +1490,7 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
-				new FrmPrintSale(printID);
+				new FrmPrintSale(printID, AppConfig.ThermalPrinterEnabled);
 			}
 		}
 
@@ -1608,6 +1681,91 @@ namespace ChickenDist.Forms
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType("Credit");
             _isDirty = false;
+		}
+
+		private void InitializeScale()
+		{
+			if (AppConfig.ScaleEnabled)
+			{
+				ScaleService.Instance.WeightChanged += Scale_WeightChanged;
+				ScaleService.Instance.ErrorOccurred += Scale_ErrorOccurred;
+				
+				lblLiveWeight.Text = "⚖️ الميزان: جاري الاتصال...";
+				lblLiveWeight.ForeColor = Theme.TextSub;
+				
+				System.Threading.Tasks.Task.Run(() => {
+					ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+				});
+			}
+		}
+
+		private void Scale_WeightChanged(decimal weight, bool isStable)
+		{
+			if (this.IsDisposed) return;
+			
+			this.BeginInvoke((Action)delegate {
+				lblLiveWeight.Text = $"⚖️ الميزان: {weight:F3} كجم {(isStable ? "🟢" : "🟡")}";
+				lblLiveWeight.ForeColor = isStable ? Color.FromArgb(46, 204, 113) : Theme.Accent;
+			});
+		}
+
+		private void Scale_ErrorOccurred(string error)
+		{
+			if (this.IsDisposed) return;
+			
+			this.BeginInvoke((Action)delegate {
+				lblLiveWeight.Text = "⚖️ الميزان: 🔴 خطأ في الاتصال!";
+				lblLiveWeight.ForeColor = Theme.Danger;
+			});
+		}
+
+		private void ReadWeightToSelectedRow()
+		{
+			if (!AppConfig.ScaleEnabled)
+			{
+				MessageBox.Show("الميزان غير مفعّل في الإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return;
+			}
+			if (!ScaleService.Instance.IsConnected)
+			{
+				MessageBox.Show("الميزان غير متصل حالياً! تأكد من التوصيل والإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+			
+			decimal weight = ScaleService.Instance.CurrentWeight;
+			if (weight <= 0m)
+			{
+				MessageBox.Show("الوزن المقروء صفر أو سالب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+			{
+				int rowIndex = dgItems.CurrentRow.Index;
+				SaleItemDTO saleItemDTO = _items[rowIndex];
+				
+				decimal productStock = InventoryDAL.GetProductStock(saleItemDTO.ProductID);
+				if (weight > productStock)
+				{
+					MessageBox.Show($"❌ خطأ: الوزن المقروء ({weight:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					return;
+				}
+
+				saleItemDTO.Quantity = weight;
+				decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
+				saleItemDTO.DiscountAmt = Math.Round(gross * saleItemDTO.DiscountPct / 100m, 2);
+
+				dgItems.Rows[rowIndex].Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["TotalPrice"].Value = saleItemDTO.TotalPrice.ToString("F2");
+
+				CalculateNet();
+			}
+			else
+			{
+				MessageBox.Show("يرجى اختيار صنف من الجدول أولاً لقراءة الوزن إليه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
 		}
 	}
 	internal class ComboItem

@@ -59,19 +59,19 @@ namespace ChickenDist.DAL
         // Permissions
         public static DataTable GetPermissions(int empID)
         {
-            return DbHelper.Query("SELECT ScreenName,CanAccess,CanEditPrice FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            return DbHelper.Query("SELECT ScreenName,CanAccess,CanEditPrice,COALESCE(CanShowCostProfit, 0) AS CanShowCostProfit FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
         }
 
-        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice)
+        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canShowCostProfit)
         {
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
                 DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             if (Convert.ToInt32(exists) > 0)
-                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep WHERE EmpID=@e AND ScreenName=@s",
-                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
+                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanShowCostProfit=@cp WHERE EmpID=@e AND ScreenName=@s",
+                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cp", canShowCostProfit), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
-                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice) VALUES(@e,@s,@a,@ep)",
-                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice));
+                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanShowCostProfit) VALUES(@e,@s,@a,@ep,@cp)",
+                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cp", canShowCostProfit));
         }
     }
 
@@ -87,8 +87,16 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(bool activeOnly = false)
         {
             string sql = activeOnly
-                ? "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description FROM Products WHERE IsActive=1 ORDER BY ProductName"
-                : "SELECT ProductID,ProductCode,ProductName,Unit,SalePrice,PurchasePrice,MinStockLimit,Description,IsActive FROM Products ORDER BY ProductName";
+                ? @"SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                           p.MinStockLimit, p.Description, p.CategoryID, c.CategoryName 
+                    FROM Products p 
+                    LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                    WHERE p.IsActive=1 ORDER BY p.ProductName"
+                : @"SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                           p.MinStockLimit, p.Description, p.IsActive, p.CategoryID, c.CategoryName 
+                    FROM Products p 
+                    LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                    ORDER BY p.ProductName";
             return DbHelper.Query(sql);
         }
 
@@ -98,18 +106,20 @@ namespace ChickenDist.DAL
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
-        public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description)
+        public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description, string internationalBarcode, bool hasBarcode)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description) VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d)",
+                    "INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,InternationalBarcode,HasBarcode) VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@ib,@hb)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
-                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description));
+                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
+                    DbHelper.P("@ib", internationalBarcode), DbHelper.P("@hb", hasBarcode));
             else
             {
-                DbHelper.Execute("UPDATE Products SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d WHERE ProductID=@id",
+                DbHelper.Execute("UPDATE Products SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,InternationalBarcode=@ib,HasBarcode=@hb WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
-                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description), DbHelper.P("@id", id));
+                    DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
+                    DbHelper.P("@ib", internationalBarcode), DbHelper.P("@hb", hasBarcode), DbHelper.P("@id", id));
                 return id;
             }
         }
@@ -349,16 +359,20 @@ namespace ChickenDist.DAL
 
         public static void AddPayment(int clientID, decimal amount, string notes)
         {
-            DbHelper.Execute(
-                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Payment',@amt,@n,@by)",
-                DbHelper.P("@id", clientID), DbHelper.P("@amt", amount),
-                DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+            // ===== لف الدفع وقيد الخزنة في Transaction واحدة =====
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO ClientTransactions(ClientID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Payment',@amt,@n,@by)",
+                    DbHelper.P("@id", clientID), DbHelper.P("@amt", amount),
+                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
 
-            DbHelper.Execute(
-                "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy) VALUES('ClientPayment',@amt,@n,@by)",
-                DbHelper.P("@amt", amount),
-                DbHelper.P("@n", "تحصيل من عميل - " + notes),
-                DbHelper.P("@by", Session.EmpID));
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy) VALUES('ClientPayment',@amt,@n,@by)",
+                    DbHelper.P("@amt", amount),
+                    DbHelper.P("@n", "تحصيل من عميل - " + notes),
+                    DbHelper.P("@by", Session.EmpID));
+            });
         }
     }
 

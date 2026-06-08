@@ -15,10 +15,12 @@ namespace ChickenDist.Forms
         private DataTable _items;
         private int _printItemIndex = 0;
         private decimal _runningTotal = 0;
+        private bool _directPrint = false;
 
-        public FrmPrintSale(int saleID)
+        public FrmPrintSale(int saleID, bool directPrint = false)
         {
             _saleID = saleID;
+            _directPrint = directPrint;
             LoadData();
             DoPrint();
         }
@@ -28,12 +30,12 @@ namespace ChickenDist.Forms
             var dt = DbHelper.Query(@"
                 SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
-                       COALESCE(c.ClientName, N'---') AS ClientName,
+                       CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي عشوائي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
                        COALESCE(e.EmpName, N'---') AS DriverName
-                FROM Sales s
-                LEFT JOIN Clients c ON s.ClientID = c.ClientID
-                LEFT JOIN Employees e ON s.DriverID = e.EmpID
-                WHERE s.SaleID = @id", DbHelper.P("@id", _saleID));
+                  FROM Sales s
+                  LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                  LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                  WHERE s.SaleID = @id", DbHelper.P("@id", _saleID));
             if (dt.Rows.Count > 0)
                 _saleRow = dt.Rows[0];
             
@@ -43,79 +45,139 @@ namespace ChickenDist.Forms
         private void DoPrint()
         {
             var pd = new PrintDocument();
-            pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
+            bool isThermal = AppConfig.ThermalPrinterEnabled && _directPrint;
+
+            if (isThermal)
+            {
+                pd.PrinterSettings.PrinterName = AppConfig.ThermalPrinterName;
+                int paperWidth = (AppConfig.ThermalPaperWidth == 58) ? 220 : 300; // width in hundredths of an inch
+                pd.DefaultPageSettings.PaperSize = new PaperSize("ThermalRoll", paperWidth, 1200);
+                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+            }
+            else
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
+                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+            }
+
             pd.BeginPrint += (s, e) => 
             {
                 _printItemIndex = 0;
                 _runningTotal = 0;
             };
+
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                var boldBig = new Font("Arial", 14, FontStyle.Bold);
-                var bold = new Font("Arial", 10, FontStyle.Bold);
-                var normal = new Font("Arial", 9);
-                var small = new Font("Arial", 8);
-
                 int pageW = e.PageBounds.Width;
-                int margin = 20;
-                int y = 20;
+                int margin = isThermal ? 10 : 20;
+                int y = isThermal ? 10 : 20;
+
+                // ===== Fonts =====
+                var boldBig = new Font("Arial", isThermal ? 11 : 14, FontStyle.Bold);
+                var bold = new Font("Arial", isThermal ? 9 : 10, FontStyle.Bold);
+                var normal = new Font("Arial", isThermal ? 8 : 9);
+                var small = new Font("Arial", isThermal ? 7 : 8);
+
+                // ===== Colors =====
+                Brush textBrush = isThermal ? Brushes.Black : Brushes.DarkBlue;
+                Brush valBrush = Brushes.Black;
+                Pen borderPen = isThermal ? Pens.Black : new Pen(Color.DarkBlue, 1.5f);
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var right = new StringFormat { Alignment = StringAlignment.Far };
 
                 // ===== Header =====
-                g.DrawString("فاتورة مبيعات", boldBig, Brushes.DarkBlue, new RectangleF(0, y, pageW, 30), center); y += 30;
-                g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
-                g.DrawLine(new Pen(Color.DarkBlue, 2), margin, y, pageW - margin, y); y += 10;
+                g.DrawString("فاتورة مبيعات", boldBig, textBrush, new RectangleF(0, y, pageW, isThermal ? 22 : 30), center); y += isThermal ? 22 : 30;
+                g.DrawString(AppConfig.CompanyName, bold, valBrush, new RectangleF(0, y, pageW, isThermal ? 18 : 22), center); y += isThermal ? 20 : 25;
+                g.DrawLine(borderPen, margin, y, pageW - margin, y); y += 10;
 
-                // ===== Sale Info (RTL: Info on right, Code on left) =====
+                // ===== Sale Info (RTL) =====
                 if (_saleRow != null)
                 {
-                    // Date on the right, invoice number on the left
+                    // Date
                     g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy}",
-                        normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                        normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right);
                     g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}",
-                        normal, Brushes.Black, margin, y);
-                    y += 20;
+                        normal, valBrush, margin, y);
+                    y += 18;
 
                     string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل"
                                      : _saleRow["SaleType"].ToString() == "Cash"   ? "نقدي"
                                      : "تحميل مندوب";
-                    string driverText = _saleRow["DriverName"].ToString() != "---" ? $"  |  المندوب: {_saleRow["DriverName"]}" : "";
-                    g.DrawString($"العميل: {_saleRow["ClientName"]}{driverText}   |   النوع: {typeLabel}",
-                        normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
-                    y += 25;
+                    string driverText = _saleRow["DriverName"].ToString() != "---" ? $" | المندوب: {_saleRow["DriverName"]}" : "";
+                    
+                    if (isThermal)
+                    {
+                        g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right);
+                        y += 18;
+                        g.DrawString($"النوع: {typeLabel}{driverText}", normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right);
+                        y += 22;
+                    }
+                    else
+                    {
+                        g.DrawString($"العميل: {_saleRow["ClientName"]}{driverText}   |   النوع: {typeLabel}",
+                            normal, valBrush, new RectangleF(0, y, pageW - margin, 20), right);
+                        y += 25;
+                    }
                 }
 
-                // ===== Table Header - RTL: Price right - Name left =====
-                int xTotal    = margin;       // Total amount
-                int xDiscount = 105;          // Discount
-                int xPrice    = 170;          // Unit price
-                int xQty      = 255;          // Quantity
-                int xProduct  = 340;          // Product Name
+                // ===== Table Header =====
+                int xTotal, xDiscount, xPrice, xQty, xProduct;
+                int colWTotal, colWDiscount, colWPrice, colWQty, colWProduct;
 
-                int colWTotal    = 80;
-                int colWDiscount = 60;
-                int colWPrice    = 80;
-                int colWQty      = 80;
-                int colWProduct  = 220;
+                if (isThermal)
+                {
+                    xTotal = margin;
+                    colWTotal = (AppConfig.ThermalPaperWidth == 58) ? 45 : 60;
 
-                // Draw header cells right-aligned inside each column box
-                DrawColHeader(g, bold, "الإجمالي",  xTotal,    colWTotal,    y);
-                DrawColHeader(g, bold, "الخصم",     xDiscount, colWDiscount, y);
-                DrawColHeader(g, bold, "السعر",     xPrice,    colWPrice,    y);
-                DrawColHeader(g, bold, "الكمية",    xQty,      colWQty,      y);
-                DrawColHeader(g, bold, "الصنف",     xProduct,  colWProduct,  y);
-                y += 20;
-                g.DrawLine(Pens.Gray, margin, y, pageW - margin, y); y += 4;
+                    xPrice = xTotal + colWTotal;
+                    colWPrice = (AppConfig.ThermalPaperWidth == 58) ? 40 : 50;
+
+                    xQty = xPrice + colWPrice;
+                    colWQty = (AppConfig.ThermalPaperWidth == 58) ? 35 : 45;
+
+                    xProduct = xQty + colWQty;
+                    colWProduct = pageW - margin - xProduct;
+
+                    xDiscount = 0;
+                    colWDiscount = 0;
+
+                    DrawColHeader(g, bold, "الإجمالي", xTotal, colWTotal, y, textBrush);
+                    DrawColHeader(g, bold, "السعر", xPrice, colWPrice, y, textBrush);
+                    DrawColHeader(g, bold, "الكمية", xQty, colWQty, y, textBrush);
+                    DrawColHeader(g, bold, "الصنف", xProduct, colWProduct, y, textBrush);
+                }
+                else
+                {
+                    xTotal    = margin;
+                    xDiscount = 105;
+                    xPrice    = 170;
+                    xQty      = 255;
+                    xProduct  = 340;
+
+                    colWTotal    = 80;
+                    colWDiscount = 60;
+                    colWPrice    = 80;
+                    colWQty      = 80;
+                    colWProduct  = 220;
+
+                    DrawColHeader(g, bold, "الإجمالي",  xTotal,    colWTotal,    y, textBrush);
+                    DrawColHeader(g, bold, "الخصم",     xDiscount, colWDiscount, y, textBrush);
+                    DrawColHeader(g, bold, "السعر",     xPrice,    colWPrice,    y, textBrush);
+                    DrawColHeader(g, bold, "الكمية",    xQty,      colWQty,      y, textBrush);
+                    DrawColHeader(g, bold, "الصنف",     xProduct,  colWProduct,  y, textBrush);
+                }
+                
+                y += 18;
+                g.DrawLine(isThermal ? Pens.Black : Pens.Gray, margin, y, pageW - margin, y); y += 4;
 
                 // ===== Items =====
                 if (_items != null)
                 {
                     while (_printItemIndex < _items.Rows.Count)
                     {
-                        if (y + 150 > e.PageBounds.Height)
+                        if (y + (isThermal ? 80 : 150) > e.PageBounds.Height)
                         {
                             e.HasMorePages = true;
                             return;
@@ -135,18 +197,33 @@ namespace ChickenDist.Forms
                             discText = itemDiscAmt.ToString("F2");
 
                         DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y);
-                        DrawColCell(g, normal, discText,               xDiscount, colWDiscount, y);
                         DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y);
                         DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y);
                         DrawColCell(g, normal, r["ProductName"].ToString(), xProduct, colWProduct,  y);
-                        _runningTotal += tot; y += 18;
+                        
+                        if (!isThermal)
+                        {
+                            DrawColCell(g, normal, discText,           xDiscount, colWDiscount, y);
+                        }
+
+                        y += isThermal ? 16 : 18;
+
+                        // For thermal: If item has discount, print it on next line indented
+                        if (isThermal && (itemDiscPct > 0 || itemDiscAmt > 0))
+                        {
+                            string discountDesc = itemDiscPct > 0 ? $"خصم {itemDiscPct:0.##}%" : $"خصم {itemDiscAmt:N2} جنيه";
+                            g.DrawString($"* {discountDesc}", small, Brushes.Gray, new RectangleF(xProduct, y, colWProduct, 14), right);
+                            y += 14;
+                        }
+
+                        _runningTotal += tot;
                         _printItemIndex++;
                     }
                 }
                 
                 e.HasMorePages = false;
 
-                g.DrawLine(new Pen(Color.DarkBlue, 1.5f), margin, y, pageW - margin, y); y += 8;
+                g.DrawLine(borderPen, margin, y, pageW - margin, y); y += 8;
 
                 // Get invoice discount details
                 decimal invDiscountAmt = 0;
@@ -162,14 +239,14 @@ namespace ChickenDist.Forms
                 if (invDiscountAmt > 0)
                 {
                     g.DrawString($"إجمالي الأصناف: {_runningTotal:N2} جنيه",
-                        normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right); y += 18;
                     g.DrawString($"خصم الفاتورة: {invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)",
-                        normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right); y += 18;
                 }
 
                 // Net Amount (Final invoice amount)
                 g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه",
-                    bold, Brushes.DarkRed, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
+                    bold, isThermal ? Brushes.Black : Brushes.DarkRed, new RectangleF(0, y, pageW - margin, 22), right); y += 22;
 
                 // ===== Balance Section =====
                 if (_saleRow != null && _saleRow["ClientID"] != DBNull.Value)
@@ -204,26 +281,57 @@ namespace ChickenDist.Forms
                         else
                             previousBalance = currentBalance + paymentToday;
 
-                        g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
+                        g.DrawLine(isThermal ? Pens.Black : Pens.LightGray, margin, y, pageW - margin, y); y += 8;
 
-                        // RTL layout: previous balance on right, payment on left
-                        g.DrawString($"الرصيد السابق: {previousBalance:N2} جنيه",
-                            bold, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
-                        g.DrawString($"المدفوع (التحصيل): {paymentToday:N2} جنيه",
-                            bold, Brushes.Black, margin, y);
-                        y += 25;
+                        if (isThermal)
+                        {
+                            g.DrawString($"الرصيد السابق: {previousBalance:N2} ج", normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right);
+                            y += 18;
+                            g.DrawString($"المدفوع اليوم: {paymentToday:N2} ج", normal, valBrush, new RectangleF(0, y, pageW - margin, 18), right);
+                            y += 18;
+                            g.DrawString($"الرصيد الحالي: {currentBalance:N2} ج", bold, textBrush, new RectangleF(0, y, pageW - margin, 20), right);
+                            y += 22;
+                        }
+                        else
+                        {
+                            g.DrawString($"الرصيد السابق: {previousBalance:N2} جنيه",
+                                bold, valBrush, new RectangleF(0, y, pageW - margin, 20), right);
+                            g.DrawString($"المدفوع (التحصيل): {paymentToday:N2} جنيه",
+                                bold, valBrush, margin, y);
+                            y += 25;
 
-                        // Current Balance - centered and bold
-                        g.DrawString($"الرصيد الحالي: {currentBalance:N2} جنيه",
-                            boldBig, Brushes.DarkBlue, new RectangleF(0, y, pageW, 28), center);
-                        y += 35;
+                            g.DrawString($"الرصيد الحالي: {currentBalance:N2} جنيه",
+                                boldBig, textBrush, new RectangleF(0, y, pageW, 28), center);
+                            y += 35;
+                        }
                     }
                 }
 
-                g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
-                g.DrawString("شكراً لتعاملكم معنا", small, Brushes.Gray, new RectangleF(0, y, pageW, 20), center);
+                g.DrawLine(isThermal ? Pens.Black : Pens.LightGray, margin, y, pageW - margin, y); y += 8;
+                g.DrawString("شكراً لتعاملكم معنا", small, Brushes.Gray, new RectangleF(0, y, pageW, 18), center);
             };
 
+            if (isThermal)
+            {
+                try
+                {
+                    pd.Print();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ فشلت الطباعة المباشرة:\n{ex.Message}\nسيتم عرض معاينة الطباعة بدلاً من ذلك.", 
+                        "خطأ طباعة حرارية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ShowPreview(pd);
+                }
+            }
+            else
+            {
+                ShowPreview(pd);
+            }
+        }
+
+        private void ShowPreview(PrintDocument pd)
+        {
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
@@ -234,14 +342,12 @@ namespace ChickenDist.Forms
             preview.ShowDialog();
         }
 
-        // Helper: draw a right-aligned header label inside a column box
-        private void DrawColHeader(Graphics g, Font f, string text, int x, int w, int y)
+        private void DrawColHeader(Graphics g, Font f, string text, int x, int w, int y, Brush brush)
         {
             var sf = new StringFormat { Alignment = StringAlignment.Far };
-            g.DrawString(text, f, Brushes.DarkBlue, new RectangleF(x, y, w, 18), sf);
+            g.DrawString(text, f, brush, new RectangleF(x, y, w, 18), sf);
         }
 
-        // Helper: draw a right-aligned data cell inside a column box
         private void DrawColCell(Graphics g, Font f, string text, int x, int w, int y)
         {
             var sf = new StringFormat { Alignment = StringAlignment.Far };

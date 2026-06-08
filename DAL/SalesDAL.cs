@@ -12,9 +12,11 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
-                         ISNULL(c.ClientName,N'---') AS ClientName,
+                         CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي عشوائي' ELSE ISNULL(c.ClientName,N'---') END AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
-                         s.TotalAmount, s.Notes
+                         s.TotalAmount, s.Notes,
+                         COALESCE((SELECT SUM(si.Quantity * COALESCE(p.PurchasePrice, 0)) FROM SaleItems si JOIN Products p ON si.ProductID = p.ProductID WHERE si.SaleID = s.SaleID), 0) AS TotalCost,
+                         s.TotalAmount - COALESCE((SELECT SUM(si.Quantity * COALESCE(p.PurchasePrice, 0)) FROM SaleItems si JOIN Products p ON si.ProductID = p.ProductID WHERE si.SaleID = s.SaleID), 0) AS TotalProfit
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -34,9 +36,35 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
-            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null)
+            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, int? createdBy = null)
         {
             int returnedSaleID = -1;
+            int sellerID = createdBy ?? Session.EmpID;
+
+            // ===== تحقق من حد الائتمان قبل البيع الآجل =====
+            if (saleType == 0 && clientID.HasValue && !isDraft)
+            {
+                var statusRow = DbHelper.Query(@"
+                    SELECT ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                           ISNULL(c.MaxCreditLimit, 0) AS MaxCreditLimit
+                     FROM Clients c
+                     LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                     WHERE c.ClientID = @id",
+                     DbHelper.P("@id", clientID.Value));
+
+                if (statusRow.Rows.Count > 0)
+                {
+                    decimal currentBalance = Convert.ToDecimal(statusRow.Rows[0]["Balance"]);
+                    decimal maxLimit       = Convert.ToDecimal(statusRow.Rows[0]["MaxCreditLimit"]);
+                    decimal newBalance     = currentBalance + total;
+
+                    if (maxLimit > 0 && newBalance > maxLimit)
+                    {
+                        throw new Exception(
+                            $"تجاوز حد الائتمان!\nالرصيد الحالي: {currentBalance:N2}\nقيمة الفاتورة: {total:N2}\nالحد المسموح: {maxLimit:N2}\nالرصيد بعد البيع سيكون: {newBalance:N2}\n\nراجع حد الائتمان من بيانات العميل أو حصّل جزءاً من الدين أولاً.");
+                    }
+                }
+            }
 
             DbHelper.RunInTransaction((con, trans) =>
             {
@@ -49,7 +77,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", sellerID),
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
                     DbHelper.P("@ip", !isDraft),
                     DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
@@ -76,7 +104,7 @@ namespace ChickenDist.DAL
                             "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
                             DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع " + code),
-                            DbHelper.P("@by", Session.EmpID));
+                            DbHelper.P("@by", sellerID));
                     }
 
                     // نقدي: أضف للخزنة
@@ -85,7 +113,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
                             DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID));
+                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", sellerID));
                     }
 
                     // تحميل مندوب: أنشئ سجل حمولة
@@ -169,34 +197,53 @@ namespace ChickenDist.DAL
             if (dt.Rows.Count == 0) return false;
 
             string typeStr = dt.Rows[0]["SaleType"].ToString();
+            bool success = false;
 
-            // 2. عكس حركات حساب العميل إذا كان بيع آجل
-            if (typeStr == "Credit")
+            // ===== لف كل عمليات الحذف في Transaction واحدة لضمان الاتساق =====
+            DbHelper.RunInTransaction((con, trans) =>
             {
-                DbHelper.Execute("DELETE FROM ClientTransactions WHERE TransType='Sale' AND RefID=@id", DbHelper.P("@id", saleID));
-            }
-
-            // 3. عكس حركات الخزينة إذا كان بيع نقدي
-            if (typeStr == "Cash")
-            {
-                DbHelper.Execute("DELETE FROM CashBox WHERE TransType='SaleIncome' AND RefID=@id", DbHelper.P("@id", saleID));
-            }
-
-            // 4. حذف حمولات المناديب غير المغلقة المرتبطة بالفاتورة
-            if (typeStr == "DriverLoad")
-            {
-                var loadData = DbHelper.Query("SELECT LoadID FROM DriverLoads WHERE SaleID=@id", DbHelper.P("@id", saleID));
-                if (loadData.Rows.Count > 0)
+                // 2. عكس حركات حساب العميل إذا كان بيع آجل
+                if (typeStr == "Credit")
                 {
-                    int loadID = Convert.ToInt32(loadData.Rows[0]["LoadID"]);
-                    DbHelper.Execute("DELETE FROM DriverLoadItems WHERE LoadID=@lid", DbHelper.P("@lid", loadID));
-                    DbHelper.Execute("DELETE FROM DriverLoads WHERE LoadID=@lid", DbHelper.P("@lid", loadID));
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM ClientTransactions WHERE TransType='Sale' AND RefID=@id",
+                        DbHelper.P("@id", saleID));
                 }
-            }
 
-            // 5. حذف الفاتورة نفسها (سوف تحذف الأصناف تلقائياً بسبب CASCADE)
-            int rows = DbHelper.Execute("DELETE FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
-            return rows > 0;
+                // 3. عكس حركات الخزينة إذا كان بيع نقدي
+                if (typeStr == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM CashBox WHERE TransType='SaleIncome' AND RefID=@id",
+                        DbHelper.P("@id", saleID));
+                }
+
+                // 4. حذف حمولات المناديب غير المغلقة المرتبطة بالفاتورة
+                if (typeStr == "DriverLoad")
+                {
+                    var loadData = DbHelper.Query(
+                        "SELECT LoadID FROM DriverLoads WHERE SaleID=@id",
+                        DbHelper.P("@id", saleID));
+                    if (loadData.Rows.Count > 0)
+                    {
+                        int loadID = Convert.ToInt32(loadData.Rows[0]["LoadID"]);
+                        DbHelper.ExecuteTrans(trans,
+                            "DELETE FROM DriverLoadItems WHERE LoadID=@lid",
+                            DbHelper.P("@lid", loadID));
+                        DbHelper.ExecuteTrans(trans,
+                            "DELETE FROM DriverLoads WHERE LoadID=@lid",
+                            DbHelper.P("@lid", loadID));
+                    }
+                }
+
+                // 5. حذف الفاتورة نفسها (الأصناف تُحذف تلقائياً CASCADE)
+                int rows = DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM Sales WHERE SaleID=@id",
+                    DbHelper.P("@id", saleID));
+                success = rows > 0;
+            });
+
+            return success;
         }
     }
 
@@ -289,7 +336,7 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveHandover(int loadID, int driverID,
-            List<HandoverItemDTO> items, string notes, decimal cashCollected)
+            List<HandoverItemDTO> items, string notes, decimal cashCollected, int deadTreatment = 0)
         {
             decimal totLoaded = 0, totRet = 0, totDead = 0, totExtra = 0, totDef = 0;
             decimal totalSoldValue = 0;
@@ -304,82 +351,151 @@ namespace ChickenDist.DAL
                 totalSoldValue += (i.SoldQty * i.UnitPrice);
             }
 
-            // 1. تسجيل التقفيل
-            int hvID = DbHelper.ExecuteInsert(
-                @"INSERT INTO DriverHandovers(HandoverDate,LoadID,DriverID,TotalLoaded,TotalReturned,TotalDead,TotalExtra,TotalDeficit,Notes,CreatedBy)
-                  VALUES(@dt,@lid,@did,@tl,@tr,@td,@te,@tdf,@n,@by)",
-                DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID), DbHelper.P("@did", driverID),
-                DbHelper.P("@tl", totLoaded), DbHelper.P("@tr", totRet), DbHelper.P("@td", totDead),
-                DbHelper.P("@te", totExtra), DbHelper.P("@tdf", totDef),
-                DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
-
-            foreach (var i in items)
+            decimal deadValue = 0;
+            if (totDead > 0)
             {
-                DbHelper.Execute(
-                    @"INSERT INTO HandoverItems(HandoverID,ProductID,LoadedQty,ReturnedQty,DeadQty,ExtraQty,DeficitQty)
-                      VALUES(@hid,@pid,@lq,@rq,@dq,@eq,@dfq)",
-                    DbHelper.P("@hid", hvID), DbHelper.P("@pid", i.ProductID),
-                    DbHelper.P("@lq", i.LoadedQty), DbHelper.P("@rq", i.ReturnedQty),
-                    DbHelper.P("@dq", i.DeadQty), DbHelper.P("@eq", i.ExtraQty),
-                    DbHelper.P("@dfq", i.DeficitQty));
-            }
-
-            // إغلاق الحمولة
-            DbHelper.Execute("UPDATE DriverLoads SET IsClosed=1, ClosedAt=@dt WHERE LoadID=@lid",
-                DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID));
-
-            // 2. إذا كان هناك كميات مباعة، ننشئ فاتورة مبيعات نقدية مجمعة باسم المندوب
-            // حتى تظهر في تقارير المبيعات اليومية، ولكن بدون خصم من المخزن مجدداً (لأننا صلحنا دالة المخزن)
-            if (totalSoldValue > 0)
-            {
-                var saleItemsDto = new List<SaleItemDTO>();
                 foreach (var i in items)
                 {
-                    if (i.SoldQty > 0)
+                    if (i.DeadQty > 0)
                     {
-                        saleItemsDto.Add(new SaleItemDTO
-                        {
-                            ProductID = i.ProductID,
-                            Quantity = i.SoldQty,
-                            UnitPrice = i.UnitPrice
-                        });
+                        deadValue += i.DeadQty * i.UnitPrice;
                     }
                 }
-                
-                // استخدام نفس دالة الحفظ، مع إرسال DriverID وعدم إرسال ClientID
-                SaleDAL.SaveSale(2, null, driverID, totalSoldValue, "مبيعات مقفلة من حمولة رقم " + loadID, saleItemsDto);
-                
-                // ولكن SaveSale عندما يتم تمرير 2 (Cash) يضيف totalSoldValue للخزنة
-                // في حالتنا نحن نحتاج لإضافة cashCollected فقط للخزنة، وليس totalSoldValue
-                // لذا سنحذف القيمة المضافة افتراضيا من SaveSale ونضيف القيمة الفعلية المحصلة
-                
-                // البحث عن آخر فاتورة بيع نقدي لنفس المندوب للتو
-                var lastSaleIdRes = DbHelper.Scalar("SELECT MAX(SaleID) FROM Sales WHERE DriverID=@did AND SaleType='Cash'", DbHelper.P("@did", driverID));
-                if (lastSaleIdRes != null && lastSaleIdRes != DBNull.Value)
+            }
+
+            string finalNotes = notes;
+            if (totDead > 0 && deadValue > 0)
+            {
+                if (deadTreatment == 1)
                 {
-                    int lastSaleId = Convert.ToInt32(lastSaleIdRes);
-                    
-                    // حذف القيد الافتراضي من الخزنة
-                    DbHelper.Execute("DELETE FROM CashBox WHERE TransType='SaleIncome' AND RefID=@ref", DbHelper.P("@ref", lastSaleId));
-                    
-                    // إدراج المبلغ الفعلي المحصل
+                    finalNotes += (string.IsNullOrEmpty(finalNotes) ? "" : " | ") + $"[النافق بقيمة {deadValue:N2} ج تم قيده كـ سلفة على المندوب]";
+                }
+                else if (deadTreatment == 2)
+                {
+                    finalNotes += (string.IsNullOrEmpty(finalNotes) ? "" : " | ") + $"[النافق بقيمة {deadValue:N2} ج تم قيده كـ خصم من مستحقات المندوب]";
+                }
+            }
+
+            // ===== لف كل عمليات التقفيل في Transaction واحدة =====
+            int hvID = -1;
+            int savedSaleID = -1;
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. تسجيل التقفيل
+                hvID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO DriverHandovers(HandoverDate,LoadID,DriverID,TotalLoaded,TotalReturned,TotalDead,TotalExtra,TotalDeficit,Notes,CreatedBy)
+                      VALUES(@dt,@lid,@did,@tl,@tr,@td,@te,@tdf,@n,@by)",
+                    DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID), DbHelper.P("@did", driverID),
+                    DbHelper.P("@tl", totLoaded), DbHelper.P("@tr", totRet), DbHelper.P("@td", totDead),
+                    DbHelper.P("@te", totExtra), DbHelper.P("@tdf", totDef),
+                    DbHelper.P("@n", finalNotes), DbHelper.P("@by", Session.EmpID));
+
+                foreach (var i in items)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO HandoverItems(HandoverID,ProductID,LoadedQty,ReturnedQty,DeadQty,ExtraQty,DeficitQty)
+                          VALUES(@hid,@pid,@lq,@rq,@dq,@eq,@dfq)",
+                        DbHelper.P("@hid", hvID), DbHelper.P("@pid", i.ProductID),
+                        DbHelper.P("@lq", i.LoadedQty), DbHelper.P("@rq", i.ReturnedQty),
+                        DbHelper.P("@dq", i.DeadQty), DbHelper.P("@eq", i.ExtraQty),
+                        DbHelper.P("@dfq", i.DeficitQty));
+                }
+
+                // 2. إغلاق الحمولة
+                DbHelper.ExecuteTrans(trans,
+                    "UPDATE DriverLoads SET IsClosed=1, ClosedAt=@dt WHERE LoadID=@lid",
+                    DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID));
+
+                // 3. تسجيل خسارة النافق كمصروف (فقط إذا كان الخيار مصروف عام)
+                if (totDead > 0 && deadTreatment == 0)
+                {
+                    if (deadValue > 0)
+                    {
+                        int expID = DbHelper.ExecuteInsertTrans(trans,
+                            @"INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,CreatedBy)
+                              VALUES(@d,@t,@a,@n,@by)",
+                            DbHelper.P("@d", DateTime.Now),
+                            DbHelper.P("@t", "نافق مناديب"),
+                            DbHelper.P("@a", deadValue),
+                            DbHelper.P("@n", $"نافق من تقفيل حمولة ({loadID}) - مندوب ID:{driverID} - عدد:{totDead:N3}"),
+                            DbHelper.P("@by", Session.EmpID));
+
+                        // تسجيل في الخزنة كمصروف (AmountOut) دون خصم نقدي فعلي = لأغراض التقرير المالي
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)
+                              VALUES(@d,'Expense',@a,@ref,@n,@by)",
+                            DbHelper.P("@d", DateTime.Now),
+                            DbHelper.P("@a", deadValue),
+                            DbHelper.P("@ref", expID),
+                            DbHelper.P("@n", $"خسارة نافق - حمولة ({loadID})"),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
+
+                // 4. إذا كان هناك كميات مباعة، ننشئ فاتورة مبيعات نقدية مجمعة باسم المندوب
+                if (totalSoldValue > 0)
+                {
+                    var saleItemsDto = new List<SaleItemDTO>();
+                    foreach (var i in items)
+                    {
+                        if (i.SoldQty > 0)
+                        {
+                            saleItemsDto.Add(new SaleItemDTO
+                            {
+                                ProductID = i.ProductID,
+                                Quantity  = i.SoldQty,
+                                UnitPrice = i.UnitPrice
+                            });
+                        }
+                    }
+
+                    // نسجّل الفاتورة كـ Cash داخل نفس الـ Transaction
+                    string typeStr = "Cash";
+                    var nextCode = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                    string code  = nextCode != null ? nextCode.ToString() : "1";
+
+                    savedSaleID = DbHelper.ExecuteInsertTrans(trans,
+                        "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) " +
+                        "VALUES(@code,@dt,@typ,NULL,@did,@tot,@n,@by,0,0,1)",
+                        DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now),
+                        DbHelper.P("@typ", typeStr), DbHelper.P("@did", driverID),
+                        DbHelper.P("@tot", totalSoldValue),
+                        DbHelper.P("@n", "مبيعات مقفلة من حمولة رقم " + loadID),
+                        DbHelper.P("@by", Session.EmpID));
+
+                    foreach (var i in saleItemsDto)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
+                            "VALUES(@sid,@pid,@qty,@up,@tp,0,0)",
+                            DbHelper.P("@sid", savedSaleID), DbHelper.P("@pid", i.ProductID),
+                            DbHelper.P("@qty", i.Quantity), DbHelper.P("@up", i.UnitPrice),
+                            DbHelper.P("@tp", i.TotalPrice));
+                    }
+
+                    // ===== إصلاح: نُضيف cashCollected الفعلي للخزنة (وليس totalSoldValue) =====
+                    // لا نضيف قيد SaleIncome تلقائي هنا لأننا نريد إضافة المحصّل الفعلي فقط
                     if (cashCollected > 0)
                     {
-                        DbHelper.Execute(
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('DriverHandover',@amt,@ref,@n,@by)",
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) " +
+                            "VALUES('DriverHandover',@amt,@ref,@n,@by)",
                             DbHelper.P("@amt", cashCollected), DbHelper.P("@ref", loadID),
-                            DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID}) - مبيعات ({totalSoldValue:N2})"), DbHelper.P("@by", Session.EmpID));
+                            DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID}) - مبيعات ({totalSoldValue:N2})"),
+                            DbHelper.P("@by", Session.EmpID));
                     }
                 }
-            }
-            else if (cashCollected > 0)
-            {
-                // إذا لم تكن هناك مبيعات (نادرة) ولكن سلم كاش
-                DbHelper.Execute(
-                    "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('DriverHandover',@amt,@ref,@n,@by)",
-                    DbHelper.P("@amt", cashCollected), DbHelper.P("@ref", loadID),
-                    DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID})"), DbHelper.P("@by", Session.EmpID));
-            }
+                else if (cashCollected > 0)
+                {
+                    // لا مبيعات لكن سلم كاش
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('DriverHandover',@amt,@ref,@n,@by)",
+                        DbHelper.P("@amt", cashCollected), DbHelper.P("@ref", loadID),
+                        DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID})"),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            }); // نهاية Transaction
 
             return hvID;
         }
