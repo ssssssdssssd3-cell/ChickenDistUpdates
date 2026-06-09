@@ -49,8 +49,12 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "سجل المبيعات";
-			base.Size = new Size(1150, 720);
+			base.Size = new Size(1366, 768);
+			base.MinimumSize = new Size(1024, 600);
 			base.StartPosition = FormStartPosition.CenterScreen;
+			base.WindowState = FormWindowState.Maximized;
+			base.AutoScaleMode = AutoScaleMode.Dpi;
+			base.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;

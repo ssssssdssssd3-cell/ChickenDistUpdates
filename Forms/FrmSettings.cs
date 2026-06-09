@@ -24,7 +24,9 @@ namespace ChickenDist.Forms
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            this.Size = new Size(600, 550);
+            // تصغير الارتفاع إذا كانت الشاشة صغيرة
+            int settH = ScreenHelper.IsSmallScreen ? 500 : 550;
+            this.Size = new Size(620, settH);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -32,6 +34,8 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة، وإعدادات الميزان والطابعة الحرارية");
             this.Controls.Add(pnlTop);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -36,8 +36,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "تقفيل حمولة مندوب";
-            this.Size = new Size(1000, 700);
+            this.Size = new Size(1366, 768);
+            this.MinimumSize = new Size(1024, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.WindowState = FormWindowState.Maximized;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;

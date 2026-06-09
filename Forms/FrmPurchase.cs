@@ -44,8 +44,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "فاتورة مشتريات - شراء بضاعة";
-            this.Size = new Size(1050, 730);
+            this.Size = new Size(1366, 768);
+            this.MinimumSize = new Size(1024, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.WindowState = FormWindowState.Maximized;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -53,12 +57,13 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmPurchase_KeyDown;
 
+            // ارتفاع Header مضغوط للشاشات الصغيرة
+            int hdrH = ScreenHelper.IsSmallScreen ? 145 : 170;
             // ===== Top Panel (Header) =====
             Panel panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 170,
-                Width = 1050,
+                Height = hdrH,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10)
             };

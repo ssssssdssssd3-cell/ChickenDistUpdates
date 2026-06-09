@@ -32,8 +32,12 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "التقارير التفصيلية المتقدمة";
-			base.Size = new Size(1100, 700);
+			base.Size = new Size(1366, 768);
+			base.MinimumSize = new Size(1024, 600);
 			base.StartPosition = FormStartPosition.CenterScreen;
+			base.WindowState = FormWindowState.Maximized;
+			base.AutoScaleMode = AutoScaleMode.Dpi;
+			base.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
