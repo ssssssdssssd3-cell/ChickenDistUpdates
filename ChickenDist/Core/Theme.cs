@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace ChickenDist.Core
 {
@@ -174,6 +175,9 @@ namespace ChickenDist.Core
             form.RightToLeft = RightToLeft.Yes;
             form.RightToLeftLayout = true;
             ApplyRTL(form.Controls);
+            
+            // تحسين تخطيط العناصر للتناسق مع الشاشات والريزليوشن المختلف تلقائياً
+            OptimizeFormLayout(form);
 
             // Add form-level key listener for Enter as Tab navigation
             form.KeyPreview = true;
@@ -347,6 +351,122 @@ namespace ChickenDist.Core
             };
 
             return panel;
+        }
+
+        /// <summary>يُحسّن تخطيط الفورم والمكونات لتناسب الشاشات الصغيرة وتكون متجاوبة</summary>
+        public static void OptimizeFormLayout(Control container)
+        {
+            if (container == null) return;
+
+            // 1. تحسين المكونات الفرعية أولاً
+            foreach (Control child in container.Controls)
+            {
+                if (child.HasChildren)
+                {
+                    OptimizeFormLayout(child);
+                }
+            }
+
+            // 2. إذا كانت الحاوية لوحة تفاصيل أو حاوية إدخال
+            if ((container is Panel || container.GetType().Name == "SplitterPanel") && !(container is TableLayoutPanel) && !(container is FlowLayoutPanel))
+            {
+                Panel panel = (Panel)container;
+
+                // تحسين الألواح الفرعية (مثل MakeField في الموردين) لتتمدد
+                var childPanels = new List<Panel>();
+                foreach (Control c in panel.Controls)
+                {
+                    if (c is Panel subPanel && !(subPanel is TableLayoutPanel) && !(subPanel is FlowLayoutPanel) && subPanel.Width >= 250 && subPanel.Width <= 350)
+                    {
+                        childPanels.Add(subPanel);
+                    }
+                }
+
+                foreach (var subPanel in childPanels)
+                {
+                    subPanel.Width = panel.Width - subPanel.Left - 15;
+                    subPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                    OptimizeRowLayout(subPanel);
+                }
+
+                // تحسين ترتيب المكونات المباشرة على نفس السطر
+                OptimizeRowLayout(panel);
+            }
+        }
+
+        private static void OptimizeRowLayout(Control parent)
+        {
+            if (parent == null || parent.Controls.Count == 0) return;
+
+            // تجميع العناصر غير المترابطة بالـ Docking
+            var controls = new List<Control>();
+            foreach (Control c in parent.Controls)
+            {
+                if (c.Dock == DockStyle.None && !(c is Panel && c.Anchor == (AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right)))
+                {
+                    controls.Add(c);
+                }
+            }
+
+            // تجميع المكونات التي تقع على نفس السطر (بفارق 8 بكسل)
+            var rows = new List<List<Control>>();
+            foreach (var ctrl in controls)
+            {
+                bool found = false;
+                foreach (var row in rows)
+                {
+                    if (Math.Abs(row[0].Top - ctrl.Top) <= 8)
+                    {
+                        row.Add(ctrl);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    rows.Add(new List<Control> { ctrl });
+                }
+            }
+
+            // ضبط كل سطر
+            foreach (var row in rows)
+            {
+                // سطر يحتوي على Label وأداة إدخال واحدة فقط (مثال: الاسم والـ TextBox)
+                if (row.Count == 2)
+                {
+                    Label lbl = row[0] is Label ? (Label)row[0] : (row[1] is Label ? (Label)row[1] : null);
+                    Control input = row[0] is Label ? row[1] : (row[1] is Label ? row[0] : null);
+
+                    if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
+                    {
+                        if (input.Left < lbl.Left) // ترتيب عربي (المدخل يسار والليبل يمين)
+                        {
+                            lbl.Left = parent.Width - lbl.Width - 15;
+                            lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+                            input.Left = 15;
+                            input.Width = lbl.Left - 15 - 10;
+                            input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                        }
+                    }
+                }
+                // سطر يحتوي على أزرار متعددة (حفظ، جديد، حذف)
+                else if (row.Count > 0)
+                {
+                    bool allButtons = true;
+                    foreach (var c in row)
+                    {
+                        if (!(c is Button)) { allButtons = false; break; }
+                    }
+                    if (allButtons)
+                    {
+                        foreach (var btn in row)
+                        {
+                            btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                        }
+                    }
+                }
+            }
         }
     }
 }

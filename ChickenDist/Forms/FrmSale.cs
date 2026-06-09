@@ -642,143 +642,195 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 110,
-				Width = 950,
-				BackColor = Theme.BgCard
+				Height = 105,
+				BackColor = Theme.BgCard,
+				Padding = new Padding(8, 6, 8, 6)
 			};
-			Label label5 = new Label
+
+			// ── قسم الإجماليات (يمين) ─────────────────────────────────────────
+			var pnlTotals = new Panel
+			{
+				Width = 650,
+				Dock = DockStyle.Right,
+				BackColor = Color.Transparent,
+				Padding = new Padding(0)
+			};
+
+			var tblTotals = new TableLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				RowCount = 2,
+				ColumnCount = 6,
+				BackColor = Color.Transparent,
+				CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+				Padding = new Padding(4)
+			};
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105)); // col0: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col1: value
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75));  // col2: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));  // col3: control / value
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));  // col4: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // col5: control / value
+			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+
+			// صف 0: إجمالي الأصناف + خصم الفاتورة
+			var lblItemsTotalLbl = new Label
 			{
 				Text = "إجمالي الأصناف:",
 				ForeColor = Theme.TextSub,
-				Location = new Point(830, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2)
 			};
 			lblTotalVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(740, 13),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Margin = new Padding(2)
 			};
-			Label lblDiscType = new Label
+
+			var lblDiscType = new Label
 			{
 				Text = "نوع الخصم:",
 				ForeColor = Theme.TextSub,
-				Location = new Point(660, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2)
 			};
 			cboInvoiceDiscountType = new ComboBox
 			{
-				Location = new Point(570, 11),
-				Width = 80,
+				Dock = DockStyle.Fill,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
 			cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => CalculateNet();
 
-			Label lblDiscVal = new Label
+			var lblDiscVal = new Label
 			{
 				Text = "خصم الفاتورة:",
 				ForeColor = Theme.TextSub,
-				Location = new Point(480, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2)
 			};
 			txtInvoiceDiscount = new TextBox
 			{
-				Location = new Point(390, 11),
-				Width = 80,
+				Dock = DockStyle.Fill,
 				Text = "0",
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			txtInvoiceDiscount.TextChanged += (s, e) => CalculateNet();
 
-			Label lblNetTitle = new Label
-			{
-				Text = "صافي الفاتورة:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(280, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			lblNetVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.Accent,
-				Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-				Location = new Point(160, 10),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
+			// صف 1: التكلفة + الربح + صافي الفاتورة
 			lblCostTitle = new Label
 			{
 				Text = "إجمالي التكلفة:",
 				ForeColor = Theme.TextSub,
-				Location = new Point(830, 42),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2),
+				Visible = Session.CanViewCost("Sales")
 			};
 			lblCostVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(740, 40),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Margin = new Padding(2),
+				Visible = Session.CanViewCost("Sales")
 			};
+
 			lblProfitTitle = new Label
 			{
 				Text = "صافي الربح:",
 				ForeColor = Theme.TextSub,
-				Location = new Point(660, 42),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2),
+				Visible = Session.CanViewCost("Sales")
 			};
 			lblProfitVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.Success,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(570, 40),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Margin = new Padding(2),
+				Visible = Session.CanViewCost("Sales")
 			};
-			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 130, 32, Theme.Accent);
-            Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 100, 32, Color.FromArgb(200, 140, 50));
-			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 100, 32, Color.FromArgb(100, 100, 150));
-			Button button = Theme.MakeButton("💵 توريد", 0, 0, 100, 32, Theme.Success);
-			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 80, 32, Color.FromArgb(80, 120, 80));
-			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 140, 32, Theme.Primary);
-			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 130, 32, Color.FromArgb(37, 211, 102));
-			btnSave.Anchor = AnchorStyles.None;
-            btnHold.Anchor = AnchorStyles.None;
-            btnLoadHold.Anchor = AnchorStyles.None;
-			button.Anchor = AnchorStyles.None;
-			btnNew.Anchor = AnchorStyles.None;
-			btnPrint.Anchor = AnchorStyles.None;
-			btnWhatsApp.Anchor = AnchorStyles.None;
+
+			var lblNetTitle = new Label
+			{
+				Text = "صافي الفاتورة:",
+				ForeColor = Theme.TextSub,
+				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				Margin = new Padding(2)
+			};
+			lblNetVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.Accent,
+				Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Margin = new Padding(2)
+			};
+
+			// إضافة عناصر الإجماليات
+			tblTotals.Controls.Add(lblItemsTotalLbl, 0, 0);
+			tblTotals.Controls.Add(lblTotalVal, 1, 0);
+			tblTotals.Controls.Add(lblDiscType, 2, 0);
+			tblTotals.Controls.Add(cboInvoiceDiscountType, 3, 0);
+			tblTotals.Controls.Add(lblDiscVal, 4, 0);
+			tblTotals.Controls.Add(txtInvoiceDiscount, 5, 0);
+
+			tblTotals.Controls.Add(lblCostTitle, 0, 1);
+			tblTotals.Controls.Add(lblCostVal, 1, 1);
+			tblTotals.Controls.Add(lblProfitTitle, 2, 1);
+			tblTotals.Controls.Add(lblProfitVal, 3, 1);
+			tblTotals.Controls.Add(lblNetTitle, 4, 1);
+			tblTotals.Controls.Add(lblNetVal, 5, 1);
+
+			pnlTotals.Controls.Add(tblTotals);
+
+			// ── قسم الأزرار (يسار) ────────────────────────────────────────────
+			var pnlBtnArea = new Panel
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Color.Transparent,
+				Padding = new Padding(4, 4, 4, 4)
+			};
+
+			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 120, 32, Theme.Accent);
+			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 32, Color.FromArgb(200, 140, 50));
+			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 95, 32, Color.FromArgb(100, 100, 150));
+			Button button = Theme.MakeButton("💵 توريد", 0, 0, 90, 32, Theme.Success);
+			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 32, Color.FromArgb(80, 120, 80));
+			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 125, 32, Theme.Primary);
+			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 100, 32, Color.FromArgb(37, 211, 102));
+
 			btnSave.Click += BtnSave_Click;
-            btnHold.Click += BtnHold_Click;
-            btnLoadHold.Click += BtnLoadHold_Click;
+			btnHold.Click += BtnHold_Click;
+			btnLoadHold.Click += BtnLoadHold_Click;
 			button.Click += BtnTawreed_Click;
 			btnNew.Click += delegate
 			{
@@ -786,41 +838,45 @@ namespace ChickenDist.Forms
 			};
 			btnPrint.Click += BtnPrint_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
-            Label lblHotkeys = new Label
-            {
-                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] بحث سريع عن صنف",
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Location = new Point(15, 70),
-                AutoSize = true,
-                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
-            };
 
-            var pnlFooterButtons = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.RightToLeft,
-                Dock = DockStyle.Bottom,
-                Height = 42,
-                Padding = new Padding(15, 5, 15, 5),
-                BackColor = Color.Transparent,
-                RightToLeft = RightToLeft.Yes,
-                WrapContents = false,
-                AutoSize = false
-            };
-            btnWhatsApp.Margin = new Padding(5, 5, 5, 5);
-            btnPrint.Margin = new Padding(5, 5, 5, 5);
-            btnNew.Margin = new Padding(5, 5, 5, 5);
-            button.Margin = new Padding(5, 5, 5, 5);
-            btnLoadHold.Margin = new Padding(5, 5, 5, 5);
-            btnHold.Margin = new Padding(5, 5, 5, 5);
-            btnSave.Margin = new Padding(5, 5, 5, 5);
-            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave });
+			var flowBtns = new FlowLayoutPanel
+			{
+				FlowDirection = FlowDirection.RightToLeft,
+				Dock = DockStyle.Top,
+				Height = 38,
+				BackColor = Color.Transparent,
+				WrapContents = false,
+				Padding = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
+			foreach (var b in new[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave })
+			{
+				b.Margin = new Padding(0, 0, 5, 0);
+				flowBtns.Controls.Add(b);
+			}
 
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, lblCostTitle, lblCostVal, lblProfitTitle, lblProfitVal, pnlFooterButtons, lblHotkeys });
+			var lblHotkeys = new Label
+			{
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] بحث سريع صنف | [F8] ميزان",
+				ForeColor = Theme.TextSub,
+				Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+				Dock = DockStyle.Bottom,
+				Height = 18,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Margin = new Padding(0, 4, 0, 0)
+			};
+
+			pnlBtnArea.Controls.Add(lblHotkeys);
+			pnlBtnArea.Controls.Add(flowBtns);
+
+			// تجميع الذيل
+			pnlFooter.Controls.Add(pnlBtnArea);
+			pnlFooter.Controls.Add(pnlTotals);
+
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
-            pnlItems.BringToFront();
+			pnlItems.BringToFront();
 			ToggleType();
 			InitializeScale();
 			Theme.ApplyFormRTL(this);
