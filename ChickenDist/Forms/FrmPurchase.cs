@@ -91,7 +91,7 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════════
             // ── لوحة الرأس — تستخدم TableLayoutPanel للتخطيط المنظم ──────────
             // ══════════════════════════════════════════════════════════════════
-            int hdrH = ScreenHelper.IsSmallScreen ? 175 : 205;
+            int hdrH = ScreenHelper.IsSmallScreen ? 185 : 215;
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
@@ -158,7 +158,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 6, 2, 6)
+                Margin = new Padding(2, 4, 2, 4)
             };
 
             // التاريخ
@@ -171,7 +171,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 Format = DateTimePickerFormat.Short,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 6, 2, 6)
+                Margin = new Padding(2, 4, 2, 4)
             };
 
             // رصيد الخزنة
@@ -202,7 +202,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 6, 2, 6)
+                Margin = new Padding(2, 4, 2, 4)
             };
 
             var lblProd = MakeLabel("الصنف:", 0, 0);
@@ -214,7 +214,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 6, 2, 6)
+                Margin = new Padding(2, 4, 2, 4)
             };
 
             // إضافة — صف 1
@@ -235,7 +235,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 6, 2, 6)
+                Margin = new Padding(2, 4, 2, 4)
             };
 
             btnSearchProduct = new Button
@@ -246,7 +246,7 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Margin = new Padding(2, 6, 2, 6),
+                Margin = new Padding(2, 4, 2, 4),
                 Font = Theme.FontBold
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
@@ -640,12 +640,12 @@ namespace ChickenDist.Forms
             pnlFooter.Controls.Add(pnlTotals);
 
             // ── تجميع عناصر النموذج ────────────────────────────────────────────
-            base.Controls.Add(pnlItems);
-            base.Controls.Add(pnlFooter);
             base.Controls.Add(pnlHeader);
-            pnlFooter.BringToFront();
-            pnlHeader.BringToFront();
-            pnlItems.SendToBack();
+            base.Controls.Add(pnlFooter);
+            base.Controls.Add(pnlItems);
+            pnlHeader.SendToBack();
+            pnlFooter.SendToBack();
+            pnlItems.BringToFront();
             ToggleType();
             Theme.ApplyFormRTL(this);
         }

@@ -124,7 +124,7 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
-			int hdrH = ScreenHelper.IsSmallScreen ? 155 : 185;
+			int hdrH = ScreenHelper.IsSmallScreen ? 175 : 205;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -168,7 +168,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			SetupSearchableCombo(cboClient);
 
@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Short,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 
 			Label label = MakeLabel("نوع الفاتورة :", 0, 0);
@@ -288,7 +288,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			SetupSearchableCombo(cboDriver);
 
@@ -306,7 +306,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			SetupSearchableCombo(cboProduct);
 
@@ -320,7 +320,7 @@ namespace ChickenDist.Forms
 				FlatStyle = FlatStyle.Flat,
 				Cursor = Cursors.Hand,
 				Dock = DockStyle.Left,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 			btnSearchProduct.FlatAppearance.BorderSize = 0;
 			btnSearchProduct.Click += BtnSearchProduct_Click;
@@ -346,7 +346,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 
 			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
@@ -362,7 +362,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 
 			lblLiveWeight = new Label
@@ -873,12 +873,12 @@ namespace ChickenDist.Forms
 			pnlFooter.Controls.Add(pnlBtnArea);
 			pnlFooter.Controls.Add(pnlTotals);
 
-			base.Controls.Add(pnlItems);
-			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
-			pnlFooter.BringToFront();
-			panel.BringToFront();
-			pnlItems.SendToBack();
+			base.Controls.Add(pnlFooter);
+			base.Controls.Add(pnlItems);
+			panel.SendToBack();
+			pnlFooter.SendToBack();
+			pnlItems.BringToFront();
 			ToggleType();
 			InitializeScale();
 			Theme.ApplyFormRTL(this);
