@@ -12,6 +12,7 @@ namespace ChickenDist.Forms
     public class FrmProducts : Form
     {
         private DataGridView dgProducts;
+        private TextBox txtSearch;
         private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation;
         private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
@@ -66,7 +67,57 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
+
+            // لوحة البحث والاستيراد العلوية
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Theme.BgCard, Padding = new Padding(6) };
+            
+            // حقل البحث
+            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 250, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "بحث بالاسم أو الكود...", Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
+            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الكود...") txtSearch.Text = ""; };
+            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الكود..."; };
+            txtSearch.TextChanged += (s, e) => {
+                string searchVal = txtSearch.Text;
+                if (searchVal == "بحث بالاسم أو الكود...") searchVal = "";
+                LoadProducts(searchVal);
+            };
+
+            // زر البحث بالعدسة
+            var btnSearch = Theme.MakeButton("🔍", Theme.Primary);
+            btnSearch.Dock = DockStyle.Right;
+            btnSearch.Width = 45;
+            btnSearch.Click += (s, e) => {
+                string searchVal = txtSearch.Text == "بحث بالاسم أو الكود..." ? "" : txtSearch.Text;
+                LoadProducts(searchVal);
+            };
+            txtSearch.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter) {
+                    string searchVal = txtSearch.Text == "بحث بالاسم أو الكود..." ? "" : txtSearch.Text;
+                    LoadProducts(searchVal);
+                }
+            };
+
+            // زر استيراد أصناف من CSV
+            var btnImport = Theme.MakeButton("📥 استيراد أصناف من CSV", Color.FromArgb(40, 110, 180));
+            btnImport.Dock = DockStyle.Left;
+            btnImport.Width = 180;
+            btnImport.Click += (s, e) => {
+                using (var frm = new FrmImportProducts())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK)
+                    {
+                        LoadProducts();
+                        ClearDetail();
+                    }
+                }
+            };
+
+            pnlSearch.Controls.Add(btnSearch);
+            pnlSearch.Controls.Add(txtSearch);
+            pnlSearch.Controls.Add(btnImport);
+
             split.Panel2.Controls.Add(dgProducts);
+            split.Panel2.Controls.Add(pnlSearch);
+            pnlSearch.BringToFront();
 
             // Right: Detail (Panel1 in RTL)
             split.Panel1.BackColor = Theme.BgCard;
@@ -150,12 +201,27 @@ namespace ChickenDist.Forms
             cboCategory.SelectedIndex = 0;
         }
 
-        private void LoadProducts()
+        private void LoadProducts(string filterText = "")
         {
             dgProducts.Rows.Clear();
             var dt = ProductDAL.GetAll();
             foreach (DataRow r in dt.Rows)
             {
+                if (!string.IsNullOrWhiteSpace(filterText))
+                {
+                    string code = r["ProductCode"].ToString();
+                    string part = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
+                    string name = r["ProductName"].ToString();
+                    string category = r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "";
+
+                    bool matches = code.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                   part.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                   name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                   category.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!matches) continue;
+                }
+
                 bool active = Convert.ToBoolean(r["IsActive"]);
                 var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
                     r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
