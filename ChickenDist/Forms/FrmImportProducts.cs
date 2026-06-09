@@ -36,7 +36,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📥 استيراد الأصناف من ملف CSV";
+            this.Text = "📥 استيراد الأصناف من ملف Excel";
             this.Size = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -46,7 +46,7 @@ namespace ChickenDist.Forms
 
             // شريط العنوان
             pnlHeader = Theme.MakeTitleBar("📥 استيراد الأصناف والبيانات الافتتاحية", 
-                "استيراد الأصناف والأسعار والأرصدة من ملف CSV مع التحقق التلقائي لمنع التكرار وتحديث البيانات بأمان.");
+                "استيراد الأصناف والأسعار والأرصدة من ملف Excel (.xlsx) مع التحقق التلقائي لمنع التكرار وتحديث البيانات بأمان.");
             this.Controls.Add(pnlHeader);
 
             // لوحة التحكم العلوية
@@ -58,11 +58,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnBrowse = Theme.MakeButton("📂 اختيار ملف CSV", 835, 12, 190, 36, Theme.Accent);
+            btnBrowse = Theme.MakeButton("📂 اختيار ملف Excel", 835, 12, 190, 36, Theme.Accent);
             btnBrowse.Click += BtnBrowse_Click;
             pnlTopControls.Controls.Add(btnBrowse);
 
-            btnCopyTemplate = Theme.MakeButton("📋 نسخ قالب CSV", 665, 12, 160, 36, Color.FromArgb(70, 80, 95));
+            btnCopyTemplate = Theme.MakeButton("📋 نسخ قالب Excel", 665, 12, 160, 36, Color.FromArgb(70, 80, 95));
             btnCopyTemplate.Click += BtnCopyTemplate_Click;
             pnlTopControls.Controls.Add(btnCopyTemplate);
 
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
 
             lblStats = new Label
             {
-                Text = "يرجى اختيار ملف CSV للبدء بالمعاينة والمطابقة...",
+                Text = "يرجى اختيار ملف Excel (.xlsx) للبدء بالمعاينة والمطابقة...",
                 Location = new Point(20, yBottom + 12),
                 Size = new Size(500, 24),
                 ForeColor = Theme.TextSub,
@@ -180,14 +180,14 @@ namespace ChickenDist.Forms
 
         private void BtnCopyTemplate_Click(object sender, EventArgs e)
         {
-            string template = "كود_الصنف,اسم_الصنف,رقم_القطعة,التصنيف,الموديل,الماركة,موقع_الرف,الوحدة,سعر_الشراء,سعر_قطاعي,سعر_نصف_جملة,سعر_جملة,حد_الطلب,الرصيد_الافتتاحي,المخزن\n" +
-                              "A101,فلتر زيت تويوتا كورولا,90915-10001,فلتر,Corolla 2018,Toyota,الرف A1,حبة,120.00,180.00,165.00,150.00,5,50,المخزن الرئيسي\n" +
-                              "B202,بوجيهات ليزر ان جي كي,IZFR6K11,كهرباء,Civic 2012,NGK,الرف B3,طقم,450.00,600.00,550.00,500.00,2,20,المخزن الرئيسي";
+            string template = "كود_الصنف\tاسم_الصنف\tرقم_القطعة\tالتصنيف\tالموديل\tالماركة\tموقع_الرف\tالوحدة\tسعر_الشراء\tسعر_قطاعي\tسعر_نصف_جملة\tسعر_جملة\tحد_الطلب\tالرصيد_الافتتاحي\tالمخزن\r\n" +
+                              "A101\tفلتر زيت تويوتا كورولا\t90915-10001\tفلتر\tCorolla 2018\tToyota\tالرف A1\tحبة\t120.00\t180.00\t165.00\t150.00\t5\t50\tالمخزن الرئيسي\r\n" +
+                              "B202\tبوجيهات ليزر ان جي كي\tIZFR6K11\tكهرباء\tCivic 2012\tNGK\tالرف B3\tطقم\t450.00\t600.00\t550.00\t500.00\t2\t20\tالمخزن الرئيسي";
             
             try
             {
                 Clipboard.SetText(template);
-                MessageBox.Show("✅ تم نسخ هيكل قالب CSV إلى الحافظة!\nيمكنك لصقه في برنامج Excel أو Notepad والبدء بالتعبئة.",
+                MessageBox.Show("✅ تم نسخ هيكل قالب Excel إلى الحافظة!\nيمكنك لصقه مباشرة (Paste) داخل ملف Excel وسينقسم إلى أعمدة تلقائياً.",
                     "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information, 
                     MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
             }
@@ -201,16 +201,16 @@ namespace ChickenDist.Forms
         {
             using (var dlg = new OpenFileDialog())
             {
-                dlg.Title = "اختر ملف الأصناف CSV";
-                dlg.Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
+                dlg.Title = "اختر ملف الأصناف Excel";
+                dlg.Filter = "Excel Files (*.xlsx)|*.xlsx|All Files (*.*)|*.*";
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    ParseProductsCsv(dlg.FileName);
+                    ParseProductsExcel(dlg.FileName);
                 }
             }
         }
 
-        private void ParseProductsCsv(string filePath)
+        private void ParseProductsExcel(string filePath)
         {
             try
             {
@@ -239,28 +239,21 @@ namespace ChickenDist.Forms
                         nameMap[normName] = (int)r["ProductID"];
                 }
 
-                // قراءة ملف CSV
-                string[] lines = File.ReadAllLines(filePath, Encoding.UTF8);
-                if (lines.Length <= 1)
+                // قراءة ملف Excel باستخدام قارئ Excel المدمج
+                List<string[]> lines = XlsxParser.Parse(filePath);
+                if (lines.Count <= 1)
                 {
                     MessageBox.Show("الملف فارغ أو يحتوي على الهيدر فقط.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                // كشف الفاصل تلقائياً
-                char delimiter = ',';
-                if (lines[0].Contains(";")) delimiter = ';';
-
                 int newCount = 0;
                 int updateCount = 0;
 
-                for (int idx = 1; idx < lines.Length; idx++)
+                for (int idx = 1; idx < lines.Count; idx++)
                 {
-                    string rawLine = lines[idx].TrimStart('\uFEFF'); // BOM
-                    if (string.IsNullOrWhiteSpace(rawLine)) continue;
-
-                    string[] cols = SplitCsvLine(rawLine, delimiter);
-                    if (cols.Length < 2) continue; // يجب أن يحتوي على كود واسم على الأقل
+                    string[] cols = lines[idx];
+                    if (cols == null || cols.Length < 2) continue; // يجب أن يحتوي على كود واسم على الأقل
 
                     string code = cols[0].Trim();
                     string name = cols[1].Trim();
@@ -372,7 +365,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل قراءة الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل قراءة ملف Excel:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -565,20 +558,7 @@ namespace ChickenDist.Forms
             => (s ?? "").Trim().ToLowerInvariant()
                         .Replace("ة", "ه").Replace("أ", "ا").Replace("إ", "ا").Replace("آ", "ا");
 
-        private static string[] SplitCsvLine(string line, char delimiter)
-        {
-            var result = new List<string>();
-            bool inQ = false;
-            var cur = new StringBuilder();
-            foreach (char c in line)
-            {
-                if (c == '"') { inQ = !inQ; }
-                else if (c == delimiter && !inQ) { result.Add(cur.ToString()); cur.Clear(); }
-                else cur.Append(c);
-            }
-            result.Add(cur.ToString());
-            return result.ToArray();
-        }
+
     }
 
     public class ParsedProductRow
