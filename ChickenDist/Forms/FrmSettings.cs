@@ -27,12 +27,16 @@ namespace ChickenDist.Forms
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            this.Size = new Size(560, 780);
+            int settH = ScreenHelper.IsSmallScreen ? 600 : 780;
+            this.Size = new Size(580, settH);
+            this.AutoScroll = true;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة والنسخ الاحتياطي والإعدادات الأساسية");
             this.Controls.Add(pnlTop);

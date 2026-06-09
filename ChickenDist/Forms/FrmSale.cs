@@ -111,8 +111,12 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(950, 680);
+			base.Size = new Size(1366, 768);
+			base.MinimumSize = new Size(1024, 600);
 			base.StartPosition = FormStartPosition.CenterScreen;
+			this.WindowState = FormWindowState.Maximized;
+			this.AutoScaleMode = AutoScaleMode.Dpi;
+			this.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -120,11 +124,11 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
+			int hdrH = ScreenHelper.IsSmallScreen ? 155 : 185;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 185,
-				Width = 950,
+				Height = hdrH,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(12, 8, 12, 8)
 			};
@@ -143,10 +147,11 @@ namespace ChickenDist.Forms
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
 
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			int rowH = ScreenHelper.IsSmallScreen ? 36 : 42;
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
 
 			// Row 0: Client & Statement, Date, Type Buttons
 			lblClient = MakeLabel("العميل :", 0, 0);

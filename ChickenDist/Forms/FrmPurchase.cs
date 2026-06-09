@@ -74,9 +74,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "فاتورة مشتريات";
-            this.Size = new Size(1150, 760);
-            this.MinimumSize = new Size(950, 660);
+            this.Size = new Size(1366, 768);
+            this.MinimumSize = new Size(1024, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.WindowState = FormWindowState.Maximized;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -88,10 +91,11 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════════
             // ── لوحة الرأس — تستخدم TableLayoutPanel للتخطيط المنظم ──────────
             // ══════════════════════════════════════════════════════════════════
+            int hdrH = ScreenHelper.IsSmallScreen ? 175 : 205;
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
-                Height  = 205,
+                Height  = hdrH,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12, 8, 12, 8)
             };
@@ -113,10 +117,12 @@ namespace ChickenDist.Forms
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // col5: control / buttons
             // ارتفاع الصفوف
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
+            int rowH = ScreenHelper.IsSmallScreen ? 36 : 42;
+            int lastRowH = ScreenHelper.IsSmallScreen ? 38 : 46;
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, lastRowH));
 
             // ── صف 0: نوع الفاتورة | المورد | التاريخ ────────────────────────
             // أزرار نوع الفاتورة (col5 صف 0)
