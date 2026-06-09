@@ -428,41 +428,183 @@ namespace ChickenDist.Core
                 }
             }
 
-            // ضبط كل سطر
+            // ترتيب الأسطر من الأعلى إلى الأسفل للحفاظ على تسلسل التبويب
+            rows.Sort((a, b) => a[0].Top.CompareTo(b[0].Top));
+
+            // فرز الحقول (ملصق ومدخل) عن باقي العناصر
+            var fieldRows = new List<KeyValuePair<Label, Control>>();
+            var otherControls = new List<Control>();
+
             foreach (var row in rows)
             {
-                // سطر يحتوي على Label وأداة إدخال واحدة فقط (مثال: الاسم والـ TextBox)
-                if (row.Count == 2)
+                Label lbl = row.Count >= 1 && row[0] is Label ? (Label)row[0] : (row.Count >= 2 && row[1] is Label ? (Label)row[1] : null);
+                Control input = row.Count >= 1 && !(row[0] is Label) ? row[0] : (row.Count >= 2 && !(row[1] is Label) ? row[1] : null);
+
+                if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
                 {
-                    Label lbl = row[0] is Label ? (Label)row[0] : (row[1] is Label ? (Label)row[1] : null);
-                    Control input = row[0] is Label ? row[1] : (row[1] is Label ? row[0] : null);
-
-                    if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
-                    {
-                        if (input.Left < lbl.Left) // ترتيب عربي (المدخل يسار والليبل يمين)
-                        {
-                            lbl.Left = parent.Width - lbl.Width - 15;
-                            lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-                            input.Left = 15;
-                            input.Width = lbl.Left - 15 - 10;
-                            input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                        }
-                    }
+                    fieldRows.Add(new KeyValuePair<Label, Control>(lbl, input));
                 }
-                // سطر يحتوي على أزرار متعددة (حفظ، جديد، حذف)
-                else if (row.Count > 0)
+                else
                 {
-                    bool allButtons = true;
                     foreach (var c in row)
                     {
-                        if (!(c is Button)) { allButtons = false; break; }
+                        otherControls.Add(c);
                     }
-                    if (allButtons)
+                }
+            }
+
+            // إذا كان عدد الحقول أكثر من 5، نقسمها لعمودين لتفادي التمرير العمودي الطويل
+            if (fieldRows.Count > 5)
+            {
+                int n = fieldRows.Count;
+                int rowsPerCol = (n + 1) / 2;
+                int rowHeight = 44; // ارتفاع مناسب للعنوان والمدخل مع الفراغ
+
+                for (int i = 0; i < n; i++)
+                {
+                    var pair = fieldRows[i];
+                    Label lbl = pair.Key;
+                    Control input = pair.Value;
+
+                    int col = i < rowsPerCol ? 0 : 1; // 0 = العمود الأيمن (لغة عربية)، 1 = العمود الأيسر
+                    int rowIdx = i < rowsPerCol ? i : i - rowsPerCol;
+
+                    int y = 10 + rowIdx * rowHeight;
+
+                    if (col == 0) // العمود الأيمن
                     {
-                        foreach (var btn in row)
+                        lbl.Top = y;
+                        lbl.Left = parent.Width - lbl.Width - 10;
+                        lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+                        input.Top = y + 16;
+                        input.Left = parent.Width / 2 + 5;
+                        input.Width = parent.Width / 2 - 15;
+                        input.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                    }
+                    else // العمود الأيسر
+                    {
+                        lbl.Top = y;
+                        lbl.Left = parent.Width / 2 - lbl.Width - 10;
+                        lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+                        input.Top = y + 16;
+                        input.Left = 10;
+                        input.Width = parent.Width / 2 - 15;
+                        input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                    }
+                }
+
+                // وضع الأزرار وعناصر التحكم الأخرى بالأسفل تحت الأعمدة
+                int columnsBottomY = 15 + rowsPerCol * rowHeight + 10;
+
+                // إعادة تجميع عناصر التحكم غير المدخلة وترتيبها عمودياً
+                var otherRows = new List<List<Control>>();
+                foreach (var ctrl in otherControls)
+                {
+                    bool found = false;
+                    foreach (var r in otherRows)
+                    {
+                        if (Math.Abs(r[0].Top - ctrl.Top) <= 8)
                         {
+                            r.Add(ctrl);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        otherRows.Add(new List<Control> { ctrl });
+                    }
+                }
+                otherRows.Sort((a, b) => a[0].Top.CompareTo(b[0].Top));
+
+                int currentY = columnsBottomY;
+                foreach (var r in otherRows)
+                {
+                    int maxH = 0;
+                    bool allButtons = true;
+                    foreach (var c in r)
+                    {
+                        if (!(c is Button)) allButtons = false;
+                        if (c.Height > maxH) maxH = c.Height;
+                    }
+
+                    if (allButtons && r.Count >= 2)
+                    {
+                        // ترتيب الأزرار المتجاورة بشكل متناسق في اليمين
+                        int totalW = 0;
+                        foreach (var btn in r) totalW += btn.Width;
+                        int spacing = 8;
+                        int btnX = parent.Width - 15;
+
+                        r.Sort((a, b) => b.Left.CompareTo(a.Left));
+                        foreach (var btn in r)
+                        {
+                            btn.Top = currentY;
+                            btn.Left = btnX - btn.Width;
                             btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                            btnX -= (btn.Width + spacing);
+                        }
+                    }
+                    else
+                    {
+                        // العناصر الفردية (الـ CheckBox أو الأزرار العريضة المفردة)
+                        foreach (var c in r)
+                        {
+                            c.Top = currentY;
+                            if (c is CheckBox || c is Label)
+                            {
+                                c.Left = parent.Width - c.Width - 15;
+                                c.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                            }
+                            else
+                            {
+                                c.Left = 15;
+                                c.Width = parent.Width - 30;
+                                c.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                            }
+                        }
+                    }
+                    currentY += maxH + 10;
+                }
+            }
+            else
+            {
+                // تخطيط العمود الفردي القياسي للمدخلات القليلة
+                foreach (var row in rows)
+                {
+                    if (row.Count == 2)
+                    {
+                        Label lbl = row[0] is Label ? (Label)row[0] : (row[1] is Label ? (Label)row[1] : null);
+                        Control input = row[0] is Label ? row[1] : (row[1] is Label ? row[0] : null);
+
+                        if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
+                        {
+                            if (input.Left < lbl.Left)
+                            {
+                                lbl.Left = parent.Width - lbl.Width - 15;
+                                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+                                input.Left = 15;
+                                input.Width = lbl.Left - 15 - 10;
+                                input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                            }
+                        }
+                    }
+                    else if (row.Count > 0)
+                    {
+                        bool allButtons = true;
+                        foreach (var c in row)
+                        {
+                            if (!(c is Button)) { allButtons = false; break; }
+                        }
+                        if (allButtons)
+                        {
+                            foreach (var btn in row)
+                            {
+                                btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                            }
                         }
                     }
                 }

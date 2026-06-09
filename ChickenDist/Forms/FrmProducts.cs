@@ -200,7 +200,7 @@ namespace ChickenDist.Forms
 
             split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnCopy });
             this.Controls.Add(split);
-            split.SplitterDistance = 350;
+            split.SplitterDistance = 430;
 
             // اختصارات لوحة المفاتيح
             this.KeyPreview = true;

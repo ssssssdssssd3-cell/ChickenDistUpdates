@@ -77,11 +77,11 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = false,
+                AutoScroll = true,
+                Height = 68,
                 BackColor = Theme.Sidebar,
-                Padding = new Padding(10, 5, 10, 5)
+                Padding = new Padding(10, 2, 10, 2)
             };
             BuildNavBar();
 
