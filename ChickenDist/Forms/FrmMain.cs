@@ -323,6 +323,7 @@ namespace ChickenDist.Forms
 
             _currentChild = form;
             form.TopLevel = false;
+            form.MinimumSize = new Size(0, 0);
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;

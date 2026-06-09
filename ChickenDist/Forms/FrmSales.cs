@@ -58,28 +58,27 @@ namespace ChickenDist.Forms
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
-			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
+			Panel flowLayoutPanel = new Panel
 			{
 				Dock = DockStyle.Top,
 				Height = 50,
-				FlowDirection = FlowDirection.LeftToRight,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10, 10, 10, 10),
-				WrapContents = false
+				Padding = new Padding(10)
 			};
 			Label label = new Label
 			{
 				Text = "من:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(10, 5, 0, 0)
+				Location = new Point(10, 16)
 			};
 			dtpFrom = new DateTimePicker
 			{
 				Width = 110,
 				Height = 26,
 				Format = DateTimePickerFormat.Short,
-				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+				Location = new Point(35, 12)
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label, dtpFrom });
 			Label label2 = new Label
@@ -87,13 +86,14 @@ namespace ChickenDist.Forms
 				Text = "إلى:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(15, 5, 0, 0)
+				Location = new Point(155, 16)
 			};
 			dtpTo = new DateTimePicker
 			{
 				Width = 110,
 				Height = 26,
-				Format = DateTimePickerFormat.Short
+				Format = DateTimePickerFormat.Short,
+				Location = new Point(185, 12)
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label2, dtpTo });
 			Label label3 = new Label
@@ -101,7 +101,7 @@ namespace ChickenDist.Forms
 				Text = "النوع:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(15, 5, 0, 0)
+				Location = new Point(305, 16)
 			};
 			cboTypeFilter = new ComboBox
 			{
@@ -110,7 +110,8 @@ namespace ChickenDist.Forms
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Location = new Point(345, 12)
 			};
 			cboTypeFilter.Items.AddRange(new object[4] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
@@ -121,7 +122,7 @@ namespace ChickenDist.Forms
 				Text = "العميل:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(15, 5, 0, 0)
+				Location = new Point(465, 16)
 			};
 			cboClientFilter = new ComboBox
 			{
@@ -130,7 +131,8 @@ namespace ChickenDist.Forms
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Location = new Point(515, 12)
 			};
 			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
@@ -150,7 +152,7 @@ namespace ChickenDist.Forms
 				Text = "بحث صنف:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(15, 5, 0, 0)
+				Location = new Point(655, 16)
 			};
 			txtProductSearch = new TextBox
 			{
@@ -158,7 +160,8 @@ namespace ChickenDist.Forms
 				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Location = new Point(725, 12)
 			};
 			txtProductSearch.KeyDown += (s, e) =>
 			{
@@ -175,32 +178,33 @@ namespace ChickenDist.Forms
 				Text = "بحث:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(15, 5, 0, 0)
+				Location = new Point(855, 16)
 			};
 			txtSearch = new TextBox
 			{
-				Width = 140,
+				Width = 120,
 				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Location = new Point(895, 12)
 			};
 			txtSearch.TextChanged += delegate
 			{
 				FilterData();
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label4, txtSearch });
-			btnLoad = Theme.MakeButton("\ud83d\udd04 عرض", Theme.Accent);
-			btnLoad.Size = new Size(80, 28);
-			btnLoad.Margin = new Padding(15, 0, 0, 0);
+			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
+			btnLoad.Size = new Size(80, 26);
+			btnLoad.Location = new Point(1025, 12);
 			btnLoad.Click += delegate
 			{
 				LoadSales();
 			};
 			flowLayoutPanel.Controls.Add(btnLoad);
 			btnNewSale = Theme.MakeButton("➕ فاتورة جديدة", Color.FromArgb(40, 150, 80));
-			btnNewSale.Size = new Size(120, 28);
-			btnNewSale.Margin = new Padding(10, 0, 0, 0);
+			btnNewSale.Size = new Size(120, 26);
+			btnNewSale.Location = new Point(1115, 12);
 			btnNewSale.Click += delegate
 			{
 				FrmSale frmSale = new FrmSale();

@@ -156,7 +156,7 @@ namespace ChickenDist.Forms
             var pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 150,
+                Height = 160,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 5, 10, 5)
             };
@@ -191,55 +191,103 @@ namespace ChickenDist.Forms
 
             pnlFooter.Controls.Add(pnlSummaryTable);
 
-            // Flow row for Actions & Cash Collection
-            var pnlActionsRow = new FlowLayoutPanel
+            // Absolute row for Actions & Cash Collection
+            var pnlActionsRow = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 85,
-                FlowDirection = FlowDirection.LeftToRight,
+                Height = 90,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(0, 10, 0, 5)
+                Padding = new Padding(10)
             };
 
-            var lblCashL = new Label { Text = "المبلغ المحصل نقداً:", AutoSize = true, ForeColor = Theme.Primary, Font = new Font("Segoe UI", 12, FontStyle.Bold), Margin = new Padding(0, 5, 5, 0) };
-            txtCashCollected = new TextBox { Width = 150, Height = 32, Font = new Font("Segoe UI", 14, FontStyle.Bold), BackColor = Color.LightYellow, ForeColor = Color.DarkGreen, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Text = "0.00" };
+            var lblCashL = new Label 
+            { 
+                Text = "المبلغ المحصل نقداً:", 
+                AutoSize = true, 
+                ForeColor = Theme.Primary, 
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Location = new Point(10, 14)
+            };
+            txtCashCollected = new TextBox 
+            { 
+                Width = 110, 
+                Height = 28, 
+                Font = new Font("Segoe UI", 11, FontStyle.Bold), 
+                BackColor = Color.LightYellow, 
+                ForeColor = Color.DarkGreen, 
+                RightToLeft = RightToLeft.Yes, 
+                BorderStyle = BorderStyle.FixedSingle, 
+                Text = "0.00",
+                Location = new Point(150, 10)
+            };
 
-            var lblNotesL = new Label { Text = "ملاحظات التقفيل:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
-            txtNotes = new TextBox { Width = 260, Height = 32, Font = new Font("Segoe UI", 11), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var lblNotesL = new Label 
+            { 
+                Text = "ملاحظات التقفيل:", 
+                AutoSize = true, 
+                ForeColor = Theme.TextSub, 
+                Location = new Point(275, 14),
+                Font = Theme.FontBold
+            };
+            txtNotes = new TextBox 
+            { 
+                Width = 180, 
+                Height = 26, 
+                Font = new Font("Segoe UI", 10), 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.Yes, 
+                BorderStyle = BorderStyle.FixedSingle,
+                Location = new Point(380, 10)
+            };
 
             btnSave = Theme.MakeButton("💾 حفظ التقفيل", Theme.Accent);
-            btnSave.Size = new Size(140, 32);
-            btnSave.Margin = new Padding(20, 0, 0, 0);
+            btnSave.Size = new Size(130, 28);
+            btnSave.Location = new Point(575, 10);
             btnSave.Click += BtnSave_Click;
 
             // زر تصدير كشف التحصيل لواتساب
             btnWhatsApp = Theme.MakeButton("📲 كشف واتساب", Color.FromArgb(37, 211, 102));
-            btnWhatsApp.Size = new Size(140, 32);
-            btnWhatsApp.Margin = new Padding(15, 0, 0, 0);
+            btnWhatsApp.Size = new Size(120, 28);
+            btnWhatsApp.Location = new Point(715, 10);
             btnWhatsApp.Click += BtnWhatsApp_Click;
 
-            // ===== أزرار تصدير/استيراد الجوال =====
-            var lblImportDate = new Label { Text = "تاريخ الاستيراد:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
-            dtpImport = new DateTimePicker { Width = 110, Height = 28, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Margin = new Padding(0, 6, 0, 0) };
-
             btnExportJson = Theme.MakeButton("📱 تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
-            btnExportJson.Size = new Size(170, 32);
-            btnExportJson.Margin = new Padding(20, 0, 0, 0);
+            btnExportJson.Size = new Size(160, 28);
+            btnExportJson.Location = new Point(845, 10);
             btnExportJson.Click += BtnExportJson_Click;
 
+            // ===== أزرار تصدير/استيراد الجوال =====
+            var lblImportDate = new Label 
+            { 
+                Text = "تاريخ الاستيراد:", 
+                AutoSize = true, 
+                ForeColor = Theme.TextSub, 
+                Location = new Point(10, 52),
+                Font = Theme.FontBold
+            };
+            dtpImport = new DateTimePicker 
+            { 
+                Width = 110, 
+                Height = 26, 
+                Format = DateTimePickerFormat.Short, 
+                Value = DateTime.Today,
+                Location = new Point(110, 48)
+            };
+
             btnImportCsv = Theme.MakeButton("📥 استيراد مبيعات CSV", Color.FromArgb(20, 150, 90));
-            btnImportCsv.Size = new Size(170, 32);
-            btnImportCsv.Margin = new Padding(10, 0, 0, 0);
+            btnImportCsv.Size = new Size(160, 28);
+            btnImportCsv.Location = new Point(235, 48);
             btnImportCsv.Click += BtnImportCsv_Click;
 
             btnImportCloud = Theme.MakeButton("☁️ استيراد من السحاب", Color.FromArgb(30, 120, 200));
-            btnImportCloud.Size = new Size(170, 32);
-            btnImportCloud.Margin = new Padding(10, 0, 0, 0);
+            btnImportCloud.Size = new Size(160, 28);
+            btnImportCloud.Location = new Point(405, 48);
             btnImportCloud.Click += BtnImportCloud_Click;
 
             btnImportClipboard = Theme.MakeButton("📋 استيراد من الحافظة", Color.FromArgb(142, 68, 173));
-            btnImportClipboard.Size = new Size(170, 32);
-            btnImportClipboard.Margin = new Padding(10, 0, 0, 0);
+            btnImportClipboard.Size = new Size(160, 28);
+            btnImportClipboard.Location = new Point(575, 48);
             btnImportClipboard.Click += BtnImportClipboard_Click;
 
             pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv, btnImportCloud, btnImportClipboard });
@@ -247,9 +295,13 @@ namespace ChickenDist.Forms
 
 
             // ===== 4. Add to form in correct Z-order docking hierarchy =====
-            this.Controls.Add(pnlGrid);   // Dock = Fill (added last, fills middle)
+            this.Controls.Add(pnlGrid);   // Dock = Fill
             this.Controls.Add(pnlFooter); // Dock = Bottom
             this.Controls.Add(pnlSel);    // Dock = Top
+
+            pnlFooter.BringToFront();
+            pnlSel.BringToFront();
+            pnlGrid.SendToBack();
 
             Theme.ApplyFormRTL(this);
         }
