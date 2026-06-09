@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
         {
             this.Text = "فاتورة مشتريات";
             this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.MinimumSize = new Size(1024, 480);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
@@ -91,13 +91,13 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════════
             // ── لوحة الرأس — تستخدم TableLayoutPanel للتخطيط المنظم ──────────
             // ══════════════════════════════════════════════════════════════════
-            int hdrH = ScreenHelper.IsSmallScreen ? 185 : 215;
+            int hdrH = ScreenHelper.IsSmallScreen ? 135 : 160;
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
                 Height  = hdrH,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 8, 12, 8)
+                Padding = new Padding(12, 6, 12, 6)
             };
 
             // ── صف 0: نوع الفاتورة + رصيد الخزنة ────────────────────────────
@@ -117,8 +117,8 @@ namespace ChickenDist.Forms
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // col5: control / buttons
             // ارتفاع الصفوف
-            int rowH = ScreenHelper.IsSmallScreen ? 36 : 42;
-            int lastRowH = ScreenHelper.IsSmallScreen ? 38 : 46;
+            int rowH = ScreenHelper.IsSmallScreen ? 30 : 35;
+            int lastRowH = ScreenHelper.IsSmallScreen ? 32 : 38;
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
@@ -435,15 +435,15 @@ namespace ChickenDist.Forms
             pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 100,
+                Height = 85,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 6, 8, 6)
+                Padding = new Padding(8, 4, 8, 4)
             };
 
             // ── قسم الإجماليات (يمين) ─────────────────────────────────────────
             var pnlTotals = new Panel
             {
-                Width = 650,
+                Width = 480,
                 Dock  = DockStyle.Right,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0)

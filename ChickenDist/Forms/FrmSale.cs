@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
 		{
 			Text = "شاشة المبيعات";
 			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.MinimumSize = new Size(1024, 480);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			this.WindowState = FormWindowState.Maximized;
 			this.AutoScaleMode = AutoScaleMode.Dpi;
@@ -124,13 +124,13 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
-			int hdrH = ScreenHelper.IsSmallScreen ? 175 : 205;
+			int hdrH = ScreenHelper.IsSmallScreen ? 135 : 160;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
 				Height = hdrH,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(12, 8, 12, 8)
+				Padding = new Padding(12, 6, 12, 6)
 			};
 			var tbl = new TableLayoutPanel
 			{
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
 
-			int rowH = ScreenHelper.IsSmallScreen ? 36 : 42;
+			int rowH = ScreenHelper.IsSmallScreen ? 30 : 35;
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
@@ -642,15 +642,15 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 105,
+				Height = 85,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(8, 6, 8, 6)
+				Padding = new Padding(8, 4, 8, 4)
 			};
 
 			// ── قسم الإجماليات (يمين) ─────────────────────────────────────────
 			var pnlTotals = new Panel
 			{
-				Width = 650,
+				Width = 480,
 				Dock = DockStyle.Right,
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
@@ -665,11 +665,11 @@ namespace ChickenDist.Forms
 				CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
 				Padding = new Padding(4)
 			};
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105)); // col0: label
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col1: value
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75));  // col2: label
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));  // col3: control / value
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));  // col4: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // col0: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65));  // col1: value
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));  // col2: label
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));  // col3: control / value
+			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
 			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // col5: control / value
 			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));

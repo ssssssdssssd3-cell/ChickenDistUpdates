@@ -78,7 +78,7 @@ namespace ChickenDist.Forms
         {
             this.Text = "مرتجع مبيعات - إدخال مباشر";
             this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.MinimumSize = new Size(1024, 480);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
@@ -94,13 +94,13 @@ namespace ChickenDist.Forms
             var pnlInfo = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 95,
+                Height = 70,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10)
+                Padding = new Padding(10, 4, 10, 4)
             };
 
             // Row 1
-            int row1Y = 16;
+            int row1Y = 8;
             
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, row1Y), Font = Theme.FontBold };
             dtpFrom = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1), Location = new Point(45, row1Y - 3) };
@@ -135,7 +135,7 @@ namespace ChickenDist.Forms
             };
 
             // Row 2
-            int row2Y = 52;
+            int row2Y = 36;
 
             var lblSale = new Label { Text = "الفاتورة الأصلية:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, row2Y), Font = Theme.FontBold };
             cboSale = new ComboBox 
