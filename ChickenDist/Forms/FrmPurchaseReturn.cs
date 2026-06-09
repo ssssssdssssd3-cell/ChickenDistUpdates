@@ -267,7 +267,11 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlInfo);
             this.Controls.Add(pnlTitle);
 
-            pnlGrid.BringToFront();
+            pnlFoot.BringToFront();
+            pnlInfo.BringToFront();
+            pnlTitle.BringToFront();
+            pnlGrid.SendToBack();
+
             Theme.ApplyFormRTL(this);
         }
 

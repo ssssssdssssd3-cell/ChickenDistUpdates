@@ -643,7 +643,9 @@ namespace ChickenDist.Forms
             base.Controls.Add(pnlItems);
             base.Controls.Add(pnlFooter);
             base.Controls.Add(pnlHeader);
-            pnlItems.BringToFront();
+            pnlFooter.BringToFront();
+            pnlHeader.BringToFront();
+            pnlItems.SendToBack();
             ToggleType();
             Theme.ApplyFormRTL(this);
         }

@@ -132,9 +132,11 @@ namespace ChickenDist.Forms
 
             pnlLeft.Controls.Add(dgStock); // Fill
             pnlLeft.Controls.Add(pnlF);    // Top
+            pnlF.BringToFront();
+            dgStock.SendToBack();
 
             // Panel Right: Adjustment Form (Dock Left, Width 340)
-            var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15) };
+            var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15), AutoScroll = true };
             
             var lblSectionTitle = new Label 
             { 
@@ -223,6 +225,8 @@ namespace ChickenDist.Forms
 
             tabStock.Controls.Add(pnlLeft);
             tabStock.Controls.Add(pnlDetails);
+            pnlDetails.BringToFront();
+            pnlLeft.SendToBack();
         }
 
         private void BuildLogsTab()
@@ -275,7 +279,7 @@ namespace ChickenDist.Forms
             tabLogs.Controls.Add(dgLogs);
             
             pnlTop.BringToFront();
-            dgLogs.BringToFront();
+            dgLogs.SendToBack();
         }
 
         private void LoadStock()
