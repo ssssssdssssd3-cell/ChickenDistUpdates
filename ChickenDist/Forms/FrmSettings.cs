@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.IO;
 using System.Windows.Forms;
 using ChickenDist.Core;
 
@@ -423,6 +424,98 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(btnCopyIds);
             y += 85;
+
+            // ── فاصل ──────────────────────────────────────────────
+            y += 10;
+            var sep3 = new Panel
+            {
+                Location = new Point(20, y),
+                Size = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sep3);
+            y += 15;
+
+            // ── أدوات الصيانة والدعم الفني ──────────────────────────
+            var lblSupportTitle = new Label
+            {
+                Text = "🛠️ أدوات الصيانة والدعم الفني",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblSupportTitle);
+            y += 35;
+
+            var btnDefender = Theme.MakeButton("🛡️ استثناء جدار الحماية", 20, y, 240, 36, Color.FromArgb(100, 40, 150));
+            btnDefender.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnDefender.Click += (s, e) =>
+            {
+                try
+                {
+                    string appFolder = AppDomain.CurrentDomain.BaseDirectory;
+                    System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = $"-NoProfile -Command \"Add-MpPreference -ExclusionPath '{appFolder}'\"",
+                        Verb = "runas", // طلب صلاحيات المسؤول UAC
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                    MessageBox.Show("✅ تم إرسال طلب استثناء المجلد لجدار الحماية بنجاح.\nيرجى تأكيد نافذة طلب الصلاحيات (UAC) التي ستظهر.", 
+                        "استثناء الحماية", MessageBoxButtons.OK, MessageBoxIcon.Information, 
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("فشل إضافة استثناء الحماية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            this.Controls.Add(btnDefender);
+
+            var btnOpenLog = Theme.MakeButton("📋 عرض سجل الأخطاء", 270, y, 250, 36, Color.FromArgb(70, 80, 95));
+            btnOpenLog.Font = new Font("Segoe UI", 9f);
+            btnOpenLog.Click += (s, e) =>
+            {
+                try
+                {
+                    string logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+                    if (!File.Exists(logFile))
+                    {
+                        File.WriteAllText(logFile, $"--- سجل جديد تم إنشاؤه في {DateTime.Now} ---{Environment.NewLine}");
+                    }
+                    System.Diagnostics.Process.Start("notepad.exe", logFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("فشل فتح ملف السجل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            this.Controls.Add(btnOpenLog);
+            y += 45;
+
+            var btnExportLog = Theme.MakeButton("📂 تحديد موقع ملف السجل لإرساله", 20, y, 500, 36, Color.FromArgb(55, 65, 81));
+            btnExportLog.Font = new Font("Segoe UI", 9f);
+            btnExportLog.Click += (s, e) =>
+            {
+                try
+                {
+                    string logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+                    if (!File.Exists(logFile))
+                    {
+                        File.WriteAllText(logFile, $"--- سجل جديد تم إنشاؤه في {DateTime.Now} ---{Environment.NewLine}");
+                    }
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{logFile}\"");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("فشل تحديد موقع الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            this.Controls.Add(btnExportLog);
+            y += 55;
 
             this.Height = y + 60;
         }

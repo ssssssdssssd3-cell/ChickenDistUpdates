@@ -291,6 +291,32 @@ namespace ChickenDist.Forms
 			};
 			detailLeftPanel.Controls.Add(lblDetailsTitle);
 
+			Button btnPrintInvoice = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(52, 152, 219));
+			btnPrintInvoice.Size = new Size(190, 38);
+			btnPrintInvoice.Margin = new Padding(0, 15, 0, 0);
+			btnPrintInvoice.Click += (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count == 0) return;
+				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+				new FrmPrintPurchase(purchaseID);
+			};
+			detailLeftPanel.Controls.Add(btnPrintInvoice);
+
+			Button btnPrintBarcodes = Theme.MakeButton("🏷️ طباعة الباركود للأصناف", Color.FromArgb(155, 89, 182));
+			btnPrintBarcodes.Size = new Size(190, 38);
+			btnPrintBarcodes.Margin = new Padding(0, 10, 0, 0);
+			btnPrintBarcodes.Click += (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count == 0) return;
+				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+				string purchaseCode = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value.ToString();
+				using (var frm = new FrmPrintPurchaseBarcodes(purchaseID, purchaseCode))
+				{
+					frm.ShowDialog(this);
+				}
+			};
+			detailLeftPanel.Controls.Add(btnPrintBarcodes);
+
 			dgItems = MakeGrid();
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{

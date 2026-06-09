@@ -330,6 +330,24 @@ namespace ChickenDist.Forms
             form.BringToFront();
         }
 
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                // نسخ احتياطي صامت عند الخروج لمرة واحدة في اليوم
+                var lastBackup = BackupManager.LastBackupTime;
+                if (lastBackup == null || lastBackup.Value.Date < DateTime.Today)
+                {
+                    BackupManager.DoBackup(silent: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("AutoBackup on exit failed", ex, "FrmMain");
+            }
+            base.OnFormClosing(e);
+        }
+
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
