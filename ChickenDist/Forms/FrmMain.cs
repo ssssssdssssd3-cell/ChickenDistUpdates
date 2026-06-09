@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
             // ===== TopBar (مضغوط ليناسب 1366x768) =====
-            int topH = ScreenHelper.IsSmallScreen ? 44 : 54;
+            int topH = ScreenHelper.IsSmallScreen ? 35 : 42;
             this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = topH, BackColor = Theme.Primary };
             this.lblCompany = new Label
             {
@@ -79,7 +79,7 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 AutoScroll = true,
-                Height = 68,
+                Height = 50,
                 BackColor = Theme.Sidebar,
                 Padding = new Padding(10, 2, 10, 2)
             };
@@ -183,14 +183,14 @@ namespace ChickenDist.Forms
                 var btn = new Button
                 {
                     Name      = item.label,
-                    Text      = $"{item.icon}\n{item.label}",
-                    Size      = new Size(105, 52),
+                    Text      = $"{item.icon} {item.label}",
+                    Size      = new Size(100, 38),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = item.btnColor,
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font      = new Font("Segoe UI", 8.0f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Margin    = new Padding(3, 4, 3, 4),
+                    Margin    = new Padding(3, 3, 3, 3),
                     Cursor    = Cursors.Hand,
                     ImageAlign = ContentAlignment.TopCenter
                 };

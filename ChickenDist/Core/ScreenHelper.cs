@@ -100,5 +100,25 @@ namespace ChickenDist.Core
             float newSize = Math.Max(7.5f, font.Size * 0.9f);
             return new Font(font.FontFamily, newSize, font.Style);
         }
+
+        /// <summary>
+        /// يضبط حجم PrintPreviewDialog بحيث لا يتجاوز حدود الشاشة
+        /// </summary>
+        public static void SafePrintPreview(Form preview, int preferredWidth, int preferredHeight)
+        {
+            preview.Width  = Math.Min(preferredWidth,  ScreenW - 40);
+            preview.Height = Math.Min(preferredHeight, ScreenH - 80);
+            preview.StartPosition = FormStartPosition.CenterScreen;
+        }
+
+        /// <summary>
+        /// يطبق الإعدادات القياسية على أي فورم يعمل كـ child form داخل FrmMain
+        /// (بدون Maximized لأنه يملأ المساحة تلقائياً عبر Dock.Fill)
+        /// </summary>
+        public static void FitChildForm(Form form)
+        {
+            form.AutoScaleMode       = AutoScaleMode.Dpi;
+            form.AutoScaleDimensions = new SizeF(96F, 96F);
+        }
     }
 }

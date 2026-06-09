@@ -58,7 +58,7 @@ namespace ChickenDist.Forms
             this.KeyDown += FrmPurchase_KeyDown;
 
             // ارتفاع Header مضغوط للشاشات الصغيرة
-            int hdrH = ScreenHelper.IsSmallScreen ? 145 : 170;
+            int hdrH = ScreenHelper.IsSmallScreen ? 155 : 170;
             // ===== Top Panel (Header) =====
             Panel panel = new Panel
             {
@@ -229,31 +229,40 @@ namespace ChickenDist.Forms
             lblTotalVal  = new Label { Text = "0.00 ج", ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Location = new Point(810, 13), AutoSize = true, Anchor = (AnchorStyles.Top | AnchorStyles.Right) };
 
             lblDiscType = MakeLabel("خصم:", 710, 15);
+            lblDiscType.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             cboInvoiceDiscountType = new ComboBox { Location = new Point(635, 12), Width = 65, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboInvoiceDiscountType.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             cboInvoiceDiscountType.Items.AddRange(new object[] { "مبلغ", "%" });
             cboInvoiceDiscountType.SelectedIndex = 0;
             cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => RecalcTotals();
 
             lblDiscVal = MakeLabel("قيمة:", 585, 15);
+            lblDiscVal.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             txtInvoiceDiscount = new TextBox { Location = new Point(495, 12), Width = 80, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "0" };
+            txtInvoiceDiscount.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             txtInvoiceDiscount.TextChanged += (s, e) => RecalcTotals();
 
             lblNetTitle = MakeLabel("الصافي:", 400, 15);
+            lblNetTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblNetVal   = new Label { Text = "0.00 ج", ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 13f, FontStyle.Bold), Location = new Point(280, 11), AutoSize = true };
+            lblNetVal.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             btnSave = Theme.MakeButton("💾 حفظ الفاتورة [F5]", Theme.Accent);
             btnSave.Size = new Size(160, 35);
             btnSave.Location = new Point(10, 8);
+            btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnSave.Click += BtnSave_Click;
 
             btnNew = Theme.MakeButton("🆕 فاتورة جديدة [F2]", Color.FromArgb(60, 100, 60));
             btnNew.Size = new Size(155, 35);
             btnNew.Location = new Point(175, 8);
+            btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnNew.Click += (s, e) => ClearInvoice();
 
             btnPrint = Theme.MakeButton("🖨 طباعة [F9]", Color.FromArgb(80, 80, 80));
             btnPrint.Size = new Size(100, 35);
             btnPrint.Location = new Point(335, 8);
+            btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
             Label lblHotkeys = new Label
             {

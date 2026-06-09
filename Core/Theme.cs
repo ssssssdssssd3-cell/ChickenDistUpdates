@@ -207,7 +207,7 @@ namespace ChickenDist.Core
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 70,
+                Height = ScreenHelper.IsSmallScreen ? 60 : 70,
                 BackColor = BgCard,
                 Padding = new Padding(20, 0, 0, 0)
             };
@@ -217,13 +217,14 @@ namespace ChickenDist.Core
                 Font = FontTitle,
                 ForeColor = TextMain,
                 AutoSize = false,
-                Width = 600,
                 Height = 40,
-                Top = 8,
+                Top = ScreenHelper.IsSmallScreen ? 4 : 8,
                 Left = 15,
                 RightToLeft = RightToLeft.Yes,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
+            lbl.Width = panel.Width - 30;
             panel.Controls.Add(lbl);
             if (!string.IsNullOrEmpty(subtitle))
             {
@@ -233,13 +234,14 @@ namespace ChickenDist.Core
                     Font = FontSmall,
                     ForeColor = TextSub,
                     AutoSize = false,
-                    Width = 600,
-                    Height = 22,
-                    Top = 46,
+                    Height = 20,
+                    Top = ScreenHelper.IsSmallScreen ? 36 : 46,
                     Left = 15,
                     RightToLeft = RightToLeft.Yes,
-                    TextAlign = ContentAlignment.MiddleRight
+                    TextAlign = ContentAlignment.MiddleRight,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
                 };
+                sub.Width = panel.Width - 30;
                 panel.Controls.Add(sub);
             }
 

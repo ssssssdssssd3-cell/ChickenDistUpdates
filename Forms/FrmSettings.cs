@@ -46,7 +46,8 @@ namespace ChickenDist.Forms
                 Location = new Point(20, 85),
                 Size = new Size(545, 335),
                 BackColor = Theme.BgCard,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
             };
 
             // Tab 1: General Settings
@@ -189,6 +190,7 @@ namespace ChickenDist.Forms
 
             // Save settings button
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, 440, 160, 42, Theme.Accent);
+            btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnSave.Click += (s, e) => {
                 if (string.IsNullOrWhiteSpace(txtCompanyName.Text)) { MessageBox.Show("أدخل اسم الشركة"); return; }
                 

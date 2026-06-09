@@ -121,7 +121,7 @@ namespace ChickenDist.Forms
                 AutoSize = false,
                 Size = new Size(480, 24),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(0, 520)
+                Location = new Point(0, ScreenHelper.IsSmallScreen ? 460 : 520)
             };
 
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter });

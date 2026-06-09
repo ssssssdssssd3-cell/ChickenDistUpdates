@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
 		{
 			Text = "شاشة المبيعات";
 			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 480);
+			base.MinimumSize = new Size(1024, 450);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			this.WindowState = FormWindowState.Maximized;
 			this.AutoScaleMode = AutoScaleMode.Dpi;
@@ -124,13 +124,13 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
-			int hdrH = ScreenHelper.IsSmallScreen ? 135 : 160;
+			int hdrH = ScreenHelper.IsSmallScreen ? 115 : 140;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
 				Height = hdrH,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(12, 6, 12, 6)
+				Padding = new Padding(12, 4, 12, 4)
 			};
 			var tbl = new TableLayoutPanel
 			{
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
 
-			int rowH = ScreenHelper.IsSmallScreen ? 30 : 35;
+			int rowH = ScreenHelper.IsSmallScreen ? 25 : 31;
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));

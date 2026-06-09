@@ -617,8 +617,7 @@ namespace ChickenDist.Forms
 			};
 			PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
 			printPreviewDialog.Document = printDocument;
-			printPreviewDialog.Width = 950;
-			printPreviewDialog.Height = 750;
+			ScreenHelper.SafePrintPreview(printPreviewDialog, 950, 750);
 			printPreviewDialog.ShowDialog();
 		}
 
@@ -901,9 +900,8 @@ namespace ChickenDist.Forms
 			var preview = new PrintPreviewDialog
 			{
 				Document = pd,
-				Width    = 1150,
-				Height   = 820
 			};
+			ScreenHelper.SafePrintPreview(preview, 1150, 820);
 			preview.ShowDialog();
 		}
 

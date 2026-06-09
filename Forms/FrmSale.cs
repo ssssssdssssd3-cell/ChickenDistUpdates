@@ -103,7 +103,7 @@ namespace ChickenDist.Forms
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
 			// ارتفاع Header مضغوط على الشاشات الصغيرة (1366x768)
-			int hdrH = ScreenHelper.IsSmallScreen ? 130 : 155;
+			int hdrH = ScreenHelper.IsSmallScreen ? 145 : 155;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -511,8 +511,8 @@ namespace ChickenDist.Forms
             btnLoadHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			button.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 			btnSave.Click += BtnSave_Click;
             btnHold.Click += BtnHold_Click;
             btnLoadHold.Click += BtnLoadHold_Click;

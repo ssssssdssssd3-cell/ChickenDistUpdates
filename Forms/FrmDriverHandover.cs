@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -184,10 +184,11 @@ namespace ChickenDist.Forms
             var pnlActionsRow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 85,
+                Height = ScreenHelper.IsSmallScreen ? 95 : 85,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(0, 10, 0, 5)
+                Padding = new Padding(0, 10, 0, 5),
+                WrapContents = true
             };
 
             var lblCashL = new Label { Text = "المبلغ المحصل نقداً:", AutoSize = true, ForeColor = Theme.Primary, Font = new Font("Segoe UI", 12, FontStyle.Bold), Margin = new Padding(0, 5, 5, 0) };

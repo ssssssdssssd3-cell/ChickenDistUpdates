@@ -22,8 +22,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             Text = "عهدة المناديب الحالية";
-            Size = new Size(1200, 680);
+            Size = new Size(1366, 768);
+            MinimumSize = new Size(1024, 600);
             StartPosition = FormStartPosition.CenterScreen;
+            WindowState = FormWindowState.Maximized;
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96F, 96F);
             RightToLeft = RightToLeft.Yes;
             RightToLeftLayout = true;
             BackColor = Theme.BgMain;
@@ -284,7 +288,8 @@ namespace ChickenDist.Forms
                 pageRow = 0;
             };
 
-            var ppd = new System.Windows.Forms.PrintPreviewDialog { Document = pd, Width = 1100, Height = 750 };
+            var ppd = new System.Windows.Forms.PrintPreviewDialog { Document = pd };
+            ScreenHelper.SafePrintPreview(ppd, 1100, 750);
             ppd.ShowDialog();
         }
     }

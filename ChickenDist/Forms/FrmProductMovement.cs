@@ -56,34 +56,42 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlHeader);
 
             // Filter Bar
-            var pnlFilters = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(10) };
+            var pnlFilters = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = ScreenHelper.IsSmallScreen ? 90 : 50,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10),
+                WrapContents = true
+            };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(880, 15) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
             dtpFrom = new DateTimePicker 
             { 
-                Location = new Point(730, 11), 
                 Width = 140, 
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today.AddDays(-30)
+                Value = DateTime.Today.AddDays(-30),
+                Margin = new Padding(5, 4, 5, 0)
             };
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(680, 15) };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
             dtpTo = new DateTimePicker 
             { 
-                Location = new Point(530, 11), 
                 Width = 140, 
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today
+                Value = DateTime.Today,
+                Margin = new Padding(5, 4, 5, 0)
             };
 
             btnLoad = Theme.MakeButton("🔍 عرض الحركة", Color.FromArgb(60, 100, 60));
-            btnLoad.Location = new Point(390, 8);
             btnLoad.Size = new Size(120, 32);
+            btnLoad.Margin = new Padding(20, 0, 5, 0);
             btnLoad.Click += (s, e) => LoadMovement();
 
             btnPrint = Theme.MakeButton("🖨 طباعة تقرير الحركة", Theme.Accent);
-            btnPrint.Location = new Point(20, 8);
             btnPrint.Size = new Size(160, 32);
+            btnPrint.Margin = new Padding(5, 0, 5, 0);
             btnPrint.Click += (s, e) => PrintMovement();
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnLoad, btnPrint });

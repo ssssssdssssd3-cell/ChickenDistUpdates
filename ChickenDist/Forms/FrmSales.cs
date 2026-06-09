@@ -58,12 +58,14 @@ namespace ChickenDist.Forms
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
-			Panel flowLayoutPanel = new Panel
+			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 50,
+				Height = ScreenHelper.IsSmallScreen ? 90 : 50,
+				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10)
+				Padding = new Padding(10),
+				WrapContents = true
 			};
 			Label label = new Label
 			{
@@ -215,7 +217,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 280,
+				Height = ScreenHelper.IsSmallScreen ? 240 : 280,
 				Padding = new Padding(10, 0, 10, 10)
 			};
 			dgSales = MakeGrid();

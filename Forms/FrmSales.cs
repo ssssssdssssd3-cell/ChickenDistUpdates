@@ -66,7 +66,7 @@ namespace ChickenDist.Forms
 				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 10, 10, 10),
-				WrapContents = false
+				WrapContents = true
 			};
 			Label label = new Label
 			{
@@ -157,7 +157,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 280,
+				Height = ScreenHelper.IsSmallScreen ? 240 : 280,
 				Padding = new Padding(10, 0, 10, 10)
 			};
 			dgSales = MakeGrid();

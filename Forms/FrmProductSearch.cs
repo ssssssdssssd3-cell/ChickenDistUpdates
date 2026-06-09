@@ -39,6 +39,8 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             // Top panel (Search)
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 125, BackColor = Theme.BgCard, Padding = new Padding(12) };
