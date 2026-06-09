@@ -79,12 +79,10 @@ namespace ChickenDist.Forms
             AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
             AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
 
-            // ComboBox للتصنيف مع زر إضافة
+            // ComboBox للتصنيف
             split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            cboCategory = new ComboBox { Location = new Point(50, y - 2), Width = 145, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
-            var btnAddCat = new Button { Text = "➕", Location = new Point(15, y - 2), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
-            btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
-            split.Panel1.Controls.AddRange(new Control[] { cboCategory, btnAddCat });
+            cboCategory = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            split.Panel1.Controls.Add(cboCategory);
             y += 38;
 
             AddField(split.Panel1, "الموديل المتوافق:", ref y, out txtCarModel);

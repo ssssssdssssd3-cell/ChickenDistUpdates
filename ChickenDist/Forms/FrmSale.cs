@@ -89,6 +89,8 @@ namespace ChickenDist.Forms
 		private string _selectedTier = "قطاعي";
 		private ComboBox cboWarehouse;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
+		private Label lblLiveWeight;
+		private decimal? _scaleBarcodeWeight = null;
 
 		public FrmSale() : this(0, false)
 		{
@@ -358,6 +360,17 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 6, 2, 6)
 			};
 
+			lblLiveWeight = new Label
+			{
+				Name = "lblLiveWeight",
+				Text = "⚖️ الميزان: 0.000 كجم (غير متصل)",
+				Dock = DockStyle.Fill,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				ForeColor = Theme.Accent,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Visible = AppConfig.ScaleEnabled
+			};
+
 			// Row 3: Price Tiers (spanning 5 columns)
 			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
 			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
@@ -445,6 +458,8 @@ namespace ChickenDist.Forms
 			tbl.Controls.Add(txtNotes, 1, 2);
 			tbl.Controls.Add(lblWarehouse, 2, 2);
 			tbl.Controls.Add(cboWarehouse, 3, 2);
+			tbl.Controls.Add(lblLiveWeight, 4, 2);
+			tbl.SetColumnSpan(lblLiveWeight, 2);
 
 			tbl.Controls.Add(lblTierRow, 0, 3);
 			tbl.Controls.Add(pnlTierBtns, 1, 3);
@@ -490,6 +505,13 @@ namespace ChickenDist.Forms
 				Name = "ProductName",
 				HeaderText = "الصنف",
 				ReadOnly = true
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "PriceTier",
+				HeaderText = "فئة السعر",
+				ReadOnly = true,
+				FillWeight = 30f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -795,6 +817,7 @@ namespace ChickenDist.Forms
 			base.Controls.Add(panel);
             pnlItems.BringToFront();
 			ToggleType();
+			InitializeScale();
 			Theme.ApplyFormRTL(this);
 		}
 
@@ -813,6 +836,7 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F8) { ReadWeightToSelectedRow(); e.Handled = true; }
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -882,6 +906,43 @@ namespace ChickenDist.Forms
 				}
 				List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
 				string text = cbo.Text;
+
+				// ── اعتراض باركود الميزان المطبوع (13 رقم يبدأ بـ 2) ────────────────
+				if (cbo == cboProduct && text.Length == 13 && text.StartsWith("2") && decimal.TryParse(text, out _))
+				{
+					string productCode = text.Substring(2, 5); // كود الصنف (5 أرقام)
+					string weightStr = text.Substring(7, 5);     // الوزن بالجرام (5 أرقام)
+					
+					if (decimal.TryParse(weightStr, out decimal grams))
+					{
+						decimal parsedWeight = grams / 1000m; // تحويل لكيلوجرام
+						int numericCode = int.TryParse(productCode, out int num) ? num : -1;
+						ComboItem matchedItem = null;
+						foreach (ComboItem item2 in list2)
+						{
+							if (item2.ID > 0 && (item2.Barcode == productCode || (numericCode != -1 && item2.Barcode == numericCode.ToString())))
+							{
+								if (item2.PriceTier == _selectedTier)
+								{
+									matchedItem = item2;
+									break;
+								}
+								if (matchedItem == null || item2.PriceTier == "قطاعي")
+								{
+									matchedItem = item2;
+								}
+							}
+						}
+
+						if (matchedItem != null)
+						{
+							_scaleBarcodeWeight = parsedWeight;
+							cbo.SelectedItem = matchedItem;
+							return;
+						}
+					}
+				}
+
 				cbo.BeginUpdate();
 				cbo.Items.Clear();
 				if (string.IsNullOrWhiteSpace(text))
@@ -894,7 +955,28 @@ namespace ChickenDist.Forms
 				{
 					foreach (ComboItem item2 in list2)
 					{
-						if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+						bool matches = false;
+						if (item2.ID == 0)
+						{
+							matches = true;
+						}
+						else if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+						{
+							matches = true;
+						}
+						else if (cbo == cboProduct)
+						{
+							// البحث الموسع للأصناف ليشمل رقم القطعة والماركة والموديل والباركود الأصلي
+							if ((item2.Barcode != null && item2.Barcode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							    (item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							    (item2.Brand != null && item2.Brand.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							    (item2.CarModel != null && item2.CarModel.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
+							{
+								matches = true;
+							}
+						}
+
+						if (matches)
 						{
 							cbo.Items.Add(item2);
 						}
@@ -967,28 +1049,76 @@ namespace ChickenDist.Forms
 			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
+				int pid = (int)row3["ProductID"];
 				string name = row3["ProductName"].ToString();
-				decimal price = (decimal)row3["SalePrice"];
+				decimal retailPrice = row3["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["SalePrice"]) : 0m;
 				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
+				decimal wholesalePrice = row3["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["WholesalePrice"]) : 0m;
+				decimal semiWholesalePrice = row3["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["SemiWholesalePrice"]) : 0m;
+				decimal minStockLimit = row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m;
+				decimal stock = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
 
-				string displayText = pendingPrice > 0 
-					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
-					: $"{name} ({price:N2})";
+				bool hasWholesale = wholesalePrice > 0 && wholesalePrice != retailPrice;
+				bool hasSemi = semiWholesalePrice > 0 && semiWholesalePrice != retailPrice && semiWholesalePrice != wholesalePrice;
 
-				var comboItem = new ComboItem(
-					(int)row3["ProductID"], 
-					name,
-					displayText,
-					price, 
-					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
-					purchasePrice
-				);
-				comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
-				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
-				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
-				comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
-				cboProduct.Items.Add(comboItem);
+				// 1. Retail Price Item
+				string retailText;
+				if (hasWholesale || hasSemi)
+				{
+					retailText = pendingPrice > 0 
+						? $"{name} - قطاعي (المتاح: {stock:N2} | سعر: {retailPrice:N2} | المعلق: {pendingPrice:N2})"
+						: $"{name} - قطاعي (المتاح: {stock:N2} | سعر: {retailPrice:N2})";
+				}
+				else
+				{
+					retailText = pendingPrice > 0 
+						? $"{name} (المتاح: {stock:N2} | السعر: {retailPrice:N2} | المعلق: {pendingPrice:N2})"
+						: $"{name} (المتاح: {stock:N2} | السعر: {retailPrice:N2})";
+				}
+
+				var retailItem = new ComboItem(pid, name, retailText, retailPrice, minStockLimit, purchasePrice)
+				{
+					PriceTier = "قطاعي",
+					PartNumber = row3["PartNumber"]?.ToString() ?? "",
+					CarModel = row3["CarModel"]?.ToString() ?? "",
+					Brand = row3["Brand"]?.ToString() ?? "",
+					ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
+					Barcode = row3["ProductCode"]?.ToString() ?? ""
+				};
+				cboProduct.Items.Add(retailItem);
+
+				// 2. Wholesale Price Item (if different)
+				if (hasWholesale)
+				{
+					string wholesaleText = $"{name} - جملة (المتاح: {stock:N2} | سعر: {wholesalePrice:N2})";
+					var wholesaleItem = new ComboItem(pid, name, wholesaleText, wholesalePrice, minStockLimit, purchasePrice)
+					{
+						PriceTier = "جملة",
+						PartNumber = row3["PartNumber"]?.ToString() ?? "",
+						CarModel = row3["CarModel"]?.ToString() ?? "",
+						Brand = row3["Brand"]?.ToString() ?? "",
+						ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
+						Barcode = row3["ProductCode"]?.ToString() ?? ""
+					};
+					cboProduct.Items.Add(wholesaleItem);
+				}
+
+				// 3. Semi-Wholesale Price Item (if different)
+				if (hasSemi)
+				{
+					string semiText = $"{name} - نصف جملة (المتاح: {stock:N2} | سعر: {semiWholesalePrice:N2})";
+					var semiItem = new ComboItem(pid, name, semiText, semiWholesalePrice, minStockLimit, purchasePrice)
+					{
+						PriceTier = "نصف جملة",
+						PartNumber = row3["PartNumber"]?.ToString() ?? "",
+						CarModel = row3["CarModel"]?.ToString() ?? "",
+						Brand = row3["Brand"]?.ToString() ?? "",
+						ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
+						Barcode = row3["ProductCode"]?.ToString() ?? ""
+					};
+					cboProduct.Items.Add(semiItem);
+				}
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -996,12 +1126,12 @@ namespace ChickenDist.Forms
 			{
 				if (cboProduct.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
 				{
-					// Check if product is already in the list
+					// Check if product with same price tier is already in the list
 					foreach (SaleItemDTO item in _items)
 					{
-						if (item.ProductID == comboItem.ID)
+						if (item.ProductID == comboItem.ID && item.PriceTier == comboItem.PriceTier)
 						{
-							MessageBox.Show("الصنف موجود مسبقاً بالفاتورة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							MessageBox.Show("الصنف بنفس فئة السعر موجود مسبقاً بالفاتورة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							cboProduct.SelectedIndex = 0;
 							return;
 						}
@@ -1017,12 +1147,32 @@ namespace ChickenDist.Forms
 						return;
 					}
 
-					// Add to items list with default Quantity = 1
+					// تحديد الكمية بناء على الوزن اللحظي أو وزن باركود الميزان المطبوع
+					decimal initialQty = 1.00m;
+					if (_scaleBarcodeWeight.HasValue)
+					{
+						initialQty = _scaleBarcodeWeight.Value;
+						_scaleBarcodeWeight = null; // إعادة تعيين
+					}
+					else if (AppConfig.ScaleEnabled && ScaleService.Instance.IsConnected && ScaleService.Instance.CurrentWeight > 0m)
+					{
+						initialQty = ScaleService.Instance.CurrentWeight;
+					}
+
+					// التحقق من الرصيد الكافي للوزن المقروء
+					if (initialQty > stock)
+					{
+						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({initialQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						cboProduct.SelectedIndex = 0;
+						return;
+					}
+
+					// Add to items list with default Quantity
 					_items.Add(new SaleItemDTO
 					{
 						ProductID = comboItem.ID,
 						ProductName = comboItem.Name,
-						Quantity = 1.00m,
+						Quantity = initialQty,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
 						MinStockLimit = comboItem.MinStockLimit,
@@ -1030,7 +1180,8 @@ namespace ChickenDist.Forms
 						PartNumber = comboItem.PartNumber,
 						CarModel = comboItem.CarModel,
 						Brand = comboItem.Brand,
-						ShelfLocation = comboItem.ShelfLocation
+						ShelfLocation = comboItem.ShelfLocation,
+						PriceTier = comboItem.PriceTier
 					});
 
 					RefreshGrid();
@@ -1213,13 +1364,25 @@ namespace ChickenDist.Forms
 
 		private void SelectProductByID(int prodID)
 		{
+			int matchedIndex = -1;
 			for (int i = 0; i < cboProduct.Items.Count; i++)
 			{
 				if (cboProduct.Items[i] is ComboItem comboItem && comboItem.ID == prodID)
 				{
-					cboProduct.SelectedIndex = i;
-					break;
+					if (comboItem.PriceTier == _selectedTier)
+					{
+						matchedIndex = i;
+						break;
+					}
+					if (matchedIndex == -1 || comboItem.PriceTier == "قطاعي")
+					{
+						matchedIndex = i;
+					}
 				}
+			}
+			if (matchedIndex != -1)
+			{
+				cboProduct.SelectedIndex = matchedIndex;
 			}
 		}
 
@@ -1257,9 +1420,9 @@ namespace ChickenDist.Forms
 			}
 			foreach (SaleItemDTO item in _items)
 			{
-				if (item.ProductID == comboItem.ID)
+				if (item.ProductID == comboItem.ID && item.PriceTier == comboItem.PriceTier)
 				{
-					MessageBox.Show("الصنف موجود مسبقا\u064b");
+					MessageBox.Show("الصنف بنفس فئة السعر موجود مسبقاً بالفاتورة");
 					return;
 				}
 			}
@@ -1275,7 +1438,8 @@ namespace ChickenDist.Forms
 				PartNumber = comboItem.PartNumber,
 				CarModel = comboItem.CarModel,
 				Brand = comboItem.Brand,
-				ShelfLocation = comboItem.ShelfLocation
+				ShelfLocation = comboItem.ShelfLocation,
+				PriceTier = comboItem.PriceTier
 			});
 			RefreshGrid();
 		}
@@ -1392,6 +1556,7 @@ namespace ChickenDist.Forms
 				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
 					item.ProductName,
+					item.PriceTier,
 					item.PartNumber,
 					item.CarModel,
 					item.Brand,
@@ -1968,6 +2133,13 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			if (AppConfig.ScaleEnabled)
+			{
+				ScaleService.Instance.WeightChanged -= Scale_WeightChanged;
+				ScaleService.Instance.ErrorOccurred -= Scale_ErrorOccurred;
+				ScaleService.Instance.Disconnect();
+			}
+
 			if (_isDirty && _items.Count > 0)
 			{
 				var res = MessageBox.Show("هناك تغييرات لم يتم حفظها في الفاتورة الحالية.\nهل تريد الخروج بدون حفظ؟", "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
@@ -2429,6 +2601,91 @@ namespace ChickenDist.Forms
             public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
             public override string ToString() => HeaderText;
         }
+
+		private void InitializeScale()
+		{
+			if (AppConfig.ScaleEnabled)
+			{
+				ScaleService.Instance.WeightChanged += Scale_WeightChanged;
+				ScaleService.Instance.ErrorOccurred += Scale_ErrorOccurred;
+				
+				lblLiveWeight.Text = "⚖️ الميزان: جاري الاتصال...";
+				lblLiveWeight.ForeColor = Theme.TextSub;
+				
+				System.Threading.Tasks.Task.Run(() => {
+					ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+				});
+			}
+		}
+
+		private void Scale_WeightChanged(decimal weight, bool isStable)
+		{
+			if (this.IsDisposed) return;
+			
+			this.BeginInvoke((Action)delegate {
+				lblLiveWeight.Text = $"⚖️ الميزان: {weight:F3} كجم {(isStable ? "🟢" : "🟡")}";
+				lblLiveWeight.ForeColor = isStable ? Color.FromArgb(46, 204, 113) : Theme.Accent;
+			});
+		}
+
+		private void Scale_ErrorOccurred(string error)
+		{
+			if (this.IsDisposed) return;
+			
+			this.BeginInvoke((Action)delegate {
+				lblLiveWeight.Text = "⚖️ الميزان: 🔴 خطأ في الاتصال!";
+				lblLiveWeight.ForeColor = Theme.Danger;
+			});
+		}
+
+		private void ReadWeightToSelectedRow()
+		{
+			if (!AppConfig.ScaleEnabled)
+			{
+				MessageBox.Show("الميزان غير مفعّل في الإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return;
+			}
+			if (!ScaleService.Instance.IsConnected)
+			{
+				MessageBox.Show("الميزان غير متصل حالياً! تأكد من التوصيل والإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+			
+			decimal weight = ScaleService.Instance.CurrentWeight;
+			if (weight <= 0m)
+			{
+				MessageBox.Show("الوزن المقروء صفر أو سالب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+			{
+				int rowIndex = dgItems.CurrentRow.Index;
+				SaleItemDTO saleItemDTO = _items[rowIndex];
+				
+				decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var sVal) ? sVal : 0m;
+				if (weight > productStock)
+				{
+					MessageBox.Show($"❌ خطأ: الوزن المقروء ({weight:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					return;
+				}
+
+				saleItemDTO.Quantity = weight;
+				decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
+				saleItemDTO.DiscountAmt = Math.Round(gross * saleItemDTO.DiscountPct / 100m, 2);
+
+				dgItems.Rows[rowIndex].Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
+				dgItems.Rows[rowIndex].Cells["TotalPrice"].Value = saleItemDTO.TotalPrice.ToString("F2");
+
+				CalculateNet();
+			}
+			else
+			{
+				MessageBox.Show("يرجى اختيار صنف من الجدول أولاً لقراءة الوزن إليه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+		}
 	}
 	internal class ComboItem
 	{
@@ -2450,6 +2707,8 @@ namespace ChickenDist.Forms
 		public string CarModel { get; set; } = "";
 		public string Brand { get; set; } = "";
 		public string ShelfLocation { get; set; } = "";
+		public string Barcode { get; set; } = "";
+		public string PriceTier { get; set; } = "قطاعي";
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

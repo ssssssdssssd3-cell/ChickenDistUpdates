@@ -589,22 +589,22 @@ namespace ChickenDist.Core
                 string sqlInvoiceEditingAndTiers = @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanEditSalesInvoice')
                 BEGIN
-                    ALTER TABLE Permissions ADD CanEditSalesInvoice BIT DEFAULT 0;
+                    ALTER TABLE Permissions ADD CanEditSalesInvoice BIT DEFAULT 1;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewCost')
                 BEGIN
-                    ALTER TABLE Permissions ADD CanViewCost BIT DEFAULT 0;
+                    ALTER TABLE Permissions ADD CanViewCost BIT DEFAULT 1;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanDeleteSalesInvoice')
                 BEGIN
-                    ALTER TABLE Permissions ADD CanDeleteSalesInvoice BIT DEFAULT 0;
+                    ALTER TABLE Permissions ADD CanDeleteSalesInvoice BIT DEFAULT 1;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanCopySalesInvoice')
                 BEGIN
-                    ALTER TABLE Permissions ADD CanCopySalesInvoice BIT DEFAULT 0;
+                    ALTER TABLE Permissions ADD CanCopySalesInvoice BIT DEFAULT 1;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
@@ -678,6 +678,12 @@ namespace ChickenDist.Core
                 EXEC('UPDATE Sales SET LastModifiedDate = GETDATE() WHERE LastModifiedDate IS NULL');";
                 Execute(sqlInvoiceEditingAndTiers);
 
+                // تحديث الصلاحيات الافتراضية للموظفين الحاليين لكي لا تفقد أزرار الفواتير وتظهر "غير مصرح"
+                Execute("UPDATE Permissions SET CanEditSalesInvoice = 1 WHERE CanEditSalesInvoice IS NULL OR CanEditSalesInvoice = 0");
+                Execute("UPDATE Permissions SET CanDeleteSalesInvoice = 1 WHERE CanDeleteSalesInvoice IS NULL OR CanDeleteSalesInvoice = 0");
+                Execute("UPDATE Permissions SET CanCopySalesInvoice = 1 WHERE CanCopySalesInvoice IS NULL OR CanCopySalesInvoice = 0");
+                Execute("UPDATE Permissions SET CanViewCost = 1 WHERE CanViewCost IS NULL OR CanViewCost = 0");
+
                 // ===== جدول رصيد الأصناف لكل مخزن (ProductStock) =====
                 string sqlProductStock = @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductStock')
@@ -735,11 +741,81 @@ namespace ChickenDist.Core
                     p.MinStockLimit,
                     w.WarehouseID,
                     w.WarehouseName,
-                    ISNULL(ps.Quantity, 0) AS StockQty,
-                    CASE WHEN ISNULL(ps.Quantity, 0) <= p.MinStockLimit THEN 1 ELSE 0 END AS IsBelowMin
+                    ISNULL(adj.ActualQty, 0) + 
+                    -- Incoming since adjustment: Sales Returns
+                    ISNULL((SELECT SUM(ri.Quantity) 
+                            FROM ReturnItems ri 
+                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
+                            WHERE ri.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
+                              AND sr.WarehouseID = w.WarehouseID), 0) +
+                    -- Incoming since adjustment: Driver Handover Returns
+                    ISNULL((SELECT SUM(hi.ReturnedQty) 
+                            FROM HandoverItems hi 
+                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                            WHERE hi.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
+                              AND dl.WarehouseID = w.WarehouseID), 0) +
+                    -- Incoming since adjustment: Purchases
+                    ISNULL((SELECT SUM(pi.Quantity)
+                            FROM PurchaseItems pi
+                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                            WHERE pi.ProductID = p.ProductID
+                              AND pu.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
+                              AND pu.WarehouseID = w.WarehouseID), 0) +
+                    -- Incoming since adjustment: Warehouse Transfers
+                    ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              AND t.ToWarehouseID = w.WarehouseID), 0)
+                    -- Outgoing since adjustment: Purchase Returns
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
+                                AND pr.WarehouseID = w.WarehouseID), 0)
+                    -- Outgoing since adjustment: Warehouse Sales & Driver Loads
+                    - ISNULL((SELECT SUM(si.Quantity) 
+                            FROM SaleItems si 
+                            JOIN Sales s ON si.SaleID = s.SaleID
+                            WHERE si.ProductID = p.ProductID 
+                              AND s.IsPosted = 1
+                              AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'') AND s.DriverID IS NULL))
+                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
+                              AND s.WarehouseID = w.WarehouseID), 0)
+                    -- Outgoing since adjustment: Warehouse Transfers
+                    - ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              AND t.FromWarehouseID = w.WarehouseID), 0) AS StockQty,
+                    
+                    CASE WHEN (
+                        ISNULL(adj.ActualQty, 0) + 
+                        ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) AND sr.WarehouseID = w.WarehouseID), 0) +
+                        ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) AND dl.WarehouseID = w.WarehouseID), 0) +
+                        ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) AND pu.WarehouseID = w.WarehouseID), 0) +
+                        ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) AND t.ToWarehouseID = w.WarehouseID), 0)
+                        - ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) AND pr.WarehouseID = w.WarehouseID), 0)
+                        - ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) AND s.WarehouseID = w.WarehouseID), 0)
+                        - ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) AND t.FromWarehouseID = w.WarehouseID), 0)
+                    ) <= p.MinStockLimit THEN 1 ELSE 0 END AS IsBelowMin
                 FROM Products p
                 CROSS JOIN Warehouses w
-                LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
+                OUTER APPLY (
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty 
+                    FROM StockAdjustments sa 
+                    WHERE sa.ProductID = p.ProductID AND sa.WarehouseID = w.WarehouseID
+                    ORDER BY sa.AdjDate DESC
+                ) adj
                 WHERE p.IsActive = 1 AND w.IsActive = 1');";
                 Execute(sqlProductStockView);
             }

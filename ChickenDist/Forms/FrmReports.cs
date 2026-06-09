@@ -404,31 +404,90 @@ namespace ChickenDist.Forms
 			{
 				if (_currentDt.Rows.Count != 0)
 				{
-					DataRow dataRow = _currentDt.Rows[0];
-					decimal num = Convert.ToDecimal(dataRow["TotalSales"]);
-					decimal val = Convert.ToDecimal(dataRow["CashSales"]);
-					decimal val2 = Convert.ToDecimal(dataRow["CreditSales"]);
-					decimal val3 = Convert.ToDecimal(dataRow["DriverLoadsSales"]);
-					decimal num2 = Convert.ToDecimal(dataRow["TotalReturns"]);
-					decimal val4 = Convert.ToDecimal(dataRow["ClientPayments"]);
-					decimal num3 = Convert.ToDecimal(dataRow["TotalExpenses"]);
-					decimal num4 = Convert.ToDecimal(dataRow["CashInflow"]);
-					decimal num5 = Convert.ToDecimal(dataRow["CashOutflow"]);
-					decimal num6 = num - num2;
-					decimal num7 = num6 - num3;
-					decimal num8 = num4 - num5;
-					AddIndicatorRow(dg, "\ud83d\udcca إجمالي قيمة المبيعات خلال الفترة (شامل)", num, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb5 المبيعات النقدية المباشرة", val, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb3 المبيعات الآجلة للعملاء", val2, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\ude9a مبيعات حمولات المناديب الصادرة", val3, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udd04 إجمالي قيمة مرتجعات البيع", num2, isNegative: true);
-					AddIndicatorRow(dg, "\ud83d\udcc8 صافي المبيعات (المبيعات - المرتجعات)", num6, isNegative: false, Color.FromArgb(30, 45, 60));
-					AddIndicatorRow(dg, "\ud83d\udce5 إجمالي تحصيلات ومسددات العملاء الآجل", val4, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb8 إجمالي المصروفات العامة والتشغيلية", num3, isNegative: true);
-					AddIndicatorRow(dg, "\ud83d\udcb0 إجمالي مقبوضات الخزينة (وارد)", num4, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udce4 إجمالي مدفوعات الخزينة (صادر)", num5, isNegative: true);
-					AddIndicatorRow(dg, "⚖\ufe0f صافي التدفق النقدي بالخزينة (وارد - صادر)", num8, num8 < 0m, Color.FromArgb(45, 45, 30));
-					AddIndicatorRow(dg, "\ud83c\udfc6 صافي الأرباح التشغيلية التقريبية (الصافي - المصاريف)", num7, num7 < 0m, Color.FromArgb(30, 60, 30));
+					DataRow dr = _currentDt.Rows[0];
+					
+					// Extraction
+					decimal totalSales = Convert.ToDecimal(dr["TotalSales"] == DBNull.Value ? 0 : dr["TotalSales"]);
+					decimal retailSales = Convert.ToDecimal(dr["RetailSales"] == DBNull.Value ? 0 : dr["RetailSales"]);
+					decimal wholesaleSales = Convert.ToDecimal(dr["WholesaleSales"] == DBNull.Value ? 0 : dr["WholesaleSales"]);
+					decimal semiWholesaleSales = Convert.ToDecimal(dr["SemiWholesaleSales"] == DBNull.Value ? 0 : dr["SemiWholesaleSales"]);
+					decimal driverLoadsSales = Convert.ToDecimal(dr["DriverLoadsSales"] == DBNull.Value ? 0 : dr["DriverLoadsSales"]);
+					decimal totalInvoiceDiscount = Convert.ToDecimal(dr["TotalInvoiceDiscount"] == DBNull.Value ? 0 : dr["TotalInvoiceDiscount"]);
+					decimal totalReturns = Convert.ToDecimal(dr["TotalReturns"] == DBNull.Value ? 0 : dr["TotalReturns"]);
+					decimal netSales = Convert.ToDecimal(dr["NetSales"] == DBNull.Value ? 0 : dr["NetSales"]);
+					
+					decimal cogs = Convert.ToDecimal(dr["COGS"] == DBNull.Value ? 0 : dr["COGS"]);
+					decimal purchaseCost = Convert.ToDecimal(dr["PurchaseCost"] == DBNull.Value ? 0 : dr["PurchaseCost"]);
+					decimal purchaseReturns = Convert.ToDecimal(dr["PurchaseReturns"] == DBNull.Value ? 0 : dr["PurchaseReturns"]);
+					
+					decimal clientPayments = Convert.ToDecimal(dr["ClientPayments"] == DBNull.Value ? 0 : dr["ClientPayments"]);
+					decimal totalExpenses = Convert.ToDecimal(dr["TotalExpenses"] == DBNull.Value ? 0 : dr["TotalExpenses"]);
+					decimal cashInflow = Convert.ToDecimal(dr["CashInflow"] == DBNull.Value ? 0 : dr["CashInflow"]);
+					decimal cashOutflow = Convert.ToDecimal(dr["CashOutflow"] == DBNull.Value ? 0 : dr["CashOutflow"]);
+					
+					decimal totalSupplierBalance = Convert.ToDecimal(dr["TotalSupplierBalance"] == DBNull.Value ? 0 : dr["TotalSupplierBalance"]);
+					decimal totalClientBalance = Convert.ToDecimal(dr["TotalClientBalance"] == DBNull.Value ? 0 : dr["TotalClientBalance"]);
+					decimal stockValueAtCost = Convert.ToDecimal(dr["StockValueAtCost"] == DBNull.Value ? 0 : dr["StockValueAtCost"]);
+					decimal stockValueAtSalePrice = Convert.ToDecimal(dr["StockValueAtSalePrice"] == DBNull.Value ? 0 : dr["StockValueAtSalePrice"]);
+					decimal driverDeficitTotal = Convert.ToDecimal(dr["DriverDeficitTotal"] == DBNull.Value ? 0 : dr["DriverDeficitTotal"]);
+					decimal empAdvanceTotal = Convert.ToDecimal(dr["EmpAdvanceTotal"] == DBNull.Value ? 0 : dr["EmpAdvanceTotal"]);
+
+					// Calculations
+					decimal grossProfit = netSales - cogs;
+					decimal grossProfitPct = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
+					
+					decimal totalExpensesAndAdvances = totalExpenses + empAdvanceTotal;
+					decimal netOperatingProfit = grossProfit - totalExpensesAndAdvances;
+					decimal netProfitPct = netSales > 0 ? (netOperatingProfit / netSales) * 100 : 0;
+					
+					decimal cashBalance = cashInflow - cashOutflow;
+
+					// Rendering Layout
+					
+					// 1. الإيرادات
+					AddHeaderRow(dg, "📈 قسم الإيرادات والمبيعات (Revenue)", Color.FromArgb(37, 99, 235)); // Blue header
+					AddDetailRow(dg, "مبيعات قطاعي", retailSales);
+					AddDetailRow(dg, "مبيعات جملة", wholesaleSales);
+					AddDetailRow(dg, "مبيعات نصف جملة", semiWholesaleSales);
+					AddDetailRow(dg, "مبيعات حمولات المناديب", driverLoadsSales);
+					AddDetailRow(dg, "إجمالي مبيعات الفترة", totalSales, isBold: true);
+					AddDetailRow(dg, "(-) خصومات الفواتير الممنوحة", totalInvoiceDiscount, isNegative: true);
+					AddDetailRow(dg, "(-) إجمالي مرتجعات المبيعات", totalReturns, isNegative: true);
+					AddDetailRow(dg, "صافي الإيرادات والمبيعات", netSales, isBold: true, fgColor: Color.FromArgb(29, 78, 216));
+
+					// 2. تكلفة المبيعات والربح الإجمالي
+					AddHeaderRow(dg, "🎯 تكلفة المبيعات والربح الإجمالي (COGS & Gross Profit)", Color.FromArgb(13, 148, 136)); // Teal header
+					AddDetailRow(dg, "تكلفة البضاعة المباعة (الأسعار الفعلية للفواتير)", cogs, isNegative: true);
+					AddDetailRow(dg, "إجمالي المشتريات خلال الفترة", purchaseCost);
+					AddDetailRow(dg, "(-) مرتجعات المشتريات خلال الفترة", purchaseReturns, isNegative: true);
+					
+					Color gpColor = grossProfit >= 0 ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38);
+					AddDetailRow(dg, "مجمل الربح (صافي المبيعات - التكلفة الفعلية)", grossProfit, isBold: true, fgColor: gpColor);
+					AddDetailRow(dg, "نسبة هامش مجمل الربح (%)", grossProfitPct, isBold: true, suffix: " %", fgColor: gpColor);
+
+					// 3. المصروفات والربح الصافي
+					AddHeaderRow(dg, "💸 المصروفات التشغيلية وصافي الأرباح (Expenses & Net Profit)", Color.FromArgb(217, 119, 6)); // Amber header
+					AddDetailRow(dg, "المصروفات العامة والتشغيلية", totalExpenses, isNegative: true);
+					AddDetailRow(dg, "مسحوبات وسلف الموظفين والمناديب", empAdvanceTotal, isNegative: true);
+					AddDetailRow(dg, "إجمالي المصروفات والمسحوبات", totalExpensesAndAdvances, isNegative: true, isBold: true);
+					
+					Color npColor = netOperatingProfit >= 0 ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38);
+					AddDetailRow(dg, "صافي الربح التشغيلي", netOperatingProfit, isBold: true, fgColor: npColor);
+					AddDetailRow(dg, "نسبة صافي الربح التشغيلي (%)", netProfitPct, isBold: true, suffix: " %", fgColor: npColor);
+
+					// 4. التدفق النقدي والخزينة
+					AddHeaderRow(dg, "🏦 التدفق النقدي ورصيد الخزينة (Cash Flow)", Color.FromArgb(79, 70, 229)); // Indigo header
+					AddDetailRow(dg, "إجمالي مقبوضات الخزينة (وارد)", cashInflow);
+					AddDetailRow(dg, "إجمالي مدفوعات الخزينة (صادر)", cashOutflow, isNegative: true);
+					AddDetailRow(dg, "رصيد الخزينة الإجمالي الحالي", cashBalance, isBold: true, fgColor: cashBalance >= 0 ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38));
+
+					// 5. المركز المالي والأرصدة
+					AddHeaderRow(dg, "📊 المركز المالي والأرصدة الحالية (Financial Position)", Color.FromArgb(75, 85, 99)); // Gray header
+					AddDetailRow(dg, "إجمالي مديونية العملاء الحالية لنا", totalClientBalance, fgColor: Color.FromArgb(37, 99, 235));
+					AddDetailRow(dg, "إجمالي مديونية الموردين الحالية علينا", totalSupplierBalance, isNegative: true);
+					AddDetailRow(dg, "قيمة المخزون الحالي (بسعر التكلفة الفعلية)", stockValueAtCost, isBold: true);
+					AddDetailRow(dg, "قيمة المخزون الحالي (بسعر البيع)", stockValueAtSalePrice, isBold: true);
+					AddDetailRow(dg, "إجمالي عجز المناديب المكتشف بالفترة", driverDeficitTotal, isNegative: true);
 				}
 				return;
 			}
@@ -554,6 +613,39 @@ namespace ChickenDist.Forms
 			}
 		}
 
+		private void AddHeaderRow(DataGridView dg, string name, Color bg)
+		{
+			int index = dg.Rows.Add(name, "");
+			dg.Rows[index].DefaultCellStyle.BackColor = bg;
+			dg.Rows[index].DefaultCellStyle.ForeColor = Color.White;
+			dg.Rows[index].DefaultCellStyle.Font = new Font("Segoe UI", 9.75f, FontStyle.Bold);
+			dg.Rows[index].Cells[1].Value = "";
+		}
+
+		private void AddDetailRow(DataGridView dg, string name, decimal val, bool isNegative = false, bool isBold = false, string suffix = " ج.م", Color? fgColor = null)
+		{
+			int index = dg.Rows.Add("   " + name, val.ToString("N2") + suffix);
+			if (isBold)
+			{
+				dg.Rows[index].DefaultCellStyle.Font = new Font("Segoe UI", 9.75f, FontStyle.Bold);
+			}
+			if (fgColor.HasValue)
+			{
+				dg.Rows[index].Cells[1].Style.ForeColor = fgColor.Value;
+				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 9.75f, FontStyle.Bold);
+			}
+			else if (isNegative)
+			{
+				dg.Rows[index].Cells[1].Style.ForeColor = Color.FromArgb(220, 38, 38); // Premium red
+				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 9.75f, FontStyle.Bold);
+			}
+			else if (val > 0)
+			{
+				dg.Rows[index].Cells[1].Style.ForeColor = Color.FromArgb(22, 163, 74); // Premium green
+				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 9.75f, FontStyle.Bold);
+			}
+		}
+
 		private void BtnPrint_Click(object sender, EventArgs e)
 		{
 			DataGridView dg = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
@@ -620,24 +712,38 @@ namespace ChickenDist.Forms
 				graphics.DrawLine(Pens.Gray, 20, num, printWidth + 20, num);
 				num += 8;
 
+				bool isFinancialSummary = tabReports.SelectedTab?.Tag?.ToString() == "FinancialSummary";
 				while (pageRow < dg.Rows.Count)
 				{
 					DataGridViewRow dataGridViewRow = dg.Rows[pageRow];
 					bool flag = dataGridViewRow.Cells[0].Value?.ToString() == "الإجمالي الكلي" || dataGridViewRow.Cells[0].Value?.ToString() == "الإجمالي";
-					Font font4 = (flag ? new Font("Arial", 8.5f, FontStyle.Bold) : font3);
-					Brush brush = (flag ? Brushes.DarkGreen : Brushes.Black);
+					bool isSectionHeader = isFinancialSummary && string.IsNullOrEmpty(dataGridViewRow.Cells[1].Value?.ToString());
+					
+					Font font4 = flag ? new Font("Arial", 8.5f, FontStyle.Bold) : isSectionHeader ? new Font("Arial", 9.5f, FontStyle.Bold) : font3;
+					Brush brush = flag ? Brushes.DarkGreen : isSectionHeader ? Brushes.DarkBlue : Brushes.Black;
 
-					currentX = 20;
-					for (int j = 0; j < dg.Columns.Count; j++)
+					if (isSectionHeader)
 					{
-						if (!dg.Columns[j].Visible) continue;
-						int colWidth = (dg.Columns[j].Width * printWidth) / totalGridWidth;
-						
-						var rect = new RectangleF(currentX, num, colWidth - 5, 18);
+						graphics.DrawLine(Pens.LightGray, 20, num, printWidth + 20, num);
+						num += 4;
+						var rect = new RectangleF(20, num, printWidth, 18);
 						var sf = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-						graphics.DrawString(dataGridViewRow.Cells[j].Value?.ToString() ?? "", font4, brush, rect, sf);
-						
-						currentX += colWidth;
+						graphics.DrawString(dataGridViewRow.Cells[0].Value?.ToString() ?? "", font4, brush, rect, sf);
+					}
+					else
+					{
+						currentX = 20;
+						for (int j = 0; j < dg.Columns.Count; j++)
+						{
+							if (!dg.Columns[j].Visible) continue;
+							int colWidth = (dg.Columns[j].Width * printWidth) / totalGridWidth;
+							
+							var rect = new RectangleF(currentX, num, colWidth - 5, 18);
+							var sf = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+							graphics.DrawString(dataGridViewRow.Cells[j].Value?.ToString() ?? "", font4, brush, rect, sf);
+							
+							currentX += colWidth;
+						}
 					}
 					num += 18;
 					pageRow++;

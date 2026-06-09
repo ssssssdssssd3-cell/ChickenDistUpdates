@@ -16,6 +16,13 @@ namespace ChickenDist.Forms
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
 
+        private CheckBox chkScaleEnabled;
+        private ComboBox cboScalePort;
+        private ComboBox cboScaleBaud;
+        private Button btnTestScale;
+        private Label lblTestWeightResult;
+        private Timer scaleTestTimer;
+
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
@@ -138,6 +145,87 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboInvoiceFormat);
             y += 40;
 
+            // ── إعدادات الميزان ───────────────────────────────
+            AddLabel("🔌 إعدادات الميزان الإلكتروني:", 20, ref y, 15);
+            
+            chkScaleEnabled = new CheckBox
+            {
+                Text = "تفعيل قراءة الميزان الإلكتروني",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ScaleEnabled
+            };
+            this.Controls.Add(chkScaleEnabled);
+            y += 30;
+
+            AddLabel("منفذ الاتصال (COM Port):", 20, ref y, 5);
+            cboScalePort = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
+            };
+            try
+            {
+                cboScalePort.Items.Clear();
+                foreach (string p in System.IO.Ports.SerialPort.GetPortNames())
+                    cboScalePort.Items.Add(p);
+                
+                if (cboScalePort.Items.Contains(AppConfig.ScaleComPort))
+                    cboScalePort.SelectedItem = AppConfig.ScaleComPort;
+                else if (cboScalePort.Items.Count > 0)
+                    cboScalePort.SelectedIndex = 0;
+            }
+            catch { }
+            this.Controls.Add(cboScalePort);
+
+            var lblBaud = new Label
+            {
+                Text = "سرعة النقل (Baud Rate):",
+                Location = new Point(280, y - 22),
+                AutoSize = true,
+                ForeColor = Theme.TextMain
+            };
+            this.Controls.Add(lblBaud);
+
+            cboScaleBaud = new ComboBox
+            {
+                Location = new Point(280, y),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboScaleBaud.Items.AddRange(new object[] { "2400", "4800", "9600", "19200", "38400", "115200" });
+            cboScaleBaud.SelectedItem = AppConfig.ScaleBaudRate.ToString();
+            this.Controls.Add(cboScaleBaud);
+            y += 40;
+
+            btnTestScale = Theme.MakeButton("🔌 اختبار قراءة الوزن", 20, y, 180, 32, Theme.Primary);
+            btnTestScale.Font = new Font("Segoe UI", 9f);
+            btnTestScale.Click += BtnTestScale_Click;
+            this.Controls.Add(btnTestScale);
+
+            lblTestWeightResult = new Label
+            {
+                Text = "الوزن الحالي: ---",
+                Location = new Point(215, y + 6),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblTestWeightResult);
+            y += 45;
+
+            // Timer to show live weight during test
+            scaleTestTimer = new Timer { Interval = 200 };
+            scaleTestTimer.Tick += ScaleTestTimer_Tick;
+
             // ── فاصل ──────────────────────────────────────────────
             var sep = new Panel
             {
@@ -242,6 +330,23 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
+                
+                AppConfig.ScaleEnabled = chkScaleEnabled.Checked;
+                if (cboScalePort.SelectedItem != null)
+                    AppConfig.ScaleComPort = cboScalePort.SelectedItem.ToString();
+                if (cboScaleBaud.SelectedItem != null)
+                    AppConfig.ScaleBaudRate = int.Parse(cboScaleBaud.SelectedItem.ToString());
+
+                if (chkScaleEnabled.Checked)
+                {
+                    ScaleService.Instance.Disconnect();
+                    ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+                }
+                else
+                {
+                    ScaleService.Instance.Disconnect();
+                }
+
                 SaveBackupFolder();
 
                 MessageBox.Show(
@@ -320,6 +425,71 @@ namespace ChickenDist.Forms
             y += 85;
 
             this.Height = y + 60;
+        }
+
+        private void BtnTestScale_Click(object sender, EventArgs e)
+        {
+            if (scaleTestTimer.Enabled)
+            {
+                scaleTestTimer.Stop();
+                ScaleService.Instance.Disconnect();
+                btnTestScale.Text = "🔌 اختبار قراءة الوزن";
+                btnTestScale.BackColor = Theme.Primary;
+                lblTestWeightResult.Text = "الوزن الحالي: ---";
+            }
+            else
+            {
+                if (cboScalePort.SelectedItem == null)
+                {
+                    MessageBox.Show("يرجى اختيار منفذ COM أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string port = cboScalePort.SelectedItem.ToString();
+                int baud = int.Parse(cboScaleBaud.SelectedItem.ToString());
+
+                lblTestWeightResult.Text = "جاري الاتصال...";
+                btnTestScale.Text = "⏹️ إيقاف الاختبار";
+                btnTestScale.BackColor = Theme.Danger;
+
+                if (ScaleService.Instance.Connect(port, baud))
+                {
+                    scaleTestTimer.Start();
+                }
+                else
+                {
+                    lblTestWeightResult.Text = "فشل الاتصال!";
+                    btnTestScale.Text = "🔌 اختبار قراءة الوزن";
+                    btnTestScale.BackColor = Theme.Primary;
+                }
+            }
+        }
+
+        private void ScaleTestTimer_Tick(object sender, EventArgs e)
+        {
+            if (ScaleService.Instance.IsConnected)
+            {
+                decimal w = ScaleService.Instance.CurrentWeight;
+                bool stable = ScaleService.Instance.IsStable;
+                lblTestWeightResult.Text = $"الوزن الحالي: {w:F3} كجم {(stable ? "نشط" : "غير مستقر")}";
+            }
+            else
+            {
+                lblTestWeightResult.Text = "انقطع الاتصال!";
+                scaleTestTimer.Stop();
+                btnTestScale.Text = "🔌 اختبار قراءة الوزن";
+                btnTestScale.BackColor = Theme.Primary;
+            }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (scaleTestTimer != null && scaleTestTimer.Enabled)
+            {
+                scaleTestTimer.Stop();
+                ScaleService.Instance.Disconnect();
+            }
+            base.OnFormClosing(e);
         }
 
         private void AddLabel(string text, int x, ref int y, int extraTop)
