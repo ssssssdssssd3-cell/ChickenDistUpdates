@@ -89,8 +89,6 @@ namespace ChickenDist.Forms
 		private string _selectedTier = "قطاعي";
 		private ComboBox cboWarehouse;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
-		private Label lblLiveWeight;
-		private decimal? _scaleBarcodeWeight = null;
 
 		public FrmSale() : this(0, false)
 		{
@@ -111,12 +109,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 450);
+			base.Size = new Size(950, 680);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			this.WindowState = FormWindowState.Maximized;
-			this.AutoScaleMode = AutoScaleMode.Dpi;
-			this.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -124,13 +118,13 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
-			int hdrH = ScreenHelper.IsSmallScreen ? 115 : 140;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = hdrH,
+				Height = 185,
+				Width = 950,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(12, 4, 12, 4)
+				Padding = new Padding(12, 8, 12, 8)
 			};
 			var tbl = new TableLayoutPanel
 			{
@@ -147,11 +141,10 @@ namespace ChickenDist.Forms
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
 
-			int rowH = ScreenHelper.IsSmallScreen ? 25 : 31;
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
 
 			// Row 0: Client & Statement, Date, Type Buttons
 			lblClient = MakeLabel("العميل :", 0, 0);
@@ -168,7 +161,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboClient);
 
@@ -206,7 +199,7 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Short,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 
 			Label label = MakeLabel("نوع الفاتورة :", 0, 0);
@@ -288,7 +281,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboDriver);
 
@@ -306,7 +299,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboProduct);
 
@@ -320,7 +313,7 @@ namespace ChickenDist.Forms
 				FlatStyle = FlatStyle.Flat,
 				Cursor = Cursors.Hand,
 				Dock = DockStyle.Left,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 			btnSearchProduct.FlatAppearance.BorderSize = 0;
 			btnSearchProduct.Click += BtnSearchProduct_Click;
@@ -346,7 +339,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Margin = new Padding(2, 6, 2, 6)
 			};
 
 			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
@@ -362,18 +355,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
-			};
-
-			lblLiveWeight = new Label
-			{
-				Name = "lblLiveWeight",
-				Text = "⚖️ الميزان: 0.000 كجم (غير متصل)",
-				Dock = DockStyle.Fill,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				ForeColor = Theme.Accent,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Visible = AppConfig.ScaleEnabled
+				Margin = new Padding(2, 6, 2, 6)
 			};
 
 			// Row 3: Price Tiers (spanning 5 columns)
@@ -463,8 +445,6 @@ namespace ChickenDist.Forms
 			tbl.Controls.Add(txtNotes, 1, 2);
 			tbl.Controls.Add(lblWarehouse, 2, 2);
 			tbl.Controls.Add(cboWarehouse, 3, 2);
-			tbl.Controls.Add(lblLiveWeight, 4, 2);
-			tbl.SetColumnSpan(lblLiveWeight, 2);
 
 			tbl.Controls.Add(lblTierRow, 0, 3);
 			tbl.Controls.Add(pnlTierBtns, 1, 3);
@@ -510,13 +490,6 @@ namespace ChickenDist.Forms
 				Name = "ProductName",
 				HeaderText = "الصنف",
 				ReadOnly = true
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PriceTier",
-				HeaderText = "فئة السعر",
-				ReadOnly = true,
-				FillWeight = 30f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -642,195 +615,143 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 85,
-				BackColor = Theme.BgCard,
-				Padding = new Padding(8, 4, 8, 4)
+				Height = 110,
+				Width = 950,
+				BackColor = Theme.BgCard
 			};
-
-			// ── قسم الإجماليات (يمين) ─────────────────────────────────────────
-			var pnlTotals = new Panel
-			{
-				Width = 480,
-				Dock = DockStyle.Right,
-				BackColor = Color.Transparent,
-				Padding = new Padding(0)
-			};
-
-			var tblTotals = new TableLayoutPanel
-			{
-				Dock = DockStyle.Fill,
-				RowCount = 2,
-				ColumnCount = 6,
-				BackColor = Color.Transparent,
-				CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
-				Padding = new Padding(4)
-			};
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // col0: label
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65));  // col1: value
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));  // col2: label
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));  // col3: control / value
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
-			tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // col5: control / value
-			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-			tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-
-			// صف 0: إجمالي الأصناف + خصم الفاتورة
-			var lblItemsTotalLbl = new Label
+			Label label5 = new Label
 			{
 				Text = "إجمالي الأصناف:",
 				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2)
+				Location = new Point(830, 15),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			lblTotalVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Margin = new Padding(2)
+				Location = new Point(740, 13),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-
-			var lblDiscType = new Label
+			Label lblDiscType = new Label
 			{
 				Text = "نوع الخصم:",
 				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2)
+				Location = new Point(660, 15),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			cboInvoiceDiscountType = new ComboBox
 			{
-				Dock = DockStyle.Fill,
+				Location = new Point(570, 11),
+				Width = 80,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
 			cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => CalculateNet();
 
-			var lblDiscVal = new Label
+			Label lblDiscVal = new Label
 			{
 				Text = "خصم الفاتورة:",
 				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2)
+				Location = new Point(480, 15),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			txtInvoiceDiscount = new TextBox
 			{
-				Dock = DockStyle.Fill,
+				Location = new Point(390, 11),
+				Width = 80,
 				Text = "0",
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 4, 2, 4)
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			txtInvoiceDiscount.TextChanged += (s, e) => CalculateNet();
 
-			// صف 1: التكلفة + الربح + صافي الفاتورة
-			lblCostTitle = new Label
-			{
-				Text = "إجمالي التكلفة:",
-				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2),
-				Visible = Session.CanViewCost("Sales")
-			};
-			lblCostVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.TextMain,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Margin = new Padding(2),
-				Visible = Session.CanViewCost("Sales")
-			};
-
-			lblProfitTitle = new Label
-			{
-				Text = "صافي الربح:",
-				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2),
-				Visible = Session.CanViewCost("Sales")
-			};
-			lblProfitVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.Success,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Margin = new Padding(2),
-				Visible = Session.CanViewCost("Sales")
-			};
-
-			var lblNetTitle = new Label
+			Label lblNetTitle = new Label
 			{
 				Text = "صافي الفاتورة:",
 				ForeColor = Theme.TextSub,
-				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleRight,
-				Margin = new Padding(2)
+				Location = new Point(280, 15),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
 			lblNetVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.Accent,
 				Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Margin = new Padding(2)
+				Location = new Point(160, 10),
+				AutoSize = true,
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-
-			// إضافة عناصر الإجماليات
-			tblTotals.Controls.Add(lblItemsTotalLbl, 0, 0);
-			tblTotals.Controls.Add(lblTotalVal, 1, 0);
-			tblTotals.Controls.Add(lblDiscType, 2, 0);
-			tblTotals.Controls.Add(cboInvoiceDiscountType, 3, 0);
-			tblTotals.Controls.Add(lblDiscVal, 4, 0);
-			tblTotals.Controls.Add(txtInvoiceDiscount, 5, 0);
-
-			tblTotals.Controls.Add(lblCostTitle, 0, 1);
-			tblTotals.Controls.Add(lblCostVal, 1, 1);
-			tblTotals.Controls.Add(lblProfitTitle, 2, 1);
-			tblTotals.Controls.Add(lblProfitVal, 3, 1);
-			tblTotals.Controls.Add(lblNetTitle, 4, 1);
-			tblTotals.Controls.Add(lblNetVal, 5, 1);
-
-			pnlTotals.Controls.Add(tblTotals);
-
-			// ── قسم الأزرار (يسار) ────────────────────────────────────────────
-			var pnlBtnArea = new Panel
+			lblCostTitle = new Label
 			{
-				Dock = DockStyle.Fill,
-				BackColor = Color.Transparent,
-				Padding = new Padding(4, 4, 4, 4)
+				Text = "إجمالي التكلفة:",
+				ForeColor = Theme.TextSub,
+				Location = new Point(830, 42),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
 			};
-
-			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 120, 32, Theme.Accent);
-			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 32, Color.FromArgb(200, 140, 50));
-			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 95, 32, Color.FromArgb(100, 100, 150));
-			Button button = Theme.MakeButton("💵 توريد", 0, 0, 90, 32, Theme.Success);
-			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 32, Color.FromArgb(80, 120, 80));
-			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 125, 32, Theme.Primary);
-			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 100, 32, Color.FromArgb(37, 211, 102));
-
+			lblCostVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.TextMain,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Location = new Point(740, 40),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			lblProfitTitle = new Label
+			{
+				Text = "صافي الربح:",
+				ForeColor = Theme.TextSub,
+				Location = new Point(660, 42),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			lblProfitVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.Success,
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Location = new Point(570, 40),
+				AutoSize = true,
+				Visible = Session.CanViewCost("Sales"),
+				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+			};
+			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 130, 32, Theme.Accent);
+            Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 100, 32, Color.FromArgb(200, 140, 50));
+			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 100, 32, Color.FromArgb(100, 100, 150));
+			Button button = Theme.MakeButton("💵 توريد", 0, 0, 100, 32, Theme.Success);
+			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 80, 32, Color.FromArgb(80, 120, 80));
+			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 140, 32, Theme.Primary);
+			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 130, 32, Color.FromArgb(37, 211, 102));
+			btnSave.Anchor = AnchorStyles.None;
+            btnHold.Anchor = AnchorStyles.None;
+            btnLoadHold.Anchor = AnchorStyles.None;
+			button.Anchor = AnchorStyles.None;
+			btnNew.Anchor = AnchorStyles.None;
+			btnPrint.Anchor = AnchorStyles.None;
+			btnWhatsApp.Anchor = AnchorStyles.None;
 			btnSave.Click += BtnSave_Click;
-			btnHold.Click += BtnHold_Click;
-			btnLoadHold.Click += BtnLoadHold_Click;
+            btnHold.Click += BtnHold_Click;
+            btnLoadHold.Click += BtnLoadHold_Click;
 			button.Click += BtnTawreed_Click;
 			btnNew.Click += delegate
 			{
@@ -838,51 +759,42 @@ namespace ChickenDist.Forms
 			};
 			btnPrint.Click += BtnPrint_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
+            Label lblHotkeys = new Label
+            {
+                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] بحث سريع عن صنف",
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Location = new Point(15, 70),
+                AutoSize = true,
+                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
+            };
 
-			var flowBtns = new FlowLayoutPanel
-			{
-				FlowDirection = FlowDirection.RightToLeft,
-				Dock = DockStyle.Top,
-				Height = 38,
-				BackColor = Color.Transparent,
-				WrapContents = false,
-				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
-			};
-			foreach (var b in new[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave })
-			{
-				b.Margin = new Padding(0, 0, 5, 0);
-				flowBtns.Controls.Add(b);
-			}
+            var pnlFooterButtons = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                Dock = DockStyle.Bottom,
+                Height = 42,
+                Padding = new Padding(15, 5, 15, 5),
+                BackColor = Color.Transparent,
+                RightToLeft = RightToLeft.Yes,
+                WrapContents = false,
+                AutoSize = false
+            };
+            btnWhatsApp.Margin = new Padding(5, 5, 5, 5);
+            btnPrint.Margin = new Padding(5, 5, 5, 5);
+            btnNew.Margin = new Padding(5, 5, 5, 5);
+            button.Margin = new Padding(5, 5, 5, 5);
+            btnLoadHold.Margin = new Padding(5, 5, 5, 5);
+            btnHold.Margin = new Padding(5, 5, 5, 5);
+            btnSave.Margin = new Padding(5, 5, 5, 5);
+            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave });
 
-			var lblHotkeys = new Label
-			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] بحث سريع صنف | [F8] ميزان",
-				ForeColor = Theme.TextSub,
-				Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-				Dock = DockStyle.Bottom,
-				Height = 18,
-				TextAlign = ContentAlignment.MiddleLeft,
-				Margin = new Padding(0, 4, 0, 0)
-			};
-
-			pnlBtnArea.Controls.Add(lblHotkeys);
-			pnlBtnArea.Controls.Add(flowBtns);
-
-			// تجميع الذيل
-			pnlFooter.Controls.Add(pnlBtnArea);
-			pnlFooter.Controls.Add(pnlTotals);
-
-			// ترتيب صحيح: الـ Dock=Bottom يجب أن يُضاف قبل Dock=Fill
-			// حتى لا يتغطى بـ pnlItems
-			base.Controls.Add(pnlFooter);  // Bottom - يُضاف أولاً
-			base.Controls.Add(panel);      // Top
-			base.Controls.Add(pnlItems);   // Fill - يُضاف أخيراً
-
-			// تفعيل التمرير بعجلة الماوس في الجدول
-			dgItems.MouseWheel += (s, e) => { }; // الجدول يدعم التمرير تلقائياً
+			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, lblCostTitle, lblCostVal, lblProfitTitle, lblProfitVal, pnlFooterButtons, lblHotkeys });
+			base.Controls.Add(pnlItems);
+			base.Controls.Add(pnlFooter);
+			base.Controls.Add(panel);
+            pnlItems.BringToFront();
 			ToggleType();
-			InitializeScale();
 			Theme.ApplyFormRTL(this);
 		}
 
@@ -901,7 +813,6 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F8) { ReadWeightToSelectedRow(); e.Handled = true; }
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -971,43 +882,6 @@ namespace ChickenDist.Forms
 				}
 				List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
 				string text = cbo.Text;
-
-				// ── اعتراض باركود الميزان المطبوع (13 رقم يبدأ بـ 2) ────────────────
-				if (cbo == cboProduct && text.Length == 13 && text.StartsWith("2") && decimal.TryParse(text, out _))
-				{
-					string productCode = text.Substring(2, 5); // كود الصنف (5 أرقام)
-					string weightStr = text.Substring(7, 5);     // الوزن بالجرام (5 أرقام)
-					
-					if (decimal.TryParse(weightStr, out decimal grams))
-					{
-						decimal parsedWeight = grams / 1000m; // تحويل لكيلوجرام
-						int numericCode = int.TryParse(productCode, out int num) ? num : -1;
-						ComboItem matchedItem = null;
-						foreach (ComboItem item2 in list2)
-						{
-							if (item2.ID > 0 && (item2.Barcode == productCode || (numericCode != -1 && item2.Barcode == numericCode.ToString())))
-							{
-								if (item2.PriceTier == _selectedTier)
-								{
-									matchedItem = item2;
-									break;
-								}
-								if (matchedItem == null || item2.PriceTier == "قطاعي")
-								{
-									matchedItem = item2;
-								}
-							}
-						}
-
-						if (matchedItem != null)
-						{
-							_scaleBarcodeWeight = parsedWeight;
-							cbo.SelectedItem = matchedItem;
-							return;
-						}
-					}
-				}
-
 				cbo.BeginUpdate();
 				cbo.Items.Clear();
 				if (string.IsNullOrWhiteSpace(text))
@@ -1020,28 +894,7 @@ namespace ChickenDist.Forms
 				{
 					foreach (ComboItem item2 in list2)
 					{
-						bool matches = false;
-						if (item2.ID == 0)
-						{
-							matches = true;
-						}
-						else if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
-						{
-							matches = true;
-						}
-						else if (cbo == cboProduct)
-						{
-							// البحث الموسع للأصناف ليشمل رقم القطعة والماركة والموديل والباركود الأصلي
-							if ((item2.Barcode != null && item2.Barcode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
-							    (item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
-							    (item2.Brand != null && item2.Brand.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
-							    (item2.CarModel != null && item2.CarModel.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
-							{
-								matches = true;
-							}
-						}
-
-						if (matches)
+						if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
 						{
 							cbo.Items.Add(item2);
 						}
@@ -1114,76 +967,28 @@ namespace ChickenDist.Forms
 			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
-				int pid = (int)row3["ProductID"];
 				string name = row3["ProductName"].ToString();
-				decimal retailPrice = row3["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["SalePrice"]) : 0m;
+				decimal price = (decimal)row3["SalePrice"];
 				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
-				decimal wholesalePrice = row3["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["WholesalePrice"]) : 0m;
-				decimal semiWholesalePrice = row3["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["SemiWholesalePrice"]) : 0m;
-				decimal minStockLimit = row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m;
-				decimal stock = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
 
-				bool hasWholesale = wholesalePrice > 0 && wholesalePrice != retailPrice;
-				bool hasSemi = semiWholesalePrice > 0 && semiWholesalePrice != retailPrice && semiWholesalePrice != wholesalePrice;
+				string displayText = pendingPrice > 0 
+					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
+					: $"{name} ({price:N2})";
 
-				// 1. Retail Price Item
-				string retailText;
-				if (hasWholesale || hasSemi)
-				{
-					retailText = pendingPrice > 0 
-						? $"{name} - قطاعي (المتاح: {stock:N2} | سعر: {retailPrice:N2} | المعلق: {pendingPrice:N2})"
-						: $"{name} - قطاعي (المتاح: {stock:N2} | سعر: {retailPrice:N2})";
-				}
-				else
-				{
-					retailText = pendingPrice > 0 
-						? $"{name} (المتاح: {stock:N2} | السعر: {retailPrice:N2} | المعلق: {pendingPrice:N2})"
-						: $"{name} (المتاح: {stock:N2} | السعر: {retailPrice:N2})";
-				}
-
-				var retailItem = new ComboItem(pid, name, retailText, retailPrice, minStockLimit, purchasePrice)
-				{
-					PriceTier = "قطاعي",
-					PartNumber = row3["PartNumber"]?.ToString() ?? "",
-					CarModel = row3["CarModel"]?.ToString() ?? "",
-					Brand = row3["Brand"]?.ToString() ?? "",
-					ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
-					Barcode = row3["ProductCode"]?.ToString() ?? ""
-				};
-				cboProduct.Items.Add(retailItem);
-
-				// 2. Wholesale Price Item (if different)
-				if (hasWholesale)
-				{
-					string wholesaleText = $"{name} - جملة (المتاح: {stock:N2} | سعر: {wholesalePrice:N2})";
-					var wholesaleItem = new ComboItem(pid, name, wholesaleText, wholesalePrice, minStockLimit, purchasePrice)
-					{
-						PriceTier = "جملة",
-						PartNumber = row3["PartNumber"]?.ToString() ?? "",
-						CarModel = row3["CarModel"]?.ToString() ?? "",
-						Brand = row3["Brand"]?.ToString() ?? "",
-						ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
-						Barcode = row3["ProductCode"]?.ToString() ?? ""
-					};
-					cboProduct.Items.Add(wholesaleItem);
-				}
-
-				// 3. Semi-Wholesale Price Item (if different)
-				if (hasSemi)
-				{
-					string semiText = $"{name} - نصف جملة (المتاح: {stock:N2} | سعر: {semiWholesalePrice:N2})";
-					var semiItem = new ComboItem(pid, name, semiText, semiWholesalePrice, minStockLimit, purchasePrice)
-					{
-						PriceTier = "نصف جملة",
-						PartNumber = row3["PartNumber"]?.ToString() ?? "",
-						CarModel = row3["CarModel"]?.ToString() ?? "",
-						Brand = row3["Brand"]?.ToString() ?? "",
-						ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "",
-						Barcode = row3["ProductCode"]?.ToString() ?? ""
-					};
-					cboProduct.Items.Add(semiItem);
-				}
+				var comboItem = new ComboItem(
+					(int)row3["ProductID"], 
+					name,
+					displayText,
+					price, 
+					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+					purchasePrice
+				);
+				comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
+				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
+				comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+				cboProduct.Items.Add(comboItem);
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -1191,12 +996,12 @@ namespace ChickenDist.Forms
 			{
 				if (cboProduct.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
 				{
-					// Check if product with same price tier is already in the list
+					// Check if product is already in the list
 					foreach (SaleItemDTO item in _items)
 					{
-						if (item.ProductID == comboItem.ID && item.PriceTier == comboItem.PriceTier)
+						if (item.ProductID == comboItem.ID)
 						{
-							MessageBox.Show("الصنف بنفس فئة السعر موجود مسبقاً بالفاتورة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							MessageBox.Show("الصنف موجود مسبقاً بالفاتورة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							cboProduct.SelectedIndex = 0;
 							return;
 						}
@@ -1212,32 +1017,12 @@ namespace ChickenDist.Forms
 						return;
 					}
 
-					// تحديد الكمية بناء على الوزن اللحظي أو وزن باركود الميزان المطبوع
-					decimal initialQty = 1.00m;
-					if (_scaleBarcodeWeight.HasValue)
-					{
-						initialQty = _scaleBarcodeWeight.Value;
-						_scaleBarcodeWeight = null; // إعادة تعيين
-					}
-					else if (AppConfig.ScaleEnabled && ScaleService.Instance.IsConnected && ScaleService.Instance.CurrentWeight > 0m)
-					{
-						initialQty = ScaleService.Instance.CurrentWeight;
-					}
-
-					// التحقق من الرصيد الكافي للوزن المقروء
-					if (initialQty > stock)
-					{
-						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({initialQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-						cboProduct.SelectedIndex = 0;
-						return;
-					}
-
-					// Add to items list with default Quantity
+					// Add to items list with default Quantity = 1
 					_items.Add(new SaleItemDTO
 					{
 						ProductID = comboItem.ID,
 						ProductName = comboItem.Name,
-						Quantity = initialQty,
+						Quantity = 1.00m,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
 						MinStockLimit = comboItem.MinStockLimit,
@@ -1245,8 +1030,7 @@ namespace ChickenDist.Forms
 						PartNumber = comboItem.PartNumber,
 						CarModel = comboItem.CarModel,
 						Brand = comboItem.Brand,
-						ShelfLocation = comboItem.ShelfLocation,
-						PriceTier = comboItem.PriceTier
+						ShelfLocation = comboItem.ShelfLocation
 					});
 
 					RefreshGrid();
@@ -1429,25 +1213,13 @@ namespace ChickenDist.Forms
 
 		private void SelectProductByID(int prodID)
 		{
-			int matchedIndex = -1;
 			for (int i = 0; i < cboProduct.Items.Count; i++)
 			{
 				if (cboProduct.Items[i] is ComboItem comboItem && comboItem.ID == prodID)
 				{
-					if (comboItem.PriceTier == _selectedTier)
-					{
-						matchedIndex = i;
-						break;
-					}
-					if (matchedIndex == -1 || comboItem.PriceTier == "قطاعي")
-					{
-						matchedIndex = i;
-					}
+					cboProduct.SelectedIndex = i;
+					break;
 				}
-			}
-			if (matchedIndex != -1)
-			{
-				cboProduct.SelectedIndex = matchedIndex;
 			}
 		}
 
@@ -1485,9 +1257,9 @@ namespace ChickenDist.Forms
 			}
 			foreach (SaleItemDTO item in _items)
 			{
-				if (item.ProductID == comboItem.ID && item.PriceTier == comboItem.PriceTier)
+				if (item.ProductID == comboItem.ID)
 				{
-					MessageBox.Show("الصنف بنفس فئة السعر موجود مسبقاً بالفاتورة");
+					MessageBox.Show("الصنف موجود مسبقا\u064b");
 					return;
 				}
 			}
@@ -1503,8 +1275,7 @@ namespace ChickenDist.Forms
 				PartNumber = comboItem.PartNumber,
 				CarModel = comboItem.CarModel,
 				Brand = comboItem.Brand,
-				ShelfLocation = comboItem.ShelfLocation,
-				PriceTier = comboItem.PriceTier
+				ShelfLocation = comboItem.ShelfLocation
 			});
 			RefreshGrid();
 		}
@@ -1621,7 +1392,6 @@ namespace ChickenDist.Forms
 				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
 					item.ProductName,
-					item.PriceTier,
 					item.PartNumber,
 					item.CarModel,
 					item.Brand,
@@ -2198,13 +1968,6 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
 		{
-			if (AppConfig.ScaleEnabled)
-			{
-				ScaleService.Instance.WeightChanged -= Scale_WeightChanged;
-				ScaleService.Instance.ErrorOccurred -= Scale_ErrorOccurred;
-				ScaleService.Instance.Disconnect();
-			}
-
 			if (_isDirty && _items.Count > 0)
 			{
 				var res = MessageBox.Show("هناك تغييرات لم يتم حفظها في الفاتورة الحالية.\nهل تريد الخروج بدون حفظ؟", "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
@@ -2666,91 +2429,6 @@ namespace ChickenDist.Forms
             public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
             public override string ToString() => HeaderText;
         }
-
-		private void InitializeScale()
-		{
-			if (AppConfig.ScaleEnabled)
-			{
-				ScaleService.Instance.WeightChanged += Scale_WeightChanged;
-				ScaleService.Instance.ErrorOccurred += Scale_ErrorOccurred;
-				
-				lblLiveWeight.Text = "⚖️ الميزان: جاري الاتصال...";
-				lblLiveWeight.ForeColor = Theme.TextSub;
-				
-				System.Threading.Tasks.Task.Run(() => {
-					ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
-				});
-			}
-		}
-
-		private void Scale_WeightChanged(decimal weight, bool isStable)
-		{
-			if (this.IsDisposed) return;
-			
-			this.BeginInvoke((Action)delegate {
-				lblLiveWeight.Text = $"⚖️ الميزان: {weight:F3} كجم {(isStable ? "🟢" : "🟡")}";
-				lblLiveWeight.ForeColor = isStable ? Color.FromArgb(46, 204, 113) : Theme.Accent;
-			});
-		}
-
-		private void Scale_ErrorOccurred(string error)
-		{
-			if (this.IsDisposed) return;
-			
-			this.BeginInvoke((Action)delegate {
-				lblLiveWeight.Text = "⚖️ الميزان: 🔴 خطأ في الاتصال!";
-				lblLiveWeight.ForeColor = Theme.Danger;
-			});
-		}
-
-		private void ReadWeightToSelectedRow()
-		{
-			if (!AppConfig.ScaleEnabled)
-			{
-				MessageBox.Show("الميزان غير مفعّل في الإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-				return;
-			}
-			if (!ScaleService.Instance.IsConnected)
-			{
-				MessageBox.Show("الميزان غير متصل حالياً! تأكد من التوصيل والإعدادات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				return;
-			}
-			
-			decimal weight = ScaleService.Instance.CurrentWeight;
-			if (weight <= 0m)
-			{
-				MessageBox.Show("الوزن المقروء صفر أو سالب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				return;
-			}
-
-			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
-			{
-				int rowIndex = dgItems.CurrentRow.Index;
-				SaleItemDTO saleItemDTO = _items[rowIndex];
-				
-				decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var sVal) ? sVal : 0m;
-				if (weight > productStock)
-				{
-					MessageBox.Show($"❌ خطأ: الوزن المقروء ({weight:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					return;
-				}
-
-				saleItemDTO.Quantity = weight;
-				decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
-				saleItemDTO.DiscountAmt = Math.Round(gross * saleItemDTO.DiscountPct / 100m, 2);
-
-				dgItems.Rows[rowIndex].Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
-				dgItems.Rows[rowIndex].Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
-				dgItems.Rows[rowIndex].Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
-				dgItems.Rows[rowIndex].Cells["TotalPrice"].Value = saleItemDTO.TotalPrice.ToString("F2");
-
-				CalculateNet();
-			}
-			else
-			{
-				MessageBox.Show("يرجى اختيار صنف من الجدول أولاً لقراءة الوزن إليه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-			}
-		}
 	}
 	internal class ComboItem
 	{
@@ -2772,8 +2450,6 @@ namespace ChickenDist.Forms
 		public string CarModel { get; set; } = "";
 		public string Brand { get; set; } = "";
 		public string ShelfLocation { get; set; } = "";
-		public string Barcode { get; set; } = "";
-		public string PriceTier { get; set; } = "قطاعي";
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

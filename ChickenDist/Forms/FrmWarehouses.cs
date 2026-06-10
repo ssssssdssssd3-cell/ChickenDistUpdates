@@ -312,8 +312,6 @@ namespace ChickenDist.Forms
             tblMain.Controls.Add(pnlForm, 1, 0);
 
             this.Controls.Add(tblMain);
-
-            Theme.ApplyFormRTL(this);
         }
 
         // ══════════════════════════════════════════════════════

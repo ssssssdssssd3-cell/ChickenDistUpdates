@@ -77,12 +77,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "مرتجع مبيعات - إدخال مباشر";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 450);
+            this.Size = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -90,39 +86,62 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmReturn_KeyDown;
 
-            // ===== 1. Filter bar (Panel) =====
-            var pnlInfo = new Panel
+            // ===== 1. Filter bar (FlowLayoutPanel) =====
+            var pnlInfo = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 58,
+                Height = 110,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10, 2, 10, 2)
+                Padding = new Padding(10, 12, 10, 10),
+                WrapContents = true
             };
 
-            // Row 1
-            int row1Y = 4;
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
+            dtpFrom = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, row1Y), Font = Theme.FontBold };
-            dtpFrom = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1), Location = new Point(45, row1Y - 3) };
-            
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(165, row1Y), Font = Theme.FontBold };
-            dtpTo = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Location = new Point(195, row1Y - 3) };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
+            dtpTo = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
 
             btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
-            btnSearch.Size = new Size(110, 26);
-            btnSearch.Location = new Point(315, row1Y - 3);
+            btnSearch.Size = new Size(130, 28);
+            btnSearch.Margin = new Padding(10, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadCombos();
 
-            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(435, row1Y), Font = Theme.FontBold };
+            var lblSale = new Label { Text = "الفاتورة الأصلية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            cboSale = new ComboBox 
+            { 
+                Width = 250, 
+                Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown, 
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain 
+            };
+            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+
+            var lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            cboClient = new ComboBox 
+            { 
+                Width = 200, 
+                Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown, 
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain 
+            };
+
+            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtProductSearch = new TextBox 
             { 
-                Width = 140, 
+                Width = 150, 
                 Height = 26, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 RightToLeft = RightToLeft.Yes, 
-                BorderStyle = BorderStyle.FixedSingle,
-                Location = new Point(505, row1Y - 3)
+                BorderStyle = BorderStyle.FixedSingle 
             };
             txtProductSearch.KeyDown += (s, e) =>
             {
@@ -134,43 +153,10 @@ namespace ChickenDist.Forms
                 }
             };
 
-            // Row 2
-            int row2Y = 30;
+            var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            var lblSale = new Label { Text = "الفاتورة الأصلية:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, row2Y), Font = Theme.FontBold };
-            cboSale = new ComboBox 
-            { 
-                Width = 230, 
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown, 
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
-                Location = new Point(115, row2Y - 3)
-            };
-            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
-
-            var lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(360, row2Y), Font = Theme.FontBold };
-            cboClient = new ComboBox 
-            { 
-                Width = 180, 
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown, 
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
-                Location = new Point(410, row2Y - 3)
-            };
-
-            var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(605, row2Y), Font = Theme.FontBold };
-            txtNotes = new TextBox { Width = 250, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Location = new Point(715, row2Y - 3) };
-
-            pnlInfo.Controls.AddRange(new Control[] { 
-                lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblProduct, txtProductSearch,
-                lblSale, cboSale, lblClient, cboClient, lblNotes, txtNotes 
-            });
+            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
 
             // ===== 2. Grid panel =====
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 10, 10) };
@@ -256,11 +242,11 @@ namespace ChickenDist.Forms
 
             pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave, lblHotkeys });
 
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlFoot); // Bottom
-            this.Controls.Add(pnlInfo);  // Top
-            this.Controls.Add(pnlGrid);  // Fill
-            
+            // ===== 4. Add controls =====
+            this.Controls.Add(pnlGrid);
+            this.Controls.Add(pnlFoot);
+            this.Controls.Add(pnlInfo);
+            pnlGrid.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 
@@ -319,84 +305,74 @@ namespace ChickenDist.Forms
             dgItems.Rows.Clear();
             lblTotal.Text = "الإجمالي: 0.00 ج";
 
-            try
+            if (cboSale.SelectedItem is ComboItem cs && cs.ID > 0)
             {
-                if (cboSale.SelectedItem is ComboItem cs && cs.ID > 0)
+                // 1. Get Client ID of this sale
+                var dtSale = DbHelper.Query("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", cs.ID));
+                if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
                 {
-                    // 1. Get Client ID of this sale
-                    var dtSale = DbHelper.Query("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", cs.ID));
-                    if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
+                    int clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
+                    foreach (ComboItem item in cboClient.Items)
                     {
-                        int clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
-                        cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                        foreach (ComboItem item in cboClient.Items)
+                        if (item.ID == clientID)
                         {
-                            if (item.ID == clientID)
-                            {
-                                cboClient.SelectedItem = item;
-                                break;
-                            }
+                            cboClient.SelectedItem = item;
+                            break;
                         }
-                        cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
-                        cboClient.Enabled = false; // Lock client selection
                     }
-                    else
-                    {
-                        cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                        if (cboClient.Items.Count > 0)
-                            cboClient.SelectedIndex = 0;
-                        cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
-                        cboClient.Enabled = true;
-                    }
-
-                    // 2. Fetch sale items and their previously returned quantities using dynamic subquery
-                    DataTable dtItems = DbHelper.Query(@"
-                        SELECT 
-                            si.ProductID, 
-                            p.ProductName, 
-                            si.Quantity AS SoldQty, 
-                            si.UnitPrice,
-                            COALESCE((
-                                SELECT SUM(ri.Quantity)
-                                FROM ReturnItems ri
-                                JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                                WHERE sr.SaleID = si.SaleID AND ri.ProductID = si.ProductID
-                            ), 0) AS PrevReturnedQty
-                        FROM SaleItems si
-                        JOIN Products p ON si.ProductID = p.ProductID
-                        WHERE si.SaleID = @sid", 
-                        DbHelper.P("@sid", cs.ID));
-
-                    foreach (DataRow r in dtItems.Rows)
-                    {
-                        int prodID = Convert.ToInt32(r["ProductID"]);
-                        string name = r["ProductName"].ToString();
-                        decimal soldQty = Convert.ToDecimal(r["SoldQty"]);
-                        decimal price = Convert.ToDecimal(r["UnitPrice"]);
-                        decimal prevQty = Convert.ToDecimal(r["PrevReturnedQty"]);
-
-                        dgItems.Rows.Add(prodID, name, soldQty.ToString("F2"), prevQty.ToString("F2"), "0.00", price.ToString("F2"), "0.00");
-                    }
+                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
+                    cboClient.Enabled = false; // Lock client selection
                 }
                 else
                 {
                     cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                    cboClient.Enabled = true;
                     if (cboClient.Items.Count > 0)
                         cboClient.SelectedIndex = 0;
                     cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
+                    cboClient.Enabled = true;
+                }
+
+                // 2. Fetch sale items and their previously returned quantities using dynamic subquery
+                DataTable dtItems = DbHelper.Query(@"
+                    SELECT 
+                        si.ProductID, 
+                        p.ProductName, 
+                        si.Quantity AS SoldQty, 
+                        si.UnitPrice,
+                        COALESCE((
+                            SELECT SUM(ri.Quantity)
+                            FROM ReturnItems ri
+                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                            WHERE sr.SaleID = si.SaleID AND ri.ProductID = si.ProductID
+                        ), 0) AS PrevReturnedQty
+                    FROM SaleItems si
+                    JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE si.SaleID = @sid", 
+                    DbHelper.P("@sid", cs.ID));
+
+                foreach (DataRow r in dtItems.Rows)
+                {
+                    int prodID = Convert.ToInt32(r["ProductID"]);
+                    string name = r["ProductName"].ToString();
+                    decimal soldQty = Convert.ToDecimal(r["SoldQty"]);
+                    decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                    decimal prevQty = Convert.ToDecimal(r["PrevReturnedQty"]);
+
+                    dgItems.Rows.Add(prodID, name, soldQty.ToString("F2"), prevQty.ToString("F2"), "0.00", price.ToString("F2"), "0.00");
                 }
             }
-            catch (Exception ex)
+            else
             {
-                AppLogger.Error("فشل تحميل أصناف الفاتورة الأصلية للمرتجع", ex, "FrmReturn.CboSale_SelectedIndexChanged");
-                MessageBox.Show($"❌ حدث خطأ أثناء تحميل أصناف الفاتورة:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
+                cboClient.Enabled = true;
+                if (cboClient.Items.Count > 0)
+                    cboClient.SelectedIndex = 0;
+                cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             }
-            finally
-            {
-                dgItems.CellValueChanged += DgItems_CellValueChanged;
-                CalculateOverallTotal();
-            }
+
+            dgItems.CellValueChanged += DgItems_CellValueChanged;
+            CalculateOverallTotal();
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)

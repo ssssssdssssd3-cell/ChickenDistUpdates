@@ -45,12 +45,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "جرد ومراقبة المخزن";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1050, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -98,7 +94,6 @@ namespace ChickenDist.Forms
             btnPrintStock = Theme.MakeButton("🖨 طباعة ورقة الجرد", Theme.Accent);
             btnPrintStock.Location = new Point(10, 8);
             btnPrintStock.Size = new Size(110, 32);
-            btnPrintStock.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
             pnlF.Controls.Add(btnPrintStock);
 
@@ -219,26 +214,24 @@ namespace ChickenDist.Forms
         {
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(940, 18), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            dtpFrom = new DateTimePicker { Location = new Point(800, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(940, 18) };
+            dtpFrom = new DateTimePicker { Location = new Point(800, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
             
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(750, 18), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            dtpTo = new DateTimePicker { Location = new Point(610, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(750, 18) };
+            dtpTo = new DateTimePicker { Location = new Point(610, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
 
-            var lblSearchLog = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(560, 18), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            txtSearchLog = new TextBox { Location = new Point(380, 14), Width = 170, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            var lblSearchLog = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(560, 18) };
+            txtSearchLog = new TextBox { Location = new Point(380, 14), Width = 170 };
             txtSearchLog.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
 
             btnLoadLogs = Theme.MakeButton("🔍 عرض السجل", Color.FromArgb(60, 100, 60));
             btnLoadLogs.Location = new Point(250, 11);
             btnLoadLogs.Size = new Size(120, 32);
-            btnLoadLogs.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLoadLogs.Click += (s, e) => LoadLogs();
 
             btnPrintLogs = Theme.MakeButton("🖨 طباعة سجل التسويات", Theme.Accent);
             btnPrintLogs.Location = new Point(20, 11);
             btnPrintLogs.Size = new Size(160, 32);
-            btnPrintLogs.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
             pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });

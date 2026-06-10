@@ -23,20 +23,17 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = AppConfig.CompanyName + " - النظام الرئيسي | الإصدار: " + UpdateManager.CurrentVersion;
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1280, 780);
+            this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.BackColor = Theme.BgLight;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
-            // ===== TopBar (مضغوط ليناسب 1366x768) =====
-            int topH = ScreenHelper.IsSmallScreen ? 35 : 42;
-            this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = topH, BackColor = Theme.Primary };
+            // ===== TopBar =====
+            this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };
             this.lblCompany = new Label
             {
                 Text = "🐣  " + AppConfig.CompanyName,
@@ -77,11 +74,11 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                AutoScroll = true,
-                Height = 50,
+                WrapContents = true,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.Sidebar,
-                Padding = new Padding(10, 2, 10, 2)
+                Padding = new Padding(10, 5, 10, 5)
             };
             BuildNavBar();
 
@@ -183,14 +180,14 @@ namespace ChickenDist.Forms
                 var btn = new Button
                 {
                     Name      = item.label,
-                    Text      = $"{item.icon} {item.label}",
-                    Size      = new Size(100, 38),
+                    Text      = $"{item.icon}\n{item.label}",
+                    Size      = new Size(105, 52),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = item.btnColor,
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 8.0f, FontStyle.Bold),
+                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Margin    = new Padding(3, 3, 3, 3),
+                    Margin    = new Padding(3, 4, 3, 4),
                     Cursor    = Cursors.Hand,
                     ImageAlign = ContentAlignment.TopCenter
                 };
@@ -323,7 +320,6 @@ namespace ChickenDist.Forms
 
             _currentChild = form;
             form.TopLevel = false;
-            form.MinimumSize = new Size(0, 0);
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
@@ -332,24 +328,6 @@ namespace ChickenDist.Forms
             pnlContent.Controls.Add(form);
             form.Show();
             form.BringToFront();
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            try
-            {
-                // نسخ احتياطي صامت عند الخروج لمرة واحدة في اليوم
-                var lastBackup = BackupManager.LastBackupTime;
-                if (lastBackup == null || lastBackup.Value.Date < DateTime.Today)
-                {
-                    BackupManager.DoBackup(silent: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Error("AutoBackup on exit failed", ex, "FrmMain");
-            }
-            base.OnFormClosing(e);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -437,11 +415,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            int titleH = ScreenHelper.IsSmallScreen ? 55 : 70;
-            int cardsH = ScreenHelper.IsSmallScreen ? 105 : 130;
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, titleH)); // Header
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, cardsH)); // Cards
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));    // Dynamic content split
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 70f)); // Header
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 130f)); // Cards
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Dynamic content split
 
             // 1. Header
             var pnlTitle = Theme.MakeTitleBar("لوحة التحكم والمؤشرات اليومية", $"مرحباً {Session.EmpName} 👋  |  تاريخ اليوم: {DateTime.Today:dd/MM/yyyy}");
@@ -564,35 +540,33 @@ namespace ChickenDist.Forms
 
         private Panel MakeCard(string title, string value, Color color)
         {
-            int cardW = ScreenHelper.IsSmallScreen ? 200 : 240;
-            int cardH = ScreenHelper.IsSmallScreen ? 88  : 110;
             var card = new Panel
             {
-                Size = new Size(cardW, cardH),
+                Size = new Size(240, 110),
                 BackColor = Theme.BgCard,
-                Margin = new Padding(ScreenHelper.IsSmallScreen ? 5 : 10),
+                Margin = new Padding(10),
                 Cursor = Cursors.Hand
             };
             card.Paint += (s, e) =>
             {
                 var g = e.Graphics;
-                g.FillRectangle(new SolidBrush(color), 0, 0, 6, cardH);
+                g.FillRectangle(new SolidBrush(color), 0, 0, 6, 110);
             };
 
             var lblTitle = new Label
             {
                 Text = title,
-                Font = ScreenHelper.IsSmallScreen ? new Font("Segoe UI", 9f, FontStyle.Bold) : Theme.FontBold,
+                Font = Theme.FontBold,
                 ForeColor = Theme.TextSub,
-                Location = new Point(15, ScreenHelper.IsSmallScreen ? 12 : 18),
+                Location = new Point(15, 18),
                 AutoSize = true
             };
             var lblValue = new Label
             {
                 Text = value,
-                Font = new Font("Segoe UI", ScreenHelper.IsSmallScreen ? 14f : 18f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 18f, FontStyle.Bold),
                 ForeColor = color,
-                Location = new Point(15, ScreenHelper.IsSmallScreen ? 34 : 45),
+                Location = new Point(15, 45),
                 AutoSize = true
             };
             card.Controls.AddRange(new Control[] { lblTitle, lblValue });

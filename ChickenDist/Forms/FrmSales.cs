@@ -48,12 +48,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "سجل المبيعات";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.Size = new Size(1150, 720);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			this.WindowState = FormWindowState.Maximized;
-			this.AutoScaleMode = AutoScaleMode.Dpi;
-			this.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -61,26 +57,25 @@ namespace ChickenDist.Forms
 			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = ScreenHelper.IsSmallScreen ? 90 : 50,
-				FlowDirection = FlowDirection.RightToLeft,
+				Height = 50,
+				FlowDirection = FlowDirection.LeftToRight,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10),
-				WrapContents = true
+				Padding = new Padding(10, 10, 10, 10),
+				WrapContents = false
 			};
 			Label label = new Label
 			{
 				Text = "من:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(10, 16)
+				Margin = new Padding(10, 5, 0, 0)
 			};
 			dtpFrom = new DateTimePicker
 			{
 				Width = 110,
 				Height = 26,
 				Format = DateTimePickerFormat.Short,
-				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
-				Location = new Point(35, 12)
+				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label, dtpFrom });
 			Label label2 = new Label
@@ -88,14 +83,13 @@ namespace ChickenDist.Forms
 				Text = "إلى:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(155, 16)
+				Margin = new Padding(15, 5, 0, 0)
 			};
 			dtpTo = new DateTimePicker
 			{
 				Width = 110,
 				Height = 26,
-				Format = DateTimePickerFormat.Short,
-				Location = new Point(185, 12)
+				Format = DateTimePickerFormat.Short
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label2, dtpTo });
 			Label label3 = new Label
@@ -103,7 +97,7 @@ namespace ChickenDist.Forms
 				Text = "النوع:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(305, 16)
+				Margin = new Padding(15, 5, 0, 0)
 			};
 			cboTypeFilter = new ComboBox
 			{
@@ -112,8 +106,7 @@ namespace ChickenDist.Forms
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(345, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			cboTypeFilter.Items.AddRange(new object[4] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
@@ -124,7 +117,7 @@ namespace ChickenDist.Forms
 				Text = "العميل:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(465, 16)
+				Margin = new Padding(15, 5, 0, 0)
 			};
 			cboClientFilter = new ComboBox
 			{
@@ -133,8 +126,7 @@ namespace ChickenDist.Forms
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(515, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
@@ -154,7 +146,7 @@ namespace ChickenDist.Forms
 				Text = "بحث صنف:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(655, 16)
+				Margin = new Padding(15, 5, 0, 0)
 			};
 			txtProductSearch = new TextBox
 			{
@@ -162,8 +154,7 @@ namespace ChickenDist.Forms
 				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(725, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			txtProductSearch.KeyDown += (s, e) =>
 			{
@@ -180,33 +171,32 @@ namespace ChickenDist.Forms
 				Text = "بحث:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
-				Location = new Point(855, 16)
+				Margin = new Padding(15, 5, 0, 0)
 			};
 			txtSearch = new TextBox
 			{
-				Width = 120,
+				Width = 140,
 				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(895, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			txtSearch.TextChanged += delegate
 			{
 				FilterData();
 			};
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label4, txtSearch });
-			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
-			btnLoad.Size = new Size(80, 26);
-			btnLoad.Location = new Point(1025, 12);
+			btnLoad = Theme.MakeButton("\ud83d\udd04 عرض", Theme.Accent);
+			btnLoad.Size = new Size(80, 28);
+			btnLoad.Margin = new Padding(15, 0, 0, 0);
 			btnLoad.Click += delegate
 			{
 				LoadSales();
 			};
 			flowLayoutPanel.Controls.Add(btnLoad);
 			btnNewSale = Theme.MakeButton("➕ فاتورة جديدة", Color.FromArgb(40, 150, 80));
-			btnNewSale.Size = new Size(120, 26);
-			btnNewSale.Location = new Point(1115, 12);
+			btnNewSale.Size = new Size(120, 28);
+			btnNewSale.Margin = new Padding(10, 0, 0, 0);
 			btnNewSale.Click += delegate
 			{
 				FrmSale frmSale = new FrmSale();
@@ -217,7 +207,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = ScreenHelper.IsSmallScreen ? 240 : 280,
+				Height = 280,
 				Padding = new Padding(10, 0, 10, 10)
 			};
 			dgSales = MakeGrid();
@@ -387,13 +377,10 @@ namespace ChickenDist.Forms
 			lblCashSummary   = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:",       "0.00 ج", Theme.Success,                 3);
 			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:",       "0.00 ج", Color.FromArgb(52, 152, 219),  4);
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
-			// ترتيب صحيح: Bottom ثم Top ثم Fill
-			base.Controls.Add(tableLayoutPanel);  // Bottom - يُضاف أولاً
-			base.Controls.Add(flowLayoutPanel);   // Top (filter bar)
-			base.Controls.Add(panel);             // Top (master grid)
-			base.Controls.Add(panel2);            // Fill - يُضاف أخيراً
-
-			Theme.ApplyFormRTL(this);
+			base.Controls.Add(panel2);
+			base.Controls.Add(panel);
+			base.Controls.Add(flowLayoutPanel);
+			base.Controls.Add(tableLayoutPanel);
 		}
 
 		private Label AddDashboardCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIndex)

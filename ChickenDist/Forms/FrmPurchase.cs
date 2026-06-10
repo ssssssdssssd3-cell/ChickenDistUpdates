@@ -74,12 +74,9 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "فاتورة مشتريات";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 450);
+            this.Size = new Size(1150, 760);
+            this.MinimumSize = new Size(950, 660);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -91,13 +88,12 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════════
             // ── لوحة الرأس — تستخدم TableLayoutPanel للتخطيط المنظم ──────────
             // ══════════════════════════════════════════════════════════════════
-            int hdrH = ScreenHelper.IsSmallScreen ? 115 : 140;
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
-                Height  = hdrH,
+                Height  = 205,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 4, 12, 4)
+                Padding = new Padding(12, 8, 12, 8)
             };
 
             // ── صف 0: نوع الفاتورة + رصيد الخزنة ────────────────────────────
@@ -117,12 +113,10 @@ namespace ChickenDist.Forms
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // col5: control / buttons
             // ارتفاع الصفوف
-            int rowH = ScreenHelper.IsSmallScreen ? 25 : 31;
-            int lastRowH = ScreenHelper.IsSmallScreen ? 28 : 34;
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, rowH));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, lastRowH));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
 
             // ── صف 0: نوع الفاتورة | المورد | التاريخ ────────────────────────
             // أزرار نوع الفاتورة (col5 صف 0)
@@ -158,7 +152,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 6, 2, 6)
             };
 
             // التاريخ
@@ -171,7 +165,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 Format = DateTimePickerFormat.Short,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 6, 2, 6)
             };
 
             // رصيد الخزنة
@@ -202,7 +196,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 6, 2, 6)
             };
 
             var lblProd = MakeLabel("الصنف:", 0, 0);
@@ -214,7 +208,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 6, 2, 6)
             };
 
             // إضافة — صف 1
@@ -235,7 +229,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 6, 2, 6)
             };
 
             btnSearchProduct = new Button
@@ -246,7 +240,7 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Margin = new Padding(2, 4, 2, 4),
+                Margin = new Padding(2, 6, 2, 6),
                 Font = Theme.FontBold
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
@@ -435,15 +429,15 @@ namespace ChickenDist.Forms
             pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 85,
+                Height = 100,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 4, 8, 4)
+                Padding = new Padding(8, 6, 8, 6)
             };
 
             // ── قسم الإجماليات (يمين) ─────────────────────────────────────────
             var pnlTotals = new Panel
             {
-                Width = 480,
+                Width = 650,
                 Dock  = DockStyle.Right,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0)
@@ -639,10 +633,11 @@ namespace ChickenDist.Forms
             pnlFooter.Controls.Add(pnlBtnArea);
             pnlFooter.Controls.Add(pnlTotals);
 
-            // ── تجميع عناصر النموذج ── ترتيب مهم: Bottom أولاً ثم Top ثم Fill
-            base.Controls.Add(pnlFooter);   // Bottom - يُضاف أولاً
-            base.Controls.Add(pnlHeader);   // Top
-            base.Controls.Add(pnlItems);    // Fill - يُضاف أخيراً
+            // ── تجميع عناصر النموذج ────────────────────────────────────────────
+            base.Controls.Add(pnlItems);
+            base.Controls.Add(pnlFooter);
+            base.Controls.Add(pnlHeader);
+            pnlItems.BringToFront();
             ToggleType();
             Theme.ApplyFormRTL(this);
         }

@@ -39,18 +39,11 @@ namespace ChickenDist.Forms
             RightToLeft     = RightToLeft.Yes;
             Font            = Theme.FontMain;
 
-            // ── إعدادات الحجم والتجاوب ──────────────────────────────────────
-            this.Size               = new Size(1366, 768);
-            this.MinimumSize        = new Size(1024, 600);
-            this.StartPosition      = FormStartPosition.CenterScreen;
-            this.WindowState        = FormWindowState.Maximized;
-            this.AutoScaleMode      = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
-
             // ── Title bar ─────────────────────────────────────────────────────
             var titleBar = Theme.MakeTitleBar(
                 "📋 تقرير التقفيل اليومي",
                 $"إجمالي المبيعات  |  آخر توريد  |  مديونية العملاء");
+            Controls.Add(titleBar);
 
             // ── Top toolbar ───────────────────────────────────────────────────
             var toolbar = new Panel
@@ -97,6 +90,7 @@ namespace ChickenDist.Forms
             btnWhatsApp.Click += BtnWhatsAppClosing_Click;
 
             toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp });
+            Controls.Add(toolbar);
 
             // ── Summary footer ────────────────────────────────────────────────
             _pnlSummary = new Panel
@@ -125,6 +119,7 @@ namespace ChickenDist.Forms
             summaryFlow.Controls.AddRange(new Control[]
                 { _lblTotalInvoice, _lblTotalPayment, _lblTotalBalance });
             _pnlSummary.Controls.Add(summaryFlow);
+            Controls.Add(_pnlSummary);
 
             // ── DataGridView ──────────────────────────────────────────────────
             _dg = new DataGridView
@@ -160,12 +155,13 @@ namespace ChickenDist.Forms
                     Alignment  = DataGridViewContentAlignment.MiddleCenter
                 }
             };
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            Controls.Add(_pnlSummary); // Bottom
-            Controls.Add(titleBar);    // Top
-            Controls.Add(toolbar);     // Top
-            Controls.Add(_dg);         // Fill
+            Controls.Add(_dg);
 
+            // ensure Z-order: title → toolbar → grid → footer
+            titleBar.BringToFront();
+            toolbar.BringToFront();
+            _dg.BringToFront();
+            _pnlSummary.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 
@@ -481,9 +477,10 @@ namespace ChickenDist.Forms
 
             var preview = new PrintPreviewDialog
             {
-                Document = pd
+                Document = pd,
+                Width    = 1100,
+                Height   = 800
             };
-            ScreenHelper.SafePrintPreview(preview, 1100, 800);
             preview.ShowDialog();
         }
 

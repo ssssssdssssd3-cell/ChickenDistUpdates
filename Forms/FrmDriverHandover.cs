@@ -36,12 +36,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "تقفيل حمولة مندوب";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1000, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -184,11 +180,10 @@ namespace ChickenDist.Forms
             var pnlActionsRow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = ScreenHelper.IsSmallScreen ? 95 : 85,
+                Height = 85,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(0, 10, 0, 5),
-                WrapContents = true
+                Padding = new Padding(0, 10, 0, 5)
             };
 
             var lblCashL = new Label { Text = "المبلغ المحصل نقداً:", AutoSize = true, ForeColor = Theme.Primary, Font = new Font("Segoe UI", 12, FontStyle.Bold), Margin = new Padding(0, 5, 5, 0) };

@@ -432,10 +432,10 @@ namespace ChickenDist.Forms
                 lblInvCount, lblTotalCash, lblTotalCredit, lblTotalAll });
             pnlBottom.Controls.Add(statsFlow);
 
-            // ===== Assemble - ترتيب صحيح: Bottom ثم Top ثم Fill =====
-            this.Controls.Add(pnlBottom);   // Bottom - يُضاف أولاً
-            this.Controls.Add(pnlHeader);   // Top
-            this.Controls.Add(pnlTop);      // Fill - يُضاف أخيراً
+            // ===== Assemble =====
+            this.Controls.Add(pnlTop);
+            this.Controls.Add(pnlBottom);
+            this.Controls.Add(pnlHeader);
             Theme.ApplyFormRTL(this);
         }
 

@@ -36,8 +36,6 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             // Top panel (Search)
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Theme.BgCard, Padding = new Padding(12) };
@@ -98,10 +96,10 @@ namespace ChickenDist.Forms
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
             pnlActions.Controls.AddRange(new Control[] { btnSelect, btnCancel });
 
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            // Add in docking Z-order
+            this.Controls.Add(pnlGrid);      // Fill
             this.Controls.Add(pnlActions);   // Bottom
             this.Controls.Add(pnlSearch);    // Top
-            this.Controls.Add(pnlGrid);      // Fill
 
             Theme.ApplyFormRTL(this);
         }

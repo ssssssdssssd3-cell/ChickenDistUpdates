@@ -2,7 +2,6 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using System.Collections.Generic;
 
 namespace ChickenDist.Core
 {
@@ -175,16 +174,6 @@ namespace ChickenDist.Core
             form.RightToLeft = RightToLeft.Yes;
             form.RightToLeftLayout = true;
             ApplyRTL(form.Controls);
-            
-            // تحسين تخطيط العناصر للتناسق مع الشاشات والريزليوشن المختلف تلقائياً
-            OptimizeFormLayout(form);
-
-            // تمكين شريط التمرير والتنقل بالبكرة للشاشات الكبيرة عند تصغير الحجم أو تغيير DPI
-            if (form.WindowState == FormWindowState.Maximized || form.Width >= 1000 || form.MinimumSize.Width >= 1000)
-            {
-                form.AutoScroll = true;
-                form.AutoScrollMinSize = new Size(1000, 650);
-            }
 
             // Add form-level key listener for Enter as Tab navigation
             form.KeyPreview = true;
@@ -309,7 +298,7 @@ namespace ChickenDist.Core
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = ScreenHelper.IsSmallScreen ? 60 : 70,
+                Height = 70,
                 BackColor = BgCard,
                 Padding = new Padding(20, 0, 0, 0)
             };
@@ -319,14 +308,13 @@ namespace ChickenDist.Core
                 Font = FontTitle,
                 ForeColor = TextMain,
                 AutoSize = false,
+                Width = 600,
                 Height = 40,
-                Top = ScreenHelper.IsSmallScreen ? 4 : 8,
+                Top = 8,
                 Left = 15,
                 RightToLeft = RightToLeft.Yes,
-                TextAlign = ContentAlignment.MiddleRight,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                TextAlign = ContentAlignment.MiddleRight
             };
-            lbl.Width = panel.Width - 30;
             panel.Controls.Add(lbl);
             if (!string.IsNullOrEmpty(subtitle))
             {
@@ -336,14 +324,13 @@ namespace ChickenDist.Core
                     Font = FontSmall,
                     ForeColor = TextSub,
                     AutoSize = false,
-                    Height = 20,
-                    Top = ScreenHelper.IsSmallScreen ? 36 : 46,
+                    Width = 600,
+                    Height = 22,
+                    Top = 46,
                     Left = 15,
                     RightToLeft = RightToLeft.Yes,
-                    TextAlign = ContentAlignment.MiddleRight,
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                    TextAlign = ContentAlignment.MiddleRight
                 };
-                sub.Width = panel.Width - 30;
                 panel.Controls.Add(sub);
             }
 
@@ -360,264 +347,6 @@ namespace ChickenDist.Core
             };
 
             return panel;
-        }
-
-        /// <summary>يُحسّن تخطيط الفورم والمكونات لتناسب الشاشات الصغيرة وتكون متجاوبة</summary>
-        public static void OptimizeFormLayout(Control container)
-        {
-            if (container == null) return;
-
-            // 1. تحسين المكونات الفرعية أولاً
-            foreach (Control child in container.Controls)
-            {
-                if (child.HasChildren)
-                {
-                    OptimizeFormLayout(child);
-                }
-            }
-
-            // 2. إذا كانت الحاوية لوحة تفاصيل أو حاوية إدخال
-            if ((container is Panel || container.GetType().Name == "SplitterPanel") && !(container is TableLayoutPanel) && !(container is FlowLayoutPanel))
-            {
-                Panel panel = (Panel)container;
-
-                // تحسين الألواح الفرعية (مثل MakeField في الموردين) لتتمدد
-                var childPanels = new List<Panel>();
-                foreach (Control c in panel.Controls)
-                {
-                    if (c is Panel subPanel && !(subPanel is TableLayoutPanel) && !(subPanel is FlowLayoutPanel) && subPanel.Width >= 250 && subPanel.Width <= 350)
-                    {
-                        childPanels.Add(subPanel);
-                    }
-                }
-
-                foreach (var subPanel in childPanels)
-                {
-                    subPanel.Width = panel.Width - subPanel.Left - 15;
-                    subPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                    OptimizeRowLayout(subPanel);
-                }
-
-                // تحسين ترتيب المكونات المباشرة على نفس السطر
-                OptimizeRowLayout(panel);
-            }
-        }
-
-        private static void OptimizeRowLayout(Control parent)
-        {
-            if (parent == null || parent.Controls.Count == 0) return;
-
-            // تجميع العناصر غير المترابطة بالـ Docking
-            var controls = new List<Control>();
-            foreach (Control c in parent.Controls)
-            {
-                if (c.Dock == DockStyle.None && !(c is Panel && c.Anchor == (AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right)))
-                {
-                    controls.Add(c);
-                }
-            }
-
-            // تجميع المكونات التي تقع على نفس السطر (بفارق 8 بكسل)
-            var rows = new List<List<Control>>();
-            foreach (var ctrl in controls)
-            {
-                bool found = false;
-                foreach (var row in rows)
-                {
-                    if (Math.Abs(row[0].Top - ctrl.Top) <= 8)
-                    {
-                        row.Add(ctrl);
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    rows.Add(new List<Control> { ctrl });
-                }
-            }
-
-            // ترتيب الأسطر من الأعلى إلى الأسفل للحفاظ على تسلسل التبويب
-            rows.Sort((a, b) => a[0].Top.CompareTo(b[0].Top));
-
-            // فرز الحقول (ملصق ومدخل) عن باقي العناصر
-            var fieldRows = new List<KeyValuePair<Label, Control>>();
-            var otherControls = new List<Control>();
-
-            foreach (var row in rows)
-            {
-                Label lbl = row.Count >= 1 && row[0] is Label ? (Label)row[0] : (row.Count >= 2 && row[1] is Label ? (Label)row[1] : null);
-                Control input = row.Count >= 1 && !(row[0] is Label) ? row[0] : (row.Count >= 2 && !(row[1] is Label) ? row[1] : null);
-
-                if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
-                {
-                    fieldRows.Add(new KeyValuePair<Label, Control>(lbl, input));
-                }
-                else
-                {
-                    foreach (var c in row)
-                    {
-                        otherControls.Add(c);
-                    }
-                }
-            }
-
-            // إذا كان عدد الحقول أكثر من 5، نقسمها لعمودين لتفادي التمرير العمودي الطويل
-            if (fieldRows.Count > 5)
-            {
-                int n = fieldRows.Count;
-                int rowsPerCol = (n + 1) / 2;
-                int rowHeight = 44; // ارتفاع مناسب للعنوان والمدخل مع الفراغ
-
-                for (int i = 0; i < n; i++)
-                {
-                    var pair = fieldRows[i];
-                    Label lbl = pair.Key;
-                    Control input = pair.Value;
-
-                    int col = i < rowsPerCol ? 0 : 1; // 0 = العمود الأيمن (لغة عربية)، 1 = العمود الأيسر
-                    int rowIdx = i < rowsPerCol ? i : i - rowsPerCol;
-
-                    int y = 10 + rowIdx * rowHeight;
-
-                    if (col == 0) // العمود الأيمن
-                    {
-                        lbl.Top = y;
-                        lbl.Left = parent.Width - lbl.Width - 10;
-                        lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-                        input.Top = y + 16;
-                        input.Left = parent.Width / 2 + 5;
-                        input.Width = parent.Width / 2 - 15;
-                        input.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                    }
-                    else // العمود الأيسر
-                    {
-                        lbl.Top = y;
-                        lbl.Left = parent.Width / 2 - lbl.Width - 10;
-                        lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-                        input.Top = y + 16;
-                        input.Left = 10;
-                        input.Width = parent.Width / 2 - 15;
-                        input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                    }
-                }
-
-                // وضع الأزرار وعناصر التحكم الأخرى بالأسفل تحت الأعمدة
-                int columnsBottomY = 15 + rowsPerCol * rowHeight + 10;
-
-                // إعادة تجميع عناصر التحكم غير المدخلة وترتيبها عمودياً
-                var otherRows = new List<List<Control>>();
-                foreach (var ctrl in otherControls)
-                {
-                    bool found = false;
-                    foreach (var r in otherRows)
-                    {
-                        if (Math.Abs(r[0].Top - ctrl.Top) <= 8)
-                        {
-                            r.Add(ctrl);
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        otherRows.Add(new List<Control> { ctrl });
-                    }
-                }
-                otherRows.Sort((a, b) => a[0].Top.CompareTo(b[0].Top));
-
-                int currentY = columnsBottomY;
-                foreach (var r in otherRows)
-                {
-                    int maxH = 0;
-                    bool allButtons = true;
-                    foreach (var c in r)
-                    {
-                        if (!(c is Button)) allButtons = false;
-                        if (c.Height > maxH) maxH = c.Height;
-                    }
-
-                    if (allButtons && r.Count >= 2)
-                    {
-                        // ترتيب الأزرار المتجاورة بشكل متناسق في اليمين
-                        int totalW = 0;
-                        foreach (var btn in r) totalW += btn.Width;
-                        int spacing = 8;
-                        int btnX = parent.Width - 15;
-
-                        r.Sort((a, b) => b.Left.CompareTo(a.Left));
-                        foreach (var btn in r)
-                        {
-                            btn.Top = currentY;
-                            btn.Left = btnX - btn.Width;
-                            btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                            btnX -= (btn.Width + spacing);
-                        }
-                    }
-                    else
-                    {
-                        // العناصر الفردية (الـ CheckBox أو الأزرار العريضة المفردة)
-                        foreach (var c in r)
-                        {
-                            c.Top = currentY;
-                            if (c is CheckBox || c is Label)
-                            {
-                                c.Left = parent.Width - c.Width - 15;
-                                c.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                            }
-                            else
-                            {
-                                c.Left = 15;
-                                c.Width = parent.Width - 30;
-                                c.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                            }
-                        }
-                    }
-                    currentY += maxH + 10;
-                }
-            }
-            else
-            {
-                // تخطيط العمود الفردي القياسي للمدخلات القليلة
-                foreach (var row in rows)
-                {
-                    if (row.Count == 2)
-                    {
-                        Label lbl = row[0] is Label ? (Label)row[0] : (row[1] is Label ? (Label)row[1] : null);
-                        Control input = row[0] is Label ? row[1] : (row[1] is Label ? row[0] : null);
-
-                        if (lbl != null && input != null && (input is TextBox || input is ComboBox || input is NumericUpDown || input is DateTimePicker))
-                        {
-                            if (input.Left < lbl.Left)
-                            {
-                                lbl.Left = parent.Width - lbl.Width - 15;
-                                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-                                input.Left = 15;
-                                input.Width = lbl.Left - 15 - 10;
-                                input.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                            }
-                        }
-                    }
-                    else if (row.Count > 0)
-                    {
-                        bool allButtons = true;
-                        foreach (var c in row)
-                        {
-                            if (!(c is Button)) { allButtons = false; break; }
-                        }
-                        if (allButtons)
-                        {
-                            foreach (var btn in row)
-                            {
-                                btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

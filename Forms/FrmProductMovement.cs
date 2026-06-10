@@ -31,12 +31,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = $"حركة الصنف - {_productName}";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(950, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -58,36 +54,32 @@ namespace ChickenDist.Forms
             // Filter Bar
             var pnlFilters = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(10) };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(880, 15), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(880, 15) };
             dtpFrom = new DateTimePicker 
             { 
                 Location = new Point(730, 11), 
                 Width = 140, 
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today.AddDays(-30),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Value = DateTime.Today.AddDays(-30)
             };
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(680, 15), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(680, 15) };
             dtpTo = new DateTimePicker 
             { 
                 Location = new Point(530, 11), 
                 Width = 140, 
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Value = DateTime.Today
             };
 
             btnLoad = Theme.MakeButton("🔍 عرض الحركة", Color.FromArgb(60, 100, 60));
             btnLoad.Location = new Point(390, 8);
             btnLoad.Size = new Size(120, 32);
-            btnLoad.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLoad.Click += (s, e) => LoadMovement();
 
             btnPrint = Theme.MakeButton("🖨 طباعة تقرير الحركة", Theme.Accent);
             btnPrint.Location = new Point(20, 8);
             btnPrint.Size = new Size(160, 32);
-            btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnPrint.Click += (s, e) => PrintMovement();
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnLoad, btnPrint });

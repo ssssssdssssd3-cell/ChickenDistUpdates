@@ -39,12 +39,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "الخزنة والمصروفات";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1000, 660);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -73,7 +69,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10),
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true
+                WrapContents = false
             };
             
             pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
@@ -120,9 +116,9 @@ namespace ChickenDist.Forms
             pnlGrid.Controls.Add(dgCash);
 
             var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            lblCashBalance = new Label { Text = "رصيد الخزنة: ---", ForeColor = Theme.Accent, Location = new Point(10, 15), AutoSize = true, Font = new Font("Segoe UI", 12, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            lblCashIn = new Label { Text = "إجمالي وارد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 15), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            lblCashOut = new Label { Text = "إجمالي صادر: 0", ForeColor = Color.OrangeRed, Location = new Point(450, 15), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            lblCashBalance = new Label { Text = "رصيد الخزنة: ---", ForeColor = Theme.Accent, Location = new Point(10, 15), AutoSize = true, Font = new Font("Segoe UI", 12, FontStyle.Bold) };
+            lblCashIn = new Label { Text = "إجمالي وارد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 15), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            lblCashOut = new Label { Text = "إجمالي صادر: 0", ForeColor = Color.OrangeRed, Location = new Point(450, 15), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblCashBalance, lblCashIn, lblCashOut });
 
             tabCash.Controls.Add(pnlGrid); // Fill

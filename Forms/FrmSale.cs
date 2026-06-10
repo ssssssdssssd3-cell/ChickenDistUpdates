@@ -89,12 +89,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.Size = new Size(1050, 720);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			base.WindowState = FormWindowState.Maximized;
-			base.AutoScaleMode = AutoScaleMode.Dpi;
-			base.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -102,16 +98,14 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
-			// ارتفاع Header مضغوط على الشاشات الصغيرة (1366x768)
-			int hdrH = ScreenHelper.IsSmallScreen ? 145 : 155;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = hdrH,
+				Height = 155,
+				Width = 1050,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10)
 			};
-
 			Label label = MakeLabel("نوع الفاتورة :", 850, 12);
 			label.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnTypeCredit = new Button
@@ -511,8 +505,8 @@ namespace ChickenDist.Forms
             btnLoadHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			button.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+			btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnSave.Click += BtnSave_Click;
             btnHold.Click += BtnHold_Click;
             btnLoadHold.Click += BtnLoadHold_Click;
@@ -537,7 +531,7 @@ namespace ChickenDist.Forms
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
-            pnlItems.SendToBack();
+            pnlItems.BringToFront();
 			ToggleType();
 		}
 

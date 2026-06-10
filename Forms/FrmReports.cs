@@ -32,12 +32,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "التقارير التفصيلية المتقدمة";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.Size = new Size(1100, 700);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			base.WindowState = FormWindowState.Maximized;
-			base.AutoScaleMode = AutoScaleMode.Dpi;
-			base.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
@@ -617,7 +613,8 @@ namespace ChickenDist.Forms
 			};
 			PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
 			printPreviewDialog.Document = printDocument;
-			ScreenHelper.SafePrintPreview(printPreviewDialog, 950, 750);
+			printPreviewDialog.Width = 950;
+			printPreviewDialog.Height = 750;
 			printPreviewDialog.ShowDialog();
 		}
 
@@ -900,8 +897,9 @@ namespace ChickenDist.Forms
 			var preview = new PrintPreviewDialog
 			{
 				Document = pd,
+				Width    = 1150,
+				Height   = 820
 			};
-			ScreenHelper.SafePrintPreview(preview, 1150, 820);
 			preview.ShowDialog();
 		}
 

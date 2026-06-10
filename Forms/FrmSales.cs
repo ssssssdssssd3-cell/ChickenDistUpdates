@@ -49,12 +49,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "سجل المبيعات";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.Size = new Size(1150, 720);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			base.WindowState = FormWindowState.Maximized;
-			base.AutoScaleMode = AutoScaleMode.Dpi;
-			base.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -66,7 +62,7 @@ namespace ChickenDist.Forms
 				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 10, 10, 10),
-				WrapContents = true
+				WrapContents = false
 			};
 			Label label = new Label
 			{
@@ -157,7 +153,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = ScreenHelper.IsSmallScreen ? 240 : 280,
+				Height = 280,
 				Padding = new Padding(10, 0, 10, 10)
 			};
 			dgSales = MakeGrid();

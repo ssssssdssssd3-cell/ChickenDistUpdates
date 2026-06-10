@@ -291,32 +291,6 @@ namespace ChickenDist.Forms
 			};
 			detailLeftPanel.Controls.Add(lblDetailsTitle);
 
-			Button btnPrintInvoice = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(52, 152, 219));
-			btnPrintInvoice.Size = new Size(190, 38);
-			btnPrintInvoice.Margin = new Padding(0, 15, 0, 0);
-			btnPrintInvoice.Click += (s, e) =>
-			{
-				if (dgPurchases.SelectedRows.Count == 0) return;
-				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
-				new FrmPrintPurchase(purchaseID);
-			};
-			detailLeftPanel.Controls.Add(btnPrintInvoice);
-
-			Button btnPrintBarcodes = Theme.MakeButton("🏷️ طباعة الباركود للأصناف", Color.FromArgb(155, 89, 182));
-			btnPrintBarcodes.Size = new Size(190, 38);
-			btnPrintBarcodes.Margin = new Padding(0, 10, 0, 0);
-			btnPrintBarcodes.Click += (s, e) =>
-			{
-				if (dgPurchases.SelectedRows.Count == 0) return;
-				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
-				string purchaseCode = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value.ToString();
-				using (var frm = new FrmPrintPurchaseBarcodes(purchaseID, purchaseCode))
-				{
-					frm.ShowDialog(this);
-				}
-			};
-			detailLeftPanel.Controls.Add(btnPrintBarcodes);
-
 			dgItems = MakeGrid();
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -375,13 +349,10 @@ namespace ChickenDist.Forms
 			lblCashSummary   = AddDashboardCard(summaryTbl, "المشتريات النقدية:",      "0.00 ج", Theme.Success,                        3);
 			lblCreditSummary = AddDashboardCard(summaryTbl, "المشتريات الآجلة:",      "0.00 ج", Color.FromArgb(52, 152, 219),         4);
 
-			// ترتيب صحيح: Bottom ثم Top ثم Fill
-			base.Controls.Add(summaryTbl);   // Bottom - يُضاف أولاً
-			base.Controls.Add(filterPanel);  // Top
-			base.Controls.Add(masterPanel);  // Top
-			base.Controls.Add(detailPanel);  // Fill - يُضاف أخيراً
-
-			Theme.ApplyFormRTL(this);
+			base.Controls.Add(detailPanel);
+			base.Controls.Add(masterPanel);
+			base.Controls.Add(filterPanel);
+			base.Controls.Add(summaryTbl);
 		}
 
 		private Label AddDashboardCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIndex)

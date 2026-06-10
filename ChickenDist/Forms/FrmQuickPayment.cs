@@ -29,8 +29,6 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             Label lblTotalTitle = new Label { Text = "المطلوب دفعه:", Location = new Point(20, 20), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextSub };
             Label lblTotal = new Label { Text = _totalAmount.ToString("N2") + " ج", Location = new Point(150, 15), AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Theme.Accent };

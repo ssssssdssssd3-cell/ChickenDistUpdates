@@ -49,12 +49,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "جرد ومراقبة المخزن";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1050, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -80,11 +76,11 @@ namespace ChickenDist.Forms
             var pnlF = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = ScreenHelper.IsSmallScreen ? 90 : 55,
+                Height = 55,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10),
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = true
+                WrapContents = false
             };
 
             var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(5, 8, 5, 0) };
@@ -130,12 +126,11 @@ namespace ChickenDist.Forms
                     BtnMovement_Click(s, e);
             };
 
-            // ترتيب صحيح: Top ثم Fill
-            pnlLeft.Controls.Add(pnlF);    // Top
             pnlLeft.Controls.Add(dgStock); // Fill
+            pnlLeft.Controls.Add(pnlF);    // Top
 
             // Panel Right: Adjustment Form (Dock Left, Width 340)
-            var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15), AutoScroll = true };
+            var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15) };
             
             var lblSectionTitle = new Label 
             { 
@@ -222,9 +217,8 @@ namespace ChickenDist.Forms
 
             pnlDetails.Controls.AddRange(new Control[] { btnSaveAdj, btnClearAdj });
 
-            // ترتيب صحيح: Left ثم Fill
-            tabStock.Controls.Add(pnlDetails); // Left
-            tabStock.Controls.Add(pnlLeft);    // Fill
+            tabStock.Controls.Add(pnlLeft);
+            tabStock.Controls.Add(pnlDetails);
         }
 
         private void BuildLogsTab()
@@ -232,11 +226,10 @@ namespace ChickenDist.Forms
             var pnlTop = new FlowLayoutPanel 
             { 
                 Dock = DockStyle.Top, 
-                Height = ScreenHelper.IsSmallScreen ? 90 : 55, 
+                Height = 55, 
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10, 10, 10, 10),
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = true
+                FlowDirection = FlowDirection.RightToLeft
             };
             
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
@@ -262,6 +255,7 @@ namespace ChickenDist.Forms
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
             pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });
+            tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdjDate", HeaderText = "التاريخ والوقت", FillWeight = 50 });
@@ -274,9 +268,10 @@ namespace ChickenDist.Forms
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات التسوية", FillWeight = 70 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", HeaderText = "بواسطة", FillWeight = 50 });
 
-            // ترتيب صحيح: Top ثم Fill
-            tabLogs.Controls.Add(pnlTop); // Top
-            tabLogs.Controls.Add(dgLogs); // Fill
+            tabLogs.Controls.Add(dgLogs);
+            
+            pnlTop.BringToFront();
+            dgLogs.BringToFront();
         }
 
         private void LoadStock()

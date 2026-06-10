@@ -49,24 +49,6 @@ namespace ChickenDist.Core
             set => Set("DefaultInvoiceFormat", value);
         }
 
-        public static bool ScaleEnabled
-        {
-            get => bool.TryParse(Get("ScaleEnabled", "false"), out bool res) && res;
-            set => Set("ScaleEnabled", value.ToString().ToLower());
-        }
-
-        public static string ScaleComPort
-        {
-            get => Get("ScaleComPort", "COM3");
-            set => Set("ScaleComPort", value);
-        }
-
-        public static int ScaleBaudRate
-        {
-            get => int.TryParse(Get("ScaleBaudRate", "9600"), out int res) ? res : 9600;
-            set => Set("ScaleBaudRate", value.ToString());
-        }
-
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
         {
             if (string.IsNullOrEmpty(printerName)) return;

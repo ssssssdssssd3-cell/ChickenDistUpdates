@@ -261,12 +261,13 @@ namespace ChickenDist.Forms
 
             pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave, lblHotkeys });
 
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlFoot);  // Bottom
-            this.Controls.Add(pnlTitle); // Top
-            this.Controls.Add(pnlInfo);  // Top
-            this.Controls.Add(pnlGrid);  // Fill
+            // ===== تجميع =====
+            this.Controls.Add(pnlGrid);
+            this.Controls.Add(pnlFoot);
+            this.Controls.Add(pnlInfo);
+            this.Controls.Add(pnlTitle);
 
+            pnlGrid.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 

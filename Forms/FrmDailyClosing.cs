@@ -39,14 +39,6 @@ namespace ChickenDist.Forms
             RightToLeft     = RightToLeft.Yes;
             Font            = Theme.FontMain;
 
-            // ── إعدادات الحجم والتجاوب ──────────────────────────────────────
-            this.Size               = new Size(1366, 768);
-            this.MinimumSize        = new Size(1024, 600);
-            this.StartPosition      = FormStartPosition.CenterScreen;
-            this.WindowState        = FormWindowState.Maximized;
-            this.AutoScaleMode      = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
-
             // ── Title bar ─────────────────────────────────────────────────────
             var titleBar = Theme.MakeTitleBar(
                 "📋 تقرير التقفيل اليومي",
@@ -484,8 +476,9 @@ namespace ChickenDist.Forms
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
+                Width    = 1100,
+                Height   = 800
             };
-            ScreenHelper.SafePrintPreview(preview, 1100, 800);
             preview.ShowDialog();
         }
 

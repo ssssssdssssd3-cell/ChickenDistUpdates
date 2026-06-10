@@ -35,23 +35,19 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "كشف حساب - " + _clientName;
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(950, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
             var pnlFilter = new Panel { Dock = DockStyle.Top, Height = 48, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(730, 14), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
-            dtpFrom = new DateTimePicker { Location = new Point(590, 10), Width = 130, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(730, 14), AutoSize = true, ForeColor = Theme.TextMain });
+            dtpFrom = new DateTimePicker { Location = new Point(590, 10), Width = 130, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) };
             pnlFilter.Controls.Add(dtpFrom);
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(540, 14), AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Top | AnchorStyles.Right });
-            dtpTo = new DateTimePicker { Location = new Point(400, 10), Width = 130, Format = DateTimePickerFormat.Short, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(540, 14), AutoSize = true, ForeColor = Theme.TextMain });
+            dtpTo = new DateTimePicker { Location = new Point(400, 10), Width = 130, Format = DateTimePickerFormat.Short };
             pnlFilter.Controls.Add(dtpTo);
             btnLoad = Theme.MakeButton("عرض", 300, 10, 80, 30, Theme.Accent);
             btnLoad.Click += (s, e) => LoadStatement();
@@ -116,17 +112,15 @@ namespace ChickenDist.Forms
                 }
             };
 
+            this.Controls.Add(dgStatement);
 
             var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 46, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Theme.Accent, Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Theme.Accent, Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.OrangeRed, Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
-
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlFoot);       // Bottom - يُضاف أولاً
-            // pnlFilter أُضيف مسبقاً كـ Top
-            this.Controls.Add(dgStatement);   // Fill - يُضاف أخيراً
+            this.Controls.Add(pnlFoot);
+            dgStatement.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 
@@ -384,8 +378,7 @@ namespace ChickenDist.Forms
                 g.DrawString("الصافي النهائي", labelFont, Brushes.DarkBlue, 615, y + 6);
                 g.DrawString($"{_runBalance:N2} ج", valueFont, Brushes.DarkBlue, 615, y + 24);
             };
-            var dlg = new PrintPreviewDialog { Document = pd };
-            ScreenHelper.SafePrintPreview(dlg, 900, 700);
+            var dlg = new PrintPreviewDialog { Document = pd, Width = 900, Height = 700 };
             dlg.ShowDialog();
         }
     }
@@ -404,8 +397,6 @@ namespace ChickenDist.Forms
             this.Size = new Size(360, 220);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.BackColor = Theme.BgCard;
             this.Font = Theme.FontMain;
@@ -449,8 +440,6 @@ namespace ChickenDist.Forms
             this.Size = new Size(600, 450);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
@@ -467,6 +456,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
+            this.Controls.Add(lblTitle);
 
             dgItems = new DataGridView
             {
@@ -489,9 +479,10 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Price", HeaderText = "السعر", FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Total", HeaderText = "الإجمالي", FillWeight = 50 });
+            this.Controls.Add(dgItems);
 
             var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-
+            
             lblTotal = new Label
             {
                 Text = "إجمالي العملية: 0.00 ج",
@@ -507,10 +498,11 @@ namespace ChickenDist.Forms
             btnClose.Click += (s, e) => this.Close();
             pnlBottom.Controls.Add(btnClose);
 
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlBottom);  // Bottom - يُضاف أولاً
-            this.Controls.Add(lblTitle);   // Top
-            this.Controls.Add(dgItems);    // Fill - يُضاف أخيراً
+            this.Controls.Add(pnlBottom);
+
+            lblTitle.BringToFront();
+            pnlBottom.BringToFront();
+            dgItems.BringToFront();
 
             LoadItems(transType, refID);
         }

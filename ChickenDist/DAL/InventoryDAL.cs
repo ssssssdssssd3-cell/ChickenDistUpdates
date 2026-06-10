@@ -35,90 +35,71 @@ namespace ChickenDist.DAL
                     p.PurchasePrice,
                     p.MinStockLimit,
                     p.ShelfLocation,
-                    SUM(t.StockQty) AS BookQty
+                    ISNULL(adj.ActualQty, 0) + 
+                    -- Incoming since adjustment: Sales Returns
+                    ISNULL((SELECT SUM(ri.Quantity) 
+                            FROM ReturnItems ri 
+                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
+                            WHERE ri.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Driver Handover Returns
+                    ISNULL((SELECT SUM(hi.ReturnedQty) 
+                            FROM HandoverItems hi 
+                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                            WHERE hi.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Purchases
+                    ISNULL((SELECT SUM(pi.Quantity)
+                            FROM PurchaseItems pi
+                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                            WHERE pi.ProductID = p.ProductID
+                              AND pu.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Warehouse Transfers
+                    ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Purchase Returns
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
+                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
+                    - ISNULL((SELECT SUM(si.Quantity) 
+                            FROM SaleItems si 
+                            JOIN Sales s ON si.SaleID = s.SaleID
+                            WHERE si.ProductID = p.ProductID 
+                              AND s.IsPosted = 1
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
+                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Warehouse Transfers
+                    - ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0) AS BookQty
                 FROM Products p
-                LEFT JOIN (
-                    SELECT 
-                        p2.ProductID,
-                        w.WarehouseID,
-                        ISNULL(adj.ActualQty, 0) + 
-                        -- Incoming since adjustment: Sales Returns
-                        ISNULL((SELECT SUM(ri.Quantity) 
-                                FROM ReturnItems ri 
-                                JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                                WHERE ri.ProductID = p2.ProductID 
-                                  AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                                  AND sr.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Driver Handover Returns
-                        ISNULL((SELECT SUM(hi.ReturnedQty) 
-                                FROM HandoverItems hi 
-                                JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                                JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                                WHERE hi.ProductID = p2.ProductID 
-                                  AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                                  AND dl.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Purchases
-                        ISNULL((SELECT SUM(pi.Quantity)
-                                FROM PurchaseItems pi
-                                JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                                WHERE pi.ProductID = p2.ProductID
-                                  AND pu.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                                  AND pu.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Warehouse Transfers
-                        ISNULL((SELECT SUM(ti.Quantity)
-                                FROM WarehouseTransferItems ti
-                                JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                                WHERE ti.ProductID = p2.ProductID
-                                  AND t.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                                  AND t.ToWarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Purchase Returns
-                        - ISNULL((SELECT SUM(pri.Quantity)
-                                  FROM PurchaseReturnItems pri
-                                  JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                                  WHERE pri.ProductID = p2.ProductID
-                                    AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                    AND pr.WarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                        - ISNULL((SELECT SUM(si.Quantity) 
-                                FROM SaleItems si 
-                                JOIN Sales s ON si.SaleID = s.SaleID
-                                WHERE si.ProductID = p2.ProductID 
-                                  AND s.IsPosted = 1
-                                  AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
-                                  AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                                  AND s.WarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Warehouse Transfers
-                        - ISNULL((SELECT SUM(ti.Quantity)
-                                FROM WarehouseTransferItems ti
-                                JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                                WHERE ti.ProductID = p2.ProductID
-                                  AND t.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                                  AND t.FromWarehouseID = w.WarehouseID), 0) AS StockQty
-                    FROM Products p2
-                    CROSS JOIN Warehouses w
-                    OUTER APPLY (
-                        SELECT TOP 1 sa.AdjDate, sa.ActualQty 
-                        FROM StockAdjustments sa 
-                        WHERE sa.ProductID = p2.ProductID AND sa.WarehouseID = w.WarehouseID
-                        ORDER BY sa.AdjDate DESC
-                    ) adj
-                    WHERE w.IsActive = 1
-                      {(warehouseID.HasValue ? "AND w.WarehouseID = @wid" : "")}
-                ) t ON p.ProductID = t.ProductID
+                OUTER APPLY (
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty 
+                    FROM StockAdjustments sa 
+                    WHERE sa.ProductID = p.ProductID 
+                      {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
+                    ORDER BY sa.AdjDate DESC
+                ) adj
                 WHERE p.IsActive = 1 {filter}
-                GROUP BY 
-                    p.ProductID,
-                    p.ProductCode,
-                    p.PartNumber,
-                    p.ProductName,
-                    p.Unit,
-                    p.SalePrice,
-                    p.PurchasePrice,
-                    p.MinStockLimit,
-                    p.ShelfLocation
                 ORDER BY p.ProductName";
 
             return DbHelper.Query(sql, prms.ToArray());
@@ -134,76 +115,72 @@ namespace ChickenDist.DAL
             }
 
             string sql = $@"
-                SELECT ISNULL(SUM(StockQty), 0) FROM (
-                    SELECT 
-                        ISNULL(adj.ActualQty, 0) + 
-                        -- Incoming since adjustment: Sales Returns
-                        ISNULL((SELECT SUM(ri.Quantity) 
-                                FROM ReturnItems ri 
-                                JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                                WHERE ri.ProductID = p.ProductID 
-                                  AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                                  AND sr.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Driver Handover Returns
-                        ISNULL((SELECT SUM(hi.ReturnedQty) 
-                                FROM HandoverItems hi 
-                                JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                                JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                                WHERE hi.ProductID = p.ProductID 
-                                  AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                                  AND dl.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Purchases
-                        ISNULL((SELECT SUM(pi.Quantity)
-                                FROM PurchaseItems pi
-                                JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                                WHERE pi.ProductID = p.ProductID
-                                  AND pu.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                                  AND pu.WarehouseID = w.WarehouseID), 0) +
-                        -- Incoming since adjustment: Warehouse Transfers
-                        ISNULL((SELECT SUM(ti.Quantity)
-                                FROM WarehouseTransferItems ti
-                                JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                                WHERE ti.ProductID = p.ProductID
-                                  AND t.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                                  AND t.ToWarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Purchase Returns
-                        - ISNULL((SELECT SUM(pri.Quantity)
-                                  FROM PurchaseReturnItems pri
-                                  JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                                  WHERE pri.ProductID = p.ProductID
-                                    AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                    AND pr.WarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                        - ISNULL((SELECT SUM(si.Quantity) 
-                                FROM SaleItems si 
-                                JOIN Sales s ON si.SaleID = s.SaleID
-                                WHERE si.ProductID = p.ProductID 
-                                  AND s.IsPosted = 1
-                                  AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
-                                  AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                                  AND s.WarehouseID = w.WarehouseID), 0)
-                        -- Outgoing since adjustment: Warehouse Transfers
-                        - ISNULL((SELECT SUM(ti.Quantity)
-                                FROM WarehouseTransferItems ti
-                                JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                                WHERE ti.ProductID = p.ProductID
-                                  AND t.IsPosted = 1
-                                  AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                                  AND t.FromWarehouseID = w.WarehouseID), 0) AS StockQty
-                    FROM Products p
-                    CROSS JOIN Warehouses w
-                    OUTER APPLY (
-                        SELECT TOP 1 sa.AdjDate, sa.ActualQty 
-                        FROM StockAdjustments sa 
-                        WHERE sa.ProductID = p.ProductID AND sa.WarehouseID = w.WarehouseID
-                        ORDER BY sa.AdjDate DESC
-                    ) adj
-                    WHERE p.ProductID = @pid 
-                      AND w.IsActive = 1
-                      {(warehouseID.HasValue ? "AND w.WarehouseID = @wid" : "")}
-                ) t";
+                SELECT 
+                    ISNULL(adj.ActualQty, 0) + 
+                    -- Incoming since adjustment: Sales Returns
+                    ISNULL((SELECT SUM(ri.Quantity) 
+                            FROM ReturnItems ri 
+                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
+                            WHERE ri.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Driver Handover Returns
+                    ISNULL((SELECT SUM(hi.ReturnedQty) 
+                            FROM HandoverItems hi 
+                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                            WHERE hi.ProductID = p.ProductID 
+                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Purchases
+                    ISNULL((SELECT SUM(pi.Quantity)
+                            FROM PurchaseItems pi
+                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                            WHERE pi.ProductID = p.ProductID
+                              AND pu.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    -- Incoming since adjustment: Warehouse Transfers
+                    ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Purchase Returns
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
+                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
+                    - ISNULL((SELECT SUM(si.Quantity) 
+                            FROM SaleItems si 
+                            JOIN Sales s ON si.SaleID = s.SaleID
+                            WHERE si.ProductID = p.ProductID 
+                              AND s.IsPosted = 1
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
+                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Warehouse Transfers
+                    - ISNULL((SELECT SUM(ti.Quantity)
+                            FROM WarehouseTransferItems ti
+                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                            WHERE ti.ProductID = p.ProductID
+                              AND t.IsPosted = 1
+                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
+                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0) AS BookQty
+                FROM Products p
+                OUTER APPLY (
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty 
+                    FROM StockAdjustments sa 
+                    WHERE sa.ProductID = p.ProductID 
+                      {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
+                    ORDER BY sa.AdjDate DESC
+                ) adj
+                WHERE p.ProductID = @pid";
 
             var val = DbHelper.Scalar(sql, prms.ToArray());
             return val == null || val == DBNull.Value ? 0 : Convert.ToDecimal(val);

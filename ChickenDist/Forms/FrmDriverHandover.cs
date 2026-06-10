@@ -40,12 +40,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "تقفيل حمولة مندوب";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1000, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -156,7 +152,7 @@ namespace ChickenDist.Forms
             var pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 160,
+                Height = 150,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 5, 10, 5)
             };
@@ -195,111 +191,61 @@ namespace ChickenDist.Forms
             var pnlActionsRow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = ScreenHelper.IsSmallScreen ? 100 : 90,
-                FlowDirection = FlowDirection.RightToLeft,
+                Height = 85,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10),
-                WrapContents = true
+                Padding = new Padding(0, 10, 0, 5)
             };
- 
-            var lblCashL = new Label 
-            { 
-                Text = "المبلغ المحصل نقداً:", 
-                AutoSize = true, 
-                ForeColor = Theme.Primary, 
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                Margin = new Padding(5, 8, 5, 0)
-            };
-            txtCashCollected = new TextBox 
-            { 
-                Width = 110, 
-                Height = 28, 
-                Font = new Font("Segoe UI", 11, FontStyle.Bold), 
-                BackColor = Color.LightYellow, 
-                ForeColor = Color.DarkGreen, 
-                RightToLeft = RightToLeft.Yes, 
-                BorderStyle = BorderStyle.FixedSingle, 
-                Text = "0.00",
-                Margin = new Padding(5, 4, 15, 0)
-            };
- 
-            var lblNotesL = new Label 
-            { 
-                Text = "ملاحظات التقفيل:", 
-                AutoSize = true, 
-                ForeColor = Theme.TextSub, 
-                Font = Theme.FontBold,
-                Margin = new Padding(5, 8, 5, 0)
-            };
-            txtNotes = new TextBox 
-            { 
-                Width = 180, 
-                Height = 26, 
-                Font = new Font("Segoe UI", 10), 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                RightToLeft = RightToLeft.Yes, 
-                BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(5, 4, 15, 0)
-            };
- 
+
+            var lblCashL = new Label { Text = "المبلغ المحصل نقداً:", AutoSize = true, ForeColor = Theme.Primary, Font = new Font("Segoe UI", 12, FontStyle.Bold), Margin = new Padding(0, 5, 5, 0) };
+            txtCashCollected = new TextBox { Width = 150, Height = 32, Font = new Font("Segoe UI", 14, FontStyle.Bold), BackColor = Color.LightYellow, ForeColor = Color.DarkGreen, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Text = "0.00" };
+
+            var lblNotesL = new Label { Text = "ملاحظات التقفيل:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
+            txtNotes = new TextBox { Width = 260, Height = 32, Font = new Font("Segoe UI", 11), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+
             btnSave = Theme.MakeButton("💾 حفظ التقفيل", Theme.Accent);
-            btnSave.Size = new Size(130, 28);
-            btnSave.Margin = new Padding(5, 0, 5, 0);
+            btnSave.Size = new Size(140, 32);
+            btnSave.Margin = new Padding(20, 0, 0, 0);
             btnSave.Click += BtnSave_Click;
- 
+
             // زر تصدير كشف التحصيل لواتساب
             btnWhatsApp = Theme.MakeButton("📲 كشف واتساب", Color.FromArgb(37, 211, 102));
-            btnWhatsApp.Size = new Size(120, 28);
-            btnWhatsApp.Margin = new Padding(5, 0, 5, 0);
+            btnWhatsApp.Size = new Size(140, 32);
+            btnWhatsApp.Margin = new Padding(15, 0, 0, 0);
             btnWhatsApp.Click += BtnWhatsApp_Click;
- 
-            btnExportJson = Theme.MakeButton("📱 تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
-            btnExportJson.Size = new Size(160, 28);
-            btnExportJson.Margin = new Padding(5, 0, 15, 0);
-            btnExportJson.Click += BtnExportJson_Click;
- 
+
             // ===== أزرار تصدير/استيراد الجوال =====
-            var lblImportDate = new Label 
-            { 
-                Text = "تاريخ الاستيراد:", 
-                AutoSize = true, 
-                ForeColor = Theme.TextSub, 
-                Font = Theme.FontBold,
-                Margin = new Padding(5, 8, 5, 0)
-            };
-            dtpImport = new DateTimePicker 
-            { 
-                Width = 110, 
-                Height = 26, 
-                Format = DateTimePickerFormat.Short, 
-                Value = DateTime.Today,
-                Margin = new Padding(5, 4, 15, 0)
-            };
- 
+            var lblImportDate = new Label { Text = "تاريخ الاستيراد:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
+            dtpImport = new DateTimePicker { Width = 110, Height = 28, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Margin = new Padding(0, 6, 0, 0) };
+
+            btnExportJson = Theme.MakeButton("📱 تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
+            btnExportJson.Size = new Size(170, 32);
+            btnExportJson.Margin = new Padding(20, 0, 0, 0);
+            btnExportJson.Click += BtnExportJson_Click;
+
             btnImportCsv = Theme.MakeButton("📥 استيراد مبيعات CSV", Color.FromArgb(20, 150, 90));
-            btnImportCsv.Size = new Size(160, 28);
-            btnImportCsv.Margin = new Padding(5, 0, 5, 0);
+            btnImportCsv.Size = new Size(170, 32);
+            btnImportCsv.Margin = new Padding(10, 0, 0, 0);
             btnImportCsv.Click += BtnImportCsv_Click;
- 
+
             btnImportCloud = Theme.MakeButton("☁️ استيراد من السحاب", Color.FromArgb(30, 120, 200));
-            btnImportCloud.Size = new Size(160, 28);
-            btnImportCloud.Margin = new Padding(5, 0, 5, 0);
+            btnImportCloud.Size = new Size(170, 32);
+            btnImportCloud.Margin = new Padding(10, 0, 0, 0);
             btnImportCloud.Click += BtnImportCloud_Click;
- 
+
             btnImportClipboard = Theme.MakeButton("📋 استيراد من الحافظة", Color.FromArgb(142, 68, 173));
-            btnImportClipboard.Size = new Size(160, 28);
-            btnImportClipboard.Margin = new Padding(5, 0, 5, 0);
+            btnImportClipboard.Size = new Size(170, 32);
+            btnImportClipboard.Margin = new Padding(10, 0, 0, 0);
             btnImportClipboard.Click += BtnImportClipboard_Click;
- 
+
             pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv, btnImportCloud, btnImportClipboard });
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
-            // ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlFooter); // Bottom
-            this.Controls.Add(pnlSel);    // Top
-            this.Controls.Add(pnlGrid);   // Fill
+            // ===== 4. Add to form in correct Z-order docking hierarchy =====
+            this.Controls.Add(pnlGrid);   // Dock = Fill (added last, fills middle)
+            this.Controls.Add(pnlFooter); // Dock = Bottom
+            this.Controls.Add(pnlSel);    // Dock = Top
 
             Theme.ApplyFormRTL(this);
         }

@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.4.6";
+        public const string CurrentVersion = "1.4.7";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -307,36 +307,19 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show(
                     "✅ تم تحميل التحديث بنجاح!\n\n" +
-                    "سيتم الآن إغلاق البرنامج واستبدال النسخة القديمة بالنسخة الجديدة تلقائياً وتشغيلها خلال ثوانٍ.",
+                    $"📁 تم حفظ ملف البرنامج الجديد باسم {versionedExeName} داخل مجلد (Updates).\n\n" +
+                    "سيتم الآن تحديد الملف الجديد تلقائياً وإغلاق البرنامج الحالي.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 
-                string currentExe = Process.GetCurrentProcess().MainModule.FileName;
-                string newExe = newExePath;
-
-                // الهروب الآمن للمسارات لو كانت تحتوي على فراغات أو أحرف خاصة
-                string currentExeEscaped = currentExe.Replace("'", "''");
-                string newExeEscaped = newExe.Replace("'", "''");
-
-                // أمر PowerShell للانتظار ثانية ونصف، ثم استبدال ملف الـ EXE، ثم تشغيل البرنامج من جديد
-                string psCommand = $"Start-Sleep -Milliseconds 1500; Copy-Item -Path '{newExeEscaped}' -Destination '{currentExeEscaped}' -Force; Start-Process '{currentExeEscaped}'";
-
-                ProcessStartInfo psi = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{psCommand}\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-
-                Process.Start(psi);
+                Process.Start("explorer.exe", $"/select,\"{newExePath}\"");
                 Application.Exit();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل بدء عملية التحديث التلقائي:\n" + ex.Message,
+                MessageBox.Show("فشل فتح مجلد التحديثات:\n" + ex.Message,
                     "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }

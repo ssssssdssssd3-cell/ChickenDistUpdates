@@ -12,12 +12,11 @@ namespace ChickenDist.Forms
     public class FrmProducts : Form
     {
         private DataGridView dgProducts;
-        private TextBox txtSearch;
         private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation;
         private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnCopy, btnQuickAdd;
+        private Button btnNew, btnSave, btnDelete;
         private int _selectedID = 0;
 
         public FrmProducts()
@@ -31,12 +30,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "إدارة الأصناف";
-            this.Size = new Size(1366, 768);
-            this.MinimumSize = new Size(1024, 600);
+            this.Size = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -71,73 +66,7 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
-
-            // لوحة البحث والاستيراد العلوية
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Theme.BgCard, Padding = new Padding(6) };
-            
-            // حقل البحث
-            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 250, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "بحث بالاسم أو الكود...", Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
-            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الكود...") txtSearch.Text = ""; };
-            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الكود..."; };
-            txtSearch.TextChanged += (s, e) => {
-                string searchVal = txtSearch.Text;
-                if (searchVal == "بحث بالاسم أو الكود...") searchVal = "";
-                LoadProducts(searchVal);
-            };
-
-            // زر البحث بالعدسة
-            var btnSearch = Theme.MakeButton("🔍", Theme.Primary);
-            btnSearch.Dock = DockStyle.Right;
-            btnSearch.Width = 45;
-            btnSearch.Click += (s, e) => {
-                string searchVal = txtSearch.Text == "بحث بالاسم أو الكود..." ? "" : txtSearch.Text;
-                LoadProducts(searchVal);
-            };
-            txtSearch.KeyDown += (s, e) => {
-                if (e.KeyCode == Keys.Enter) {
-                    string searchVal = txtSearch.Text == "بحث بالاسم أو الكود..." ? "" : txtSearch.Text;
-                    LoadProducts(searchVal);
-                }
-            };
-
-            // زر استيراد أصناف من Excel
-            var btnImport = Theme.MakeButton("📥 استيراد أصناف من Excel", Color.FromArgb(40, 110, 180));
-            btnImport.Dock = DockStyle.Left;
-            btnImport.Width = 180;
-            btnImport.Click += (s, e) => {
-                using (var frm = new FrmImportProducts())
-                {
-                    if (frm.ShowDialog() == DialogResult.OK)
-                    {
-                        LoadProducts();
-                        ClearDetail();
-                    }
-                }
-            };
-
-            // زر الإدخال السريع
-            btnQuickAdd = Theme.MakeButton("⚡ إدخال سريع للأصناف", Color.FromArgb(230, 126, 34));
-            btnQuickAdd.Dock = DockStyle.Left;
-            btnQuickAdd.Width = 180;
-            btnQuickAdd.Click += (s, e) => {
-                using (var frm = new FrmQuickAdd())
-                {
-                    if (frm.ShowDialog() == DialogResult.OK)
-                    {
-                        LoadProducts();
-                        ClearDetail();
-                    }
-                }
-            };
-
-            pnlSearch.Controls.Add(btnSearch);
-            pnlSearch.Controls.Add(txtSearch);
-            pnlSearch.Controls.Add(btnImport);
-            pnlSearch.Controls.Add(btnQuickAdd);
-
             split.Panel2.Controls.Add(dgProducts);
-            split.Panel2.Controls.Add(pnlSearch);
-            pnlSearch.BringToFront();
 
             // Right: Detail (Panel1 in RTL)
             split.Panel1.BackColor = Theme.BgCard;
@@ -146,14 +75,16 @@ namespace ChickenDist.Forms
 
             int y = 20;
             AddField(split.Panel1, "كود الصنف:", ref y, out txtCode);
-            txtCode.ReadOnly = false;
+            txtCode.ReadOnly = true;
             AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
             AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
 
-            // ComboBox للتصنيف
+            // ComboBox للتصنيف مع زر إضافة
             split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            cboCategory = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
-            split.Panel1.Controls.Add(cboCategory);
+            cboCategory = new ComboBox { Location = new Point(50, y - 2), Width = 145, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            var btnAddCat = new Button { Text = "➕", Location = new Point(15, y - 2), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
+            split.Panel1.Controls.AddRange(new Control[] { cboCategory, btnAddCat });
             y += 38;
 
             AddField(split.Panel1, "الموديل المتوافق:", ref y, out txtCarModel);
@@ -190,21 +121,12 @@ namespace ChickenDist.Forms
             btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
             btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40));
             
-            btnCopy = Theme.MakeButton("📋 نسخ صنف موجود", 40, y + 40, 290, 32, Color.FromArgb(100, 80, 140));
-            btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
-            btnCopy.Click += BtnCopy_Click;
-
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnCopy });
+            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
             this.Controls.Add(split);
-            split.SplitterDistance = 430;
-
-            // اختصارات لوحة المفاتيح
-            this.KeyPreview = true;
-            this.KeyDown += FrmProducts_KeyDown;
+            split.SplitterDistance = 350;
 
             Theme.ApplyFormRTL(this);
         }
@@ -230,27 +152,12 @@ namespace ChickenDist.Forms
             cboCategory.SelectedIndex = 0;
         }
 
-        private void LoadProducts(string filterText = "")
+        private void LoadProducts()
         {
             dgProducts.Rows.Clear();
             var dt = ProductDAL.GetAll();
             foreach (DataRow r in dt.Rows)
             {
-                if (!string.IsNullOrWhiteSpace(filterText))
-                {
-                    string code = r["ProductCode"].ToString();
-                    string part = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
-                    string name = r["ProductName"].ToString();
-                    string category = r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "";
-
-                    bool matches = code.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                   part.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                   name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                   category.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0;
-
-                    if (!matches) continue;
-                }
-
                 bool active = Convert.ToBoolean(r["IsActive"]);
                 var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
                     r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
@@ -321,172 +228,21 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtName.Text)) 
-            { 
-                MessageBox.Show("أدخل اسم الصنف", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Warning); 
-                txtName.Focus(); 
-                return; 
-            }
+            if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
             
-            // 1. التحقق من الأسعار السالبة
-            if (nudPrice.Value < 0 || nudPurchasePrice.Value < 0 || nudWholesalePrice.Value < 0 || nudSemiWholesalePrice.Value < 0)
-            {
-                MessageBox.Show("❌ لا يمكن إدخال أسعار سالبة!", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            string name = txtName.Text.Trim();
-            string code = txtCode.Text.Trim();
-            string partNumber = txtPartNumber.Text.Trim();
-
-            // 2. التحقق من تكرار كود الصنف / الباركود
-            if (!string.IsNullOrEmpty(code) && ProductDAL.IsCodeExists(code, _selectedID))
-            {
-                MessageBox.Show($"❌ كود الصنف أو الباركود '{code}' مستخدم بالفعل لصنف آخر!", "تكرار الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtCode.Focus();
-                txtCode.SelectAll();
-                return;
-            }
-
-            // 3. التحقق من تكرار رقم القطعة
-            if (!string.IsNullOrEmpty(partNumber) && ProductDAL.IsPartNumberExists(partNumber, _selectedID))
-            {
-                MessageBox.Show($"❌ رقم القطعة '{partNumber}' مستخدم بالفعل لصنف آخر!", "تكرار رقم القطعة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtPartNumber.Focus();
-                txtPartNumber.SelectAll();
-                return;
-            }
-
-            // 4. التحقق من تكرار اسم الصنف
-            if (ProductDAL.IsNameExists(name, _selectedID))
-            {
-                MessageBox.Show($"❌ اسم الصنف '{name}' مستخدم بالفعل!", "تكرار اسم الصنف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtName.Focus();
-                txtName.SelectAll();
-                return;
-            }
-
             int? categoryID = null;
             if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
             {
                 categoryID = ci.ID;
             }
 
-            int id = ProductDAL.Save(_selectedID, code, name, txtUnit.Text, nudPrice.Value, chkActive.Checked,
+            int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
-                partNumber, categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
+                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
                 nudWholesalePrice.Value, nudSemiWholesalePrice.Value);
             
-            if (id > 0) 
-            { 
-                MessageBox.Show("✅ تم الحفظ", "حفظ الصنف", MessageBoxButtons.OK, MessageBoxIcon.Information); 
-                _selectedID = id; 
-                LoadProducts(); 
-                txtName.Focus(); // التركيز تلقائيًا على حقل اسم الصنف بعد الحفظ
-            }
-            else 
-            {
-                MessageBox.Show("❌ فشل الحفظ", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void SaveAndNew()
-        {
-            if (string.IsNullOrWhiteSpace(txtName.Text)) 
-            { 
-                MessageBox.Show("أدخل اسم الصنف", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Warning); 
-                txtName.Focus(); 
-                return; 
-            }
-            
-            if (nudPrice.Value < 0 || nudPurchasePrice.Value < 0 || nudWholesalePrice.Value < 0 || nudSemiWholesalePrice.Value < 0)
-            {
-                MessageBox.Show("❌ لا يمكن إدخال أسعار سالبة!", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            string name = txtName.Text.Trim();
-            string code = txtCode.Text.Trim();
-            string partNumber = txtPartNumber.Text.Trim();
-
-            if (!string.IsNullOrEmpty(code) && ProductDAL.IsCodeExists(code, _selectedID))
-            {
-                MessageBox.Show($"❌ كود الصنف أو الباركود '{code}' مستخدم بالفعل لصنف آخر!", "تكرار الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtCode.Focus();
-                txtCode.SelectAll();
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(partNumber) && ProductDAL.IsPartNumberExists(partNumber, _selectedID))
-            {
-                MessageBox.Show($"❌ رقم القطعة '{partNumber}' مستخدم بالفعل لصنف آخر!", "تكرار رقم القطعة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtPartNumber.Focus();
-                txtPartNumber.SelectAll();
-                return;
-            }
-
-            if (ProductDAL.IsNameExists(name, _selectedID))
-            {
-                MessageBox.Show($"❌ اسم الصنف '{name}' مستخدم بالفعل!", "تكرار اسم الصنف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtName.Focus();
-                txtName.SelectAll();
-                return;
-            }
-
-            int? categoryID = null;
-            if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
-            {
-                categoryID = ci.ID;
-            }
-
-            int id = ProductDAL.Save(_selectedID, code, name, txtUnit.Text, nudPrice.Value, chkActive.Checked,
-                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
-                partNumber, categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
-                nudWholesalePrice.Value, nudSemiWholesalePrice.Value);
-            
-            if (id > 0) 
-            { 
-                LoadProducts(); 
-                ClearDetail(); 
-                txtName.Focus(); // التركيز تلقائيًا على حقل اسم الصنف بعد الحفظ
-            }
-            else 
-            {
-                MessageBox.Show("❌ فشل الحفظ", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void FrmProducts_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Control && e.KeyCode == Keys.S)
-            {
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                BtnSave_Click(this, EventArgs.Empty);
-            }
-            else if (e.Control && e.KeyCode == Keys.Enter)
-            {
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                SaveAndNew();
-            }
-        }
-
-        private void BtnCopy_Click(object sender, EventArgs e)
-        {
-            if (_selectedID == 0)
-            {
-                MessageBox.Show("❌ اختر صنفاً لنسخه أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            _selectedID = 0; // تحويله لصنف جديد
-            txtCode.Text = ProductDAL.GetNextProductCode(); // توليد كود تلقائي جديد
-            txtName.Text = txtName.Text + " - نسخة";
-            txtPartNumber.Clear();
-            
-            txtCode.Focus();
-            txtCode.SelectAll();
-            MessageBox.Show("📋 تم نسخ بيانات الصنف كمنتج جديد. يرجى إدخال الباركود والاسم الجديد ثم اضغط حفظ.", "نسخ صنف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadProducts(); }
+            else MessageBox.Show("❌ فشل الحفظ");
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)

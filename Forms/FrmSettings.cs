@@ -24,9 +24,7 @@ namespace ChickenDist.Forms
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            // تصغير الارتفاع إذا كانت الشاشة صغيرة
-            int settH = ScreenHelper.IsSmallScreen ? 500 : 550;
-            this.Size = new Size(620, settH);
+            this.Size = new Size(600, 550);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -34,8 +32,6 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة، وإعدادات الميزان والطابعة الحرارية");
             this.Controls.Add(pnlTop);
@@ -46,8 +42,7 @@ namespace ChickenDist.Forms
                 Location = new Point(20, 85),
                 Size = new Size(545, 335),
                 BackColor = Theme.BgCard,
-                ForeColor = Theme.TextMain,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+                ForeColor = Theme.TextMain
             };
 
             // Tab 1: General Settings
@@ -190,7 +185,6 @@ namespace ChickenDist.Forms
 
             // Save settings button
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, 440, 160, 42, Theme.Accent);
-            btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnSave.Click += (s, e) => {
                 if (string.IsNullOrWhiteSpace(txtCompanyName.Text)) { MessageBox.Show("أدخل اسم الشركة"); return; }
                 

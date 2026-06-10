@@ -1476,210 +1476,26 @@ namespace ChickenDist.DAL
         public static DataTable GetFinancialSummary(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"DECLARE @f DATE = @fromDate;
-                DECLARE @t DATE = @toDate;
-                DECLARE @wh INT = @warehouseID;
-
-                -- 1. Calculate weighted average cost of products up to @t
-                DECLARE @ProductCost TABLE (ProductID INT PRIMARY KEY, AvgCost DECIMAL(18,4));
-                INSERT INTO @ProductCost (ProductID, AvgCost)
-                SELECT 
-                    pi.ProductID,
-                    SUM(pi.TotalPrice) / NULLIF(SUM(pi.Quantity), 0)
-                FROM PurchaseItems pi
-                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
-                WHERE p.IsPosted = 1 AND CAST(p.PurchaseDate AS DATE) <= @t
-                GROUP BY pi.ProductID;
-
-                -- 2. Calculate Sales by Tier
-                DECLARE @RetailSales DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(si.TotalPrice)
-                    FROM SaleItems si
-                    JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE s.IsPosted = 1
-                      AND s.SaleType IN ('Cash', 'Credit')
-                      AND (si.PriceTier = N'قطاعي' OR si.PriceTier IS NULL)
-                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR s.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @WholesaleSales DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(si.TotalPrice)
-                    FROM SaleItems si
-                    JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE s.IsPosted = 1
-                      AND s.SaleType IN ('Cash', 'Credit')
-                      AND si.PriceTier = N'جملة'
-                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR s.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @SemiWholesaleSales DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(si.TotalPrice)
-                    FROM SaleItems si
-                    JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE s.IsPosted = 1
-                      AND s.SaleType IN ('Cash', 'Credit')
-                      AND si.PriceTier = N'نص جملة'
-                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR s.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @DriverLoadsSales DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(TotalAmount)
-                    FROM Sales
-                    WHERE IsPosted = 1
-                      AND SaleType = 'DriverLoad'
-                      AND CAST(SaleDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @TotalInvoiceDiscount DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(DiscountAmount) 
-                    FROM Sales 
-                    WHERE IsPosted = 1 
-                      AND CAST(SaleDate AS DATE) BETWEEN @f AND @t 
-                      AND (@wh IS NULL OR WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @TotalReturns DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(TotalAmount) 
-                    FROM SalesReturns 
-                    WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t 
-                      AND (@wh IS NULL OR WarehouseID = @wh)
-                ), 0);
-
-                -- Total Sales before returns and invoice discount
-                DECLARE @TotalSales DECIMAL(18,2) = @RetailSales + @WholesaleSales + @SemiWholesaleSales + @DriverLoadsSales;
-
-                -- Net Sales
-                DECLARE @NetSales DECIMAL(18,2) = @TotalSales - @TotalInvoiceDiscount - @TotalReturns;
-
-                -- 3. Calculate COGS
-                DECLARE @SalesCost DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(si.Quantity * COALESCE(pc.AvgCost, pr.PurchasePrice, pr.CostPrice, 0))
-                    FROM SaleItems si
-                    JOIN Sales s ON si.SaleID = s.SaleID
-                    JOIN Products pr ON si.ProductID = pr.ProductID
-                    LEFT JOIN @ProductCost pc ON si.ProductID = pc.ProductID
-                    WHERE s.IsPosted = 1
-                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR s.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @ReturnsCost DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(ri.Quantity * COALESCE(pc.AvgCost, pr.PurchasePrice, pr.CostPrice, 0))
-                    FROM ReturnItems ri
-                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                    JOIN Products pr ON ri.ProductID = pr.ProductID
-                    LEFT JOIN @ProductCost pc ON ri.ProductID = pc.ProductID
-                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                      AND (@wh IS NULL OR sr.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @COGS DECIMAL(18,2) = @SalesCost - @ReturnsCost;
-
-                -- 4. Calculate Purchases
-                DECLARE @PurchaseCost DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(TotalAmount) 
-                    FROM Purchases 
-                    WHERE IsPosted = 1 
-                      AND CAST(PurchaseDate AS DATE) BETWEEN @f AND @t 
-                      AND (@wh IS NULL OR WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @PurchaseReturns DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(TotalAmount) 
-                    FROM PurchaseReturns 
-                    WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t 
-                      AND (@wh IS NULL OR WarehouseID = @wh)
-                ), 0);
-
-                -- 5. Cash and Expenses
-                DECLARE @ClientPayments DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(Credit) 
-                    FROM ClientTransactions 
-                    WHERE TransType='Payment' 
-                      AND CAST(TransDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                DECLARE @TotalExpenses DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(Amount) 
-                    FROM Expenses 
-                    WHERE CAST(ExpenseDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                DECLARE @CashInflow DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(AmountIn) 
-                    FROM CashBox 
-                    WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                DECLARE @CashOutflow DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(AmountOut) 
-                    FROM CashBox 
-                    WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                -- 6. Overall Totals
-                DECLARE @TotalSupplierBalance DECIMAL(18,2) = ISNULL((SELECT SUM(Balance) FROM vw_SupplierBalance), 0);
-                DECLARE @TotalClientBalance DECIMAL(18,2) = ISNULL((SELECT SUM(Balance) FROM vw_ClientBalance), 0);
-
-                DECLARE @StockValueAtCost DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(ps.StockQty * COALESCE(pc.AvgCost, p.PurchasePrice, p.CostPrice, 0))
-                    FROM vw_ProductStock ps
-                    JOIN Products p ON ps.ProductID = p.ProductID
-                    LEFT JOIN @ProductCost pc ON ps.ProductID = pc.ProductID
-                    WHERE p.IsActive = 1
-                      AND (@wh IS NULL OR ps.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @StockValueAtSalePrice DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(ps.StockQty * p.SalePrice)
-                    FROM vw_ProductStock ps
-                    JOIN Products p ON ps.ProductID = p.ProductID
-                    WHERE p.IsActive = 1
-                      AND (@wh IS NULL OR ps.WarehouseID = @wh)
-                ), 0);
-
-                DECLARE @DriverDeficitTotal DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(Debit) 
-                    FROM EmployeeTransactions 
-                    WHERE TransType IN ('DeficitCharge', 'Deduction') 
-                      AND CAST(TransDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                DECLARE @EmpAdvanceTotal DECIMAL(18,2) = ISNULL((
-                    SELECT SUM(Debit) 
-                    FROM EmployeeTransactions 
-                    WHERE TransType = 'Advance' 
-                      AND CAST(TransDate AS DATE) BETWEEN @f AND @t
-                ), 0);
-
-                -- Return all fields in a single row
-                SELECT 
-                    @TotalSales AS TotalSales,
-                    @RetailSales AS RetailSales,
-                    @WholesaleSales AS WholesaleSales,
-                    @SemiWholesaleSales AS SemiWholesaleSales,
-                    @DriverLoadsSales AS DriverLoadsSales,
-                    @TotalInvoiceDiscount AS TotalInvoiceDiscount,
-                    @TotalReturns AS TotalReturns,
-                    @NetSales AS NetSales,
-                    @ClientPayments AS ClientPayments,
-                    @TotalExpenses AS TotalExpenses,
-                    @CashInflow AS CashInflow,
-                    @CashOutflow AS CashOutflow,
-                    @PurchaseCost AS PurchaseCost,
-                    @PurchaseReturns AS PurchaseReturns,
-                    @COGS AS COGS,
-                    @TotalSupplierBalance AS TotalSupplierBalance,
-                    @TotalClientBalance AS TotalClientBalance,
-                    @StockValueAtCost AS StockValueAtCost,
-                    @StockValueAtSalePrice AS StockValueAtSalePrice,
-                    @DriverDeficitTotal AS DriverDeficitTotal,
-                    @EmpAdvanceTotal AS EmpAdvanceTotal;",
-                DbHelper.P("@fromDate", from.Date), DbHelper.P("@toDate", to.Date),
+                @"SELECT 
+                    -- Total Sales
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalSales,
+                    -- Cash Sales
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CashSales,
+                    -- Credit Sales
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Credit' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CreditSales,
+                    -- Driver Loads Sales
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS DriverLoadsSales,
+                    -- Returns
+                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalReturns,
+                    -- Client Payments
+                    ISNULL((SELECT SUM(Credit) FROM ClientTransactions WHERE TransType='Payment' AND CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS ClientPayments,
+                    -- Expenses
+                    ISNULL((SELECT SUM(Amount) FROM Expenses WHERE CAST(ExpenseDate AS DATE) BETWEEN @f AND @t), 0) AS TotalExpenses,
+                    -- Cashbox Inflow (Cash Sales + Payments)
+                    ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashInflow,
+                    -- Cashbox Outflow (Expenses + Handover returned or other outflows)
+                    ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashOutflow",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 

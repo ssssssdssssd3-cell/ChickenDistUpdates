@@ -20,14 +20,10 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "تسجيل الدخول - " + AppConfig.CompanyName;
-            // تصغير ارتفاع Login ليناسب 1366x768
-            int loginH = ScreenHelper.IsSmallScreen ? 500 : 580;
-            this.Size = new Size(480, loginH);
+            this.Size = new Size(480, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.BackColor = Theme.Primary;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -121,7 +117,7 @@ namespace ChickenDist.Forms
                 AutoSize = false,
                 Size = new Size(480, 24),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(0, loginH - 60)
+                Location = new Point(0, 520)
             };
 
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter });

@@ -222,12 +222,10 @@ namespace ChickenDist.Forms
             dgAudit.SelectionChanged += DgAudit_SelectionChanged;
             dgAudit.RowPrePaint += (s, e) => e.PaintParts &= ~DataGridViewPaintParts.Focus;
 
-            // تجميع الشاشة - ترتيب صحيح: Bottom ثم Top ثم Fill
-            this.Controls.Add(pnlCompare);  // Bottom - يُضاف أولاً
-            this.Controls.Add(pnlFilter);   // Top
-            this.Controls.Add(dgAudit);     // Fill - يُضاف أخيراً
-
-            Theme.ApplyFormRTL(this);
+            // تجميع الشاشة
+            this.Controls.Add(dgAudit);
+            this.Controls.Add(pnlCompare);
+            this.Controls.Add(pnlFilter);
         }
 
         // ══════════════════════════════════════════════
