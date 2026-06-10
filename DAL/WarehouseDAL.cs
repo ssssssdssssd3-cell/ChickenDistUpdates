@@ -21,14 +21,15 @@ namespace ChickenDist.DAL
             if (string.IsNullOrWhiteSpace(barcode)) return null;
             string trimmed = barcode.Trim();
             var dt = DbHelper.Query(
-                @"SELECT TOP 1 ProductID, ProductName, SalePrice, PurchasePrice, Barcode, PartNumber,
-                         ISNULL(MinStockLimit, 0) AS MinStockLimit
+                @"SELECT TOP 1 ProductID, ProductName, SalePrice, PurchasePrice, ProductCode, Barcode, PartNumber,
+                          ISNULL(MinStockLimit, 0) AS MinStockLimit
                   FROM Products
                   WHERE IsActive = 1
-                    AND (Barcode = @bc OR PartNumber = @bc OR ProductName LIKE @like)
-                  ORDER BY CASE WHEN Barcode = @bc THEN 0
-                                WHEN PartNumber = @bc THEN 1
-                                ELSE 2 END",
+                    AND (ProductCode = @bc OR Barcode = @bc OR PartNumber = @bc OR ProductName LIKE @like)
+                  ORDER BY CASE WHEN ProductCode = @bc THEN 0
+                                WHEN Barcode = @bc THEN 1
+                                WHEN PartNumber = @bc THEN 2
+                                ELSE 3 END",
                 DbHelper.P("@bc", trimmed),
                 DbHelper.P("@like", "%" + trimmed + "%"));
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
