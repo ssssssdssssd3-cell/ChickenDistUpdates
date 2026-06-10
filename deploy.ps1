@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ─────────────────────────────────────────────
 # ⚙️ Settings
 # ─────────────────────────────────────────────
-$VERSION   = "1.4.6"
+$VERSION   = "1.4.7"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -108,7 +108,8 @@ git commit -m $commitMsg
 if ($LASTEXITCODE -ne 0) { Write-Fail "git commit failed" }
 Write-OK "git commit ok"
 
-git push origin main
+$currentBranch = (git symbolic-ref --short HEAD).Trim()
+git push origin $currentBranch
 if ($LASTEXITCODE -ne 0) { Write-Fail "git push failed" }
 Write-OK "git push ok"
 

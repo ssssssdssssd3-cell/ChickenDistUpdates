@@ -67,6 +67,28 @@ namespace ChickenDist.Core
             set => Set("ScaleBaudRate", value.ToString());
         }
 
+        // ===== إعدادات ميزان الباركود =====
+        public static string BarcodeScalePrefix
+        {
+            get => Get("BarcodeScalePrefix", "20");
+            set => Set("BarcodeScalePrefix", value);
+        }
+        public static int BarcodeScaleItemCodeLength
+        {
+            get => int.TryParse(Get("BarcodeScaleItemCodeLength", "5"), out int len) ? len : 5;
+            set => Set("BarcodeScaleItemCodeLength", value.ToString());
+        }
+        public static int BarcodeScaleWeightLength
+        {
+            get => int.TryParse(Get("BarcodeScaleWeightLength", "5"), out int len) ? len : 5;
+            set => Set("BarcodeScaleWeightLength", value.ToString());
+        }
+        public static decimal BarcodeScaleDivideBy
+        {
+            get => decimal.TryParse(Get("BarcodeScaleDivideBy", "1000"), out decimal d) ? d : 1000m;
+            set => Set("BarcodeScaleDivideBy", value.ToString());
+        }
+
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
         {
             if (string.IsNullOrEmpty(printerName)) return;

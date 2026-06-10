@@ -189,6 +189,12 @@ namespace ChickenDist.Forms
 			};
 			filterPanel.Controls.Add(btnLoad);
 
+			var btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(40, 100, 180));
+			btnPrint.Size = new Size(130, 28);
+			btnPrint.Margin = new Padding(6, 0, 0, 0);
+			btnPrint.Click += BtnPrintPurchase_Click;
+			filterPanel.Controls.Add(btnPrint);
+
 			btnNewPurchase = Theme.MakeButton("➕ فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
 			btnNewPurchase.Size = new Size(150, 28);
 			btnNewPurchase.Margin = new Padding(10, 0, 0, 0);
@@ -200,111 +206,71 @@ namespace ChickenDist.Forms
 			};
 			filterPanel.Controls.Add(btnNewPurchase);
 
-			Panel masterPanel = new Panel
-			{
-				Dock = DockStyle.Top,
-				Height = 280,
-				Padding = new Padding(10, 0, 10, 10)
-			};
-			dgPurchases = MakeGrid();
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PurchaseID",
-				Visible = false
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PurchaseCode",
-				HeaderText = "رقم الفاتورة",
-				FillWeight = 60f
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PurchaseDate",
-				HeaderText = "التاريخ والوقت",
-				FillWeight = 80f
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PurchaseType",
-				HeaderText = "نوع الفاتورة",
-				FillWeight = 50f
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "SupplierName",
-				HeaderText = "المورد",
-				FillWeight = 120f
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "TotalAmount",
-				HeaderText = "قيمة الفاتورة",
-				FillWeight = 60f
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "ReturnAmount",
-				HeaderText = "المرتجع ↩",
-				FillWeight = 55f,
-				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter }
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "NetAmount",
-				HeaderText = "الصافي ✔",
-				FillWeight = 55f,
-				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
-			});
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "Notes",
-				HeaderText = "الملاحظات",
-				FillWeight = 130f
-			});
-			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
-			masterPanel.Controls.Add(dgPurchases);
-
-			Panel detailPanel = new Panel
+			// ─── منطقة المحتوى: صفان بنسب مرنة ───
+			var tblContent = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				Padding = new Padding(10, 0, 10, 10)
+				ColumnCount = 1,
+				RowCount = 2
 			};
+			tblContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 58f));  // جريد الفواتير
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 42f));  // تفاصيل الأصناف
 
-			FlowLayoutPanel detailLeftPanel = new FlowLayoutPanel
+			// الصف 0: جريد الفواتير
+			dgPurchases = MakeGrid();
+			dgPurchases.Margin = new Padding(10, 6, 10, 4);
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseID",   Visible = false });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseCode", HeaderText = "رقم الفاتورة",   FillWeight = 60f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate", HeaderText = "التاريخ والوقت", FillWeight = 80f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType", HeaderText = "نوع الفاتورة",   FillWeight = 50f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "المورد",         FillWeight = 120f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",  HeaderText = "قيمة الفاتورة",  FillWeight = 60f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", HeaderText = "المرتجع ↩",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",    HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",        HeaderText = "الملاحظات",      FillWeight = 130f });
+			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+
+			// الصف 1: تفاصيل الأصناف
+			var tblDetail = new TableLayoutPanel
 			{
-				Dock = DockStyle.Left,
-				Width = 220,
+				Dock = DockStyle.Fill,
+				ColumnCount = 2,
+				RowCount = 1,
+				Margin = new Padding(10, 4, 10, 6)
+			};
+			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f));
+			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+			tblDetail.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+			var pnlDetailLabel = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
 				FlowDirection = FlowDirection.TopDown,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(15),
+				Padding = new Padding(15, 10, 15, 10),
 				WrapContents = false
 			};
 			Label lblDetailsTitle = new Label
 			{
 				Text = "تفاصيل الأصناف بالفاتورة المحددة",
-				Size = new Size(190, 60),
+				Size = new Size(190, 40),
 				ForeColor = Theme.TextSub,
 				Font = Theme.FontBold,
 				TextAlign = ContentAlignment.TopCenter,
 				Margin = new Padding(0)
 			};
-			detailLeftPanel.Controls.Add(lblDetailsTitle);
+			pnlDetailLabel.Controls.Add(lblDetailsTitle);
 
 			Button btnPrintInvoice = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(52, 152, 219));
-			btnPrintInvoice.Size = new Size(190, 38);
-			btnPrintInvoice.Margin = new Padding(0, 15, 0, 0);
-			btnPrintInvoice.Click += (s, e) =>
-			{
-				if (dgPurchases.SelectedRows.Count == 0) return;
-				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
-				new FrmPrintPurchase(purchaseID);
-			};
-			detailLeftPanel.Controls.Add(btnPrintInvoice);
+			btnPrintInvoice.Size = new Size(190, 34);
+			btnPrintInvoice.Margin = new Padding(0, 5, 0, 8);
+			btnPrintInvoice.Click += BtnPrintPurchase_Click;
+			pnlDetailLabel.Controls.Add(btnPrintInvoice);
 
 			Button btnPrintBarcodes = Theme.MakeButton("🏷️ طباعة الباركود للأصناف", Color.FromArgb(155, 89, 182));
-			btnPrintBarcodes.Size = new Size(190, 38);
-			btnPrintBarcodes.Margin = new Padding(0, 10, 0, 0);
+			btnPrintBarcodes.Size = new Size(190, 34);
+			btnPrintBarcodes.Margin = new Padding(0, 0, 0, 0);
 			btnPrintBarcodes.Click += (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count == 0) return;
@@ -315,42 +281,20 @@ namespace ChickenDist.Forms
 					frm.ShowDialog(this);
 				}
 			};
-			detailLeftPanel.Controls.Add(btnPrintBarcodes);
+			pnlDetailLabel.Controls.Add(btnPrintBarcodes);
 
 			dgItems = MakeGrid();
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "ProductName",
-				HeaderText = "الصنف",
-				FillWeight = 130f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "Quantity",
-				HeaderText = "الكمية",
-				FillWeight = 50f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "UnitPrice",
-				HeaderText = "سعر الوحدة",
-				FillWeight = 50f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "Discount",
-				HeaderText = "الخصم",
-				FillWeight = 50f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "TotalPrice",
-				HeaderText = "الإجمالي",
-				FillWeight = 60f
-			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 130f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",     FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الوحدة", FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount",    HeaderText = "الخصم",      FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 60f });
 
-			detailPanel.Controls.Add(detailLeftPanel);
-			detailPanel.Controls.Add(dgItems);
+			tblDetail.Controls.Add(pnlDetailLabel, 0, 0);
+			tblDetail.Controls.Add(dgItems, 1, 0);
+
+			tblContent.Controls.Add(dgPurchases, 0, 0);
+			tblContent.Controls.Add(tblDetail, 0, 1);
 
 			TableLayoutPanel summaryTbl = new TableLayoutPanel
 			{
@@ -362,11 +306,7 @@ namespace ChickenDist.Forms
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 5, 10, 5)
 			};
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			for (int i = 0; i < 5; i++) summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
 			summaryTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
 			lblTotalSummary  = AddDashboardCard(summaryTbl, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                         0);
@@ -375,11 +315,9 @@ namespace ChickenDist.Forms
 			lblCashSummary   = AddDashboardCard(summaryTbl, "المشتريات النقدية:",      "0.00 ج", Theme.Success,                        3);
 			lblCreditSummary = AddDashboardCard(summaryTbl, "المشتريات الآجلة:",      "0.00 ج", Color.FromArgb(52, 152, 219),         4);
 
-			// ترتيب صحيح: Bottom ثم Top ثم Fill
-			base.Controls.Add(summaryTbl);   // Bottom - يُضاف أولاً
-			base.Controls.Add(filterPanel);  // Top
-			base.Controls.Add(masterPanel);  // Top
-			base.Controls.Add(detailPanel);  // Fill - يُضاف أخيراً
+			base.Controls.Add(summaryTbl);
+			base.Controls.Add(filterPanel);
+			base.Controls.Add(tblContent);
 
 			Theme.ApplyFormRTL(this);
 		}
@@ -581,6 +519,32 @@ namespace ChickenDist.Forms
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2")
 				);
 			}
+		}
+
+		private void BtnPrintPurchase_Click(object sender, EventArgs e)
+		{
+			if (dgPurchases.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+			string purchaseCode = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value?.ToString() ?? "";
+
+			var menu = new ContextMenuStrip();
+
+			var itemReceipt = new ToolStripMenuItem("🧾 طباعة باركود (Receipt)");
+			itemReceipt.Click += (s2, e2) => new FrmPrintPurchase(purchaseID, "Receipt");
+
+			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة A4");
+			itemA4.Click += (s2, e2) => new FrmPrintPurchase(purchaseID, "A4");
+
+			menu.Items.Add(itemReceipt);
+			menu.Items.Add(itemA4);
+
+			if (sender is Control ctrl)
+				menu.Show(ctrl, new System.Drawing.Point(0, ctrl.Height));
 		}
 	}
 }
