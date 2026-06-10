@@ -47,8 +47,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             Text = "إدارة المخازن وعرض الكميات";
-            Size = new Size(1150, 680);
-            MinimumSize = new Size(900, 500);
+            Size = new Size(1200, 720);
+            MinimumSize = new Size(950, 560);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
             RightToLeftLayout = true;
@@ -63,39 +63,47 @@ namespace ChickenDist.Forms
                 RowCount = 1,
                 Padding = new Padding(6)
             };
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // محتوى المخازن + الكميات
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f)); // نموذج التعديل
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 290f));
 
             // ══════ العمود الأيسر: قائمة المخازن + لوحة الكميات ══════
-            var pnlLeft = new Panel { Dock = DockStyle.Fill };
+            // نستخدم TableLayoutPanel بـ 3 صفوف: فلتر، جريد المخازن، لوحة الكميات
+            var tblLeft = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3
+            };
+            tblLeft.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            tblLeft.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f));   // شريط البحث
+            tblLeft.RowStyles.Add(new RowStyle(SizeType.Absolute, 200f));  // جريد المخازن
+            tblLeft.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));   // لوحة الكميات
 
-            // ─── شريط فلتر المخازن ───
+            // ─── صف 0: شريط فلتر المخازن ───
             var pnlWFilter = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 44,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 8, 8, 4)
+                Padding = new Padding(8, 6, 8, 4)
             };
-            var lblWSearch = new Label { Text = "بحث مخزن:", AutoSize = true, ForeColor = Theme.TextSub, Location = new Point(195, 12) };
+            var lblWTitle = new Label
+            {
+                Text = "🏭 قائمة المخازن",
+                Location = new Point(400, 11), AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.Primary
+            };
+            var lblWSearch = new Label { Text = "بحث مخزن:", AutoSize = true, ForeColor = Theme.TextSub, Location = new Point(210, 13) };
             txtWarehouseSearch = new TextBox
             {
-                Location = new Point(10, 8), Width = 180,
+                Location = new Point(20, 9), Width = 185,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle
             };
             txtWarehouseSearch.TextChanged += (s, e) => LoadWarehouses();
-            var lblWTitle = new Label
-            {
-                Text = "🏭 قائمة المخازن",
-                Location = new Point(340, 12), AutoSize = true,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Theme.Primary
-            };
             pnlWFilter.Controls.AddRange(new Control[] { lblWTitle, lblWSearch, txtWarehouseSearch });
 
-            // ─── جريد المخازن (ارتفاع ثابت 200px) ───
-            var pnlWGrid = new Panel { Dock = DockStyle.Top, Height = 200, BackColor = Theme.BgMain };
+            // ─── صف 1: جريد المخازن ───
             dgWarehouses = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -126,32 +134,44 @@ namespace ChickenDist.Forms
             dgWarehouses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location",      HeaderText = "الموقع",      FillWeight = 100 });
             dgWarehouses.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive",      HeaderText = "حالة النشاط", FillWeight = 40  });
             dgWarehouses.SelectionChanged += DgWarehouses_SelectionChanged;
-            pnlWGrid.Controls.Add(dgWarehouses);
 
-            // ─── لوحة الكميات (مخفية حتى يُختار مخزن) ───
+            // ─── صف 2: لوحة الكميات (مخفية حتى يُختار مخزن) ───
             pnlStock = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgMain, Visible = false };
+
+            // هيكل لوحة الكميات: TableLayoutPanel بـ 3 صفوف
+            var tblStock = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3
+            };
+            tblStock.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            tblStock.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));   // رأس وبحث
+            tblStock.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));   // الجريد
+            tblStock.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));   // شريط الإجماليات
 
             // رأس لوحة الكميات
             var pnlStockHeader = new Panel
             {
-                Dock = DockStyle.Top, Height = 50,
-                BackColor = Theme.BgCard, Padding = new Padding(8)
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(8, 6, 8, 4)
             };
             lblStockHeader = new Label
             {
                 Text = "📦 كميات المخزن",
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Theme.Primary,
-                Location = new Point(560, 12), AutoSize = true
+                Location = new Point(580, 13), AutoSize = true
             };
             var lblProdSearch = new Label
             {
                 Text = "بحث صنف:",
-                AutoSize = true, ForeColor = Theme.TextSub, Location = new Point(195, 16)
+                AutoSize = true, ForeColor = Theme.TextSub, Location = new Point(210, 15)
             };
             txtProductSearch = new TextBox
             {
-                Location = new Point(10, 12), Width = 180,
+                Location = new Point(20, 11), Width = 185,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -160,18 +180,17 @@ namespace ChickenDist.Forms
             btnRefreshStock = new Button
             {
                 Text = "🔄 تحديث",
-                Location = new Point(220, 12), Size = new Size(80, 26),
+                Location = new Point(310, 11), Size = new Size(80, 26),
                 BackColor = Theme.Accent, ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat, Font = Theme.FontBold, Cursor = Cursors.Hand
             };
             btnRefreshStock.FlatAppearance.BorderSize = 0;
             btnRefreshStock.Click += (s, e) => LoadStock();
 
-            // زر "إظهار الأصناف ناقصة المخزون فقط"
             var btnLowStock = new Button
             {
                 Text = "⚠ عجز فقط",
-                Location = new Point(308, 12), Size = new Size(85, 26),
+                Location = new Point(398, 11), Size = new Size(88, 26),
                 BackColor = Color.FromArgb(150, 40, 40), ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat, Font = Theme.FontBold, Cursor = Cursors.Hand
             };
@@ -181,7 +200,7 @@ namespace ChickenDist.Forms
             chkQtyOnly = new CheckBox
             {
                 Text = "كميات متوفرة فقط",
-                Location = new Point(400, 12), Size = new Size(150, 26),
+                Location = new Point(494, 13), Size = new Size(155, 26),
                 ForeColor = Theme.TextMain,
                 Checked = true,
                 Font = Theme.FontMain
@@ -214,7 +233,8 @@ namespace ChickenDist.Forms
                 },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowTemplate = { Height = 26 }
+                RowTemplate = { Height = 26 },
+                ScrollBars = ScrollBars.Both
             };
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود",        FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber",  HeaderText = "رقم القطعة",  FillWeight = 55 });
@@ -230,7 +250,7 @@ namespace ChickenDist.Forms
             // شريط الإجماليات
             lblTotals = new Label
             {
-                Dock = DockStyle.Bottom, Height = 32,
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(20, 40, 80),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -238,13 +258,16 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 0, 10, 0)
             };
 
-            pnlStock.Controls.Add(dgStock);
-            pnlStock.Controls.Add(lblTotals);
-            pnlStock.Controls.Add(pnlStockHeader);
+            // تجميع لوحة الكميات
+            tblStock.Controls.Add(pnlStockHeader, 0, 0);
+            tblStock.Controls.Add(dgStock, 0, 1);
+            tblStock.Controls.Add(lblTotals, 0, 2);
+            pnlStock.Controls.Add(tblStock);
 
-            pnlLeft.Controls.Add(pnlWFilter);
-            pnlLeft.Controls.Add(pnlWGrid);
-            pnlLeft.Controls.Add(pnlStock);
+            // تجميع العمود الأيسر
+            tblLeft.Controls.Add(pnlWFilter, 0, 0);
+            tblLeft.Controls.Add(dgWarehouses, 0, 1);
+            tblLeft.Controls.Add(pnlStock, 0, 2);
 
             // ══════ العمود الأيمن: نموذج التعديل ══════
             var pnlForm = new Panel
@@ -308,7 +331,7 @@ namespace ChickenDist.Forms
             pnlForm.Controls.Add(flow);
             pnlForm.Controls.Add(lblFormTitle);
 
-            tblMain.Controls.Add(pnlLeft, 0, 0);
+            tblMain.Controls.Add(tblLeft, 0, 0);
             tblMain.Controls.Add(pnlForm, 1, 0);
 
             this.Controls.Add(tblMain);

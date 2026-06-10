@@ -173,7 +173,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(5)
+                Padding = new Padding(5),
+                AutoScroll = true
             };
             flowRight.Controls.AddRange(new Control[] {
                 lblSelectEmp, cboEmployee,

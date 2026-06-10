@@ -419,6 +419,30 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", from.Date),
                 DbHelper.P("@t", to.Date));
         }
+
+        public static bool IsCodeExists(string code, int currentProductID)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return false;
+            var res = DbHelper.Scalar("SELECT COUNT(1) FROM Products WHERE ProductCode = @c AND ProductID != @id", 
+                DbHelper.P("@c", code.Trim()), DbHelper.P("@id", currentProductID));
+            return Convert.ToInt32(res) > 0;
+        }
+
+        public static bool IsPartNumberExists(string partNumber, int currentProductID)
+        {
+            if (string.IsNullOrWhiteSpace(partNumber)) return false;
+            var res = DbHelper.Scalar("SELECT COUNT(1) FROM Products WHERE PartNumber = @pn AND ProductID != @id", 
+                DbHelper.P("@pn", partNumber.Trim()), DbHelper.P("@id", currentProductID));
+            return Convert.ToInt32(res) > 0;
+        }
+
+        public static bool IsNameExists(string name, int currentProductID)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var res = DbHelper.Scalar("SELECT COUNT(1) FROM Products WHERE ProductName = @n AND ProductID != @id", 
+                DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentProductID));
+            return Convert.ToInt32(res) > 0;
+        }
     }
 
     // =================== Supplier DAL ===================

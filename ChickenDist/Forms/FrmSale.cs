@@ -75,6 +75,8 @@ namespace ChickenDist.Forms
 		private TextBox txtPrice;
 
 		private List<SaleItemDTO> _items = new List<SaleItemDTO>();
+		private decimal? _pendingBarcodeWeight = null;
+		private decimal? _pendingScaleWeight = null;
 		// FIX: cache أرصدة المخزون لتفادي رحلة DB لكل صنف عند الاختيار
 		private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
 
@@ -103,6 +105,20 @@ namespace ChickenDist.Forms
 			if (saleID > 0)
 			{
 				LoadInvoiceForEdit(saleID);
+			}
+			
+			// Scale Service Hook
+			if (AppConfig.ScaleEnabled)
+			{
+				ScaleService.Instance.WeightChanged += ScaleService_WeightChanged;
+			}
+		}
+
+		private void ScaleService_WeightChanged(decimal weight, bool isStable)
+		{
+			if (isStable)
+			{
+				_pendingScaleWeight = weight;
 			}
 		}
 
@@ -302,6 +318,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboProduct);
+			cboProduct.KeyDown += CboProduct_KeyDown;
 
 			btnSearchProduct = new Button
 			{
@@ -866,6 +883,35 @@ namespace ChickenDist.Forms
 			};
 		}
 
+		private void CboProduct_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(cboProduct.Text))
+			{
+				var res = BarcodeParser.Parse(cboProduct.Text);
+				if (res.IsScaleBarcode)
+				{
+					_pendingBarcodeWeight = res.WeightOrPrice;
+					e.Handled = true;
+					
+					// Search for item by code
+					for (int i = 0; i < cboProduct.Items.Count; i++)
+					{
+						if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+						{
+							// Assuming ItemCode matches ProductID or PartNumber
+							if (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode)
+							{
+								cboProduct.SelectedIndex = i;
+								return;
+							}
+						}
+					}
+					MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
+					_pendingBarcodeWeight = null;
+				}
+			}
+		}
+
 		private void SetupSearchableCombo(ComboBox cbo)
 		{
 			cbo.AutoCompleteMode = AutoCompleteMode.None;
@@ -1017,12 +1063,16 @@ namespace ChickenDist.Forms
 						return;
 					}
 
-					// Add to items list with default Quantity = 1
+					decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
+					_pendingBarcodeWeight = null;
+					_pendingScaleWeight = null;
+
+					// Add to items list
 					_items.Add(new SaleItemDTO
 					{
 						ProductID = comboItem.ID,
 						ProductName = comboItem.Name,
-						Quantity = 1.00m,
+						Quantity = qtyToAdd,
 						UnitPrice = comboItem.Price,
 						StockQty = stock,
 						MinStockLimit = comboItem.MinStockLimit,
@@ -1968,6 +2018,10 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			if (AppConfig.ScaleEnabled)
+			{
+				ScaleService.Instance.WeightChanged -= ScaleService_WeightChanged;
+			}
 			if (_isDirty && _items.Count > 0)
 			{
 				var res = MessageBox.Show("هناك تغييرات لم يتم حفظها في الفاتورة الحالية.\nهل تريد الخروج بدون حفظ؟", "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);

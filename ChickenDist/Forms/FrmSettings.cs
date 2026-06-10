@@ -16,6 +16,16 @@ namespace ChickenDist.Forms
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
 
+        // Scale & Barcode controls
+        private CheckBox chkScaleEnabled;
+        private ComboBox cboScalePort;
+        private ComboBox cboScaleBaud;
+        private Label lblTestWeightResult;
+        private TextBox txtBarcodePrefix;
+        private NumericUpDown nudCodeLen;
+        private NumericUpDown nudWeightLen;
+        private NumericUpDown nudDiv;
+
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
@@ -25,6 +35,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.AutoScroll = true;
 
             var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة والنسخ الاحتياطي والإعدادات الأساسية");
             this.Controls.Add(pnlTop);
@@ -139,6 +150,123 @@ namespace ChickenDist.Forms
             y += 40;
 
             // ── فاصل ──────────────────────────────────────────────
+            y += 25;
+            var sepSettings = new Panel
+            {
+                Location = new Point(20, y),
+                Size = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sepSettings);
+            y += 15;
+
+            // ── إعدادات الميزان الإلكتروني ─────────────────────────
+            var lblScaleTitle = new Label
+            {
+                Text = "⚖️ إعدادات الميزان الإلكتروني (COM Port)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblScaleTitle);
+            y += 30;
+
+            chkScaleEnabled = new CheckBox
+            {
+                Text = "تفعيل الميزان الإلكتروني",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ScaleEnabled
+            };
+            this.Controls.Add(chkScaleEnabled);
+            y += 30;
+
+            AddLabel("منفذ الاتصال (COM Port):", 20, ref y, 0);
+            cboScalePort = new ComboBox { Location = new Point(20, y), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            foreach (string p in System.IO.Ports.SerialPort.GetPortNames()) cboScalePort.Items.Add(p);
+            if (cboScalePort.Items.Contains(AppConfig.ScaleComPort)) cboScalePort.SelectedItem = AppConfig.ScaleComPort;
+            else if (cboScalePort.Items.Count > 0) cboScalePort.SelectedIndex = 0;
+            this.Controls.Add(cboScalePort);
+
+            var lblBaud = new Label { Text = "سرعة النقل (Baud Rate):", Location = new Point(270, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblBaud);
+            cboScaleBaud = new ComboBox { Location = new Point(270, y), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            cboScaleBaud.Items.AddRange(new object[] { "2400", "4800", "9600", "19200", "38400", "115200" });
+            cboScaleBaud.SelectedItem = AppConfig.ScaleBaudRate.ToString();
+            this.Controls.Add(cboScaleBaud);
+            y += 40;
+
+            var btnTestScale = Theme.MakeButton("⚖️ اختبار الميزان", 20, y, 150, 35, Theme.Primary);
+            lblTestWeightResult = new Label { Location = new Point(180, y + 8), AutoSize = true, ForeColor = Theme.Success, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            this.Controls.Add(btnTestScale);
+            this.Controls.Add(lblTestWeightResult);
+            btnTestScale.Click += (s, e) =>
+            {
+                if (ScaleService.Instance.IsConnected)
+                {
+                    ScaleService.Instance.Disconnect();
+                    btnTestScale.Text = "⚖️ اختبار الميزان";
+                    btnTestScale.BackColor = Theme.Primary;
+                    lblTestWeightResult.Text = "";
+                }
+                else
+                {
+                    if (cboScalePort.SelectedItem == null) return;
+                    btnTestScale.Text = "🛑 إيقاف الاختبار";
+                    btnTestScale.BackColor = Theme.Danger;
+                    lblTestWeightResult.Text = "جاري الاتصال...";
+                    if (ScaleService.Instance.Connect(cboScalePort.SelectedItem.ToString(), int.Parse(cboScaleBaud.SelectedItem.ToString())))
+                    {
+                        ScaleService.Instance.WeightChanged += (w, stable) =>
+                        {
+                            this.Invoke(new Action(() => lblTestWeightResult.Text = $"الوزن: {w} {(stable ? "(مستقر)" : "")}"));
+                        };
+                    }
+                    else
+                    {
+                        lblTestWeightResult.Text = "خطأ في الاتصال";
+                        btnTestScale.Text = "⚖️ اختبار الميزان";
+                        btnTestScale.BackColor = Theme.Primary;
+                    }
+                }
+            };
+            y += 50;
+
+            // ── إعدادات ميزان الباركود ─────────────────────────────
+            var lblBarcodeScaleTitle = new Label
+            {
+                Text = "🏷️ إعدادات ميزان الباركود (الاستيكرات)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblBarcodeScaleTitle);
+            y += 30;
+
+            AddLabel("بداية باركود الميزان (Prefix):", 20, ref y, 0);
+            txtBarcodePrefix = new TextBox { Location = new Point(20, y), Width = 230, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = AppConfig.BarcodeScalePrefix };
+            this.Controls.Add(txtBarcodePrefix);
+
+            var lblCodeLen = new Label { Text = "طول كود الصنف:", Location = new Point(270, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblCodeLen);
+            nudCodeLen = new NumericUpDown { Location = new Point(270, y), Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10, Value = AppConfig.BarcodeScaleItemCodeLength };
+            this.Controls.Add(nudCodeLen);
+
+            var lblWeightLen = new Label { Text = "طول الوزن:", Location = new Point(390, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblWeightLen);
+            nudWeightLen = new NumericUpDown { Location = new Point(390, y), Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10, Value = AppConfig.BarcodeScaleWeightLength };
+            this.Controls.Add(nudWeightLen);
+            y += 40;
+
+            AddLabel("عامل القسمة للوزن (مثال 1000 للجرام):", 20, ref y, 0);
+            nudDiv = new NumericUpDown { Location = new Point(20, y), Width = 230, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10000, Value = AppConfig.BarcodeScaleDivideBy };
+            this.Controls.Add(nudDiv);
+            y += 40;
+
+            // ── فاصل ──────────────────────────────────────────────
             var sep = new Panel
             {
                 Location = new Point(20, y + 10),
@@ -243,6 +371,23 @@ namespace ChickenDist.Forms
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
                 SaveBackupFolder();
+
+                // Save Scale Settings
+                AppConfig.ScaleEnabled = chkScaleEnabled.Checked;
+                if (cboScalePort.SelectedItem != null) AppConfig.ScaleComPort = cboScalePort.SelectedItem.ToString();
+                if (cboScaleBaud.SelectedItem != null) AppConfig.ScaleBaudRate = int.Parse(cboScaleBaud.SelectedItem.ToString());
+
+                // Save Barcode Settings
+                AppConfig.BarcodeScalePrefix = txtBarcodePrefix.Text.Trim();
+                AppConfig.BarcodeScaleItemCodeLength = (int)nudCodeLen.Value;
+                AppConfig.BarcodeScaleWeightLength = (int)nudWeightLen.Value;
+                AppConfig.BarcodeScaleDivideBy = nudDiv.Value;
+
+                // Reconnect if enabled
+                if (ScaleService.Instance.IsConnected) ScaleService.Instance.Disconnect();
+                if (AppConfig.ScaleEnabled)
+                    ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+
 
                 MessageBox.Show(
                     "✅ تم حفظ الإعدادات بنجاح!\nقد تحتاج لإعادة فتح بعض الشاشات ليتم تحديث الاسم.",

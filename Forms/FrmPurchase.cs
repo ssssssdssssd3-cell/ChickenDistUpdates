@@ -236,23 +236,33 @@ namespace ChickenDist.Forms
             lblNetTitle = MakeLabel("الصافي:", 400, 15);
             lblNetVal   = new Label { Text = "0.00 ج", ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 13f, FontStyle.Bold), Location = new Point(280, 11), AutoSize = true };
 
-            btnSave = Theme.MakeButton("💾 حفظ الفاتورة [F5]", Theme.Accent);
-            btnSave.Size = new Size(160, 35);
-            btnSave.Location = new Point(10, 8);
+            btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 780, 50, 130, 32, Theme.Accent);
+            Button btnHold = Theme.MakeButton("⏸️ تعليق", 670, 50, 100, 32, Color.FromArgb(200, 140, 50));
+            Button btnLoadHold = Theme.MakeButton("📂 معلقات", 560, 50, 100, 32, Color.FromArgb(100, 100, 150));
+            Button btnTawreed = Theme.MakeButton("💵 صرف", 450, 50, 100, 32, Theme.Success);
+            btnNew = Theme.MakeButton("🆕 جديد", 360, 50, 80, 32, Color.FromArgb(80, 120, 80));
+            btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 200, 50, 150, 32, Theme.Primary);
+            Button btnWhatsApp = Theme.MakeButton("📲 واتساب", 30, 50, 160, 32, Color.FromArgb(37, 211, 102));
+
+            btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnLoadHold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnTawreed.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnNew.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnWhatsApp.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             btnSave.Click += BtnSave_Click;
-
-            btnNew = Theme.MakeButton("🆕 فاتورة جديدة [F2]", Color.FromArgb(60, 100, 60));
-            btnNew.Size = new Size(155, 35);
-            btnNew.Location = new Point(175, 8);
+            btnHold.Click += BtnHold_Click;
+            btnLoadHold.Click += BtnLoadHold_Click;
+            btnTawreed.Click += BtnSarf_Click;
             btnNew.Click += (s, e) => ClearInvoice();
-
-            btnPrint = Theme.MakeButton("🖨 طباعة [F9]", Color.FromArgb(80, 80, 80));
-            btnPrint.Size = new Size(100, 35);
-            btnPrint.Location = new Point(335, 8);
+            btnPrint.Click += BtnPrint_Click;
+            btnWhatsApp.Click += BtnWhatsApp_Click;
 
             Label lblHotkeys = new Label
             {
-                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F12] تركيز على الباركود",
+                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] تركيز على الباركود",
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Location = new Point(10, 65),
@@ -260,7 +270,7 @@ namespace ChickenDist.Forms
                 Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
             };
 
-            pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, btnNew, btnPrint, lblHotkeys });
+            pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, btnSave, btnHold, btnLoadHold, btnTawreed, btnNew, btnPrint, btnWhatsApp, lblHotkeys });
 
             base.Controls.Add(pnlItems);
             base.Controls.Add(pnlFooter);
@@ -662,6 +672,37 @@ namespace ChickenDist.Forms
             {
                 MessageBox.Show($"❌ فشلت طباعة الباركود للصنف '{name}':\n{ex.Message}", "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+        private void BtnHold_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnLoadHold_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnSarf_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnPrint_Click(object sender, EventArgs e)
+        {
+            if (_lastPurchaseID > 0)
+            {
+                MessageBox.Show("سيتم طباعة الفاتورة رقم " + _lastPurchaseID, "طباعة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("لا توجد فاتورة سابقة لطباعتها", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void BtnWhatsApp_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
