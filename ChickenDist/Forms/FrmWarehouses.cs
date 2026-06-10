@@ -238,9 +238,9 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 0, 10, 0)
             };
 
-            pnlStock.Controls.Add(dgStock);
-            pnlStock.Controls.Add(lblTotals);
             pnlStock.Controls.Add(pnlStockHeader);
+            pnlStock.Controls.Add(lblTotals);
+            pnlStock.Controls.Add(dgStock);
 
             pnlLeft.Controls.Add(pnlWFilter);
             pnlLeft.Controls.Add(pnlWGrid);

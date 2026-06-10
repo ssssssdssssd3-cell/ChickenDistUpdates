@@ -537,7 +537,7 @@ namespace ChickenDist.Forms
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(panel);
-            pnlItems.BringToFront();
+            pnlItems.SendToBack();
 			ToggleType();
 		}
 

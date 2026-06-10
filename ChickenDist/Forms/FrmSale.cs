@@ -876,9 +876,7 @@ namespace ChickenDist.Forms
 			base.Controls.Add(panel);
 			base.Controls.Add(pnlFooter);
 			base.Controls.Add(pnlItems);
-			panel.SendToBack();
-			pnlFooter.SendToBack();
-			pnlItems.BringToFront();
+			pnlItems.SendToBack();
 			ToggleType();
 			InitializeScale();
 			Theme.ApplyFormRTL(this);

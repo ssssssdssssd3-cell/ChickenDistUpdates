@@ -328,6 +328,9 @@ namespace ChickenDist.Forms
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
 
+            // تطبيق تهيئة الشاشات الفرعية والتجاوب للـ DPI
+            ScreenHelper.FitChildForm(form);
+
             pnlContent.Controls.Clear();
             pnlContent.Controls.Add(form);
             form.Show();

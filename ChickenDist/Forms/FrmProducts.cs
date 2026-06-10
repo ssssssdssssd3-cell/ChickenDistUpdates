@@ -135,62 +135,137 @@ namespace ChickenDist.Forms
             pnlSearch.Controls.Add(btnImport);
             pnlSearch.Controls.Add(btnQuickAdd);
 
-            split.Panel2.Controls.Add(dgProducts);
             split.Panel2.Controls.Add(pnlSearch);
-            pnlSearch.BringToFront();
+            split.Panel2.Controls.Add(dgProducts);
 
             // Right: Detail (Panel1 in RTL)
             split.Panel1.BackColor = Theme.BgCard;
-            split.Panel1.Padding = new Padding(15);
+            split.Panel1.Padding = new Padding(12);
             split.Panel1.AutoScroll = true;
 
-            int y = 20;
-            AddField(split.Panel1, "كود الصنف:", ref y, out txtCode);
-            txtCode.ReadOnly = false;
-            AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
-            AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
+            // بناء جدول الحقول (TableLayoutPanel) لتنظيم العناصر وتقليص الارتفاع
+            var tblFields = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 4,
+                RowCount = 9,
+                AutoSize = true,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(0),
+                RightToLeft = RightToLeft.Yes
+            };
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // Label 1
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f)); // Input 1
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // Label 2
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f)); // Input 2
 
-            // ComboBox للتصنيف
-            split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            cboCategory = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
-            split.Panel1.Controls.Add(cboCategory);
-            y += 38;
+            for (int i = 0; i < 9; i++)
+            {
+                tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+            }
 
-            AddField(split.Panel1, "الموديل المتوافق:", ref y, out txtCarModel);
-            AddField(split.Panel1, "الماركة:", ref y, out txtBrand);
-            AddField(split.Panel1, "موقع الرف:", ref y, out txtShelfLocation);
-            AddField(split.Panel1, "الوحدة:", ref y, out txtUnit);
+            Func<string, Label> createLbl = (labelText) => new Label
+            {
+                Text = labelText,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                ForeColor = Theme.TextSub,
+                Font = Theme.FontBold,
+                TextAlign = ContentAlignment.MiddleRight,
+                Padding = new Padding(0, 0, 4, 0)
+            };
 
-            split.Panel1.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            nudPurchasePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(nudPurchasePrice); y += 40;
-
-            split.Panel1.Controls.Add(new Label { Text = "سعر قطاعي:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            nudPrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(nudPrice); y += 40;
-
-            split.Panel1.Controls.Add(new Label { Text = "سعر نصف الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            nudSemiWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(nudSemiWholesalePrice); y += 40;
-
-            split.Panel1.Controls.Add(new Label { Text = "سعر الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            nudWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(nudWholesalePrice); y += 40;
-
-            split.Panel1.Controls.Add(new Label { Text = "حد الطلب:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            nudMinStockLimit = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 3, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(nudMinStockLimit); y += 40;
-
-            AddField(split.Panel1, "الوصف:", ref y, out txtDescription);
-
-            chkActive = new CheckBox { Text = "صنف نشط", Location = new Point(230, y), ForeColor = Theme.TextMain, Checked = true }; y += 40;
-            split.Panel1.Controls.Add(chkActive);
-
-            btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40));
+            txtCode = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            txtUnit = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill, Text = "قطعة" };
+            txtName = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            txtPartNumber = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            cboCategory = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Dock = DockStyle.Fill };
+            txtCarModel = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            txtBrand = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            txtShelfLocation = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
             
-            btnCopy = Theme.MakeButton("📋 نسخ صنف موجود", 40, y + 40, 290, 32, Color.FromArgb(100, 80, 140));
+            nudPurchasePrice = new NumericUpDown { Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Dock = DockStyle.Fill };
+            nudPrice = new NumericUpDown { Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Dock = DockStyle.Fill };
+            nudSemiWholesalePrice = new NumericUpDown { Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Dock = DockStyle.Fill };
+            nudWholesalePrice = new NumericUpDown { Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Dock = DockStyle.Fill };
+            nudMinStockLimit = new NumericUpDown { Minimum = 0, Maximum = 999999, DecimalPlaces = 3, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Dock = DockStyle.Fill };
+            
+            txtDescription = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Dock = DockStyle.Fill };
+            chkActive = new CheckBox { Text = "صنف نشط", ForeColor = Theme.TextMain, Checked = true, Dock = DockStyle.Fill };
+
+            // الصف الأول: كود الصنف + الوحدة
+            tblFields.Controls.Add(createLbl("كود الصنف:"), 0, 0);
+            tblFields.Controls.Add(txtCode, 1, 0);
+            tblFields.Controls.Add(createLbl("الوحدة:"), 2, 0);
+            tblFields.Controls.Add(txtUnit, 3, 0);
+
+            // الصف الثاني: اسم الصنف
+            tblFields.Controls.Add(createLbl("اسم الصنف:"), 0, 1);
+            tblFields.Controls.Add(txtName, 1, 1);
+            tblFields.SetColumnSpan(txtName, 3);
+
+            // الصف الثالث: رقم القطعة + التصنيف
+            tblFields.Controls.Add(createLbl("رقم القطعة:"), 0, 2);
+            tblFields.Controls.Add(txtPartNumber, 1, 2);
+            tblFields.Controls.Add(createLbl("التصنيف:"), 2, 2);
+            tblFields.Controls.Add(cboCategory, 3, 2);
+
+            // الصف الرابع: الموديل + الماركة
+            tblFields.Controls.Add(createLbl("الموديل:"), 0, 3);
+            tblFields.Controls.Add(txtCarModel, 1, 3);
+            tblFields.Controls.Add(createLbl("الماركة:"), 2, 3);
+            tblFields.Controls.Add(txtBrand, 3, 3);
+
+            // الصف الخامس: موقع الرف + حد الطلب
+            tblFields.Controls.Add(createLbl("موقع الرف:"), 0, 4);
+            tblFields.Controls.Add(txtShelfLocation, 1, 4);
+            tblFields.Controls.Add(createLbl("حد الطلب:"), 2, 4);
+            tblFields.Controls.Add(nudMinStockLimit, 3, 4);
+
+            // الصف السادس: سعر الشراء + سعر قطاعي
+            tblFields.Controls.Add(createLbl("سعر الشراء:"), 0, 5);
+            tblFields.Controls.Add(nudPurchasePrice, 1, 5);
+            tblFields.Controls.Add(createLbl("سعر قطاعي:"), 2, 5);
+            tblFields.Controls.Add(nudPrice, 3, 5);
+
+            // الصف السابع: نصف جملة + سعر جملة
+            tblFields.Controls.Add(createLbl("نصف جملة:"), 0, 6);
+            tblFields.Controls.Add(nudSemiWholesalePrice, 1, 6);
+            tblFields.Controls.Add(createLbl("سعر جملة:"), 2, 6);
+            tblFields.Controls.Add(nudWholesalePrice, 3, 6);
+
+            // الصف الثامن: الوصف
+            tblFields.Controls.Add(createLbl("الوصف:"), 0, 7);
+            tblFields.Controls.Add(txtDescription, 1, 7);
+            tblFields.SetColumnSpan(txtDescription, 3);
+
+            // الصف التاسع: صنف نشط
+            tblFields.Controls.Add(chkActive, 1, 8);
+            tblFields.SetColumnSpan(chkActive, 3);
+
+            // بناء لوحة أزرار الإجراءات
+            var pnlBtns = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 3,
+                RowCount = 2,
+                Height = 85,
+                Padding = new Padding(0, 10, 0, 0),
+                RightToLeft = RightToLeft.Yes
+            };
+            pnlBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            pnlBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            pnlBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+
+            btnNew = Theme.MakeButton("🆕 جديد", Color.FromArgb(60, 100, 60));
+            btnNew.Dock = DockStyle.Fill;
+            btnSave = Theme.MakeButton("💾 حفظ", Theme.Accent);
+            btnSave.Dock = DockStyle.Fill;
+            btnDelete = Theme.MakeButton("🗑 إيقاف", Color.FromArgb(140, 40, 40));
+            btnDelete.Dock = DockStyle.Fill;
+
+            btnCopy = Theme.MakeButton("📋 نسخ صنف موجود", Color.FromArgb(100, 80, 140));
+            btnCopy.Dock = DockStyle.Fill;
             btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 
             btnNew.Click += (s, e) => ClearDetail();
@@ -198,7 +273,14 @@ namespace ChickenDist.Forms
             btnDelete.Click += BtnDelete_Click;
             btnCopy.Click += BtnCopy_Click;
 
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnCopy });
+            pnlBtns.Controls.Add(btnNew, 0, 0);
+            pnlBtns.Controls.Add(btnSave, 1, 0);
+            pnlBtns.Controls.Add(btnDelete, 2, 0);
+            pnlBtns.Controls.Add(btnCopy, 0, 1);
+            pnlBtns.SetColumnSpan(btnCopy, 3);
+
+            split.Panel1.Controls.Add(pnlBtns);
+            split.Panel1.Controls.Add(tblFields);
             this.Controls.Add(split);
             split.SplitterDistance = 430;
 
