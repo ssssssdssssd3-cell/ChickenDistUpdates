@@ -51,6 +51,9 @@ namespace ChickenDist
             // تحويل مفتاح Enter إلى Tab للتنقل بين الخانات تلقائياً
             Application.AddMessageFilter(new EnterKeyFilter());
 
+            // تفعيل التمرير بعجلة الماوس لأي عنصر تحت المؤشر (بدون الحاجة للنقر أولاً)
+            Application.AddMessageFilter(new MouseWheelFilter());
+
             // ===== فحص اتصال قاعدة البيانات قبل أي شيء =====
             if (!CheckDatabaseConnection())
                 return;
@@ -244,5 +247,52 @@ namespace ChickenDist
             }
             return c;
         }
+    }
+
+    /// <summary>
+    /// مرشح عالمي لتمرير بكرة الماوس (Scroll Wheel) لأي عنصر تحت مؤشر الماوس
+    /// يحل مشكلة ضرورة النقر على العنصر أولاً لتفعيل التمرير
+    /// </summary>
+    internal class MouseWheelFilter : IMessageFilter
+    {
+        private const int WM_MOUSEWHEEL = 0x020A;
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg == WM_MOUSEWHEEL)
+            {
+                // احصل على العنصر تحت مؤشر الماوس
+                var pt = new System.Drawing.Point(
+                    (int)(short)((uint)m.LParam & 0xFFFF),         // X
+                    (int)(short)(((uint)m.LParam >> 16) & 0xFFFF)  // Y
+                );
+
+                var ctrl = Control.FromHandle(m.HWnd);
+                if (ctrl == null) return false;
+
+                // ابحث عن العنصر تحت المؤشر
+                var target = ctrl.TopLevelControl?.GetChildAtPoint(
+                    ctrl.TopLevelControl.PointToClient(pt),
+                    GetChildAtPointSkip.Invisible | GetChildAtPointSkip.Disabled);
+
+                if (target == null) target = ctrl;
+
+                // إذا كان العنصر المستهدف مختلفاً عن مستقبل الرسالة الأصلي، أعد التوجيه
+                if (target.Handle != m.HWnd)
+                {
+                    // أرسل رسالة التمرير للعنصر الصحيح
+                    Win32.SendMessage(target.Handle, WM_MOUSEWHEEL, m.WParam, m.LParam);
+                    return true; // منع المعالجة الافتراضية
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>استدعاءات Win32 API</summary>
+    internal static class Win32
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
     }
 }

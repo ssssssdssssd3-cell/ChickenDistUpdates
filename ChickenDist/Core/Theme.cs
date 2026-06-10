@@ -179,6 +179,13 @@ namespace ChickenDist.Core
             // تحسين تخطيط العناصر للتناسق مع الشاشات والريزليوشن المختلف تلقائياً
             OptimizeFormLayout(form);
 
+            // تمكين شريط التمرير والتنقل بالبكرة للشاشات الكبيرة عند تصغير الحجم أو تغيير DPI
+            if (form.WindowState == FormWindowState.Maximized || form.Width >= 1000 || form.MinimumSize.Width >= 1000)
+            {
+                form.AutoScroll = true;
+                form.AutoScrollMinSize = new Size(1000, 650);
+            }
+
             // Add form-level key listener for Enter as Tab navigation
             form.KeyPreview = true;
             form.KeyDown += (s, e) => {

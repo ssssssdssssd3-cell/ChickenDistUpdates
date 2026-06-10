@@ -639,11 +639,10 @@ namespace ChickenDist.Forms
             pnlFooter.Controls.Add(pnlBtnArea);
             pnlFooter.Controls.Add(pnlTotals);
 
-            // ── تجميع عناصر النموذج ────────────────────────────────────────────
-            base.Controls.Add(pnlHeader);
-            base.Controls.Add(pnlFooter);
-            base.Controls.Add(pnlItems);
-            pnlItems.SendToBack();
+            // ── تجميع عناصر النموذج ── ترتيب مهم: Bottom أولاً ثم Top ثم Fill
+            base.Controls.Add(pnlFooter);   // Bottom - يُضاف أولاً
+            base.Controls.Add(pnlHeader);   // Top
+            base.Controls.Add(pnlItems);    // Fill - يُضاف أخيراً
             ToggleType();
             Theme.ApplyFormRTL(this);
         }

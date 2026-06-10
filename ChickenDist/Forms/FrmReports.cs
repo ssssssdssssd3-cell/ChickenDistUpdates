@@ -111,7 +111,6 @@ namespace ChickenDist.Forms
 			btnPrint.Margin = new Padding(10, 0, 0, 0);
 			btnPrint.Click += BtnPrint_Click;
 			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint });
-			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
 				Dock = DockStyle.Fill,
@@ -181,8 +180,11 @@ namespace ChickenDist.Forms
 			{
 				LoadCurrentTab();
 			};
-			base.Controls.Add(tabReports);
-			tabReports.BringToFront();
+			// ترتيب صحيح: Top ثم Fill
+			base.Controls.Add(panel);       // Top
+			base.Controls.Add(tabReports);  // Fill
+
+			Theme.ApplyFormRTL(this);
 			LoadCurrentTab();
 		}
 

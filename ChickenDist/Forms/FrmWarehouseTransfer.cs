@@ -204,10 +204,10 @@ namespace ChickenDist.Forms
 
             pnlFooter.Controls.AddRange(new Control[] { btnSave, btnNew, lblCount });
 
-            // ── Assemble ───────────────────────────────────────────────────
-            this.Controls.Add(pnlItems);
-            this.Controls.Add(pnlFooter);
-            this.Controls.Add(pnlHeader);
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlFooter);  // Bottom - يُضاف أولاً
+            this.Controls.Add(pnlHeader);  // Top
+            this.Controls.Add(pnlItems);   // Fill - يُضاف أخيراً
 
             Theme.ApplyFormRTL(this);
         }

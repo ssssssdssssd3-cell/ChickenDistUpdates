@@ -134,10 +134,10 @@ namespace ChickenDist.Forms
                 }
             };
 
-            // إضافة إلى النموذج بالترتيب الصحيح
-            Controls.Add(dgCustody);
-            Controls.Add(pnlFooter);
-            Controls.Add(pnlTitle);
+            // إضافة إلى النموذج بالترتيب الصحيح: Bottom ثم Top ثم Fill
+            Controls.Add(pnlFooter);   // Bottom - يُضاف أولاً
+            Controls.Add(pnlTitle);    // Top
+            Controls.Add(dgCustody);   // Fill - يُضاف أخيراً
 
             Theme.ApplyFormRTL(this);
         }

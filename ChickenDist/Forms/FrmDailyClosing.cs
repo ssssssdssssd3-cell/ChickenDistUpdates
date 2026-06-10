@@ -51,7 +51,6 @@ namespace ChickenDist.Forms
             var titleBar = Theme.MakeTitleBar(
                 "📋 تقرير التقفيل اليومي",
                 $"إجمالي المبيعات  |  آخر توريد  |  مديونية العملاء");
-            Controls.Add(titleBar);
 
             // ── Top toolbar ───────────────────────────────────────────────────
             var toolbar = new Panel
@@ -98,7 +97,6 @@ namespace ChickenDist.Forms
             btnWhatsApp.Click += BtnWhatsAppClosing_Click;
 
             toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp });
-            Controls.Add(toolbar);
 
             // ── Summary footer ────────────────────────────────────────────────
             _pnlSummary = new Panel
@@ -127,7 +125,6 @@ namespace ChickenDist.Forms
             summaryFlow.Controls.AddRange(new Control[]
                 { _lblTotalInvoice, _lblTotalPayment, _lblTotalBalance });
             _pnlSummary.Controls.Add(summaryFlow);
-            Controls.Add(_pnlSummary);
 
             // ── DataGridView ──────────────────────────────────────────────────
             _dg = new DataGridView
@@ -163,13 +160,12 @@ namespace ChickenDist.Forms
                     Alignment  = DataGridViewContentAlignment.MiddleCenter
                 }
             };
-            Controls.Add(_dg);
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            Controls.Add(_pnlSummary); // Bottom
+            Controls.Add(titleBar);    // Top
+            Controls.Add(toolbar);     // Top
+            Controls.Add(_dg);         // Fill
 
-            // ensure Z-order: title → toolbar → grid → footer
-            titleBar.BringToFront();
-            toolbar.BringToFront();
-            _dg.BringToFront();
-            _pnlSummary.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 

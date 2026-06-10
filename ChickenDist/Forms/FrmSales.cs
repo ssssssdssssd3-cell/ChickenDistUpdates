@@ -387,10 +387,13 @@ namespace ChickenDist.Forms
 			lblCashSummary   = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:",       "0.00 ج", Theme.Success,                 3);
 			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:",       "0.00 ج", Color.FromArgb(52, 152, 219),  4);
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
-			base.Controls.Add(panel2);
-			base.Controls.Add(panel);
-			base.Controls.Add(flowLayoutPanel);
-			base.Controls.Add(tableLayoutPanel);
+			// ترتيب صحيح: Bottom ثم Top ثم Fill
+			base.Controls.Add(tableLayoutPanel);  // Bottom - يُضاف أولاً
+			base.Controls.Add(flowLayoutPanel);   // Top (filter bar)
+			base.Controls.Add(panel);             // Top (master grid)
+			base.Controls.Add(panel2);            // Fill - يُضاف أخيراً
+
+			Theme.ApplyFormRTL(this);
 		}
 
 		private Label AddDashboardCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIndex)

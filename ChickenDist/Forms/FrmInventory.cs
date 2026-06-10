@@ -130,10 +130,9 @@ namespace ChickenDist.Forms
                     BtnMovement_Click(s, e);
             };
 
-            pnlLeft.Controls.Add(dgStock); // Fill
+            // ترتيب صحيح: Top ثم Fill
             pnlLeft.Controls.Add(pnlF);    // Top
-            pnlF.BringToFront();
-            dgStock.SendToBack();
+            pnlLeft.Controls.Add(dgStock); // Fill
 
             // Panel Right: Adjustment Form (Dock Left, Width 340)
             var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15), AutoScroll = true };
@@ -223,10 +222,9 @@ namespace ChickenDist.Forms
 
             pnlDetails.Controls.AddRange(new Control[] { btnSaveAdj, btnClearAdj });
 
-            tabStock.Controls.Add(pnlLeft);
-            tabStock.Controls.Add(pnlDetails);
-            pnlDetails.BringToFront();
-            pnlLeft.SendToBack();
+            // ترتيب صحيح: Left ثم Fill
+            tabStock.Controls.Add(pnlDetails); // Left
+            tabStock.Controls.Add(pnlLeft);    // Fill
         }
 
         private void BuildLogsTab()
@@ -264,7 +262,6 @@ namespace ChickenDist.Forms
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
             pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });
-            tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdjDate", HeaderText = "التاريخ والوقت", FillWeight = 50 });
@@ -277,10 +274,9 @@ namespace ChickenDist.Forms
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات التسوية", FillWeight = 70 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", HeaderText = "بواسطة", FillWeight = 50 });
 
-            tabLogs.Controls.Add(dgLogs);
-            
-            pnlTop.BringToFront();
-            dgLogs.SendToBack();
+            // ترتيب صحيح: Top ثم Fill
+            tabLogs.Controls.Add(pnlTop); // Top
+            tabLogs.Controls.Add(dgLogs); // Fill
         }
 
         private void LoadStock()

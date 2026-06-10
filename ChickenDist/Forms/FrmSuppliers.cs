@@ -101,8 +101,8 @@ namespace ChickenDist.Forms
             dgSuppliers.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
             dgSuppliers.SelectionChanged += DgSuppliers_SelectionChanged;
 
-            pnlGrid.Controls.Add(pnlSearch);
             pnlGrid.Controls.Add(dgSuppliers);
+            pnlGrid.Controls.Add(pnlSearch);
 
             // Detail panel
             var pnlDetails = new Panel

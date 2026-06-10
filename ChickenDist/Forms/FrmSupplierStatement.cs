@@ -159,9 +159,12 @@ namespace ChickenDist.Forms
             };
 
             pnlFoot.Controls.AddRange(new Control[] { lblPurchases, lblPayments, lblBalance });
-            this.Controls.Add(pnlFoot);
 
-            dgStatement.BringToFront();
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlFoot);         // Bottom - يُضاف أولاً
+            // pnlFilter أُضيف مسبقاً كـ Top
+            this.Controls.Add(dgStatement);     // Fill - يُضاف أخيراً
+
             Theme.ApplyFormRTL(this);
         }
 

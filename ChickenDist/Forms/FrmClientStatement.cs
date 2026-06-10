@@ -116,15 +116,17 @@ namespace ChickenDist.Forms
                 }
             };
 
-            this.Controls.Add(dgStatement);
 
             var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 46, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
             lblBalance = new Label { Text = "الصافي: 0", ForeColor = Theme.Accent, Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.OrangeRed, Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
-            this.Controls.Add(pnlFoot);
-            dgStatement.BringToFront();
+
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlFoot);       // Bottom - يُضاف أولاً
+            // pnlFilter أُضيف مسبقاً كـ Top
+            this.Controls.Add(dgStatement);   // Fill - يُضاف أخيراً
             Theme.ApplyFormRTL(this);
         }
 
@@ -465,7 +467,6 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            this.Controls.Add(lblTitle);
 
             dgItems = new DataGridView
             {
@@ -488,10 +489,9 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Price", HeaderText = "السعر", FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Total", HeaderText = "الإجمالي", FillWeight = 50 });
-            this.Controls.Add(dgItems);
 
             var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-            
+
             lblTotal = new Label
             {
                 Text = "إجمالي العملية: 0.00 ج",
@@ -507,11 +507,10 @@ namespace ChickenDist.Forms
             btnClose.Click += (s, e) => this.Close();
             pnlBottom.Controls.Add(btnClose);
 
-            this.Controls.Add(pnlBottom);
-
-            lblTitle.BringToFront();
-            pnlBottom.BringToFront();
-            dgItems.BringToFront();
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlBottom);  // Bottom - يُضاف أولاً
+            this.Controls.Add(lblTitle);   // Top
+            this.Controls.Add(dgItems);    // Fill - يُضاف أخيراً
 
             LoadItems(transType, refID);
         }

@@ -296,14 +296,10 @@ namespace ChickenDist.Forms
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
-            // ===== 4. Add to form in correct Z-order docking hierarchy =====
-            this.Controls.Add(pnlGrid);   // Dock = Fill
-            this.Controls.Add(pnlFooter); // Dock = Bottom
-            this.Controls.Add(pnlSel);    // Dock = Top
-
-            pnlFooter.BringToFront();
-            pnlSel.BringToFront();
-            pnlGrid.SendToBack();
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlFooter); // Bottom
+            this.Controls.Add(pnlSel);    // Top
+            this.Controls.Add(pnlGrid);   // Fill
 
             Theme.ApplyFormRTL(this);
         }

@@ -98,10 +98,10 @@ namespace ChickenDist.Forms
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
             pnlActions.Controls.AddRange(new Control[] { btnSelect, btnCancel });
 
-            // Add in docking Z-order
-            this.Controls.Add(pnlGrid);      // Fill
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
             this.Controls.Add(pnlActions);   // Bottom
             this.Controls.Add(pnlSearch);    // Top
+            this.Controls.Add(pnlGrid);      // Fill
 
             Theme.ApplyFormRTL(this);
         }

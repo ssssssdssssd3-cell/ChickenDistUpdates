@@ -143,9 +143,10 @@ namespace ChickenDist.Forms
             lblCashOut = new Label { Text = "إجمالي صادر: 0", ForeColor = Color.OrangeRed, Location = new Point(450, 15), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Left };
             pnlFoot.Controls.AddRange(new Control[] { lblCashBalance, lblCashIn, lblCashOut });
 
-            tabCash.Controls.Add(pnlGrid); // Fill
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            tabCash.Controls.Add(pnlFoot); // Bottom - يُضاف أولاً
             tabCash.Controls.Add(pnlF);    // Top
-            tabCash.Controls.Add(pnlFoot); // Bottom
+            tabCash.Controls.Add(pnlGrid); // Fill - يُضاف أخيراً
         }
 
         private void BuildExpensesTab()

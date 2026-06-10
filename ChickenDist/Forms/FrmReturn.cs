@@ -256,14 +256,10 @@ namespace ChickenDist.Forms
 
             pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave, lblHotkeys });
 
-            // ===== 4. Add controls =====
-            this.Controls.Add(pnlGrid);
-            this.Controls.Add(pnlFoot);
-            this.Controls.Add(pnlInfo);
-            
-            pnlFoot.BringToFront();
-            pnlInfo.BringToFront();
-            pnlGrid.SendToBack();
+            // ترتيب صحيح: Bottom ثم Top ثم Fill
+            this.Controls.Add(pnlFoot); // Bottom
+            this.Controls.Add(pnlInfo);  // Top
+            this.Controls.Add(pnlGrid);  // Fill
             
             Theme.ApplyFormRTL(this);
         }

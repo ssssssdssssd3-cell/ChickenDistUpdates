@@ -873,10 +873,14 @@ namespace ChickenDist.Forms
 			pnlFooter.Controls.Add(pnlBtnArea);
 			pnlFooter.Controls.Add(pnlTotals);
 
-			base.Controls.Add(panel);
-			base.Controls.Add(pnlFooter);
-			base.Controls.Add(pnlItems);
-			pnlItems.SendToBack();
+			// ترتيب صحيح: الـ Dock=Bottom يجب أن يُضاف قبل Dock=Fill
+			// حتى لا يتغطى بـ pnlItems
+			base.Controls.Add(pnlFooter);  // Bottom - يُضاف أولاً
+			base.Controls.Add(panel);      // Top
+			base.Controls.Add(pnlItems);   // Fill - يُضاف أخيراً
+
+			// تفعيل التمرير بعجلة الماوس في الجدول
+			dgItems.MouseWheel += (s, e) => { }; // الجدول يدعم التمرير تلقائياً
 			ToggleType();
 			InitializeScale();
 			Theme.ApplyFormRTL(this);

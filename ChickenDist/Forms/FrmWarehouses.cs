@@ -238,9 +238,9 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 0, 10, 0)
             };
 
-            pnlStock.Controls.Add(pnlStockHeader);
-            pnlStock.Controls.Add(lblTotals);
             pnlStock.Controls.Add(dgStock);
+            pnlStock.Controls.Add(lblTotals);
+            pnlStock.Controls.Add(pnlStockHeader);
 
             pnlLeft.Controls.Add(pnlWFilter);
             pnlLeft.Controls.Add(pnlWGrid);
@@ -312,6 +312,8 @@ namespace ChickenDist.Forms
             tblMain.Controls.Add(pnlForm, 1, 0);
 
             this.Controls.Add(tblMain);
+
+            Theme.ApplyFormRTL(this);
         }
 
         // ══════════════════════════════════════════════════════

@@ -53,7 +53,6 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleLeft
             };
             pnlHeader.Controls.Add(lblTitle);
-            this.Controls.Add(pnlHeader);
 
             // Filter Bar
             var pnlFilters = new FlowLayoutPanel
@@ -95,7 +94,6 @@ namespace ChickenDist.Forms
             btnPrint.Click += (s, e) => PrintMovement();
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnLoad, btnPrint });
-            this.Controls.Add(pnlFilters);
 
             // Grid
             dgMovement = new DataGridView
@@ -125,12 +123,10 @@ namespace ChickenDist.Forms
             dgMovement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الحالي", FillWeight = 35 });
             dgMovement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان", FillWeight = 70 });
 
-            this.Controls.Add(dgMovement);
-
-            // Apply responsive Z-Order docking:
-            pnlHeader.BringToFront();
-            pnlFilters.BringToFront();
-            dgMovement.BringToFront();
+            // ترتيب صحيح: Top ثم Fill
+            this.Controls.Add(pnlHeader);  // Top
+            this.Controls.Add(pnlFilters); // Top
+            this.Controls.Add(dgMovement); // Fill
 
             Theme.ApplyFormRTL(this);
         }
