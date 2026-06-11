@@ -2,26 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
-using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة إدارة الأصناف</summary>
+    /// <summary>شاشة إدارة الأصناف المتوافقة مع قطع الغيار</summary>
     public class FrmProducts : Form
     {
         private DataGridView dgProducts;
-        private TextBox txtCode, txtName, txtUnit, txtDescription, txtInternationalBarcode;
-        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit;
-        private CheckBox chkActive, chkHasBarcode;
+        private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
+        private ComboBox cboCategory;
+        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
+        private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete;
         private int _selectedID = 0;
 
         public FrmProducts()
         {
             InitUI();
+            LoadCategoriesCombo();
             LoadProducts();
             ClearDetail();
         }
@@ -29,14 +30,12 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "إدارة الأصناف";
-            this.Size = new Size(900, 600);
+            this.Size = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
-
-            // header handled by main form's top bar
 
             var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, FixedPanel = FixedPanel.Panel1 };
 
@@ -59,10 +58,12 @@ namespace ChickenDist.Forms
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف" });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "السعر", FillWeight = 40 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 40 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 60 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 110 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 50 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             split.Panel2.Controls.Add(dgProducts);
@@ -76,45 +77,75 @@ namespace ChickenDist.Forms
             AddField(split.Panel1, "كود الصنف:", ref y, out txtCode);
             txtCode.ReadOnly = true;
             AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
+            AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
+            AddField(split.Panel1, "الكود الدولي (الباركود):", ref y, out txtInternationalCode);
+
+            // ComboBox للتصنيف مع زر إضافة
+            split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            cboCategory = new ComboBox { Location = new Point(50, y - 2), Width = 145, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            var btnAddCat = new Button { Text = "➕", Location = new Point(15, y - 2), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
+            split.Panel1.Controls.AddRange(new Control[] { cboCategory, btnAddCat });
+            y += 38;
+
+            AddField(split.Panel1, "الموديل المتوافق:", ref y, out txtCarModel);
+            AddField(split.Panel1, "الماركة:", ref y, out txtBrand);
+            AddField(split.Panel1, "موقع الرف:", ref y, out txtShelfLocation);
             AddField(split.Panel1, "الوحدة:", ref y, out txtUnit);
 
-            var lblPurchasePrice = new Label { Text = "سعر الشراء:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain };
-            split.Panel1.Controls.Add(lblPurchasePrice);
+            split.Panel1.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             nudPurchasePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             split.Panel1.Controls.Add(nudPurchasePrice); y += 40;
 
-            if (!Session.CanShowCostProfit("Products"))
-            {
-                lblPurchasePrice.Visible = false;
-                nudPurchasePrice.Visible = false;
-            }
-
-            split.Panel1.Controls.Add(new Label { Text = "سعر البيع:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            split.Panel1.Controls.Add(new Label { Text = "سعر قطاعي:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             nudPrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             split.Panel1.Controls.Add(nudPrice); y += 40;
+
+            split.Panel1.Controls.Add(new Label { Text = "سعر نصف الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            nudSemiWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            split.Panel1.Controls.Add(nudSemiWholesalePrice); y += 40;
+
+            split.Panel1.Controls.Add(new Label { Text = "سعر الجملة:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
+            nudWholesalePrice = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            split.Panel1.Controls.Add(nudWholesalePrice); y += 40;
 
             split.Panel1.Controls.Add(new Label { Text = "حد الطلب:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             nudMinStockLimit = new NumericUpDown { Location = new Point(15, y - 2), Width = 180, Minimum = 0, Maximum = 999999, DecimalPlaces = 3, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             split.Panel1.Controls.Add(nudMinStockLimit); y += 40;
 
             AddField(split.Panel1, "الوصف:", ref y, out txtDescription);
-            AddField(split.Panel1, "الكود الدولي:", ref y, out txtInternationalBarcode);
 
-            chkHasBarcode = new CheckBox { Text = "له ملصق باركود مطبوع", Location = new Point(140, y), Width = 180, ForeColor = Theme.TextMain, Checked = true };
-            chkActive = new CheckBox { Text = "صنف نشط", Location = new Point(40, y), Width = 90, ForeColor = Theme.TextMain, Checked = true }; y += 40;
-            split.Panel1.Controls.AddRange(new Control[] { chkHasBarcode, chkActive });
+            chkActive = new CheckBox { Text = "صنف نشط", Location = new Point(230, y), ForeColor = Theme.TextMain, Checked = true }; y += 40;
+            split.Panel1.Controls.Add(chkActive);
 
             btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
             btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 40;
+            btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40));
+            var btnPrintBarcode = Theme.MakeButton("🏷️ طباعة الباركود", 40, y + 40, 290, 32, Theme.Primary);
             
-            var btnPrintBarcode = Theme.MakeButton("🖨️ طباعة ملصق باركود", 40, y, 290, 32, Theme.Primary);
-            
+            var btnQuickAdd = Theme.MakeButton("⚡ الإدخال السريع للأصناف", 40, y + 80, 290, 32, Color.FromArgb(60, 100, 60));
+            btnQuickAdd.Click += (s, e) =>
+            {
+                if (new FrmQuickAdd().ShowDialog() == DialogResult.OK)
+                {
+                    LoadProducts();
+                }
+            };
+
+            var btnImportExcel = Theme.MakeButton("📥 استيراد الأصناف من إكسل", 40, y + 120, 290, 32, Theme.Accent);
+            btnImportExcel.Click += (s, e) =>
+            {
+                if (new FrmImportProducts().ShowDialog() == DialogResult.OK)
+                {
+                    LoadProducts();
+                }
+            };
+
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnPrintBarcode.Click += BtnPrintBarcode_Click;
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode });
+            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode, btnQuickAdd, btnImportExcel });
             this.Controls.Add(split);
             split.SplitterDistance = 350;
 
@@ -124,9 +155,22 @@ namespace ChickenDist.Forms
         private void AddField(Control parent, string label, ref int y, out TextBox txt)
         {
             parent.Controls.Add(new Label { Text = label, Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            txt = new TextBox { Location = new Point(15, y - 2), Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txt = new TextBox { Location = new Point(15, y - 2), Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             parent.Controls.Add(txt);
             y += 38;
+        }
+
+        private void LoadCategoriesCombo()
+        {
+            cboCategory.Items.Clear();
+            cboCategory.Items.Add(new ComboItem(0, "-- بدون تصنيف --"));
+            DataTable dt = CategoryDAL.GetAll(true);
+            foreach (DataRow r in dt.Rows)
+            {
+                cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+            }
+            cboCategory.DisplayMember = "Text";
+            cboCategory.SelectedIndex = 0;
         }
 
         private void LoadProducts()
@@ -136,7 +180,8 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dt.Rows)
             {
                 bool active = Convert.ToBoolean(r["IsActive"]);
-                var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["ProductName"],
+                var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
+                    r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
                     r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
                 if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
             }
@@ -150,35 +195,75 @@ namespace ChickenDist.Forms
             if (dr == null) return;
             txtCode.Text = dr["ProductCode"].ToString();
             txtName.Text = dr["ProductName"].ToString();
+            txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
+            txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
+            txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
+            txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
+            txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
             txtUnit.Text = dr["Unit"].ToString();
             nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
             nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
+            nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
+            nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
             nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
             txtDescription.Text = dr["Description"].ToString();
-            txtInternationalBarcode.Text = dr["InternationalBarcode"] != DBNull.Value ? dr["InternationalBarcode"].ToString() : "";
-            chkHasBarcode.Checked = dr["HasBarcode"] == DBNull.Value || Convert.ToBoolean(dr["HasBarcode"]);
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
+
+            // تحديد التصنيف في الـ ComboBox
+            if (dr["CategoryID"] != DBNull.Value)
+            {
+                int catID = Convert.ToInt32(dr["CategoryID"]);
+                for (int i = 0; i < cboCategory.Items.Count; i++)
+                {
+                    if (cboCategory.Items[i] is ComboItem item && item.ID == catID)
+                    {
+                        cboCategory.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                cboCategory.SelectedIndex = 0;
+            }
         }
 
         private void ClearDetail()
         {
             _selectedID = 0;
             txtCode.Text = ProductDAL.GetNextProductCode();
-            txtName.Clear(); txtUnit.Text = "رأس";
+            txtName.Clear(); 
+            txtPartNumber.Clear();
+            txtInternationalCode.Clear();
+            txtCarModel.Clear();
+            txtBrand.Clear();
+            txtShelfLocation.Clear();
+            if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
+            txtUnit.Text = "قطعة";
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
+            nudWholesalePrice.Value = 0;
+            nudSemiWholesalePrice.Value = 0;
             nudMinStockLimit.Value = 0;
             txtDescription.Clear();
-            txtInternationalBarcode.Clear();
-            chkHasBarcode.Checked = true;
             chkActive.Checked = true;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
+            
+            int? categoryID = null;
+            if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                categoryID = ci.ID;
+            }
+
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
-                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text, txtInternationalBarcode.Text, chkHasBarcode.Checked);
+                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
+                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
+                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim());
+            
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadProducts(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
@@ -194,117 +279,22 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0)
             {
-                MessageBox.Show("اختر صنفاً أولاً لطباعة الباركود الخاص به.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى اختيار صنف أولاً للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             var dr = ProductDAL.GetByID(_selectedID);
             if (dr == null) return;
 
-            bool hasBarcode = dr["HasBarcode"] == DBNull.Value || Convert.ToBoolean(dr["HasBarcode"]);
-            if (!hasBarcode)
+            string name = dr["ProductName"]?.ToString() ?? "";
+            string code = dr["ProductCode"]?.ToString() ?? "";
+            string intCode = dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
+            decimal price = Convert.ToDecimal(dr["SalePrice"]);
+            string shelfLocation = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
+
+            using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price, shelfLocation))
             {
-                MessageBox.Show("هذا الصنف محدد بأنه 'ليس له باركود' في كارت الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            // Ask for quantity of prints
-            Form prompt = new Form()
-            {
-                Width = 300,
-                Height = 160,
-                Text = "طباعة ملصقات الباركود",
-                StartPosition = FormStartPosition.CenterParent,
-                RightToLeft = RightToLeft.Yes,
-                RightToLeftLayout = true,
-                BackColor = Theme.BgCard,
-                Font = Theme.FontMain,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false,
-                MinimizeBox = false
-            };
-            Label textLabel = new Label() { Left = 20, Top = 20, Text = "عدد الملصقات المطلوب طباعتها:", AutoSize = true, ForeColor = Theme.TextMain };
-            NumericUpDown input = new NumericUpDown() { Left = 20, Top = 45, Width = 240, Minimum = 1, Maximum = 100, Value = 1, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            Button confirmation = Theme.MakeButton("🖨️ طباعة", 100, 85, 100, 30, Theme.Success);
-            confirmation.Click += (senderPrompt, ePrompt) => { prompt.DialogResult = DialogResult.OK; prompt.Close(); };
-            prompt.Controls.Add(textLabel);
-            prompt.Controls.Add(input);
-            prompt.Controls.Add(confirmation);
-
-            // Apply Theme RTL to dialog
-            Theme.ApplyRTL(prompt.Controls);
-
-            if (prompt.ShowDialog() == DialogResult.OK)
-            {
-                int qty = (int)input.Value;
-                // Use international barcode if filled, otherwise local product code
-                string codeToPrint = dr["InternationalBarcode"] != DBNull.Value && !string.IsNullOrWhiteSpace(dr["InternationalBarcode"].ToString())
-                    ? dr["InternationalBarcode"].ToString()
-                    : dr["ProductCode"].ToString();
-
-                PrintBarcodeLabels(codeToPrint, dr["ProductName"].ToString(), Convert.ToDecimal(dr["SalePrice"]), qty);
+                dlg.ShowDialog(this);
             }
         }
-
-        private void PrintBarcodeLabels(string code, string name, decimal price, int qty)
-        {
-            try
-            {
-                var pd = new PrintDocument();
-                if (AppConfig.ThermalPrinterEnabled && !string.IsNullOrEmpty(AppConfig.ThermalPrinterName))
-                {
-                    pd.PrinterSettings.PrinterName = AppConfig.ThermalPrinterName;
-                }
-                
-                pd.DefaultPageSettings.PaperSize = new PaperSize("BarcodeLabel", 180, 100);
-                pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
-
-                int printedCount = 0;
-                pd.PrintPage += (s, ev) =>
-                {
-                    var g = ev.Graphics;
-                    var nameFont = new Font("Arial", 8, FontStyle.Bold);
-                    var codeFont = new Font("Arial", 10, FontStyle.Bold);
-                    var priceFont = new Font("Arial", 8);
-
-                    int pageW = ev.PageBounds.Width;
-                    int pageH = ev.PageBounds.Height;
-                    
-                    var center = new StringFormat { Alignment = StringAlignment.Center };
-
-                    g.DrawString(AppConfig.CompanyName, priceFont, Brushes.Black, new RectangleF(0, 5, pageW, 14), center);
-                    g.DrawString(name, nameFont, Brushes.Black, new RectangleF(0, 20, pageW, 16), center);
-                    g.DrawString($"* {code} *", codeFont, Brushes.Black, new RectangleF(0, 40, pageW, 20), center);
-                    
-                    // Simulated barcode lines
-                    int startX = 30;
-                    int endX = pageW - 30;
-                    int barY = 60;
-                    int barH = 15;
-                    Pen thinPen = new Pen(Color.Black, 1.5f);
-                    Pen thickPen = new Pen(Color.Black, 3f);
-                    
-                    for (int x = startX; x < endX; x += 4)
-                    {
-                        if (x % 3 == 0)
-                            g.DrawLine(thickPen, x, barY, x, barY + barH);
-                        else
-                            g.DrawLine(thinPen, x, barY, x, barY + barH);
-                    }
-
-                    g.DrawString($"السعر: {price:N2} ج", nameFont, Brushes.Black, new RectangleF(0, 80, pageW, 16), center);
-
-                    printedCount++;
-                    ev.HasMorePages = printedCount < qty;
-                };
-
-                pd.Print();
-                MessageBox.Show($"✅ تم إرسال {qty} ملصق باركود للطابعة بنجاح!", "نجاح الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ فشلت طباعة الباركود:\n{ex.Message}", "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-    }}
-
+    }
+}

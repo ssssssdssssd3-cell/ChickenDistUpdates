@@ -13,8 +13,7 @@ using ChickenDist.DAL;
 namespace ChickenDist.Forms
 {
     /// <summary>
-    /// شاشة ذكية للغاية لاستيراد الأصناف من ملف CSV للعملاء الجدد،
-    /// مع الحفاظ الكامل على سلامة البيانات وعدم تكرار الأصناف وإنشاء تسوية جردية للأرصدة.
+    /// شاشة ذكية للغاية لاستيراد الأصناف من ملف Excel مع إمكانية مطابقة الأعمدة ديناميكياً
     /// </summary>
     public class FrmImportProducts : Form
     {
@@ -22,11 +21,14 @@ namespace ChickenDist.Forms
         private Label lblTitle, lblDesc;
         private DataGridView dgPreview;
         private ComboBox cboStockPolicy;
-        private Button btnBrowse, btnCopyTemplate, btnImport, btnCancel;
+        private Button btnBrowse, btnCopyTemplate, btnImport, btnCancel, btnPreview;
+        private GroupBox grpMapping;
         private Label lblStats;
 
         private List<ParsedProductRow> _parsedRows = new List<ParsedProductRow>();
         private Dictionary<string, int> _warehouseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, ComboBox> _mappings = new Dictionary<string, ComboBox>(StringComparer.OrdinalIgnoreCase);
+        private List<string[]> _allLines = null;
 
         public FrmImportProducts()
         {
@@ -37,7 +39,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "📥 استيراد الأصناف من ملف Excel";
-            this.Size = new Size(1100, 680);
+            this.Size = new Size(1100, 700);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
@@ -46,13 +48,13 @@ namespace ChickenDist.Forms
 
             // شريط العنوان
             pnlHeader = Theme.MakeTitleBar("📥 استيراد الأصناف والبيانات الافتتاحية", 
-                "استيراد الأصناف والأسعار والأرصدة من ملف Excel (.xlsx) مع التحقق التلقائي لمنع التكرار وتحديث البيانات بأمان.");
+                "استيراد الأصناف والأسعار والأرصدة من ملف Excel (.xlsx) مع مطابقة الأعمدة ديناميكياً وتفادي التكرار.");
             this.Controls.Add(pnlHeader);
 
             // لوحة التحكم العلوية
             var pnlTopControls = new Panel
             {
-                Location = new Point(20, 80),
+                Location = new Point(20, 85),
                 Size = new Size(1045, 65),
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10)
@@ -96,11 +98,57 @@ namespace ChickenDist.Forms
 
             this.Controls.Add(pnlTopControls);
 
+            // لوحة مطابقة الأعمدة
+            grpMapping = new GroupBox
+            {
+                Text = "⚙️ مطابقة أعمدة ملف Excel / Column Mapping",
+                Location = new Point(20, 155),
+                Size = new Size(1045, 175),
+                ForeColor = Theme.TextMain,
+                Enabled = false
+            };
+
+            AddMappingField("ProductCode", "كود الصنف:", 0, 0);
+            AddMappingField("ProductName", "اسم الصنف (*):", 0, 1);
+            AddMappingField("PartNumber", "رقم القطعة (OEM):", 0, 2);
+            AddMappingField("CategoryName", "التصنيف / القسم:", 0, 3);
+            AddMappingField("Unit", "الوحدة الأساسية:", 0, 4);
+
+            AddMappingField("PurchasePrice", "سعر الشراء:", 1, 0);
+            AddMappingField("SalePrice", "سعر البيع قطاعي:", 1, 1);
+            AddMappingField("SemiWholesalePrice", "سعر نصف جملة:", 1, 2);
+            AddMappingField("WholesalePrice", "سعر الجملة:", 1, 3);
+            AddMappingField("MinStockLimit", "حد الطلب الأدنى:", 1, 4);
+
+            AddMappingField("InitialStock", "الرصيد الافتتاحي:", 2, 0);
+            AddMappingField("WarehouseName", "المخزن المستهدف:", 2, 1);
+            AddMappingField("CarModel", "الموديل المتوافق:", 2, 2);
+            AddMappingField("Brand", "الماركة / الشركة:", 2, 3);
+            AddMappingField("ShelfLocation", "موقع الرف:", 2, 4);
+
+            this.Controls.Add(grpMapping);
+
+            // زر المعاينة والإحصائيات
+            lblStats = new Label
+            {
+                Text = "يرجى اختيار ملف Excel (.xlsx) للبدء بالمعاينة والمطابقة...",
+                Location = new Point(20, 340),
+                Size = new Size(830, 24),
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            this.Controls.Add(lblStats);
+
+            btnPreview = Theme.MakeButton("👁️ معاينة ومطابقة البيانات", 865, 335, 200, 32, Theme.Primary);
+            btnPreview.Enabled = false;
+            btnPreview.Click += BtnPreview_Click;
+            this.Controls.Add(btnPreview);
+
             // جدول المعاينة
             dgPreview = new DataGridView
             {
-                Location = new Point(20, 155),
-                Size = new Size(1045, 410),
+                Location = new Point(20, 375),
+                Size = new Size(1045, 220),
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -142,18 +190,8 @@ namespace ChickenDist.Forms
 
             this.Controls.Add(dgPreview);
 
-            // الإحصائيات والأزرار بالأسفل
-            int yBottom = 575;
-
-            lblStats = new Label
-            {
-                Text = "يرجى اختيار ملف Excel (.xlsx) للبدء بالمعاينة والمطابقة...",
-                Location = new Point(20, yBottom + 12),
-                Size = new Size(500, 24),
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
-            };
-            this.Controls.Add(lblStats);
+            // الأزرار بالأسفل
+            int yBottom = 605;
 
             btnImport = Theme.MakeButton("📥 بدء الاستيراد", 725, yBottom, 160, 40, Theme.Success);
             btnImport.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -168,6 +206,35 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void AddMappingField(string key, string arabicLabel, int colIdx, int rowIdx)
+        {
+            int colX = colIdx == 0 ? 20 : colIdx == 1 ? 360 : 700;
+            int y = 25 + rowIdx * 28;
+
+            var lbl = new Label
+            {
+                Text = arabicLabel,
+                Location = new Point(colX + 210, y + 3),
+                Size = new Size(110, 22),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            var cbo = new ComboBox
+            {
+                Location = new Point(colX, y),
+                Width = 200,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+
+            grpMapping.Controls.Add(lbl);
+            grpMapping.Controls.Add(cbo);
+            _mappings[key] = cbo;
+        }
+
         private void LoadWarehouses()
         {
             _warehouseMap.Clear();
@@ -175,6 +242,90 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dt.Rows)
             {
                 _warehouseMap[r["WarehouseName"].ToString()] = (int)r["WarehouseID"];
+            }
+        }
+
+        private void PopulateMappings(string[] headers)
+        {
+            foreach (var kv in _mappings)
+            {
+                ComboBox cbo = kv.Value;
+                cbo.Items.Clear();
+                cbo.Items.Add("[غير حدد]");
+
+                if (kv.Key == "ProductCode")
+                {
+                    cbo.Items.Add("[توليد تلقائي / AUTO]");
+                }
+
+                foreach (string header in headers)
+                {
+                    cbo.Items.Add(header);
+                }
+
+                cbo.SelectedIndex = 0; // Default to unmapped
+            }
+        }
+
+        private void AutoMatchColumns(string[] headers)
+        {
+            var ruleMap = new Dictionary<string, string[]>
+            {
+                { "ProductCode", new[] { "كود", "code", "barcode", "الباركود", "الصنف كود", "رقم الصنف", "رقم_الصنف", "كود_الصنف" } },
+                { "ProductName", new[] { "اسم", "name", "product", "item", "اسم الصنف", "اسم_الصنف", "الاسم" } },
+                { "PartNumber", new[] { "قطعة", "part", "oem", "رقم القطعة", "رقم_القطعة", "oem_number", "part_number", "رقم قطعة" } },
+                { "CategoryName", new[] { "تصنيف", "فئة", "قسم", "category", "group", "القسم", "الفئة" } },
+                { "CarModel", new[] { "موديل", "سيارة", "model", "car", "الموديل", "الموديل المتوافق" } },
+                { "Brand", new[] { "ماركة", "شركة", "براند", "brand", "make", "الماركة" } },
+                { "ShelfLocation", new[] { "رف", "موقع", "مكان", "shelf", "location", "موقع الرف", "رقم الرف", "الرف" } },
+                { "Unit", new[] { "وحدة", "unit", "الوحدة" } },
+                { "PurchasePrice", new[] { "شراء", "تكلفة", "cost", "purchase", "سعر الشراء", "سعر_الشراء", "سعر التكلفة" } },
+                { "SalePrice", new[] { "قطاعي", "بيع", "سعر", "price", "sale", "سعر البيع", "سعر_البيع", "سعر القطاعي" } },
+                { "SemiWholesalePrice", new[] { "نصف جملة", "نصف_جملة", "semi", "semi_wholesale", "سعر نصف جملة" } },
+                { "WholesalePrice", new[] { "جملة", "wholesale", "سعر الجملة" } },
+                { "MinStockLimit", new[] { "حد الطلب", "الطلب", "min", "limit", "minimum", "حد_الطلب" } },
+                { "InitialStock", new[] { "افتتاحي", "رصيد", "كمية", "qty", "quantity", "stock", "initial", "الرصيد الافتتاحي" } },
+                { "WarehouseName", new[] { "مخزن", "مستودع", "warehouse", "store", "المخزن" } }
+            };
+
+            foreach (var kv in _mappings)
+            {
+                ComboBox cbo = kv.Value;
+                string fieldKey = kv.Key;
+                string[] keywords = ruleMap[fieldKey];
+
+                int matchedIndex = -1; // Default to [غير محدد]
+                if (fieldKey == "ProductCode") matchedIndex = -2; // Default to [توليد تلقائي]
+
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    string header = headers[i].Trim().ToLowerInvariant();
+                    foreach (string keyword in keywords)
+                    {
+                        if (header.Contains(keyword.ToLowerInvariant()))
+                        {
+                            if (fieldKey == "ProductCode")
+                                matchedIndex = i + 2;
+                            else
+                                matchedIndex = i + 1;
+                            break;
+                        }
+                    }
+                    if (matchedIndex >= 0 || (fieldKey == "ProductCode" && matchedIndex != -2))
+                        break; 
+                }
+
+                if (fieldKey == "ProductCode")
+                {
+                    if (matchedIndex == -2) cbo.SelectedIndex = 1; // [توليد تلقائي]
+                    else if (matchedIndex == -1) cbo.SelectedIndex = 0; // [غير حدد]
+                    else cbo.SelectedIndex = matchedIndex;
+                }
+                else
+                {
+                    if (matchedIndex == -1) cbo.SelectedIndex = 0; // [غير حدد]
+                    else cbo.SelectedIndex = matchedIndex;
+                }
             }
         }
 
@@ -205,19 +356,87 @@ namespace ChickenDist.Forms
                 dlg.Filter = "Excel Files (*.xlsx)|*.xlsx|All Files (*.*)|*.*";
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    ParseProductsExcel(dlg.FileName);
+                    try
+                    {
+                        _allLines = XlsxParser.Parse(dlg.FileName);
+                        if (_allLines == null || _allLines.Count == 0)
+                        {
+                            MessageBox.Show("الملف فارغ أو لم نتمكن من قراءته.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        string[] headers = _allLines[0];
+                        PopulateMappings(headers);
+                        AutoMatchColumns(headers);
+
+                        grpMapping.Enabled = true;
+                        btnPreview.Enabled = true;
+                        btnImport.Enabled = false;
+
+                        lblStats.Text = $"📂 تم تحميل الملف بنجاح! يحتوي على {headers.Length} عمود و {_allLines.Count - 1} صف. يرجى مراجعة وتأكيد مطابقة الأعمدة بالأسفل.";
+                        lblStats.ForeColor = Theme.Success;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل قراءة ملف Excel:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
 
-        private void ParseProductsExcel(string filePath)
+        private void BtnPreview_Click(object sender, EventArgs e)
         {
+            if (_allLines == null || _allLines.Count <= 1)
+            {
+                MessageBox.Show("يرجى اختيار ملف Excel يحتوي على بيانات أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 1. التحقق من ربط اسم الصنف
+            ComboBox cboName = _mappings["ProductName"];
+            if (cboName.SelectedIndex <= 0) // [غير حدد]
+            {
+                MessageBox.Show("❌ يجب تحديد العمود المقابل لـ (اسم الصنف) على الأقل للاستيراد.", "خطأ مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 2. التحقق من تكرار الأعمدة المربوطة
+            var mappedIndices = new Dictionary<int, string>();
+            foreach (var kv in _mappings)
+            {
+                ComboBox cbo = kv.Value;
+                string fieldKey = kv.Key;
+
+                int colIdx = -1;
+                if (fieldKey == "ProductCode")
+                {
+                    if (cbo.SelectedIndex == 1) colIdx = -2; // AUTO
+                    else if (cbo.SelectedIndex > 1) colIdx = cbo.SelectedIndex - 2;
+                }
+                else
+                {
+                    if (cbo.SelectedIndex > 0) colIdx = cbo.SelectedIndex - 1;
+                }
+
+                if (colIdx >= 0)
+                {
+                    if (mappedIndices.TryGetValue(colIdx, out string existingField))
+                    {
+                        string friendlyExisting = GetFriendlyName(existingField);
+                        string friendlyCurrent = GetFriendlyName(fieldKey);
+                        MessageBox.Show($"❌ لا يمكن مطابقة نفس العمود بالملف لأكثر من حقل!\nالعمود '{cbo.SelectedItem}' تم ربطه بكل من '{friendlyExisting}' و '{friendlyCurrent}'.", "تضارب مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    mappedIndices[colIdx] = fieldKey;
+                }
+            }
+
+            // 3. قراءة البيانات وبناء المعاينة
             try
             {
                 _parsedRows.Clear();
                 dgPreview.Rows.Clear();
 
-                // قراءة القواميس للمطابقة السريعة ومنع التكرار
                 var codeMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 var partMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 var nameMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -239,48 +458,60 @@ namespace ChickenDist.Forms
                         nameMap[normName] = (int)r["ProductID"];
                 }
 
-                // قراءة ملف Excel باستخدام قارئ Excel المدمج
-                List<string[]> lines = XlsxParser.Parse(filePath);
-                if (lines.Count <= 1)
-                {
-                    MessageBox.Show("الملف فارغ أو يحتوي على الهيدر فقط.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
                 int newCount = 0;
                 int updateCount = 0;
 
-                for (int idx = 1; idx < lines.Count; idx++)
+                for (int idx = 1; idx < _allLines.Count; idx++)
                 {
-                    string[] cols = lines[idx];
-                    if (cols == null || cols.Length < 2) continue; // يجب أن يحتوي على كود واسم على الأقل
+                    string[] cols = _allLines[idx];
+                    if (cols == null || cols.Length == 0) continue;
 
-                    string code = cols[0].Trim();
-                    string name = cols[1].Trim();
-                    if (string.IsNullOrEmpty(name)) continue; // تخطي السطور بدون اسم
+                    string GetValue(string key)
+                    {
+                        ComboBox cbo = _mappings[key];
+                        int colIdx = -1;
+                        if (key == "ProductCode")
+                        {
+                            if (cbo.SelectedIndex == 1) colIdx = -2; // AUTO
+                            else if (cbo.SelectedIndex > 1) colIdx = cbo.SelectedIndex - 2;
+                        }
+                        else
+                        {
+                            if (cbo.SelectedIndex > 0) colIdx = cbo.SelectedIndex - 1;
+                        }
 
-                    string part = cols.Length > 2 ? cols[2].Trim() : "";
-                    string category = cols.Length > 3 ? cols[3].Trim() : "";
-                    string model = cols.Length > 4 ? cols[4].Trim() : "";
-                    string brand = cols.Length > 5 ? cols[5].Trim() : "";
-                    string shelf = cols.Length > 6 ? cols[6].Trim() : "";
-                    string unit = cols.Length > 7 && !string.IsNullOrEmpty(cols[7]) ? cols[7].Trim() : "قطعة";
+                        if (colIdx == -2) return "AUTO";
+                        if (colIdx < 0 || colIdx >= cols.Length) return "";
+                        return (cols[colIdx] ?? "").Trim();
+                    }
+
+                    string name = GetValue("ProductName");
+                    if (string.IsNullOrEmpty(name)) continue; 
+
+                    string code = GetValue("ProductCode");
+                    string part = GetValue("PartNumber");
+                    string category = GetValue("CategoryName");
+                    string model = GetValue("CarModel");
+                    string brand = GetValue("Brand");
+                    string shelf = GetValue("ShelfLocation");
+                    string unit = GetValue("Unit");
+                    if (string.IsNullOrEmpty(unit)) unit = "قطعة";
 
                     decimal purchasePrice = 0, salePrice = 0, semiWholesale = 0, wholesale = 0, minStock = 0, initialStock = 0;
-                    if (cols.Length > 8) decimal.TryParse(cols[8].Trim(), out purchasePrice);
-                    if (cols.Length > 9) decimal.TryParse(cols[9].Trim(), out salePrice);
-                    if (cols.Length > 10) decimal.TryParse(cols[10].Trim(), out semiWholesale);
-                    if (cols.Length > 11) decimal.TryParse(cols[11].Trim(), out wholesale);
-                    if (cols.Length > 12) decimal.TryParse(cols[12].Trim(), out minStock);
-                    if (cols.Length > 13) decimal.TryParse(cols[13].Trim(), out initialStock);
+                    decimal.TryParse(GetValue("PurchasePrice"), out purchasePrice);
+                    decimal.TryParse(GetValue("SalePrice"), out salePrice);
+                    decimal.TryParse(GetValue("SemiWholesalePrice"), out semiWholesale);
+                    decimal.TryParse(GetValue("WholesalePrice"), out wholesale);
+                    decimal.TryParse(GetValue("MinStockLimit"), out minStock);
+                    decimal.TryParse(GetValue("InitialStock"), out initialStock);
 
-                    string warehouseName = cols.Length > 14 ? cols[14].Trim() : "المخزن الرئيسي";
+                    string warehouseName = GetValue("WarehouseName");
+                    if (string.IsNullOrEmpty(warehouseName)) warehouseName = "المخزن الرئيسي";
 
-                    // مطابقة الصنف لتحديد هل هو جديد أم موجود
                     int matchedProductID = 0;
                     bool isExisting = false;
 
-                    if (!string.IsNullOrEmpty(code) && codeMap.TryGetValue(code, out int idByCode))
+                    if (!string.IsNullOrEmpty(code) && code != "AUTO" && codeMap.TryGetValue(code, out int idByCode))
                     {
                         matchedProductID = idByCode;
                         isExisting = true;
@@ -296,7 +527,6 @@ namespace ChickenDist.Forms
                         isExisting = true;
                     }
 
-                    // جلب الرصيد الحالي للصنف لو كان موجوداً
                     decimal currentStock = 0;
                     if (isExisting)
                     {
@@ -329,7 +559,6 @@ namespace ChickenDist.Forms
 
                     _parsedRows.Add(row);
 
-                    // إضافة للجدول للمعاينة
                     string statusText = isExisting ? "⚠️ تعديل صنف موجود" : "🆕 صنف جديد";
                     int gridIdx = dgPreview.Rows.Add(
                         statusText,
@@ -344,7 +573,6 @@ namespace ChickenDist.Forms
                         row.WarehouseName
                     );
 
-                    // تلوين الصفوف حسب الحالة
                     if (isExisting)
                     {
                         dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(45, 40, 20);
@@ -365,7 +593,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل قراءة ملف Excel:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل معاينة ومطابقة البيانات:\n" + ex.Message, "خطأ المعاينة", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -384,15 +612,11 @@ namespace ChickenDist.Forms
             int failed = 0;
 
             int stockPolicyIndex = cboStockPolicy.SelectedIndex; 
-            // 0 = تجاهل رصيد المشتريات للأصناف الموجودة
-            // 1 = جمع الرصيد المستورد مع الرصيد الحالي
-            // 2 = استبدال الرصيد الحالي بالرصيد المستورد
 
             try
             {
                 DbHelper.RunInTransaction((con, trans) =>
                 {
-                    // جلب أول مخزن نشط كافتراضي
                     int defaultWarehouseID = 1;
                     var defaultWhRes = DbHelper.ScalarTrans(trans, "SELECT TOP 1 WarehouseID FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
                     if (defaultWhRes != null && defaultWhRes != DBNull.Value)
@@ -402,7 +626,6 @@ namespace ChickenDist.Forms
                     {
                         try
                         {
-                            // 1. معالجة وتأمين التصنيف
                             int? catID = null;
                             if (!string.IsNullOrWhiteSpace(row.CategoryName))
                             {
@@ -419,10 +642,8 @@ namespace ChickenDist.Forms
 
                             int finalProductID = 0;
 
-                            // 2. معالجة وحفظ الصنف نفسه
                             if (row.IsExisting)
                             {
-                                // تعديل صنف موجود
                                 DbHelper.ExecuteTrans(trans,
                                     @"UPDATE Products
                                       SET ProductName=@n, Unit=@u, SalePrice=@sp, PurchasePrice=@pp, MinStockLimit=@msl,
@@ -447,7 +668,6 @@ namespace ChickenDist.Forms
                             }
                             else
                             {
-                                // إضافة صنف جديد
                                 string codeToUse = row.ProductCode;
                                 if (codeToUse == "AUTO")
                                 {
@@ -473,7 +693,6 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@swp", row.SemiWholesalePrice));
                             }
 
-                            // 3. معالجة وتأمين المخزن والمخزون
                             if (finalProductID > 0)
                             {
                                 int warehouseID = defaultWarehouseID;
@@ -488,7 +707,6 @@ namespace ChickenDist.Forms
 
                                 if (row.IsExisting)
                                 {
-                                    // للأصناف الموجودة مسبقاً
                                     if (stockPolicyIndex == 1) // جمع الأرصدة
                                     {
                                         bookQty = row.CurrentStock;
@@ -499,12 +717,11 @@ namespace ChickenDist.Forms
                                     {
                                         bookQty = row.CurrentStock;
                                         actualQty = row.InitialStock;
-                                        shouldAdjustStock = true; // يتم التعديل حتى لو كان الصفر
+                                        shouldAdjustStock = true; 
                                     }
                                 }
                                 else
                                 {
-                                    // للأصناف الجديدة
                                     bookQty = 0;
                                     actualQty = row.InitialStock;
                                     shouldAdjustStock = row.InitialStock > 0;
@@ -519,7 +736,7 @@ namespace ChickenDist.Forms
                                         DbHelper.P("@wid", warehouseID),
                                         DbHelper.P("@bq", bookQty),
                                         DbHelper.P("@aq", actualQty),
-                                        DbHelper.P("@notes", "رصيد افتتاحي مستورد من ملف CSV"),
+                                        DbHelper.P("@notes", "رصيد افتتاحي مستورد من ملف Excel"),
                                         DbHelper.P("@by", Session.EmpID));
                                 }
 
@@ -554,11 +771,32 @@ namespace ChickenDist.Forms
             }
         }
 
+        private string GetFriendlyName(string key)
+        {
+            switch (key)
+            {
+                case "ProductCode": return "كود الصنف";
+                case "ProductName": return "اسم الصنف";
+                case "PartNumber": return "رقم القطعة";
+                case "CategoryName": return "التصنيف";
+                case "CarModel": return "الموديل المتوافق";
+                case "Brand": return "الماركة";
+                case "ShelfLocation": return "موقع الرف";
+                case "Unit": return "الوحدة";
+                case "PurchasePrice": return "سعر الشراء";
+                case "SalePrice": return "سعر قطاعي";
+                case "SemiWholesalePrice": return "سعر نصف جملة";
+                case "WholesalePrice": return "سعر الجملة";
+                case "MinStockLimit": return "حد الطلب";
+                case "InitialStock": return "الرصيد الافتتاحي";
+                case "WarehouseName": return "المخزن المستهدف";
+                default: return key;
+            }
+        }
+
         private static string Normalize(string s)
             => (s ?? "").Trim().ToLowerInvariant()
                         .Replace("ة", "ه").Replace("أ", "ا").Replace("إ", "ا").Replace("آ", "ا");
-
-
     }
 
     public class ParsedProductRow

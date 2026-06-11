@@ -123,11 +123,29 @@ namespace ChickenDist.Forms
             btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40));
             var btnPrintBarcode = Theme.MakeButton("🏷️ طباعة الباركود", 40, y + 40, 290, 32, Theme.Primary);
             
+            var btnQuickAdd = Theme.MakeButton("⚡ الإدخال السريع للأصناف", 40, y + 80, 290, 32, Color.FromArgb(60, 100, 60));
+            btnQuickAdd.Click += (s, e) =>
+            {
+                if (new FrmQuickAdd().ShowDialog() == DialogResult.OK)
+                {
+                    LoadProducts();
+                }
+            };
+
+            var btnImportExcel = Theme.MakeButton("📥 استيراد الأصناف من إكسل", 40, y + 120, 290, 32, Theme.Accent);
+            btnImportExcel.Click += (s, e) =>
+            {
+                if (new FrmImportProducts().ShowDialog() == DialogResult.OK)
+                {
+                    LoadProducts();
+                }
+            };
+
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnPrintBarcode.Click += BtnPrintBarcode_Click;
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode });
+            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode, btnQuickAdd, btnImportExcel });
             this.Controls.Add(split);
             split.SplitterDistance = 350;
 
