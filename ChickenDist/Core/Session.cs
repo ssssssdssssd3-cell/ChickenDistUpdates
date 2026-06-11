@@ -97,7 +97,7 @@ namespace ChickenDist.Core
         public static readonly string[] AllScreens = {
             "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "Products",
             "Vehicles", "CashBox", "Expenses", "Reports", "Employees", "Returns",
-            "Suppliers", "Purchases", "Inventory"
+            "Suppliers", "Purchases", "Inventory", "Installments"
         };
     }
 

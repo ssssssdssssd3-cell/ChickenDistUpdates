@@ -210,13 +210,13 @@ namespace ChickenDist.Forms
             "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "CashBox",
             "Products", "Returns", "Reports", "Employees", "Suppliers", "Purchases", "Vehicles", "Inventory",
             "Settings", "Categories", "DailyClosing", "EmployeeTransactions", "WarehouseTransfers", "Warehouses",
-            "ClientStatement", "SupplierStatement", "ProductMovement", "SalesAudit", "PurchaseReturn", "DriversMonitor", "QuickPayment"
+            "ClientStatement", "SupplierStatement", "ProductMovement", "SalesAudit", "PurchaseReturn", "DriversMonitor", "QuickPayment", "Installments"
         };
         private static readonly string[] ScreenNames = {
             "المبيعات", "تسليم السائقين", "مبيعات السائقين", "مراجعة الاستيراد", "العملاء", "الخزينة",
             "الأصناف", "المرتجعات", "التقارير", "الموظفين", "الموردين", "المشتريات", "السيارات", "الجرد",
             "إعدادات النظام", "التصنيفات", "التقفيل اليومي", "حركة الموظفين", "تحويلات المخازن", "المخازن",
-            "كشف حساب عميل", "كشف حساب مورد", "حركة صنف", "مراجعة المبيعات", "مرتجع المشتريات", "مراقبة السائقين", "السداد السريع"
+            "كشف حساب عميل", "كشف حساب مورد", "حركة صنف", "مراجعة المبيعات", "مرتجع المشتريات", "مراقبة السائقين", "السداد السريع", "عقود التقسيط"
         };
 
         public FrmPermissions(int empID, string empName)

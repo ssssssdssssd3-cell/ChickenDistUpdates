@@ -1023,6 +1023,105 @@ namespace ChickenDist.Core
                 BEGIN
                     ALTER TABLE Employees ADD PlainPassword NVARCHAR(200) NULL;
                 END");
+
+                // ===== Installment Module Migration =====
+                string sqlInstallments = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'InstallmentContracts')
+                BEGIN
+                    CREATE TABLE InstallmentContracts (
+                        ContractID         INT IDENTITY(1,1) PRIMARY KEY,
+                        ContractGUID       UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() UNIQUE,
+                        ContractCode       NVARCHAR(50) NULL,
+                        BranchID           INT NOT NULL DEFAULT 1,
+                        InvoiceID          INT NULL REFERENCES Sales(SaleID) ON DELETE SET NULL,
+                        CustomerID         INT NOT NULL REFERENCES Clients(ClientID),
+                        SaleType           NVARCHAR(20) NOT NULL DEFAULT 'Installment',
+                        ContractAmount     DECIMAL(10,2) NOT NULL,
+                        DownPayment        DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        FinancedAmount     DECIMAL(10,2) NOT NULL,
+                        InstallmentCount   INT NOT NULL DEFAULT 1,
+                        InstallmentValue   DECIMAL(10,2) NOT NULL,
+                        StartDate          DATETIME NOT NULL,
+                        Status             NVARCHAR(20) NOT NULL DEFAULT 'Active',
+                        Notes              NVARCHAR(500) NULL,
+                        CreatedBy          INT NULL REFERENCES Employees(EmpID),
+                        CreatedDate        DATETIME NOT NULL DEFAULT GETDATE(),
+                        LastModifiedBy     INT NULL REFERENCES Employees(EmpID),
+                        LastModifiedDate   DATETIME NULL
+                    );
+                END
+                ELSE
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('InstallmentContracts') AND name = 'ContractCode')
+                    BEGIN
+                        ALTER TABLE InstallmentContracts ADD ContractCode NVARCHAR(50) NULL;
+                    END
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'InstallmentSchedules')
+                BEGIN
+                    CREATE TABLE InstallmentSchedules (
+                        ScheduleID         INT IDENTITY(1,1) PRIMARY KEY,
+                        ScheduleGUID       UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() UNIQUE,
+                        ContractID         INT NOT NULL REFERENCES InstallmentContracts(ContractID) ON DELETE CASCADE,
+                        InstallmentNo      INT NOT NULL,
+                        DueDate            DATETIME NOT NULL,
+                        Amount             DECIMAL(10,2) NOT NULL,
+                        PaidAmount         DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        RemainingAmount    DECIMAL(10,2) NOT NULL,
+                        PaidDate           DATETIME NULL,
+                        Status             NVARCHAR(20) NOT NULL DEFAULT 'Pending'
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'InstallmentPayments')
+                BEGIN
+                    CREATE TABLE InstallmentPayments (
+                        PaymentID          INT IDENTITY(1,1) PRIMARY KEY,
+                        PaymentGUID        UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() UNIQUE,
+                        ContractID         INT NOT NULL REFERENCES InstallmentContracts(ContractID),
+                        ScheduleID         INT NOT NULL REFERENCES InstallmentSchedules(ScheduleID),
+                        BranchID           INT NOT NULL DEFAULT 1,
+                        PaymentDate        DATETIME NOT NULL DEFAULT GETDATE(),
+                        Amount             DECIMAL(10,2) NOT NULL,
+                        PaymentMethod      NVARCHAR(20) NOT NULL DEFAULT 'Cash',
+                        SafeID             INT NOT NULL DEFAULT 1,
+                        UserID             INT NULL REFERENCES Employees(EmpID),
+                        Notes              NVARCHAR(500) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'InstallmentAuditLog')
+                BEGIN
+                    CREATE TABLE InstallmentAuditLog (
+                        LogID              INT IDENTITY(1,1) PRIMARY KEY,
+                        Action             NVARCHAR(50) NOT NULL,
+                        ContractID         INT NOT NULL,
+                        UserID             INT NULL REFERENCES Employees(EmpID),
+                        LogDate            DATETIME NOT NULL DEFAULT GETDATE(),
+                        MachineName        NVARCHAR(100) NOT NULL,
+                        OldValue           NVARCHAR(MAX) NULL,
+                        NewValue           NVARCHAR(MAX) NULL
+                    );
+                END
+
+                -- Indexes for Installment tables
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentContracts_CustomerID' AND object_id = OBJECT_ID('InstallmentContracts'))
+                    CREATE INDEX IX_InstallmentContracts_CustomerID ON InstallmentContracts(CustomerID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentContracts_InvoiceID' AND object_id = OBJECT_ID('InstallmentContracts'))
+                    CREATE INDEX IX_InstallmentContracts_InvoiceID ON InstallmentContracts(InvoiceID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentContracts_BranchID' AND object_id = OBJECT_ID('InstallmentContracts'))
+                    CREATE INDEX IX_InstallmentContracts_BranchID ON InstallmentContracts(BranchID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentSchedules_ContractID' AND object_id = OBJECT_ID('InstallmentSchedules'))
+                    CREATE INDEX IX_InstallmentSchedules_ContractID ON InstallmentSchedules(ContractID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentSchedules_DueDate_Status' AND object_id = OBJECT_ID('InstallmentSchedules'))
+                    CREATE INDEX IX_InstallmentSchedules_DueDate_Status ON InstallmentSchedules(DueDate, Status);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentPayments_ContractID' AND object_id = OBJECT_ID('InstallmentPayments'))
+                    CREATE INDEX IX_InstallmentPayments_ContractID ON InstallmentPayments(ContractID);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_InstallmentPayments_PaymentDate' AND object_id = OBJECT_ID('InstallmentPayments'))
+                    CREATE INDEX IX_InstallmentPayments_PaymentDate ON InstallmentPayments(PaymentDate);
+                ";
+                Execute(sqlInstallments);
             }
             catch (Exception ex)
             {

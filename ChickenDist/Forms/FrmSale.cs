@@ -24,6 +24,8 @@ namespace ChickenDist.Forms
 
 		private Button btnTypeDriverLoad;
 
+		private Button btnTypeInstallment;
+
 		private string _invoiceType = "Credit";
 
 		private Label lblClient;
@@ -125,7 +127,7 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(950, 680);
+			base.Size = new Size(1020, 680);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
@@ -138,7 +140,7 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Top,
 				Height = 185,
-				Width = 950,
+				Width = 1020,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(12, 8, 12, 8)
 			};
@@ -151,11 +153,11 @@ namespace ChickenDist.Forms
 				CellBorderStyle = TableLayoutPanelCellBorderStyle.None
 			};
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // col0: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));  // col1: control
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f));  // col1: control
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col2: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));  // col3: control
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f));  // col3: control
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));  // col5: control / buttons
+			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44f));  // col5: control / buttons
 
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
@@ -271,6 +273,22 @@ namespace ChickenDist.Forms
 				SetInvoiceType("DriverLoad");
 			};
 
+			btnTypeInstallment = new Button
+			{
+				Text = "تقسيط شرعي",
+				Width = 95,
+				Height = 28,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2)
+			};
+			btnTypeInstallment.FlatAppearance.BorderSize = 0;
+			btnTypeInstallment.Click += delegate
+			{
+				SetInvoiceType("Installment");
+			};
+
 			var pnlTypeBtns = new FlowLayoutPanel
 			{
 				FlowDirection = FlowDirection.RightToLeft,
@@ -279,6 +297,7 @@ namespace ChickenDist.Forms
 				WrapContents = false,
 				Margin = new Padding(0, 4, 0, 0)
 			};
+			pnlTypeBtns.Controls.Add(btnTypeInstallment);
 			pnlTypeBtns.Controls.Add(btnTypeDriverLoad);
 			pnlTypeBtns.Controls.Add(btnTypeCash);
 			pnlTypeBtns.Controls.Add(btnTypeCredit);
@@ -1202,12 +1221,14 @@ namespace ChickenDist.Forms
 			btnTypeCash.ForeColor = ((_invoiceType == "Cash") ? Color.White : Theme.TextMain);
 			btnTypeDriverLoad.BackColor = ((_invoiceType == "DriverLoad") ? Theme.Accent : Theme.BgInput);
 			btnTypeDriverLoad.ForeColor = ((_invoiceType == "DriverLoad") ? Color.White : Theme.TextMain);
+			btnTypeInstallment.BackColor = ((_invoiceType == "Installment") ? Theme.Accent : Theme.BgInput);
+			btnTypeInstallment.ForeColor = ((_invoiceType == "Installment") ? Color.White : Theme.TextMain);
 			ToggleType();
 		}
 
 		private void ToggleType()
 		{
-			bool flag = _invoiceType == "Credit";
+			bool flag = _invoiceType == "Credit" || _invoiceType == "Installment";
 			bool flag2 = _invoiceType == "DriverLoad";
 			bool flag3 = _invoiceType == "Cash";
 			cboClient.Enabled = flag || flag3;
@@ -1232,7 +1253,7 @@ namespace ChickenDist.Forms
             bool limitExceeded = status.MaxCreditLimit > 0 && status.Balance >= status.MaxCreditLimit;
             bool oldDebtExists = status.OldDebt30 > 0;
 
-            if ((limitExceeded || oldDebtExists) && _invoiceType == "Credit")
+            if ((limitExceeded || oldDebtExists) && (_invoiceType == "Credit" || _invoiceType == "Installment"))
             {
                 this.BackColor = Color.FromArgb(255, 200, 200); // Light Red
                 pnlItems.Enabled = false; 
@@ -1242,7 +1263,7 @@ namespace ChickenDist.Forms
                 if (limitExceeded) msg += $"- تجاوز العميل الحد الائتماني ({status.MaxCreditLimit:N2} ج). رصيده: {status.Balance:N2} ج.\n";
                 if (oldDebtExists) msg += $"- ديون متأخرة (تجاوزت 30 يوم) بقيمة {status.OldDebt30:N2} ج لم تسدد.\n";
                 
-                MessageBox.Show(msg + "\nالبيع الآجل موقوف لهذا العميل حتى يتم السداد.", "إيقاف البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                MessageBox.Show(msg + "\nالبيع الآجل والتقسيط موقوف لهذا العميل حتى يتم السداد.", "إيقاف البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
             }
             else
             {
@@ -1658,6 +1679,12 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			if (_editSaleID > 0 && _invoiceType == "Installment")
+			{
+				MessageBox.Show("❌ لا يمكن تعديل فواتير التقسيط من شاشة المبيعات مباشرة. يرجى تعديلها أو إدارتها من شاشة عقود التقسيط.", "تعديل غير مسموح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+				return;
+			}
+
 			// ─── التحقق من صلاحية تعديل الفاتورة ───
 			if (_editSaleID > 0)
 			{
@@ -1699,10 +1726,10 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : 2;
+			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : _invoiceType == "Installment" ? 3 : 2;
 			int? clientID = null;
 			int? driverID = null;
-			if (_invoiceType == "Credit" || _invoiceType == "Cash")
+			if (_invoiceType == "Credit" || _invoiceType == "Cash" || _invoiceType == "Installment")
 			{
 				if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 				{
@@ -1820,9 +1847,35 @@ namespace ChickenDist.Forms
 			else
 			{
 				// وضع الإنشاء الجديد (أو نسخ)
+				decimal downPayment = 0m;
+				int installmentCount = 1;
+				string installmentPeriod = "Monthly";
+				DateTime? startDate = null;
+				List<InstallmentScheduleDTO> schedule = null;
+
+				if (_invoiceType == "Installment" && !isDraft)
+				{
+					using (var frmConfig = new FrmConfigureInstallment(net))
+					{
+						if (frmConfig.ShowDialog() != DialogResult.OK)
+						{
+							return;
+						}
+						net = frmConfig.InstallmentPrice;
+						downPayment = frmConfig.DownPayment;
+						installmentCount = frmConfig.InstallmentCount;
+						installmentPeriod = frmConfig.InstallmentPeriod;
+						startDate = frmConfig.StartDate;
+						schedule = frmConfig.Schedule;
+					}
+				}
+
 				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
 					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
-					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier);
+					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
+					downPayment: downPayment, installmentCount: installmentCount,
+					installmentPeriod: installmentPeriod, startDate: startDate,
+					schedule: schedule);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;

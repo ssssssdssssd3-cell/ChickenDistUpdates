@@ -68,13 +68,14 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
-            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي")
+            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
+            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1)
         {
             int returnedSaleID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : "Cash";
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                 int targetWarehouse = warehouseID ?? 1;
@@ -121,6 +122,76 @@ namespace ChickenDist.DAL
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
                             DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع " + code),
                             DbHelper.P("@by", Session.EmpID));
+                    }
+
+                    // تقسيط: أضف للحساب بالكامل (مدين: العملاء بالتقسيط، دائن: المبيعات)
+                    if (typeStr == "Installment" && clientID.HasValue)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع بالتقسيط " + code),
+                            DbHelper.P("@by", Session.EmpID));
+
+                        // إنشاء عقد التقسيط والأقساط المرتبطة به
+                        var nextContractResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(ContractID), 0) + 1 FROM InstallmentContracts");
+                        int nextCId = nextContractResult != null ? Convert.ToInt32(nextContractResult) : 1;
+                        string contractCode = "INST-" + nextCId.ToString("D4");
+
+                        decimal financedAmount = total - downPayment;
+                        decimal instValue = installmentCount > 0 ? Math.Round(financedAmount / installmentCount, 2) : financedAmount;
+
+                        int contractID = DbHelper.ExecuteInsertTrans(trans,
+                            @"INSERT INTO InstallmentContracts (ContractCode, BranchID, InvoiceID, CustomerID, SaleType, ContractAmount, DownPayment, FinancedAmount, InstallmentCount, InstallmentValue, StartDate, Status, Notes, CreatedBy, CreatedDate)
+                              VALUES (@cc, @bid, @inv, @cust, 'Installment', @tot, @dp, @fa, @ic, @iv, @sd, 'Active', @notes, @uid, @cd)",
+                            DbHelper.P("@cc", contractCode),
+                            DbHelper.P("@bid", branchID),
+                            DbHelper.P("@inv", saleID),
+                            DbHelper.P("@cust", clientID.Value),
+                            DbHelper.P("@tot", total),
+                            DbHelper.P("@dp", downPayment),
+                            DbHelper.P("@fa", financedAmount),
+                            DbHelper.P("@ic", installmentCount),
+                            DbHelper.P("@iv", instValue),
+                            DbHelper.P("@sd", startDate ?? DateTime.Today),
+                            DbHelper.P("@notes", notes),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@cd", DateTime.Now));
+
+                        if (schedule != null)
+                        {
+                            foreach (var s in schedule)
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO InstallmentSchedules (ContractID, InstallmentNo, DueDate, Amount, PaidAmount, RemainingAmount, Status)
+                                      VALUES (@cid, @no, @dt, @amt, 0, @amt, 'Pending')",
+                                    DbHelper.P("@cid", contractID),
+                                    DbHelper.P("@no", s.InstallmentNo),
+                                    DbHelper.P("@dt", s.DueDate),
+                                    DbHelper.P("@amt", s.Amount));
+                            }
+                        }
+
+                        // إذا تم دفع مقدم، نسجل الحركات المالية (مدين: الصندوق/الخزنة، دائن: العملاء بالتقسيط)
+                        if (downPayment > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Credit, RefID, Notes, CreatedBy) VALUES(@cid, 'Payment', @amt, @ref, @notes, @uid)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", downPayment),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"دفعة مقدمة لعقد التقسيط {contractCode}"),
+                                DbHelper.P("@uid", Session.EmpID));
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy) VALUES('ClientPayment', @amt, @ref, @notes, @uid)",
+                                DbHelper.P("@amt", downPayment),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
+                                DbHelper.P("@uid", Session.EmpID));
+                        }
+
+                        InstallmentDAL.AddAuditLogTrans(trans, "Create", contractID, "", $"إنشاء عقد التقسيط بقيمة: {total:N2} ج");
                     }
 
                     // نقدي: أضف للخزنة
@@ -227,6 +298,18 @@ namespace ChickenDist.DAL
                 }
             }
 
+            // 3. التحقق من وجود عقد تقسيط به تحصيلات مسجلة
+            var dtContract = DbHelper.Query("SELECT ContractID FROM InstallmentContracts WHERE InvoiceID=@id AND Status <> 'Cancelled'", DbHelper.P("@id", saleID));
+            if (dtContract.Rows.Count > 0)
+            {
+                int contractID = Convert.ToInt32(dtContract.Rows[0]["ContractID"]);
+                if (InstallmentDAL.HasPaymentsCollected(contractID))
+                {
+                    reason = "لا يمكن حذف الفاتورة لوجود أقساط مسددة أو دفعات مسجلة على عقد التقسيط المرتبط بها. يجب عمل مرتجع مبيعات أو تسوية مالية.";
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -276,11 +359,29 @@ namespace ChickenDist.DAL
                          DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                  }
 
-                // 4. عكس حركات حساب العميل إذا كان بيع آجل
-                if (typeStr == "Credit")
+                // 4. عكس حركات حساب العميل إذا كان بيع آجل أو تقسيط
+                if (typeStr == "Credit" || typeStr == "Installment")
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "DELETE FROM ClientTransactions WHERE TransType='Sale' AND RefID=@id",
+                        "DELETE FROM ClientTransactions WHERE RefID=@id",
+                        DbHelper.P("@id", saleID));
+                }
+
+                // 4a. حذف عقد التقسيط المرتبط بالفاتورة والجدولة والدفعات بالكامل
+                if (typeStr == "Installment")
+                {
+                    var dtContractDel = DbHelper.QueryTrans(trans, "SELECT ContractID FROM InstallmentContracts WHERE InvoiceID=@id", DbHelper.P("@id", saleID));
+                    if (dtContractDel.Rows.Count > 0)
+                    {
+                        int contractID = Convert.ToInt32(dtContractDel.Rows[0]["ContractID"]);
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentSchedules WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentPayments WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                    }
+
+                    // عكس حركة الخزينة للدفعة المقدمة
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM CashBox WHERE RefID=@id",
                         DbHelper.P("@id", saleID));
                 }
 
@@ -606,7 +707,7 @@ namespace ChickenDist.DAL
                              JOIN Sales s ON si.SaleID = s.SaleID
                              JOIN DriverLoads dl ON dl.LoadID = @lid
                              WHERE s.DriverID = dl.DriverID
-                               AND s.SaleType IN ('Cash', 'Credit')
+                               AND s.SaleType IN ('Cash', 'Credit', 'Installment')
                                AND s.SaleDate >= dl.LoadDate
                                AND si.ProductID = p.ProductID
                          ), 0) AS SoldQty
@@ -752,7 +853,7 @@ namespace ChickenDist.DAL
                         FROM SaleItems si
                         JOIN Sales s2 ON si.SaleID = s2.SaleID
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType IN ('Cash','Credit')
+                          AND s2.SaleType IN ('Cash','Credit','Installment')
                           AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldQty,
@@ -761,7 +862,7 @@ namespace ChickenDist.DAL
                         SELECT SUM(s2.TotalAmount)
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType IN ('Cash','Credit')
+                          AND s2.SaleType IN ('Cash','Credit','Installment')
                           AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldValue,
@@ -779,7 +880,7 @@ namespace ChickenDist.DAL
                         SELECT SUM(s2.TotalAmount)
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType = 'Credit'
+                          AND s2.SaleType IN ('Credit','Installment')
                           AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS CreditSold,
@@ -800,7 +901,7 @@ namespace ChickenDist.DAL
                     - ISNULL((
                         SELECT SUM(si.Quantity)
                         FROM SaleItems si JOIN Sales s2 ON si.SaleID=s2.SaleID
-                        WHERE s2.DriverID=dl.DriverID AND s2.SaleType IN('Cash','Credit')
+                        WHERE s2.DriverID=dl.DriverID AND s2.SaleType IN('Cash','Credit','Installment')
                           AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE) AND s2.IsPosted=1
                     ), 0)
                     + ISNULL((
@@ -864,7 +965,7 @@ namespace ChickenDist.DAL
                         FROM Sales
                         WHERE DriverID = @did AND ClientID = c.ClientID
                           AND CAST(SaleDate AS DATE) = @dt AND IsPosted = 1
-                          AND SaleType IN ('Cash','Credit')
+                          AND SaleType IN ('Cash','Credit','Installment')
                     ), 0) AS TodaySales
                   FROM Clients c
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
@@ -888,7 +989,7 @@ namespace ChickenDist.DAL
                         SELECT SUM(s.TotalAmount)
                         FROM Sales s
                         WHERE s.DriverID = e.EmpID AND s.IsPosted = 1
-                          AND s.SaleType IN ('Cash','Credit')
+                          AND s.SaleType IN ('Cash','Credit','Installment')
                           AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                     ), 0) AS TotalSales,
                     -- النقدية المحصلة (مبيعات نقدية + ما حُصّل عند التقفيل)
@@ -1233,7 +1334,7 @@ namespace ChickenDist.DAL
                   WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
                     AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ORDER BY sr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", from.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
@@ -1293,6 +1394,12 @@ namespace ChickenDist.DAL
                         DbHelper.P("@ref", retID), DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
                         DbHelper.P("@by", Session.EmpID));
                 }
+
+                // معالجة مرتجع التقسيط (تخفيض قيمة العقد وجدول الأقساط تلقائياً تنازلياً)
+                if (saleID > 0 && saleType == "Installment")
+                {
+                    InstallmentDAL.HandleSalesReturn(trans, saleID, total);
+                }
             });
 
             return returnedRetID;
@@ -1308,7 +1415,7 @@ namespace ChickenDist.DAL
                     CAST(SaleDate AS DATE) AS SaleDay,
                     COUNT(*) AS Count,
                     SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(CASE WHEN SaleType = 'DriverLoad' THEN TotalAmount ELSE 0 END) AS LoadTotal,
                     SUM(TotalAmount) AS Total
                   FROM Sales
@@ -1327,7 +1434,7 @@ namespace ChickenDist.DAL
                     ISNULL(e.EmpName, N'مبيعات مباشرة') AS DriverName,
                     COUNT(s.SaleID) AS Count,
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total
                   FROM Sales s 
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -1347,7 +1454,7 @@ namespace ChickenDist.DAL
                     ISNULL(c.Phone, N'---') AS Phone,
                     COUNT(DISTINCT s.SaleID) AS Count,
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total,
                     ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsTotal,
                     ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
@@ -1416,7 +1523,7 @@ namespace ChickenDist.DAL
                       JOIN Sales s ON si.SaleID = s.SaleID
                       WHERE CAST(s.SaleDate AS DATE) = @date
                         AND s.IsPosted = 1
-                        AND s.SaleType IN ('Cash','Credit')
+                        AND s.SaleType IN ('Cash','Credit','Installment')
                         AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                       
                       UNION ALL
@@ -1455,7 +1562,7 @@ namespace ChickenDist.DAL
                       FROM Sales
                       WHERE CAST(SaleDate AS DATE) = @date
                         AND IsPosted = 1
-                        AND SaleType IN ('Cash','Credit')
+                        AND SaleType IN ('Cash','Credit','Installment')
                         AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
 
                       UNION ALL
@@ -1481,8 +1588,8 @@ namespace ChickenDist.DAL
                     ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalSales,
                     -- Cash Sales
                     ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CashSales,
-                    -- Credit Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Credit' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CreditSales,
+                    -- Credit Sales (including Installment)
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType IN ('Credit', 'Installment') AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CreditSales,
                     -- Driver Loads Sales
                     ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS DriverLoadsSales,
                     -- Returns
@@ -1532,7 +1639,7 @@ namespace ChickenDist.DAL
                            SUM(si.Quantity)   AS TotalQty,
                            SUM(si.TotalPrice) AS TotalAmt,
                            SUM(CASE WHEN s.SaleType='Cash'       THEN si.Quantity ELSE 0 END) AS CashQty,
-                           SUM(CASE WHEN s.SaleType='Credit'     THEN si.Quantity ELSE 0 END) AS CreditQty,
+                           SUM(CASE WHEN s.SaleType='Credit' OR s.SaleType='Installment' THEN si.Quantity ELSE 0 END) AS CreditQty,
                            SUM(CASE WHEN s.SaleType='DriverLoad' THEN si.Quantity ELSE 0 END) AS DriverLoadQty
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID

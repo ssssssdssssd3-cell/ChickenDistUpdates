@@ -131,6 +131,7 @@ namespace ChickenDist.Forms
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
+                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
                     ("📋 سجل المبيعات", "Sales",      (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                 }),
