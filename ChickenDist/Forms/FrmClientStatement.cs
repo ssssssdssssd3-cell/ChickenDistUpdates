@@ -388,13 +388,14 @@ namespace ChickenDist.Forms
     {
         private int _clientID;
         private TextBox txtAmount, txtNotes;
+        private ComboBox cboSafe;
         private Button btnOk, btnCancel;
 
         public FrmPayment(int clientID, string clientName)
         {
             _clientID = clientID;
             this.Text = "تحصيل من: " + clientName;
-            this.Size = new Size(360, 220);
+            this.Size = new Size(360, 270);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.RightToLeft = RightToLeft.Yes;
@@ -405,6 +406,33 @@ namespace ChickenDist.Forms
             this.Controls.Add(new Label { Text = "المبلغ المحصل (ج):", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
             txtAmount = new TextBox { Location = new Point(20, y - 2), Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             this.Controls.Add(txtAmount); y += 40;
+
+            this.Controls.Add(new Label { Text = "حساب التحصيل:", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
+            cboSafe = new ComboBox
+            {
+                Location = new Point(20, y - 2),
+                Width = 140,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            // تحميل الحسابات النشطة
+            try
+            {
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                foreach (DataRow row in safes.Rows)
+                {
+                    cboSafe.Items.Add(new ComboItem(
+                        Convert.ToInt32(row["AccountID"]),
+                        row["AccountName"].ToString()
+                    ));
+                }
+                cboSafe.DisplayMember = "Text";
+                if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+            }
+            catch { }
+            this.Controls.Add(cboSafe); y += 40;
 
             this.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
             txtNotes = new TextBox { Location = new Point(20, y - 2), Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
@@ -420,7 +448,12 @@ namespace ChickenDist.Forms
         private void BtnOk_Click(object sender, EventArgs e)
         {
             if (!decimal.TryParse(txtAmount.Text, out decimal amt) || amt <= 0) { MessageBox.Show("أدخل مبلغاً صحيحاً"); return; }
-            ClientDAL.AddPayment(_clientID, amt, txtNotes.Text);
+            int? targetSafeID = null;
+            if (cboSafe.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+            {
+                targetSafeID = safeItem.ID;
+            }
+            ClientDAL.AddPayment(_clientID, amt, txtNotes.Text, targetSafeID);
             MessageBox.Show("✅ تم تسجيل التحصيل");
             this.DialogResult = DialogResult.OK;
         }

@@ -737,7 +737,7 @@ namespace ChickenDist.DAL
             return 0;
         }
 
-        public static void AddPayment(int clientID, decimal amount, string notes)
+        public static void AddPayment(int clientID, decimal amount, string notes, int? safeAccountID = null)
         {
             // FIX: القيدان (حساب العميل + الخزنة) داخل Transaction واحد
             // إذا فشل أي منهما يتم التراجع عن الآخر لمنع الفجوة المالية الصامتة
@@ -749,10 +749,11 @@ namespace ChickenDist.DAL
                     DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
 
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy) VALUES('ClientPayment',@amt,@n,@by)",
+                    "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES('ClientPayment',@amt,@n,@by,@accId)",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@n", "تحصيل من عميل - " + notes),
-                    DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
             });
         }
     }
@@ -760,35 +761,64 @@ namespace ChickenDist.DAL
     // =================== Account DAL ===================
     public static class AccountDAL
     {
-        public static DataTable GetCashBox(DateTime from, DateTime to)
+        public static DataTable GetActiveSafeAccounts()
         {
-            return DbHelper.Query(
-                @"SELECT CashID, TransDate, TransType, AmountIn, AmountOut,
-                  (AmountIn - AmountOut) AS Net, Notes
-                  FROM CashBox
-                  WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t
-                  ORDER BY TransDate",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+            return DbHelper.Query("SELECT AccountID, AccountName, AccountType, AccountNumber, OpeningBalance FROM SafeAccounts WHERE IsActive = 1 ORDER BY AccountID");
         }
 
-        public static decimal GetCashBalance()
+        public static DataTable GetCashBox(DateTime from, DateTime to, int? accountID = null)
         {
-            var result = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox");
-            return result == null ? 0 : Convert.ToDecimal(result);
+            string sql = @"SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
+                          (cb.AmountIn - cb.AmountOut) AS Net, cb.Notes, sa.AccountName
+                          FROM CashBox cb
+                          LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                          WHERE CAST(cb.TransDate AS DATE) BETWEEN @f AND @t";
+            
+            if (accountID.HasValue && accountID.Value > 0)
+            {
+                sql += " AND cb.AccountID = @accId ORDER BY cb.TransDate";
+                return DbHelper.Query(sql,
+                    DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                    DbHelper.P("@accId", accountID.Value));
+            }
+            
+            sql += " ORDER BY cb.TransDate";
+            return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
 
-        public static void SaveCashReceipt(int? clientID, decimal amount, DateTime date, string notes)
+        public static decimal GetCashBalance(int? accountID = null)
+        {
+            if (accountID.HasValue && accountID.Value > 0)
+            {
+                var openingObj = DbHelper.Scalar("SELECT OpeningBalance FROM SafeAccounts WHERE AccountID = @accId", DbHelper.P("@accId", accountID.Value));
+                decimal opening = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
+                
+                var result = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId", DbHelper.P("@accId", accountID.Value));
+                return opening + (result == null ? 0 : Convert.ToDecimal(result));
+            }
+            else
+            {
+                var openingObj = DbHelper.Scalar("SELECT SUM(OpeningBalance) FROM SafeAccounts");
+                decimal opening = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
+                
+                var result = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox");
+                return opening + (result == null ? 0 : Convert.ToDecimal(result));
+            }
+        }
+
+        public static void SaveCashReceipt(int? clientID, decimal amount, DateTime date, string notes, int? safeAccountID = null)
         {
             if (clientID.HasValue)
             {
-                ClientDAL.AddPayment(clientID.Value, amount, notes);
+                ClientDAL.AddPayment(clientID.Value, amount, notes, safeAccountID);
             }
             else
             {
                 DbHelper.Execute(
-                    "INSERT INTO CashBox(TransDate,TransType,AmountIn,Notes,CreatedBy) VALUES(@d,'Deposit',@a,@n,@by)",
+                    "INSERT INTO CashBox(TransDate,TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES(@d,'Deposit',@a,@n,@by,@accId)",
                     DbHelper.P("@d", date), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", "توريد نقدية - " + notes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@n", "توريد نقدية - " + notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
             }
         }
 
@@ -796,7 +826,8 @@ namespace ChickenDist.DAL
         {
             var sql = @"SELECT e.ExpenseID, e.ExpenseDate, e.ExpenseType, e.Amount, e.Notes,
                   e.SupplierID, s.SupplierName,
-                  e.VehicleID, v.VehicleName, v.VehicleType
+                  e.VehicleID, v.VehicleName, v.VehicleType,
+                  e.SafeAccountID
                   FROM Expenses e
                   LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID
                   LEFT JOIN Vehicles v ON e.VehicleID = v.VehicleID
@@ -812,7 +843,6 @@ namespace ChickenDist.DAL
 
             if (!string.IsNullOrWhiteSpace(vehicleType))
             {
-                // FIX: كان يُمرَّر @vtype حتى عندما لا يكون في الـ SQL → SqlException
                 sql += " AND v.VehicleType = @vtype ORDER BY e.ExpenseDate";
                 return DbHelper.Query(sql,
                     DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
@@ -823,67 +853,67 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
 
-        public static int SaveExpense(int id, DateTime date, string type, decimal amount, string notes, int? supplierID = null, int? vehicleID = null)
+        public static int SaveExpense(int id, DateTime date, string type, decimal amount, string notes, int? supplierID = null, int? vehicleID = null, int? safeAccountID = null)
         {
             if (id == 0)
             {
-                // إضافة جديدة: Expense + CashBox في Transaction واحد
                 int newID = -1;
                 DbHelper.RunInTransaction((con, trans) =>
                 {
                     var cashResult = DbHelper.ScalarTrans(trans, 
-                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId",
+                        DbHelper.P("@accId", safeAccountID ?? 1));
                     decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
                     if (cashBalance < amount)
                     {
-                        throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لتسجيل هذا المصروف بقيمة ({amount:N2} ج)!");
+                        throw new Exception($"رصيد الحساب المختار ({cashBalance:N2} ج) لا يكفي لتسجيل هذا المصروف بقيمة ({amount:N2} ج)!");
                     }
 
                     newID = DbHelper.ExecuteInsertTrans(trans,
-                        "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy) VALUES(@d,@t,@a,@n,@s,@v,@by)",
+                        "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy,SafeAccountID) VALUES(@d,@t,@a,@n,@s,@v,@by,@accId)",
                         DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
-                        DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@by", Session.EmpID));
+                        DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@accId", safeAccountID ?? 1));
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@d,'Expense',@a,@ref,@n,@by)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@d,'Expense',@a,@ref,@n,@by,@accId)",
                         DbHelper.P("@d", date), DbHelper.P("@a", amount), DbHelper.P("@ref", newID),
-                        DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@by", Session.EmpID));
+                        DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@accId", safeAccountID ?? 1));
                 });
                 return newID;
             }
 
-            // FIX: تعديل — يُحدَّث Expenses وقيد الخزنة معاً في Transaction واحد ويتحقق من رصيد الخزنة
             DbHelper.RunInTransaction((con, trans) =>
             {
                 var oldAmountObj = DbHelper.ScalarTrans(trans, "SELECT Amount FROM Expenses WHERE ExpenseID=@id", DbHelper.P("@id", id));
                 decimal oldAmount = oldAmountObj != null ? Convert.ToDecimal(oldAmountObj) : 0;
 
                 var cashResult = DbHelper.ScalarTrans(trans, 
-                    "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                    "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId",
+                    DbHelper.P("@accId", safeAccountID ?? 1));
                 decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
 
                 decimal diff = amount - oldAmount;
                 if (diff > 0 && cashBalance < diff)
                 {
-                    throw new Exception($"رصيد الخزنة الحالي ({cashBalance:N2} ج) لا يكفي لتعديل قيمة المصروف بزيادة قدرها ({diff:N2} ج)!");
+                    throw new Exception($"رصيد الحساب المختار ({cashBalance:N2} ج) لا يكفي لتعديل قيمة المصروف بزيادة قدرها ({diff:N2} ج)!");
                 }
 
                 DbHelper.ExecuteTrans(trans,
-                    "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v WHERE ExpenseID=@id",
+                    "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v,SafeAccountID=@accId WHERE ExpenseID=@id",
                     DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@id", id));
+                    DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@accId", safeAccountID ?? 1), DbHelper.P("@id", id));
 
                 DbHelper.ExecuteTrans(trans,
-                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, Notes=@n WHERE RefID=@ref AND TransType='Expense'",
+                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, Notes=@n, AccountID=@accId WHERE RefID=@ref AND TransType='Expense'",
                     DbHelper.P("@d", date), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@ref", id));
+                    DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@accId", safeAccountID ?? 1), DbHelper.P("@ref", id));
             });
             return id;
         }
 
         public static void DeleteExpense(int id)
         {
-            // FIX: حذف Expense + قيد الخزنة معاً في Transaction
-            // الكود القديم كان يحذف Expenses فقط ويبقي قيد الخزنة
             DbHelper.RunInTransaction((con, trans) =>
             {
                 DbHelper.ExecuteTrans(trans,
@@ -892,6 +922,43 @@ namespace ChickenDist.DAL
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM Expenses WHERE ExpenseID=@id",
                     DbHelper.P("@id", id));
+            });
+        }
+
+        public static void TransferFunds(int sourceAccountID, int destAccountID, decimal amount, string notes)
+        {
+            if (sourceAccountID == destAccountID)
+            {
+                throw new Exception("لا يمكن تحويل نقدية إلى نفس الحساب المختار كأصل.");
+            }
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // Check balance of source account
+                decimal sourceBalance = GetCashBalance(sourceAccountID);
+                if (sourceBalance < amount)
+                {
+                    throw new Exception($"رصيد الحساب المصدر ({sourceBalance:N2} ج) لا يكفي لإتمام عملية التحويل بقيمة ({amount:N2} ج)!");
+                }
+                
+                string srcName = DbHelper.ScalarTrans(trans, "SELECT AccountName FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", sourceAccountID))?.ToString();
+                string destName = DbHelper.ScalarTrans(trans, "SELECT AccountName FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", destAccountID))?.ToString();
+
+                // Outflow from source
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO CashBox(TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES('Transfer', @amt, @notes, @uid, @src)",
+                    DbHelper.P("@amt", amount),
+                    DbHelper.P("@notes", $"تحويل صادر إلى {destName} | " + notes),
+                    DbHelper.P("@uid", Session.EmpID),
+                    DbHelper.P("@src", sourceAccountID));
+                
+                // Inflow to destination
+                DbHelper.ExecuteTrans(trans,
+                    "INSERT INTO CashBox(TransType, AmountIn, Notes, CreatedBy, AccountID) VALUES('Transfer', @amt, @notes, @uid, @dest)",
+                    DbHelper.P("@amt", amount),
+                    DbHelper.P("@notes", $"تحويل وارد من {srcName} | " + notes),
+                    DbHelper.P("@uid", Session.EmpID),
+                    DbHelper.P("@dest", destAccountID));
             });
         }
     }

@@ -1122,6 +1122,69 @@ namespace ChickenDist.Core
                     CREATE INDEX IX_InstallmentPayments_PaymentDate ON InstallmentPayments(PaymentDate);
                 ";
                 Execute(sqlInstallments);
+
+                // ===== Detailed Safes & Bank Accounts Migration =====
+                string sqlSafeAccounts = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SafeAccounts')
+                BEGIN
+                    CREATE TABLE SafeAccounts (
+                        AccountID      INT IDENTITY(1,1) PRIMARY KEY,
+                        AccountName    NVARCHAR(100) NOT NULL UNIQUE,
+                        AccountType    NVARCHAR(20) NOT NULL, -- 'Cash', 'Bank', 'Visa'
+                        AccountNumber  NVARCHAR(50) NULL,
+                        OpeningBalance DECIMAL(12,2) NOT NULL DEFAULT 0,
+                        IsActive       BIT NOT NULL DEFAULT 1,
+                        CreatedAt      DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                    -- Insert default accounts
+                    INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                    VALUES (N'الخزينة الرئيسية', 'Cash', NULL, 0.00, 1);
+                    
+                    INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                    VALUES (N'حساب البنك الأهلي', 'Bank', N'1234567890', 0.00, 1);
+                    
+                    INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                    VALUES (N'فيزا المحل', 'Visa', NULL, 0.00, 1);
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('CashBox') AND name = 'AccountID')
+                BEGIN
+                    ALTER TABLE CashBox ADD AccountID INT NULL;
+                    ALTER TABLE CashBox ADD CONSTRAINT FK_CashBox_SafeAccounts FOREIGN KEY (AccountID) REFERENCES SafeAccounts(AccountID);
+                    EXEC('UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL');
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Expenses') AND name = 'SafeAccountID')
+                BEGIN
+                    ALTER TABLE Expenses ADD SafeAccountID INT NULL;
+                    ALTER TABLE Expenses ADD CONSTRAINT FK_Expenses_SafeAccounts FOREIGN KEY (SafeAccountID) REFERENCES SafeAccounts(AccountID);
+                    EXEC('UPDATE Expenses SET SafeAccountID = 1 WHERE SafeAccountID IS NULL');
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_InstallmentPayments_SafeAccounts') AND EXISTS (SELECT * FROM sys.tables WHERE name = 'InstallmentPayments')
+                BEGIN
+                    ALTER TABLE InstallmentPayments ADD CONSTRAINT FK_InstallmentPayments_SafeAccounts FOREIGN KEY (SafeID) REFERENCES SafeAccounts(AccountID);
+                END
+                ";
+                Execute(sqlSafeAccounts);
+
+                string sqlSafeBalancesView = @"
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SafeAccountBalances') DROP VIEW vw_SafeAccountBalances;
+                EXEC('CREATE VIEW vw_SafeAccountBalances AS
+                SELECT
+                    sa.AccountID,
+                    sa.AccountName,
+                    sa.AccountType,
+                    sa.AccountNumber,
+                    sa.OpeningBalance,
+                    ISNULL(SUM(cb.AmountIn),0) AS TotalIn,
+                    ISNULL(SUM(cb.AmountOut),0) AS TotalOut,
+                    sa.OpeningBalance + ISNULL(SUM(cb.AmountIn),0) - ISNULL(SUM(cb.AmountOut),0) AS Balance
+                FROM SafeAccounts sa
+                LEFT JOIN CashBox cb ON sa.AccountID = cb.AccountID
+                WHERE sa.IsActive = 1
+                GROUP BY sa.AccountID, sa.AccountName, sa.AccountType, sa.AccountNumber, sa.OpeningBalance');";
+                Execute(sqlSafeBalancesView);
             }
             catch (Exception ex)
             {

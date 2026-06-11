@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "نظام عقود التقسيط الشرعي";
-            this.Size = new Size(1180, 720);
+            this.Size = new Size(1180, 480);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -69,8 +69,8 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 100f)); // 1. Dashboard Metrics
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 65f));  // 2. Filters Bar
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 70f));  // 1. Dashboard Metrics (scaled down)
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));  // 2. Filters Bar (scaled down)
             mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // 3. Grids & Actions Split
 
             // 1. Dashboard Metrics Panel
@@ -99,10 +99,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            AddLabel(pnlFilters, "العميل:", 15, 20);
+            AddLabel(pnlFilters, "العميل:", 15, 13);
             cboSearchClient = new ComboBox
             {
-                Location = new Point(65, 16),
+                Location = new Point(65, 9),
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput,
@@ -112,10 +112,10 @@ namespace ChickenDist.Forms
             SetupSearchableCombo(cboSearchClient);
             pnlFilters.Controls.Add(cboSearchClient);
 
-            AddLabel(pnlFilters, "الحالة:", 280, 20);
+            AddLabel(pnlFilters, "الحالة:", 280, 13);
             cboSearchStatus = new ComboBox
             {
-                Location = new Point(330, 16),
+                Location = new Point(330, 9),
                 Width = 110,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
@@ -126,10 +126,10 @@ namespace ChickenDist.Forms
             cboSearchStatus.SelectedIndex = 1; // Default to Active
             pnlFilters.Controls.Add(cboSearchStatus);
 
-            AddLabel(pnlFilters, "رقم العقد:", 455, 20);
+            AddLabel(pnlFilters, "رقم العقد:", 455, 13);
             txtSearchCode = new TextBox
             {
-                Location = new Point(520, 16),
+                Location = new Point(520, 9),
                 Width = 120,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -137,12 +137,12 @@ namespace ChickenDist.Forms
             };
             pnlFilters.Controls.Add(txtSearchCode);
 
-            btnSearch = Theme.MakeButton("🔍 بحث", 660, 13, 90, 30, Theme.Primary);
+            btnSearch = Theme.MakeButton("🔍 بحث", 660, 8, 90, 26, Theme.Primary);
             btnSearch.Click += (s, e) => { _currentPage = 1; SearchContracts(); };
-            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 760, 13, 100, 30, Color.FromArgb(100, 100, 100));
+            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 760, 8, 100, 26, Color.FromArgb(100, 100, 100));
             btnReset.Click += BtnReset_Click;
 
-            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 870, 13, 130, 30, Color.FromArgb(120, 120, 80));
+            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 870, 8, 130, 26, Color.FromArgb(120, 120, 80));
             btnTopDebtors.Click += (s, e) => new FrmTopDebtors().ShowDialog();
 
             pnlFilters.Controls.AddRange(new Control[] { btnSearch, btnReset, btnTopDebtors });
@@ -161,20 +161,22 @@ namespace ChickenDist.Forms
             splitTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f)); // Column 1 (Left): Schedule & Actions (45%)
             splitTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            // 3a. Right Column: Contracts Grid Panel
-            var pnlContracts = new Panel
+            // 3a. Right Column: Contracts Grid Table Layout
+            var pnlContracts = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
+                ColumnCount = 1,
+                RowCount = 2,
                 Padding = new Padding(10),
-                Margin = new Padding(10, 10, 5, 10)
+                Margin = new Padding(10, 10, 5, 10),
+                BackColor = Theme.BgCard
             };
+            pnlContracts.RowStyles.Add(new RowStyle(SizeType.Percent, 100f)); // dgContracts (docked fill)
+            pnlContracts.RowStyles.Add(new RowStyle(SizeType.Absolute, 35f));  // pnlPagination
 
             dgContracts = new DataGridView
             {
-                Location = new Point(10, 10),
-                Size = new Size(600, 430),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                Dock = DockStyle.Fill,
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -196,58 +198,75 @@ namespace ChickenDist.Forms
             dgContracts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Count", HeaderText = "الأقساط", FillWeight = 30 });
             dgContracts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 35 });
             dgContracts.SelectionChanged += DgContracts_SelectionChanged;
-            pnlContracts.Controls.Add(dgContracts);
+            pnlContracts.Controls.Add(dgContracts, 0, 0);
 
-            // Pagination panel
-            var pnlPagination = new Panel
+            // Pagination Table Layout (100% responsive)
+            var pnlPagination = new TableLayoutPanel
             {
-                Location = new Point(10, 445),
-                Size = new Size(600, 35),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
-                BackColor = Theme.BgCard
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
             };
-            btnPrevPage = Theme.MakeButton("السابق ◀", 10, 3, 90, 26, Color.FromArgb(70, 70, 70));
+            pnlPagination.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // btnPrevPage
+            pnlPagination.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // btnNextPage
+            pnlPagination.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // lblPageInfo
+            pnlPagination.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            btnPrevPage = Theme.MakeButton("السابق ◀", Color.FromArgb(70, 70, 70));
+            btnPrevPage.Dock = DockStyle.Fill;
+            btnPrevPage.Margin = new Padding(2);
             btnPrevPage.Click += (s, e) => { if (_currentPage > 1) { _currentPage--; SearchContracts(); } };
-            btnNextPage = Theme.MakeButton("▶ التالي", 110, 3, 90, 26, Color.FromArgb(70, 70, 70));
+
+            btnNextPage = Theme.MakeButton("▶ التالي", Color.FromArgb(70, 70, 70));
+            btnNextPage.Dock = DockStyle.Fill;
+            btnNextPage.Margin = new Padding(2);
             btnNextPage.Click += (s, e) => { if (_currentPage < _totalPages) { _currentPage++; SearchContracts(); } };
+
             lblPageInfo = new Label
             {
                 Text = "صفحة 1 من 1",
-                Location = new Point(220, 8),
-                AutoSize = true,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
                 ForeColor = Theme.TextSub,
                 Font = Theme.FontSmall
             };
-            pnlPagination.Controls.AddRange(new Control[] { btnPrevPage, btnNextPage, lblPageInfo });
-            pnlContracts.Controls.Add(pnlPagination);
+            pnlPagination.Controls.Add(btnPrevPage, 0, 0);
+            pnlPagination.Controls.Add(btnNextPage, 1, 0);
+            pnlPagination.Controls.Add(lblPageInfo, 2, 0);
 
+            pnlContracts.Controls.Add(pnlPagination, 0, 1);
             splitTbl.Controls.Add(pnlContracts, 0, 0);
 
-            // 3b. Left Column: Details & Operations Panel
-            var pnlDetails = new Panel
+            // 3b. Left Column: Details & Operations Table Layout
+            var pnlDetails = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
+                ColumnCount = 1,
+                RowCount = 3,
                 Padding = new Padding(10),
-                Margin = new Padding(5, 10, 10, 10)
+                Margin = new Padding(5, 10, 10, 10),
+                BackColor = Theme.BgCard
             };
+            pnlDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f)); // lblContractTitle
+            pnlDetails.RowStyles.Add(new RowStyle(SizeType.Percent, 100f)); // dgSchedule
+            pnlDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));  // pnlActions
 
             lblContractTitle = new Label
             {
                 Text = "اختر عقداً لعرض جدول السداد تفصيلياً",
                 Font = new Font(Theme.FontBold.FontFamily, 11f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
-                Location = new Point(10, 10),
-                Width = 450,
-                Height = 25
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            pnlDetails.Controls.Add(lblContractTitle);
+            pnlDetails.Controls.Add(lblContractTitle, 0, 0);
 
             dgSchedule = new DataGridView
             {
-                Location = new Point(10, 40),
-                Size = new Size(480, 260),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                Dock = DockStyle.Fill,
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -267,37 +286,62 @@ namespace ChickenDist.Forms
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "PaidAmount", HeaderText = "المدفوع", FillWeight = 35 });
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "Remaining", HeaderText = "المتبقي", FillWeight = 35 });
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 35 });
-            pnlDetails.Controls.Add(dgSchedule);
+            pnlDetails.Controls.Add(dgSchedule, 0, 1);
 
-            // Operation Buttons panel
-            var pnlActions = new Panel
+            // Operation Buttons Table Layout (100% responsive)
+            var pnlActions = new TableLayoutPanel
             {
-                Location = new Point(10, 310),
-                Size = new Size(480, 170),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 2,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
                 BackColor = Theme.BgCard
             };
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            btnCollectSingle = Theme.MakeButton("💵 سداد قسط محدد", 10, 10, 145, 36, Theme.Success);
+            btnCollectSingle = Theme.MakeButton("💵 سداد قسط", Theme.Success);
+            btnCollectSingle.Dock = DockStyle.Fill;
+            btnCollectSingle.Margin = new Padding(3);
             btnCollectSingle.Click += BtnCollectSingle_Click;
-            btnCollectAmount = Theme.MakeButton("💰 تحصيل مبلغ إجمالي", 165, 10, 150, 36, Theme.Accent);
+
+            btnCollectAmount = Theme.MakeButton("💰 تحصيل مبلغ", Theme.Accent);
+            btnCollectAmount.Dock = DockStyle.Fill;
+            btnCollectAmount.Margin = new Padding(3);
             btnCollectAmount.Click += BtnCollectAmount_Click;
-            btnEarlyPayoff = Theme.MakeButton("⚡ سداد مبكر وتسوية", 325, 10, 145, 36, Color.FromArgb(160, 50, 160));
+
+            btnEarlyPayoff = Theme.MakeButton("⚡ سداد مبكر", Color.FromArgb(160, 50, 160));
+            btnEarlyPayoff.Dock = DockStyle.Fill;
+            btnEarlyPayoff.Margin = new Padding(3);
             btnEarlyPayoff.Click += BtnEarlyPayoff_Click;
 
-            btnReschedule = Theme.MakeButton("📅 إعادة جدولة إدارية", 10, 60, 145, 36, Theme.Primary);
+            btnReschedule = Theme.MakeButton("📅 إعادة جدولة", Theme.Primary);
+            btnReschedule.Dock = DockStyle.Fill;
+            btnReschedule.Margin = new Padding(3);
             btnReschedule.Click += BtnReschedule_Click;
-            btnCancelContract = Theme.MakeButton("❌ إلغاء العقد (Cancel)", 165, 60, 150, 36, Theme.Danger);
+
+            btnCancelContract = Theme.MakeButton("❌ إلغاء العقد", Theme.Danger);
+            btnCancelContract.Dock = DockStyle.Fill;
+            btnCancelContract.Margin = new Padding(3);
             btnCancelContract.Click += BtnCancelContract_Click;
-            btnAuditLog = Theme.MakeButton("🔐 سجل التدقيق", 325, 60, 145, 36, Color.FromArgb(120, 120, 80));
+
+            btnAuditLog = Theme.MakeButton("🔐 سجل التدقيق", Color.FromArgb(120, 120, 80));
+            btnAuditLog.Dock = DockStyle.Fill;
+            btnAuditLog.Margin = new Padding(3);
             btnAuditLog.Click += BtnAuditLog_Click;
 
-            pnlActions.Controls.AddRange(new Control[] {
-                btnCollectSingle, btnCollectAmount, btnEarlyPayoff,
-                btnReschedule, btnCancelContract, btnAuditLog
-            });
-            pnlDetails.Controls.Add(pnlActions);
+            pnlActions.Controls.Add(btnCollectSingle, 0, 0);
+            pnlActions.Controls.Add(btnCollectAmount, 1, 0);
+            pnlActions.Controls.Add(btnEarlyPayoff, 2, 0);
+            pnlActions.Controls.Add(btnReschedule, 0, 1);
+            pnlActions.Controls.Add(btnCancelContract, 1, 1);
+            pnlActions.Controls.Add(btnAuditLog, 2, 1);
 
+            pnlDetails.Controls.Add(pnlActions, 0, 2);
             splitTbl.Controls.Add(pnlDetails, 1, 0);
 
             mainTbl.Controls.Add(splitTbl, 0, 2);
@@ -310,20 +354,20 @@ namespace ChickenDist.Forms
         {
             var pnl = new Panel
             {
-                Size = new Size(215, 80),
+                Size = new Size(215, 58),
                 BackColor = Theme.BgCard,
-                Margin = new Padding(6),
+                Margin = new Padding(4),
                 Cursor = Cursors.Hand
             };
             pnl.Paint += (s, e) =>
             {
-                e.Graphics.FillRectangle(new SolidBrush(edgeColor), 0, 0, 5, 80);
+                e.Graphics.FillRectangle(new SolidBrush(edgeColor), 0, 0, 5, 58);
             };
 
             var lblTitle = new Label
             {
                 Text = title,
-                Location = new Point(10, 12),
+                Location = new Point(10, 6),
                 AutoSize = true,
                 ForeColor = Theme.TextSub,
                 Font = Theme.FontSmall
@@ -331,10 +375,10 @@ namespace ChickenDist.Forms
             lblVal = new Label
             {
                 Text = "0.00 ج",
-                Location = new Point(10, 35),
+                Location = new Point(10, 26),
                 AutoSize = true,
                 ForeColor = edgeColor,
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold)
             };
             pnl.Controls.AddRange(new Control[] { lblTitle, lblVal });
             return pnl;
@@ -581,7 +625,7 @@ namespace ChickenDist.Forms
                 {
                     try
                     {
-                        bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, 1, frm.Notes);
+                        bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes);
                         if (ok)
                         {
                             MessageBox.Show("✅ تم سداد القسط وتحديث القيود بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -618,7 +662,7 @@ namespace ChickenDist.Forms
                 {
                     try
                     {
-                        bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, 1, frm.Notes);
+                        bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes);
                         if (ok)
                         {
                             MessageBox.Show("✅ تم تحصيل المبلغ وتوزيعه بنجاح على الأقساط من الأقدم للأحدث.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -735,11 +779,12 @@ namespace ChickenDist.Forms
 
                                     DbHelper.ExecuteTrans(trans,
                                         @"INSERT INTO InstallmentPayments (ContractID, ScheduleID, BranchID, PaymentDate, Amount, PaymentMethod, SafeID, UserID, Notes)
-                                          VALUES (@cid, @sid, 1, GETDATE(), @amt, @pm, 1, @uid, @notes)",
+                                          VALUES (@cid, @sid, 1, GETDATE(), @amt, @pm, @safeId, @uid, @notes)",
                                         DbHelper.P("@cid", _selectedContractID),
                                         DbHelper.P("@sid", sid),
                                         DbHelper.P("@amt", payThis),
                                         DbHelper.P("@pm", frm.PaymentMethod),
+                                        DbHelper.P("@safeId", frm.SelectedSafeID),
                                         DbHelper.P("@uid", Session.EmpID),
                                         DbHelper.P("@notes", $"سداد مبكر وتسوية قسط {instNo} للعقد {contractCode}"));
 
@@ -761,11 +806,12 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@uid", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, TransDate) VALUES('ClientPayment', @amt, @ref, @notes, @uid, GETDATE())",
+                                    "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, TransDate, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, GETDATE(), @accId)",
                                     DbHelper.P("@amt", payoffAmount),
                                     DbHelper.P("@ref", _selectedContractID),
                                     DbHelper.P("@notes", $"تسوية وسداد مبكر للعقد {contractCode} للعميل ID:{customerID}"),
-                                    DbHelper.P("@uid", Session.EmpID));
+                                    DbHelper.P("@uid", Session.EmpID),
+                                    DbHelper.P("@accId", frm.SelectedSafeID));
                             }
                             ok = true;
                         });
@@ -883,6 +929,7 @@ namespace ChickenDist.Forms
     public class FrmCollectPrompt : Form
     {
         public decimal CollectedAmount { get; private set; }
+        public int SelectedSafeID { get; private set; }
         public string PaymentMethod { get; private set; }
         public string Notes { get; private set; }
 
@@ -921,7 +968,7 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { lblAmount, nudAmount });
 
             y += 40;
-            var lblMethod = new Label { Text = "طريقة التحصيل:", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblMethod = new Label { Text = "حساب التحصيل:", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain };
             cboMethod = new ComboBox
             {
                 Location = new Point(160, y - 3),
@@ -931,8 +978,21 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboMethod.Items.AddRange(new object[] { "Cash", "Bank" });
-            cboMethod.SelectedIndex = 0;
+            // تحميل الحسابات النشطة
+            try
+            {
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                foreach (DataRow row in safes.Rows)
+                {
+                    cboMethod.Items.Add(new ComboItem(
+                        Convert.ToInt32(row["AccountID"]),
+                        row["AccountName"].ToString()
+                    ));
+                }
+                cboMethod.DisplayMember = "Text";
+                if (cboMethod.Items.Count > 0) cboMethod.SelectedIndex = 0;
+            }
+            catch { }
             this.Controls.AddRange(new Control[] { lblMethod, cboMethod });
 
             y += 40;
@@ -952,7 +1012,13 @@ namespace ChickenDist.Forms
             btnOk.Click += (s, e) =>
             {
                 CollectedAmount = nudAmount.Value;
-                PaymentMethod = cboMethod.Text;
+                SelectedSafeID = 1;
+                PaymentMethod = "Cash";
+                if (cboMethod.SelectedItem is ComboItem safeItem)
+                {
+                    SelectedSafeID = safeItem.ID;
+                    PaymentMethod = safeItem.Text;
+                }
                 Notes = txtNotes.Text.Trim();
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -968,6 +1034,7 @@ namespace ChickenDist.Forms
     public class FrmEarlyPayoffPrompt : Form
     {
         public decimal WaiverAmount { get; private set; }
+        public int SelectedSafeID { get; private set; }
         public string PaymentMethod { get; private set; }
 
         private Label lblTotal;
@@ -1031,7 +1098,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblPayoff);
 
             y += 40;
-            var lblMethod = new Label { Text = "طريقة السداد:", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblMethod = new Label { Text = "حساب السداد:", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain };
             cboMethod = new ComboBox
             {
                 Location = new Point(180, y - 3),
@@ -1041,8 +1108,21 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboMethod.Items.AddRange(new object[] { "Cash", "Bank" });
-            cboMethod.SelectedIndex = 0;
+            // تحميل الحسابات النشطة
+            try
+            {
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                foreach (DataRow row in safes.Rows)
+                {
+                    cboMethod.Items.Add(new ComboItem(
+                        Convert.ToInt32(row["AccountID"]),
+                        row["AccountName"].ToString()
+                    ));
+                }
+                cboMethod.DisplayMember = "Text";
+                if (cboMethod.Items.Count > 0) cboMethod.SelectedIndex = 0;
+            }
+            catch { }
             this.Controls.AddRange(new Control[] { lblMethod, cboMethod });
 
             y += 50;
@@ -1050,7 +1130,13 @@ namespace ChickenDist.Forms
             btnOk.Click += (s, e) =>
             {
                 WaiverAmount = nudWaiver.Value;
-                PaymentMethod = cboMethod.Text;
+                SelectedSafeID = 1;
+                PaymentMethod = "Cash";
+                if (cboMethod.SelectedItem is ComboItem safeItem)
+                {
+                    SelectedSafeID = safeItem.ID;
+                    PaymentMethod = safeItem.Text;
+                }
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };

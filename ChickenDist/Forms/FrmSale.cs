@@ -92,6 +92,8 @@ namespace ChickenDist.Forms
 		private Button btnTierWholesale;
 		private string _selectedTier = "قطاعي";
 		private ComboBox cboWarehouse;
+		private ComboBox cboSafeAccount;
+		private Label lblSafeAccount;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
 
 		public FrmSale() : this(0, false)
@@ -394,6 +396,22 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 6, 2, 6)
 			};
 
+			lblSafeAccount = MakeLabel("حساب الدفع :", 0, 0);
+			lblSafeAccount.Dock = DockStyle.Fill;
+			lblSafeAccount.TextAlign = ContentAlignment.MiddleRight;
+			lblSafeAccount.Margin = new Padding(2);
+
+			cboSafeAccount = new ComboBox
+			{
+				Dock = DockStyle.Fill,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
 			// Row 3: Price Tiers (spanning 5 columns)
 			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
 			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
@@ -481,6 +499,8 @@ namespace ChickenDist.Forms
 			tbl.Controls.Add(txtNotes, 1, 2);
 			tbl.Controls.Add(lblWarehouse, 2, 2);
 			tbl.Controls.Add(cboWarehouse, 3, 2);
+			tbl.Controls.Add(lblSafeAccount, 4, 2);
+			tbl.Controls.Add(cboSafeAccount, 5, 2);
 
 			tbl.Controls.Add(lblTierRow, 0, 3);
 			tbl.Controls.Add(pnlTierBtns, 1, 3);
@@ -1139,6 +1159,23 @@ namespace ChickenDist.Forms
 				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
 			}
 			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
+
+			// تحميل الحسابات والخزائن
+			try
+			{
+				DataTable safes = AccountDAL.GetActiveSafeAccounts();
+				cboSafeAccount.Items.Clear();
+				foreach (DataRow row in safes.Rows)
+				{
+					cboSafeAccount.Items.Add(new ComboItem(
+						Convert.ToInt32(row["AccountID"]),
+						row["AccountName"].ToString()
+					));
+				}
+				cboSafeAccount.DisplayMember = "Text";
+				if (cboSafeAccount.Items.Count > 0) cboSafeAccount.SelectedIndex = 0;
+			}
+			catch { }
 		}
 
 		/// <summary>
@@ -1814,10 +1851,15 @@ namespace ChickenDist.Forms
 				// وضع التعديل
 				try
 				{
+					int? safeAccountID = null;
+					if (cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+					{
+						safeAccountID = safeItem.ID;
+					}
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
-						loadedLastModified: _loadedLastModified);
+						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID);
 					if (updated)
 					{
 						_isDirty = false;
@@ -1870,12 +1912,17 @@ namespace ChickenDist.Forms
 					}
 				}
 
+				int? safeAccountID = null;
+				if (cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+				{
+					safeAccountID = safeItem.ID;
+				}
 				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
 					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
-					schedule: schedule);
+					schedule: schedule, safeAccountID: safeAccountID);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -2127,13 +2174,13 @@ namespace ChickenDist.Forms
 		{
 			if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 			{
-				MessageBox.Show("❌ خطأ: يجب اختيار عميل مسجل أولا\u064b لتسجيل عملية التوريد لحسابه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("❌ خطأ: يجب اختيار عميل مسجل أولاً لتسجيل عملية التوريد لحسابه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			Form frm = new Form
 			{
 				Width = 400,
-				Height = 250,
+				Height = 310,
 				Text = "توريد نقدية",
 				StartPosition = FormStartPosition.CenterParent,
 				RightToLeft = RightToLeft.Yes,
@@ -2173,16 +2220,55 @@ namespace ChickenDist.Forms
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain
 			};
-			Button button = Theme.MakeButton("✅ حفظ", 120, 150, 100, 35, Theme.Accent);
+			Label label3 = new Label
+			{
+				Left = 20,
+				Top = 140,
+				Text = "حساب التوريد:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain
+			};
+			ComboBox cboSafe = new ComboBox
+			{
+				Left = 20,
+				Top = 165,
+				Width = 340,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat
+			};
+			// Load safes
+			try
+			{
+				DataTable safes = AccountDAL.GetActiveSafeAccounts();
+				foreach (DataRow row in safes.Rows)
+				{
+					cboSafe.Items.Add(new ComboItem(
+						Convert.ToInt32(row["AccountID"]),
+						row["AccountName"].ToString()
+					));
+				}
+				cboSafe.DisplayMember = "Text";
+				if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+			}
+			catch { }
+
+			Button button = Theme.MakeButton("✅ حفظ", 120, 215, 100, 35, Theme.Accent);
 			button.Click += delegate
 			{
 				frm.DialogResult = DialogResult.OK;
 				frm.Close();
 			};
-			frm.Controls.AddRange(new Control[5] { label, textBox, label2, textBox2, button });
+			frm.Controls.AddRange(new Control[7] { label, textBox, label2, textBox2, label3, cboSafe, button });
 			if (frm.ShowDialog() == DialogResult.OK && decimal.TryParse(textBox.Text, out var result) && result > 0m)
 			{
-				AccountDAL.SaveCashReceipt(comboItem.ID, result, dtpDate.Value, textBox2.Text);
+				int? targetSafeID = null;
+				if (cboSafe.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+				{
+					targetSafeID = safeItem.ID;
+				}
+				AccountDAL.SaveCashReceipt(comboItem.ID, result, dtpDate.Value, textBox2.Text, targetSafeID);
 				MessageBox.Show("✅ تم تسجيل التوريد في الخزنة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 			}
 		}

@@ -258,12 +258,13 @@ namespace ChickenDist.DAL
 
                 // قيد الخزنة (AmountIn مدين)
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, TransDate) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @dt)",
+                    "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, TransDate, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @dt, @accId)",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@ref", contractID),
                     DbHelper.P("@notes", $"تحصيل أقساط العقد {contractCode} للعميل ID:{customerID}"),
                     DbHelper.P("@uid", Session.EmpID),
-                    DbHelper.P("@dt", DateTime.Now));
+                    DbHelper.P("@dt", DateTime.Now),
+                    DbHelper.P("@accId", safeID));
 
                 AddAuditLogTrans(trans, "Collect", contractID, "", $"تحصيل مبلغ: {amount:N2} ج");
                 success = true;

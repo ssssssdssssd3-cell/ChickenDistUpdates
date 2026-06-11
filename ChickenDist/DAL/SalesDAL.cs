@@ -69,7 +69,7 @@ namespace ChickenDist.DAL
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
-            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1)
+            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null)
         {
             int returnedSaleID = -1;
 
@@ -184,11 +184,12 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@uid", Session.EmpID));
 
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy) VALUES('ClientPayment', @amt, @ref, @notes, @uid)",
+                                "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @accId)",
                                 DbHelper.P("@amt", downPayment),
                                 DbHelper.P("@ref", saleID),
                                 DbHelper.P("@notes", $"مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
-                                DbHelper.P("@uid", Session.EmpID));
+                                DbHelper.P("@uid", Session.EmpID),
+                                DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
                         }
 
                         InstallmentDAL.AddAuditLogTrans(trans, "Create", contractID, "", $"إنشاء عقد التقسيط بقيمة: {total:N2} ج");
@@ -198,9 +199,10 @@ namespace ChickenDist.DAL
                     if (typeStr == "Cash")
                     {
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID));
+                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
                     }
 
                     // تحميل مندوب: أنشئ سجل حمولة
@@ -454,7 +456,7 @@ namespace ChickenDist.DAL
 
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
-            DateTime? loadedLastModified = null)
+            DateTime? loadedLastModified = null, int? safeAccountID = null)
         {
             bool success = false;
 
@@ -591,9 +593,10 @@ namespace ChickenDist.DAL
                     else if (typeStr == "Cash")
                     {
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "تعديل بيع نقدي " + code), DbHelper.P("@by", Session.EmpID));
+                            DbHelper.P("@n", "تعديل بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
                     }
                     else if (typeStr == "DriverLoad" && driverID.HasValue)
                     {
