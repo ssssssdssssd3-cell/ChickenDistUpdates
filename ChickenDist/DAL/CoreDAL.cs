@@ -61,17 +61,18 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive) VALUES(@n,@u,@p,@r,@ph,@dr,@a)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive) VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
+                    DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive));
             else
             {
                 DbHelper.Execute(
                     "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a" +
-                    (hashedPassword == null ? "" : ",Password=@p") + " WHERE EmpID=@id",
+                    (hashedPassword == null ? "" : ",Password=@p,PlainPassword=@pp") + " WHERE EmpID=@id",
                     hashedPassword == null
                         ? new[] { DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive), DbHelper.P("@id", id) }
-                        : new[] { DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword), DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive), DbHelper.P("@id", id) });
+                        : new[] { DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword), DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password), DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive), DbHelper.P("@id", id) });
                 return id;
             }
         }

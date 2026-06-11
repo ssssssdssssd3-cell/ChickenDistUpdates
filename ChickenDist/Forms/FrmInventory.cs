@@ -29,6 +29,9 @@ namespace ChickenDist.Forms
         private string _selectedProductName = "";
         private string _selectedProductUnit = "";
         private bool _isSelecting = false;
+        // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل
+        private readonly System.Collections.Generic.Dictionary<int, decimal> _enteredActualQty
+            = new System.Collections.Generic.Dictionary<int, decimal>();
 
         // Tab Logs
         private DataGridView dgLogs;
@@ -283,19 +286,42 @@ namespace ChickenDist.Forms
                 wid = ci.ID;
             }
             var dt = InventoryDAL.GetStock(wid, txtSearch.Text);
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (DataRow r in dt.Rows)
             {
                 decimal bookQty = Convert.ToDecimal(r["BookQty"]);
-                dgStock.Rows.Add(
+                int pid = Convert.ToInt32(r["ProductID"]);
+
+                // إعادة القيمة الفعلية التي أدخلها المستخدم مسبقاً (إن وُجدت)
+                string actualVal = "";
+                string diffVal = "";
+                if (_enteredActualQty.TryGetValue(pid, out decimal savedActual))
+                {
+                    actualVal = savedActual.ToString("N3");
+                    decimal diff = savedActual - bookQty;
+                    diffVal = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                }
+
+                int ri = dgStock.Rows.Add(
                     r["ProductID"],
                     r["ProductCode"],
                     r["ProductName"],
                     r["Unit"],
                     Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
                     bookQty.ToString("N3"),
-                    "",   // ActualQty يبدأ فارغاً — المستخدم يُدخله يدوياً فقط للأصناف التي يجردها
-                    ""    // DiffQty يبدأ فارغاً
+                    actualVal,
+                    diffVal
                 );
+
+                // تلوين خلية الفارق
+                if (!string.IsNullOrEmpty(diffVal))
+                {
+                    decimal diff2 = savedActual - bookQty;
+                    if (diff2 > 0)
+                        dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.LightGreen;
+                    else if (diff2 < 0)
+                        dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
+                }
             }
             ClearAdjustmentForm();
         }
@@ -389,6 +415,10 @@ namespace ChickenDist.Forms
                     r.Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
                 else
                     r.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
+
+                // حفظ القيمة في الـ Dictionary للاحتفاظ بها عبر إعادات التحميل
+                if (_selectedProductID > 0)
+                    _enteredActualQty[_selectedProductID] = nudActualQty.Value;
             }
         }
 
@@ -402,6 +432,7 @@ namespace ChickenDist.Forms
                 var numStyles = System.Globalization.NumberStyles.Any;
                 decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
                 string cellText = row.Cells["ActualQty"].Value?.ToString();
+                int rowPid = Convert.ToInt32(row.Cells["ProductID"].Value);
 
                 if (!string.IsNullOrWhiteSpace(cellText) &&
                     decimal.TryParse(cellText, numStyles, inv, out decimal actualQty))
@@ -416,7 +447,11 @@ namespace ChickenDist.Forms
                     else
                         row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
 
-                    if (Convert.ToInt32(row.Cells["ProductID"].Value) == _selectedProductID)
+                    // حفظ القيمة في الـ Dictionary
+                    if (rowPid > 0)
+                        _enteredActualQty[rowPid] = actualQty;
+
+                    if (rowPid == _selectedProductID)
                     {
                         _isSelecting = true;
                         nudActualQty.Value = actualQty;
@@ -431,7 +466,11 @@ namespace ChickenDist.Forms
                     row.Cells["DiffQty"].Value = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
 
-                    if (Convert.ToInt32(row.Cells["ProductID"].Value) == _selectedProductID)
+                    // حذف القيمة من الـ Dictionary
+                    if (rowPid > 0)
+                        _enteredActualQty.Remove(rowPid);
+
+                    if (rowPid == _selectedProductID)
                     {
                         _isSelecting = true;
                         nudActualQty.Value = bookQty;
@@ -463,16 +502,24 @@ namespace ChickenDist.Forms
 
         private void ClearAdjustmentForm()
         {
-            _selectedProductID = 0;
-            _selectedBookQty = 0;
-            _selectedProductName = "";
-            _selectedProductUnit = "";
-            lblSelectedProduct.Text = "اختر صنفاً...";
-            lblBookQtyVal.Text = "0.00";
-            nudActualQty.Value = 0;
-            lblDiffVal.Text = "0.00";
-            lblDiffVal.ForeColor = Theme.TextMain;
-            txtNotes.Clear();
+            _isSelecting = true;
+            try
+            {
+                _selectedProductID = 0;
+                _selectedBookQty = 0;
+                _selectedProductName = "";
+                _selectedProductUnit = "";
+                lblSelectedProduct.Text = "اختر صنفاً...";
+                lblBookQtyVal.Text = "0.00";
+                nudActualQty.Value = 0;
+                lblDiffVal.Text = "0.00";
+                lblDiffVal.ForeColor = Theme.TextMain;
+                txtNotes.Clear();
+            }
+            finally
+            {
+                _isSelecting = false;
+            }
         }
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
@@ -545,7 +592,12 @@ namespace ChickenDist.Forms
                         decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                         
                         int id = InventoryDAL.SaveAdjustment(pid, wid, book, actual, txtNotes.Text);
-                        if (id > 0) savedCount++;
+                        if (id > 0)
+                        {
+                            savedCount++;
+                            // حذف الصنف المحفوظ من الـ Dictionary
+                            _enteredActualQty.Remove(pid);
+                        }
                     }
 
                     if (savedCount > 0)
@@ -577,6 +629,8 @@ namespace ChickenDist.Forms
                     int id = InventoryDAL.SaveAdjustment(_selectedProductID, wid, _selectedBookQty, nudActualQty.Value, txtNotes.Text);
                     if (id > 0)
                     {
+                        // حذف الصنف المحفوظ من الـ Dictionary
+                        _enteredActualQty.Remove(_selectedProductID);
                         MessageBox.Show("✅ تم حفظ وتطبيق التسوية الجردية وتعديل كمية المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadStock();
                         LoadLogs();

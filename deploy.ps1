@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ─────────────────────────────────────────────
 # ⚙️ Settings
 # ─────────────────────────────────────────────
-$VERSION   = "1.5.4"
+$VERSION   = "1.5.5"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 

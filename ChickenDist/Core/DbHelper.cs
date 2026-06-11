@@ -742,6 +742,287 @@ namespace ChickenDist.Core
                 LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
                 WHERE p.IsActive = 1 AND w.IsActive = 1');";
                 Execute(sqlProductStockView);
+
+                // ===== عمود المديونية الحالية في جدول العملاء =====
+                string sqlClientDebtCol = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'CurrentDebt')
+                BEGIN
+                    ALTER TABLE Clients ADD CurrentDebt DECIMAL(12,2) NOT NULL DEFAULT 0;
+                    -- تعبئة أولية بالأرصدة الموجودة فعلاً
+                    UPDATE c
+                    SET c.CurrentDebt = c.OpeningBalance
+                        + ISNULL((SELECT SUM(ct.Debit) - SUM(ct.Credit)
+                                  FROM ClientTransactions ct
+                                  WHERE ct.ClientID = c.ClientID), 0)
+                    FROM Clients c;
+                END";
+                Execute(sqlClientDebtCol);
+
+                // تريغر يُحدّث CurrentDebt تلقائياً عند أي إدراج/تعديل/حذف في ClientTransactions
+                Execute(@"IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'tr_UpdateClientCurrentDebt')
+                              DROP TRIGGER tr_UpdateClientCurrentDebt;");
+                Execute(@"EXEC('CREATE TRIGGER tr_UpdateClientCurrentDebt
+                ON ClientTransactions
+                AFTER INSERT, UPDATE, DELETE
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    ;WITH affected AS (
+                        SELECT ClientID FROM inserted
+                        UNION
+                        SELECT ClientID FROM deleted
+                    )
+                    UPDATE c
+                    SET c.CurrentDebt = c.OpeningBalance
+                        + ISNULL((SELECT SUM(ct.Debit) - SUM(ct.Credit)
+                                  FROM ClientTransactions ct
+                                  WHERE ct.ClientID = c.ClientID), 0)
+                    FROM Clients c
+                    WHERE c.ClientID IN (SELECT ClientID FROM affected);
+                END')");
+
+                // ===== عرض سجل جميع حركات الأصناف vw_AllStockMovements =====
+                string sqlStockMovementsView = @"
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_AllStockMovements') DROP VIEW vw_AllStockMovements;
+                EXEC('CREATE VIEW vw_AllStockMovements AS
+
+                -- 1. مبيعات (صادر)
+                SELECT
+                    s.SaleDate       AS MovDate,
+                    CASE s.SaleType
+                        WHEN ''Cash''       THEN N''بيع نقدي''
+                        WHEN ''Credit''     THEN N''بيع آجل''
+                        ELSE                     N''تحميل مندوب''
+                    END              AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    w.WarehouseName,
+                    s.SaleCode       AS RefCode,
+                    ISNULL(c.ClientName, e.EmpName) AS PersonName,
+                    0.000            AS QtyIn,
+                    si.Quantity      AS QtyOut,
+                    s.Notes
+                FROM SaleItems si
+                JOIN Sales      s  ON si.SaleID     = s.SaleID
+                JOIN Products   p  ON si.ProductID  = p.ProductID
+                JOIN Warehouses w  ON s.WarehouseID = w.WarehouseID
+                LEFT JOIN Clients   c ON s.ClientID = c.ClientID
+                LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                WHERE s.IsPosted = 1
+
+                UNION ALL
+
+                -- 2. مرتجع مبيعات (وارد)
+                SELECT
+                    sr.ReturnDate    AS MovDate,
+                    N''مرتجع مبيعات'' AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    w.WarehouseName,
+                    ISNULL(sl.SaleCode, N''---'') AS RefCode,
+                    ISNULL(c.ClientName,   N''---'') AS PersonName,
+                    ri.Quantity      AS QtyIn,
+                    0.000            AS QtyOut,
+                    sr.Notes
+                FROM ReturnItems ri
+                JOIN SalesReturns sr ON ri.ReturnID    = sr.ReturnID
+                JOIN Products     p  ON ri.ProductID   = p.ProductID
+                JOIN Warehouses   w  ON sr.WarehouseID = w.WarehouseID
+                LEFT JOIN Sales   sl ON sr.SaleID      = sl.SaleID
+                LEFT JOIN Clients c  ON sr.ClientID    = c.ClientID
+
+                UNION ALL
+
+                -- 3. مشتريات (وارد)
+                SELECT
+                    pu.PurchaseDate  AS MovDate,
+                    N''شراء''          AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    w.WarehouseName,
+                    pu.PurchaseCode  AS RefCode,
+                    ISNULL(sup.SupplierName, N''---'') AS PersonName,
+                    pi.Quantity      AS QtyIn,
+                    0.000            AS QtyOut,
+                    pu.Notes
+                FROM PurchaseItems pi
+                JOIN Purchases  pu  ON pi.PurchaseID  = pu.PurchaseID
+                JOIN Products   p   ON pi.ProductID   = p.ProductID
+                JOIN Warehouses w   ON pu.WarehouseID = w.WarehouseID
+                LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
+                WHERE pu.IsPosted = 1
+
+                UNION ALL
+
+                -- 4. مرتجع مشتريات (صادر)
+                SELECT
+                    pr.ReturnDate    AS MovDate,
+                    N''مرتجع مشتريات'' AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    w.WarehouseName,
+                    N''مرتجع #'' + CAST(pr.ReturnID AS NVARCHAR(20)) AS RefCode,
+                    ISNULL(sup.SupplierName, N''---'') AS PersonName,
+                    0.000            AS QtyIn,
+                    pri.Quantity     AS QtyOut,
+                    pr.Notes
+                FROM PurchaseReturnItems pri
+                JOIN PurchaseReturns pr ON pri.ReturnID    = pr.ReturnID
+                JOIN Products        p  ON pri.ProductID   = p.ProductID
+                JOIN Warehouses      w  ON pr.WarehouseID  = w.WarehouseID
+                LEFT JOIN Suppliers sup ON pr.SupplierID   = sup.SupplierID
+
+                UNION ALL
+
+                -- 5. تسويات جردية
+                SELECT
+                    sa.AdjDate       AS MovDate,
+                    N''تسوية جردية''   AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    w.WarehouseName,
+                    N''تسوية #'' + CAST(sa.AdjID AS NVARCHAR(20)) AS RefCode,
+                    ISNULL(e.EmpName, N''---'') AS PersonName,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) ELSE 0 END AS QtyIn,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) ELSE 0 END AS QtyOut,
+                    sa.Notes
+                FROM StockAdjustments sa
+                JOIN Products   p  ON sa.ProductID   = p.ProductID
+                JOIN Warehouses w  ON sa.WarehouseID = w.WarehouseID
+                LEFT JOIN Employees e ON sa.CreatedBy = e.EmpID
+
+                UNION ALL
+
+                -- 6. تحويلات وارد (الى المخزن)
+                SELECT
+                    t.TransferDate   AS MovDate,
+                    N''تحويل وارد''    AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    wTo.WarehouseName,
+                    t.TransferCode   AS RefCode,
+                    N''من: '' + wFrom.WarehouseName AS PersonName,
+                    ti.Quantity      AS QtyIn,
+                    0.000            AS QtyOut,
+                    t.Notes
+                FROM WarehouseTransferItems ti
+                JOIN WarehouseTransfers t  ON ti.TransferID       = t.TransferID
+                JOIN Products           p  ON ti.ProductID        = p.ProductID
+                JOIN Warehouses      wFrom ON t.FromWarehouseID   = wFrom.WarehouseID
+                JOIN Warehouses        wTo ON t.ToWarehouseID     = wTo.WarehouseID
+                WHERE t.IsPosted = 1
+
+                UNION ALL
+
+                -- 7. تحويلات صادر (من المخزن)
+                SELECT
+                    t.TransferDate   AS MovDate,
+                    N''تحويل صادر''   AS ChangeType,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    wFrom.WarehouseName,
+                    t.TransferCode   AS RefCode,
+                    N''إلى: '' + wTo.WarehouseName AS PersonName,
+                    0.000            AS QtyIn,
+                    ti.Quantity      AS QtyOut,
+                    t.Notes
+                FROM WarehouseTransferItems ti
+                JOIN WarehouseTransfers t  ON ti.TransferID       = t.TransferID
+                JOIN Products           p  ON ti.ProductID        = p.ProductID
+                JOIN Warehouses      wFrom ON t.FromWarehouseID   = wFrom.WarehouseID
+                JOIN Warehouses        wTo ON t.ToWarehouseID     = wTo.WarehouseID
+                WHERE t.IsPosted = 1');";
+                Execute(sqlStockMovementsView);
+
+                // ===== عرض الكميات الفعلية الحالية لكل صنف في كل مخزن =====
+                string sqlCurrentStockView = @"
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;
+                EXEC('CREATE VIEW vw_CurrentStockByWarehouse AS
+                SELECT
+                    p.ProductID,
+                    p.ProductCode,
+                    p.PartNumber,
+                    p.ProductName,
+                    p.Unit,
+                    p.SalePrice,
+                    p.MinStockLimit,
+                    w.WarehouseID,
+                    w.WarehouseName,
+                    ISNULL(adj.ActualQty, 0)
+                    + ISNULL((SELECT SUM(ri.Quantity)
+                              FROM ReturnItems ri
+                              JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                              WHERE ri.ProductID = p.ProductID
+                                AND sr.WarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
+                    + ISNULL((SELECT SUM(hi.ReturnedQty)
+                              FROM HandoverItems hi
+                              JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                              JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                              WHERE hi.ProductID = p.ProductID
+                                AND dl.WarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
+                    + ISNULL((SELECT SUM(pi.Quantity)
+                              FROM PurchaseItems pi
+                              JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                              WHERE pi.ProductID = p.ProductID
+                                AND pu.IsPosted = 1
+                                AND pu.WarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    + ISNULL((SELECT SUM(ti.Quantity)
+                              FROM WarehouseTransferItems ti
+                              JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                              WHERE ti.ProductID = p.ProductID
+                                AND t.IsPosted = 1
+                                AND t.ToWarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                              WHERE pri.ProductID = p.ProductID
+                                AND pr.WarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM(si.Quantity)
+                              FROM SaleItems si
+                              JOIN Sales s ON si.SaleID = s.SaleID
+                              WHERE si.ProductID = p.ProductID
+                                AND s.IsPosted = 1
+                                AND s.WarehouseID = w.WarehouseID
+                                AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'') AND s.DriverID IS NULL))
+                                AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM(ti2.Quantity)
+                              FROM WarehouseTransferItems ti2
+                              JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID
+                              WHERE ti2.ProductID = p.ProductID
+                                AND t2.IsPosted = 1
+                                AND t2.FromWarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
+                    AS CurrentQty,
+                    adj.AdjDate AS LastAdjDate
+                FROM Products p
+                CROSS JOIN Warehouses w
+                OUTER APPLY (
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty
+                    FROM StockAdjustments sa
+                    WHERE sa.ProductID = p.ProductID
+                      AND sa.WarehouseID = w.WarehouseID
+                    ORDER BY sa.AdjDate DESC
+                ) adj
+                WHERE p.IsActive = 1 AND w.IsActive = 1');";
+                Execute(sqlCurrentStockView);
+
+                // ===== عمود كلمة المرور الأصلية للموظفين (للمراجعة الإدارية فقط) =====
+                Execute(@"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'PlainPassword')
+                BEGIN
+                    ALTER TABLE Employees ADD PlainPassword NVARCHAR(200) NULL;
+                END");
             }
             catch (Exception ex)
             {

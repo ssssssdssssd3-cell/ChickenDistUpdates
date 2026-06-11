@@ -92,7 +92,8 @@ namespace ChickenDist.Forms
             AddField(pnlDetails, "الاسم:", ref y, out txtName);
             AddField(pnlDetails, "اسم المستخدم:", ref y, out txtUsername);
             AddField(pnlDetails, "كلمة المرور:", ref y, out txtPassword);
-            txtPassword.PasswordChar = '●';
+            // كلمة المرور ظاهرة للأدمن (لاسترجاعها عند النسيان)
+            // txtPassword.PasswordChar = '●';  // تم إلغاء الإخفاء بناءً على طلب المدير
             AddField(pnlDetails, "الهاتف:", ref y, out txtPhone);
 
             pnlDetails.Controls.Add(new Label { Text = "الدور:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
@@ -152,7 +153,12 @@ namespace ChickenDist.Forms
             if (dr == null) return;
             txtName.Text = dr["EmpName"].ToString();
             txtUsername.Text = dr["UserName"].ToString();
-            txtPassword.Clear();
+            // إظهار كلمة المرور الأصلية مباشرة
+            var pwRow = DbHelper.Query("SELECT ISNULL(PlainPassword, '') AS PlainPassword FROM Employees WHERE EmpID=@id", DbHelper.P("@id", _selectedID));
+            if (pwRow.Rows.Count > 0)
+                txtPassword.Text = pwRow.Rows[0]["PlainPassword"].ToString();
+            else
+                txtPassword.Clear();
             txtPhone.Text = dr["Phone"].ToString();
             cboRole.Text = dr["Role"].ToString();
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);
