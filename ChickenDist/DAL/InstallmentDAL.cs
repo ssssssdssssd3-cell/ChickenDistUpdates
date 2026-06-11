@@ -101,22 +101,26 @@ namespace ChickenDist.DAL
             totalCount = countResult != null ? Convert.ToInt32(countResult) : 0;
 
             // Query with pagination
-            int offset = (pageIndex - 1) * pageSize;
+            int startRow = (pageIndex - 1) * pageSize;
+            int endRow = startRow + pageSize;
             string querySql = $@"
-                SELECT ic.ContractID, ic.ContractGUID, ic.ContractCode, ic.BranchID, ic.InvoiceID,
-                       ic.CustomerID, c.ClientName AS CustomerName, ic.SaleType, ic.ContractAmount,
-                       ic.DownPayment, ic.FinancedAmount, ic.InstallmentCount, ic.InstallmentValue,
-                       ic.StartDate, ic.Status, ic.Notes, ic.CreatedDate,
-                       (SELECT TOP 1 SaleCode FROM Sales WHERE SaleID = ic.InvoiceID) AS InvoiceCode
-                FROM InstallmentContracts ic
-                JOIN Clients c ON ic.CustomerID = c.ClientID
-                {filter}
-                ORDER BY ic.ContractID DESC
-                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY";
+                SELECT * FROM (
+                    SELECT ic.ContractID, ic.ContractGUID, ic.ContractCode, ic.BranchID, ic.InvoiceID,
+                           ic.CustomerID, c.ClientName AS CustomerName, ic.SaleType, ic.ContractAmount,
+                           ic.DownPayment, ic.FinancedAmount, ic.InstallmentCount, ic.InstallmentValue,
+                           ic.StartDate, ic.Status, ic.Notes, ic.CreatedDate,
+                           (SELECT TOP 1 SaleCode FROM Sales WHERE SaleID = ic.InvoiceID) AS InvoiceCode,
+                           ROW_NUMBER() OVER (ORDER BY ic.ContractID DESC) AS RowNum
+                    FROM InstallmentContracts ic
+                    JOIN Clients c ON ic.CustomerID = c.ClientID
+                    {filter}
+                ) AS RowConstrainedResult
+                WHERE RowNum > @startRow AND RowNum <= @endRow
+                ORDER BY RowNum";
 
             var prmsQuery = BuildParams(customerID, status, code);
-            prmsQuery.Add(DbHelper.P("@offset", offset));
-            prmsQuery.Add(DbHelper.P("@limit", pageSize));
+            prmsQuery.Add(DbHelper.P("@startRow", startRow));
+            prmsQuery.Add(DbHelper.P("@endRow", endRow));
 
             return DbHelper.Query(querySql, prmsQuery.ToArray());
         }
