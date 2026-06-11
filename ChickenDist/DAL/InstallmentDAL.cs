@@ -58,34 +58,46 @@ namespace ChickenDist.DAL
             catch { }
         }
 
+        private static List<SqlParameter> BuildParams(int? customerID, string status, string code)
+        {
+            var prms = new List<SqlParameter>();
+            if (customerID.HasValue && customerID.Value > 0)
+            {
+                prms.Add(DbHelper.P("@custID", customerID.Value));
+            }
+            if (!string.IsNullOrEmpty(status) && status != "All")
+            {
+                prms.Add(DbHelper.P("@status", status));
+            }
+            if (!string.IsNullOrEmpty(code))
+            {
+                prms.Add(DbHelper.P("@code", "%" + code + "%"));
+            }
+            return prms;
+        }
+
         public static DataTable GetContracts(int? customerID, string status, string code, int pageIndex, int pageSize, out int totalCount)
         {
             string filter = " WHERE 1=1 ";
-            var prms = new List<SqlParameter>();
-
             if (customerID.HasValue && customerID.Value > 0)
             {
                 filter += " AND ic.CustomerID = @custID ";
-                prms.Add(DbHelper.P("@custID", customerID.Value));
             }
-
             if (!string.IsNullOrEmpty(status) && status != "All")
             {
                 filter += " AND ic.Status = @status ";
-                prms.Add(DbHelper.P("@status", status));
             }
-
             if (!string.IsNullOrEmpty(code))
             {
                 filter += " AND (ic.ContractCode LIKE @code OR c.ClientName LIKE @code) ";
-                prms.Add(DbHelper.P("@code", "%" + code + "%"));
             }
 
             // Count total
             string countSql = @"SELECT COUNT(*) FROM InstallmentContracts ic 
                                 JOIN Clients c ON ic.CustomerID = c.ClientID" + filter;
             
-            var countResult = DbHelper.Scalar(countSql, prms.ToArray());
+            var prmsCount = BuildParams(customerID, status, code);
+            var countResult = DbHelper.Scalar(countSql, prmsCount.ToArray());
             totalCount = countResult != null ? Convert.ToInt32(countResult) : 0;
 
             // Query with pagination
@@ -102,11 +114,11 @@ namespace ChickenDist.DAL
                 ORDER BY ic.ContractID DESC
                 OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY";
 
-            var prmsPaginated = new List<SqlParameter>(prms);
-            prmsPaginated.Add(DbHelper.P("@offset", offset));
-            prmsPaginated.Add(DbHelper.P("@limit", pageSize));
+            var prmsQuery = BuildParams(customerID, status, code);
+            prmsQuery.Add(DbHelper.P("@offset", offset));
+            prmsQuery.Add(DbHelper.P("@limit", pageSize));
 
-            return DbHelper.Query(querySql, prmsPaginated.ToArray());
+            return DbHelper.Query(querySql, prmsQuery.ToArray());
         }
 
         public static DataTable GetContractSchedule(int contractID)

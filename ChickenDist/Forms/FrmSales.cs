@@ -115,7 +115,7 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				Location = new Point(345, 12)
 			};
-			cboTypeFilter.Items.AddRange(new object[4] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تحميل مندوب" });
+			cboTypeFilter.Items.AddRange(new object[5] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تقسيط شرعي", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
 			flowLayoutPanel.Controls.AddRange(new Control[2] { label3, cboTypeFilter });
 
@@ -527,7 +527,7 @@ namespace ChickenDist.Forms
 				if (text5 == "DriverLoad" && text4 != "---")
 					text7 = text4;
 
-				if ((!(text != "الكل") || ((!text.Contains("نقدي") || !(text5 != "Cash")) && (!text.Contains("آجل") || !(text5 != "Credit")) && (!text.Contains("تحميل") || !(text5 != "DriverLoad")))) && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
+				if ((!(text != "الكل") || ((!text.Contains("نقدي") || !(text5 != "Cash")) && (!text.Contains("آجل") || !(text5 != "Credit")) && (!text.Contains("تقسيط") || !(text5 != "Installment")) && (!text.Contains("تحميل") || !(text5 != "DriverLoad")))) && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
 					decimal num = Convert.ToDecimal(row["TotalAmount"]);
 					decimal returnAmt = row.Table.Columns.Contains("ReturnAmount") && row["ReturnAmount"] != DBNull.Value
@@ -538,11 +538,12 @@ namespace ChickenDist.Forms
 					ret += returnAmt;
 					switch (text5)
 					{
-						case "Cash":       cash   += num; break;
-						case "Credit":     credit += num; break;
-						case "DriverLoad": driver += num; break;
+						case "Cash":        cash   += num; break;
+						case "Credit":      
+						case "Installment": credit += num; break;
+						case "DriverLoad":  driver += num; break;
 					}
-					string text8 = (text5 == "Credit") ? "آجل" : (text5 == "Cash") ? "نقدي" : "تحميل مندوب";
+					string text8 = (text5 == "Credit") ? "آجل" : (text5 == "Cash") ? "نقدي" : (text5 == "Installment") ? "تقسيط شرعي" : "تحميل مندوب";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 					dgSales.Rows.Add(
 						row["SaleID"], row["SaleCode"],
