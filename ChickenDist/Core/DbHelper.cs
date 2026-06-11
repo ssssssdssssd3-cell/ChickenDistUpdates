@@ -748,13 +748,13 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'CurrentDebt')
                 BEGIN
                     ALTER TABLE Clients ADD CurrentDebt DECIMAL(12,2) NOT NULL DEFAULT 0;
-                    -- تعبئة أولية بالأرصدة الموجودة فعلاً
-                    UPDATE c
-                    SET c.CurrentDebt = c.OpeningBalance
-                        + ISNULL((SELECT SUM(ct.Debit) - SUM(ct.Credit)
-                                  FROM ClientTransactions ct
-                                  WHERE ct.ClientID = c.ClientID), 0)
-                    FROM Clients c;
+                    -- تعبئة أولية بالأرصدة الموجودة فعلاً (استخدام EXEC لتفادي خطأ التحقق من وجود العمود وقت تصريف الدفعة)
+                    EXEC('UPDATE c
+                          SET c.CurrentDebt = c.OpeningBalance
+                              + ISNULL((SELECT SUM(ct.Debit) - SUM(ct.Credit)
+                                        FROM ClientTransactions ct
+                                        WHERE ct.ClientID = c.ClientID), 0)
+                          FROM Clients c');
                 END";
                 Execute(sqlClientDebtCol);
 
