@@ -198,8 +198,23 @@ namespace ChickenDist.Core
 
                             if (File.Exists(newExePath))
                             {
-                                try { File.Delete(newExePath); }
-                                catch (Exception ex) { AppLogger.Error("Failed to delete old update file", ex, "UpdateManager"); }
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    try
+                                    {
+                                        File.Delete(newExePath);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        if (i == 2)
+                                        {
+                                            AppLogger.Error("Failed to delete old update file after 3 attempts", ex, "UpdateManager");
+                                            throw;
+                                        }
+                                        System.Threading.Thread.Sleep(500);
+                                    }
+                                }
                             }
 
                             using (var client = new WebClient())
