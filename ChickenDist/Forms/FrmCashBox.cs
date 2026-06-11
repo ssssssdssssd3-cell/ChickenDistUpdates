@@ -596,7 +596,7 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(30, 158),
                 Width = 320,
-                Minimum = 0.01m,
+                Minimum = 0.00m,
                 Maximum = 9999999,
                 DecimalPlaces = 2,
                 BackColor = Theme.BgInput,
