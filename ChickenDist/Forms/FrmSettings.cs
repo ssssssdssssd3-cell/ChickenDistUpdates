@@ -13,6 +13,10 @@ namespace ChickenDist.Forms
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
         private ComboBox cboInvoiceFormat;
+        private ComboBox cboReceiptTemplate;
+        private ComboBox cboA4Template;
+        private ComboBox cboBarcodeTemplate;
+        private ComboBox cboBarcodeEncoding;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
 
@@ -147,6 +151,104 @@ namespace ChickenDist.Forms
             });
             cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : 1;
             this.Controls.Add(cboInvoiceFormat);
+            y += 40;
+
+            // ── قالب طباعة الريسيت ───────────────────
+            AddLabel("قالب طباعة الريسيت الحراري (Receipt):", 20, ref y, 10);
+            cboReceiptTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboReceiptTemplate.Items.AddRange(new object[]
+            {
+                "القياسي (Standard)",
+                "العصري (Modern)",
+                "المبسط السريع (Compact)",
+                "الفواتير الاحترافية (Elegant)"
+            });
+            cboReceiptTemplate.SelectedItem = AppConfig.ReceiptTemplate == "Modern" ? "العصري (Modern)"
+                                            : AppConfig.ReceiptTemplate == "Compact" ? "المبسط السريع (Compact)"
+                                            : AppConfig.ReceiptTemplate == "Elegant" ? "الفواتير الاحترافية (Elegant)"
+                                            : "القياسي (Standard)";
+            if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboReceiptTemplate);
+            y += 40;
+
+            // ── قالب طباعة A4 ───────────────────
+            AddLabel("قالب طباعة ورق A4/A5:", 20, ref y, 10);
+            cboA4Template = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboA4Template.Items.AddRange(new object[]
+            {
+                "الكلاسيكي الأزرق (Classic Blue)",
+                "التصميم الحديث (Modern Dark)",
+                "الفاتورة الرسمية (Official Invoice)",
+                "الشبكة المبسطة (Simple Grid)"
+            });
+            cboA4Template.SelectedItem = AppConfig.A4Template == "Modern" ? "التصميم الحديث (Modern Dark)"
+                                       : AppConfig.A4Template == "Official" ? "الفاتورة الرسمية (Official Invoice)"
+                                       : AppConfig.A4Template == "Simple" ? "الشبكة المبسطة (Simple Grid)"
+                                       : "الكلاسيكي الأزرق (Classic Blue)";
+            if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 0;
+            this.Controls.Add(cboA4Template);
+            y += 40;
+
+            // ── قالب الباركود الافتراضي ───────────────────
+            AddLabel("قالب ملصق الباركود الافتراضي (Sticker):", 20, ref y, 10);
+            cboBarcodeTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodeTemplate.Items.AddRange(new object[]
+            {
+                "الافتراضي (اسم صنف + سعر + باركود)",
+                "سعر بارز (سعر كبير + باركود)",
+                "ملصق صغير (سعر وباركود فقط)",
+                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+            });
+            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
+                                            : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
+                                            : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                                            : "الافتراضي (اسم صنف + سعر + باركود)";
+            if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboBarcodeTemplate);
+            y += 40;
+
+            // ── ترميز الباركود ───────────────────
+            AddLabel("نوع تشفير الباركود المطبوع:", 20, ref y, 10);
+            cboBarcodeEncoding = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodeEncoding.Items.AddRange(new object[]
+            {
+                "Code 128 (موصى به - ثنائي ومدمج وسريع القراءة)",
+                "Code 39 (أحادي عريض)"
+            });
+            cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
+            this.Controls.Add(cboBarcodeEncoding);
             y += 40;
 
             // ── فاصل ──────────────────────────────────────────────
@@ -370,6 +472,22 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
+
+                // Save Templates Settings
+                AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
+                                          : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
+                                          : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : "Standard";
+                AppConfig.A4Template = cboA4Template.SelectedIndex == 1 ? "Modern"
+                                     : cboA4Template.SelectedIndex == 2 ? "Official"
+                                     : cboA4Template.SelectedIndex == 3 ? "Simple"
+                                     : "Classic";
+                AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
+                                          : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
+                                          : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
+                                          : "Standard";
+                AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
+
                 SaveBackupFolder();
 
                 // Save Scale Settings

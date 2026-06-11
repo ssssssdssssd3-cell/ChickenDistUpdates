@@ -49,6 +49,31 @@ namespace ChickenDist.Core
             set => Set("DefaultInvoiceFormat", value);
         }
 
+        public static string ReceiptTemplate
+        {
+            get => Get("ReceiptTemplate", "Standard");
+            set => Set("ReceiptTemplate", value);
+        }
+
+        public static string A4Template
+        {
+            get => Get("A4Template", "Classic");
+            set => Set("A4Template", value);
+        }
+
+        public static string BarcodeTemplate
+        {
+            get => Get("BarcodeTemplate", "Standard");
+            set => Set("BarcodeTemplate", value);
+        }
+
+        public static string BarcodeEncoding
+        {
+            get => Get("BarcodeEncoding", "Code128");
+            set => Set("BarcodeEncoding", value);
+        }
+
+
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
         {
             if (string.IsNullOrEmpty(printerName)) return;
@@ -74,7 +99,7 @@ namespace ChickenDist.Core
 
         public static bool DriverPortalAutoStart
         {
-            get => Get("DriverPortalAutoStart", "false") == "true";
+            get => Get("DriverPortalAutoStart", "true") == "true";
             set => Set("DriverPortalAutoStart", value ? "true" : "false");
         }
 
@@ -92,7 +117,7 @@ namespace ChickenDist.Core
         // ===== إعدادات الميزان الإلكتروني =====
         public static bool ScaleEnabled
         {
-            get => Get("ScaleEnabled", "false") == "true";
+            get => Get("ScaleEnabled", "true") == "true";
             set => Set("ScaleEnabled", value ? "true" : "false");
         }
         public static string ScaleComPort

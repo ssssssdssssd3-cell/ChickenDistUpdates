@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.Drawing.Printing;
-using System.IO.Ports;
 using System.Windows.Forms;
 using ChickenDist.Core;
 
@@ -10,339 +9,614 @@ namespace ChickenDist.Forms
     public class FrmSettings : Form
     {
         private TextBox txtCompanyName;
+        private ComboBox cboReceiptPrintMode;
+        private ComboBox cboReceiptPrinter;
+        private ComboBox cboA4Printer;
+        private ComboBox cboInvoiceFormat;
+        private ComboBox cboReceiptTemplate;
+        private ComboBox cboA4Template;
+        private ComboBox cboBarcodeTemplate;
+        private ComboBox cboBarcodeEncoding;
+        private TextBox txtBackupFolder;
+        private Label lblLastBackup;
+
+        // Scale & Barcode controls
         private CheckBox chkScaleEnabled;
         private ComboBox cboScalePort;
         private ComboBox cboScaleBaud;
-        private CheckBox chkThermalEnabled;
-        private ComboBox cboThermalPrinter;
-        private ComboBox cboThermalWidth;
-        
         private Label lblTestWeightResult;
-        private Button btnTestScale;
-        private Timer scaleTestTimer;
+        private TextBox txtBarcodePrefix;
+        private NumericUpDown nudCodeLen;
+        private NumericUpDown nudWeightLen;
+        private NumericUpDown nudDiv;
 
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            this.Size = new Size(600, 550);
+            this.Size = new Size(560, 780);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.AutoScroll = true;
 
-            var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة، وإعدادات الميزان والطابعة الحرارية");
+            var pnlTop = Theme.MakeTitleBar("⚙️ إعدادات النظام", "تعديل بيانات الشركة والنسخ الاحتياطي والإعدادات الأساسية");
             this.Controls.Add(pnlTop);
 
-            // Tab Control
-            TabControl tc = new TabControl
+            int y = 80;
+
+            // ── اسم الشركة ──────────────────────────────────────
+            AddLabel("اسم الشركة / المؤسسة:", 20, ref y, 0);
+            txtCompanyName = new TextBox
             {
-                Location = new Point(20, 85),
-                Size = new Size(545, 335),
-                BackColor = Theme.BgCard,
-                ForeColor = Theme.TextMain
-            };
-
-            // Tab 1: General Settings
-            TabPage tpGeneral = new TabPage { Text = "البيانات العامة", BackColor = Theme.BgCard };
-            var lblComp = new Label { Text = "اسم الشركة / المؤسسة:", Location = new Point(20, 30), AutoSize = true, ForeColor = Theme.TextMain };
-            txtCompanyName = new TextBox { Location = new Point(20, 55), Width = 480, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 12f) };
-            txtCompanyName.Text = AppConfig.CompanyName;
-            tpGeneral.Controls.Add(lblComp);
-            tpGeneral.Controls.Add(txtCompanyName);
-            tc.TabPages.Add(tpGeneral);
-
-            // Tab 2: Scale Settings
-            TabPage tpScale = new TabPage { Text = "إعدادات الميزان", BackColor = Theme.BgCard };
-            
-            chkScaleEnabled = new CheckBox 
-            { 
-                Text = "تفعيل قراءة الميزان الإلكتروني", 
-                Location = new Point(20, 20), 
-                AutoSize = true, 
+                Location = new Point(20, y),
+                Width = 500,
+                BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                Checked = AppConfig.ScaleEnabled 
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 12f)
             };
-            
-            var lblPort = new Label { Text = "منفذ الاتصال (COM Port):", Location = new Point(20, 65), AutoSize = true, ForeColor = Theme.TextMain };
-            cboScalePort = new ComboBox 
-            { 
-                Location = new Point(20, 90), 
-                Width = 220, 
-                DropDownStyle = ComboBoxStyle.DropDownList, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                FlatStyle = FlatStyle.Flat 
+            txtCompanyName.Text = AppConfig.CompanyName;
+            this.Controls.Add(txtCompanyName);
+            y += 40;
+
+            // ── نمط الطباعة ──────────────────────────────────────
+            AddLabel("نمط طباعة الفاتورة:", 20, ref y, 15);
+            cboReceiptPrintMode = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
             };
-            
-            // Fill ports
+            cboReceiptPrintMode.Items.AddRange(new object[]
+            {
+                "مفصل - يظهر الرصيد السابق والحالي والمدفوع",
+                "مختصر - يظهر المجموع النهائي فقط"
+            });
+            cboReceiptPrintMode.SelectedIndex = AppConfig.ReceiptPrintMode == "Compact" ? 1 : 0;
+            this.Controls.Add(cboReceiptPrintMode);
+            y += 40;
+
+            // ── طابعة الريسيت الافتراضية ──────────────────────────
+            AddLabel("طابعة الريسيت الافتراضية:", 20, ref y, 15);
+            cboReceiptPrinter = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboReceiptPrinter.Items.Add("(طابعة النظام الافتراضية)");
             try
             {
-                cboScalePort.Items.Clear();
-                foreach (string p in SerialPort.GetPortNames())
+                foreach (string printer in PrinterSettings.InstalledPrinters)
                 {
-                    cboScalePort.Items.Add(p);
+                    cboReceiptPrinter.Items.Add(printer);
                 }
-                if (cboScalePort.Items.Contains(AppConfig.ScaleComPort))
-                    cboScalePort.SelectedItem = AppConfig.ScaleComPort;
-                else if (cboScalePort.Items.Count > 0)
-                    cboScalePort.SelectedIndex = 0;
             }
             catch { }
+            cboReceiptPrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.ReceiptPrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.ReceiptPrinterName;
+            if (cboReceiptPrinter.SelectedIndex == -1 && cboReceiptPrinter.Items.Count > 0)
+                cboReceiptPrinter.SelectedIndex = 0;
+            this.Controls.Add(cboReceiptPrinter);
+            y += 40;
 
-            var lblBaud = new Label { Text = "سرعة النقل (Baud Rate):", Location = new Point(265, 65), AutoSize = true, ForeColor = Theme.TextMain };
-            cboScaleBaud = new ComboBox 
-            { 
-                Location = new Point(265, 90), 
-                Width = 220, 
-                DropDownStyle = ComboBoxStyle.DropDownList, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                FlatStyle = FlatStyle.Flat 
+            // ── طابعة A4 الافتراضية ──────────────────────────────
+            AddLabel("طابعة A4 / التقارير الافتراضية:", 20, ref y, 15);
+            cboA4Printer = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
             };
+            cboA4Printer.Items.Add("(طابعة النظام الافتراضية)");
+            try
+            {
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    cboA4Printer.Items.Add(printer);
+                }
+            }
+            catch { }
+            cboA4Printer.SelectedItem = string.IsNullOrEmpty(AppConfig.A4PrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.A4PrinterName;
+            if (cboA4Printer.SelectedIndex == -1 && cboA4Printer.Items.Count > 0)
+                cboA4Printer.SelectedIndex = 0;
+            this.Controls.Add(cboA4Printer);
+            y += 40;
+
+            // ── الحجم الافتراضي لطباعة الفاتورة ───────────────────
+            AddLabel("حجم طباعة الفاتورة الافتراضي:", 20, ref y, 15);
+            cboInvoiceFormat = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboInvoiceFormat.Items.AddRange(new object[]
+            {
+                "ريسيت حراري (Receipt 80mm)",
+                "ورق عادي (A4/A5)"
+            });
+            cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : 1;
+            this.Controls.Add(cboInvoiceFormat);
+            y += 40;
+
+            // ── قالب طباعة الريسيت ───────────────────
+            AddLabel("قالب طباعة الريسيت الحراري (Receipt):", 20, ref y, 10);
+            cboReceiptTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboReceiptTemplate.Items.AddRange(new object[]
+            {
+                "القياسي (Standard)",
+                "العصري (Modern)",
+                "المبسط السريع (Compact)",
+                "الفواتير الاحترافية (Elegant)"
+            });
+            cboReceiptTemplate.SelectedItem = AppConfig.ReceiptTemplate == "Modern" ? "العصري (Modern)"
+                                            : AppConfig.ReceiptTemplate == "Compact" ? "المبسط السريع (Compact)"
+                                            : AppConfig.ReceiptTemplate == "Elegant" ? "الفواتير الاحترافية (Elegant)"
+                                            : "القياسي (Standard)";
+            if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboReceiptTemplate);
+            y += 40;
+
+            // ── قالب طباعة A4 ───────────────────
+            AddLabel("قالب طباعة ورق A4/A5:", 20, ref y, 10);
+            cboA4Template = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboA4Template.Items.AddRange(new object[]
+            {
+                "الكلاسيكي الأزرق (Classic Blue)",
+                "التصميم الحديث (Modern Dark)",
+                "الفاتورة الرسمية (Official Invoice)",
+                "الشبكة المبسطة (Simple Grid)"
+            });
+            cboA4Template.SelectedItem = AppConfig.A4Template == "Modern" ? "التصميم الحديث (Modern Dark)"
+                                       : AppConfig.A4Template == "Official" ? "الفاتورة الرسمية (Official Invoice)"
+                                       : AppConfig.A4Template == "Simple" ? "الشبكة المبسطة (Simple Grid)"
+                                       : "الكلاسيكي الأزرق (Classic Blue)";
+            if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 0;
+            this.Controls.Add(cboA4Template);
+            y += 40;
+
+            // ── قالب الباركود الافتراضي ───────────────────
+            AddLabel("قالب ملصق الباركود الافتراضي (Sticker):", 20, ref y, 10);
+            cboBarcodeTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodeTemplate.Items.AddRange(new object[]
+            {
+                "الافتراضي (اسم صنف + سعر + باركود)",
+                "سعر بارز (سعر كبير + باركود)",
+                "ملصق صغير (سعر وباركود فقط)",
+                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+            });
+            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
+                                            : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
+                                            : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                                            : "الافتراضي (اسم صنف + سعر + باركود)";
+            if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboBarcodeTemplate);
+            y += 40;
+
+            // ── ترميز الباركود ───────────────────
+            AddLabel("نوع تشفير الباركود المطبوع:", 20, ref y, 10);
+            cboBarcodeEncoding = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodeEncoding.Items.AddRange(new object[]
+            {
+                "Code 128 (موصى به - ثنائي ومدمج وسريع القراءة)",
+                "Code 39 (أحادي عريض)"
+            });
+            cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
+            this.Controls.Add(cboBarcodeEncoding);
+            y += 40;
+
+            // ── فاصل ──────────────────────────────────────────────
+            y += 25;
+            var sepSettings = new Panel
+            {
+                Location = new Point(20, y),
+                Size = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sepSettings);
+            y += 15;
+
+            // ── إعدادات الميزان الإلكتروني ─────────────────────────
+            var lblScaleTitle = new Label
+            {
+                Text = "⚖️ إعدادات الميزان الإلكتروني (COM Port)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblScaleTitle);
+            y += 30;
+
+            chkScaleEnabled = new CheckBox
+            {
+                Text = "تفعيل الميزان الإلكتروني",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ScaleEnabled
+            };
+            this.Controls.Add(chkScaleEnabled);
+            y += 30;
+
+            AddLabel("منفذ الاتصال (COM Port):", 20, ref y, 0);
+            cboScalePort = new ComboBox { Location = new Point(20, y), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            foreach (string p in System.IO.Ports.SerialPort.GetPortNames()) cboScalePort.Items.Add(p);
+            if (cboScalePort.Items.Contains(AppConfig.ScaleComPort)) cboScalePort.SelectedItem = AppConfig.ScaleComPort;
+            else if (cboScalePort.Items.Count > 0) cboScalePort.SelectedIndex = 0;
+            this.Controls.Add(cboScalePort);
+
+            var lblBaud = new Label { Text = "سرعة النقل (Baud Rate):", Location = new Point(270, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblBaud);
+            cboScaleBaud = new ComboBox { Location = new Point(270, y), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             cboScaleBaud.Items.AddRange(new object[] { "2400", "4800", "9600", "19200", "38400", "115200" });
             cboScaleBaud.SelectedItem = AppConfig.ScaleBaudRate.ToString();
+            this.Controls.Add(cboScaleBaud);
+            y += 40;
 
-            btnTestScale = Theme.MakeButton("🔌 اختبار قراءة الوزن", 20, 150, 180, 35, Theme.Primary);
-            lblTestWeightResult = new Label 
-            { 
-                Text = "الوزن الحالي: ---", 
-                Location = new Point(215, 158), 
-                AutoSize = true, 
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold), 
-                ForeColor = Theme.Accent 
-            };
-
-            btnTestScale.Click += BtnTestScale_Click;
-
-            // Timer to show live weight during test
-            scaleTestTimer = new Timer { Interval = 200 };
-            scaleTestTimer.Tick += ScaleTestTimer_Tick;
-
-            tpScale.Controls.AddRange(new Control[] { chkScaleEnabled, lblPort, cboScalePort, lblBaud, cboScaleBaud, btnTestScale, lblTestWeightResult });
-            tc.TabPages.Add(tpScale);
-
-            // Tab 3: Printer Settings
-            TabPage tpPrinter = new TabPage { Text = "إعدادات الطابعة", BackColor = Theme.BgCard };
-            
-            chkThermalEnabled = new CheckBox 
-            { 
-                Text = "تفعيل الطباعة الحرارية المباشرة (بدون معاينة)", 
-                Location = new Point(20, 20), 
-                AutoSize = true, 
-                ForeColor = Theme.TextMain,
-                Checked = AppConfig.ThermalPrinterEnabled 
-            };
-
-            var lblPrinter = new Label { Text = "اسم الطابعة الحرارية (Xprinter/Zebra):", Location = new Point(20, 65), AutoSize = true, ForeColor = Theme.TextMain };
-            cboThermalPrinter = new ComboBox 
-            { 
-                Location = new Point(20, 90), 
-                Width = 465, 
-                DropDownStyle = ComboBoxStyle.DropDownList, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                FlatStyle = FlatStyle.Flat 
-            };
-
-            // Fill printers
-            try
+            var btnTestScale = Theme.MakeButton("⚖️ اختبار الميزان", 20, y, 150, 35, Theme.Primary);
+            lblTestWeightResult = new Label { Location = new Point(180, y + 8), AutoSize = true, ForeColor = Theme.Success, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            this.Controls.Add(btnTestScale);
+            this.Controls.Add(lblTestWeightResult);
+            btnTestScale.Click += (s, e) =>
             {
-                cboThermalPrinter.Items.Clear();
-                foreach (string prt in PrinterSettings.InstalledPrinters)
-                {
-                    cboThermalPrinter.Items.Add(prt);
-                }
-                if (cboThermalPrinter.Items.Contains(AppConfig.ThermalPrinterName))
-                    cboThermalPrinter.SelectedItem = AppConfig.ThermalPrinterName;
-                else if (cboThermalPrinter.Items.Count > 0)
-                    cboThermalPrinter.SelectedIndex = 0;
-            }
-            catch { }
-
-            var lblWidth = new Label { Text = "عرض ورق الطباعة:", Location = new Point(20, 140), AutoSize = true, ForeColor = Theme.TextMain };
-            cboThermalWidth = new ComboBox 
-            { 
-                Location = new Point(20, 165), 
-                Width = 220, 
-                DropDownStyle = ComboBoxStyle.DropDownList, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                FlatStyle = FlatStyle.Flat 
-            };
-            cboThermalWidth.Items.AddRange(new object[] { "80 مم", "58 مم" });
-            cboThermalWidth.SelectedIndex = AppConfig.ThermalPaperWidth == 58 ? 1 : 0;
-
-            var btnTestPrint = Theme.MakeButton("🖨️ طباعة فاتورة تجريبية", 20, 225, 200, 35, Theme.Success);
-            btnTestPrint.Click += BtnTestPrint_Click;
-
-            tpPrinter.Controls.AddRange(new Control[] { chkThermalEnabled, lblPrinter, cboThermalPrinter, lblWidth, cboThermalWidth, btnTestPrint });
-            tc.TabPages.Add(tpPrinter);
-
-            this.Controls.Add(tc);
-
-            // Save settings button
-            var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, 440, 160, 42, Theme.Accent);
-            btnSave.Click += (s, e) => {
-                if (string.IsNullOrWhiteSpace(txtCompanyName.Text)) { MessageBox.Show("أدخل اسم الشركة"); return; }
-                
-                // Save General Settings
-                AppConfig.CompanyName = txtCompanyName.Text.Trim();
-
-                // Save Scale Settings
-                AppConfig.ScaleEnabled = chkScaleEnabled.Checked;
-                if (cboScalePort.SelectedItem != null)
-                    AppConfig.ScaleComPort = cboScalePort.SelectedItem.ToString();
-                if (cboScaleBaud.SelectedItem != null)
-                    AppConfig.ScaleBaudRate = int.Parse(cboScaleBaud.SelectedItem.ToString());
-
-                // Save Printer Settings
-                AppConfig.ThermalPrinterEnabled = chkThermalEnabled.Checked;
-                if (cboThermalPrinter.SelectedItem != null)
-                    AppConfig.ThermalPrinterName = cboThermalPrinter.SelectedItem.ToString();
-                AppConfig.ThermalPaperWidth = cboThermalWidth.SelectedIndex == 1 ? 58 : 80;
-
-                MessageBox.Show("✅ تم حفظ الإعدادات بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // If main form is open, update the title/company name
-                if (Application.OpenForms["FrmMain"] is FrmMain main)
-                {
-                    main.UpdateCompanyName(AppConfig.CompanyName);
-                }
-
-                // If sale form is open, reset or reconnect the scale service
-                if (chkScaleEnabled.Checked)
+                if (ScaleService.Instance.IsConnected)
                 {
                     ScaleService.Instance.Disconnect();
-                    ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+                    btnTestScale.Text = "⚖️ اختبار الميزان";
+                    btnTestScale.BackColor = Theme.Primary;
+                    lblTestWeightResult.Text = "";
                 }
                 else
                 {
-                    ScaleService.Instance.Disconnect();
+                    if (cboScalePort.SelectedItem == null) return;
+                    btnTestScale.Text = "🛑 إيقاف الاختبار";
+                    btnTestScale.BackColor = Theme.Danger;
+                    lblTestWeightResult.Text = "جاري الاتصال...";
+                    if (ScaleService.Instance.Connect(cboScalePort.SelectedItem.ToString(), int.Parse(cboScaleBaud.SelectedItem.ToString())))
+                    {
+                        ScaleService.Instance.WeightChanged += (w, stable) =>
+                        {
+                            this.Invoke(new Action(() => lblTestWeightResult.Text = $"الوزن: {w} {(stable ? "(مستقر)" : "")}"));
+                        };
+                    }
+                    else
+                    {
+                        lblTestWeightResult.Text = "خطأ في الاتصال";
+                        btnTestScale.Text = "⚖️ اختبار الميزان";
+                        btnTestScale.BackColor = Theme.Primary;
+                    }
                 }
-
-                this.Close();
             };
-            this.Controls.Add(btnSave);
+            y += 50;
 
-            // Apply theme RTL styles recursively
-            Theme.ApplyRTL(this.Controls);
-        }
+            // ── إعدادات ميزان الباركود ─────────────────────────────
+            var lblBarcodeScaleTitle = new Label
+            {
+                Text = "🏷️ إعدادات ميزان الباركود (الاستيكرات)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblBarcodeScaleTitle);
+            y += 30;
 
-        private void BtnTestScale_Click(object sender, EventArgs e)
-        {
-            if (scaleTestTimer.Enabled)
+            AddLabel("بداية باركود الميزان (Prefix):", 20, ref y, 0);
+            txtBarcodePrefix = new TextBox { Location = new Point(20, y), Width = 230, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = AppConfig.BarcodeScalePrefix };
+            this.Controls.Add(txtBarcodePrefix);
+
+            var lblCodeLen = new Label { Text = "طول كود الصنف:", Location = new Point(270, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblCodeLen);
+            nudCodeLen = new NumericUpDown { Location = new Point(270, y), Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10, Value = AppConfig.BarcodeScaleItemCodeLength };
+            this.Controls.Add(nudCodeLen);
+
+            var lblWeightLen = new Label { Text = "طول الوزن:", Location = new Point(390, y - 22), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblWeightLen);
+            nudWeightLen = new NumericUpDown { Location = new Point(390, y), Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10, Value = AppConfig.BarcodeScaleWeightLength };
+            this.Controls.Add(nudWeightLen);
+            y += 40;
+
+            AddLabel("عامل القسمة للوزن (مثال 1000 للجرام):", 20, ref y, 0);
+            nudDiv = new NumericUpDown { Location = new Point(20, y), Width = 230, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Minimum = 1, Maximum = 10000, Value = AppConfig.BarcodeScaleDivideBy };
+            this.Controls.Add(nudDiv);
+            y += 40;
+
+            // ── فاصل ──────────────────────────────────────────────
+            var sep = new Panel
             {
-                // Stop testing
-                scaleTestTimer.Stop();
-                ScaleService.Instance.Disconnect();
-                btnTestScale.Text = "🔌 اختبار قراءة الوزن";
-                btnTestScale.BackColor = Theme.Primary;
-                lblTestWeightResult.Text = "الوزن الحالي: ---";
-            }
-            else
+                Location = new Point(20, y + 10),
+                Size = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sep);
+            y += 25;
+
+            // ── النسخ الاحتياطي ──────────────────────────────────
+            var lblBackupTitle = new Label
             {
-                if (cboScalePort.SelectedItem == null)
+                Text = "💾 إعدادات النسخ الاحتياطي",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblBackupTitle);
+            y += 30;
+
+            // مجلد الباكب
+            AddLabel("مجلد حفظ النسخ الاحتياطية:", 20, ref y, 0);
+            txtBackupFolder = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtBackupFolder.Text = BackupManager.BackupFolder;
+            this.Controls.Add(txtBackupFolder);
+
+            var btnBrowse = Theme.MakeButton("📂 تصفح", 410, y - 1, 110, 28, Color.FromArgb(55, 65, 81));
+            btnBrowse.Font = new Font("Segoe UI", 9f);
+            btnBrowse.Click += (s, e) =>
+            {
+                using (var dlg = new FolderBrowserDialog())
                 {
-                    MessageBox.Show("يرجى اختيار منفذ COM أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    dlg.Description = "اختر مجلد حفظ النسخ الاحتياطية";
+                    dlg.SelectedPath = txtBackupFolder.Text;
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                        txtBackupFolder.Text = dlg.SelectedPath;
+                }
+            };
+            this.Controls.Add(btnBrowse);
+            y += 38;
+
+            // آخر نسخة احتياطية
+            var last = BackupManager.LastBackupTime;
+            string lastStr = last.HasValue
+                ? last.Value.ToString("dd/MM/yyyy hh:mm tt")
+                : "لم يتم عمل نسخة احتياطية بعد";
+            string overdueStr = BackupManager.IsBackupOverdue() ? " ⚠️ متأخر!" : " ✅ حديث";
+
+            lblLastBackup = new Label
+            {
+                Text = $"آخر نسخة احتياطية: {lastStr}{overdueStr}",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = BackupManager.IsBackupOverdue() ? Color.FromArgb(220, 80, 80) : Color.FromArgb(80, 200, 120),
+                Font = new Font("Segoe UI", 9.5f)
+            };
+            this.Controls.Add(lblLastBackup);
+            y += 30;
+
+            // أزرار النسخ الاحتياطي
+            var btnBackupNow = Theme.MakeButton("💾 نسخ احتياطي الآن", 20, y, 185, 38, Theme.Success);
+            btnBackupNow.Click += (s, e) =>
+            {
+                // حفظ المسار أولاً
+                SaveBackupFolder();
+                bool ok = BackupManager.DoBackup(silent: false);
+                if (ok) RefreshLastBackupLabel();
+            };
+            this.Controls.Add(btnBackupNow);
+
+            var btnOpenFolder = Theme.MakeButton("📂 فتح مجلد الباكب", 215, y, 180, 38, Color.FromArgb(55, 65, 81));
+            btnOpenFolder.Click += (s, e) =>
+            {
+                SaveBackupFolder();
+                BackupManager.OpenBackupFolder();
+            };
+            this.Controls.Add(btnOpenFolder);
+            y += 55;
+
+            // ── زر الحفظ الرئيسي ──────────────────────────────────
+            var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, y, 180, 44, Theme.Accent);
+            btnSave.Click += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtCompanyName.Text))
+                {
+                    MessageBox.Show("أدخل اسم الشركة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                string port = cboScalePort.SelectedItem.ToString();
-                int baud = int.Parse(cboScaleBaud.SelectedItem.ToString());
+                AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
+                AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
+                AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
+                AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
 
-                lblTestWeightResult.Text = "جاري الاتصال...";
-                btnTestScale.Text = "⏹️ إيقاف الاختبار";
-                btnTestScale.BackColor = Theme.Danger;
+                // Save Templates Settings
+                AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
+                                          : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
+                                          : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : "Standard";
+                AppConfig.A4Template = cboA4Template.SelectedIndex == 1 ? "Modern"
+                                     : cboA4Template.SelectedIndex == 2 ? "Official"
+                                     : cboA4Template.SelectedIndex == 3 ? "Simple"
+                                     : "Classic";
+                AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
+                                          : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
+                                          : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
+                                          : "Standard";
+                AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
 
-                if (ScaleService.Instance.Connect(port, baud))
-                {
-                    scaleTestTimer.Start();
-                }
-                else
-                {
-                    lblTestWeightResult.Text = "❌ فشل الاتصال!";
-                    btnTestScale.Text = "🔌 اختبار قراءة الوزن";
-                    btnTestScale.BackColor = Theme.Primary;
-                }
-            }
+                SaveBackupFolder();
+
+                // Save Scale Settings
+                AppConfig.ScaleEnabled = chkScaleEnabled.Checked;
+                if (cboScalePort.SelectedItem != null) AppConfig.ScaleComPort = cboScalePort.SelectedItem.ToString();
+                if (cboScaleBaud.SelectedItem != null) AppConfig.ScaleBaudRate = int.Parse(cboScaleBaud.SelectedItem.ToString());
+
+                // Save Barcode Settings
+                AppConfig.BarcodeScalePrefix = txtBarcodePrefix.Text.Trim();
+                AppConfig.BarcodeScaleItemCodeLength = (int)nudCodeLen.Value;
+                AppConfig.BarcodeScaleWeightLength = (int)nudWeightLen.Value;
+                AppConfig.BarcodeScaleDivideBy = nudDiv.Value;
+
+                // Reconnect if enabled
+                if (ScaleService.Instance.IsConnected) ScaleService.Instance.Disconnect();
+                if (AppConfig.ScaleEnabled)
+                    ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
+
+
+                MessageBox.Show(
+                    "✅ تم حفظ الإعدادات بنجاح!\nقد تحتاج لإعادة فتح بعض الشاشات ليتم تحديث الاسم.",
+                    "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                if (Application.OpenForms["FrmMain"] is FrmMain main)
+                    main.UpdateCompanyName(AppConfig.CompanyName);
+            };
+            this.Controls.Add(btnSave);
+
+            // ── فاصل ──────────────────────────────────────────────
+            y += 55;
+            var sep2 = new Panel
+            {
+                Location  = new Point(20, y),
+                Size      = new Size(500, 2),
+                BackColor = Theme.BorderColor
+            };
+            this.Controls.Add(sep2);
+            y += 12;
+
+            // ── معلومات الترخيص ──────────────────────────────────
+            var lblLicTitle = new Label
+            {
+                Text      = "🔑 معلومات ترخيص البرنامج",
+                Location  = new Point(20, y),
+                AutoSize  = true,
+                Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblLicTitle);
+            y += 30;
+
+            string machineId = LicenseManager.GetCurrentMachineId();
+            string hddSerial = LicenseManager.GetCurrentHddSerial();
+
+            string expiryTxt = LicenseManager.IsActivated
+                ? (LicenseManager.ExpiryDate == DateTime.MaxValue
+                    ? "✅ ترخيص دائم"
+                    : $"✅ صالح حتى: {LicenseManager.ExpiryDate:yyyy-MM-dd}")
+                : "⛔ غير مفعّل";
+
+            var lblLicInfo = new Label
+            {
+                Text      = $"الحالة: {expiryTxt}\n" +
+                            $"الجهاز: {LicenseManager.DeviceName}\n" +
+                            $"Machine ID: {machineId}\n" +
+                            $"HDD Serial:   {hddSerial}",
+                Location  = new Point(20, y),
+                AutoSize  = false,
+                Width     = 390,
+                Height    = 75,
+                Font      = new Font("Consolas", 9.5f),
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Theme.BgInput,
+                Padding   = new Padding(5)
+            };
+            this.Controls.Add(lblLicInfo);
+
+            var btnCopyIds = Theme.MakeButton("📋 نسخ المعرّفات", 420, y, 110, 38, Color.FromArgb(55, 65, 81));
+            btnCopyIds.Font = new Font("Segoe UI", 9f);
+            btnCopyIds.Click += (s, e) =>
+            {
+                string info = $"Machine ID: {machineId}\nHDD Serial: {hddSerial}";
+                System.Windows.Forms.Clipboard.SetText(info);
+                MessageBox.Show("✅ تم نسخ معرّفات الجهاز!\nأرسلها للمطور للحصول على ملف التفعيل.",
+                    "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+            };
+            this.Controls.Add(btnCopyIds);
+            y += 85;
+
+            this.Height = y + 60;
         }
 
-        private void ScaleTestTimer_Tick(object sender, EventArgs e)
+        private void AddLabel(string text, int x, ref int y, int extraTop)
         {
-            if (ScaleService.Instance.IsConnected)
+            y += extraTop;
+            var lbl = new Label
             {
-                decimal w = ScaleService.Instance.CurrentWeight;
-                bool stable = ScaleService.Instance.IsStable;
-                lblTestWeightResult.Text = $"الوزن الحالي: {w:F3} كجم {(stable ? "🟢" : "🟡")}";
-            }
-            else
-            {
-                lblTestWeightResult.Text = "❌ انقطع الاتصال!";
-                scaleTestTimer.Stop();
-                btnTestScale.Text = "🔌 اختبار قراءة الوزن";
-                btnTestScale.BackColor = Theme.Primary;
-            }
+                Text = text,
+                Location = new Point(x, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain
+            };
+            this.Controls.Add(lbl);
+            y += 22;
         }
 
-        private void BtnTestPrint_Click(object sender, EventArgs e)
+        private void SaveBackupFolder()
         {
-            if (cboThermalPrinter.SelectedItem == null)
-            {
-                MessageBox.Show("يرجى اختيار طابعة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            string printerName = cboThermalPrinter.SelectedItem.ToString();
-            int width = cboThermalWidth.SelectedIndex == 1 ? 58 : 80;
-
-            try
-            {
-                var pd = new PrintDocument();
-                pd.PrinterSettings.PrinterName = printerName;
-                pd.PrintPage += (s, ev) =>
-                {
-                    var g = ev.Graphics;
-                    var titleFont = new Font("Arial", 12, FontStyle.Bold);
-                    var normalFont = new Font("Arial", 9);
-                    
-                    int pageW = width == 58 ? 200 : 280; // approximate width in dots
-                    int y = 10;
-                    var center = new StringFormat { Alignment = StringAlignment.Center };
-                    var right = new StringFormat { Alignment = StringAlignment.Far };
-
-                    g.DrawString("فاتورة اختبار طابعة", titleFont, Brushes.Black, new RectangleF(0, y, pageW, 20), center);
-                    y += 25;
-                    g.DrawString($"الشركة: {AppConfig.CompanyName}", normalFont, Brushes.Black, new RectangleF(0, y, pageW, 18), right);
-                    y += 20;
-                    g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}", normalFont, Brushes.Black, new RectangleF(0, y, pageW, 18), right);
-                    y += 20;
-                    g.DrawString("----------------------------------", normalFont, Brushes.Black, new RectangleF(0, y, pageW, 15), center);
-                    y += 15;
-                    g.DrawString("اختبار الطباعة الحرارية ناجح 100%", normalFont, Brushes.Black, new RectangleF(0, y, pageW, 20), center);
-                    y += 20;
-                    g.DrawString("----------------------------------", normalFont, Brushes.Black, new RectangleF(0, y, pageW, 15), center);
-                };
-
-                pd.Print();
-                MessageBox.Show("✅ تم إرسال صفحة الاختبار للطابعة بنجاح!", "نجاح الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ فشلت الطباعة:\n{ex.Message}", "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            string folder = txtBackupFolder.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(folder))
+                BackupManager.BackupFolder = folder;
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
+        private void RefreshLastBackupLabel()
         {
-            if (scaleTestTimer.Enabled)
-            {
-                scaleTestTimer.Stop();
-                ScaleService.Instance.Disconnect();
-            }
-            base.OnFormClosing(e);
+            var last = BackupManager.LastBackupTime;
+            string lastStr = last.HasValue
+                ? last.Value.ToString("dd/MM/yyyy hh:mm tt")
+                : "لم يتم عمل نسخة احتياطية بعد";
+            string overdueStr = BackupManager.IsBackupOverdue() ? " ⚠️ متأخر!" : " ✅ حديث";
+            lblLastBackup.Text = $"آخر نسخة احتياطية: {lastStr}{overdueStr}";
+            lblLastBackup.ForeColor = BackupManager.IsBackupOverdue()
+                ? Color.FromArgb(220, 80, 80)
+                : Color.FromArgb(80, 200, 120);
         }
     }
 }

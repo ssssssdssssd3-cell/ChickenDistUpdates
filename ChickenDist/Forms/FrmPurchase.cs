@@ -44,6 +44,7 @@ namespace ChickenDist.Forms
         private List<PurchaseItemDTO> _items = new List<PurchaseItemDTO>();
         private int _lastPurchaseID = 0;
         private bool _isDirty = false;
+        private bool _isScanningBarcode = false;
         private int _supplierId = 0;
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
@@ -222,7 +223,7 @@ namespace ChickenDist.Forms
             cboProduct = new ComboBox
             {
                 Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
@@ -709,8 +710,10 @@ namespace ChickenDist.Forms
             }
             cboProduct.DisplayMember = "Text";
             cboProduct.SelectedIndex = 0;
+            SetupSearchableCombo(cboProduct);
             cboProduct.SelectedIndexChanged += (s, e) =>
             {
+                if (_isScanningBarcode) return;
                 if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
                     decimal price = ci.Extra;
@@ -721,6 +724,7 @@ namespace ChickenDist.Forms
                     {
                         timer.Stop();
                         timer.Dispose();
+                        if (_isScanningBarcode) return;
                         decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
                         _pendingBarcodeWeight = null;
                         _pendingScaleWeight = null;
@@ -782,48 +786,90 @@ namespace ChickenDist.Forms
             if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(cboProduct.Text))
             {
                 var res = BarcodeParser.Parse(cboProduct.Text);
+                
+                // Get unfiltered product list
+                List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+                if (allItems == null)
+                {
+                    allItems = new List<ComboItem>();
+                    foreach (var item in cboProduct.Items)
+                    {
+                        if (item is ComboItem ci) allItems.Add(ci);
+                    }
+                }
+
+				ComboItem foundItem = null;
+
                 if (res.IsScaleBarcode)
                 {
                     _pendingBarcodeWeight = res.WeightOrPrice;
-                    e.Handled = true;
                     
-                    for (int i = 0; i < cboProduct.Items.Count; i++)
+                    // Search in unfiltered list
+                    foreach (var ci in allItems)
                     {
-                        if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+                        if (ci.ID > 0 && ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
                         {
-                            if (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
-                            {
-                                cboProduct.SelectedIndex = i;
-                                return;
-                            }
+                            foundItem = ci;
+                            break;
                         }
                     }
-                    MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
-                    _pendingBarcodeWeight = null;
+                    if (foundItem == null)
+                    {
+                        MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
+						_pendingBarcodeWeight = null;
+                        return;
+                    }
                 }
                 else
                 {
                     string scanText = cboProduct.Text.Trim();
-                    for (int i = 0; i < cboProduct.Items.Count; i++)
+                    foreach (var ci in allItems)
                     {
-                        if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+                        if (ci.ID > 0 && 
+                            (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+                             string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+                             string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase)))
                         {
-                            if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
-                                string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-                                string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase))
-                            {
-                                cboProduct.SelectedIndex = i;
-                                e.Handled = true;
-                                return;
-                            }
+                            foundItem = ci;
+                            break;
                         }
                     }
+                }
+
+                if (foundItem != null)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+
+                    decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
+                    _pendingBarcodeWeight = null;
+                    _pendingScaleWeight = null;
+
+                    _isScanningBarcode = true;
+                    try
+                    {
+                        decimal price = foundItem.Extra;
+                        decimal salePrice = foundItem.Price;
+                        AddProductToGrid(foundItem.ID, foundItem.Text, qtyToAdd, price, 0m, salePrice);
+                        
+                        cboProduct.Text = "";
+                        cboProduct.Items.Clear();
+                        cboProduct.Items.AddRange(allItems.ToArray());
+                        cboProduct.SelectedIndex = 0;
+                        cboProduct.Focus();
+                    }
+                    finally
+                    {
+                        _isScanningBarcode = false;
+                    }
+                    return;
                 }
             }
         }
 
         private void SelectQuantityCell(int prodId)
         {
+            if (_isScanningBarcode) return;
             if (dgItems.Rows.Count > 0)
             {
                 foreach (DataGridViewRow row in dgItems.Rows)
@@ -1375,6 +1421,47 @@ namespace ChickenDist.Forms
             taxAmt = Math.Round(afterDisc * taxPct / 100m, 2);
 
             net = afterDisc + taxAmt;
+        }
+
+        private void SetupSearchableCombo(ComboBox cbo)
+        {
+            cbo.AutoCompleteMode = AutoCompleteMode.None;
+            cbo.TextUpdate += delegate
+            {
+                if (cbo.Tag == null)
+                {
+                    List<ComboItem> list = new List<ComboItem>();
+                    foreach (ComboItem item in cbo.Items)
+                    {
+                        list.Add(item);
+                    }
+                    cbo.Tag = list;
+                }
+                List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
+                string text = cbo.Text;
+                cbo.BeginUpdate();
+                cbo.Items.Clear();
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    ComboBox.ObjectCollection items = cbo.Items;
+                    object[] items2 = list2.ToArray();
+                    items.AddRange(items2);
+                }
+                else
+                {
+                    foreach (ComboItem item2 in list2)
+                    {
+                        if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            cbo.Items.Add(item2);
+                        }
+                    }
+                }
+                cbo.EndUpdate();
+                cbo.SelectionStart = text.Length;
+                cbo.SelectionLength = 0;
+                cbo.DroppedDown = true;
+            };
         }
     }
 

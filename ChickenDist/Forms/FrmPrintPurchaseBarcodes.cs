@@ -16,6 +16,8 @@ namespace ChickenDist.Forms
         private string _purchaseCode;
         private DataGridView dgItems;
         private ComboBox cboPrinters;
+        private ComboBox cboBarcodeTemplate;
+        private ComboBox cboBarcodeEncoding;
         private CheckBox chkPrintPrice;
         private CheckBox chkPrintCompanyName;
         private Button btnPrint;
@@ -137,11 +139,71 @@ namespace ChickenDist.Forms
             }
             catch { }
             this.Controls.Add(cboPrinters);
+            y += 35;
+
+            // Sticker Template
+            var lblTemplate = new Label
+            {
+                Text = "شكل ملصق الباركود:",
+                Location = new Point(20, y + 4),
+                AutoSize = true,
+                ForeColor = Theme.TextMain
+            };
+            this.Controls.Add(lblTemplate);
+
+            cboBarcodeTemplate = new ComboBox
+            {
+                Location = new Point(160, y),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            cboBarcodeTemplate.Items.AddRange(new object[]
+            {
+                "الافتراضي (اسم صنف + سعر + باركود)",
+                "سعر بارز (سعر كبير + باركود)",
+                "ملصق صغير (سعر وباركود فقط)",
+                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+            });
+            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
+                                            : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
+                                            : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                                            : "الافتراضي (اسم صنف + سعر + باركود)";
+            if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboBarcodeTemplate);
+            y += 35;
+
+            // Barcode Encoding
+            var lblEncoding = new Label
+            {
+                Text = "نوع تشفير الباركود:",
+                Location = new Point(20, y + 4),
+                AutoSize = true,
+                ForeColor = Theme.TextMain
+            };
+            this.Controls.Add(lblEncoding);
+
+            cboBarcodeEncoding = new ComboBox
+            {
+                Location = new Point(160, y),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            cboBarcodeEncoding.Items.AddRange(new object[]
+            {
+                "Code 128 (موصى به - سريع وسهل القراءة)",
+                "Code 39 (أحادي عريض)"
+            });
+            cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
+            this.Controls.Add(cboBarcodeEncoding);
 
             chkPrintPrice = new CheckBox
             {
                 Text = "طباعة السعر على الملصق",
-                Location = new Point(420, y),
+                Location = new Point(420, 395),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Checked = true
@@ -151,14 +213,14 @@ namespace ChickenDist.Forms
             chkPrintCompanyName = new CheckBox
             {
                 Text = "طباعة اسم المؤسسة",
-                Location = new Point(420, y + 25),
+                Location = new Point(420, 420),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Checked = true
             };
             this.Controls.Add(chkPrintCompanyName);
 
-            y += 65;
+            y += 45;
 
             // أزرار
             btnPrint = Theme.MakeButton("🖨️ طباعة الملصقات", 20, y, 160, 38, Theme.Success);
@@ -297,34 +359,126 @@ namespace ChickenDist.Forms
             var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
 
             // 1. طباعة اسم الشركة
-            if (chkPrintCompanyName.Checked)
+            string template = "Standard";
+            bool isCode128 = true;
+            
+            if (cboBarcodeTemplate.SelectedItem != null)
             {
-                g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, 12), center);
+                template = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
+                         : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
+                         : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
+                         : "Standard";
+            }
+            if (cboBarcodeEncoding.SelectedItem != null)
+            {
+                isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
+            }
+
+            // Large fonts for heavy/shelf templates
+            var fPriceLarge = new Font("Arial", 14f, FontStyle.Bold);
+            var fNameLarge = new Font("Arial", 10f, FontStyle.Bold);
+            var fLocationLarge = new Font("Arial", 9f, FontStyle.Bold);
+
+            if (template == "Shelf")
+            {
+                // Template 4: Shelf pricing (No Barcode, Large Text)
+                if (chkPrintCompanyName.Checked)
+                {
+                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Gray, new RectangleF(0, y, w, 12), center);
+                    y += 14;
+                }
+                
+                g.DrawString(item.ProductName, fNameLarge, Brushes.Black, new RectangleF(2, y, w - 4, 30), center);
+                y += 32;
+
+                if (chkPrintPrice.Checked)
+                {
+                    g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(0, y, w, 24), center);
+                    y += 26;
+                }
+
+                if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
+                {
+                    g.DrawString($"الرف / مكان الصنف: {item.ShelfLocation}", fLocationLarge, Brushes.Black, new RectangleF(0, y, w, 16), center);
+                }
+            }
+            else if (template == "Small")
+            {
+                // Template 3: Small Sticker (Barcode & Price only)
+                g.DrawString(item.ProductName, new Font("Arial", 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(2, y, w - 4, 16), center);
+                y += 16;
+
+                float barcodeHeight = 32;
+                if (isCode128)
+                    DrawCode128(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                else
+                    DrawCode39(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                y += barcodeHeight + 2;
+
+                g.DrawString(item.ProductCode, new Font("Courier New", 6.5f), Brushes.Black, new RectangleF(0, y, w, 10), center);
+                y += 10;
+
+                if (chkPrintPrice.Checked)
+                {
+                    g.DrawString($"{item.Price:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(0, y, w, 12), center);
+                }
+            }
+            else if (template == "PriceHeavy")
+            {
+                // Template 2: Price Heavy (Large Price on Top)
+                if (chkPrintPrice.Checked)
+                {
+                    g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(5, y, w - 10, 22), center);
+                    y += 24;
+                }
+
+                g.DrawString(item.ProductName, fName, Brushes.Black, new RectangleF(2, y, w - 4, 18), center);
+                y += 18;
+
+                float barcodeHeight = 30;
+                if (isCode128)
+                    DrawCode128(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                else
+                    DrawCode39(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                y += barcodeHeight + 2;
+
+                g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(5, y, w / 2 - 5, 12), leftFormat);
+                if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
+                {
+                    g.DrawString($"الرف: {item.ShelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, y, w / 2 - 5, 12), rightFormat);
+                }
+            }
+            else
+            {
+                // Template 1: Standard (Default)
+                if (chkPrintCompanyName.Checked)
+                {
+                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, 12), center);
+                    y += 12;
+                }
+
+                g.DrawString(item.ProductName, fName, Brushes.Black, new RectangleF(2, y, w - 4, 24), center);
+                y += 24;
+
+                float barcodeHeight = 36;
+                if (isCode128)
+                    DrawCode128(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                else
+                    DrawCode39(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
+                y += barcodeHeight + 2;
+
+                g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(0, y, w, 12), center);
                 y += 12;
-            }
 
-            // 2. طباعة اسم الصنف (ملتف إذا كان طويلاً)
-            g.DrawString(item.ProductName, fName, Brushes.Black, new RectangleF(2, y, w - 4, 24), center);
-            y += 24;
-
-            // 3. رسم الباركود (Code 39)
-            float barcodeHeight = 36;
-            DrawCode39(g, item.ProductCode, 10, y, w - 20, barcodeHeight);
-            y += barcodeHeight + 2;
-
-            // 4. طباعة النص للباركود
-            g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(0, y, w, 12), center);
-            y += 12;
-
-            // 5. طباعة السعر والرف
-            float bottomY = y;
-            if (chkPrintPrice.Checked)
-            {
-                g.DrawString($"السعر: {item.Price:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(5, bottomY, w / 2 - 5, 14), leftFormat);
-            }
-            if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
-            {
-                g.DrawString($"الرف: {item.ShelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, bottomY, w / 2 - 5, 14), rightFormat);
+                float bottomY = y;
+                if (chkPrintPrice.Checked)
+                {
+                    g.DrawString($"السعر: {item.Price:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(5, bottomY, w / 2 - 5, 14), leftFormat);
+                }
+                if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
+                {
+                    g.DrawString($"الرف: {item.ShelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, bottomY, w / 2 - 5, 14), rightFormat);
+                }
             }
 
             // تتبع الكمية المتبقية من الاستيكر الحالي
@@ -337,6 +491,80 @@ namespace ChickenDist.Forms
 
             // تحديد إذا كان هناك صفحات أخرى
             e.HasMorePages = (_currentItemIndex < _printList.Count);
+        }
+
+        private static readonly string[] Code128Patterns = new string[]
+        {
+            "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
+            "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
+            "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211",
+            "212123", "212321", "232121", "111323", "131123", "131321", "112313", "132113", "132311", "211313",
+            "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331",
+            "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111",
+            "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214",
+            "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111",
+            "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141",
+            "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141",
+            "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
+        };
+
+        private static void DrawCode128(Graphics g, string code, float x, float y, float width, float height)
+        {
+            try
+            {
+                code = code.Trim();
+                if (string.IsNullOrEmpty(code)) return;
+
+                int sum = 104; // Start B
+                var symbolIndices = new List<int>();
+                symbolIndices.Add(104); // Start B
+
+                for (int i = 0; i < code.Length; i++)
+                {
+                    int val = code[i] - 32;
+                    if (val < 0 || val > 102) val = 0; // fallback to Space
+                    symbolIndices.Add(val);
+                    sum += val * (i + 1);
+                }
+
+                int checksum = sum % 103;
+                symbolIndices.Add(checksum);
+                symbolIndices.Add(106); // Stop
+
+                int totalModules = 0;
+                foreach (int index in symbolIndices)
+                {
+                    string pattern = Code128Patterns[index];
+                    foreach (char c in pattern)
+                    {
+                        totalModules += (c - '0');
+                    }
+                }
+
+                float moduleWidth = width / totalModules;
+                if (moduleWidth < 0.4f) moduleWidth = 0.4f;
+
+                float curX = x;
+                using (var brush = new SolidBrush(Color.Black))
+                {
+                    foreach (int index in symbolIndices)
+                    {
+                        string pattern = Code128Patterns[index];
+                        for (int i = 0; i < pattern.Length; i++)
+                        {
+                            bool isBar = (i % 2 == 0);
+                            float elementWidth = (pattern[i] - '0') * moduleWidth;
+
+                            if (isBar)
+                            {
+                                g.FillRectangle(brush, curX, y, elementWidth, height);
+                            }
+                            curX += elementWidth;
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         // رسم باركود Code 39 القياسي بألوان GDI+ بدون خطوط خارجية

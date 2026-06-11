@@ -86,6 +86,7 @@ namespace ChickenDist.Forms
         private bool _isDirty = false;
         private int _editSaleID = 0;
         private bool _isCopyMode = false;
+        private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
 		private Button btnTierRetail;
 		private Button btnTierSemi;
@@ -927,44 +928,81 @@ namespace ChickenDist.Forms
 			if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(cboProduct.Text))
 			{
 				var res = BarcodeParser.Parse(cboProduct.Text);
+				
+				// Get unfiltered product list
+				List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+				if (allItems == null)
+				{
+					allItems = new List<ComboItem>();
+					foreach (var item in cboProduct.Items)
+					{
+						if (item is ComboItem ci) allItems.Add(ci);
+					}
+				}
+
+				ComboItem foundItem = null;
+
 				if (res.IsScaleBarcode)
 				{
 					_pendingBarcodeWeight = res.WeightOrPrice;
-					e.Handled = true;
 					
-					// Search for item by code
-					for (int i = 0; i < cboProduct.Items.Count; i++)
+					// Search for item by scale code in unfiltered list
+					foreach (var ci in allItems)
 					{
-						if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+						if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
 						{
-							// Assuming ItemCode matches ProductID or PartNumber
-							if (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode)
-							{
-								cboProduct.SelectedIndex = i;
-								return;
-							}
+							foundItem = ci;
+							break;
 						}
 					}
-					MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
-					_pendingBarcodeWeight = null;
+					if (foundItem == null)
+					{
+						MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
+						_pendingBarcodeWeight = null;
+						return;
+					}
 				}
 				else
 				{
 					string scanText = cboProduct.Text.Trim();
-					for (int i = 0; i < cboProduct.Items.Count; i++)
+					foreach (var ci in allItems)
 					{
-						if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+						if (ci.ID > 0 && 
+							(string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+							 string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase)))
 						{
-							if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
-								string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-								string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase))
-							{
-								cboProduct.SelectedIndex = i;
-								e.Handled = true;
-								return;
-							}
+							foundItem = ci;
+							break;
 						}
 					}
+				}
+
+				if (foundItem != null)
+				{
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+
+					decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
+					_pendingBarcodeWeight = null;
+					_pendingScaleWeight = null;
+
+					_isScanningBarcode = true;
+					try
+					{
+						AddOrUpdateProduct(foundItem.ID, qtyToAdd);
+						
+						cboProduct.Text = "";
+						cboProduct.Items.Clear();
+						cboProduct.Items.AddRange(allItems.ToArray());
+						cboProduct.SelectedIndex = 0;
+						cboProduct.Focus();
+					}
+					finally
+					{
+						_isScanningBarcode = false;
+					}
+					return;
 				}
 			}
 		}
@@ -1102,6 +1140,7 @@ namespace ChickenDist.Forms
 			cboProduct.SelectedIndex = 0;
 			cboProduct.SelectedIndexChanged += delegate
 			{
+				if (_isScanningBarcode) return;
 				if (cboProduct.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
 				{
 					decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
@@ -1427,7 +1466,7 @@ namespace ChickenDist.Forms
 			}
 			else if (dgItems.Columns[e.ColumnIndex].Name == "DiscountPct")
 			{
-				if (decimal.TryParse(dataGridViewRow.Cells["DiscountPct"].Value?.ToString(), out var resultPct) && resultPct >= 0m && resultPct <= 100m)
+				if (decimal.TryParse(dataGridViewRow.Cells[e.ColumnIndex].Value?.ToString(), out var resultPct) && resultPct >= 0m && resultPct <= 100m)
 				{
 					saleItemDTO.DiscountPct = resultPct;
 					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
@@ -1436,18 +1475,18 @@ namespace ChickenDist.Forms
 				else
 				{
 					MessageBox.Show("من فضلك أدخل نسبة خصم صحيحة بين 0 و 100.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					dataGridViewRow.Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
+					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountPct.ToString("F2");
 				}
 			}
 			else if (dgItems.Columns[e.ColumnIndex].Name == "DiscountAmt")
 			{
-				if (decimal.TryParse(dataGridViewRow.Cells["DiscountAmt"].Value?.ToString(), out var resultAmt) && resultAmt >= 0m)
+				if (decimal.TryParse(dataGridViewRow.Cells[e.ColumnIndex].Value?.ToString(), out var resultAmt) && resultAmt >= 0m)
 				{
 					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
 					if (resultAmt > gross)
 					{
 						MessageBox.Show("قيمة الخصم لا يمكن أن تكون أكبر من إجمالي سعر الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-						dataGridViewRow.Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
+						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 						return;
 					}
 					saleItemDTO.DiscountAmt = resultAmt;
@@ -1463,13 +1502,16 @@ namespace ChickenDist.Forms
 				else
 				{
 					MessageBox.Show("من فضلك أدخل قيمة خصم صحيحة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					dataGridViewRow.Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
+					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 				}
 			}
 
-			dataGridViewRow.Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
-			dataGridViewRow.Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
-			dataGridViewRow.Cells["TotalPrice"].Value = saleItemDTO.TotalPrice.ToString("F2");
+			if (dgItems.Columns.Contains("DiscountPct"))
+				dataGridViewRow.Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
+			if (dgItems.Columns.Contains("DiscountAmt"))
+				dataGridViewRow.Cells["DiscountAmt"].Value = saleItemDTO.DiscountAmt.ToString("F2");
+			if (dgItems.Columns.Contains("TotalPrice"))
+				dataGridViewRow.Cells["TotalPrice"].Value = saleItemDTO.TotalPrice.ToString("F2");
 			CalculateNet();
 		}
 
@@ -1522,6 +1564,17 @@ namespace ChickenDist.Forms
 				{
 					product = ci;
 					break;
+				}
+			}
+			if (product == null && cboProduct.Tag is List<ComboItem> allItems)
+			{
+				foreach (var ci in allItems)
+				{
+					if (ci.ID == productID)
+					{
+						product = ci;
+						break;
+					}
 				}
 			}
 			if (product == null) return;
@@ -2677,6 +2730,16 @@ namespace ChickenDist.Forms
                 var hidden  = new System.Collections.Generic.List<string>(
                     string.IsNullOrEmpty(hiddenVal) ? new string[0]
                     : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها في النهاية
+                foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)
+                {
+                    if (col.Name == "Delete") continue;
+                    if (!ordered.Contains(col.Name))
+                    {
+                        ordered.Add(col.Name);
+                    }
+                }
 
                 int displayIndex = 0;
                 foreach (string colName in ordered)
