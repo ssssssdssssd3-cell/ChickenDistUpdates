@@ -30,10 +30,7 @@ namespace ChickenDist.Core
                     
                     // تحميل بيانات ملف التحديث
                     string rawData = client.DownloadString(UpdateUrl);
-                    if (rawData.StartsWith("\uFEFF"))
-                    {
-                        rawData = rawData.Substring(1);
-                    }
+                    rawData = rawData.TrimStart('\uFEFF');
                     string remoteVersion = "";
                     string downloadUrl   = "";
                     string changelog     = "";
