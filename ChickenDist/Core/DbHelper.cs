@@ -212,6 +212,14 @@ namespace ChickenDist.Core
                 BEGIN
                     ALTER TABLE Products ADD Description NVARCHAR(500) NULL;
                 END");
+
+                // Add InternationalCode to Products
+                SafeMigrate("Products.InternationalCode", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'InternationalCode')
+                BEGIN
+                    ALTER TABLE Products ADD InternationalCode NVARCHAR(100) NULL;
+                END");
+
                 // Add Discount fields to Sales
                 SafeMigrate("Sales.Discount", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'DiscountAmount')

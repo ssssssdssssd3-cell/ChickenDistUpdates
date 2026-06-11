@@ -220,13 +220,13 @@ namespace ChickenDist.DAL
         {
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.InternationalCode,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive, p.InternationalCode,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
@@ -245,16 +245,17 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description,
-            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0)
+            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0, string internationalCode = null)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice) 
-                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp)",
+                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode) 
+                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
-                    DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice));
+                    DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
+                    DbHelper.P("@ic", internationalCode));
             else
             {
                 decimal oldPrice = 0m;
@@ -267,12 +268,13 @@ namespace ChickenDist.DAL
                 DbHelper.Execute(
                     @"UPDATE Products 
                       SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,
-                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp 
+                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp,InternationalCode=@ic 
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
                     DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
+                    DbHelper.P("@ic", internationalCode),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)
@@ -301,10 +303,10 @@ namespace ChickenDist.DAL
             if (string.IsNullOrWhiteSpace(code)) return new DataTable();
             return DbHelper.Query(
                 @"SELECT TOP 1 p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, 
-                         p.SalePrice, p.PurchasePrice, p.MinStockLimit
+                         p.SalePrice, p.PurchasePrice, p.MinStockLimit, p.InternationalCode
                   FROM Products p
                   WHERE p.IsActive = 1
-                    AND (p.ProductCode = @code OR p.PartNumber = @code)",
+                    AND (p.ProductCode = @code OR p.PartNumber = @code OR p.InternationalCode = @code)",
                 DbHelper.P("@code", code));
         }
 

@@ -948,6 +948,24 @@ namespace ChickenDist.Forms
 					MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
 					_pendingBarcodeWeight = null;
 				}
+				else
+				{
+					string scanText = cboProduct.Text.Trim();
+					for (int i = 0; i < cboProduct.Items.Count; i++)
+					{
+						if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+						{
+							if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+								string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+								string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase))
+							{
+								cboProduct.SelectedIndex = i;
+								e.Handled = true;
+								return;
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -1076,6 +1094,8 @@ namespace ChickenDist.Forms
 				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
 				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
 				comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+				comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
+				comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
 				cboProduct.Items.Add(comboItem);
 			}
 			cboProduct.DisplayMember = "Text";
@@ -2702,6 +2722,8 @@ namespace ChickenDist.Forms
 		public string ShelfLocation { get; set; } = "";
 		public decimal PendingSalePrice { get; set; } = 0m;
 		public decimal PendingQtyThreshold { get; set; } = 0m;
+		public string ProductCode { get; set; } = "";
+		public string InternationalCode { get; set; } = "";
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

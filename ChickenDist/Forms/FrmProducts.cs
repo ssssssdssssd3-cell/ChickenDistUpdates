@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     public class FrmProducts : Form
     {
         private DataGridView dgProducts;
-        private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation;
+        private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
         private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive;
@@ -78,6 +78,7 @@ namespace ChickenDist.Forms
             txtCode.ReadOnly = true;
             AddField(split.Panel1, "اسم الصنف:", ref y, out txtName);
             AddField(split.Panel1, "رقم القطعة (OEM):", ref y, out txtPartNumber);
+            AddField(split.Panel1, "الكود الدولي (الباركود):", ref y, out txtInternationalCode);
 
             // ComboBox للتصنيف مع زر إضافة
             split.Panel1.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
@@ -120,11 +121,13 @@ namespace ChickenDist.Forms
             btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
             btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
             btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40));
+            var btnPrintBarcode = Theme.MakeButton("🏷️ طباعة الباركود", 40, y + 40, 290, 32, Theme.Primary);
             
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+            btnPrintBarcode.Click += BtnPrintBarcode_Click;
+            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode });
             this.Controls.Add(split);
             split.SplitterDistance = 350;
 
@@ -175,6 +178,7 @@ namespace ChickenDist.Forms
             txtCode.Text = dr["ProductCode"].ToString();
             txtName.Text = dr["ProductName"].ToString();
             txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
+            txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
             txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
             txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
             txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
@@ -212,6 +216,7 @@ namespace ChickenDist.Forms
             txtCode.Text = ProductDAL.GetNextProductCode();
             txtName.Clear(); 
             txtPartNumber.Clear();
+            txtInternationalCode.Clear();
             txtCarModel.Clear();
             txtBrand.Clear();
             txtShelfLocation.Clear();
@@ -239,7 +244,7 @@ namespace ChickenDist.Forms
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
-                nudWholesalePrice.Value, nudSemiWholesalePrice.Value);
+                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim());
             
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadProducts(); }
             else MessageBox.Show("❌ فشل الحفظ");
@@ -250,6 +255,27 @@ namespace ChickenDist.Forms
             if (_selectedID == 0) return;
             if (MessageBox.Show("إيقاف الصنف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { ProductDAL.Delete(_selectedID); LoadProducts(); ClearDetail(); }
+        }
+
+        private void BtnPrintBarcode_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0)
+            {
+                MessageBox.Show("يرجى اختيار صنف أولاً للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var dr = ProductDAL.GetByID(_selectedID);
+            if (dr == null) return;
+
+            string name = dr["ProductName"]?.ToString() ?? "";
+            string code = dr["ProductCode"]?.ToString() ?? "";
+            string intCode = dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
+            decimal price = Convert.ToDecimal(dr["SalePrice"]);
+
+            using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price))
+            {
+                dlg.ShowDialog(this);
+            }
         }
     }
 }

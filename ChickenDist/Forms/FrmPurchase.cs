@@ -702,6 +702,9 @@ namespace ChickenDist.Forms
                     r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m);
                 ci.Extra = r["PurchasePrice"] != DBNull.Value
                     ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
+                ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
+                ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
                 cboProduct.Items.Add(ci);
             }
             cboProduct.DisplayMember = "Text";
@@ -797,6 +800,24 @@ namespace ChickenDist.Forms
                     }
                     MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
                     _pendingBarcodeWeight = null;
+                }
+                else
+                {
+                    string scanText = cboProduct.Text.Trim();
+                    for (int i = 0; i < cboProduct.Items.Count; i++)
+                    {
+                        if (cboProduct.Items[i] is ComboItem ci && ci.ID > 0)
+                        {
+                            if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+                                string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+                                string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase))
+                            {
+                                cboProduct.SelectedIndex = i;
+                                e.Handled = true;
+                                return;
+                            }
+                        }
+                    }
                 }
             }
         }
