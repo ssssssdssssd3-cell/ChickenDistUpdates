@@ -222,35 +222,41 @@ namespace ChickenDist.Core
 
                 // Add Discount fields to Sales
                 SafeMigrate("Sales.Discount", @"
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'DiscountAmount')
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE Sales ADD DiscountAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
-                END
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'DiscountPct')
-                BEGIN
-                    ALTER TABLE Sales ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Sales', 'DiscountAmount') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD DiscountAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    END
+                    IF COL_LENGTH('Sales', 'DiscountPct') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                    END
                 END");
 
                 // Add CloudID to Sales table for idempotency check on Cloud Import
                 SafeMigrate("Sales.CloudID", @"
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CloudID')
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE Sales ADD CloudID BIGINT NULL;
+                    IF COL_LENGTH('Sales', 'CloudID') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD CloudID BIGINT NULL;
+                    END
                 END
-                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_CloudID' AND object_id = OBJECT_ID('Sales'))
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL AND NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_CloudID' AND object_id = OBJECT_ID('Sales'))
                 BEGIN
                     CREATE INDEX IX_Sales_CloudID ON Sales(CloudID);
                 END");
 
                 // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***
                 SafeMigrate("SaleItems.Discount", @"
-                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
                 BEGIN
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
+                    IF COL_LENGTH('SaleItems', 'DiscountPct') IS NULL
                     BEGIN
                         ALTER TABLE SaleItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
                     END
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
+                    IF COL_LENGTH('SaleItems', 'DiscountAmt') IS NULL
                     BEGIN
                         ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
                     END
@@ -258,16 +264,41 @@ namespace ChickenDist.Core
 
                 // *** ضمان إضافي (v2) لإضافة DiscountPct/DiscountAmt في حال فشل الخطوة الأولى ***
                 SafeMigrate("SaleItems.DiscountV2", @"
-                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
-                    AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'DiscountPct') IS NULL
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
                 END");
                 SafeMigrate("SaleItems.DiscountAmtV2", @"
-                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
-                    AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'DiscountAmt') IS NULL
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
+                END");
+
+                // *** ضمان إضافي للخصومات في جداول المشتريات (Purchases & PurchaseItems) ***
+                SafeMigrate("Purchases.DiscountSafety", @"
+                IF OBJECT_ID('Purchases', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Purchases', 'DiscountAmount') IS NULL
+                    BEGIN
+                        ALTER TABLE Purchases ADD DiscountAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    END
+                    IF COL_LENGTH('Purchases', 'DiscountPct') IS NULL
+                    BEGIN
+                        ALTER TABLE Purchases ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                    END
+                END");
+
+                SafeMigrate("PurchaseItems.DiscountSafety", @"
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseItems', 'DiscountPct') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                    END
+                    IF COL_LENGTH('PurchaseItems', 'DiscountAmt') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    END
                 END");
 
                 // Add Purchases and Suppliers schema (tables only)

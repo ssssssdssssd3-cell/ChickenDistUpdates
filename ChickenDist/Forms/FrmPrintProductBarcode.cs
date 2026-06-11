@@ -30,12 +30,15 @@ namespace ChickenDist.Forms
         private decimal _printedPrice;
         private int _printedLabelsCount = 0;
 
-        public FrmPrintProductBarcode(int productID, string productName, string productCode, string internationalCode, decimal salePrice)
+        private string _shelfLocation;
+
+        public FrmPrintProductBarcode(int productID, string productName, string productCode, string internationalCode, decimal salePrice, string shelfLocation)
         {
             _productID = productID;
             _productName = productName;
             _productCode = productCode;
             _internationalCode = internationalCode;
+            _shelfLocation = shelfLocation;
 
             InitializeComponent(salePrice);
         }
@@ -253,22 +256,25 @@ namespace ChickenDist.Forms
 
             var g = e.Graphics;
 
-            var fCompany = new Font("Arial", 6f, FontStyle.Regular);
+            var fCompany = new Font("Arial", 8f, FontStyle.Bold);
             var fName    = new Font("Arial", 7.5f, FontStyle.Bold);
             var fPrice   = new Font("Arial", 8.5f, FontStyle.Bold);
             var fCode    = new Font("Courier New", 7.5f, FontStyle.Regular);
+            var fLocation = new Font("Arial", 7.5f, FontStyle.Bold);
 
             int w = e.PageBounds.Width;   // 200 units (2 inches)
             int h = e.PageBounds.Height;  // 120 units (1.2 inches)
             float y = 4;
 
             var center = new StringFormat { Alignment = StringAlignment.Center };
+            var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+            var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
 
             // 1. Company name
             if (chkPrintCompanyName.Checked)
             {
-                g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, 10), center);
-                y += 10;
+                g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, 12), center);
+                y += 12;
             }
 
             // 2. Product name
@@ -282,12 +288,17 @@ namespace ChickenDist.Forms
 
             // 4. Draw Code Text
             g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(0, y, w, 12), center);
-            y += 10;
+            y += 12;
 
-            // 5. Draw Price
+            // 5. Draw Price and Location
+            float bottomY = y;
             if (chkPrintPrice.Checked)
             {
-                g.DrawString($"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(0, y, w, 14), center);
+                g.DrawString($"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(5, bottomY, w / 2 - 5, 14), leftFormat);
+            }
+            if (!string.IsNullOrWhiteSpace(_shelfLocation))
+            {
+                g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, bottomY, w / 2 - 5, 14), rightFormat);
             }
 
             _printedLabelsCount++;

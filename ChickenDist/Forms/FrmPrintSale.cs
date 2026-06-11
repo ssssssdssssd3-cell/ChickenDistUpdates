@@ -127,8 +127,8 @@ namespace ChickenDist.Forms
                             decimal qty = Convert.ToDecimal(r["Quantity"]);
                             decimal price = Convert.ToDecimal(r["UnitPrice"]);
                             decimal tot = Convert.ToDecimal(r["TotalPrice"]);
-                            decimal itemDisc = Convert.ToDecimal(r["DiscountAmt"]);
-                            decimal itemDiscPct = Convert.ToDecimal(r["DiscountPct"]);
+                            decimal itemDisc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"]) : 0m;
+                            decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"]) : 0m;
 
                             // Line 1: Product Name (right aligned)
                             g.DrawString(prodName, bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
@@ -156,8 +156,8 @@ namespace ChickenDist.Forms
                     decimal netAmount = _runningTotal;
                     if (_saleRow != null)
                     {
-                        invDiscountAmt = Convert.ToDecimal(_saleRow["DiscountAmount"]);
-                        invDiscountPct = Convert.ToDecimal(_saleRow["DiscountPct"]);
+                        invDiscountAmt = _saleRow.Table.Columns.Contains("DiscountAmount") && _saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountAmount"]) : 0m;
+                        invDiscountPct = _saleRow.Table.Columns.Contains("DiscountPct") && _saleRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountPct"]) : 0m;
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 
@@ -279,8 +279,8 @@ namespace ChickenDist.Forms
                             decimal qty   = Convert.ToDecimal(r["Quantity"]);
                             decimal price = Convert.ToDecimal(r["UnitPrice"]);
                             decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-                            decimal itemDiscPct = Convert.ToDecimal(r["DiscountPct"]);
-                            decimal itemDiscAmt = Convert.ToDecimal(r["DiscountAmt"]);
+                            decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"]) : 0m;
+                            decimal itemDiscAmt = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"]) : 0m;
                             
                             string discText = "-";
                             if (itemDiscPct > 0)
@@ -308,8 +308,8 @@ namespace ChickenDist.Forms
                     decimal netAmount = _runningTotal;
                     if (_saleRow != null)
                     {
-                        invDiscountAmt = Convert.ToDecimal(_saleRow["DiscountAmount"]);
-                        invDiscountPct = Convert.ToDecimal(_saleRow["DiscountPct"]);
+                        invDiscountAmt = _saleRow.Table.Columns.Contains("DiscountAmount") && _saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountAmount"]) : 0m;
+                        invDiscountPct = _saleRow.Table.Columns.Contains("DiscountPct") && _saleRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountPct"]) : 0m;
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 

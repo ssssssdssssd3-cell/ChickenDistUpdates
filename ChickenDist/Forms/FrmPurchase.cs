@@ -1146,8 +1146,8 @@ namespace ChickenDist.Forms
                 txtNotes.Text = row["Notes"].ToString();
 
                 // الخصم
-                decimal dAmt = Convert.ToDecimal(row["DiscountAmount"]);
-                decimal dPct = Convert.ToDecimal(row["DiscountPct"]);
+                decimal dAmt = row.Row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+                decimal dPct = row.Row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
                 if (dPct > 0)
                 {
                     cboInvoiceDiscountType.SelectedIndex = 1;
@@ -1174,8 +1174,8 @@ namespace ChickenDist.Forms
                         ProductName = iRow["ProductName"].ToString(),
                         Quantity    = Convert.ToDecimal(iRow["Quantity"]),
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
-                        DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
-                        DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+                        DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+                        DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
                         SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null
                     });
                 }

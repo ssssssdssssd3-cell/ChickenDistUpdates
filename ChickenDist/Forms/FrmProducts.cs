@@ -271,8 +271,9 @@ namespace ChickenDist.Forms
             string code = dr["ProductCode"]?.ToString() ?? "";
             string intCode = dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
             decimal price = Convert.ToDecimal(dr["SalePrice"]);
+            string shelfLocation = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
 
-            using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price))
+            using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price, shelfLocation))
             {
                 dlg.ShowDialog(this);
             }

@@ -1721,8 +1721,8 @@ namespace ChickenDist.Forms
 			txtNotes.Text = row["Notes"].ToString();
 
 			// الخصم
-			decimal discPct = Convert.ToDecimal(row["DiscountPct"]);
-			decimal discAmt = Convert.ToDecimal(row["DiscountAmount"]);
+			decimal discPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
+			decimal discAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
 			if (discPct > 0)
 			{
 				cboInvoiceDiscountType.SelectedIndex = 1;
@@ -1762,8 +1762,8 @@ namespace ChickenDist.Forms
 					ProductName = iRow["ProductName"].ToString(),
 					Quantity    = qty,
 					UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
-					DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
-					DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+					DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+					DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
 					PriceTier   = iRow["PriceTier"].ToString(),
 					StockQty    = stock,
 					PurchasePrice = iRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["PurchasePrice"]) : 0m,
@@ -2126,8 +2126,8 @@ namespace ChickenDist.Forms
 				dtpDate.Value = Convert.ToDateTime(row["SaleDate"]);
 				txtNotes.Text = row["Notes"].ToString();
 
-				decimal discAmt = Convert.ToDecimal(row["DiscountAmount"]);
-				decimal discPctVal = Convert.ToDecimal(row["DiscountPct"]);
+				decimal discAmt = row.Row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+				decimal discPctVal = row.Row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
 				if (discPctVal > 0)
 				{
 					cboInvoiceDiscountType.SelectedIndex = 1;
@@ -2149,8 +2149,8 @@ namespace ChickenDist.Forms
 						ProductName = iRow["ProductName"].ToString(),
 						Quantity = Convert.ToDecimal(iRow["Quantity"]),
 						UnitPrice = Convert.ToDecimal(iRow["UnitPrice"]),
-						DiscountPct = Convert.ToDecimal(iRow["DiscountPct"]),
-						DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+						DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+						DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
 						PartNumber = iRow["PartNumber"]?.ToString() ?? "",
 						CarModel = iRow["CarModel"]?.ToString() ?? "",
 						Brand = iRow["Brand"]?.ToString() ?? "",
