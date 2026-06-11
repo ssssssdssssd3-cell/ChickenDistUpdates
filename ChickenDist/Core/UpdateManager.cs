@@ -28,8 +28,9 @@ namespace ChickenDist.Core
                     client.Encoding = System.Text.Encoding.UTF8;
                     client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
                     
-                    // تحميل بيانات ملف التحديث
-                    string rawData = client.DownloadString(UpdateUrl);
+                    // تحميل بيانات ملف التحديث مع كسر التخزين المؤقت (Cache Busting)
+                    string cacheBustedUrl = UpdateUrl + (UpdateUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
+                    string rawData = client.DownloadString(cacheBustedUrl);
                     rawData = rawData.TrimStart('\uFEFF');
                     string remoteVersion = "";
                     string downloadUrl   = "";
@@ -220,7 +221,8 @@ namespace ChickenDist.Core
                                     innerEx = ce.Error;
                                     done.Set();
                                 };
-                                client.DownloadFileAsync(new Uri(downloadUrl), newExePath);
+                                string cacheBustedDownloadUrl = downloadUrl + (downloadUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
+                                client.DownloadFileAsync(new Uri(cacheBustedDownloadUrl), newExePath);
                                 done.WaitOne(); // ننتظر في الـ background thread — لا يُجمّد الـ UI
 
                                 if (innerEx != null) throw innerEx;
