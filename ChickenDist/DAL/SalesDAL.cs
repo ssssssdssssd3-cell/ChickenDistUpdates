@@ -110,6 +110,53 @@ namespace ChickenDist.DAL
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
                         DbHelper.P("@damt", item.DiscountAmt), DbHelper.P("@pt", item.PriceTier ?? priceTier));
+
+                    // check if price is different from product base price to log it in PriceChangesLog
+                    if (!isDraft)
+                    {
+                        var basePriceObj = DbHelper.ScalarTrans(trans, "SELECT SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                        if (basePriceObj != null && basePriceObj != DBNull.Value)
+                        {
+                            decimal basePrice = Convert.ToDecimal(basePriceObj);
+                            if (Math.Abs(item.UnitPrice - basePrice) > 0.005m)
+                            {
+                                string changeNotes = $"بيع بسعر مختلف في فاتورة البيع #{code}";
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                      VALUES (@pid, @old, @new, 'SalesInvoice', @ref, @uid, @notes)",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@old", basePrice), DbHelper.P("@new", item.UnitPrice),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", changeNotes));
+                            }
+                        }
+
+                        // Atomic update to subtract from PendingQtyThreshold if sold at old SalePrice
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = CASE 
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingQtyThreshold - @qty
+                                  END,
+                                  SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN PendingSalePrice
+                                  ELSE SalePrice
+                                  END,
+                                  PendingSalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingSalePrice
+                                  END,
+                                  PendingPriceSourceRefID = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingPriceSourceRefID
+                                  END
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0 
+                                AND @qty > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", item.Quantity),
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@up", item.UnitPrice));
+                    }
                 }
 
                 if (!isDraft)
@@ -346,7 +393,22 @@ namespace ChickenDist.DAL
                 // 3. نسخ البنود المحذوفة إلى SaleItemsHistory
                 var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
                 foreach (DataRow r in dtOldItems.Rows)
-                 {
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal qty = Convert.ToDecimal(r["Quantity"]);
+                    decimal up = Convert.ToDecimal(r["UnitPrice"]);
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"UPDATE Products
+                          SET PendingQtyThreshold = PendingQtyThreshold + @qty
+                          WHERE ProductID = @pid 
+                            AND PendingSalePrice IS NOT NULL 
+                            AND PendingQtyThreshold > 0
+                            AND ABS(SalePrice - @up) < 0.005",
+                        DbHelper.P("@qty", qty),
+                        DbHelper.P("@pid", pid),
+                        DbHelper.P("@up", up));
+
                      DbHelper.ExecuteTrans(trans,
                          @"INSERT INTO SaleItemsHistory(AuditID, SaleID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier)
                            VALUES(@aid, @sid, @pid, @qty, @up, @tp, @dpct, @damt, @pt)",
@@ -496,17 +558,35 @@ namespace ChickenDist.DAL
                 var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
                 foreach (DataRow r in dtOldItems.Rows)
                 {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal qty = Convert.ToDecimal(r["Quantity"]);
+                    decimal up = Convert.ToDecimal(r["UnitPrice"]);
+
+                    if (!isDraft)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = PendingQtyThreshold + @qty
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", qty),
+                            DbHelper.P("@pid", pid),
+                            DbHelper.P("@up", up));
+                    }
+
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO SaleItemsHistory(AuditID, SaleID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier)
                           VALUES(@aid, @sid, @pid, @qty, @up, @tp, @dpct, @damt, @pt)",
                         DbHelper.P("@aid", auditID),
                         DbHelper.P("@sid", saleID),
-                        DbHelper.P("@pid", r["ProductID"]),
-                        DbHelper.P("@qty", r["Quantity"]),
-                        DbHelper.P("@up", r["UnitPrice"]),
-                        DbHelper.P("@tp", r["TotalPrice"]),
-                        DbHelper.P("@dpct", r["DiscountPct"]),
-                        DbHelper.P("@damt", r["DiscountAmt"]),
+                        DbHelper.P("@pid", pid),
+                        DbHelper.P("@qty", qty),
+                        DbHelper.P("@up", up),
+                        DbHelper.P("@tp", Convert.ToDecimal(r["TotalPrice"])),
+                        DbHelper.P("@dpct", Convert.ToDecimal(r["DiscountPct"])),
+                        DbHelper.P("@damt", Convert.ToDecimal(r["DiscountAmt"])),
                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                 }
 
@@ -536,6 +616,10 @@ namespace ChickenDist.DAL
 
                 // 5. حذف البنود الحالية
                 DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+
+                string code = saleID.ToString();
+                var dtCode = DbHelper.QueryTrans(trans, "SELECT SaleCode FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                if (dtCode.Rows.Count > 0) code = dtCode.Rows[0]["SaleCode"].ToString();
 
                 // 6. تحديث رأس الفاتورة
                 string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
@@ -573,14 +657,58 @@ namespace ChickenDist.DAL
                         DbHelper.P("@dpct", item.DiscountPct),
                         DbHelper.P("@damt", item.DiscountAmt),
                         DbHelper.P("@pt", item.PriceTier ?? priceTier));
+
+                    // check if price is different from product base price to log it in PriceChangesLog
+                    if (!isDraft)
+                    {
+                        var basePriceObj = DbHelper.ScalarTrans(trans, "SELECT SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                        if (basePriceObj != null && basePriceObj != DBNull.Value)
+                        {
+                            decimal basePrice = Convert.ToDecimal(basePriceObj);
+                            if (Math.Abs(item.UnitPrice - basePrice) > 0.005m)
+                            {
+                                string changeNotes = $"بيع بسعر مختلف في فاتورة البيع #{code}";
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                      VALUES (@pid, @old, @new, 'SalesInvoice', @ref, @uid, @notes)",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@old", basePrice), DbHelper.P("@new", item.UnitPrice),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", changeNotes));
+                            }
+                        }
+
+                        // Atomic update to subtract from PendingQtyThreshold if sold at old SalePrice
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = CASE 
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingQtyThreshold - @qty
+                                  END,
+                                  SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN PendingSalePrice
+                                  ELSE SalePrice
+                                  END,
+                                  PendingSalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingSalePrice
+                                  END,
+                                  PendingPriceSourceRefID = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingPriceSourceRefID
+                                  END
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0 
+                                AND @qty > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", item.Quantity),
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@up", item.UnitPrice));
+                    }
                 }
 
                 // 8. إنشاء الحركات المالية الجديدة
                 if (!isDraft)
                 {
-                    string code = saleID.ToString();
-                    var dtCode = DbHelper.QueryTrans(trans, "SELECT SaleCode FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
-                    if (dtCode.Rows.Count > 0) code = dtCode.Rows[0]["SaleCode"].ToString();
 
                     if (typeStr == "Credit" && clientID.HasValue)
                     {
@@ -1703,7 +1831,7 @@ namespace ChickenDist.DAL
                                       JOIN Sales s2 ON si2.SaleID=s2.SaleID
                                       WHERE si2.ProductID=p2.ProductID
                                         AND s2.IsPosted = 1
-                                        AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit') AND s2.DriverID IS NULL))
+                                        AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit', 'Installment') AND s2.DriverID IS NULL))
                                         AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)
                                         AND (@warehouseID IS NULL OR s2.WarehouseID = @warehouseID)), 0)
                            AS CurrentStock

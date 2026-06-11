@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.6.5";
+        public const string CurrentVersion = "1.6.6";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -30,6 +30,10 @@ namespace ChickenDist.Core
                     
                     // تحميل بيانات ملف التحديث
                     string rawData = client.DownloadString(UpdateUrl);
+                    if (rawData.StartsWith("\uFEFF"))
+                    {
+                        rawData = rawData.Substring(1);
+                    }
                     string remoteVersion = "";
                     string downloadUrl   = "";
                     string changelog     = "";

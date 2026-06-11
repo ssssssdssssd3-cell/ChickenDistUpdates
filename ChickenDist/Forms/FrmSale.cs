@@ -1055,6 +1055,7 @@ namespace ChickenDist.Forms
 				string name = row3["ProductName"].ToString();
 				decimal price = (decimal)row3["SalePrice"];
 				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
+				decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
 
 				string displayText = pendingPrice > 0 
@@ -1069,6 +1070,8 @@ namespace ChickenDist.Forms
 					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 					purchasePrice
 				);
+				comboItem.PendingSalePrice = pendingPrice;
+				comboItem.PendingQtyThreshold = pendingQtyThreshold;
 				comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
 				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
 				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
@@ -1081,51 +1084,21 @@ namespace ChickenDist.Forms
 			{
 				if (cboProduct.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
 				{
-					// Check if product is already in the list
-					foreach (SaleItemDTO item in _items)
-					{
-						if (item.ProductID == comboItem.ID)
-						{
-							MessageBox.Show("الصنف موجود مسبقاً بالفاتورة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-							cboProduct.SelectedIndex = 0;
-							return;
-						}
-					}
-
-					// Verify stock availability
-					// FIX: استخدام cache بدلاً من رحلة DB لكل صنف
-					decimal stock = _stockCache.TryGetValue(comboItem.ID, out var cached1) ? cached1 : 0m;
-					if (stock <= 0)
-					{
-						MessageBox.Show($"❌ عجز: الصنف '{comboItem.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-						cboProduct.SelectedIndex = 0;
-						return;
-					}
-
 					decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
 					_pendingBarcodeWeight = null;
 					_pendingScaleWeight = null;
 
-					// Add to items list
-					_items.Add(new SaleItemDTO
+					AddOrUpdateProduct(comboItem.ID, qtyToAdd);
+
+					int rowIndex = -1;
+					for (int i = _items.Count - 1; i >= 0; i--)
 					{
-						ProductID = comboItem.ID,
-						ProductName = comboItem.Name,
-						Quantity = qtyToAdd,
-						UnitPrice = comboItem.Price,
-						StockQty = stock,
-						MinStockLimit = comboItem.MinStockLimit,
-						PurchasePrice = comboItem.PurchasePrice,
-						PartNumber = comboItem.PartNumber,
-						CarModel = comboItem.CarModel,
-						Brand = comboItem.Brand,
-						ShelfLocation = comboItem.ShelfLocation
-					});
-
-					RefreshGrid();
-
-					// Focus on the newly added row's Quantity cell
-					int rowIndex = _items.Count - 1;
+						if (_items[i].ProductID == comboItem.ID)
+						{
+							rowIndex = i;
+							break;
+						}
+					}
 					if (rowIndex >= 0)
 					{
 						dgItems.Focus();
@@ -1134,7 +1107,6 @@ namespace ChickenDist.Forms
 						dgItems.BeginEdit(true);
 					}
 
-					// Clear combobox selection quietly
 					cboProduct.SelectedIndex = 0;
 				}
 			};
@@ -1356,36 +1328,8 @@ namespace ChickenDist.Forms
 				return;
 			}
 			decimal value = nudQty.Value;
-			// FIX: استخدام cache بدلاً من رحلة DB
-			decimal productStock = _stockCache.TryGetValue(comboItem.ID, out var cached2) ? cached2 : 0m;
-			if (value > productStock)
-			{
-				MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({value:N2}) أكبر من الكمية المتاحة في المخزن حاليا\u064b ({productStock:N2})!", "تنبيه - رصيد غير كاف\u064d", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-				return;
-			}
-			foreach (SaleItemDTO item in _items)
-			{
-				if (item.ProductID == comboItem.ID)
-				{
-					MessageBox.Show("الصنف موجود مسبقا\u064b");
-					return;
-				}
-			}
-			_items.Add(new SaleItemDTO
-			{
-				ProductID = comboItem.ID,
-				ProductName = comboItem.Name,
-				Quantity = value,
-				UnitPrice = result,
-				StockQty = productStock,
-				MinStockLimit = comboItem.MinStockLimit,
-				PurchasePrice = comboItem.PurchasePrice,
-				PartNumber = comboItem.PartNumber,
-				CarModel = comboItem.CarModel,
-				Brand = comboItem.Brand,
-				ShelfLocation = comboItem.ShelfLocation
-			});
-			RefreshGrid();
+
+			AddOrUpdateProduct(comboItem.ID, value, result);
 		}
 
 		private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -1417,10 +1361,27 @@ namespace ChickenDist.Forms
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
 						return;
 					}
-					saleItemDTO.Quantity = result;
-					// Recalculate discount amount based on percentage
-					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
-					saleItemDTO.DiscountAmt = Math.Round(gross * saleItemDTO.DiscountPct / 100m, 2);
+
+					decimal delta = result - saleItemDTO.Quantity;
+					decimal? manualPrice = null;
+					ComboItem prod = null;
+					foreach (var item in cboProduct.Items)
+					{
+						if (item is ComboItem ci && ci.ID == saleItemDTO.ProductID)
+						{
+							prod = ci;
+							break;
+						}
+					}
+					if (prod != null)
+					{
+						if (saleItemDTO.UnitPrice != prod.Price && saleItemDTO.UnitPrice != prod.PendingSalePrice)
+						{
+							manualPrice = saleItemDTO.UnitPrice;
+						}
+					}
+
+					AddOrUpdateProduct(saleItemDTO.ProductID, delta, manualPrice);
 				}
 				else
 				{
@@ -1530,6 +1491,102 @@ namespace ChickenDist.Forms
                 }
 			}
 			CalculateNet();
+		}
+
+		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null)
+		{
+			ComboItem product = null;
+			foreach (var item in cboProduct.Items)
+			{
+				if (item is ComboItem ci && ci.ID == productID)
+				{
+					product = ci;
+					break;
+				}
+			}
+			if (product == null) return;
+
+			decimal stock = _stockCache.TryGetValue(productID, out var cached) ? cached : 0m;
+			if (stock <= 0)
+			{
+				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				RefreshGrid();
+				return;
+			}
+
+			decimal existingQty = 0m;
+			List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
+			foreach (var item in _items)
+			{
+				if (item.ProductID == productID)
+				{
+					existingQty += item.Quantity;
+					existingRows.Add(item);
+				}
+			}
+
+			decimal totalQty = existingQty + qtyToAdd;
+
+			if (totalQty > stock)
+			{
+				MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				RefreshGrid();
+				return;
+			}
+
+			decimal oldPrice = manualPrice ?? product.Price;
+			decimal newPrice = product.PendingSalePrice;
+			decimal threshold = product.PendingQtyThreshold;
+
+			bool hasPendingPrice = newPrice > 0 && threshold > 0 && manualPrice == null;
+
+			foreach (var row in existingRows)
+			{
+				_items.Remove(row);
+			}
+
+			if (hasPendingPrice)
+			{
+				decimal oldQtyAvailable = Math.Max(0m, Math.Min(stock, threshold));
+				decimal qtyOld = Math.Min(totalQty, oldQtyAvailable);
+				decimal qtyNew = Math.Max(0m, totalQty - oldQtyAvailable);
+
+				if (qtyOld > 0)
+				{
+					_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock));
+				}
+				if (qtyNew > 0)
+				{
+					_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock));
+				}
+			}
+			else
+			{
+				if (totalQty > 0)
+				{
+					_items.Add(CreateSaleItemDTO(product, totalQty, oldPrice, stock));
+				}
+			}
+
+			RefreshGrid();
+		}
+
+		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock)
+		{
+			return new SaleItemDTO
+			{
+				ProductID = product.ID,
+				ProductName = product.Name,
+				Quantity = qty,
+				UnitPrice = price,
+				StockQty = stock,
+				MinStockLimit = product.MinStockLimit,
+				PurchasePrice = product.PurchasePrice,
+				PartNumber = product.PartNumber,
+				CarModel = product.CarModel,
+				Brand = product.Brand,
+				ShelfLocation = product.ShelfLocation
+			};
 		}
 
 		private void CalculateNet()
@@ -2643,6 +2700,8 @@ namespace ChickenDist.Forms
 		public string CarModel { get; set; } = "";
 		public string Brand { get; set; } = "";
 		public string ShelfLocation { get; set; } = "";
+		public decimal PendingSalePrice { get; set; } = 0m;
+		public decimal PendingQtyThreshold { get; set; } = 0m;
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

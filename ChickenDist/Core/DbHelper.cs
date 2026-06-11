@@ -792,6 +792,7 @@ namespace ChickenDist.Core
                     CASE s.SaleType
                         WHEN ''Cash''       THEN N''بيع نقدي''
                         WHEN ''Credit''     THEN N''بيع آجل''
+                        WHEN ''Installment'' THEN N''تقسيط شرعي''
                         ELSE                     N''تحميل مندوب''
                     END              AS ChangeType,
                     p.ProductCode,
@@ -995,7 +996,7 @@ namespace ChickenDist.Core
                               WHERE si.ProductID = p.ProductID
                                 AND s.IsPosted = 1
                                 AND s.WarehouseID = w.WarehouseID
-                                AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'') AND s.DriverID IS NULL))
+                                AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL))
                                 AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(ti2.Quantity)
                               FROM WarehouseTransferItems ti2
@@ -1185,6 +1186,29 @@ namespace ChickenDist.Core
                 WHERE sa.IsActive = 1
                 GROUP BY sa.AccountID, sa.AccountName, sa.AccountType, sa.AccountNumber, sa.OpeningBalance');";
                 Execute(sqlSafeBalancesView);
+
+                // ===== Price Change History & Pending Price Reference Migration =====
+                string sqlPriceChangesSchema = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PriceChangesLog')
+                BEGIN
+                    CREATE TABLE PriceChangesLog (
+                        LogID         INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID     INT NOT NULL FOREIGN KEY REFERENCES Products(ProductID) ON DELETE CASCADE,
+                        OldPrice      DECIMAL(10,2) NOT NULL,
+                        NewPrice      DECIMAL(10,2) NOT NULL,
+                        ChangeSource  NVARCHAR(50) NOT NULL,
+                        SourceRefID   INT NULL,
+                        ChangeDate    DATETIME NOT NULL DEFAULT GETDATE(),
+                        UserID        INT NULL FOREIGN KEY REFERENCES Employees(EmpID),
+                        Notes         NVARCHAR(500) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingPriceSourceRefID')
+                BEGIN
+                    ALTER TABLE Products ADD PendingPriceSourceRefID INT NULL;
+                END";
+                Execute(sqlPriceChangesSchema);
             }
             catch (Exception ex)
             {

@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ─────────────────────────────────────────────
 # ⚙️ Settings
 # ─────────────────────────────────────────────
-$VERSION   = "1.6.5"
+$VERSION   = "1.6.6"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -92,7 +92,8 @@ url=$UPDATE_URL
 sha256=$sha256
 changelog=$CHANGELOG
 "@
-[System.IO.File]::WriteAllText($UPDATE_TXT, $updateContent, [System.Text.Encoding]::UTF8)
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($UPDATE_TXT, $updateContent, $utf8NoBom)
 Write-OK "update.txt updated -> version=$VERSION"
 
 # Step 7: Git commit + push

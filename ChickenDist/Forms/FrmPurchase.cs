@@ -1272,14 +1272,14 @@ namespace ChickenDist.Forms
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true, purchaseID: id);
                         }
                     }
                     else if (priceDecision == "Pending")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false, purchaseID: id);
                         }
                     }
                     else

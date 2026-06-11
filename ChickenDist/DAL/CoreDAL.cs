@@ -220,13 +220,13 @@ namespace ChickenDist.DAL
         {
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
@@ -257,6 +257,13 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice));
             else
             {
+                decimal oldPrice = 0m;
+                var oldPriceVal = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID=@id", DbHelper.P("@id", id));
+                if (oldPriceVal != null && oldPriceVal != DBNull.Value)
+                {
+                    oldPrice = Convert.ToDecimal(oldPriceVal);
+                }
+
                 DbHelper.Execute(
                     @"UPDATE Products 
                       SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,
@@ -267,6 +274,15 @@ namespace ChickenDist.DAL
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
                     DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
                     DbHelper.P("@id", id));
+
+                if (Math.Abs(price - oldPrice) > 0.005m)
+                {
+                    DbHelper.Execute(
+                        @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                          VALUES (@pid, @old, @new, 'ProductCard', NULL, @uid, N'تعديل سعر البيع من كارت الصنف')",
+                        DbHelper.P("@pid", id), DbHelper.P("@old", oldPrice), DbHelper.P("@new", price), DbHelper.P("@uid", Session.EmpID));
+                }
+
                 return id;
             }
         }
@@ -300,8 +316,11 @@ namespace ChickenDist.DAL
         /// <param name="pendingPrice">السعر الجديد المقترح</param>
         /// <param name="costPrice">تكلفة الشراء الجديدة</param>
         /// <param name="applyNow">true = طبّق فوراً | false = علّق حتى نفاد المخزون القديم</param>
-        public static void SetPendingPrice(int productID, decimal pendingPrice, decimal costPrice, bool applyNow)
+        public static void SetPendingPrice(int productID, decimal pendingPrice, decimal costPrice, bool applyNow, int? purchaseID = null)
         {
+            var val = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            decimal currentSalePrice = val != DBNull.Value && val != null ? Convert.ToDecimal(val) : 0m;
+
             if (applyNow)
             {
                 // طبّق فوراً على الكل — امسح أي سعر معلق سابق
@@ -311,11 +330,22 @@ namespace ChickenDist.DAL
                           CostPrice            = @cp,
                           PurchasePrice        = @cp,
                           PendingSalePrice     = NULL,
-                          PendingQtyThreshold  = NULL
+                          PendingQtyThreshold  = NULL,
+                          PendingPriceSourceRefID = NULL
                       WHERE ProductID = @id",
                     DbHelper.P("@sp", pendingPrice),
                     DbHelper.P("@cp", costPrice),
                     DbHelper.P("@id", productID));
+
+                if (Math.Abs(pendingPrice - currentSalePrice) > 0.005m)
+                {
+                    string notes = purchaseID.HasValue ? "تحديث سعر بيع فوري من فاتورة الشراء #" + purchaseID.Value : "تحديث سعر بيع فوري";
+                    DbHelper.Execute(
+                        @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                          VALUES (@pid, @old, @new, 'PurchaseInvoice', @ref, @uid, @notes)",
+                        DbHelper.P("@pid", productID), DbHelper.P("@old", currentSalePrice), DbHelper.P("@new", pendingPrice),
+                        DbHelper.P("@ref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", notes));
+                }
             }
             else
             {
@@ -327,11 +357,13 @@ namespace ChickenDist.DAL
                       SET CostPrice            = @cp,
                           PurchasePrice        = @cp,
                           PendingSalePrice     = @psp,
-                          PendingQtyThreshold  = @pqt
+                          PendingQtyThreshold  = @pqt,
+                          PendingPriceSourceRefID = @pref
                       WHERE ProductID = @id",
                     DbHelper.P("@cp", costPrice),
                     DbHelper.P("@psp", pendingPrice),
                     DbHelper.P("@pqt", currentStock),
+                    DbHelper.P("@pref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value),
                     DbHelper.P("@id", productID));
             }
 
@@ -344,15 +376,32 @@ namespace ChickenDist.DAL
         /// </summary>
         public static void ActivatePendingPrice(int productID)
         {
-            DbHelper.Execute(
-                @"UPDATE Products
-                  SET SalePrice           = PendingSalePrice,
-                      PendingSalePrice    = NULL,
-                      PendingQtyThreshold = NULL
-                  WHERE ProductID = @id AND PendingSalePrice IS NOT NULL",
-                DbHelper.P("@id", productID));
+            var dt = DbHelper.Query("SELECT SalePrice, PendingSalePrice, PendingPriceSourceRefID FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            if (dt.Rows.Count > 0 && dt.Rows[0]["PendingSalePrice"] != DBNull.Value)
+            {
+                decimal oldPrice = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+                decimal newPrice = Convert.ToDecimal(dt.Rows[0]["PendingSalePrice"]);
+                object refIdVal = dt.Rows[0]["PendingPriceSourceRefID"];
+                int? purchaseID = refIdVal != DBNull.Value ? (int?)Convert.ToInt32(refIdVal) : null;
 
-            AppLogger.Audit("تفعيل سعر معلق", $"ProductID:{productID}");
+                DbHelper.Execute(
+                    @"UPDATE Products
+                      SET SalePrice           = PendingSalePrice,
+                          PendingSalePrice    = NULL,
+                          PendingQtyThreshold = NULL,
+                          PendingPriceSourceRefID = NULL
+                      WHERE ProductID = @id AND PendingSalePrice IS NOT NULL",
+                    DbHelper.P("@id", productID));
+
+                string notes = purchaseID.HasValue ? "تفعيل سعر معلق تلقائي من فاتورة الشراء #" + purchaseID.Value : "تفعيل سعر معلق تلقائي";
+                DbHelper.Execute(
+                    @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                      VALUES (@pid, @old, @new, 'PurchaseInvoice', @ref, @uid, @notes)",
+                    DbHelper.P("@pid", productID), DbHelper.P("@old", oldPrice), DbHelper.P("@new", newPrice),
+                    DbHelper.P("@ref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", notes));
+
+                AppLogger.Audit("تفعيل سعر معلق", $"ProductID:{productID} Price:{newPrice}");
+            }
         }
 
         /// <summary>

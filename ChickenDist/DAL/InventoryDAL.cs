@@ -80,7 +80,7 @@ namespace ChickenDist.DAL
                             JOIN Sales s ON si.SaleID = s.SaleID
                             WHERE si.ProductID = p.ProductID 
                               AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
                               AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
                               {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
@@ -161,7 +161,7 @@ namespace ChickenDist.DAL
                             JOIN Sales s ON si.SaleID = s.SaleID
                             WHERE si.ProductID = p.ProductID 
                               AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
+                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
                               AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
                               {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
@@ -296,7 +296,7 @@ namespace ChickenDist.DAL
                     LEFT JOIN Employees e ON s.DriverID = e.EmpID
                     WHERE si.ProductID = @pid
                       AND s.IsPosted = 1
-                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit') AND s.DriverID IS NULL))
+                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
                       {whFilterSales}
  
                     UNION ALL
