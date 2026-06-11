@@ -236,11 +236,28 @@ namespace ChickenDist.Core
 
                 // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***
                 SafeMigrate("SaleItems.Discount", @"
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
+                    BEGIN
+                        ALTER TABLE SaleItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
+                    BEGIN
+                        ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    END
+                END");
+
+                // *** ضمان إضافي (v2) لإضافة DiscountPct/DiscountAmt في حال فشل الخطوة الأولى ***
+                SafeMigrate("SaleItems.DiscountV2", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
+                    AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
-                END
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
+                END");
+                SafeMigrate("SaleItems.DiscountAmtV2", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SaleItems')
+                    AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
                 END");
