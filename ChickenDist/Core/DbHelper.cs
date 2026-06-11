@@ -118,11 +118,39 @@ namespace ChickenDist.Core
             return builder.ConnectionString;
         }
 
-        public static void EnsureDatabaseSchema()
+        // مساعد: ينفّذ خطوة ترحيل واحدة ويسجّل الأخطاء بدون إيقاف باقي الخطوات
+        private static void SafeMigrate(string stepName, string sql, params SqlParameter[] prms)
         {
             try
             {
-                string sql = @"
+                using (var con = GetConnection())
+                using (var cmd = new SqlCommand(sql, con))
+                {
+                    if (prms != null) cmd.Parameters.AddRange(prms);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"EnsureDatabaseSchema[{stepName}] failed", ex, stepName);
+                try
+                {
+                    string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "schema_errors.log");
+                    System.IO.File.AppendAllText(logPath,
+                        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] STEP={stepName} | {ex.Message}{Environment.NewLine}");
+                }
+                catch { }
+                // لا نعيد الرمي — الخطوة الفاشلة معزولة ولا تؤثر على ما بعدها
+            }
+        }
+
+        public static void EnsureDatabaseSchema()
+        {
+            // كل SafeMigrate مستقلة: فشل أي خطوة لا يوقف الباقي
+            try
+            {
+                SafeMigrate("StockAdjustments", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StockAdjustments')
                 BEGIN
                     CREATE TABLE StockAdjustments (
@@ -134,11 +162,11 @@ namespace ChickenDist.Core
                         Notes NVARCHAR(500),
                         CreatedBy INT REFERENCES Employees(EmpID)
                     );
-                END";
-                Execute(sql);
+                END");
+
 
                 // FIX: توسيع عمود Password ليستوعب الـ hash (PBKDF2 يحتاج ~80 حرف)
-                string sqlPasswordUpgrade = @"
+                SafeMigrate("Employees.Password", @"
                 IF EXISTS (
                     SELECT * FROM sys.columns
                     WHERE object_id = OBJECT_ID('Employees') AND name = 'Password'
@@ -146,19 +174,17 @@ namespace ChickenDist.Core
                 )
                 BEGIN
                     ALTER TABLE Employees ALTER COLUMN Password NVARCHAR(200) NOT NULL;
-                END";
-                Execute(sqlPasswordUpgrade);
+                END");
 
                 // Add DriverID migration to Clients table if not exists
-                string sqlClientsDriver = @"
+                SafeMigrate("Clients.DriverID", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'DriverID')
                 BEGIN
                     ALTER TABLE Clients ADD DriverID INT NULL FOREIGN KEY REFERENCES Employees(EmpID);
-                END";
-                Execute(sqlClientsDriver);
+                END");
 
                 // Add Phone2, MaxCreditLimit, Notes to Clients
-                string sqlClientsExtra = @"
+                SafeMigrate("Clients.Extra", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'Phone2')
                 BEGIN
                     ALTER TABLE Clients ADD Phone2 NVARCHAR(20) NULL;
@@ -170,11 +196,10 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'Notes')
                 BEGIN
                     ALTER TABLE Clients ADD Notes NVARCHAR(500) NULL;
-                END";
-                Execute(sqlClientsExtra);
+                END");
 
                 // Add PurchasePrice, MinStockLimit, Description to Products
-                string sqlProductsExtra = @"
+                SafeMigrate("Products.Extra", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PurchasePrice')
                 BEGIN
                     ALTER TABLE Products ADD PurchasePrice DECIMAL(10,2) DEFAULT 0;
@@ -186,10 +211,9 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Description')
                 BEGIN
                     ALTER TABLE Products ADD Description NVARCHAR(500) NULL;
-                END";
-                Execute(sqlProductsExtra);
-                // Add Discount fields to Sales and SaleItems
-                string sqlSalesDiscount = @"
+                END");
+                // Add Discount fields to Sales
+                SafeMigrate("Sales.Discount", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'DiscountAmount')
                 BEGIN
                     ALTER TABLE Sales ADD DiscountAmount DECIMAL(10,2) NOT NULL DEFAULT 0;
@@ -197,11 +221,10 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'DiscountPct')
                 BEGIN
                     ALTER TABLE Sales ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
-                END";
-                Execute(sqlSalesDiscount);
+                END");
 
                 // Add CloudID to Sales table for idempotency check on Cloud Import
-                string sqlSalesCloudID = @"
+                SafeMigrate("Sales.CloudID", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CloudID')
                 BEGIN
                     ALTER TABLE Sales ADD CloudID BIGINT NULL;
@@ -209,10 +232,10 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_CloudID' AND object_id = OBJECT_ID('Sales'))
                 BEGIN
                     CREATE INDEX IX_Sales_CloudID ON Sales(CloudID);
-                END";
-                Execute(sqlSalesCloudID);
+                END");
 
-                string sqlSaleItemsDiscount = @"
+                // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***
+                SafeMigrate("SaleItems.Discount", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountPct')
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountPct DECIMAL(5,2) NOT NULL DEFAULT 0;
@@ -220,11 +243,10 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'DiscountAmt')
                 BEGIN
                     ALTER TABLE SaleItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
-                END";
-                Execute(sqlSaleItemsDiscount);
+                END");
 
-                // Add Purchases and Suppliers schema
-                string sqlPurchases = @"
+                // Add Purchases and Suppliers schema (tables only)
+                SafeMigrate("Purchases.Tables", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Suppliers')
                 BEGIN
                     CREATE TABLE Suppliers (
@@ -238,7 +260,7 @@ namespace ChickenDist.Core
                         CreatedAt        DATETIME DEFAULT GETDATE()
                     );
                 END
-                
+
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SupplierTransactions')
                 BEGIN
                     CREATE TABLE SupplierTransactions (
@@ -253,7 +275,7 @@ namespace ChickenDist.Core
                         CreatedBy  INT REFERENCES Employees(EmpID)
                     );
                 END
-                
+
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Purchases')
                 BEGIN
                     CREATE TABLE Purchases (
@@ -270,7 +292,7 @@ namespace ChickenDist.Core
                         IsPosted        BIT DEFAULT 1
                     );
                 END
-                
+
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseItems')
                 BEGIN
                     CREATE TABLE PurchaseItems (
@@ -283,9 +305,12 @@ namespace ChickenDist.Core
                         DiscountPct DECIMAL(5,2) DEFAULT 0,
                         DiscountAmt DECIMAL(10,2) DEFAULT 0
                     );
-                END
-                
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance') DROP VIEW vw_SupplierBalance;
+                END");
+
+                // *** فصل DROP VIEW / CREATE VIEW إلى استدعاء مستقل لتفادي خطأ الدفعة ***
+                SafeMigrate("vw_SupplierBalance.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance') DROP VIEW vw_SupplierBalance;");
+                SafeMigrate("vw_SupplierBalance.Create", @"
                 EXEC('CREATE VIEW vw_SupplierBalance AS
                 SELECT
                     s.SupplierID,
@@ -297,17 +322,15 @@ namespace ChickenDist.Core
                     s.OpeningBalance + ISNULL(SUM(st.Credit),0) - ISNULL(SUM(st.Debit),0) AS Balance
                 FROM Suppliers s
                 LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
-                GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance');";
-                Execute(sqlPurchases);
+                GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance');");
 
                 // Add SupplierID to Expenses (optional link to Suppliers)
-                string sqlExpensesSupplier = @"
+                SafeMigrate("Expenses.SupplierID", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Expenses') AND name = 'SupplierID')
                 BEGIN
                     ALTER TABLE Expenses ADD SupplierID INT NULL;
                     ALTER TABLE Expenses ADD CONSTRAINT FK_Expenses_Suppliers FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID);
-                END";
-                Execute(sqlExpensesSupplier);
+                END");
 
                 string sqlVehicles = @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Vehicles')
@@ -390,8 +413,9 @@ namespace ChickenDist.Core
                 Execute(sqlEmployeeTransactions);
 
                 // ===== عرض أرصدة الموظفين =====
-                string sqlEmployeeBalanceView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_EmployeeBalance') DROP VIEW vw_EmployeeBalance;
+                SafeMigrate("vw_EmployeeBalance.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_EmployeeBalance') DROP VIEW vw_EmployeeBalance;");
+                SafeMigrate("vw_EmployeeBalance.Create", @"
                 EXEC('CREATE VIEW vw_EmployeeBalance AS
                 SELECT
                     e.EmpID,
@@ -402,8 +426,7 @@ namespace ChickenDist.Core
                     ISNULL(SUM(et.Debit),0) - ISNULL(SUM(et.Credit),0) AS Balance
                 FROM Employees e
                 LEFT JOIN EmployeeTransactions et ON e.EmpID = et.EmpID
-                GROUP BY e.EmpID, e.EmpName, e.Phone');";
-                Execute(sqlEmployeeBalanceView);
+                GROUP BY e.EmpID, e.EmpName, e.Phone');");
 
                 // ===== أعمدة السعر المعلق وهامش الربح على Products =====
                 string sqlProductPricing = @"
@@ -694,8 +717,9 @@ namespace ChickenDist.Core
                 Execute(sqlProductStock);
 
                 // ===== عرض رصيد العملاء vw_ClientBalance =====
-                string sqlClientBalanceView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance') DROP VIEW vw_ClientBalance;
+                SafeMigrate("vw_ClientBalance.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance') DROP VIEW vw_ClientBalance;");
+                SafeMigrate("vw_ClientBalance.Create", @"
                 EXEC('CREATE VIEW vw_ClientBalance AS
                 SELECT
                     c.ClientID,
@@ -709,23 +733,23 @@ namespace ChickenDist.Core
                         - ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS Balance
                 FROM Clients c
                 LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
-                GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');";
-                Execute(sqlClientBalanceView);
+                GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');");
 
                 // ===== عرض رصيد الخزنة vw_CashBalance =====
-                string sqlCashBalanceView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CashBalance') DROP VIEW vw_CashBalance;
+                SafeMigrate("vw_CashBalance.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CashBalance') DROP VIEW vw_CashBalance;");
+                SafeMigrate("vw_CashBalance.Create", @"
                 EXEC('CREATE VIEW vw_CashBalance AS
                 SELECT
                     ISNULL(SUM(AmountIn),0)  AS TotalIn,
                     ISNULL(SUM(AmountOut),0) AS TotalOut,
                     ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) AS Balance
-                FROM CashBox');";
-                Execute(sqlCashBalanceView);
+                FROM CashBox');");
 
                 // ===== عرض مخزون الأصناف vw_ProductStock =====
-                string sqlProductStockView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ProductStock') DROP VIEW vw_ProductStock;
+                SafeMigrate("vw_ProductStock.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ProductStock') DROP VIEW vw_ProductStock;");
+                SafeMigrate("vw_ProductStock.Create", @"
                 EXEC('CREATE VIEW vw_ProductStock AS
                 SELECT
                     p.ProductID,
@@ -740,8 +764,7 @@ namespace ChickenDist.Core
                 FROM Products p
                 CROSS JOIN Warehouses w
                 LEFT JOIN ProductStock ps ON ps.ProductID = p.ProductID AND ps.WarehouseID = w.WarehouseID
-                WHERE p.IsActive = 1 AND w.IsActive = 1');";
-                Execute(sqlProductStockView);
+                WHERE p.IsActive = 1 AND w.IsActive = 1');");
 
                 // ===== عمود المديونية الحالية في جدول العملاء =====
                 string sqlClientDebtCol = @"
@@ -782,8 +805,9 @@ namespace ChickenDist.Core
                 END')");
 
                 // ===== عرض سجل جميع حركات الأصناف vw_AllStockMovements =====
-                string sqlStockMovementsView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_AllStockMovements') DROP VIEW vw_AllStockMovements;
+                SafeMigrate("vw_AllStockMovements.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_AllStockMovements') DROP VIEW vw_AllStockMovements;");
+                SafeMigrate("vw_AllStockMovements.Create", @"
                 EXEC('CREATE VIEW vw_AllStockMovements AS
 
                 -- 1. مبيعات (صادر)
@@ -939,12 +963,12 @@ namespace ChickenDist.Core
                 JOIN Products           p  ON ti.ProductID        = p.ProductID
                 JOIN Warehouses      wFrom ON t.FromWarehouseID   = wFrom.WarehouseID
                 JOIN Warehouses        wTo ON t.ToWarehouseID     = wTo.WarehouseID
-                WHERE t.IsPosted = 1');";
-                Execute(sqlStockMovementsView);
+                WHERE t.IsPosted = 1');");
 
                 // ===== عرض الكميات الفعلية الحالية لكل صنف في كل مخزن =====
-                string sqlCurrentStockView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;
+                SafeMigrate("vw_CurrentStockByWarehouse.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;");
+                SafeMigrate("vw_CurrentStockByWarehouse.Create", @"
                 EXEC('CREATE VIEW vw_CurrentStockByWarehouse AS
                 SELECT
                     p.ProductID,
@@ -1016,8 +1040,7 @@ namespace ChickenDist.Core
                       AND sa.WarehouseID = w.WarehouseID
                     ORDER BY sa.AdjDate DESC
                 ) adj
-                WHERE p.IsActive = 1 AND w.IsActive = 1');";
-                Execute(sqlCurrentStockView);
+                WHERE p.IsActive = 1 AND w.IsActive = 1');");
 
                 // ===== عمود كلمة المرور الأصلية للموظفين (للمراجعة الإدارية فقط) =====
                 Execute(@"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'PlainPassword')
@@ -1169,8 +1192,9 @@ namespace ChickenDist.Core
                 ";
                 Execute(sqlSafeAccounts);
 
-                string sqlSafeBalancesView = @"
-                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SafeAccountBalances') DROP VIEW vw_SafeAccountBalances;
+                SafeMigrate("vw_SafeAccountBalances.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SafeAccountBalances') DROP VIEW vw_SafeAccountBalances;");
+                SafeMigrate("vw_SafeAccountBalances.Create", @"
                 EXEC('CREATE VIEW vw_SafeAccountBalances AS
                 SELECT
                     sa.AccountID,
@@ -1184,8 +1208,7 @@ namespace ChickenDist.Core
                 FROM SafeAccounts sa
                 LEFT JOIN CashBox cb ON sa.AccountID = cb.AccountID
                 WHERE sa.IsActive = 1
-                GROUP BY sa.AccountID, sa.AccountName, sa.AccountType, sa.AccountNumber, sa.OpeningBalance');";
-                Execute(sqlSafeBalancesView);
+                GROUP BY sa.AccountID, sa.AccountName, sa.AccountType, sa.AccountNumber, sa.OpeningBalance');");
 
                 // ===== Price Change History & Pending Price Reference Migration =====
                 string sqlPriceChangesSchema = @"
@@ -1212,8 +1235,9 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل تطبيق ترحيلات قاعدة البيانات:\n" + ex.Message, "خطأ في التهيئة", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                throw;
+                AppLogger.Error("EnsureDatabaseSchema overall process failed", ex);
+                MessageBox.Show("فشل تطبيق بعض ترحيلات قاعدة البيانات:\n" + ex.Message, "تنبيه في التهيئة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // لا نعيد رمي الاستثناء حتى لا يتعطل تشغيل التطبيق بالكامل في حال وجود أخطاء طفيفة
             }
         }
 
