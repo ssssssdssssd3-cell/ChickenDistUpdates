@@ -139,7 +139,7 @@ namespace ChickenDist.Forms
                 {
                     cboPrinters.Items.Add(printer);
                 }
-                cboPrinters.SelectedItem = string.IsNullOrEmpty(AppConfig.ReceiptPrinterName) ? "(طابعة الباركود الافتراضية)" : AppConfig.ReceiptPrinterName;
+                cboPrinters.SelectedItem = string.IsNullOrEmpty(AppConfig.BarcodePrinterName) ? "(طابعة الباركود الافتراضية)" : AppConfig.BarcodePrinterName;
                 if (cboPrinters.SelectedIndex == -1 && cboPrinters.Items.Count > 0)
                     cboPrinters.SelectedIndex = 0;
             }
@@ -257,12 +257,23 @@ namespace ChickenDist.Forms
             {
                 var pd = new PrintDocument();
                 // Sticker size: 50x30 mm (approx 2x1.2 inches)
-                pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", 200, 120);
+                if (AppConfig.BarcodeStickerSize == "38x26")
+                {
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", 150, 102);
+                }
+                else
+                {
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", 200, 120);
+                }
                 pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
 
                 if (cboPrinters.SelectedIndex > 0)
                 {
                     pd.PrinterSettings.PrinterName = cboPrinters.SelectedItem.ToString();
+                }
+                else if (!string.IsNullOrEmpty(AppConfig.BarcodePrinterName))
+                {
+                    AppConfig.SetPrinter(pd, AppConfig.BarcodePrinterName);
                 }
                 else if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName))
                 {
@@ -319,20 +330,22 @@ namespace ChickenDist.Forms
                 isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
             }
 
-            var fCompany = new Font("Arial", 8f, FontStyle.Bold);
-            var fName    = new Font("Arial", 7.5f, FontStyle.Bold);
-            var fPrice   = new Font("Arial", 8.5f, FontStyle.Bold);
-            var fCode    = new Font("Courier New", 7.5f, FontStyle.Regular);
-            var fLocation = new Font("Arial", 7.5f, FontStyle.Bold);
+            bool isSmallSticker = (AppConfig.BarcodeStickerSize == "38x26");
+
+            var fCompany  = new Font("Arial", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
+            var fName     = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
+            var fPrice    = new Font("Arial", isSmallSticker ? 7.5f : 8.5f, FontStyle.Bold);
+            var fCode     = new Font("Courier New", isSmallSticker ? 6.5f : 7.5f, FontStyle.Regular);
+            var fLocation = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
 
             // Large fonts for heavy/shelf templates
-            var fPriceLarge = new Font("Arial", 14f, FontStyle.Bold);
-            var fNameLarge = new Font("Arial", 10f, FontStyle.Bold);
-            var fLocationLarge = new Font("Arial", 9f, FontStyle.Bold);
+            var fPriceLarge    = new Font("Arial", isSmallSticker ? 11f : 14f, FontStyle.Bold);
+            var fNameLarge     = new Font("Arial", isSmallSticker ? 8.5f : 10f, FontStyle.Bold);
+            var fLocationLarge = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
 
-            int w = e.PageBounds.Width;   // 200 units (2 inches)
-            int h = e.PageBounds.Height;  // 120 units (1.2 inches)
-            float y = 4;
+            int w = e.PageBounds.Width;   // 150 or 200
+            int h = e.PageBounds.Height;  // 102 or 120
+            float y = isSmallSticker ? 2 : 4;
 
             var center = new StringFormat { Alignment = StringAlignment.Center };
             var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
@@ -344,36 +357,36 @@ namespace ChickenDist.Forms
                 // Company Name
                 if (chkPrintCompanyName.Checked)
                 {
-                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Gray, new RectangleF(0, y, w, 12), center);
-                    y += 14;
+                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Gray, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
+                    y += isSmallSticker ? 11 : 14;
                 }
                 
                 // Product Name (Large)
-                g.DrawString(_productName, fNameLarge, Brushes.Black, new RectangleF(2, y, w - 4, 30), center);
-                y += 32;
+                g.DrawString(_productName, fNameLarge, Brushes.Black, new RectangleF(2, y, w - 4, isSmallSticker ? 22 : 30), center);
+                y += isSmallSticker ? 24 : 32;
 
                 // Price (Extra Large)
                 if (chkPrintPrice.Checked)
                 {
-                    g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(0, y, w, 24), center);
-                    y += 26;
+                    g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(0, y, w, isSmallSticker ? 18 : 24), center);
+                    y += isSmallSticker ? 20 : 26;
                 }
 
                 // Shelf Location
                 if (!string.IsNullOrWhiteSpace(_shelfLocation))
                 {
-                    g.DrawString($"الرف / مكان الصنف: {_shelfLocation}", fLocationLarge, Brushes.Black, new RectangleF(0, y, w, 16), center);
+                    g.DrawString($"الرف / مكان الصنف: {_shelfLocation}", fLocationLarge, Brushes.Black, new RectangleF(0, y, w, isSmallSticker ? 12 : 16), center);
                 }
             }
             else if (template == "Small")
             {
                 // Template 3: Small Sticker (Barcode & Price only)
                 // Product Name (Small)
-                g.DrawString(_productName, new Font("Arial", 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(2, y, w - 4, 16), center);
-                y += 16;
+                g.DrawString(_productName, new Font("Arial", isSmallSticker ? 6f : 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(2, y, w - 4, isSmallSticker ? 12 : 16), center);
+                y += isSmallSticker ? 12 : 16;
 
                 // Barcode
-                float barcodeHeight = 32;
+                float barcodeHeight = isSmallSticker ? 22 : 32;
                 if (isCode128)
                     DrawCode128(g, _selectedBarcode, 10, y, w - 20, barcodeHeight);
                 else
@@ -381,13 +394,13 @@ namespace ChickenDist.Forms
                 y += barcodeHeight + 2;
 
                 // Barcode Text
-                g.DrawString(_selectedBarcode, new Font("Courier New", 6.5f), Brushes.Black, new RectangleF(0, y, w, 10), center);
-                y += 10;
+                g.DrawString(_selectedBarcode, new Font("Courier New", isSmallSticker ? 6f : 6.5f), Brushes.Black, new RectangleF(0, y, w, isSmallSticker ? 8 : 10), center);
+                y += isSmallSticker ? 8 : 10;
 
                 // Price (Centered)
                 if (chkPrintPrice.Checked)
                 {
-                    g.DrawString($"{_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(0, y, w, 12), center);
+                    g.DrawString($"{_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
                 }
             }
             else if (template == "PriceHeavy")
@@ -396,16 +409,16 @@ namespace ChickenDist.Forms
                 // Price on Top
                 if (chkPrintPrice.Checked)
                 {
-                    g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(5, y, w - 10, 22), center);
-                    y += 24;
+                    g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(5, y, w - 10, isSmallSticker ? 18 : 22), center);
+                    y += isSmallSticker ? 20 : 24;
                 }
 
                 // Product Name
-                g.DrawString(_productName, fName, Brushes.Black, new RectangleF(2, y, w - 4, 18), center);
-                y += 18;
+                g.DrawString(_productName, fName, Brushes.Black, new RectangleF(2, y, w - 4, isSmallSticker ? 14 : 18), center);
+                y += isSmallSticker ? 14 : 18;
 
                 // Barcode
-                float barcodeHeight = 30;
+                float barcodeHeight = isSmallSticker ? 20 : 30;
                 if (isCode128)
                     DrawCode128(g, _selectedBarcode, 10, y, w - 20, barcodeHeight);
                 else
@@ -413,10 +426,10 @@ namespace ChickenDist.Forms
                 y += barcodeHeight + 2;
 
                 // Barcode Text & Shelf Location at Bottom
-                g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(5, y, w / 2 - 5, 12), leftFormat);
+                g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(5, y, w / 2 - 5, isSmallSticker ? 10 : 12), leftFormat);
                 if (!string.IsNullOrWhiteSpace(_shelfLocation))
                 {
-                    g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, y, w / 2 - 5, 12), rightFormat);
+                    g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, y, w / 2 - 5, isSmallSticker ? 10 : 12), rightFormat);
                 }
             }
             else
@@ -425,16 +438,16 @@ namespace ChickenDist.Forms
                 // 1. Company name
                 if (chkPrintCompanyName.Checked)
                 {
-                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, 12), center);
-                    y += 12;
+                    g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
+                    y += isSmallSticker ? 10 : 12;
                 }
 
                 // 2. Product name
-                g.DrawString(_productName, fName, Brushes.Black, new RectangleF(2, y, w - 4, 24), center);
-                y += 24;
+                g.DrawString(_productName, fName, Brushes.Black, new RectangleF(2, y, w - 4, isSmallSticker ? 16 : 24), center);
+                y += isSmallSticker ? 16 : 24;
 
                 // 3. Draw Barcode
-                float barcodeHeight = 36;
+                float barcodeHeight = isSmallSticker ? 24 : 36;
                 if (isCode128)
                     DrawCode128(g, _selectedBarcode, 10, y, w - 20, barcodeHeight);
                 else
@@ -442,18 +455,18 @@ namespace ChickenDist.Forms
                 y += barcodeHeight + 2;
 
                 // 4. Draw Code Text
-                g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(0, y, w, 12), center);
-                y += 12;
+                g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
+                y += isSmallSticker ? 10 : 12;
 
                 // 5. Draw Price and Location
                 float bottomY = y;
                 if (chkPrintPrice.Checked)
                 {
-                    g.DrawString($"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(5, bottomY, w / 2 - 5, 14), leftFormat);
+                    g.DrawString($"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(5, bottomY, w / 2 - 5, isSmallSticker ? 11 : 14), leftFormat);
                 }
                 if (!string.IsNullOrWhiteSpace(_shelfLocation))
                 {
-                    g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, bottomY, w / 2 - 5, 14), rightFormat);
+                    g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(w / 2, bottomY, w / 2 - 5, isSmallSticker ? 11 : 14), rightFormat);
                 }
             }
 

@@ -1114,27 +1114,66 @@ namespace ChickenDist.Forms
 				decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
 
-				string displayText = pendingPrice > 0 
-					? $"{name} ({price:N2} | المعلق: {pendingPrice:N2})"
-					: $"{name} ({price:N2})";
+				if (pendingPrice > 0m && pendingQtyThreshold > 0m)
+				{
+					// إضافة السعر الحالي كخيار مستقل
+					var itemOld = new ComboItem(
+						(int)row3["ProductID"], 
+						name,
+						$"{name} (سعر: {price:N2})",
+						price, 
+						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+						purchasePrice
+					);
+					itemOld.PendingSalePrice = 0m;
+					itemOld.PendingQtyThreshold = 0m;
+					itemOld.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+					itemOld.CarModel = row3["CarModel"]?.ToString() ?? "";
+					itemOld.Brand = row3["Brand"]?.ToString() ?? "";
+					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+					itemOld.ProductCode = row3["ProductCode"]?.ToString() ?? "";
+					itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					cboProduct.Items.Add(itemOld);
 
-				var comboItem = new ComboItem(
-					(int)row3["ProductID"], 
-					name,
-					displayText,
-					price, 
-					row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
-					purchasePrice
-				);
-				comboItem.PendingSalePrice = pendingPrice;
-				comboItem.PendingQtyThreshold = pendingQtyThreshold;
-				comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
-				comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
-				comboItem.Brand = row3["Brand"]?.ToString() ?? "";
-				comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
-				comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
-				comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
-				cboProduct.Items.Add(comboItem);
+					// إضافة السعر المعلق كخيار مستقل
+					var itemPending = new ComboItem(
+						(int)row3["ProductID"], 
+						name,
+						$"{name} (معلق: {pendingPrice:N2})",
+						pendingPrice, 
+						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+						purchasePrice
+					);
+					itemPending.PendingSalePrice = 0m;
+					itemPending.PendingQtyThreshold = 0m;
+					itemPending.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+					itemPending.CarModel = row3["CarModel"]?.ToString() ?? "";
+					itemPending.Brand = row3["Brand"]?.ToString() ?? "";
+					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+					itemPending.ProductCode = row3["ProductCode"]?.ToString() ?? "";
+					itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					cboProduct.Items.Add(itemPending);
+				}
+				else
+				{
+					var comboItem = new ComboItem(
+						(int)row3["ProductID"], 
+						name,
+						$"{name} ({price:N2})",
+						price, 
+						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+						purchasePrice
+					);
+					comboItem.PendingSalePrice = pendingPrice;
+					comboItem.PendingQtyThreshold = pendingQtyThreshold;
+					comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+					comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
+					comboItem.Brand = row3["Brand"]?.ToString() ?? "";
+					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
+					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					cboProduct.Items.Add(comboItem);
+				}
 			}
 			cboProduct.DisplayMember = "Text";
 			cboProduct.SelectedIndex = 0;
@@ -1147,12 +1186,12 @@ namespace ChickenDist.Forms
 					_pendingBarcodeWeight = null;
 					_pendingScaleWeight = null;
 
-					AddOrUpdateProduct(comboItem.ID, qtyToAdd);
+					AddOrUpdateProduct(comboItem.ID, qtyToAdd, comboItem.Price);
 
 					int rowIndex = -1;
 					for (int i = _items.Count - 1; i >= 0; i--)
 					{
-						if (_items[i].ProductID == comboItem.ID)
+						if (_items[i].ProductID == comboItem.ID && Math.Abs(_items[i].UnitPrice - comboItem.Price) < 0.005m)
 						{
 							rowIndex = i;
 							break;
@@ -1343,18 +1382,21 @@ namespace ChickenDist.Forms
 
 		private void BtnSearchProduct_Click(object sender, EventArgs e)
 		{
-			using FrmProductSearch frmProductSearch = new FrmProductSearch();
+			int? warehouseID = null;
+			if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
+
+			using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID);
 			if (frmProductSearch.ShowDialog() == DialogResult.OK)
 			{
-				SelectProductByID(frmProductSearch.SelectedProductID);
+				SelectProductByID(frmProductSearch.SelectedProductID, frmProductSearch.SelectedPrice);
 			}
 		}
 
-		private void SelectProductByID(int prodID)
+		private void SelectProductByID(int prodID, decimal price)
 		{
 			for (int i = 0; i < cboProduct.Items.Count; i++)
 			{
-				if (cboProduct.Items[i] is ComboItem comboItem && comboItem.ID == prodID)
+				if (cboProduct.Items[i] is ComboItem comboItem && comboItem.ID == prodID && Math.Abs(comboItem.Price - price) < 0.005m)
 				{
 					cboProduct.SelectedIndex = i;
 					break;
@@ -1422,25 +1464,9 @@ namespace ChickenDist.Forms
 					}
 
 					decimal delta = result - saleItemDTO.Quantity;
-					decimal? manualPrice = null;
-					ComboItem prod = null;
-					foreach (var item in cboProduct.Items)
-					{
-						if (item is ComboItem ci && ci.ID == saleItemDTO.ProductID)
-						{
-							prod = ci;
-							break;
-						}
-					}
-					if (prod != null)
-					{
-						if (saleItemDTO.UnitPrice != prod.Price && saleItemDTO.UnitPrice != prod.PendingSalePrice)
-						{
-							manualPrice = saleItemDTO.UnitPrice;
-						}
-					}
-
+					decimal? manualPrice = saleItemDTO.UnitPrice;
 					AddOrUpdateProduct(saleItemDTO.ProductID, delta, manualPrice);
+					return;
 				}
 				else
 				{
@@ -1505,6 +1531,8 @@ namespace ChickenDist.Forms
 					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 				}
 			}
+
+			if (dataGridViewRow.DataGridView == null) return;
 
 			if (dgItems.Columns.Contains("DiscountPct"))
 				dataGridViewRow.Cells["DiscountPct"].Value = saleItemDTO.DiscountPct.ToString("F2");
@@ -1587,57 +1615,118 @@ namespace ChickenDist.Forms
 				return;
 			}
 
-			decimal existingQty = 0m;
-			List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
-			foreach (var item in _items)
+			if (manualPrice.HasValue)
 			{
-				if (item.ProductID == productID)
+				decimal targetPrice = manualPrice.Value;
+				SaleItemDTO existingRow = null;
+				foreach (var item in _items)
 				{
-					existingQty += item.Quantity;
-					existingRows.Add(item);
+					if (item.ProductID == productID && Math.Abs(item.UnitPrice - targetPrice) < 0.005m)
+					{
+						existingRow = item;
+						break;
+					}
 				}
-			}
 
-			decimal totalQty = existingQty + qtyToAdd;
-
-			if (totalQty > stock)
-			{
-				MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-				RefreshGrid();
-				return;
-			}
-
-			decimal oldPrice = manualPrice ?? product.Price;
-			decimal newPrice = product.PendingSalePrice;
-			decimal threshold = product.PendingQtyThreshold;
-
-			bool hasPendingPrice = newPrice > 0 && threshold > 0 && manualPrice == null;
-
-			foreach (var row in existingRows)
-			{
-				_items.Remove(row);
-			}
-
-			if (hasPendingPrice)
-			{
-				decimal oldQtyAvailable = Math.Max(0m, Math.Min(stock, threshold));
-				decimal qtyOld = Math.Min(totalQty, oldQtyAvailable);
-				decimal qtyNew = Math.Max(0m, totalQty - oldQtyAvailable);
-
-				if (qtyOld > 0)
+				decimal newQty = qtyToAdd;
+				if (existingRow != null)
 				{
-					_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock));
+					newQty = existingRow.Quantity + qtyToAdd;
 				}
-				if (qtyNew > 0)
+
+				decimal totalProductQtyInInvoice = qtyToAdd;
+				foreach (var item in _items)
 				{
-					_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock));
+					if (item.ProductID == productID)
+					{
+						totalProductQtyInInvoice += item.Quantity;
+					}
+				}
+				if (existingRow != null)
+				{
+					totalProductQtyInInvoice -= existingRow.Quantity;
+				}
+
+				if (totalProductQtyInInvoice > stock)
+				{
+					MessageBox.Show($"❌ خطأ: إجمالي الكمية المطلوبة ({totalProductQtyInInvoice:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					RefreshGrid();
+					return;
+				}
+
+				if (existingRow != null)
+				{
+					if (newQty <= 0)
+					{
+						_items.Remove(existingRow);
+					}
+					else
+					{
+						existingRow.Quantity = newQty;
+					}
+				}
+				else
+				{
+					if (newQty > 0)
+					{
+						_items.Add(CreateSaleItemDTO(product, newQty, targetPrice, stock));
+					}
 				}
 			}
 			else
 			{
-				if (totalQty > 0)
+				decimal existingQty = 0m;
+				List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
+				foreach (var item in _items)
 				{
-					_items.Add(CreateSaleItemDTO(product, totalQty, oldPrice, stock));
+					if (item.ProductID == productID)
+					{
+						existingQty += item.Quantity;
+						existingRows.Add(item);
+					}
+				}
+
+				decimal totalQty = existingQty + qtyToAdd;
+
+				if (totalQty > stock)
+				{
+					MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					RefreshGrid();
+					return;
+				}
+
+				decimal oldPrice = product.Price;
+				decimal newPrice = product.PendingSalePrice;
+				decimal threshold = product.PendingQtyThreshold;
+
+				bool hasPendingPrice = newPrice > 0 && threshold > 0;
+
+				foreach (var row in existingRows)
+				{
+					_items.Remove(row);
+				}
+
+				if (hasPendingPrice)
+				{
+					decimal oldQtyAvailable = Math.Max(0m, Math.Min(stock, threshold));
+					decimal qtyOld = Math.Min(totalQty, oldQtyAvailable);
+					decimal qtyNew = Math.Max(0m, totalQty - oldQtyAvailable);
+
+					if (qtyOld > 0)
+					{
+						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock));
+					}
+					if (qtyNew > 0)
+					{
+						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock));
+					}
+				}
+				else
+				{
+					if (totalQty > 0)
+					{
+						_items.Add(CreateSaleItemDTO(product, totalQty, oldPrice, stock));
+					}
 				}
 			}
 
@@ -2443,7 +2532,6 @@ namespace ChickenDist.Forms
 
 			// جلب البيانات المالية للعميل
 			decimal prevBalance = 0m;
-			decimal currentBalance = 0m;
 			decimal lastPaymentAmt = 0m;
 			DateTime lastPaymentDate = DateTime.MinValue;
 
@@ -2454,9 +2542,6 @@ namespace ChickenDist.Forms
 
 				// الرصيد السابق قبل هذه الفاتورة
 				prevBalance = ClientDAL.GetPreviousBalance(clientID, saleDate);
-
-				// الرصيد الحالي بعد الفاتورة
-				currentBalance = ClientDAL.GetClientBalance(clientID);
 
 				// آخر توريد (دفعة)
 				var lastPayDt = DbHelper.Query(@"
@@ -2472,54 +2557,131 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// بناء نص الرسالة
-			var sb = new System.Text.StringBuilder();
-			sb.AppendLine("🧾 *فاتورة مبيعات*");
-			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-			sb.AppendLine("──────────────────────");
-			sb.AppendLine($"📌 رقم الفاتورة: {saleRow["SaleCode"]}");
-			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
-			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
-			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
-			sb.AppendLine($"🏷️ النوع: {typeLabel}");
-			sb.AppendLine("──────────────────────");
-
-			if (items != null)
+			// عرض خيارات الإرسال
+			string choice = "";
+			using (var frm = new Form())
 			{
-				foreach (DataRow r in items.Rows)
+				frm.Text = "إرسال الفاتورة عبر واتساب";
+				frm.Size = new Size(380, 160);
+				frm.StartPosition = FormStartPosition.CenterParent;
+				frm.FormBorderStyle = FormBorderStyle.FixedDialog;
+				frm.MaximizeBox = false;
+				frm.MinimizeBox = false;
+				frm.RightToLeft = RightToLeft.Yes;
+				frm.RightToLeftLayout = true;
+				frm.BackColor = Theme.BgMain;
+				frm.Font = Theme.FontMain;
+
+				var lbl = new Label { Text = "اختر طريقة إرسال الفاتورة للعميل:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+				frm.Controls.Add(lbl);
+
+				var btnText = Theme.MakeButton("📋 إرسال كرسالة نصية", 20, 60, 150, 40, Theme.Primary);
+				var btnImage = Theme.MakeButton("🖼️ إرسال كصورة (تصميم)", 190, 60, 150, 40, Theme.Success);
+
+				btnText.Click += (s, ev) => { choice = "text"; frm.Close(); };
+				btnImage.Click += (s, ev) => { choice = "image"; frm.Close(); };
+
+				frm.Controls.Add(btnText);
+				frm.Controls.Add(btnImage);
+
+				frm.ShowDialog(this);
+			}
+
+			if (choice == "text")
+			{
+				// بناء نص الرسالة بالتنسيق المطلوب من المستخدم
+				var sb = new System.Text.StringBuilder();
+				sb.AppendLine($"📋 فاتورة مبيعات رقم {saleRow["SaleCode"]}");
+				sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+				sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
+				sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+				string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
+				sb.AppendLine($"💳 نوع البيع: {typeLabel}");
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
+
+				if (items != null)
 				{
-					string name  = r["ProductName"].ToString();
-					decimal qty   = Convert.ToDecimal(r["Quantity"]);
-					decimal price = Convert.ToDecimal(r["UnitPrice"]);
-					decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-					sb.AppendLine($"• {name}: {qty:N0} × {price:N2} = {tot:N2} ج");
+					foreach (DataRow r in items.Rows)
+					{
+						string name  = r["ProductName"].ToString();
+						decimal qty   = Convert.ToDecimal(r["Quantity"]);
+						decimal price = Convert.ToDecimal(r["UnitPrice"]);
+						decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
+						sb.AppendLine($"🐥 {name}");
+						sb.AppendLine($"▪ الكمية : {qty:0.##}");
+						sb.AppendLine($"▪ السعر : {price:N2} ج");
+						sb.AppendLine($"▪ الإجمالي : {tot:N2} ج");
+						sb.AppendLine("━━━━━━━━━━━━━━━━");
+					}
+				}
+
+				decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
+				sb.AppendLine("💰 صافي الفاتورة");
+				sb.AppendLine($"{totalAmount:N2} ج.م");
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
+
+				if (saleRow["ClientID"] != DBNull.Value)
+				{
+					decimal currentInvoiceAmt = totalAmount;
+					decimal totalDue = prevBalance + currentInvoiceAmt;
+					decimal currentDue = totalDue - lastPaymentAmt;
+
+					sb.AppendLine("📊 الوضع المالي");
+					sb.AppendLine($"الرصيد السابق : {prevBalance:N2} ج.م");
+					sb.AppendLine($"+ الفاتورة الحالية : {currentInvoiceAmt:N2} ج.م");
+					sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+					if (lastPaymentAmt > 0)
+					{
+						sb.AppendLine($"- آخر توريد : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
+					}
+					else
+					{
+						sb.AppendLine("- آخر توريد : 0.00 ج.م");
+					}
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
+					sb.AppendLine($"{currentDue:N2} ج.م");
+					sb.AppendLine("🔴 الرصيد الحالي المستحق");
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
+				}
+
+				sb.AppendLine("🙏 شكراً لتعاملكم معنا");
+
+				SendWhatsApp(phone, sb.ToString());
+			}
+			else if (choice == "image")
+			{
+				try
+				{
+					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate))
+					{
+						Clipboard.SetImage(bmp);
+					}
+
+					MessageBox.Show("✅ تم تصميم الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
+						"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information,
+						MessageBoxDefaultButton.Button1,
+						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+					// فتح محادثة الواتساب
+					string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+					if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
+					
+					string appUrl = $"whatsapp://send?phone={clean}";
+					try
+					{
+						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appUrl) { UseShellExecute = true });
+					}
+					catch
+					{
+						string webUrl = $"https://web.whatsapp.com/send?phone={clean}";
+						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(webUrl) { UseShellExecute = true });
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show("فشل تصميم الفاتورة أو نسخها للحافظة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 			}
-
-			sb.AppendLine("──────────────────────");
-			decimal discAmt = Convert.ToDecimal(saleRow["DiscountAmount"]);
-			if (discAmt > 0)
-				sb.AppendLine($"💸 الخصم: {discAmt:N2} ج");
-			sb.AppendLine($"💰 *صافي الفاتورة: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م*");
-			sb.AppendLine("──────────────────────");
-
-			// المعلومات المالية
-			if (saleRow["ClientID"] != DBNull.Value)
-			{
-				sb.AppendLine("📊 *الوضع المالي للحساب:*");
-				sb.AppendLine($"📋 الرصيد السابق:    {prevBalance:N2} ج");
-				sb.AppendLine($"🛒 الفاتورة الحالية:  {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج");
-				sb.AppendLine($"📈 *إجمالي المديونية: {currentBalance:N2} ج*");
-				if (lastPaymentAmt > 0)
-					sb.AppendLine($"✅ آخر توريد: {lastPaymentAmt:N2} ج  ({lastPaymentDate:dd/MM/yyyy})");
-				else
-					sb.AppendLine("✅ آخر توريد: لا يوجد");
-				sb.AppendLine("──────────────────────");
-			}
-
-			sb.AppendLine("شكراً لتعاملكم معنا 🙏");
-
-			SendWhatsApp(phone, sb.ToString());
 		}
 
 		private static void SendWhatsApp(string phone, string message)
@@ -2529,12 +2691,222 @@ namespace ChickenDist.Forms
 				string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
 				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
 				string encoded = Uri.EscapeDataString(message);
-				string url = $"https://wa.me/{clean}?text={encoded}";
-				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+				
+				string appUrl = $"whatsapp://send?phone={clean}&text={encoded}";
+				try
+				{
+					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appUrl) { UseShellExecute = true });
+				}
+				catch
+				{
+					string webUrl = $"https://web.whatsapp.com/send?phone={clean}&text={encoded}";
+					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(webUrl) { UseShellExecute = true });
+				}
 			}
 			catch (Exception ex)
 			{
 				MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate)
+		{
+			int itemCount = items != null ? items.Rows.Count : 0;
+			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
+			
+			// حساب الارتفاع المطلوب ديناميكياً
+			int headerH = 110;
+			int metaH = 80;
+			int tableHeaderH = 35;
+			int rowH = 30;
+			int netH = 40;
+			int financialH = showFinancial ? 190 : 0;
+			int footerH = 55;
+			
+			int totalH = headerH + metaH + tableHeaderH + (itemCount * rowH) + netH + 15 + financialH + footerH + 30;
+			int w = 600;
+
+			var bmp = new Bitmap(w, totalH);
+			using (var g = Graphics.FromImage(bmp))
+			{
+				g.Clear(Color.White);
+				g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+				g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+				var cNavy = Color.FromArgb(0, 51, 153);
+				using (var pNavyThick = new Pen(cNavy, 3))
+				using (var pNavyThin = new Pen(cNavy, 1))
+				using (var bNavy = new SolidBrush(cNavy))
+				using (var bRed = new SolidBrush(Color.FromArgb(200, 30, 30)))
+				{
+					// رسم الحدود
+					g.DrawRectangle(pNavyThick, 4, 4, w - 8, totalH - 8);
+					g.DrawRectangle(pNavyThin, 9, 9, w - 18, totalH - 18);
+
+					float y = 20;
+
+					// الخطوط
+					var fTitle = new Font("Arial", 20f, FontStyle.Bold);
+					var fComp = new Font("Arial", 14f, FontStyle.Bold);
+					var fBold = new Font("Arial", 9.5f, FontStyle.Bold);
+					var fNormal = new Font("Arial", 9f);
+
+					var center = new StringFormat { Alignment = StringAlignment.Center };
+					var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+					var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+					g.DrawString("فاتورة مبيعات", fTitle, bNavy, new RectangleF(0, y, w, 32), center);
+					y += 35;
+
+					g.DrawString(AppConfig.CompanyName, fComp, bNavy, new RectangleF(0, y, w, 28), center);
+					
+					// رسم دجاجتين كشعار
+					DrawChickenSilhouette(g, 35, y - 25, 40);
+					DrawChickenSilhouette(g, w - 75, y - 25, 40);
+					y += 40;
+
+					// مربع البيانات الفوقية
+					g.DrawRectangle(pNavyThin, 20, y, w - 40, 75);
+					g.DrawLine(pNavyThin, w / 2, y, w / 2, y + 75);
+
+					float boxY = y + 10;
+					// اليمين
+					g.DrawString($"رقم الفاتورة:  {saleRow["SaleCode"]}", fBold, Brushes.Black, new RectangleF(w / 2 + 10, boxY, w / 2 - 30, 22), rtlNear);
+					g.DrawString($"التاريخ:  {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}", fNormal, Brushes.Black, new RectangleF(w / 2 + 10, boxY + 26, w / 2 - 30, 22), rtlNear);
+
+					// اليسار
+					g.DrawString($"العميل:  {saleRow["ClientName"]}", fBold, Brushes.Black, new RectangleF(25, boxY, w / 2 - 35, 22), rtlNear);
+					string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+					g.DrawString($"النوع:  {typeLabel}", fNormal, Brushes.Black, new RectangleF(25, boxY + 26, w / 2 - 35, 22), rtlNear);
+					
+					y += 90;
+
+					// ترويسة جدول الأصناف
+					g.FillRectangle(bNavy, 20, y, w - 40, tableHeaderH);
+					
+					g.DrawString("النوع", fBold, Brushes.White, new RectangleF(400, y + 8, 180, tableHeaderH), rtlCenter);
+					g.DrawString("الكمية", fBold, Brushes.White, new RectangleF(290, y + 8, 110, tableHeaderH), rtlCenter);
+					g.DrawString("السعر", fBold, Brushes.White, new RectangleF(180, y + 8, 110, tableHeaderH), rtlCenter);
+					g.DrawString("الإجمالي", fBold, Brushes.White, new RectangleF(20, y + 8, 160, tableHeaderH), rtlCenter);
+					
+					y += tableHeaderH;
+
+					// سطور الأصناف
+					if (items != null)
+					{
+						foreach (DataRow r in items.Rows)
+						{
+							g.DrawRectangle(pNavyThin, 20, y, w - 40, rowH);
+							g.DrawLine(pNavyThin, 400, y, 400, y + rowH);
+							g.DrawLine(pNavyThin, 290, y, 290, y + rowH);
+							g.DrawLine(pNavyThin, 180, y, 180, y + rowH);
+
+							string prodName = r["ProductName"].ToString();
+							decimal qty = Convert.ToDecimal(r["Quantity"]);
+							decimal price = Convert.ToDecimal(r["UnitPrice"]);
+							decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+
+							g.DrawString(prodName, fBold, Brushes.Black, new RectangleF(405, y + 6, 170, rowH), rtlNear);
+							g.DrawString(qty.ToString("0.##"), fNormal, Brushes.Black, new RectangleF(290, y + 6, 110, rowH), rtlCenter);
+							g.DrawString(price.ToString("N2"), fNormal, Brushes.Black, new RectangleF(180, y + 6, 110, rowH), rtlCenter);
+							g.DrawString(tot.ToString("N2"), fBold, Brushes.Black, new RectangleF(20, y + 6, 155, rowH), rtlCenter);
+
+							y += rowH;
+						}
+					}
+
+					// إجمالي الفاتورة
+					g.FillRectangle(bNavy, 320, y, 260, netH);
+					g.DrawString("صافي الفاتورة", fBold, Brushes.White, new RectangleF(320, y + 10, 260, netH), rtlCenter);
+					
+					g.DrawRectangle(pNavyThin, 20, y, 300, netH);
+					decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
+					g.DrawString($"{netVal:N2} ج.م", fTitle, bNavy, new RectangleF(20, y + 2, 290, netH), rtlCenter);
+
+					y += netH + 20;
+
+					// الوضع المالي للحساب
+					if (showFinancial)
+					{
+						decimal currentInvoiceAmt = netVal;
+						decimal totalDue = prevBalance + currentInvoiceAmt;
+						decimal currentDue = totalDue - lastPaymentAmt;
+
+						g.FillRectangle(bNavy, 20, y, w - 40, 30);
+						g.DrawString("الوضع المالي للحساب", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
+						y += 30;
+
+						string[] labels = { "الرصيد السابق", "الفاتورة الحالية", "إجمالي المستحق", $"آخر توريد ({lastPaymentDate:dd/MM/yyyy})", "الرصيد الحالي المستحق" };
+						decimal[] vals = { prevBalance, currentInvoiceAmt, totalDue, lastPaymentAmt, currentDue };
+
+						for (int i = 0; i < 5; i++)
+						{
+							g.DrawRectangle(pNavyThin, 20, y, w - 40, 28);
+							g.DrawLine(pNavyThin, w / 2, y, w / 2, y + 28);
+
+							var brushVal = (i == 4) ? bRed : Brushes.Black;
+							var fontLabel = (i == 4) ? fBold : fNormal;
+							var fontVal = (i == 4) ? fTitle : fBold;
+
+							g.DrawString(labels[i], fontLabel, (i == 4) ? bRed : bNavy, new RectangleF(w / 2 + 10, y + 5, w / 2 - 30, 22), rtlNear);
+							string valStr = (i == 3 && lastPaymentAmt == 0) ? "0.00 ج.م" : $"{vals[i]:N2} ج.م";
+							g.DrawString(valStr, (i == 4) ? fBold : fNormal, brushVal, new RectangleF(25, y + 5, w / 2 - 35, 22), rtlNear);
+
+							y += 28;
+						}
+						y += 15;
+					}
+
+					// التذييل
+					g.DrawRectangle(pNavyThin, 20, y, w - 40, footerH);
+					g.DrawString("شكراً لتعاملكم معنا", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
+					
+					DrawChickenSilhouette(g, 100, y + 10, 25);
+					DrawChickenSilhouette(g, w - 125, y + 10, 25);
+
+					fTitle.Dispose();
+					fComp.Dispose();
+					fBold.Dispose();
+					fNormal.Dispose();
+					center.Dispose();
+					rtlNear.Dispose();
+					rtlCenter.Dispose();
+				}
+			}
+			return bmp;
+		}
+
+		private void DrawChickenSilhouette(Graphics g, float x, float y, float size)
+		{
+			using (var brush = new SolidBrush(Color.FromArgb(0, 51, 153)))
+			{
+				// Body (oval)
+				g.FillEllipse(brush, x, y + size * 0.3f, size, size * 0.7f);
+				// Head (circle)
+				g.FillEllipse(brush, x + size * 0.4f, y, size * 0.5f, size * 0.5f);
+				
+				// Beak (triangle facing right)
+				var beakPoints = new PointF[] {
+					new PointF(x + size * 1.02f, y + size * 0.25f),
+					new PointF(x + size * 0.88f, y + size * 0.18f),
+					new PointF(x + size * 0.88f, y + size * 0.32f)
+				};
+				g.FillPolygon(brush, beakPoints);
+				
+				// Tail (triangle facing left)
+				var tailPoints = new PointF[] {
+					new PointF(x, y + size * 0.4f),
+					new PointF(x - size * 0.2f, y + size * 0.1f),
+					new PointF(x + size * 0.2f, y + size * 0.5f)
+				};
+				g.FillPolygon(brush, tailPoints);
+				
+				// Legs
+				using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))
+				{
+					g.DrawLine(pen, x + size * 0.4f, y + size * 0.9f, x + size * 0.35f, y + size * 1.2f);
+					g.DrawLine(pen, x + size * 0.6f, y + size * 0.9f, x + size * 0.65f, y + size * 1.2f);
+				}
 			}
 		}
 

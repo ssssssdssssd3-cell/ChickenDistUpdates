@@ -12,11 +12,13 @@ namespace ChickenDist.Forms
         private ComboBox cboReceiptPrintMode;
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
+        private ComboBox cboBarcodePrinter;
         private ComboBox cboInvoiceFormat;
         private ComboBox cboReceiptTemplate;
         private ComboBox cboA4Template;
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
+        private ComboBox cboBarcodeStickerSize;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
 
@@ -131,6 +133,32 @@ namespace ChickenDist.Forms
             if (cboA4Printer.SelectedIndex == -1 && cboA4Printer.Items.Count > 0)
                 cboA4Printer.SelectedIndex = 0;
             this.Controls.Add(cboA4Printer);
+            y += 40;
+
+            // ── طابعة الباركود الافتراضية ──────────────────────────
+            AddLabel("طابعة ملصقات الباركود الافتراضية (Stickers):", 20, ref y, 15);
+            cboBarcodePrinter = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodePrinter.Items.Add("(طابعة النظام الافتراضية)");
+            try
+            {
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    cboBarcodePrinter.Items.Add(printer);
+                }
+            }
+            catch { }
+            cboBarcodePrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.BarcodePrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.BarcodePrinterName;
+            if (cboBarcodePrinter.SelectedIndex == -1 && cboBarcodePrinter.Items.Count > 0)
+                cboBarcodePrinter.SelectedIndex = 0;
+            this.Controls.Add(cboBarcodePrinter);
             y += 40;
 
             // ── الحجم الافتراضي لطباعة الفاتورة ───────────────────
@@ -249,6 +277,26 @@ namespace ChickenDist.Forms
             });
             cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
             this.Controls.Add(cboBarcodeEncoding);
+            y += 40;
+
+            // ── مقاس ملصق الباركود ──────────────────────────────
+            AddLabel("مقاس ملصق الباركود (Sticker Size):", 20, ref y, 15);
+            cboBarcodeStickerSize = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBarcodeStickerSize.Items.AddRange(new object[]
+            {
+                "50x30 مم (كامل)",
+                "38x26 مم (صغير)"
+            });
+            cboBarcodeStickerSize.SelectedIndex = AppConfig.BarcodeStickerSize == "38x26" ? 1 : 0;
+            this.Controls.Add(cboBarcodeStickerSize);
             y += 40;
 
             // ── فاصل ──────────────────────────────────────────────
@@ -471,6 +519,8 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
+                AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();
+                AppConfig.BarcodeStickerSize = cboBarcodeStickerSize.SelectedIndex == 1 ? "38x26" : "50x30";
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
 
                 // Save Templates Settings

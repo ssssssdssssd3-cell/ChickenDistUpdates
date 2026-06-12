@@ -43,6 +43,18 @@ namespace ChickenDist.Core
             set => Set("A4PrinterName", value);
         }
 
+        public static string BarcodePrinterName
+        {
+            get => Get("BarcodePrinterName", "");
+            set => Set("BarcodePrinterName", value);
+        }
+
+        public static string BarcodeStickerSize
+        {
+            get => Get("BarcodeStickerSize", "50x30");
+            set => Set("BarcodeStickerSize", value);
+        }
+
         public static string DefaultInvoiceFormat
         {
             get => Get("DefaultInvoiceFormat", "Receipt");

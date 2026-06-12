@@ -351,8 +351,31 @@ namespace ChickenDist.DAL
             }
             else
             {
-                // احسب المخزون الحالي كـ Threshold للتفعيل التلقائي لاحقاً
+                // احسب المخزون الحالي (والذي تم تحديثه بعد حفظ المشتريات)
                 decimal currentStock = InventoryDAL.GetProductStock(productID);
+                decimal purchasedQty = 0m;
+
+                if (purchaseID.HasValue)
+                {
+                    var pqtyVal = DbHelper.Scalar(
+                        "SELECT Quantity FROM PurchaseItems WHERE PurchaseID = @ref AND ProductID = @pid",
+                        DbHelper.P("@ref", purchaseID.Value),
+                        DbHelper.P("@pid", productID));
+                    if (pqtyVal != DBNull.Value && pqtyVal != null)
+                    {
+                        purchasedQty = Convert.ToDecimal(pqtyVal);
+                    }
+                }
+
+                // المخزون القديم هو المخزون الحالي مطروحاً منه الكمية التي تم شراؤها في هذه الفاتورة
+                decimal oldStock = Math.Max(0m, currentStock - purchasedQty);
+
+                if (oldStock <= 0m)
+                {
+                    // إذا لم يكن هناك مخزون قديم، نطبق السعر الجديد فوراً للكل
+                    SetPendingPrice(productID, pendingPrice, costPrice, applyNow: true, purchaseID: purchaseID);
+                    return;
+                }
 
                 DbHelper.Execute(
                     @"UPDATE Products
@@ -364,7 +387,7 @@ namespace ChickenDist.DAL
                       WHERE ProductID = @id",
                     DbHelper.P("@cp", costPrice),
                     DbHelper.P("@psp", pendingPrice),
-                    DbHelper.P("@pqt", currentStock),
+                    DbHelper.P("@pqt", oldStock),
                     DbHelper.P("@pref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value),
                     DbHelper.P("@id", productID));
             }
