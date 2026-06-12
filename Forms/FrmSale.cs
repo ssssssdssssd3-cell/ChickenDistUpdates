@@ -878,10 +878,10 @@ namespace ChickenDist.Forms
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
 				{
+					dgItems.EndEdit();
 					var curCell = dgItems.CurrentCell;
-					if (curCell != null)
+					if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
 					{
-						dgItems.EndEdit();
 						// Find next editable cell in the same row
 						int nextCol = -1;
 						for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
@@ -905,6 +905,11 @@ namespace ChickenDist.Forms
 							cboProduct.Focus();
 							return true;
 						}
+					}
+					else
+					{
+						cboProduct.Focus();
+						return true;
 					}
 				}
 			}

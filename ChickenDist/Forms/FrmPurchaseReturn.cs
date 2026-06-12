@@ -42,10 +42,10 @@ namespace ChickenDist.Forms
             {
                 if (dgItems.Focused || dgItems.EditingControl != null)
                 {
+                    dgItems.EndEdit();
                     var curCell = dgItems.CurrentCell;
-                    if (curCell != null)
+                    if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
                     {
-                        dgItems.EndEdit();
                         int nextCol = -1;
                         for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
                         {
@@ -63,6 +63,11 @@ namespace ChickenDist.Forms
                             cboPurchase.Focus();
                             return true;
                         }
+                    }
+                    else
+                    {
+                        cboPurchase.Focus();
+                        return true;
                     }
                 }
             }

@@ -617,10 +617,10 @@ namespace ChickenDist.Forms
             if (keyData == Keys.Enter &&
                 (dgItems.Focused || dgItems.EditingControl != null))
             {
+                dgItems.EndEdit();
                 var cur = dgItems.CurrentCell;
-                if (cur != null)
+                if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
                 {
-                    dgItems.EndEdit();
                     for (int col = cur.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
                     {
                         if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
@@ -630,6 +630,11 @@ namespace ChickenDist.Forms
                             return true;
                         }
                     }
+                    cboProduct.Focus();
+                    return true;
+                }
+                else
+                {
                     cboProduct.Focus();
                     return true;
                 }
