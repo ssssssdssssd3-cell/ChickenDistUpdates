@@ -641,6 +641,22 @@ namespace ChickenDist.DAL
 
             return opening + txBalance;
         }
+
+        public static void AddAdjustment(int supplierID, decimal amount, bool isDiscount, string notes)
+        {
+            decimal debit = isDiscount ? amount : 0m;
+            decimal credit = isDiscount ? 0m : amount;
+            string transType = isDiscount ? "Discount" : "Addition";
+
+            DbHelper.Execute(
+                "INSERT INTO SupplierTransactions(SupplierID,TransType,Debit,Credit,Notes,CreatedBy) VALUES(@id,@type,@debit,@credit,@notes,@by)",
+                DbHelper.P("@id", supplierID),
+                DbHelper.P("@type", transType),
+                DbHelper.P("@debit", debit),
+                DbHelper.P("@credit", credit),
+                DbHelper.P("@notes", notes),
+                DbHelper.P("@by", Session.EmpID));
+        }
     }
 
     public static class VehicleDAL
@@ -829,6 +845,22 @@ namespace ChickenDist.DAL
                     DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
             });
+        }
+
+        public static void AddAdjustment(int clientID, decimal amount, bool isDiscount, string notes)
+        {
+            decimal debit = isDiscount ? 0m : amount;
+            decimal credit = isDiscount ? amount : 0m;
+            string transType = isDiscount ? "Discount" : "Addition";
+
+            DbHelper.Execute(
+                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,Credit,Notes,CreatedBy) VALUES(@id,@type,@debit,@credit,@notes,@by)",
+                DbHelper.P("@id", clientID),
+                DbHelper.P("@type", transType),
+                DbHelper.P("@debit", debit),
+                DbHelper.P("@credit", credit),
+                DbHelper.P("@notes", notes),
+                DbHelper.P("@by", Session.EmpID));
         }
     }
 

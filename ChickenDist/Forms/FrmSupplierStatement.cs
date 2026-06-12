@@ -236,6 +236,8 @@ namespace ChickenDist.Forms
                 case "Purchase": return "فاتورة مشتريات";
                 case "Payment":  return "دفعة للمورد";
                 case "Opening":  return "رصيد افتتاحي";
+                case "Discount": return "تسوية خصم";
+                case "Addition": return "تسوية إضافة";
                 default: return t;
             }
         }

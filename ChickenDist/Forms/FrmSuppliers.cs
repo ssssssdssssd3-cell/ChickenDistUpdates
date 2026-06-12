@@ -135,17 +135,20 @@ namespace ChickenDist.Forms
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
 
-            var btnExpense = Theme.MakeButton("💸 صرف", 210, y + 40, 130, 32, Color.FromArgb(80, 80, 140));
+            var btnExpense = Theme.MakeButton("💸 صرف", 205, y + 40, 95, 32, Color.FromArgb(80, 80, 140));
             btnExpense.Click += BtnExpense_Click;
 
-            btnStatement = Theme.MakeButton("📋 كشف حساب", 10, y + 40, 190, 32, Color.FromArgb(50, 100, 150));
+            var btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y + 40, 90, 32, Color.FromArgb(120, 80, 140));
+            btnAdjustment.Click += BtnAdjustment_Click;
+
+            btnStatement = Theme.MakeButton("📋 كشف", 10, y + 40, 95, 32, Color.FromArgb(50, 100, 150));
             btnStatement.Click += (s, e) =>
             {
                 if (_selectedID == 0) { MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
                 new FrmSupplierStatement(_selectedID, txtName.Text).ShowDialog();
             };
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnStatement });
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement });
 
             tbl.Controls.Add(pnlDetails, 0, 0);
             tbl.Controls.Add(pnlGrid, 1, 0);
@@ -317,6 +320,18 @@ namespace ChickenDist.Forms
             dlg.Controls.Add(btnOk);
             dlg.Controls.Add(btnCancel);
             dlg.ShowDialog(this);
+        }
+
+        private void BtnAdjustment_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0)
+            {
+                MessageBox.Show("اختر مورداً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var frm = new FrmAdjustment(_selectedID, txtName.Text, false);
+            if (frm.ShowDialog() == DialogResult.OK)
+                LoadSuppliers();
         }
     }
 }

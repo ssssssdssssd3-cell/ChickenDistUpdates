@@ -16,7 +16,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudOpening, nudCreditLimit;
         private ComboBox cmbDriver, cmbPriceTier;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment;
+        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -169,16 +169,18 @@ namespace ChickenDist.Forms
             btnSave = Theme.MakeButton("💾 حفظ", 210, y, 90, 32, Theme.Accent);
             btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Color.FromArgb(60, 100, 60));
             btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 44;
-            btnPayment = Theme.MakeButton("💵 تحصيل", 160, y, 140, 32, Color.FromArgb(80, 100, 60));
-            btnStatement = Theme.MakeButton("📄 كشف حساب", 10, y, 140, 32, Theme.Primary);
+            btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Color.FromArgb(80, 100, 60));
+            btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Color.FromArgb(120, 80, 140));
+            btnStatement = Theme.MakeButton("📄 كشف", 10, y, 95, 32, Theme.Primary);
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnStatement.Click += BtnStatement_Click;
             btnPayment.Click += BtnPayment_Click;
+            btnAdjustment.Click += BtnAdjustment_Click;
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment });
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment });
             
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
@@ -311,6 +313,14 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0) { MessageBox.Show("اختر عميلاً أولاً"); return; }
             var frm = new FrmPayment(_selectedID, txtName.Text);
+            if (frm.ShowDialog() == DialogResult.OK)
+                LoadClients();
+        }
+
+        private void BtnAdjustment_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0) { MessageBox.Show("اختر عميلاً أولاً"); return; }
+            var frm = new FrmAdjustment(_selectedID, txtName.Text, true);
             if (frm.ShowDialog() == DialogResult.OK)
                 LoadClients();
         }

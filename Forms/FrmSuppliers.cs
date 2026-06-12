@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtAddress;
         private NumericUpDown nudOpening;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnPaySupplier;
+        private Button btnNew, btnSave, btnDelete, btnStatement;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -135,18 +135,25 @@ namespace ChickenDist.Forms
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+            var btnExpense = Theme.MakeButton("💸 صرف", 205, y + 40, 95, 32, Color.FromArgb(80, 80, 140));
+            btnExpense.Click += BtnExpense_Click;
 
-            // زر صرف للمورد
-            y += 40;
-            btnPaySupplier = Theme.MakeButton("💸 صرف للمورد", 10, y, 290, 38, Color.FromArgb(180, 100, 0));
-            btnPaySupplier.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            btnPaySupplier.Click += BtnPaySupplier_Click;
-            pnlDetails.Controls.Add(btnPaySupplier);
+            var btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y + 40, 90, 32, Color.FromArgb(120, 80, 140));
+            btnAdjustment.Click += BtnAdjustment_Click;
+
+            btnStatement = Theme.MakeButton("📋 كشف", 10, y + 40, 95, 32, Color.FromArgb(50, 100, 150));
+            btnStatement.Click += (s, e) =>
+            {
+                if (_selectedID == 0) { MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+                new FrmSupplierStatement(_selectedID, txtName.Text).ShowDialog();
+            };
+
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement });
 
             tbl.Controls.Add(pnlDetails, 0, 0);
             tbl.Controls.Add(pnlGrid, 1, 0);
             this.Controls.Add(tbl);
+            Theme.ApplyFormRTL(this);
         }
 
         private Panel MakeField(string label, ref int y, out TextBox txt)
@@ -229,7 +236,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void BtnPaySupplier_Click(object sender, EventArgs e)
+        private void BtnExpense_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0)
             {
@@ -243,30 +250,55 @@ namespace ChickenDist.Forms
             // نافذة الصرف
             var dlg = new Form
             {
-                Text = "صرف نقدي للمورد - " + supplierName,
-                Size = new Size(400, 280),
+                Text = "💸 صرف نقدي للمورد - " + supplierName,
+                Size = new Size(420, 300),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false, MinimizeBox = false,
                 RightToLeft = RightToLeft.Yes,
                 RightToLeftLayout = true,
-                BackColor = Theme.BgMain
+                BackColor = Theme.BgMain,
+                Font = Theme.FontMain
             };
 
-            int dy = 15;
-            dlg.Controls.Add(new Label { Text = "المورد: " + supplierName, Location = new Point(10, dy), Width = 360, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10, FontStyle.Bold) }); dy += 28;
-            dlg.Controls.Add(new Label { Text = balText, Location = new Point(10, dy), Width = 360, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10, FontStyle.Bold) }); dy += 32;
+            int dy = 18;
+            dlg.Controls.Add(new Label
+            {
+                Text = "المورد: " + supplierName,
+                Location = new Point(10, dy), Width = 380,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            }); dy += 30;
 
-            dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 4), Width = 170, ForeColor = Theme.TextMain });
-            var nudAmt = new NumericUpDown { Location = new Point(10, dy), Width = 185, Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            dlg.Controls.Add(nudAmt); dy += 38;
+            dlg.Controls.Add(new Label
+            {
+                Text = balText,
+                Location = new Point(10, dy), Width = 380,
+                ForeColor = Theme.Accent,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            }); dy += 36;
 
-            dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 4), Width = 170, ForeColor = Theme.TextMain });
-            var txtNote = new TextBox { Location = new Point(10, dy), Width = 185, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "سداد جزء من المديونية" };
-            dlg.Controls.Add(txtNote); dy += 38;
+            dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+            var nudAmt = new NumericUpDown
+            {
+                Location = new Point(10, dy), Width = 185,
+                Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            dlg.Controls.Add(nudAmt); dy += 40;
 
-            var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 200, dy, 170, 36, Color.FromArgb(180, 100, 0));
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 10, dy, 120, 36, Color.FromArgb(100, 40, 40));
+            dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+            var txtNote = new TextBox
+            {
+                Location = new Point(10, dy), Width = 185,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Text = "سداد جزء من المديونية"
+            };
+            dlg.Controls.Add(txtNote); dy += 40;
+
+            var btnOk     = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 175, 38, Color.FromArgb(140, 80, 0));
+            var btnCancel = Theme.MakeButton("❌ إلغاء",        10,  dy, 120, 38, Color.FromArgb(100, 40, 40));
+            btnOk.Font    = new Font("Segoe UI", 10, FontStyle.Bold);
 
             btnOk.Click += (s2, e2) =>
             {
@@ -279,7 +311,7 @@ namespace ChickenDist.Forms
                         "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
-                    LoadSuppliers();
+                    LoadSuppliers(); // تحديث الرصيد في الجدول
                 }
                 catch { } // الخطأ بيتعرض تلقائياً من RunInTransaction
             };
@@ -288,6 +320,18 @@ namespace ChickenDist.Forms
             dlg.Controls.Add(btnOk);
             dlg.Controls.Add(btnCancel);
             dlg.ShowDialog(this);
+        }
+
+        private void BtnAdjustment_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0)
+            {
+                MessageBox.Show("اختر مورداً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var frm = new FrmAdjustment(_selectedID, txtName.Text, false);
+            if (frm.ShowDialog() == DialogResult.OK)
+                LoadSuppliers();
         }
     }
 }
