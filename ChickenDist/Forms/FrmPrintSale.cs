@@ -336,6 +336,7 @@ namespace ChickenDist.Forms
                         {
                             decimal currentBalance = 0;
                             decimal paymentToday = 0;
+                            decimal returnToday = 0;
                             decimal previousBalance = 0;
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
@@ -349,20 +350,29 @@ namespace ChickenDist.Forms
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
                             var dtPay = DbHelper.Query(@"
-                                SELECT COALESCE(SUM(Credit), 0) AS TotalPayment
+                                SELECT 
+                                    COALESCE(SUM(CASE WHEN TransType = 'Payment' THEN Credit ELSE 0 END), 0) AS TotalPayment,
+                                    COALESCE(SUM(CASE WHEN TransType = 'Return' THEN Credit ELSE 0 END), 0) AS TotalReturn
                                 FROM ClientTransactions
-                                WHERE ClientID = @cid AND TransType = 'Payment' AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)",
+                                WHERE ClientID = @cid AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)",
                                 DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
                             if (dtPay.Rows.Count > 0)
+                            {
                                 paymentToday = Convert.ToDecimal(dtPay.Rows[0]["TotalPayment"]);
+                                returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
+                            }
 
                             if (isCredit)
-                                previousBalance = currentBalance - netAmount + paymentToday;
+                                previousBalance = currentBalance - netAmount + paymentToday + returnToday;
                             else
-                                previousBalance = currentBalance + paymentToday;
+                                previousBalance = currentBalance + paymentToday + returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 6;
                             g.DrawString($"الرصيد السابق: {previousBalance:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                            if (returnToday > 0)
+                            {
+                                g.DrawString($"المرتجع اليوم: {returnToday:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                            }
                             g.DrawString($"المدفوع (التحصيل): {paymentToday:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
                             g.DrawString($"الرصيد الحالي: {currentBalance:N2}", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 20;
                         }
@@ -653,6 +663,7 @@ namespace ChickenDist.Forms
                         {
                             decimal currentBalance  = 0;
                             decimal paymentToday    = 0;
+                            decimal returnToday     = 0;
                             decimal previousBalance = 0;
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
@@ -666,33 +677,56 @@ namespace ChickenDist.Forms
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
                             var dtPay = DbHelper.Query(@"
-                                SELECT COALESCE(SUM(Credit), 0) AS TotalPayment
+                                SELECT 
+                                    COALESCE(SUM(CASE WHEN TransType = 'Payment' THEN Credit ELSE 0 END), 0) AS TotalPayment,
+                                    COALESCE(SUM(CASE WHEN TransType = 'Return' THEN Credit ELSE 0 END), 0) AS TotalReturn
                                 FROM ClientTransactions
-                                WHERE ClientID = @cid AND TransType = 'Payment' AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)",
+                                WHERE ClientID = @cid AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)",
                                 DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
                             if (dtPay.Rows.Count > 0)
+                            {
                                 paymentToday = Convert.ToDecimal(dtPay.Rows[0]["TotalPayment"]);
+                                returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
+                            }
 
                             if (isCredit)
-                                previousBalance = currentBalance - netAmount + paymentToday;
+                                previousBalance = currentBalance - netAmount + paymentToday + returnToday;
                             else
-                                previousBalance = currentBalance + paymentToday;
+                                previousBalance = currentBalance + paymentToday + returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
 
                             if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
                             {
-                                g.DrawString($"الرصيد السابق: {previousBalance:N2} | المدفوع اليوم: {paymentToday:N2} | الرصيد المتبقي: {currentBalance:N2}", boldSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), right);
+                                string balText = $"الرصيد السابق: {previousBalance:N2} | ";
+                                if (returnToday > 0)
+                                {
+                                    balText += $"المرتجع اليوم: {returnToday:N2} | ";
+                                }
+                                balText += $"المدفوع اليوم: {paymentToday:N2} | الرصيد المتبقي: {currentBalance:N2}";
+                                g.DrawString(balText, boldSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), right);
                                 y += 25;
                             }
                             else if (string.Equals(a4Template, "Simple", StringComparison.OrdinalIgnoreCase))
                             {
-                                g.DrawString($"السابق: {previousBalance:N2} | المدفوع: {paymentToday:N2} | الرصيد الحالي: {currentBalance:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
+                                string balText = $"السابق: {previousBalance:N2} | ";
+                                if (returnToday > 0)
+                                {
+                                    balText += $"المرتجع: {returnToday:N2} | ";
+                                }
+                                balText += $"المدفوع: {paymentToday:N2} | الرصيد الحالي: {currentBalance:N2}";
+                                g.DrawString(balText, normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
                                 y += 20;
                             }
                             else if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                             {
-                                g.DrawString($"الرصيد السابق: {previousBalance:N2} جنيه  |  المسدد: {paymentToday:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                                string balText = $"الرصيد السابق: {previousBalance:N2} جنيه  |  ";
+                                if (returnToday > 0)
+                                {
+                                    balText += $"المرتجع: {returnToday:N2} جنيه  |  ";
+                                }
+                                balText += $"المسدد: {paymentToday:N2} جنيه";
+                                g.DrawString(balText, normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
                                 y += 20;
                                 g.DrawString($"الرصيد الحالي: {currentBalance:N2} جنيه", boldSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW - margin, 22), right);
                                 y += 25;
