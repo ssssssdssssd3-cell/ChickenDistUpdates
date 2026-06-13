@@ -591,14 +591,21 @@ function loadFromStorageSilent() {
     try { invoices = JSON.parse(savedInv); }
     catch(e) { localStorage.removeItem('driver_invoices'); invoices = []; }
   }
-  if (savedDriver) {
+  
+  if (appData && appData.targetDriverId) {
+    driverId = appData.targetDriverId;
+    driverName = appData.targetDriverName;
+    localStorage.setItem('driver_id', driverId);
+    localStorage.setItem('driver_name', driverName);
+  } else if (savedDriver) {
     driverName = savedDriver;
     driverId = savedDriverId ? parseInt(savedDriverId) : null;
-    // auto launch app if driver known
-    if (driverName && appData.clients && appData.clients.length > 0) {
-      launchApp();
-    }
   }
+
+  if (driverName && appData && appData.clients && appData.clients.length > 0) {
+    launchApp();
+  }
+
   const savedPhone = localStorage.getItem('driver_accountant_phone');
   if (savedPhone && document.getElementById('accountantPhone')) {
     document.getElementById('accountantPhone').value = savedPhone;
@@ -608,10 +615,28 @@ function loadFromStorageSilent() {
 function showStep2() {
   document.getElementById('step2').style.display = 'block';
   const sel = document.getElementById('selDriver');
-  sel.innerHTML = '<option value="">-- اختر --</option>';
-  (appData.drivers || []).forEach(d => {
-    sel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
-  });
+  const txtName = document.getElementById('txtDriverName');
+  
+  if (appData && appData.targetDriverId) {
+    sel.innerHTML = `<option value="${appData.targetDriverId}">${appData.targetDriverName}</option>`;
+    sel.value = appData.targetDriverId;
+    sel.disabled = true;
+    if (txtName) {
+      txtName.value = appData.targetDriverName;
+      txtName.disabled = true;
+    }
+    driverId = appData.targetDriverId;
+    driverName = appData.targetDriverName;
+    localStorage.setItem('driver_id', driverId);
+    localStorage.setItem('driver_name', driverName);
+  } else {
+    sel.innerHTML = '<option value="">-- اختر --</option>';
+    sel.disabled = false;
+    if (txtName) txtName.disabled = false;
+    (appData.drivers || []).forEach(d => {
+      sel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+    });
+  }
 }
 
 function onDriverChange() {
@@ -623,16 +648,21 @@ function onDriverChange() {
 }
 
 function confirmSetup() {
-  const sel = document.getElementById('selDriver');
-  const selectedId = sel.value;
-  const name = selectedId ? sel.options[sel.selectedIndex].text : document.getElementById('txtDriverName').value.trim();
+  if (appData && appData.targetDriverId) {
+    driverId = appData.targetDriverId;
+    driverName = appData.targetDriverName;
+  } else {
+    const sel = document.getElementById('selDriver');
+    const selectedId = sel.value;
+    const name = selectedId ? sel.options[sel.selectedIndex].text : document.getElementById('txtDriverName').value.trim();
+    
+    if (!name) { toast('❌ أدخل اسم المندوب', 'error'); return; }
+    
+    driverName = name;
+    driverId = selectedId ? parseInt(selectedId) : null;
+  }
   
-  if (!name) { toast('❌ أدخل اسم المندوب', 'error'); return; }
-  
-  driverName = name;
-  driverId = selectedId ? parseInt(selectedId) : null;
-  
-  localStorage.setItem('driver_name', name);
+  localStorage.setItem('driver_name', driverName);
   if (driverId) {
     localStorage.setItem('driver_id', driverId);
   } else {

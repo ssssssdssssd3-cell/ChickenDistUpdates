@@ -1181,27 +1181,61 @@ namespace ChickenDist.DAL
         /// يُولّد كائن JSON للمندوب يحتوي على قوائم العملاء والأصناف والمناديب النشطين.
         /// يُستخدم بواسطة FrmDriverHandover لتصدير ملف data.json للجوال.
         /// </summary>
-        public static string BuildDriverExportJson()
+        public static string BuildDriverExportJson(int? driverID = null)
         {
             // جلب العملاء النشطين مع DriverID
-            var clients = DbHelper.Query(
-                "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+            System.Data.DataTable clients;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                clients = DbHelper.Query(
+                    "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 AND DriverID = @did ORDER BY ClientName",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                clients = DbHelper.Query(
+                    "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+            }
 
             // جلب الأصناف النشطة
             var products = DbHelper.Query(
                 "SELECT ProductID, ProductName, SalePrice, ISNULL(Unit,'وحدة') AS Unit FROM Products WHERE IsActive=1 ORDER BY ProductName");
 
             // جلب المناديب النشطين
-            var drivers = DbHelper.Query(
-                "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+            System.Data.DataTable drivers;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                drivers = DbHelper.Query(
+                    "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 AND EmpID = @did ORDER BY EmpName",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                drivers = DbHelper.Query(
+                    "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+            }
 
             // جلب الحمولات المفتوحة
-            var loads = DbHelper.Query(@"
-                SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
-                FROM DriverLoads dl
-                JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
-                WHERE dl.IsClosed = 0
-                GROUP BY dl.DriverID, dli.ProductID");
+            System.Data.DataTable loads;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                loads = DbHelper.Query(@"
+                    SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
+                    FROM DriverLoads dl
+                    JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
+                    WHERE dl.IsClosed = 0 AND dl.DriverID = @did
+                    GROUP BY dl.DriverID, dli.ProductID",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                loads = DbHelper.Query(@"
+                    SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
+                    FROM DriverLoads dl
+                    JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
+                    WHERE dl.IsClosed = 0
+                    GROUP BY dl.DriverID, dli.ProductID");
+            }
 
             var sb = new System.Text.StringBuilder();
             sb.Append("{");
@@ -1250,6 +1284,13 @@ namespace ChickenDist.DAL
                 firstL = false;
             }
             sb.Append("],");
+
+            if (driverID.HasValue && driverID.Value > 0 && drivers.Rows.Count > 0)
+            {
+                sb.AppendFormat("\"targetDriverId\":{0},\"targetDriverName\":\"{1}\",",
+                    drivers.Rows[0]["EmpID"],
+                    EscapeJson(drivers.Rows[0]["EmpName"].ToString()));
+            }
 
             // drivers array
             sb.Append("\"drivers\":[");

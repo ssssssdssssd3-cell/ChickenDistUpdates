@@ -203,9 +203,9 @@ namespace ChickenDist.Core
         /// <summary>
         /// يرفع JSON البيانات إلى pastes.dev ويُرجع الرمز التعريفي الفريد
         /// </summary>
-        public static string UploadToCloud()
+        public static string UploadToCloud(int? driverID = null)
         {
-            string json = DAL.DriverDAL.BuildDriverExportJson();
+            string json = DAL.DriverDAL.BuildDriverExportJson(driverID);
             string encryptedJson = SecurityHelper.Encrypt(json);
 
             using (var wc = new WebClient())

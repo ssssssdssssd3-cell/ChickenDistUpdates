@@ -10,89 +10,153 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(DateTime from, DateTime to)
         {
+            return GetAll(from, to, null, null, null);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
+        {
+            return GetAll(from, to, null, null, warehouseID);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null)
+        {
+            string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
-                         CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي عشوائي' ELSE ISNULL(c.ClientName,N'---') END AS ClientName,
+                         ISNULL(c.ClientName,N'---') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes,
-                         COALESCE((SELECT SUM(si.Quantity * COALESCE(p.PurchasePrice, 0)) FROM SaleItems si JOIN Products p ON si.ProductID = p.ProductID WHERE si.SaleID = s.SaleID), 0) AS TotalCost,
-                         s.TotalAmount - COALESCE((SELECT SUM(si.Quantity * COALESCE(p.PurchasePrice, 0)) FROM SaleItems si JOIN Products p ON si.ProductID = p.ProductID WHERE si.SaleID = s.SaleID), 0) AS TotalProfit
+                         ISNULL(creator.EmpName, N'---') AS CreatedByName,
+                         ISNULL((
+                             SELECT SUM(ri.Quantity * ri.UnitPrice)
+                             FROM SalesReturns r
+                             JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                             WHERE r.SaleID = s.SaleID
+                         ), 0) AS ReturnAmount
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                  LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    AND (@clientID IS NULL OR s.ClientID = @clientID)
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    AND (@product IS NULL OR EXISTS (
+                        SELECT 1 FROM SaleItems si2
+                        JOIN Products pr ON si2.ProductID = pr.ProductID
+                        WHERE si2.SaleID = s.SaleID
+                        AND (pr.ProductName LIKE N'%' + @product + N'%'
+                          OR pr.ProductCode LIKE N'%' + @product + N'%')
+                    ))
                   ORDER BY s.SaleDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static DataTable GetItems(int saleID)
         {
             return DbHelper.Query(
                 @"SELECT si.ItemID, si.ProductID, p.ProductName, si.Quantity, si.UnitPrice, si.TotalPrice,
-                         COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt
+                          COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
+                          COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
+                          COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
+                          p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation
                   FROM SaleItems si JOIN Products p ON si.ProductID=p.ProductID
                   WHERE si.SaleID=@id",
                 DbHelper.P("@id", saleID));
         }
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
-            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, int? createdBy = null)
+            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
+            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null)
         {
             int returnedSaleID = -1;
-            int sellerID = createdBy ?? Session.EmpID;
-
-            // ===== تحقق من حد الائتمان قبل البيع الآجل =====
-            if (saleType == 0 && clientID.HasValue && !isDraft)
-            {
-                var statusRow = DbHelper.Query(@"
-                    SELECT ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
-                           ISNULL(c.MaxCreditLimit, 0) AS MaxCreditLimit
-                     FROM Clients c
-                     LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                     WHERE c.ClientID = @id",
-                     DbHelper.P("@id", clientID.Value));
-
-                if (statusRow.Rows.Count > 0)
-                {
-                    decimal currentBalance = Convert.ToDecimal(statusRow.Rows[0]["Balance"]);
-                    decimal maxLimit       = Convert.ToDecimal(statusRow.Rows[0]["MaxCreditLimit"]);
-                    decimal newBalance     = currentBalance + total;
-
-                    if (maxLimit > 0 && newBalance > maxLimit)
-                    {
-                        throw new Exception(
-                            $"تجاوز حد الائتمان!\nالرصيد الحالي: {currentBalance:N2}\nقيمة الفاتورة: {total:N2}\nالحد المسموح: {maxLimit:N2}\nالرصيد بعد البيع سيكون: {newBalance:N2}\n\nراجع حد الائتمان من بيانات العميل أو حصّل جزءاً من الدين أولاً.");
-                    }
-                }
-            }
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : "Cash";
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
+                int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,LastModifiedDate) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,GETDATE())",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", sellerID),
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
-                    DbHelper.P("@ip", !isDraft),
-                    DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+                    DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
 
+                // تسجيل حركة إنشاء جديدة في الـ Audit
+                DbHelper.ExecuteTrans(trans,
+                    @"INSERT INTO SalesAudit(SaleID, UserID, EditDate, OldTotal, NewTotal, Notes, MachineName, ActionType) 
+                      VALUES(@sid, @uid, GETDATE(), 0, @newTot, @auditNotes, @mach, 'CREATE')",
+                    DbHelper.P("@sid", saleID),
+                    DbHelper.P("@uid", Session.EmpID),
+                    DbHelper.P("@newTot", total),
+                    DbHelper.P("@auditNotes", string.IsNullOrEmpty(notes) ? "إنشاء فاتورة جديدة" : "إنشاء: " + notes),
+                    DbHelper.P("@mach", Environment.MachineName));
+
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
-                        DbHelper.P("@damt", item.DiscountAmt));
+                        DbHelper.P("@damt", item.DiscountAmt), DbHelper.P("@pt", item.PriceTier ?? priceTier));
+
+                    // check if price is different from product base price to log it in PriceChangesLog
+                    if (!isDraft)
+                    {
+                        var basePriceObj = DbHelper.ScalarTrans(trans, "SELECT SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                        if (basePriceObj != null && basePriceObj != DBNull.Value)
+                        {
+                            decimal basePrice = Convert.ToDecimal(basePriceObj);
+                            if (Math.Abs(item.UnitPrice - basePrice) > 0.005m)
+                            {
+                                string changeNotes = $"بيع بسعر مختلف في فاتورة البيع #{code}";
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                      VALUES (@pid, @old, @new, 'SalesInvoice', @ref, @uid, @notes)",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@old", basePrice), DbHelper.P("@new", item.UnitPrice),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", changeNotes));
+                            }
+                        }
+
+                        // Atomic update to subtract from PendingQtyThreshold if sold at old SalePrice
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = CASE 
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingQtyThreshold - @qty
+                                  END,
+                                  SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN PendingSalePrice
+                                  ELSE SalePrice
+                                  END,
+                                  PendingSalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingSalePrice
+                                  END,
+                                  PendingPriceSourceRefID = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingPriceSourceRefID
+                                  END
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0 
+                                AND @qty > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", item.Quantity),
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@up", item.UnitPrice));
+                    }
                 }
 
                 if (!isDraft)
@@ -104,24 +168,97 @@ namespace ChickenDist.DAL
                             "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
                             DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع " + code),
-                            DbHelper.P("@by", sellerID));
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+
+                    // تقسيط: أضف للحساب بالكامل (مدين: العملاء بالتقسيط، دائن: المبيعات)
+                    if (typeStr == "Installment" && clientID.HasValue)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع بالتقسيط " + code),
+                            DbHelper.P("@by", Session.EmpID));
+
+                        // إنشاء عقد التقسيط والأقساط المرتبطة به
+                        var nextContractResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(ContractID), 0) + 1 FROM InstallmentContracts");
+                        int nextCId = nextContractResult != null ? Convert.ToInt32(nextContractResult) : 1;
+                        string contractCode = "INST-" + nextCId.ToString("D4");
+
+                        decimal financedAmount = total - downPayment;
+                        decimal instValue = installmentCount > 0 ? Math.Round(financedAmount / installmentCount, 2) : financedAmount;
+
+                        int contractID = DbHelper.ExecuteInsertTrans(trans,
+                            @"INSERT INTO InstallmentContracts (ContractCode, BranchID, InvoiceID, CustomerID, SaleType, ContractAmount, DownPayment, FinancedAmount, InstallmentCount, InstallmentValue, StartDate, Status, Notes, CreatedBy, CreatedDate)
+                              VALUES (@cc, @bid, @inv, @cust, 'Installment', @tot, @dp, @fa, @ic, @iv, @sd, 'Active', @notes, @uid, @cd)",
+                            DbHelper.P("@cc", contractCode),
+                            DbHelper.P("@bid", branchID),
+                            DbHelper.P("@inv", saleID),
+                            DbHelper.P("@cust", clientID.Value),
+                            DbHelper.P("@tot", total),
+                            DbHelper.P("@dp", downPayment),
+                            DbHelper.P("@fa", financedAmount),
+                            DbHelper.P("@ic", installmentCount),
+                            DbHelper.P("@iv", instValue),
+                            DbHelper.P("@sd", startDate ?? DateTime.Today),
+                            DbHelper.P("@notes", notes),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@cd", DateTime.Now));
+
+                        if (schedule != null)
+                        {
+                            foreach (var s in schedule)
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO InstallmentSchedules (ContractID, InstallmentNo, DueDate, Amount, PaidAmount, RemainingAmount, Status)
+                                      VALUES (@cid, @no, @dt, @amt, 0, @amt, 'Pending')",
+                                    DbHelper.P("@cid", contractID),
+                                    DbHelper.P("@no", s.InstallmentNo),
+                                    DbHelper.P("@dt", s.DueDate),
+                                    DbHelper.P("@amt", s.Amount));
+                            }
+                        }
+
+                        // إذا تم دفع مقدم، نسجل الحركات المالية (مدين: الصندوق/الخزنة، دائن: العملاء بالتقسيط)
+                        if (downPayment > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Credit, RefID, Notes, CreatedBy) VALUES(@cid, 'Payment', @amt, @ref, @notes, @uid)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", downPayment),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"دفعة مقدمة لعقد التقسيط {contractCode}"),
+                                DbHelper.P("@uid", Session.EmpID));
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @accId)",
+                                DbHelper.P("@amt", downPayment),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
+                                DbHelper.P("@uid", Session.EmpID),
+                                DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
+                        }
+
+                        InstallmentDAL.AddAuditLogTrans(trans, "Create", contractID, "", $"إنشاء عقد التقسيط بقيمة: {total:N2} ج");
                     }
 
                     // نقدي: أضف للخزنة
                     if (typeStr == "Cash")
                     {
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('SaleIncome',@amt,@ref,@n,@by)",
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", sellerID));
+                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
                     }
 
                     // تحميل مندوب: أنشئ سجل حمولة
                     if (typeStr == "DriverLoad" && driverID.HasValue)
                     {
                         int loadID = DbHelper.ExecuteInsertTrans(trans,
-                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed) VALUES(@dt,@did,@sid,0)",
-                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID));
+                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed,WarehouseID) VALUES(@dt,@did,@sid,0,@wid)",
+                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID),
+                            DbHelper.P("@wid", targetWarehouse));
 
                         foreach (var item in items)
                         {
@@ -133,6 +270,21 @@ namespace ChickenDist.DAL
                     }
                 }
             });
+
+            if (returnedSaleID > 0 && !isDraft)
+            {
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
+                    }
+                }
+            }
 
             return returnedSaleID;
         }
@@ -158,9 +310,17 @@ namespace ChickenDist.DAL
             try
             {
                 DbHelper.Execute("DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", saleID));
+                AppLogger.Audit("حذف مسودة فاتورة", $"SaleID: {saleID}");
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"فشل حذف مسودة الفاتورة رقم {saleID} — الفاتورة قد تظل معلقة في قاعدة البيانات", ex, "SaleDAL.DeleteDraftSale");
+                System.Windows.Forms.MessageBox.Show(
+                    $"فشل حذف المسودة:\n{ex.Message}\nيرجى مراجعة سجل الأخطاء.",
+                    "خطأ في الحذف", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return false;
+            }
         }
 
         public static bool CanDeleteSale(int saleID, out string reason)
@@ -187,30 +347,109 @@ namespace ChickenDist.DAL
                 }
             }
 
+            // 3. التحقق من وجود عقد تقسيط به تحصيلات مسجلة
+            var dtContract = DbHelper.Query("SELECT ContractID FROM InstallmentContracts WHERE InvoiceID=@id AND Status <> 'Cancelled'", DbHelper.P("@id", saleID));
+            if (dtContract.Rows.Count > 0)
+            {
+                int contractID = Convert.ToInt32(dtContract.Rows[0]["ContractID"]);
+                if (InstallmentDAL.HasPaymentsCollected(contractID))
+                {
+                    reason = "لا يمكن حذف الفاتورة لوجود أقساط مسددة أو دفعات مسجلة على عقد التقسيط المرتبط بها. يجب عمل مرتجع مبيعات أو تسوية مالية.";
+                    return false;
+                }
+            }
+
             return true;
         }
 
         public static bool DeleteSale(int saleID)
         {
-            // 1. استرجاع تفاصيل الفاتورة لمعرفة نوعها
-            var dt = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
+            // FIX: كل عمليات الحذف داخل Transaction واحد لضمان الاتساق
+            // إذا فشلت أي خطوة يتم التراجع عن الكل تلقائياً
+            bool success = false;
+
+            // 1. استرجاع تفاصيل الفاتورة قبل بدء الـ Transaction
+            var dt = DbHelper.Query("SELECT SaleType, TotalAmount, Notes FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
             if (dt.Rows.Count == 0) return false;
 
             string typeStr = dt.Rows[0]["SaleType"].ToString();
-            bool success = false;
+            decimal oldTotal = Convert.ToDecimal(dt.Rows[0]["TotalAmount"]);
+            string oldNotes = dt.Rows[0]["Notes"].ToString();
 
-            // ===== لف كل عمليات الحذف في Transaction واحدة لضمان الاتساق =====
             DbHelper.RunInTransaction((con, trans) =>
             {
-                // 2. عكس حركات حساب العميل إذا كان بيع آجل
-                if (typeStr == "Credit")
+                // 2. إدخال سجل الحذف في SalesAudit
+                int auditID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO SalesAudit(SaleID, UserID, EditDate, OldTotal, NewTotal, Notes, MachineName, ActionType) 
+                      VALUES(@sid, @uid, GETDATE(), @oldTot, 0, @auditNotes, @mach, 'DELETE')",
+                    DbHelper.P("@sid", saleID),
+                    DbHelper.P("@uid", Session.EmpID),
+                    DbHelper.P("@oldTot", oldTotal),
+                    DbHelper.P("@auditNotes", "حذف الفاتورة: " + oldNotes),
+                    DbHelper.P("@mach", Environment.MachineName));
+
+                if (auditID <= 0) throw new Exception("فشل في إنشاء سجل أرشفة الحذف.");
+
+                // 3. نسخ البنود المحذوفة إلى SaleItemsHistory
+                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                foreach (DataRow r in dtOldItems.Rows)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal qty = Convert.ToDecimal(r["Quantity"]);
+                    decimal up = Convert.ToDecimal(r["UnitPrice"]);
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"UPDATE Products
+                          SET PendingQtyThreshold = PendingQtyThreshold + @qty
+                          WHERE ProductID = @pid 
+                            AND PendingSalePrice IS NOT NULL 
+                            AND PendingQtyThreshold > 0
+                            AND ABS(SalePrice - @up) < 0.005",
+                        DbHelper.P("@qty", qty),
+                        DbHelper.P("@pid", pid),
+                        DbHelper.P("@up", up));
+
+                     DbHelper.ExecuteTrans(trans,
+                         @"INSERT INTO SaleItemsHistory(AuditID, SaleID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier)
+                           VALUES(@aid, @sid, @pid, @qty, @up, @tp, @dpct, @damt, @pt)",
+                         DbHelper.P("@aid", auditID),
+                         DbHelper.P("@sid", saleID),
+                         DbHelper.P("@pid", r["ProductID"]),
+                         DbHelper.P("@qty", r["Quantity"]),
+                         DbHelper.P("@up", r["UnitPrice"]),
+                         DbHelper.P("@tp", r["TotalPrice"]),
+                         DbHelper.P("@dpct", r["DiscountPct"]),
+                         DbHelper.P("@damt", r["DiscountAmt"]),
+                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
+                 }
+
+                // 4. عكس حركات حساب العميل إذا كان بيع آجل أو تقسيط
+                if (typeStr == "Credit" || typeStr == "Installment")
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "DELETE FROM ClientTransactions WHERE TransType='Sale' AND RefID=@id",
+                        "DELETE FROM ClientTransactions WHERE RefID=@id",
                         DbHelper.P("@id", saleID));
                 }
 
-                // 3. عكس حركات الخزينة إذا كان بيع نقدي
+                // 4a. حذف عقد التقسيط المرتبط بالفاتورة والجدولة والدفعات بالكامل
+                if (typeStr == "Installment")
+                {
+                    var dtContractDel = DbHelper.QueryTrans(trans, "SELECT ContractID FROM InstallmentContracts WHERE InvoiceID=@id", DbHelper.P("@id", saleID));
+                    if (dtContractDel.Rows.Count > 0)
+                    {
+                        int contractID = Convert.ToInt32(dtContractDel.Rows[0]["ContractID"]);
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentSchedules WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentPayments WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                    }
+
+                    // عكس حركة الخزينة للدفعة المقدمة
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM CashBox WHERE RefID=@id",
+                        DbHelper.P("@id", saleID));
+                }
+
+                // 5. عكس حركات الخزينة إذا كان بيع نقدي
                 if (typeStr == "Cash")
                 {
                     DbHelper.ExecuteTrans(trans,
@@ -218,10 +457,10 @@ namespace ChickenDist.DAL
                         DbHelper.P("@id", saleID));
                 }
 
-                // 4. حذف حمولات المناديب غير المغلقة المرتبطة بالفاتورة
+                // 6. حذف حمولات المناديب غير المغلقة المرتبطة بالفاتورة
                 if (typeStr == "DriverLoad")
                 {
-                    var loadData = DbHelper.Query(
+                    var loadData = DbHelper.QueryTrans(trans,
                         "SELECT LoadID FROM DriverLoads WHERE SaleID=@id",
                         DbHelper.P("@id", saleID));
                     if (loadData.Rows.Count > 0)
@@ -236,11 +475,275 @@ namespace ChickenDist.DAL
                     }
                 }
 
-                // 5. حذف الفاتورة نفسها (الأصناف تُحذف تلقائياً CASCADE)
+                // 7. حذف الفاتورة نفسها (سوف تحذف الأصناف تلقائياً بسبب CASCADE)
                 int rows = DbHelper.ExecuteTrans(trans,
                     "DELETE FROM Sales WHERE SaleID=@id",
                     DbHelper.P("@id", saleID));
-                success = rows > 0;
+
+                if (rows <= 0)
+                    throw new Exception($"لم يتم حذف الفاتورة رقم {saleID} — قد تكون محذوفة مسبقاً.");
+
+                success = true;
+            });
+
+            return success;
+        }
+
+        public static bool CanEditSale(int saleID, out string reason)
+        {
+            reason = "";
+
+            // 1. تحقق من وجود مرتجعات
+            var returnsCount = DbHelper.Scalar("SELECT COUNT(*) FROM SalesReturns WHERE SaleID=@id", DbHelper.P("@id", saleID));
+            if (returnsCount != null && Convert.ToInt32(returnsCount) > 0)
+            {
+                reason = "لا يمكن تعديل الفاتورة لوجود مرتجع مبيعات مرتبط بها.";
+                return false;
+            }
+
+            // 2. تحقق من وجود حمولة مندوب مغلقة
+            var loadData = DbHelper.Query("SELECT LoadID, IsClosed FROM DriverLoads WHERE SaleID=@id", DbHelper.P("@id", saleID));
+            if (loadData.Rows.Count > 0)
+            {
+                bool isClosed = Convert.ToBoolean(loadData.Rows[0]["IsClosed"]);
+                if (isClosed)
+                {
+                    reason = "لا يمكن تعديل الفاتورة لأنها حمولة مندوب مغلقة (تم تقفيلها وتسليم العهدة بالفعل).";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
+            List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
+            DateTime? loadedLastModified = null, int? safeAccountID = null)
+        {
+            bool success = false;
+
+            // 1. جلب البيانات القديمة لأرشفة الفاتورة والتحقق من التعديل المتزامن
+            var dtOldSale = DbHelper.Query("SELECT TotalAmount, Notes, SaleType, LastModifiedDate FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
+            if (dtOldSale.Rows.Count == 0) return false;
+
+            // التحقق من التعديل المتزامن (Concurrency Check)
+            if (loadedLastModified.HasValue && dtOldSale.Rows[0]["LastModifiedDate"] != DBNull.Value)
+            {
+                DateTime dbLastModified = Convert.ToDateTime(dtOldSale.Rows[0]["LastModifiedDate"]);
+                if (Math.Abs((dbLastModified - loadedLastModified.Value).TotalSeconds) > 1.5) // سماحية 1.5 ثانية للفروق البسيطة
+                {
+                    throw new Exception("CONCURRENCY_ERROR: تم تعديل هذه الفاتورة بواسطة مستخدم آخر أثناء قيامك بالعمل عليها. يرجى إلغاء العملية وإعادة فتح الفاتورة للحصول على أحدث البيانات.");
+                }
+            }
+
+            decimal oldTotal = Convert.ToDecimal(dtOldSale.Rows[0]["TotalAmount"]);
+            string oldTypeStr = dtOldSale.Rows[0]["SaleType"].ToString();
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 2. إدخال سجل التعديل في SalesAudit
+                int auditID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO SalesAudit(SaleID, UserID, EditDate, OldTotal, NewTotal, Notes, MachineName, ActionType) 
+                      VALUES(@sid, @uid, GETDATE(), @oldTot, @newTot, @notes, @mach, 'EDIT')",
+                    DbHelper.P("@sid", saleID),
+                    DbHelper.P("@uid", Session.EmpID),
+                    DbHelper.P("@oldTot", oldTotal),
+                    DbHelper.P("@newTot", total),
+                    DbHelper.P("@notes", notes),
+                    DbHelper.P("@mach", Environment.MachineName));
+
+                if (auditID <= 0) throw new Exception("فشل في إنشاء سجل أرشفة التعديل.");
+
+                // 3. نسخ البنود القديمة إلى SaleItemsHistory
+                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                foreach (DataRow r in dtOldItems.Rows)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal qty = Convert.ToDecimal(r["Quantity"]);
+                    decimal up = Convert.ToDecimal(r["UnitPrice"]);
+
+                    if (!isDraft)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = PendingQtyThreshold + @qty
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", qty),
+                            DbHelper.P("@pid", pid),
+                            DbHelper.P("@up", up));
+                    }
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO SaleItemsHistory(AuditID, SaleID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier)
+                          VALUES(@aid, @sid, @pid, @qty, @up, @tp, @dpct, @damt, @pt)",
+                        DbHelper.P("@aid", auditID),
+                        DbHelper.P("@sid", saleID),
+                        DbHelper.P("@pid", pid),
+                        DbHelper.P("@qty", qty),
+                        DbHelper.P("@up", up),
+                        DbHelper.P("@tp", Convert.ToDecimal(r["TotalPrice"])),
+                        DbHelper.P("@dpct", Convert.ToDecimal(r["DiscountPct"])),
+                        DbHelper.P("@damt", Convert.ToDecimal(r["DiscountAmt"])),
+                        DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
+                }
+
+                // 4. عكس الحركات المالية السابقة (العملاء، الخزينة، المندوب)
+                if (oldTypeStr == "Credit")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM ClientTransactions WHERE TransType='Sale' AND RefID=@id",
+                        DbHelper.P("@id", saleID));
+                }
+                else if (oldTypeStr == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "DELETE FROM CashBox WHERE TransType='SaleIncome' AND RefID=@id",
+                        DbHelper.P("@id", saleID));
+                }
+                else if (oldTypeStr == "DriverLoad")
+                {
+                    var loadData = DbHelper.QueryTrans(trans, "SELECT LoadID FROM DriverLoads WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                    if (loadData.Rows.Count > 0)
+                    {
+                        int loadID = Convert.ToInt32(loadData.Rows[0]["LoadID"]);
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM DriverLoadItems WHERE LoadID=@lid", DbHelper.P("@lid", loadID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM DriverLoads WHERE LoadID=@lid", DbHelper.P("@lid", loadID));
+                    }
+                }
+
+                // 5. حذف البنود الحالية
+                DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+
+                string code = saleID.ToString();
+                var dtCode = DbHelper.QueryTrans(trans, "SELECT SaleCode FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                if (dtCode.Rows.Count > 0) code = dtCode.Rows[0]["SaleCode"].ToString();
+
+                // 6. تحديث رأس الفاتورة
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
+                int targetWarehouse = warehouseID ?? 1;
+
+                DbHelper.ExecuteTrans(trans,
+                    @"UPDATE Sales 
+                      SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
+                          DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
+                          LastModifiedDate=GETDATE()
+                      WHERE SaleID=@id",
+                    DbHelper.P("@typ", typeStr),
+                    DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
+                    DbHelper.P("@tot", total),
+                    DbHelper.P("@n", notes),
+                    DbHelper.P("@discAmt", discountAmount),
+                    DbHelper.P("@discPct", discountPct),
+                    DbHelper.P("@ip", !isDraft),
+                    DbHelper.P("@wid", targetWarehouse),
+                    DbHelper.P("@pt", priceTier),
+                    DbHelper.P("@id", saleID));
+
+                // 7. إدخال البنود الجديدة
+                foreach (var item in items)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier) 
+                          VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt)",
+                        DbHelper.P("@sid", saleID), 
+                        DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), 
+                        DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice), 
+                        DbHelper.P("@dpct", item.DiscountPct),
+                        DbHelper.P("@damt", item.DiscountAmt),
+                        DbHelper.P("@pt", item.PriceTier ?? priceTier));
+
+                    // check if price is different from product base price to log it in PriceChangesLog
+                    if (!isDraft)
+                    {
+                        var basePriceObj = DbHelper.ScalarTrans(trans, "SELECT SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                        if (basePriceObj != null && basePriceObj != DBNull.Value)
+                        {
+                            decimal basePrice = Convert.ToDecimal(basePriceObj);
+                            if (Math.Abs(item.UnitPrice - basePrice) > 0.005m)
+                            {
+                                string changeNotes = $"بيع بسعر مختلف في فاتورة البيع #{code}";
+                                DbHelper.ExecuteTrans(trans,
+                                    @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                      VALUES (@pid, @old, @new, 'SalesInvoice', @ref, @uid, @notes)",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@old", basePrice), DbHelper.P("@new", item.UnitPrice),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", changeNotes));
+                            }
+                        }
+
+                        // Atomic update to subtract from PendingQtyThreshold if sold at old SalePrice
+                        DbHelper.ExecuteTrans(trans,
+                            @"UPDATE Products
+                              SET PendingQtyThreshold = CASE 
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingQtyThreshold - @qty
+                                  END,
+                                  SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN PendingSalePrice
+                                  ELSE SalePrice
+                                  END,
+                                  PendingSalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingSalePrice
+                                  END,
+                                  PendingPriceSourceRefID = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingPriceSourceRefID
+                                  END
+                              WHERE ProductID = @pid 
+                                AND PendingSalePrice IS NOT NULL 
+                                AND PendingQtyThreshold > 0 
+                                AND @qty > 0
+                                AND ABS(SalePrice - @up) < 0.005",
+                            DbHelper.P("@qty", item.Quantity),
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@up", item.UnitPrice));
+                    }
+                }
+
+                // 8. إنشاء الحركات المالية الجديدة
+                if (!isDraft)
+                {
+
+                    if (typeStr == "Credit" && clientID.HasValue)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل فاتورة بيع " + code),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                    else if (typeStr == "Cash")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
+                            DbHelper.P("@amt", total), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@n", "تعديل بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
+                    }
+                    else if (typeStr == "DriverLoad" && driverID.HasValue)
+                    {
+                        int loadID = DbHelper.ExecuteInsertTrans(trans,
+                            "INSERT INTO DriverLoads(LoadDate,DriverID,SaleID,IsClosed,WarehouseID) VALUES(@dt,@did,@sid,0,@wid)",
+                            DbHelper.P("@dt", DateTime.Now), DbHelper.P("@did", driverID.Value), DbHelper.P("@sid", saleID),
+                            DbHelper.P("@wid", targetWarehouse));
+
+                        foreach (var item in items)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO DriverLoadItems(LoadID,ProductID,LoadedQty,UnitPrice) VALUES(@lid,@pid,@qty,@up)",
+                                DbHelper.P("@lid", loadID), DbHelper.P("@pid", item.ProductID),
+                                DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice));
+                        }
+                    }
+                }
+
+                success = true;
             });
 
             return success;
@@ -254,8 +757,13 @@ namespace ChickenDist.DAL
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+        public decimal PurchasePrice { get; set; } = 0m;
         public decimal StockQty { get; set; } = 0m;
         public decimal MinStockLimit { get; set; } = 0m;
+        public string PartNumber { get; set; } = "";
+        public string CarModel { get; set; } = "";
+        public string Brand { get; set; } = "";
+        public string ShelfLocation { get; set; } = "";
         /// <summary>نسبة الخصم % على الصنف</summary>
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة الخصم بالجنيه على الصنف</summary>
@@ -263,6 +771,10 @@ namespace ChickenDist.DAL
         {
             get
             {
+                // FIX: إذا أُدخلت قيمة يدوية (_discountPctOverride=false) نُعيدها مباشرةً
+                // حتى لو كانت DiscountPct == 0 — الكود القديم كان يُعيد 0 متجاهلاً _discountAmtOverride
+                if (!_discountPctOverride)
+                    return _discountAmtOverride;
                 if (DiscountPct > 0)
                     return Math.Round(Quantity * UnitPrice * DiscountPct / 100m, 2);
                 return 0m;
@@ -287,6 +799,7 @@ namespace ChickenDist.DAL
                     return Math.Round(gross - _discountAmtOverride, 2);
             }
         }
+        public string PriceTier { get; set; } = "قطاعي";
     }
 
     public static class DriverDAL
@@ -325,7 +838,7 @@ namespace ChickenDist.DAL
                              JOIN Sales s ON si.SaleID = s.SaleID
                              JOIN DriverLoads dl ON dl.LoadID = @lid
                              WHERE s.DriverID = dl.DriverID
-                               AND s.SaleType IN ('Cash', 'Credit')
+                               AND s.SaleType IN ('Cash', 'Credit', 'Installment')
                                AND s.SaleDate >= dl.LoadDate
                                AND si.ProductID = p.ProductID
                          ), 0) AS SoldQty
@@ -336,7 +849,8 @@ namespace ChickenDist.DAL
         }
 
         public static int SaveHandover(int loadID, int driverID,
-            List<HandoverItemDTO> items, string notes, decimal cashCollected, int deadTreatment = 0)
+            List<HandoverItemDTO> items, string notes, decimal cashCollected,
+            string settlementType = null, decimal deficitValue = 0m, string settlementNotes = null)
         {
             decimal totLoaded = 0, totRet = 0, totDead = 0, totExtra = 0, totDef = 0;
             decimal totalSoldValue = 0;
@@ -351,34 +865,10 @@ namespace ChickenDist.DAL
                 totalSoldValue += (i.SoldQty * i.UnitPrice);
             }
 
-            decimal deadValue = 0;
-            if (totDead > 0)
-            {
-                foreach (var i in items)
-                {
-                    if (i.DeadQty > 0)
-                    {
-                        deadValue += i.DeadQty * i.UnitPrice;
-                    }
-                }
-            }
-
-            string finalNotes = notes;
-            if (totDead > 0 && deadValue > 0)
-            {
-                if (deadTreatment == 1)
-                {
-                    finalNotes += (string.IsNullOrEmpty(finalNotes) ? "" : " | ") + $"[النافق بقيمة {deadValue:N2} ج تم قيده كـ سلفة على المندوب]";
-                }
-                else if (deadTreatment == 2)
-                {
-                    finalNotes += (string.IsNullOrEmpty(finalNotes) ? "" : " | ") + $"[النافق بقيمة {deadValue:N2} ج تم قيده كـ خصم من مستحقات المندوب]";
-                }
-            }
-
-            // ===== لف كل عمليات التقفيل في Transaction واحدة =====
+            // ===== FIX: كل عمليات التقفيل الأساسية في Transaction واحد =====
+            // لو حصل أي خطأ في المنتصف يتم التراجع عن كل العمليات تلقائياً
             int hvID = -1;
-            int savedSaleID = -1;
+            DateTime closedAt = DateTime.Now;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
@@ -386,11 +876,14 @@ namespace ChickenDist.DAL
                 hvID = DbHelper.ExecuteInsertTrans(trans,
                     @"INSERT INTO DriverHandovers(HandoverDate,LoadID,DriverID,TotalLoaded,TotalReturned,TotalDead,TotalExtra,TotalDeficit,Notes,CreatedBy)
                       VALUES(@dt,@lid,@did,@tl,@tr,@td,@te,@tdf,@n,@by)",
-                    DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID), DbHelper.P("@did", driverID),
+                    DbHelper.P("@dt", closedAt), DbHelper.P("@lid", loadID), DbHelper.P("@did", driverID),
                     DbHelper.P("@tl", totLoaded), DbHelper.P("@tr", totRet), DbHelper.P("@td", totDead),
                     DbHelper.P("@te", totExtra), DbHelper.P("@tdf", totDef),
-                    DbHelper.P("@n", finalNotes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
 
+                if (hvID <= 0) throw new Exception("فشل في إنشاء سجل التقفيل.");
+
+                // 2. تفاصيل أصناف التقفيل
                 foreach (var i in items)
                 {
                     DbHelper.ExecuteTrans(trans,
@@ -402,105 +895,56 @@ namespace ChickenDist.DAL
                         DbHelper.P("@dfq", i.DeficitQty));
                 }
 
-                // 2. إغلاق الحمولة
+                // 3. إغلاق الحمولة
                 DbHelper.ExecuteTrans(trans,
                     "UPDATE DriverLoads SET IsClosed=1, ClosedAt=@dt WHERE LoadID=@lid",
-                    DbHelper.P("@dt", DateTime.Now), DbHelper.P("@lid", loadID));
+                    DbHelper.P("@dt", closedAt), DbHelper.P("@lid", loadID));
 
-                // 3. تسجيل خسارة النافق كمصروف (فقط إذا كان الخيار مصروف عام)
-                if (totDead > 0 && deadTreatment == 0)
+                // 4. قيد الخزنة (النقدية المحصّلة) — جزء من نفس الـ Transaction
+                if (cashCollected > 0)
                 {
-                    if (deadValue > 0)
-                    {
-                        int expID = DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,CreatedBy)
-                              VALUES(@d,@t,@a,@n,@by)",
-                            DbHelper.P("@d", DateTime.Now),
-                            DbHelper.P("@t", "نافق مناديب"),
-                            DbHelper.P("@a", deadValue),
-                            DbHelper.P("@n", $"نافق من تقفيل حمولة ({loadID}) - مندوب ID:{driverID} - عدد:{totDead:N3}"),
-                            DbHelper.P("@by", Session.EmpID));
-
-                        // تسجيل في الخزنة كمصروف (AmountOut) دون خصم نقدي فعلي = لأغراض التقرير المالي
-                        DbHelper.ExecuteTrans(trans,
-                            @"INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)
-                              VALUES(@d,'Expense',@a,@ref,@n,@by)",
-                            DbHelper.P("@d", DateTime.Now),
-                            DbHelper.P("@a", deadValue),
-                            DbHelper.P("@ref", expID),
-                            DbHelper.P("@n", $"خسارة نافق - حمولة ({loadID})"),
-                            DbHelper.P("@by", Session.EmpID));
-                    }
-                }
-
-                // 4. إذا كان هناك كميات مباعة، ننشئ فاتورة مبيعات نقدية مجمعة باسم المندوب
-                if (totalSoldValue > 0)
-                {
-                    var saleItemsDto = new List<SaleItemDTO>();
-                    foreach (var i in items)
-                    {
-                        if (i.SoldQty > 0)
-                        {
-                            saleItemsDto.Add(new SaleItemDTO
-                            {
-                                ProductID = i.ProductID,
-                                Quantity  = i.SoldQty,
-                                UnitPrice = i.UnitPrice
-                            });
-                        }
-                    }
-
-                    // نسجّل الفاتورة كـ Cash داخل نفس الـ Transaction
-                    string typeStr = "Cash";
-                    var nextCode = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
-                    string code  = nextCode != null ? nextCode.ToString() : "1";
-
-                    savedSaleID = DbHelper.ExecuteInsertTrans(trans,
-                        "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted) " +
-                        "VALUES(@code,@dt,@typ,NULL,@did,@tot,@n,@by,0,0,1)",
-                        DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now),
-                        DbHelper.P("@typ", typeStr), DbHelper.P("@did", driverID),
-                        DbHelper.P("@tot", totalSoldValue),
-                        DbHelper.P("@n", "مبيعات مقفلة من حمولة رقم " + loadID),
-                        DbHelper.P("@by", Session.EmpID));
-
-                    foreach (var i in saleItemsDto)
-                    {
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
-                            "VALUES(@sid,@pid,@qty,@up,@tp,0,0)",
-                            DbHelper.P("@sid", savedSaleID), DbHelper.P("@pid", i.ProductID),
-                            DbHelper.P("@qty", i.Quantity), DbHelper.P("@up", i.UnitPrice),
-                            DbHelper.P("@tp", i.TotalPrice));
-                    }
-
-                    // ===== إصلاح: نُضيف cashCollected الفعلي للخزنة (وليس totalSoldValue) =====
-                    // لا نضيف قيد SaleIncome تلقائي هنا لأننا نريد إضافة المحصّل الفعلي فقط
-                    if (cashCollected > 0)
-                    {
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) " +
-                            "VALUES('DriverHandover',@amt,@ref,@n,@by)",
-                            DbHelper.P("@amt", cashCollected), DbHelper.P("@ref", loadID),
-                            DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID}) - مبيعات ({totalSoldValue:N2})"),
-                            DbHelper.P("@by", Session.EmpID));
-                    }
-                }
-                else if (cashCollected > 0)
-                {
-                    // لا مبيعات لكن سلم كاش
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy) VALUES('DriverHandover',@amt,@ref,@n,@by)",
-                        DbHelper.P("@amt", cashCollected), DbHelper.P("@ref", loadID),
-                        DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID})"),
+                        "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) VALUES(@dt,'DriverHandover',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", closedAt), DbHelper.P("@amt", cashCollected),
+                        DbHelper.P("@ref", loadID),
+                        DbHelper.P("@n", $"تحصيل تقفيل حمولة ({loadID}) — مبيعات ({totalSoldValue:N2})"),
                         DbHelper.P("@by", Session.EmpID));
                 }
-            }); // نهاية Transaction
+
+                // 5. تسوية العجز المالي المباشرة داخل الـ Transaction لضمان سلامة البيانات
+                if (deficitValue > 0.009m && !string.IsNullOrEmpty(settlementType) && settlementType != "Skip")
+                {
+                    if (settlementType == "Advance" || settlementType == "Deduction")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO EmployeeTransactions(EmpID, TransType, Debit, RefID, Notes, CreatedBy)
+                              VALUES(@eid, @type, @amt, @ref, @n, @by)",
+                            DbHelper.P("@eid", driverID),
+                            DbHelper.P("@type", settlementType == "Advance" ? "DeficitCharge" : "Deduction"),
+                            DbHelper.P("@amt", deficitValue),
+                            DbHelper.P("@ref", loadID),
+                            DbHelper.P("@n", settlementNotes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                    else if (settlementType == "CompanyExpense")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO Expenses(ExpenseDate, ExpenseType, Amount, Notes, CreatedBy)
+                              VALUES(GETDATE(), N'عجز حمولة مندوب', @amt, @n, @by)",
+                            DbHelper.P("@amt", deficitValue),
+                            DbHelper.P("@n", settlementNotes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
+            });
+            // ===== نهاية Transaction الأساسي =====
+
+            AppLogger.Audit("تقفيل حمولة مندوب", $"LoadID: {loadID}, DriverID: {driverID}, HandoverID: {hvID}, كاش محصل: {cashCollected:N2}, تسوية العجز: {settlementType}");
 
             return hvID;
         }
 
-        public static DataTable GetHandovers(DateTime from, DateTime to)
+        public static DataTable GetHandovers(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT dh.HandoverID, dh.HandoverDate, e.EmpName AS DriverName,
@@ -508,10 +952,13 @@ namespace ChickenDist.DAL
                           dh.Notes, creator.EmpName AS CreatedBy
                   FROM DriverHandovers dh
                   JOIN Employees e ON dh.DriverID = e.EmpID
+                  JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
                   LEFT JOIN Employees creator ON dh.CreatedBy = creator.EmpID
                   WHERE CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
                   ORDER BY dh.HandoverDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         /// <summary>ملخص عهدة المناديب الحاليين (الحمولات المفتوحة فقط)</summary>
@@ -537,8 +984,8 @@ namespace ChickenDist.DAL
                         FROM SaleItems si
                         JOIN Sales s2 ON si.SaleID = s2.SaleID
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType IN ('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND s2.SaleType IN ('Cash','Credit','Installment')
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldQty,
                     -- قيمة المبيعات
@@ -546,8 +993,8 @@ namespace ChickenDist.DAL
                         SELECT SUM(s2.TotalAmount)
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType IN ('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND s2.SaleType IN ('Cash','Credit','Installment')
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS SoldValue,
                     -- منها نقدي (محصل فعلاً)
@@ -556,7 +1003,7 @@ namespace ChickenDist.DAL
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
                           AND s2.SaleType = 'Cash'
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS CashCollected,
                     -- منها آجل (غير محصل)
@@ -564,8 +1011,8 @@ namespace ChickenDist.DAL
                         SELECT SUM(s2.TotalAmount)
                         FROM Sales s2
                         WHERE s2.DriverID = dl.DriverID
-                          AND s2.SaleType = 'Credit'
-                          AND s2.SaleDate >= dl.LoadDate
+                          AND s2.SaleType IN ('Credit','Installment')
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                           AND s2.IsPosted = 1
                     ), 0)                                   AS CreditSold,
                     -- الكميات المرتجعة من العملاء في نفس الفترة
@@ -575,7 +1022,7 @@ namespace ChickenDist.DAL
                         JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                         JOIN Sales s2 ON sr.SaleID = s2.SaleID
                         WHERE s2.DriverID = dl.DriverID
-                          AND sr.ReturnDate >= dl.LoadDate
+                          AND CAST(sr.ReturnDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                     ), 0)                                   AS ReturnedQty,
                     -- المتبقي بعهدته (محمل - مباع + مرتجع)
                     ISNULL((
@@ -585,21 +1032,425 @@ namespace ChickenDist.DAL
                     - ISNULL((
                         SELECT SUM(si.Quantity)
                         FROM SaleItems si JOIN Sales s2 ON si.SaleID=s2.SaleID
-                        WHERE s2.DriverID=dl.DriverID AND s2.SaleType IN('Cash','Credit')
-                          AND s2.SaleDate >= dl.LoadDate AND s2.IsPosted=1
+                        WHERE s2.DriverID=dl.DriverID AND s2.SaleType IN('Cash','Credit','Installment')
+                          AND CAST(s2.SaleDate AS DATE) >= CAST(dl.LoadDate AS DATE) AND s2.IsPosted=1
                     ), 0)
                     + ISNULL((
                         SELECT SUM(ri.Quantity)
                         FROM ReturnItems ri
                         JOIN SalesReturns sr ON ri.ReturnID=sr.ReturnID
                         JOIN Sales s2 ON sr.SaleID=s2.SaleID
-                        WHERE s2.DriverID=dl.DriverID AND sr.ReturnDate >= dl.LoadDate
+                        WHERE s2.DriverID=dl.DriverID AND CAST(sr.ReturnDate AS DATE) >= CAST(dl.LoadDate AS DATE)
                     ), 0)                                   AS RemainingQty
                 FROM DriverLoads dl
                 JOIN Employees e ON dl.DriverID = e.EmpID
                 JOIN Sales s ON dl.SaleID = s.SaleID
                 WHERE dl.IsClosed = 0
                 ORDER BY e.EmpName, dl.LoadDate DESC");
+        }
+
+        /// <summary>تسوية العجز المالي عند التقفيل — 3 خيارات: سلفة، مصروف شركة، خصم</summary>
+        public static void SettleDeficit(int driverID, int loadID, decimal deficitValue, string settlementType, string notes)
+        {
+            // settlementType: "Advance" = سلفة على المندوب | "CompanyExpense" = مصروف شركة | "Deduction" = خصم
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                if (settlementType == "Advance" || settlementType == "Deduction")
+                {
+                    // تسجيل مديونية/خصم على المندوب في EmployeeTransactions
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO EmployeeTransactions(EmpID, TransType, Debit, RefID, Notes, CreatedBy)
+                          VALUES(@eid, @type, @amt, @ref, @n, @by)",
+                        DbHelper.P("@eid", driverID),
+                        DbHelper.P("@type", settlementType == "Advance" ? "DeficitCharge" : "Deduction"),
+                        DbHelper.P("@amt", deficitValue),
+                        DbHelper.P("@ref", loadID),
+                        DbHelper.P("@n", notes),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                else if (settlementType == "CompanyExpense")
+                {
+                    // تحميل العجز على الشركة كمصروف تشغيلي
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO Expenses(ExpenseDate, ExpenseType, Amount, Notes, CreatedBy)
+                          VALUES(GETDATE(), N'عجز حمولة مندوب', @amt, @n, @by)",
+                        DbHelper.P("@amt", deficitValue),
+                        DbHelper.P("@n", notes),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            AppLogger.Audit("تسوية عجز حمولة", $"DriverID:{driverID} LoadID:{loadID} Value:{deficitValue:N2} Type:{settlementType}");
+        }
+
+        /// <summary>كشف التحصيل اليومي للمندوب — قائمة عملاء بديونهم لإرسالها عبر واتساب</summary>
+        public static DataTable GetDriverCollectionList(int driverID, DateTime date)
+        {
+            return DbHelper.Query(
+                @"SELECT
+                    c.ClientName,
+                    ISNULL(c.Phone, N'---') AS Phone,
+                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    ISNULL((
+                        SELECT SUM(TotalAmount)
+                        FROM Sales
+                        WHERE DriverID = @did AND ClientID = c.ClientID
+                          AND CAST(SaleDate AS DATE) = @dt AND IsPosted = 1
+                          AND SaleType IN ('Cash','Credit','Installment')
+                    ), 0) AS TodaySales
+                  FROM Clients c
+                  LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                  WHERE c.DriverID = @did AND c.IsActive = 1
+                    AND ISNULL(cb.Balance, c.OpeningBalance) > 0
+                  ORDER BY Balance DESC",
+                DbHelper.P("@did", driverID),
+                DbHelper.P("@dt", date.Date));
+        }
+
+        /// <summary>بيانات لوحة أداء ومنافسة المناديب</summary>
+        public static DataTable GetLeaderboard(DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT
+                    e.EmpID,
+                    e.EmpName                                          AS DriverName,
+                    ISNULL(e.Phone, N'---')                             AS Phone,
+                    -- إجمالي المبيعات
+                    ISNULL((
+                        SELECT SUM(s.TotalAmount)
+                        FROM Sales s
+                        WHERE s.DriverID = e.EmpID AND s.IsPosted = 1
+                          AND s.SaleType IN ('Cash','Credit','Installment')
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalSales,
+                    -- النقدية المحصلة (مبيعات نقدية + ما حُصّل عند التقفيل)
+                    ISNULL((
+                        SELECT SUM(s.TotalAmount)
+                        FROM Sales s
+                        WHERE s.DriverID = e.EmpID AND s.IsPosted = 1
+                          AND s.SaleType = 'Cash'
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS CashSales,
+                    -- إجمالي النافق
+                    ISNULL((
+                        SELECT SUM(dh.TotalDead)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalDead,
+                    -- إجمالي العجز (بعد قاعدة النافق = عجز)
+                    ISNULL((
+                        SELECT SUM(dh.TotalDeficit)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS TotalDeficit,
+                    -- عدد الحمولات المقفلة
+                    ISNULL((
+                        SELECT COUNT(*)
+                        FROM DriverHandovers dh
+                        WHERE dh.DriverID = e.EmpID
+                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS HandoverCount,
+                    -- رصيد المديونية على المندوب
+                    ISNULL((
+                        SELECT SUM(et.Debit) - SUM(et.Credit)
+                        FROM EmployeeTransactions et
+                        WHERE et.EmpID = e.EmpID
+                    ), 0) AS DebtBalance
+                  FROM Employees e
+                  WHERE e.IsDriver = 1 AND e.IsActive = 1
+                  ORDER BY TotalSales DESC",
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date));
+        }
+
+        /// <summary>رصيد مديونية مندوب معين</summary>
+        public static decimal GetEmployeeBalance(int empID)
+        {
+            var r = DbHelper.Scalar(
+                "SELECT ISNULL(SUM(Debit),0)-ISNULL(SUM(Credit),0) FROM EmployeeTransactions WHERE EmpID=@id",
+                DbHelper.P("@id", empID));
+            return r != null ? Convert.ToDecimal(r) : 0;
+        }
+
+        // =====================================================================
+        //  تصدير بيانات الجوال (data.json) — قائمة العملاء والأصناف والمناديب
+        // =====================================================================
+        /// <summary>
+        /// يُولّد كائن JSON للمندوب يحتوي على قوائم العملاء والأصناف والمناديب النشطين.
+        /// يُستخدم بواسطة FrmDriverHandover لتصدير ملف data.json للجوال.
+        /// </summary>
+        public static string BuildDriverExportJson(int? driverID = null)
+        {
+            // جلب العملاء النشطين مع DriverID
+            System.Data.DataTable clients;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                clients = DbHelper.Query(
+                    "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 AND DriverID = @did ORDER BY ClientName",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                clients = DbHelper.Query(
+                    "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+            }
+
+            // جلب الأصناف النشطة
+            var products = DbHelper.Query(
+                "SELECT ProductID, ProductName, SalePrice, ISNULL(Unit,'وحدة') AS Unit FROM Products WHERE IsActive=1 ORDER BY ProductName");
+
+            // جلب المناديب النشطين
+            System.Data.DataTable drivers;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                drivers = DbHelper.Query(
+                    "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 AND EmpID = @did ORDER BY EmpName",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                drivers = DbHelper.Query(
+                    "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+            }
+
+            // جلب الحمولات المفتوحة
+            System.Data.DataTable loads;
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                loads = DbHelper.Query(@"
+                    SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
+                    FROM DriverLoads dl
+                    JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
+                    WHERE dl.IsClosed = 0 AND dl.DriverID = @did
+                    GROUP BY dl.DriverID, dli.ProductID",
+                    DbHelper.P("@did", driverID.Value));
+            }
+            else
+            {
+                loads = DbHelper.Query(@"
+                    SELECT dl.DriverID, dli.ProductID, SUM(dli.LoadedQty) AS LoadedQty
+                    FROM DriverLoads dl
+                    JOIN DriverLoadItems dli ON dl.LoadID = dli.LoadID
+                    WHERE dl.IsClosed = 0
+                    GROUP BY dl.DriverID, dli.ProductID");
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append("{");
+
+            // clients array
+            sb.Append("\"clients\":[");
+            bool firstC = true;
+            foreach (System.Data.DataRow r in clients.Rows)
+            {
+                if (!firstC) sb.Append(",");
+                string driverVal = r["DriverID"] == DBNull.Value ? "null" : r["DriverID"].ToString();
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"phone\":\"{2}\",\"driverId\":{3}}}",
+                    r["ClientID"],
+                    EscapeJson(r["ClientName"].ToString()),
+                    EscapeJson(r["Phone"].ToString()),
+                    driverVal);
+                firstC = false;
+            }
+            sb.Append("],");
+
+            // products array
+            sb.Append("\"products\":[");
+            bool firstP = true;
+            foreach (System.Data.DataRow r in products.Rows)
+            {
+                if (!firstP) sb.Append(",");
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\",\"price\":{2},\"unit\":\"{3}\"}}",
+                    r["ProductID"],
+                    EscapeJson(r["ProductName"].ToString()),
+                    Convert.ToDecimal(r["SalePrice"]).ToString("F4", System.Globalization.CultureInfo.InvariantCulture),
+                    EscapeJson(r["Unit"].ToString()));
+                firstP = false;
+            }
+            sb.Append("],");
+
+            // loads array
+            sb.Append("\"loads\":[");
+            bool firstL = true;
+            foreach (System.Data.DataRow r in loads.Rows)
+            {
+                if (!firstL) sb.Append(",");
+                sb.AppendFormat("{{\"driverId\":{0},\"productId\":{1},\"qty\":{2}}}",
+                    r["DriverID"],
+                    r["ProductID"],
+                    Convert.ToDecimal(r["LoadedQty"]).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+                firstL = false;
+            }
+            sb.Append("],");
+
+            if (driverID.HasValue && driverID.Value > 0 && drivers.Rows.Count > 0)
+            {
+                sb.AppendFormat("\"targetDriverId\":{0},\"targetDriverName\":\"{1}\",",
+                    drivers.Rows[0]["EmpID"],
+                    EscapeJson(drivers.Rows[0]["EmpName"].ToString()));
+            }
+
+            // drivers array
+            sb.Append("\"drivers\":[");
+            bool firstD = true;
+            foreach (System.Data.DataRow r in drivers.Rows)
+            {
+                if (!firstD) sb.Append(",");
+                sb.AppendFormat("{{\"id\":{0},\"name\":\"{1}\"}}",
+                    r["EmpID"],
+                    EscapeJson(r["EmpName"].ToString()));
+                firstD = false;
+            }
+            sb.Append("]");
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string EscapeJson(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"")
+                    .Replace("\r", "").Replace("\n", " ");
+        }
+
+        // =====================================================================
+        //  استيراد فاتورة واحدة من CSV (يُستدعى من FrmImportPreview)
+        // =====================================================================
+        /// <summary>
+        /// يحفظ مجموعة بنود (تمثل فاتورة واحدة) كفاتورة رسمية في السيستم.
+        /// يستخدم نفس SaveSale الرئيسي تماماً.
+        /// </summary>
+        /// <param name="clientID">رقم العميل (0 = عميل غير محدد)</param>
+        /// <param name="driverID">رقم المندوب</param>
+        /// <param name="paymentType">Cash أو Credit</param>
+        /// <param name="saleDate">تاريخ البيع من الـ CSV</param>
+        /// <param name="notes">ملاحظات الفاتورة</param>
+        /// <param name="items">بنود الفاتورة</param>
+        /// <returns>SaleID الجديد أو -1 عند الفشل</returns>
+               public static int ImportDriverSaleRow(int clientID, int driverID, string paymentType,
+            DateTime saleDate, string notes, List<SaleItemDTO> items, long? cloudID = null)
+        {
+            if (items == null || items.Count == 0) return -1;
+            decimal total = 0;
+            foreach (var it in items) total += it.Quantity * it.UnitPrice;
+
+            int returnedID = -1;
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // Resolve warehouse from driver's open load
+                int targetWarehouse = 1;
+                object activeLoadWh = DbHelper.ScalarTrans(trans,
+                    "SELECT TOP 1 WarehouseID FROM DriverLoads WHERE DriverID = @did AND IsClosed = 0 ORDER BY LoadDate DESC",
+                    DbHelper.P("@did", driverID));
+                if (activeLoadWh != null && activeLoadWh != DBNull.Value)
+                {
+                    targetWarehouse = Convert.ToInt32(activeLoadWh);
+                }
+
+                // Check for existing cloud import (idempotency)
+                if (cloudID.HasValue && cloudID.Value > 0)
+                {
+                    object existing = DbHelper.ScalarTrans(trans, "SELECT SaleID FROM Sales WHERE CloudID = @cloudID", DbHelper.P("@cloudID", cloudID.Value));
+                    if (existing != null && existing != DBNull.Value)
+                    {
+                        int saleID = Convert.ToInt32(existing);
+                        
+                        // Delete old transactions and items so we can overwrite/update them
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID = @sid", DbHelper.P("@sid", saleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID = @sid AND TransType = 'Sale'", DbHelper.P("@sid", saleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID = @sid AND TransType = 'DriverSaleImport'", DbHelper.P("@sid", saleID));
+                        
+                        // Update main invoice header
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE Sales SET SaleDate=@dt, SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, WarehouseID=@wid, LastModifiedDate=GETDATE() WHERE SaleID=@sid",
+                            DbHelper.P("@dt", saleDate),
+                            DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
+                            DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                            DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
+                            DbHelper.P("@tot", total),
+                            DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب (محدث)"),
+                            DbHelper.P("@wid", targetWarehouse),
+                            DbHelper.P("@sid", saleID));
+
+                        returnedID = saleID;
+                    }
+                }
+
+                string code = "1";
+                if (returnedID <= 0)
+                {
+                    var nextResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                    code = nextResult?.ToString() ?? "1";
+
+                    int saleID = DbHelper.ExecuteInsertTrans(trans,
+                        "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,CloudID,LastModifiedDate) " +
+                        "VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,0,0,1,@wid,@cloud,GETDATE())",
+                        DbHelper.P("@code", code),
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@typ", paymentType == "Cash" ? "Cash" : "Credit"),
+                        DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                        DbHelper.P("@did", driverID > 0 ? (object)driverID : DBNull.Value),
+                        DbHelper.P("@tot", total),
+                        DbHelper.P("@n", notes ?? "استيراد مبيعات مندوب"),
+                        DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@wid", targetWarehouse),
+                        DbHelper.P("@cloud", cloudID.HasValue ? (object)cloudID.Value : DBNull.Value));
+
+                    if (saleID <= 0) throw new Exception("فشل في إنشاء الفاتورة المستوردة.");
+                    returnedID = saleID;
+                }
+                else
+                {
+                    // If we updated, let's load the existing code for audit/logging or transactions
+                    object existingCode = DbHelper.ScalarTrans(trans, "SELECT SaleCode FROM Sales WHERE SaleID = @sid", DbHelper.P("@sid", returnedID));
+                    if (existingCode != null && existingCode != DBNull.Value) code = existingCode.ToString();
+                }
+
+                foreach (var it in items)
+                {
+                    decimal lineTotal = it.Quantity * it.UnitPrice;
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
+                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0)",
+                        DbHelper.P("@sid", returnedID),
+                        DbHelper.P("@pid", it.ProductID),
+                        DbHelper.P("@qty", it.Quantity),
+                        DbHelper.P("@up", it.UnitPrice),
+                        DbHelper.P("@tot", lineTotal));
+                }
+
+                // قيد العميل (Credit) إن كانت آجل
+                if (paymentType != "Cash" && clientID > 0)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ClientTransactions(ClientID,TransDate,TransType,Debit,RefID,Notes,CreatedBy) " +
+                        "VALUES(@cid,@dt,'Sale',@amt,@ref,@n,@by)",
+                        DbHelper.P("@cid", clientID),
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", returnedID),
+                        DbHelper.P("@n", "استيراد مبيعات مندوب — فاتورة #" + code),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+                // قيد خزنة (Cash)
+                else if (paymentType == "Cash")
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) " +
+                        "VALUES(@dt,'DriverSaleImport',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", saleDate),
+                        DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", returnedID),
+                        DbHelper.P("@n", "استيراد نقدي مندوب — فاتورة #" + code),
+                        DbHelper.P("@by", Session.EmpID));
+                }
+            });
+
+            AppLogger.Audit("استيراد فاتورة مندوب", $"SaleID:{returnedID} Client:{clientID} Driver:{driverID} Total:{total:N2}");
+            return returnedID;
         }
     }
 
@@ -613,11 +1464,14 @@ namespace ChickenDist.DAL
         public decimal DeadQty { get; set; }
         public decimal UnitPrice { get; set; }
 
+        // ✅ قاعدة: النافق = عجز — لا يخصم النافق من المتوقع، فكل نافق يحاسب عليه المندوب
+        // المتوقع = المحمل - المرتجع فقط (النافق لا يُعفي المندوب)
+        // عجز الكمية = المتوقع - المباع (إذا كان المتوقع > المباع)
         public decimal DeficitQty
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
                 return expected > SoldQty ? expected - SoldQty : 0;
             }
         }
@@ -626,16 +1480,22 @@ namespace ChickenDist.DAL
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
                 return SoldQty > expected ? SoldQty - expected : 0;
             }
         }
+
+        /// <summary>القيمة المالية للعجز (كمية العجز × سعر الوحدة)</summary>
+        public decimal DeficitValue => DeficitQty * UnitPrice;
+
+        /// <summary>القيمة المالية للنافق (كمية النافق × سعر الوحدة)</summary>
+        public decimal DeadValue => DeadQty * UnitPrice;
     }
 
 
     public static class ReturnDAL
     {
-        public static DataTable GetAll(DateTime from, DateTime to)
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT sr.ReturnID, sr.ReturnDate, s.SaleCode,
@@ -644,8 +1504,10 @@ namespace ChickenDist.DAL
                   LEFT JOIN Sales s ON sr.SaleID=s.SaleID
                   LEFT JOIN Clients c ON sr.ClientID=c.ClientID
                   WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ORDER BY sr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", from.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items)
@@ -654,15 +1516,23 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var dtSale = DbHelper.Query("SELECT SaleType FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                var dtSale = DbHelper.Query("SELECT SaleType, ClientID, WarehouseID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
                 string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
+                int whID = (dtSale.Rows.Count > 0 && dtSale.Rows[0]["WarehouseID"] != DBNull.Value) ? Convert.ToInt32(dtSale.Rows[0]["WarehouseID"]) : 1;
+
+                // استخدم clientID من الفاتورة الأصلية إذا لم يُحدَّد في الشاشة
+                if (!clientID.HasValue && dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
+                    clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
 
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy) VALUES(@dt,@sid,@cid,@tot,@n,@by)",
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid)",
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@wid", whID));
+
+                if (retID <= 0) throw new Exception("فشل إنشاء سجل المرتجع.");
 
                 returnedRetID = retID;
 
@@ -675,10 +1545,15 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp", item.TotalPrice));
                 }
 
+                // المنطق المحاسبي السليم:
+                // بيع نقدي → رد نقدي من الخزنة (AmountOut)
+                // بيع آجل أو حمولة مندوب → تخفيض دين العميل (Credit في ClientTransactions)
                 if (saleType == "Cash")
                 {
+                    // تسجيل خروج نقدية من الخزنة (رد مبلغ المرتجع للعميل)
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransType,AmountOut,RefID,Notes,CreatedBy) VALUES('ReturnOutcome',@amt,@ref,@n,@by)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by)",
+                        DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
                         DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
                         DbHelper.P("@by", Session.EmpID));
@@ -691,6 +1566,12 @@ namespace ChickenDist.DAL
                         DbHelper.P("@ref", retID), DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
                         DbHelper.P("@by", Session.EmpID));
                 }
+
+                // معالجة مرتجع التقسيط (تخفيض قيمة العقد وجدول الأقساط تلقائياً تنازلياً)
+                if (saleID > 0 && saleType == "Installment")
+                {
+                    InstallmentDAL.HandleSalesReturn(trans, saleID, total);
+                }
             });
 
             return returnedRetID;
@@ -699,41 +1580,45 @@ namespace ChickenDist.DAL
 
     public static class ReportDAL
     {
-        public static DataTable SalesByDay(DateTime from, DateTime to)
+        public static DataTable SalesByDay(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
                     CAST(SaleDate AS DATE) AS SaleDay,
                     COUNT(*) AS Count,
                     SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(CASE WHEN SaleType = 'DriverLoad' THEN TotalAmount ELSE 0 END) AS LoadTotal,
                     SUM(TotalAmount) AS Total
                   FROM Sales
                   WHERE CAST(SaleDate AS DATE) BETWEEN @f AND @t AND IsPosted=1
+                    AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                   GROUP BY CAST(SaleDate AS DATE)
                   ORDER BY SaleDay",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByDriver(DateTime from, DateTime to)
+        public static DataTable SalesByDriver(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
                     ISNULL(e.EmpName, N'مبيعات مباشرة') AS DriverName,
                     COUNT(s.SaleID) AS Count,
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total
                   FROM Sales s 
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                   GROUP BY e.EmpName
                   ORDER BY Total DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByClient(DateTime from, DateTime to)
+        public static DataTable SalesByClient(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
@@ -741,9 +1626,9 @@ namespace ChickenDist.DAL
                     ISNULL(c.Phone, N'---') AS Phone,
                     COUNT(DISTINCT s.SaleID) AS Count,
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total,
-                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS ReturnsTotal,
+                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsTotal,
                     ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
                     (c.OpeningBalance + 
                      ISNULL((SELECT SUM(ct.Debit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0) - 
@@ -752,83 +1637,90 @@ namespace ChickenDist.DAL
                   FROM Sales s 
                   JOIN Clients c ON s.ClientID = c.ClientID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
+                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                   GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance
                   ORDER BY Total DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable SalesByProduct(DateTime from, DateTime to)
+        public static DataTable SalesByProduct(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"SELECT 
+                @";WITH ReturnTotals AS (
+                    SELECT ri.ProductID,
+                           SUM(ri.Quantity)   AS ReturnedQty,
+                           SUM(ri.TotalPrice) AS ReturnedAmount
+                    FROM ReturnItems ri
+                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY ri.ProductID
+                )
+                SELECT 
                     p.ProductName,
                     p.Unit,
-                    AVG(si.UnitPrice) AS AvgPrice,
-                    SUM(si.Quantity) AS TotalQty,
-                    SUM(si.TotalPrice) AS TotalAmount,
-                    ISNULL((
-                        SELECT SUM(ri.Quantity) 
-                        FROM ReturnItems ri 
-                        JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                        WHERE ri.ProductID = p.ProductID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0) AS ReturnedQty,
-                    ISNULL((
-                        SELECT SUM(ri.TotalPrice) 
-                        FROM ReturnItems ri 
-                        JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                        WHERE ri.ProductID = p.ProductID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0) AS ReturnedAmount,
-                    -- Net outcomes
-                    (SUM(si.Quantity) - ISNULL((
-                        SELECT SUM(ri.Quantity) 
-                        FROM ReturnItems ri 
-                        JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                        WHERE ri.ProductID = p.ProductID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0)) AS NetQty,
-                    (SUM(si.TotalPrice) - ISNULL((
-                        SELECT SUM(ri.TotalPrice) 
-                        FROM ReturnItems ri 
-                        JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                        WHERE ri.ProductID = p.ProductID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0)) AS NetAmount
-                  FROM SaleItems si
-                  JOIN Sales s ON si.SaleID=s.SaleID
-                  JOIN Products p ON si.ProductID=p.ProductID
-                  WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
-                  GROUP BY p.ProductID, p.ProductName, p.Unit
-                  ORDER BY TotalQty DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                    AVG(si.UnitPrice)                                 AS AvgPrice,
+                    SUM(si.Quantity)                                   AS TotalQty,
+                    SUM(si.TotalPrice)                                 AS TotalAmount,
+                    ISNULL(rt.ReturnedQty, 0)                         AS ReturnedQty,
+                    ISNULL(rt.ReturnedAmount, 0)                       AS ReturnedAmount,
+                    SUM(si.Quantity)   - ISNULL(rt.ReturnedQty, 0)   AS NetQty,
+                    SUM(si.TotalPrice) - ISNULL(rt.ReturnedAmount, 0) AS NetAmount
+                FROM SaleItems si
+                JOIN Sales s    ON si.SaleID    = s.SaleID
+                JOIN Products p ON si.ProductID = p.ProductID
+                LEFT JOIN ReturnTotals rt ON rt.ProductID = p.ProductID
+                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted = 1
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY p.ProductID, p.ProductName, p.Unit, rt.ReturnedQty, rt.ReturnedAmount
+                ORDER BY TotalQty DESC",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري)</summary>
-        public static DataTable GetDailyClientProductSales(DateTime date)
+        /// <summary>كميات مبيعات كل عميل لكل صنف في يوم معين (للتقرير اليومي المحوري) — مخصوماً منها المرتجعات</summary>
+        public static DataTable GetDailyClientProductSales(DateTime date, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT
                     c.ClientID,
                     c.ClientName,
-                    si.ProductID,
-                    SUM(si.Quantity) AS TotalQty,
-                    MAX(si.UnitPrice) AS UnitPrice
-                  FROM SaleItems si
-                  JOIN Sales s   ON si.SaleID  = s.SaleID
-                  JOIN Clients c ON s.ClientID = c.ClientID
-                  WHERE CAST(s.SaleDate AS DATE) = @date
-                    AND s.IsPosted = 1
-                    AND s.SaleType IN ('Cash','Credit')
-                  GROUP BY c.ClientID, c.ClientName, si.ProductID
+                    t.ProductID,
+                    SUM(t.Qty) AS TotalQty,
+                    MAX(t.UnitPrice) AS UnitPrice
+                  FROM (
+                      SELECT s.ClientID, si.ProductID, si.Quantity AS Qty, si.UnitPrice
+                      FROM SaleItems si
+                      JOIN Sales s ON si.SaleID = s.SaleID
+                      WHERE CAST(s.SaleDate AS DATE) = @date
+                        AND s.IsPosted = 1
+                        AND s.SaleType IN ('Cash','Credit','Installment')
+                        AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                      
+                      UNION ALL
+                      
+                      SELECT sr.ClientID, ri.ProductID, -ri.Quantity AS Qty, ri.UnitPrice
+                      FROM ReturnItems ri
+                      JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                      WHERE CAST(sr.ReturnDate AS DATE) = @date
+                        AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                  ) t
+                  JOIN Clients c ON t.ClientID = c.ClientID
+                  GROUP BY c.ClientID, c.ClientName, t.ProductID
                   ORDER BY c.ClientName",
-                DbHelper.P("@date", date.Date));
+                DbHelper.P("@date", date.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        /// <summary>إجمالي الفاتورة وآخر توريد والمديونية لكل عميل في يوم معين</summary>
-        public static DataTable GetDailyClientTotals(DateTime date)
+        /// <summary>إجمالي الفاتورة وآخر توريد والمديونية لكل عميل في يوم معين — مخصوماً منها المرتجعات</summary>
+        public static DataTable GetDailyClientTotals(DateTime date, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT
                     c.ClientID,
                     c.ClientName,
-                    SUM(s.TotalAmount) AS TotalInvoice,
+                    SUM(t.Amt) AS TotalInvoice,
                     ISNULL((
                         SELECT TOP 1 ct.Credit
                         FROM ClientTransactions ct
@@ -837,31 +1729,43 @@ namespace ChickenDist.DAL
                         ORDER BY ct.TransDate DESC
                     ), 0) AS LastPayment,
                     ISNULL(cb.Balance, c.OpeningBalance) AS Balance
-                  FROM Sales s
-                  JOIN Clients c ON s.ClientID = c.ClientID
+                  FROM (
+                      SELECT ClientID, TotalAmount AS Amt
+                      FROM Sales
+                      WHERE CAST(SaleDate AS DATE) = @date
+                        AND IsPosted = 1
+                        AND SaleType IN ('Cash','Credit','Installment')
+                        AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+
+                      UNION ALL
+
+                      SELECT ClientID, -TotalAmount AS Amt
+                      FROM SalesReturns
+                      WHERE CAST(ReturnDate AS DATE) = @date
+                        AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+                  ) t
+                  JOIN Clients c ON t.ClientID = c.ClientID
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                  WHERE CAST(s.SaleDate AS DATE) = @date
-                    AND s.IsPosted = 1
-                    AND s.SaleType IN ('Cash','Credit')
                   GROUP BY c.ClientID, c.ClientName, c.OpeningBalance, cb.Balance
                   ORDER BY c.ClientName",
-                DbHelper.P("@date", date.Date));
+                DbHelper.P("@date", date.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static DataTable GetFinancialSummary(DateTime from, DateTime to)
+        public static DataTable GetFinancialSummary(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
                 @"SELECT 
                     -- Total Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS TotalSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalSales,
                     -- Cash Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS CashSales,
-                    -- Credit Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Credit' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS CreditSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='Cash' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CashSales,
+                    -- Credit Sales (including Installment)
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType IN ('Credit', 'Installment') AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS CreditSales,
                     -- Driver Loads Sales
-                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t), 0) AS DriverLoadsSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND SaleType='DriverLoad' AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS DriverLoadsSales,
                     -- Returns
-                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS TotalReturns,
+                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS TotalReturns,
                     -- Client Payments
                     ISNULL((SELECT SUM(Credit) FROM ClientTransactions WHERE TransType='Payment' AND CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS ClientPayments,
                     -- Expenses
@@ -870,7 +1774,8 @@ namespace ChickenDist.DAL
                     ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashInflow,
                     -- Cashbox Outflow (Expenses + Handover returned or other outflows)
                     ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE CAST(TransDate AS DATE) BETWEEN @f AND @t), 0) AS CashOutflow",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
         public static DataTable ClientsReport()
@@ -894,138 +1799,134 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>
-        public static DataTable GetProductQtyDetail(DateTime from, DateTime to)
+        public static DataTable GetProductQtyDetail(DateTime from, DateTime to, int? warehouseID = null)
         {
+            // FIX: استخدام CTE لحساب SoldQty, ReturnedQty, DriverReturnQty مرة واحدة
+            // الكود القديم كان يُعيد حساب نفس الـ subqueries 3 مرات في NetSoldQty و CurrentStock
+            // مما يُسبّب ضغطاً كبيراً على قاعدة البيانات في التقارير الكبيرة
             return DbHelper.Query(@"
+                ;WITH
+                SalesPeriod AS (
+                    SELECT si.ProductID,
+                           SUM(si.Quantity)   AS TotalQty,
+                           SUM(si.TotalPrice) AS TotalAmt,
+                           SUM(CASE WHEN s.SaleType='Cash'       THEN si.Quantity ELSE 0 END) AS CashQty,
+                           SUM(CASE WHEN s.SaleType='Credit' OR s.SaleType='Installment' THEN si.Quantity ELSE 0 END) AS CreditQty,
+                           SUM(CASE WHEN s.SaleType='DriverLoad' THEN si.Quantity ELSE 0 END) AS DriverLoadQty
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY si.ProductID
+                ),
+                ReturnsPeriod AS (
+                    SELECT ri.ProductID,
+                           SUM(ri.Quantity) AS ReturnedQty
+                    FROM ReturnItems ri
+                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY ri.ProductID
+                ),
+                DriverReturnsPeriod AS (
+                    SELECT hi.ProductID,
+                           SUM(hi.ReturnedQty) AS DriverReturnQty
+                    FROM HandoverItems hi
+                    JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                    JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                    WHERE CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                      AND hi.ReturnedQty > 0
+                      AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
+                    GROUP BY hi.ProductID
+                ),
+                StockSinceAdj AS (
+                    SELECT p2.ProductID,
+                           ISNULL(adj2.ActualQty, 0)
+                           + ISNULL((SELECT SUM(ri2.Quantity) FROM ReturnItems ri2
+                                      JOIN SalesReturns sr2 ON ri2.ReturnID=sr2.ReturnID
+                                      WHERE ri2.ProductID=p2.ProductID
+                                        AND (adj2.AdjDate IS NULL OR sr2.ReturnDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR sr2.WarehouseID = @warehouseID)), 0)
+                           + ISNULL((SELECT SUM(hi2.ReturnedQty) FROM HandoverItems hi2
+                                      JOIN DriverHandovers dh2 ON hi2.HandoverID=dh2.HandoverID
+                                      JOIN DriverLoads dl2 ON dh2.LoadID = dl2.LoadID
+                                      WHERE hi2.ProductID=p2.ProductID
+                                        AND (adj2.AdjDate IS NULL OR dh2.HandoverDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR dl2.WarehouseID = @warehouseID)), 0)
+                           -- Incoming: Purchases since adjustment
+                           + ISNULL((SELECT SUM(pi2.Quantity) FROM PurchaseItems pi2
+                                      JOIN Purchases pu2 ON pi2.PurchaseID = pu2.PurchaseID
+                                      WHERE pi2.ProductID = p2.ProductID
+                                        AND pu2.IsPosted = 1
+                                        AND (adj2.AdjDate IS NULL OR pu2.PurchaseDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR pu2.WarehouseID = @warehouseID)), 0)
+                           -- Outgoing: Purchase Returns since adjustment
+                           - ISNULL((SELECT SUM(pri2.Quantity) FROM PurchaseReturnItems pri2
+                                      JOIN PurchaseReturns pr2 ON pri2.ReturnID = pr2.ReturnID
+                                      WHERE pri2.ProductID = p2.ProductID
+                                        AND (adj2.AdjDate IS NULL OR pr2.ReturnDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR pr2.WarehouseID = @warehouseID)), 0)
+                           -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
+                           - ISNULL((SELECT SUM(si2.Quantity) FROM SaleItems si2
+                                      JOIN Sales s2 ON si2.SaleID=s2.SaleID
+                                      WHERE si2.ProductID=p2.ProductID
+                                        AND s2.IsPosted = 1
+                                        AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit', 'Installment') AND s2.DriverID IS NULL))
+                                        AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)
+                                        AND (@warehouseID IS NULL OR s2.WarehouseID = @warehouseID)), 0)
+                           AS CurrentStock
+                    FROM Products p2
+                    OUTER APPLY (
+                        SELECT TOP 1 sa2.AdjDate, sa2.ActualQty
+                        FROM StockAdjustments sa2
+                        WHERE sa2.ProductID = p2.ProductID
+                          AND (@warehouseID IS NULL OR sa2.WarehouseID = @warehouseID)
+                        ORDER BY sa2.AdjDate DESC
+                    ) adj2
+                    WHERE p2.IsActive = 1
+                )
                 SELECT
-                    p.ProductCode                                       AS ProductCode,
-                    p.ProductName                                       AS ProductName,
-                    p.Unit                                              AS Unit,
-                    p.SalePrice                                         AS SalePrice,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.Unit,
+                    p.SalePrice,
 
-                    -- رصيد آخر تسوية جردية قبل / خلال الفترة (أو 0 إن لم توجد)
                     ISNULL((
                         SELECT TOP 1 sa.ActualQty
                         FROM StockAdjustments sa
                         WHERE sa.ProductID = p.ProductID
                           AND sa.AdjDate <= DATEADD(DAY, 1, @t)
+                          AND (@warehouseID IS NULL OR sa.WarehouseID = @warehouseID)
                         ORDER BY sa.AdjDate DESC
-                    ), 0)                                               AS LastAdjQty,
+                    ), 0)                                                   AS LastAdjQty,
 
-                    -- إجمالي كميات المبيعات (جميع الأنواع) في الفترة
-                    ISNULL((
-                        SELECT SUM(si.Quantity)
-                        FROM SaleItems si
-                        JOIN Sales s ON si.SaleID = s.SaleID
-                        WHERE si.ProductID = p.ProductID
-                          AND s.IsPosted = 1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS SoldQty,
+                    ISNULL(sp.TotalQty,        0)                          AS SoldQty,
+                    ISNULL(sp.CashQty,         0)                          AS CashQty,
+                    ISNULL(sp.CreditQty,       0)                          AS CreditQty,
+                    ISNULL(sp.DriverLoadQty,   0)                          AS DriverLoadQty,
+                    ISNULL(rp.ReturnedQty,     0)                          AS ReturnedQty,
+                    ISNULL(drp.DriverReturnQty,0)                          AS DriverReturnQty,
 
-                    -- كمية مبيعات نقدية
-                    ISNULL((
-                        SELECT SUM(si.Quantity)
-                        FROM SaleItems si
-                        JOIN Sales s ON si.SaleID = s.SaleID
-                        WHERE si.ProductID = p.ProductID
-                          AND s.SaleType = 'Cash' AND s.IsPosted = 1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS CashQty,
+                    -- صافي المبيعات: مرة حساب واحدة من الـ CTEs بدلاً من subqueries مكررة
+                    ISNULL(sp.TotalQty, 0)
+                    - ISNULL(rp.ReturnedQty, 0)
+                    - ISNULL(drp.DriverReturnQty, 0)                       AS NetSoldQty,
 
-                    -- كمية مبيعات آجلة
-                    ISNULL((
-                        SELECT SUM(si.Quantity)
-                        FROM SaleItems si
-                        JOIN Sales s ON si.SaleID = s.SaleID
-                        WHERE si.ProductID = p.ProductID
-                          AND s.SaleType = 'Credit' AND s.IsPosted = 1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS CreditQty,
+                    ISNULL(sp.TotalAmt,        0)                          AS TotalSalesAmt,
 
-                    -- كمية حمولات المناديب
-                    ISNULL((
-                        SELECT SUM(si.Quantity)
-                        FROM SaleItems si
-                        JOIN Sales s ON si.SaleID = s.SaleID
-                        WHERE si.ProductID = p.ProductID
-                          AND s.SaleType = 'DriverLoad' AND s.IsPosted = 1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS DriverLoadQty,
-
-                    -- مرتجعات المبيعات في الفترة
-                    ISNULL((
-                        SELECT SUM(ri.Quantity)
-                        FROM ReturnItems ri
-                        JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                        WHERE ri.ProductID = p.ProductID
-                          AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS ReturnedQty,
-
-                    -- مرتجعات حمولات المناديب في الفترة
-                    ISNULL((
-                        SELECT SUM(hi.ReturnedQty)
-                        FROM HandoverItems hi
-                        JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                        WHERE hi.ProductID = p.ProductID
-                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
-                          AND hi.ReturnedQty > 0
-                    ), 0)                                               AS DriverReturnQty,
-
-                    -- صافي الكميات المباعة (مبيعات - مرتجعات مبيعات - مرتجعات مناديب)
-                    ISNULL((
-                        SELECT SUM(si.Quantity)
-                        FROM SaleItems si JOIN Sales s ON si.SaleID=s.SaleID
-                        WHERE si.ProductID=p.ProductID AND s.IsPosted=1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)
-                    - ISNULL((
-                        SELECT SUM(ri.Quantity)
-                        FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID=sr.ReturnID
-                        WHERE ri.ProductID=p.ProductID
-                          AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
-                    ), 0)
-                    - ISNULL((
-                        SELECT SUM(hi.ReturnedQty)
-                        FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID=dh.HandoverID
-                        WHERE hi.ProductID=p.ProductID
-                          AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
-                          AND hi.ReturnedQty > 0
-                    ), 0)                                               AS NetSoldQty,
-
-                    -- إجمالي قيمة المبيعات في الفترة
-                    ISNULL((
-                        SELECT SUM(si.TotalPrice)
-                        FROM SaleItems si JOIN Sales s ON si.SaleID=s.SaleID
-                        WHERE si.ProductID=p.ProductID AND s.IsPosted=1
-                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                    ), 0)                                               AS TotalSalesAmt,
-
-                    -- الرصيد الكتابي الحالي
-                    ISNULL(adj.ActualQty, 0)
-                    + ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri
-                               JOIN SalesReturns sr ON ri.ReturnID=sr.ReturnID
-                               WHERE ri.ProductID=p.ProductID
-                                 AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi
-                               JOIN DriverHandovers dh ON hi.HandoverID=dh.HandoverID
-                               WHERE hi.ProductID=p.ProductID
-                                 AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si
-                               JOIN Sales s ON si.SaleID=s.SaleID
-                               WHERE si.ProductID=p.ProductID
-                                 AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
-                                                                        AS CurrentStock
+                    -- الرصيد الكتابي الحالي من الـ CTE
+                    ISNULL(sca.CurrentStock,   0)                          AS CurrentStock
 
                 FROM Products p
-                OUTER APPLY (
-                    SELECT TOP 1 sa.AdjDate, sa.ActualQty
-                    FROM StockAdjustments sa
-                    WHERE sa.ProductID = p.ProductID
-                    ORDER BY sa.AdjDate DESC
-                ) adj
+                LEFT JOIN SalesPeriod        sp  ON sp.ProductID  = p.ProductID
+                LEFT JOIN ReturnsPeriod      rp  ON rp.ProductID  = p.ProductID
+                LEFT JOIN DriverReturnsPeriod drp ON drp.ProductID = p.ProductID
+                LEFT JOIN StockSinceAdj      sca ON sca.ProductID = p.ProductID
                 WHERE p.IsActive = 1
                 ORDER BY p.ProductName",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
     }
 }

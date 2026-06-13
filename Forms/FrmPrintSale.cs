@@ -334,21 +334,53 @@ namespace ChickenDist.Forms
                         int clientID = Convert.ToInt32(_saleRow["ClientID"]);
                         if (clientID > 0)
                         {
+                            int saleID = Convert.ToInt32(_saleRow["SaleID"]);
                             decimal currentBalance = 0;
                             decimal paymentToday = 0;
                             decimal returnToday = 0;
                             decimal previousBalance = 0;
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
-                            var dtBal = DbHelper.Query(@"
-                                SELECT COALESCE(cb.Balance, c.OpeningBalance) AS Balance
-                                FROM Clients c
-                                LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                                WHERE c.ClientID = @cid", DbHelper.P("@cid", clientID));
-                            if (dtBal.Rows.Count > 0)
-                                currentBalance = Convert.ToDecimal(dtBal.Rows[0]["Balance"]);
+                            // محاولة جلب معرف حركة البيع في كشف الحساب للحصول على الرصيد التاريخي الدقيق
+                            var dtTrans = DbHelper.Query(@"
+                                SELECT TransID 
+                                FROM ClientTransactions 
+                                WHERE ClientID = @cid AND TransType = 'Sale' AND RefID = @saleID",
+                                DbHelper.P("@cid", clientID), DbHelper.P("@saleID", saleID));
+
+                            int saleTransID = 0;
+                            if (dtTrans.Rows.Count > 0)
+                            {
+                                saleTransID = Convert.ToInt32(dtTrans.Rows[0]["TransID"]);
+                            }
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
+
+                            if (saleTransID > 0)
+                            {
+                                // حساب الرصيد السابق مباشرة قبل حركة هذه الفاتورة
+                                var dtPrev = DbHelper.Query(@"
+                                    SELECT 
+                                        c.OpeningBalance + 
+                                        ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND TransID < @transID), 0) AS PrevBal
+                                    FROM Clients c WHERE c.ClientID = @cid",
+                                    DbHelper.P("@cid", clientID), DbHelper.P("@transID", saleTransID));
+                                if (dtPrev.Rows.Count > 0)
+                                    previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
+                            }
+                            else
+                            {
+                                // Fallback: الرصيد السابق قبل تاريخ هذه الفاتورة
+                                var dtPrev = DbHelper.Query(@"
+                                    SELECT 
+                                        c.OpeningBalance + 
+                                        ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND CAST(TransDate AS DATE) < CAST(@dt AS DATE)), 0) AS PrevBal
+                                    FROM Clients c WHERE c.ClientID = @cid",
+                                    DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
+                                if (dtPrev.Rows.Count > 0)
+                                    previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
+                            }
+
                             var dtPay = DbHelper.Query(@"
                                 SELECT 
                                     COALESCE(SUM(CASE WHEN TransType = 'Payment' THEN Credit ELSE 0 END), 0) AS TotalPayment,
@@ -363,9 +395,9 @@ namespace ChickenDist.Forms
                             }
 
                             if (isCredit)
-                                previousBalance = currentBalance - netAmount + paymentToday + returnToday;
+                                currentBalance = previousBalance + netAmount - paymentToday - returnToday;
                             else
-                                previousBalance = currentBalance + paymentToday + returnToday;
+                                currentBalance = previousBalance - paymentToday - returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 6;
                             g.DrawString($"الرصيد السابق: {previousBalance:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
@@ -661,21 +693,53 @@ namespace ChickenDist.Forms
                         int clientID = Convert.ToInt32(_saleRow["ClientID"]);
                         if (clientID > 0)
                         {
+                            int saleID = Convert.ToInt32(_saleRow["SaleID"]);
                             decimal currentBalance  = 0;
                             decimal paymentToday    = 0;
                             decimal returnToday     = 0;
                             decimal previousBalance = 0;
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
-                            var dtBal = DbHelper.Query(@"
-                                SELECT COALESCE(cb.Balance, c.OpeningBalance) AS Balance
-                                FROM Clients c
-                                LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                                WHERE c.ClientID = @cid", DbHelper.P("@cid", clientID));
-                            if (dtBal.Rows.Count > 0)
-                                currentBalance = Convert.ToDecimal(dtBal.Rows[0]["Balance"]);
+                            // محاولة جلب معرف حركة البيع في كشف الحساب للحصول على الرصيد التاريخي الدقيق
+                            var dtTrans = DbHelper.Query(@"
+                                SELECT TransID 
+                                FROM ClientTransactions 
+                                WHERE ClientID = @cid AND TransType = 'Sale' AND RefID = @saleID",
+                                DbHelper.P("@cid", clientID), DbHelper.P("@saleID", saleID));
+
+                            int saleTransID = 0;
+                            if (dtTrans.Rows.Count > 0)
+                            {
+                                saleTransID = Convert.ToInt32(dtTrans.Rows[0]["TransID"]);
+                            }
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
+
+                            if (saleTransID > 0)
+                            {
+                                // حساب الرصيد السابق مباشرة قبل حركة هذه الفاتورة
+                                var dtPrev = DbHelper.Query(@"
+                                    SELECT 
+                                        c.OpeningBalance + 
+                                        ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND TransID < @transID), 0) AS PrevBal
+                                    FROM Clients c WHERE c.ClientID = @cid",
+                                    DbHelper.P("@cid", clientID), DbHelper.P("@transID", saleTransID));
+                                if (dtPrev.Rows.Count > 0)
+                                    previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
+                            }
+                            else
+                            {
+                                // Fallback: الرصيد السابق قبل تاريخ هذه الفاتورة
+                                var dtPrev = DbHelper.Query(@"
+                                    SELECT 
+                                        c.OpeningBalance + 
+                                        ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND CAST(TransDate AS DATE) < CAST(@dt AS DATE)), 0) AS PrevBal
+                                    FROM Clients c WHERE c.ClientID = @cid",
+                                    DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
+                                if (dtPrev.Rows.Count > 0)
+                                    previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
+                            }
+
                             var dtPay = DbHelper.Query(@"
                                 SELECT 
                                     COALESCE(SUM(CASE WHEN TransType = 'Payment' THEN Credit ELSE 0 END), 0) AS TotalPayment,
@@ -690,9 +754,9 @@ namespace ChickenDist.Forms
                             }
 
                             if (isCredit)
-                                previousBalance = currentBalance - netAmount + paymentToday + returnToday;
+                                currentBalance = previousBalance + netAmount - paymentToday - returnToday;
                             else
-                                previousBalance = currentBalance + paymentToday + returnToday;
+                                currentBalance = previousBalance - paymentToday - returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
 

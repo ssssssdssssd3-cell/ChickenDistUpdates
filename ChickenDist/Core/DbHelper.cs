@@ -785,8 +785,8 @@ namespace ChickenDist.Core
                     ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
                     ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
                     c.OpeningBalance
-                        + ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0)
-                        - ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS Balance
+                        + ISNULL(SUM(ct.Debit), 0)
+                        - ISNULL(SUM(ct.Credit), 0) AS Balance
                 FROM Clients c
                 LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
                 GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');");

@@ -40,6 +40,7 @@ namespace ChickenDist.Forms
 
         // قائمة الفواتير المستخلصة من CSV (مجمّعة)
         private List<DraftInvoice> _invoices = new List<DraftInvoice>();
+        private HashSet<int> _driverLoadProducts = new HashSet<int>();
 
         // ===== DTO =====
         private class DraftInvoice
@@ -74,6 +75,7 @@ namespace ChickenDist.Forms
             _driverName = driverName;
 
             BuildLookups();
+            LoadDriverLoadProducts();
             ParseCsv(csvPath);
             InitUI();
             PopulateGrid();
@@ -349,16 +351,31 @@ namespace ChickenDist.Forms
             dgInvoices.DataError += (s, e) => e.Cancel = true;
 
             // ===== Label separator =====
+            var pnlItemsHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 35,
+                Padding = new Padding(10, 2, 10, 2),
+                BackColor = Theme.BgCard
+            };
+
             var lblItemsTitle = new Label
             {
                 Text = "📦 بنود الفاتورة المحددة:",
-                Dock = DockStyle.Top,
-                Height = 28,
+                Dock = DockStyle.Right,
+                Width = 200,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 ForeColor = Theme.Accent,
-                TextAlign = ContentAlignment.MiddleRight,
-                Padding = new Padding(0, 4, 4, 0)
+                TextAlign = ContentAlignment.MiddleRight
             };
+
+            var btnAddItem = Theme.MakeButton("➕ إضافة صنف جديد للفاتورة", Color.FromArgb(40, 120, 80));
+            btnAddItem.Dock = DockStyle.Left;
+            btnAddItem.Width = 220;
+            btnAddItem.Click += BtnAddItem_Click;
+
+            pnlItemsHeader.Controls.Add(lblItemsTitle);
+            pnlItemsHeader.Controls.Add(btnAddItem);
 
             // ===== Bottom items grid =====
             dgItems = new DataGridView
@@ -368,8 +385,9 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
-                ReadOnly = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                ReadOnly = false,
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
+                EditMode = DataGridViewEditMode.EditOnEnter,
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle
@@ -386,15 +404,39 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColStatus",  HeaderText = "حالة",    FillWeight = 30 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColProdCsv", HeaderText = "اسم الصنف (CSV)", FillWeight = 120 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColProdRes", HeaderText = "الصنف المطابق",   FillWeight = 120 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColQty",     HeaderText = "الكمية",   FillWeight = 50 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColPrice",   HeaderText = "السعر",    FillWeight = 55 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColTotal",   HeaderText = "الإجمالي", FillWeight = 60 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColStatus",  HeaderText = "حالة",    ReadOnly = true, FillWeight = 30 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColProdCsv", HeaderText = "اسم الصنف (CSV)", ReadOnly = true, FillWeight = 120 });
+            
+            var cboProdCol = new DataGridViewComboBoxColumn
+            {
+                Name = "IColProdRes",
+                HeaderText = "الصنف المطابق",
+                FillWeight = 150,
+                DisplayStyleForCurrentCellOnly = true
+            };
+            dgItems.Columns.Add(cboProdCol);
+
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColQty",     HeaderText = "الكمية",   ReadOnly = false, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColPrice",   HeaderText = "السعر",    ReadOnly = false, FillWeight = 55 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IColTotal",   HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 60 });
+
+            var btnDeleteCol = new DataGridViewButtonColumn
+            {
+                Name = "IColDelete",
+                HeaderText = "حذف",
+                Text = "❌",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 30
+            };
+            dgItems.Columns.Add(btnDeleteCol);
+
+            dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.CurrentCellDirtyStateChanged += DgItems_CurrentCellDirtyStateChanged;
+            dgItems.CellContentClick += DgItems_CellContentClick;
+            dgItems.DataError += (s, e) => { e.Cancel = true; };
 
             pnlTop.Controls.Add(dgItems);
-            pnlTop.Controls.Add(lblItemsTitle);
+            pnlTop.Controls.Add(pnlItemsHeader);
             pnlTop.Controls.Add(dgInvoices);
 
             // ===== Footer =====
@@ -471,6 +513,16 @@ namespace ChickenDist.Forms
             cboCol.ValueMember = null;
             cboCol.DisplayMember = null;
 
+            // ملء ComboBox الأصناف في جدول الأصناف
+            var cboProdCol = (DataGridViewComboBoxColumn)dgItems.Columns["IColProdRes"];
+            cboProdCol.Items.Clear();
+            cboProdCol.Items.Add("-- غير محدد --");
+            var allProducts = DbHelper.Query("SELECT ProductID, ProductName FROM Products WHERE IsActive=1 ORDER BY ProductName");
+            foreach (DataRow r in allProducts.Rows)
+                cboProdCol.Items.Add($"{r["ProductID"]}|{r["ProductName"]}");
+            cboProdCol.ValueMember = null;
+            cboProdCol.DisplayMember = null;
+
             dgInvoices.Rows.Clear();
             int idx = 1;
             foreach (var inv in _invoices)
@@ -524,20 +576,32 @@ namespace ChickenDist.Forms
             if (rowIdx < 0 || rowIdx >= _invoices.Count) return;
 
             var inv = _invoices[rowIdx];
+            var cboProdCol = (DataGridViewComboBoxColumn)dgItems.Columns["IColProdRes"];
+
             foreach (var item in inv.Items)
             {
                 string itemStatus = item.ProductID > 0 ? "✅" : "⚠️";
-                dgItems.Rows.Add(
+                string prodFixed = item.ProductID > 0
+                    ? $"{item.ProductID}|{item.ProductNameResolved}"
+                    : "-- غير محدد --";
+
+                // التأكد من وجود القيمة في قائمة الكومبوبوكس لتجنب أي خطأ
+                if (item.ProductID > 0 && !cboProdCol.Items.Contains(prodFixed))
+                {
+                    cboProdCol.Items.Add(prodFixed);
+                }
+
+                int rIdx = dgItems.Rows.Add(
                     itemStatus,
                     item.ProductNameCsv,
-                    item.ProductID > 0 ? item.ProductNameResolved : "❌ غير موجود",
+                    prodFixed,
                     item.Qty.ToString("F2"),
-                    item.UnitPrice.ToString("N2"),
+                    item.UnitPrice.ToString("F2"),
                     (item.Qty * item.UnitPrice).ToString("N2") + " ج"
                 );
 
                 if (item.ProductID == 0)
-                    dgItems.Rows[dgItems.RowCount - 1].DefaultCellStyle.BackColor = Color.FromArgb(80, 30, 30);
+                    dgItems.Rows[rIdx].DefaultCellStyle.BackColor = Color.FromArgb(80, 30, 30);
             }
         }
 
@@ -693,6 +757,211 @@ namespace ChickenDist.Forms
                 (fail > 0 ? $"❌ فشل ترحيل {fail} فاتورة (راجع السجلات)." : ""),
                 "نتيجة الترحيل", MessageBoxButtons.OK,
                 success > 0 && fail == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+        }
+
+        private void LoadDriverLoadProducts()
+        {
+            _driverLoadProducts.Clear();
+            try
+            {
+                var dt = DbHelper.Query(
+                    @"SELECT DISTINCT dli.ProductID
+                      FROM DriverLoadItems dli
+                      JOIN DriverLoads dl ON dli.LoadID = dl.LoadID
+                      WHERE dl.DriverID = @did AND dl.IsClosed = 0",
+                    DbHelper.P("@did", _driverID));
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (r["ProductID"] != DBNull.Value)
+                        _driverLoadProducts.Add((int)r["ProductID"]);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("خطأ في تحميل أصناف حمولة المندوب: " + ex.Message, ex, "FrmImportPreview");
+            }
+        }
+
+        private void BtnAddItem_Click(object sender, EventArgs e)
+        {
+            if (dgInvoices.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("الرجاء اختيار فاتورة أولاً لإضافة صنف إليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int invIdx = dgInvoices.SelectedRows[0].Index;
+            if (invIdx < 0 || invIdx >= _invoices.Count) return;
+            var inv = _invoices[invIdx];
+
+            if (inv.IsImported)
+            {
+                MessageBox.Show("لا يمكن التعديل على فاتورة تم ترحيلها بالفعل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // إضافة صنف جديد فارغ
+            var newItem = new DraftItem
+            {
+                ProductNameCsv = "",
+                ProductID = 0,
+                ProductNameResolved = "",
+                Qty = 1,
+                UnitPrice = 0
+            };
+            inv.Items.Add(newItem);
+
+            // تحديث الجدول الفرعي
+            DgInvoices_SelectionChanged(this, EventArgs.Empty);
+
+            // تحديث سطر الفاتورة في الجدول الرئيسي
+            var invRow = dgInvoices.Rows[invIdx];
+            invRow.Cells["ColItems"].Value = inv.Items.Count;
+            invRow.Cells["ColTotal"].Value = inv.Total.ToString("N2") + " ج";
+
+            // إعادة تلوين وحالة الفاتورة
+            RefreshRowStyle(invIdx, inv);
+            UpdateStats();
+
+            // التركيز على السطر الجديد في جدول الأصناف ليتمكن المستخدم من اختيار الصنف فوراً
+            if (dgItems.Rows.Count > 0)
+            {
+                dgItems.CurrentCell = dgItems.Rows[dgItems.Rows.Count - 1].Cells["IColProdRes"];
+                dgItems.BeginEdit(true);
+            }
+        }
+
+        private void DgItems_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (dgItems.IsCurrentCellDirty)
+            {
+                dgItems.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            if (dgInvoices.SelectedRows.Count == 0) return;
+            int invIdx = dgInvoices.SelectedRows[0].Index;
+            if (invIdx < 0 || invIdx >= _invoices.Count) return;
+            var inv = _invoices[invIdx];
+
+            if (e.RowIndex >= inv.Items.Count) return;
+            var item = inv.Items[e.RowIndex];
+
+            string colName = dgItems.Columns[e.ColumnIndex].Name;
+
+            if (colName == "IColProdRes")
+            {
+                var val = dgItems.Rows[e.RowIndex].Cells["IColProdRes"].Value?.ToString() ?? "";
+                if (val.Contains("|"))
+                {
+                    var parts = val.Split('|');
+                    if (int.TryParse(parts[0], out int pid) && pid > 0)
+                    {
+                        item.ProductID = pid;
+                        item.ProductNameResolved = parts[1];
+
+                        // التحقق من وجود الصنف في حمولة المندوب
+                        if (_driverLoadProducts.Count > 0 && !_driverLoadProducts.Contains(pid))
+                        {
+                            MessageBox.Show("تنبيه: هذا الصنف غير موجود في حمولة المندوب المفتوحة حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+
+                        // تحميل السعر الافتراضي إن كان السعر الحالي صفر
+                        if (item.UnitPrice == 0 && _productPrice.TryGetValue(pid, out decimal defaultPrice))
+                        {
+                            item.UnitPrice = defaultPrice;
+                            dgItems.Rows[e.RowIndex].Cells["IColPrice"].Value = defaultPrice.ToString("F2");
+                        }
+                    }
+                }
+                else
+                {
+                    item.ProductID = 0;
+                    item.ProductNameResolved = "";
+                }
+            }
+            else if (colName == "IColQty")
+            {
+                var val = dgItems.Rows[e.RowIndex].Cells["IColQty"].Value?.ToString() ?? "0";
+                if (decimal.TryParse(val, out decimal q) && q >= 0)
+                {
+                    item.Qty = q;
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells["IColQty"].Value = item.Qty.ToString("F2");
+                }
+            }
+            else if (colName == "IColPrice")
+            {
+                var val = dgItems.Rows[e.RowIndex].Cells["IColPrice"].Value?.ToString() ?? "0";
+                if (decimal.TryParse(val, out decimal p) && p >= 0)
+                {
+                    item.UnitPrice = p;
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells["IColPrice"].Value = item.UnitPrice.ToString("F2");
+                }
+            }
+
+            // تحديث الإجمالي والرمز في السطر الحالي
+            dgItems.Rows[e.RowIndex].Cells["IColTotal"].Value = (item.Qty * item.UnitPrice).ToString("N2") + " ج";
+            dgItems.Rows[e.RowIndex].Cells["IColStatus"].Value = item.ProductID > 0 ? "✅" : "⚠️";
+
+            if (item.ProductID == 0)
+                dgItems.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.FromArgb(80, 30, 30);
+            else
+                dgItems.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.FromArgb(24, 28, 42);
+
+            // تحديث الفاتورة الرئيسية
+            var invRow = dgInvoices.Rows[invIdx];
+            invRow.Cells["ColItems"].Value = inv.Items.Count;
+            invRow.Cells["ColTotal"].Value = inv.Total.ToString("N2") + " ج";
+
+            RefreshRowStyle(invIdx, inv);
+            UpdateStats();
+        }
+
+        private void DgItems_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (dgItems.Columns[e.ColumnIndex].Name == "IColDelete")
+            {
+                if (dgInvoices.SelectedRows.Count == 0) return;
+                int invIdx = dgInvoices.SelectedRows[0].Index;
+                if (invIdx < 0 || invIdx >= _invoices.Count) return;
+                var inv = _invoices[invIdx];
+
+                if (inv.IsImported)
+                {
+                    MessageBox.Show("لا يمكن حذف صنف من فاتورة تم ترحيلها بالفعل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (e.RowIndex >= inv.Items.Count) return;
+
+                var res = MessageBox.Show(
+                    "هل أنت متأكد من حذف هذا الصنف من الفاتورة؟",
+                    "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (res != DialogResult.Yes) return;
+
+                inv.Items.RemoveAt(e.RowIndex);
+
+                // تحديث الجدول الفرعي
+                DgInvoices_SelectionChanged(this, EventArgs.Empty);
+
+                // تحديث السطر الرئيسي
+                var invRow = dgInvoices.Rows[invIdx];
+                invRow.Cells["ColItems"].Value = inv.Items.Count;
+                invRow.Cells["ColTotal"].Value = inv.Total.ToString("N2") + " ج";
+
+                RefreshRowStyle(invIdx, inv);
+                UpdateStats();
+            }
         }
     }
 }

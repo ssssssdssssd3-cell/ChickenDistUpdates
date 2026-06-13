@@ -25,6 +25,7 @@ namespace ChickenDist.Forms
         private Button btnUploadCloud;
         private Label  lblCloudCode, lblCloudExpiry;
         private Button btnCopyCode;
+        private ComboBox cboUploadDriver;
 
         // ── تبويبات ──────────────────────────────────────────────────
         private TabControl tabs;
@@ -109,6 +110,40 @@ namespace ChickenDist.Forms
             };
             page.Controls.Add(lblInfo);
             y += 108;
+
+            // ── اختيار المندوب ─────────────────────────────────────────
+            var lblSelectDriver = new Label
+            {
+                Text      = "👤 المندوب المستهدف:",
+                Location  = new Point(14, y + 4),
+                Size      = new Size(160, 25),
+                ForeColor = Theme.TextMain,
+                Font      = new Font("Segoe UI", 11f, FontStyle.Bold)
+            };
+            page.Controls.Add(lblSelectDriver);
+
+            cboUploadDriver = new ComboBox
+            {
+                Location      = new Point(180, y),
+                Width         = 479,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor     = Theme.BgInput,
+                ForeColor     = Theme.TextMain,
+                Font          = new Font("Segoe UI", 11f)
+            };
+            cboUploadDriver.Items.Add(new ComboItem { ID = 0, Name = "-- جميع المناديب --" });
+            try
+            {
+                var dt = DbHelper.Query("SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
+                foreach (System.Data.DataRow r in dt.Rows)
+                {
+                    cboUploadDriver.Items.Add(new ComboItem { ID = Convert.ToInt32(r["EmpID"]), Name = r["EmpName"].ToString() });
+                }
+            }
+            catch { }
+            cboUploadDriver.SelectedIndex = 0;
+            page.Controls.Add(cboUploadDriver);
+            y += 38;
 
             // ── زر الرفع ─────────────────────────────────────────────
             btnUploadCloud = Theme.MakeButton("☁️  رفع وتوليد رمز المزامنة", Color.FromArgb(14, 122, 200));
@@ -443,9 +478,15 @@ namespace ChickenDist.Forms
             lblCloudCode.Text      = "⏳";
             lblCloudExpiry.Text    = "جارٍ رفع البيانات للإنترنت — انتظر...";
 
+            int? targetDriverID = null;
+            if (cboUploadDriver.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                targetDriverID = ci.ID;
+            }
+
             try
             {
-                string code = await Task.Run(() => DriverPortalServer.UploadToCloud());
+                string code = await Task.Run(() => DriverPortalServer.UploadToCloud(targetDriverID));
                 lblCloudCode.Text   = code;
                 lblCloudExpiry.Text = $"⏰ الرمز صالح حتى {DriverPortalServer.CloudCodeExpiry:hh:mm tt} — أرسله للمندوب على واتساب";
                 btnCopyCode.Enabled = true;
@@ -477,6 +518,13 @@ namespace ChickenDist.Forms
         private void FrmDriverPortal_FormClosing(object sender, FormClosingEventArgs e)
         {
             AppConfig.DriverPortalAutoStart = chkAutoStart.Checked;
+        }
+
+        private class ComboItem
+        {
+            public int ID { get; set; }
+            public string Name { get; set; }
+            public override string ToString() => Name;
         }
     }
 }

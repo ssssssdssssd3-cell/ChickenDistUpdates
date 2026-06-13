@@ -643,7 +643,12 @@ namespace ChickenDist.Forms
         {
             try
             {
-                string json = DriverDAL.BuildDriverExportJson();
+                int? driverID = null;
+                if (cboDriver.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    driverID = ci.ID;
+                }
+                string json = DriverDAL.BuildDriverExportJson(driverID);
                 string encryptedJson = SecurityHelper.Encrypt(json);
                 
                 // نسخ الكود المشفر للحافظة
