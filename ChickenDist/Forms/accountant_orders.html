@@ -727,38 +727,7 @@
         <div id="cloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
       </div>
 
-      <!-- Wi-Fi Local Sync -->
-      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">📶 سحب محلي من شبكة المحل (Wi-Fi)</div>
-        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">اكتب عنوان IP الخاص بجهاز الكمبيوتر الرئيسي</div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="txtWifiIP" placeholder="مثال: 192.168.1.100"
-            style="flex:1;font-size:14px;direction:ltr;text-align:left">
-          <button class="btn btn-sm" style="background:var(--green);color:#fff;padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromWifi()">⬇ سحب</button>
-        </div>
-        <div id="wifiStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
-      </div>
 
-      <!-- Paste Encrypted Code -->
-      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات المنسوخ</div>
-        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">الصق كود البيانات المشفر الذي قمت بنسخه من خادم البرنامج</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <textarea id="txtPasteCode" placeholder="الصق كود البيانات المشفر هنا..." 
-                    style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
-          <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="loadFromPastedCode()">⬇ تحميل البيانات</button>
-        </div>
-      </div>
-
-      <!-- Manual File Drop -->
-      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 اختيار ملف data.json يدوياً</div>
-        <div class="file-drop" onclick="document.getElementById('fileInput').click()">
-          <div class="drop-icon">📄</div>
-          <p>اضغط لاختيار ملف <strong>data.json</strong></p>
-          <input type="file" id="fileInput" accept=".json" onchange="loadDataFile(event)">
-        </div>
-      </div>
 
       <div class="sep"></div>
       <button class="btn btn-ghost" onclick="loadFromStorage()">⚡ استرجاع آخر بيانات مسحوبة</button>
@@ -954,25 +923,7 @@
       <div id="refreshCloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
     </div>
 
-    <!-- Paste code -->
-    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود التحديث الجديد</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <textarea id="txtRefreshPasteCode" placeholder="الصق كود البيانات المشفر الجديد هنا..." 
-                  style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
-        <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="refreshFromPastedCode()">⬇ تحديث البيانات</button>
-      </div>
-    </div>
 
-    <!-- File selection -->
-    <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 تحميل ملف data.json يدوياً</div>
-      <div class="file-drop" onclick="document.getElementById('fileInputRefresh').click()">
-        <div class="drop-icon">📄</div>
-        <p>اضغط لاختيار ملف <strong>data.json</strong> جديد</p>
-        <input type="file" id="fileInputRefresh" accept=".json" onchange="refreshFromFile(event)">
-      </div>
-    </div>
 
     <button class="btn btn-ghost" onclick="closeRefreshModal()">إلغاء</button>
   </div>
@@ -989,6 +940,26 @@ let currentItems = [];
 let selectedClient = null;
 let paymentType = 'Cash';
 let accountantName = '';
+let editingInvoiceId = null;
+
+// تفعيل زر انتر للتنقل بين الخانات
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.keyCode === 13) {
+    const target = e.target;
+    if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') {
+      e.preventDefault();
+      const focusables = Array.from(document.querySelectorAll('input:not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'))
+        .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0);
+      const index = focusables.indexOf(target);
+      if (index > -1 && index < focusables.length - 1) {
+        focusables[index + 1].focus();
+        if (typeof focusables[index + 1].select === 'function') {
+          focusables[index + 1].select();
+        }
+      }
+    }
+  }
+});
 
 // =================== INIT ===================
 window.onload = () => {
@@ -1230,6 +1201,9 @@ function clearClient() {
   document.getElementById('productsCard').style.display = 'none';
   document.getElementById('itemsSection').style.display = 'none';
   currentItems = [];
+  editingInvoiceId = null;
+  const saveBtn = document.querySelector('.sticky-action button');
+  if (saveBtn) saveBtn.innerHTML = '💾 حفظ الطلب / الحجز';
   renderClients();
 }
 
@@ -1357,23 +1331,41 @@ function setPayment(type) {
 // =================== SAVE INVOICE ===================
 function saveInvoice() {
   if (!selectedClient) { toast('❌ يرجى اختيار العميل أولاً', 'error'); return; }
-  if (currentItems.length === 0) { toast('❌ يرجى إضافة صنف واحد على الأثل للطلب', 'error'); return; }
+  if (currentItems.length === 0) { toast('❌ يرجى إضافة صنف واحد على الأقل للطلب', 'error'); return; }
 
   const total = currentItems.reduce((s, i) => s + i.qty * i.price, 0);
-  const inv = {
-    id: Date.now(),
-    time: new Date().toISOString(),
-    clientId: selectedClient.id,
-    clientName: selectedClient.name,
-    clientPhone: selectedClient.phone || '',
-    accountantName: accountantName,
-    paymentType: paymentType,
-    notes: document.getElementById('invoiceNotes').value.trim(),
-    total: total,
-    items: currentItems.map(i => ({ ...i }))
-  };
+  const notesText = document.getElementById('invoiceNotes').value.trim();
 
-  invoices.push(inv);
+  if (editingInvoiceId !== null) {
+    const idx = invoices.findIndex(i => i.id === editingInvoiceId);
+    if (idx !== -1) {
+      invoices[idx].clientId = selectedClient.id;
+      invoices[idx].clientName = selectedClient.name;
+      invoices[idx].clientPhone = selectedClient.phone || '';
+      invoices[idx].paymentType = paymentType;
+      invoices[idx].notes = notesText;
+      invoices[idx].total = total;
+      invoices[idx].items = currentItems.map(i => ({ ...i }));
+    }
+    editingInvoiceId = null;
+    const saveBtn = document.querySelector('.sticky-action button');
+    if (saveBtn) saveBtn.innerHTML = '💾 حفظ الطلب / الحجز';
+  } else {
+    const inv = {
+      id: Date.now(),
+      time: new Date().toISOString(),
+      clientId: selectedClient.id,
+      clientName: selectedClient.name,
+      clientPhone: selectedClient.phone || '',
+      accountantName: accountantName,
+      paymentType: paymentType,
+      notes: notesText,
+      total: total,
+      items: currentItems.map(i => ({ ...i }))
+    };
+    invoices.push(inv);
+  }
+
   localStorage.setItem('acc_invoices', JSON.stringify(invoices));
 
   // إرجاع النموذج للوضع الافتراضي
@@ -1421,7 +1413,10 @@ function renderInvoices() {
           </div>
           <div style="text-align:left">
             <div class="inv-total">${inv.total.toFixed(2)} ج</div>
-            <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-top:6px; padding:4px 8px; font-size:11px;" onclick="deleteInvoice(${inv.id})">🗑 حذف الطلب</button>
+            <div style="display:flex; gap:6px; margin-top:6px; justify-content:flex-end;">
+              <button class="btn btn-ghost btn-sm" style="color:var(--orange); padding:4px 8px; font-size:11px;" onclick="editInvoice(${inv.id})">✏️ تعديل</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red); padding:4px 8px; font-size:11px;" onclick="deleteInvoice(${inv.id})">🗑 حذف</button>
+            </div>
           </div>
         </div>
         <div class="inv-items-preview">${preview}</div>
@@ -1439,6 +1434,46 @@ function deleteInvoice(id) {
   renderInvoices();
   renderProducts();
   updateExportStats();
+}
+
+function editInvoice(id) {
+  const inv = invoices.find(i => i.id === id);
+  if (!inv) return;
+
+  editingInvoiceId = id;
+
+  selectedClient = {
+    id: inv.clientId,
+    name: inv.clientName,
+    phone: inv.clientPhone
+  };
+
+  document.getElementById('selectedClientName').textContent = inv.clientName;
+  document.getElementById('selectedClientPhone').textContent = inv.clientPhone || 'بدون هاتف';
+  document.getElementById('selectedClientBadge').style.display = 'flex';
+  document.getElementById('clientSearchArea').style.display = 'none';
+  document.getElementById('productsCard').style.display = 'block';
+
+  currentItems = inv.items.map(i => ({ ...i }));
+  document.getElementById('itemsSection').style.display = 'block';
+  renderItemsList();
+
+  paymentType = inv.paymentType;
+  document.querySelectorAll('.pay-opt').forEach(el => {
+    const text = el.textContent;
+    if (paymentType === 'Cash' && text.includes('نقدي')) el.classList.add('active');
+    else if (paymentType === 'Credit' && text.includes('آجل')) el.classList.add('active');
+    else if (paymentType === 'Bank' && text.includes('تحويل')) el.classList.add('active');
+    else el.classList.remove('active');
+  });
+
+  document.getElementById('invoiceNotes').value = inv.notes || '';
+
+  const saveBtn = document.querySelector('.sticky-action button');
+  if (saveBtn) saveBtn.innerHTML = '💾 تعديل وحفظ الطلب / الحجز';
+
+  switchTab('tabNew');
+  toast('ℹ️ تم تحميل بيانات الطلب للتعديل', 'info');
 }
 
 function updateExportStats() {

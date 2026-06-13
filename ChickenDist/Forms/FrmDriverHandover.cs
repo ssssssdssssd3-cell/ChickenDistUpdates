@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private DataGridView dgItems;
-        private Button btnLoadItems, btnSave, btnWhatsApp, btnExportJson, btnImportCsv, btnImportCloud, btnImportClipboard;
+        private Button btnLoadItems, btnSave, btnWhatsApp, btnExportJson, btnImportCloud, btnImportClipboard;
         private DateTimePicker dtpImport;
         private TextBox txtNotes, txtCashCollected;
         private Label lblTotLoad, lblTotRet, lblTotDead, lblTotExtra, lblTotDef, lblExpCash;
@@ -223,11 +223,6 @@ namespace ChickenDist.Forms
             btnExportJson.Margin = new Padding(20, 0, 0, 0);
             btnExportJson.Click += BtnExportJson_Click;
 
-            btnImportCsv = Theme.MakeButton("📥 استيراد مبيعات CSV", Color.FromArgb(20, 150, 90));
-            btnImportCsv.Size = new Size(170, 32);
-            btnImportCsv.Margin = new Padding(10, 0, 0, 0);
-            btnImportCsv.Click += BtnImportCsv_Click;
-
             btnImportCloud = Theme.MakeButton("☁️ استيراد من السحاب", Color.FromArgb(30, 120, 200));
             btnImportCloud.Size = new Size(170, 32);
             btnImportCloud.Margin = new Padding(10, 0, 0, 0);
@@ -238,7 +233,7 @@ namespace ChickenDist.Forms
             btnImportClipboard.Margin = new Padding(10, 0, 0, 0);
             btnImportClipboard.Click += BtnImportClipboard_Click;
 
-            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCsv, btnImportCloud, btnImportClipboard });
+            pnlActionsRow.Controls.AddRange(new Control[] { lblCashL, txtCashCollected, lblNotesL, txtNotes, btnSave, btnWhatsApp, btnExportJson, lblImportDate, dtpImport, btnImportCloud, btnImportClipboard });
             pnlFooter.Controls.Add(pnlActionsRow);
 
 
@@ -299,7 +294,6 @@ namespace ChickenDist.Forms
         private void ApplyPermissions()
         {
             btnExportJson.Visible = Session.CanAccess("DriverSales");
-            btnImportCsv.Visible = Session.CanAccess("ImportPreview");
             btnImportCloud.Visible = Session.CanAccess("ImportPreview");
             btnImportClipboard.Visible = Session.CanAccess("ImportPreview");
         }
@@ -684,38 +678,6 @@ namespace ChickenDist.Forms
             }
         }
 
-        // =====================================================================
-        // استيراد مبيعات CSV من المندوب
-        // =====================================================================
-        private void BtnImportCsv_Click(object sender, EventArgs e)
-        {
-            if (!(_driverID > 0))
-            {
-                MessageBox.Show("اختر المندوب أولاً قبل الاستيراد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            using (var dlg = new OpenFileDialog())
-            {
-                dlg.Title = "اختر ملف CSV للمندوب";
-                dlg.Filter = "CSV Files|*.csv|All Files|*.*";
-                dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                if (dlg.ShowDialog() != DialogResult.OK) return;
-
-                string driverName = cboDriver.SelectedItem is ComboItem ci ? ci.Text : "مندوب";
-                try
-                {
-                    var preview = new FrmImportPreview(dlg.FileName, dtpImport.Value.Date, _driverID, driverName);
-                    preview.ShowDialog(this);
-                    // بعد إغلاق نافذة الاستيراد — تحديث قائمة الحمولات
-                    CboDriver_SelectedIndexChanged(null, null);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("❌ خطأ في قراءة الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-        }
 
         /// <summary>تصدير كشف التحصيل اليومي جاهزاً للإرسال عبر واتساب</summary>
         private void BtnWhatsApp_Click(object sender, EventArgs e)

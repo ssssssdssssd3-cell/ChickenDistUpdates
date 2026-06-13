@@ -2573,6 +2573,7 @@ namespace ChickenDist.Forms
 			decimal prevBalance = 0m;
 			decimal lastPaymentAmt = 0m;
 			DateTime lastPaymentDate = DateTime.MinValue;
+			decimal todayPayments = 0m;
 
 			if (saleRow["ClientID"] != DBNull.Value)
 			{
@@ -2593,6 +2594,17 @@ namespace ChickenDist.Forms
 				{
 					lastPaymentAmt  = Convert.ToDecimal(lastPayDt.Rows[0]["Credit"]);
 					lastPaymentDate = Convert.ToDateTime(lastPayDt.Rows[0]["TransDate"]);
+				}
+
+				// مجموع المدفوعات المسددة في تاريخ الفاتورة
+				var todayPayObj = DbHelper.Scalar(@"
+					SELECT COALESCE(SUM(Credit), 0)
+					FROM ClientTransactions
+					WHERE ClientID=@id AND TransType='Payment' AND CAST(TransDate AS DATE) = CAST(@saleDate AS DATE)",
+					DbHelper.P("@id", clientID), DbHelper.P("@saleDate", saleDate));
+				if (todayPayObj != null && todayPayObj != DBNull.Value)
+				{
+					todayPayments = Convert.ToDecimal(todayPayObj);
 				}
 			}
 
@@ -2663,19 +2675,20 @@ namespace ChickenDist.Forms
 				{
 					decimal currentInvoiceAmt = totalAmount;
 					decimal totalDue = prevBalance + currentInvoiceAmt;
-					decimal currentDue = totalDue - lastPaymentAmt;
+					decimal currentDue = totalDue - todayPayments;
 
 					sb.AppendLine("📊 الوضع المالي");
 					sb.AppendLine($"الرصيد السابق : {prevBalance:N2} ج.م");
 					sb.AppendLine($"+ الفاتورة الحالية : {currentInvoiceAmt:N2} ج.م");
 					sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+					sb.AppendLine($"- مسدد اليوم : {todayPayments:N2} ج.م");
 					if (lastPaymentAmt > 0)
 					{
-						sb.AppendLine($"- آخر توريد : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
+						sb.AppendLine($"📝 آخر توريد سابق : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
 					}
 					else
 					{
-						sb.AppendLine("- آخر توريد : 0.00 ج.م");
+						sb.AppendLine("📝 آخر توريد سابق : لا يوجد");
 					}
 					sb.AppendLine("━━━━━━━━━━━━━━━━");
 					sb.AppendLine($"{currentDue:N2} ج.م");
@@ -2691,7 +2704,7 @@ namespace ChickenDist.Forms
 			{
 				try
 				{
-					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate))
+					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments))
 					{
 						Clipboard.SetImage(bmp);
 					}
@@ -2748,7 +2761,7 @@ namespace ChickenDist.Forms
 			}
 		}
 
-		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate)
+		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments)
 		{
 			int itemCount = items != null ? items.Rows.Count : 0;
 			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
@@ -2759,7 +2772,7 @@ namespace ChickenDist.Forms
 			int tableHeaderH = 35;
 			int rowH = 30;
 			int netH = 40;
-			int financialH = showFinancial ? 190 : 0;
+			int financialH = showFinancial ? 220 : 0;
 			int footerH = 55;
 			
 			int totalH = headerH + metaH + tableHeaderH + (itemCount * rowH) + netH + 15 + financialH + footerH + 30;
@@ -2869,14 +2882,14 @@ namespace ChickenDist.Forms
 					{
 						decimal currentInvoiceAmt = netVal;
 						decimal totalDue = prevBalance + currentInvoiceAmt;
-						decimal currentDue = totalDue - lastPaymentAmt;
+						decimal currentDue = totalDue - todayPayments;
 
 						g.FillRectangle(bNavy, 20, y, w - 40, 30);
 						g.DrawString("الوضع المالي للحساب", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
 						y += 30;
 
-						string[] labels = { "الرصيد السابق", "الفاتورة الحالية", "إجمالي المستحق", $"آخر توريد ({lastPaymentDate:dd/MM/yyyy})", "الرصيد الحالي المستحق" };
-						decimal[] vals = { prevBalance, currentInvoiceAmt, totalDue, lastPaymentAmt, currentDue };
+						string[] labels = { "الرصيد السابق", "الفاتورة الحالية", "إجمالي المستحق", "مسدد اليوم", "الرصيد الحالي المستحق" };
+						decimal[] vals = { prevBalance, currentInvoiceAmt, totalDue, todayPayments, currentDue };
 
 						for (int i = 0; i < 5; i++)
 						{
@@ -2888,12 +2901,25 @@ namespace ChickenDist.Forms
 							var fontVal = (i == 4) ? fTitle : fBold;
 
 							g.DrawString(labels[i], fontLabel, (i == 4) ? bRed : bNavy, new RectangleF(w / 2 + 10, y + 5, w / 2 - 30, 22), rtlNear);
-							string valStr = (i == 3 && lastPaymentAmt == 0) ? "0.00 ج.م" : $"{vals[i]:N2} ج.م";
+							string valStr = $"{vals[i]:N2} ج.م";
 							g.DrawString(valStr, (i == 4) ? fBold : fNormal, brushVal, new RectangleF(25, y + 5, w / 2 - 35, 22), rtlNear);
 
 							y += 28;
 						}
-						y += 15;
+
+						// إضافة سطر إعلامي بآخر توريد سابق تحت الجدول
+						string lastPayText = "";
+						if (lastPaymentAmt > 0)
+						{
+							lastPayText = $"* آخر توريد سابق للعميل: {lastPaymentAmt:N2} ج.م بتاريخ {lastPaymentDate:dd/MM/yyyy}";
+						}
+						else
+						{
+							lastPayText = "* آخر توريد سابق للعميل: لا يوجد";
+						}
+						g.DrawString(lastPayText, fNormal, Brushes.Gray, new RectangleF(20, y + 5, w - 40, 22), rtlNear);
+
+						y += 28 + 15;
 					}
 
 					// التذييل

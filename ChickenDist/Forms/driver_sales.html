@@ -194,38 +194,7 @@
         <div id="cloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
       </div>
 
-      <!-- ── خيار 2: Wi-Fi محلي ── -->
-      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">📶 سحب من شبكة المحل (Wi-Fi)</div>
-        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">لو موبايلك على نفس شبكة المحل — اكتب رقم الكمبيوتر</div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="txtWifiIP" placeholder="مثال: 192.168.1.100"
-            style="flex:1;font-size:14px;direction:ltr;text-align:left" id="txtWifiIP">
-          <button class="btn btn-sm" style="background:var(--green);color:#fff;padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromWifi()">⬇ سحب</button>
-        </div>
-        <div id="wifiStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
-      </div>
 
-      <!-- ── خيار 3: لصق كود البيانات (بدون إنترنت) ── -->
-      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات (بدون إنترنت)</div>
-        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">الصق الكود المرسل من المحاسب هنا لتحديث الأصناف</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <textarea id="txtPasteCode" placeholder="الصق كود البيانات المشفر هنا..." 
-                    style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
-          <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="loadFromPastedCode()">⬇ تحميل البيانات</button>
-        </div>
-      </div>
-
-      <!-- ── خيار 4: ملف يدوي ── -->
-      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 ملف JSON (احتياطي)</div>
-        <div class="file-drop" style="padding:14px 10px" onclick="document.getElementById('fileInput').click()">
-          <div class="drop-icon" style="font-size:28px">📄</div>
-          <p style="font-size:12px">اضغط لاختيار ملف <strong>data.json</strong></p>
-          <input type="file" id="fileInput" accept=".json" onchange="loadDataFile(event)">
-        </div>
-      </div>
 
       <div class="sep"></div>
       <button class="btn btn-ghost" style="margin-top:6px" onclick="loadFromStorage()">⚡ تحميل آخر بيانات محفوظة</button>
@@ -417,25 +386,7 @@
       <div id="refreshCloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
     </div>
 
-    <!-- كود البيانات بدون إنترنت -->
-    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات (بدون إنترنت)</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <textarea id="txtRefreshPasteCode" placeholder="الصق كود البيانات المشفر الجديد هنا..." 
-                  style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
-        <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="refreshFromPastedCode()">⬇ تحديث البيانات</button>
-      </div>
-    </div>
 
-    <!-- ملف JSON -->
-    <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 أو حمّل ملف data.json جديد</div>
-      <div class="file-drop" style="padding:14px 10px" onclick="document.getElementById('fileInputRefresh').click()">
-        <div class="drop-icon" style="font-size:28px">📄</div>
-        <p style="font-size:12px">اضغط لاختيار ملف <strong>data.json</strong> جديد</p>
-        <input type="file" id="fileInputRefresh" accept=".json" onchange="refreshFromFile(event)">
-      </div>
-    </div>
 
     <button class="btn btn-ghost" onclick="closeRefreshModal()">إلغاء</button>
   </div>
@@ -453,6 +404,25 @@ let selectedClient = null;
 let paymentType = 'Cash';
 let driverName = '';
 let driverId = null;
+
+// تفعيل زر انتر للتنقل بين الخانات
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.keyCode === 13) {
+    const target = e.target;
+    if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') {
+      e.preventDefault();
+      const focusables = Array.from(document.querySelectorAll('input:not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'))
+        .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0);
+      const index = focusables.indexOf(target);
+      if (index > -1 && index < focusables.length - 1) {
+        focusables[index + 1].focus();
+        if (typeof focusables[index + 1].select === 'function') {
+          focusables[index + 1].select();
+        }
+      }
+    }
+  }
+});
 
 // =================== INIT ===================
 window.onload = () => {

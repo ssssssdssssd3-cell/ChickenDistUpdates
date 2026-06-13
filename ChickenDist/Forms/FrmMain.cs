@@ -162,7 +162,7 @@ namespace ChickenDist.Forms
                 ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
                     ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
                     ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
-                    ("📥 استيراد CSV",      "ImportPreview",  (Action)(() => OpenImportPreviewDialog())),
+                    ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
                     ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
                     ("📋 عهدة المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverCustody()))),
                     ("🏆 أداء المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
@@ -288,58 +288,155 @@ namespace ChickenDist.Forms
             base.OnFormClosed(e);
         }
 
-        private void OpenImportPreviewDialog()
+        private void OpenCloudImportDialog()
         {
             try
             {
-                using (var openDlg = new OpenFileDialog())
+                string code = "";
+                if (ShowInputDialog("☁️ استيراد من السحاب", "أدخل رمز الاستيراد المكون من 5 حروف أو أكثر:", ref code))
                 {
-                    openDlg.Title = "اختر ملف CSV للمندوب";
-                    openDlg.Filter = "CSV Files|*.csv|All Files|*.*";
-                    if (openDlg.ShowDialog() == DialogResult.OK)
+                    code = code.Trim();
+                    if (string.IsNullOrEmpty(code)) return;
+
+                    string tempFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scratch", $"temp_import_{code}.csv");
+                    string scratchDir = System.IO.Path.GetDirectoryName(tempFile);
+                    if (!System.IO.Directory.Exists(scratchDir)) System.IO.Directory.CreateDirectory(scratchDir);
+
+                    string csvContent = "";
+                    using (var wc = new System.Net.WebClient())
                     {
-                        using (var driverDlg = new Form())
+                        wc.Encoding = System.Text.Encoding.UTF8;
+                        wc.Headers[System.Net.HttpRequestHeader.UserAgent] = "ChickenDistApp";
+                        
+                        string downloadUrl = $"https://api.pastes.dev/raw/{code}";
+                        try
                         {
-                            driverDlg.Text = "اختر المندوب";
-                            driverDlg.Size = new Size(350, 180);
-                            driverDlg.StartPosition = FormStartPosition.CenterParent;
-                            driverDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                            driverDlg.MaximizeBox = false;
-                            driverDlg.MinimizeBox = false;
-                            driverDlg.RightToLeft = RightToLeft.Yes;
-                            driverDlg.BackColor = Theme.BgMain;
-
-                            var lbl = new Label { Text = "اختر المندوب للاستيراد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
-                            var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-
-                            var dt = EmployeeDAL.GetDrivers();
-                            foreach (DataRow r in dt.Rows)
-                                cbo.Items.Add(new ComboItem((int)r["EmpID"], r["EmpName"].ToString()));
-                            cbo.DisplayMember = "Text";
-                            if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
-
-                            var btnOk = Theme.MakeButton("📥 بدء الاستيراد", 180, 90, 130, 32, Theme.Accent);
-                            btnOk.Click += (senderDlg, eDlg) => {
-                                if (cbo.SelectedItem is ComboItem ci)
-                                {
-                                    driverDlg.DialogResult = DialogResult.OK;
-                                    driverDlg.Close();
-
-                                    var preview = new FrmImportPreview(openDlg.FileName, DateTime.Today, ci.ID, ci.Text);
-                                    NavigateTo(preview);
-                                }
-                            };
-
-                            driverDlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
-                            driverDlg.ShowDialog(this);
+                            csvContent = wc.DownloadString(downloadUrl);
                         }
+                        catch
+                        {
+                            csvContent = wc.DownloadString($"https://api.pastes.dev/{code}");
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(csvContent) || csvContent.Contains("{\"error\""))
+                    {
+                        throw new Exception("الرمز غير صحيح، أو انتهت صلاحيته.");
+                    }
+
+                    string decryptedCsv = SecurityHelper.Decrypt(csvContent);
+
+                    if (string.IsNullOrWhiteSpace(decryptedCsv) || (!decryptedCsv.Contains("رقم_الفاتورة") && !decryptedCsv.Contains("رقم_الطلب")))
+                    {
+                        throw new Exception("المستند المحمل ليس كشف مبيعات أو طلبات صالح.");
+                    }
+
+                    System.IO.File.WriteAllText(tempFile, decryptedCsv, System.Text.Encoding.UTF8);
+
+                    using (var driverDlg = new Form())
+                    {
+                        driverDlg.Text = "اختر المستخدم للاستيراد";
+                        driverDlg.Size = new Size(350, 180);
+                        driverDlg.StartPosition = FormStartPosition.CenterParent;
+                        driverDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        driverDlg.MaximizeBox = false;
+                        driverDlg.MinimizeBox = false;
+                        driverDlg.RightToLeft = RightToLeft.Yes;
+                        driverDlg.BackColor = Theme.BgMain;
+
+                        var lbl = new Label { Text = "اختر المندوب/المحاسب المنسوب له هذا الاستيراد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                        var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                        // إضافة خيار افتراضي للمحاسب
+                        cbo.Items.Add(new ComboItem(-99, "المحاسب (حجوزات/طلبات)"));
+
+                        var dt = EmployeeDAL.GetDrivers();
+                        foreach (DataRow r in dt.Rows)
+                            cbo.Items.Add(new ComboItem((int)r["EmpID"], r["EmpName"].ToString()));
+                        cbo.DisplayMember = "Text";
+                        cbo.SelectedIndex = 0;
+
+                        var btnOk = Theme.MakeButton("📥 بدء الاستيراد", 180, 90, 130, 32, Theme.Accent);
+                        btnOk.Click += (senderDlg, eDlg) => {
+                            if (cbo.SelectedItem is ComboItem ci)
+                            {
+                                driverDlg.DialogResult = DialogResult.OK;
+                                driverDlg.Close();
+
+                                var preview = new FrmImportPreview(tempFile, DateTime.Today, ci.ID, ci.Text);
+                                preview.FormClosed += (s, ev) => {
+                                    try { if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile); } catch { }
+                                };
+                                NavigateTo(preview);
+                            }
+                        };
+
+                        driverDlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                        driverDlg.ShowDialog(this);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل بدء الاستيراد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("❌ خطأ أثناء تحميل البيانات من السحاب:\n" + ex.Message, "خطأ الاستيراد السحابي", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static bool ShowInputDialog(string title, string promptText, ref string value)
+        {
+            Form form = new Form();
+            Label label = new Label();
+            TextBox textBox = new TextBox();
+            Button buttonOk = new Button();
+            Button buttonCancel = new Button();
+
+            form.Text = title;
+            label.Text = promptText;
+            textBox.Text = value;
+
+            buttonOk.Text = "موافق";
+            buttonCancel.Text = "إلغاء";
+            buttonOk.DialogResult = DialogResult.OK;
+            buttonCancel.DialogResult = DialogResult.Cancel;
+
+            label.SetBounds(9, 20, 372, 13);
+            textBox.SetBounds(12, 36, 372, 20);
+            buttonOk.SetBounds(228, 72, 75, 23);
+            buttonCancel.SetBounds(309, 72, 75, 23);
+
+            label.AutoSize = true;
+            textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
+            buttonOk.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+            form.ClientSize = new Size(396, 107);
+            form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
+            form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
+            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+            form.StartPosition = FormStartPosition.CenterParent;
+            form.MinimizeBox = false;
+            form.MaximizeBox = false;
+            form.AcceptButton = buttonOk;
+            form.CancelButton = buttonCancel;
+            
+            form.RightToLeft = RightToLeft.Yes;
+            form.RightToLeftLayout = true;
+            form.Font = Theme.FontMain;
+            form.BackColor = Theme.BgMain;
+            label.ForeColor = Theme.TextMain;
+            textBox.BackColor = Theme.BgInput;
+            textBox.ForeColor = Theme.TextMain;
+            buttonOk.BackColor = Theme.Accent;
+            buttonOk.ForeColor = Color.White;
+            buttonCancel.BackColor = Theme.BgCard;
+            buttonCancel.ForeColor = Theme.TextMain;
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                value = textBox.Text;
+                return true;
+            }
+            return false;
         }
     }
 
