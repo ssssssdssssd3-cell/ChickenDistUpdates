@@ -20,6 +20,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <EmbeddedResource Include="Forms\driver_sales.html" />
+    <EmbeddedResource Include="Forms\accountant_orders.html" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
     <EmbeddedResource Include="QRCoder.dll" />
     <None Include="app.config" />

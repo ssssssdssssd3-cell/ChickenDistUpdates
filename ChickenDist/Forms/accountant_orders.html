@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>تسجيل طلبات وحجوزات المحاسب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d19;
+    --card: #15182b;
+    --card2: #1e223f;
+    --accent: #6366f1;
+    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+    --green: #10b981;
+    --green-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --text: #f3f4f6;
+    --sub: #9ca3af;
+    --border: #2c3154;
+    --radius: 16px;
+    --input-bg: #0f1122;
+    --shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+  
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-tap-highlight-color: transparent; 
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  }
+  
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    font-size: 15px; 
+    min-height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header { 
+    background: linear-gradient(135deg, #181c3b 0%, #10132a 100%); 
+    padding: 20px 16px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 { 
+    font-size: 20px; 
+    font-weight: 800; 
+    color: #fff; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    background: linear-gradient(to left, #fff, #9ca3af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .driver-badge { 
+    background: rgba(99, 102, 241, 0.15); 
+    border: 1px solid rgba(99, 102, 241, 0.4); 
+    border-radius: 8px; 
+    padding: 4px 12px; 
+    font-size: 13px; 
+    color: #a5b4fc; 
+    margin-top: 8px; 
+    display: inline-block; 
+    font-weight: 700;
+  }
+
+  .tabs { 
+    display: flex; 
+    background: var(--card); 
+    border-bottom: 1px solid var(--border); 
+    position: sticky;
+    top: 90px;
+    z-index: 99;
+  }
+  .tab { 
+    flex: 1; 
+    padding: 14px 8px; 
+    text-align: center; 
+    font-size: 14px; 
+    font-weight: 700; 
+    color: var(--sub); 
+    cursor: pointer; 
+    border-bottom: 3px solid transparent; 
+    transition: all 0.2s ease; 
+  }
+  .tab.active { 
+    color: #a5b4fc; 
+    border-bottom-color: var(--accent); 
+    background: rgba(99, 102, 241, 0.08); 
+  }
+
+  /* Sections */
+  .section { 
+    padding: 16px 14px; 
+    display: none; 
+    flex: 1;
+  }
+  .section.active { 
+    display: block; 
+  }
+
+  /* Cards */
+  .card { 
+    background: var(--card); 
+    border-radius: var(--radius); 
+    padding: 16px; 
+    margin-bottom: 14px; 
+    border: 1px solid var(--border); 
+    box-shadow: var(--shadow);
+  }
+  .card-title { 
+    font-size: 14px; 
+    color: #a5b4fc; 
+    margin-bottom: 12px; 
+    font-weight: 700; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 6px;
+  }
+
+  /* Form controls */
+  label { 
+    display: block; 
+    font-size: 13px; 
+    color: var(--sub); 
+    margin-bottom: 6px; 
+    font-weight: 600; 
+  }
+  select, input[type=text], input[type=number], input[type=date] {
+    width: 100%; 
+    padding: 11px 14px; 
+    background: var(--input-bg); 
+    border: 1px solid var(--border);
+    border-radius: 10px; 
+    color: var(--text); 
+    font-size: 15px; 
+    outline: none;
+    transition: all 0.2s; 
+    direction: rtl;
+  }
+  select:focus, input:focus { 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+  .form-row { 
+    margin-bottom: 14px; 
+  }
+  .form-row-2 { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 12px; 
+    margin-bottom: 14px; 
+  }
+
+  /* Buttons */
+  .btn { 
+    width: 100%; 
+    padding: 14px; 
+    border: none; 
+    border-radius: 12px; 
+    font-size: 15px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: all 0.2s; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; 
+  }
+  .btn:active { 
+    transform: scale(0.97); 
+  }
+  .btn-primary { 
+    background: var(--accent-gradient); 
+    color: #fff; 
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  }
+  .btn-green { 
+    background: var(--green-gradient); 
+    color: #fff; 
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  }
+  .btn-red { 
+    background: linear-gradient(135deg, #ef4444, #dc2626); 
+    color: #fff; 
+  }
+  .btn-orange { 
+    background: linear-gradient(135deg, #f59e0b, #d97706); 
+    color: #fff; 
+  }
+  .btn-ghost { 
+    background: var(--card2); 
+    color: var(--text); 
+    border: 1px solid var(--border); 
+  }
+  .btn-sm { 
+    padding: 8px 14px; 
+    font-size: 13px; 
+    width: auto; 
+    border-radius: 8px; 
+  }
+
+  /* Cart items list */
+  .items-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+  }
+  .item-row { 
+    background: var(--card2); 
+    border-radius: 12px; 
+    padding: 12px; 
+    display: flex; 
+    flex-direction: column;
+    gap: 10px; 
+    border: 1px solid var(--border); 
+    position: relative;
+  }
+  
+  .item-details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .item-row .item-name { 
+    font-size: 15px; 
+    font-weight: 700; 
+    color: #fff;
+  }
+  .item-row .item-price { 
+    color: var(--sub); 
+    font-size: 12px; 
+  }
+  
+  .inputs-ctrl {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .input-label-inline {
+    font-size: 11px;
+    color: var(--sub);
+    margin-bottom: 2px;
+  }
+
+  .qty-ctrl { 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+  }
+  .qty-btn { 
+    width: 32px; 
+    height: 32px; 
+    border: none; 
+    border-radius: 6px; 
+    font-size: 18px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    background: var(--accent); 
+    color: #fff; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+  }
+  .qty-btn.minus { 
+    background: var(--card); 
+    color: var(--sub); 
+    border: 1px solid var(--border); 
+  }
+  .qty-input, .price-input { 
+    text-align: center; 
+    padding: 6px; 
+    font-size: 14px; 
+    font-weight: 700; 
+    border-radius: 6px; 
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 100%;
+  }
+  
+  .item-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+
+  .item-total { 
+    font-weight: 700; 
+    color: var(--green); 
+    font-size: 15px; 
+  }
+  .remove-btn { 
+    background: none; 
+    border: none; 
+    color: var(--red); 
+    font-size: 15px; 
+    cursor: pointer; 
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+  }
+
+  /* Invoice summary */
+  .summary-bar { 
+    background: linear-gradient(135deg, #1e1b4b, #111827); 
+    border-radius: 14px; 
+    padding: 16px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 16px; 
+    border: 1px solid rgba(99, 102, 241, 0.3); 
+  }
+  .summary-bar .total-label { 
+    font-size: 13px; 
+    color: var(--sub); 
+  }
+  .summary-bar .total-val { 
+    font-size: 24px; 
+    font-weight: 800; 
+    color: #818cf8; 
+  }
+
+  /* Invoice list */
+  .invoice-card { 
+    background: var(--card); 
+    border-radius: 12px; 
+    padding: 14px; 
+    margin-bottom: 12px; 
+    border: 1px solid var(--border); 
+  }
+  .invoice-card .inv-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    margin-bottom: 10px; 
+  }
+  .invoice-card .inv-client { 
+    font-weight: 700; 
+    font-size: 16px; 
+  }
+  .invoice-card .inv-time { 
+    font-size: 12px; 
+    color: var(--sub); 
+    margin-top: 2px;
+  }
+  .invoice-card .inv-total { 
+    font-size: 19px; 
+    font-weight: 800; 
+    color: var(--green); 
+  }
+  
+  .badge { 
+    display: inline-block; 
+    padding: 3px 10px; 
+    border-radius: 20px; 
+    font-size: 11px; 
+    font-weight: 700; 
+  }
+  .badge-cash { 
+    background: rgba(16, 185, 129, 0.15); 
+    color: var(--green); 
+    border: 1px solid rgba(16, 185, 129, 0.3); 
+  }
+  .badge-credit { 
+    background: rgba(245, 158, 11, 0.15); 
+    color: var(--orange); 
+    border: 1px solid rgba(245, 158, 11, 0.3); 
+  }
+  .badge-bank { 
+    background: rgba(99, 102, 241, 0.15); 
+    color: #818cf8; 
+    border: 1px solid rgba(99, 102, 241, 0.3); 
+  }
+  .inv-items-preview { 
+    font-size: 13px; 
+    color: var(--sub); 
+    margin-top: 6px; 
+    background: var(--card2);
+    padding: 8px 10px;
+    border-radius: 8px;
+    line-height: 1.6;
+  }
+
+  /* Empty state */
+  .empty { 
+    text-align: center; 
+    padding: 50px 20px; 
+  }
+  .empty .icon { 
+    font-size: 54px; 
+    margin-bottom: 12px; 
+  }
+  .empty p { 
+    color: var(--sub); 
+    font-size: 14px; 
+  }
+
+  /* Setup screen */
+  .setup-wrap { 
+    max-width: 480px; 
+    margin: 0 auto; 
+    padding: 30px 14px; 
+  }
+  .logo-area { 
+    text-align: center; 
+    padding: 20px 0 24px; 
+  }
+  .logo-area .logo-icon { 
+    font-size: 64px; 
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+  .logo-area h2 { 
+    font-size: 24px; 
+    font-weight: 800; 
+    margin-top: 10px; 
+  }
+  .logo-area p { 
+    color: var(--sub); 
+    font-size: 14px; 
+    margin-top: 6px; 
+  }
+
+  /* Toast */
+  .toast { 
+    position: fixed; 
+    bottom: 24px; 
+    left: 50%; 
+    transform: translateX(-50%) translateY(100px); 
+    background: var(--card2); 
+    border: 1px solid var(--border); 
+    color: var(--text); 
+    padding: 12px 24px; 
+    border-radius: 12px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    z-index: 9999; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    white-space: nowrap; 
+  }
+  .toast.show { 
+    transform: translateX(-50%) translateY(0); 
+  }
+  .toast.success { 
+    background: rgba(16, 185, 129, 0.2); 
+    border-color: var(--green); 
+    color: #34d399; 
+  }
+  .toast.error { 
+    background: rgba(239, 68, 68, 0.2); 
+    border-color: var(--red); 
+    color: #fca5a5; 
+  }
+  .toast.info { 
+    background: rgba(99, 102, 241, 0.2); 
+    border-color: var(--accent); 
+    color: #a5b4fc; 
+  }
+
+  /* Modal */
+  .modal-overlay { 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.8); 
+    z-index: 500; 
+    display: flex; 
+    align-items: flex-end; 
+    justify-content: center; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity 0.25s ease; 
+  }
+  .modal-overlay.open { 
+    opacity: 1; 
+    pointer-events: all; 
+  }
+  .modal-sheet { 
+    background: var(--card); 
+    border-radius: 24px 24px 0 0; 
+    padding: 24px 16px 36px; 
+    width: 100%; 
+    max-width: 560px; 
+    max-height: 85vh; 
+    overflow-y: auto; 
+    transform: translateY(100%); 
+    transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.3, 1); 
+    border-top: 2px solid var(--border);
+  }
+  .modal-overlay.open .modal-sheet { 
+    transform: translateY(0); 
+  }
+  .modal-handle { 
+    width: 40px; 
+    height: 4px; 
+    background: var(--border); 
+    border-radius: 2px; 
+    margin: 0 auto 20px; 
+  }
+  .modal-title { 
+    font-size: 18px; 
+    font-weight: 700; 
+    margin-bottom: 16px; 
+    color: #fff;
+  }
+
+  /* Payment toggle */
+  .pay-toggle { 
+    display: flex; 
+    background: var(--card2); 
+    border-radius: 12px; 
+    padding: 4px; 
+    gap: 4px; 
+    margin-bottom: 14px; 
+  }
+  .pay-opt { 
+    flex: 1; 
+    padding: 11px; 
+    text-align: center; 
+    border-radius: 9px; 
+    cursor: pointer; 
+    font-weight: 700; 
+    font-size: 14px; 
+    transition: all 0.2s; 
+    color: var(--sub); 
+  }
+  .pay-opt.active { 
+    background: var(--accent); 
+    color: #fff; 
+  }
+
+  /* Stats bar */
+  .stats-row { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 10px; 
+    margin-bottom: 14px; 
+  }
+  .stat-card { 
+    background: var(--card2); 
+    border-radius: 12px; 
+    padding: 12px; 
+    text-align: center; 
+    border: 1px solid var(--border); 
+  }
+  .stat-card .stat-val { 
+    font-size: 20px; 
+    font-weight: 800; 
+  }
+  .stat-card .stat-lbl { 
+    font-size: 11px; 
+    color: var(--sub); 
+    margin-top: 4px; 
+  }
+
+  /* Separator */
+  .sep { 
+    height: 1px; 
+    background: var(--border); 
+    margin: 16px 0; 
+  }
+
+  /* Search bar */
+  .search-bar { 
+    display: flex; 
+    gap: 8px; 
+    margin-bottom: 12px; 
+  }
+  .search-bar input { 
+    flex: 1; 
+  }
+
+  /* Sticky action */
+  .sticky-action { 
+    position: sticky; 
+    bottom: 0; 
+    background: var(--bg); 
+    padding: 14px 0; 
+    border-top: 1px solid var(--border); 
+    z-index: 50; 
+  }
+
+  /* Setup step cards */
+  .file-drop { 
+    border: 2px dashed var(--border); 
+    border-radius: var(--radius); 
+    padding: 24px 20px; 
+    text-align: center; 
+    cursor: pointer; 
+    transition: border-color 0.2s; 
+  }
+  .file-drop:hover { 
+    border-color: var(--accent); 
+  }
+  .file-drop .drop-icon { 
+    font-size: 36px; 
+    margin-bottom: 6px; 
+  }
+  .file-drop p { 
+    color: var(--sub); 
+    font-size: 13px; 
+  }
+  .file-drop input { 
+    display: none; 
+  }
+
+  /* Scrollable list */
+  .scroll-list { 
+    max-height: 250px; 
+    overflow-y: auto; 
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+  }
+  .list-item { 
+    padding: 12px; 
+    border-bottom: 1px solid var(--border); 
+    cursor: pointer; 
+    transition: background 0.15s; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+  }
+  .list-item:last-child {
+    border-bottom: none;
+  }
+  .list-item:hover, .list-item:active { 
+    background: var(--card2); 
+  }
+  .list-item .item-avatar { 
+    width: 36px; 
+    height: 36px; 
+    border-radius: 10px; 
+    background: linear-gradient(135deg, var(--accent), #2563eb); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 16px; 
+    color: #fff; 
+    font-weight: 700; 
+    flex-shrink: 0; 
+  }
+  .list-item .item-info { 
+    flex: 1; 
+  }
+  .list-item .item-info strong { 
+    display: block; 
+    font-size: 14px; 
+    color: #fff;
+  }
+  .list-item .item-info span { 
+    font-size: 12px; 
+    color: var(--sub); 
+  }
+  .list-item .check { 
+    color: var(--green); 
+    font-size: 18px; 
+    display: none; 
+  }
+  .list-item.selected .check { 
+    display: block; 
+  }
+  .list-item.selected { 
+    background: rgba(99, 102, 241, 0.1); 
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== SETUP SCREEN ===================== -->
+<div id="setupScreen">
+  <div class="setup-wrap">
+    <div class="logo-area">
+      <div class="logo-icon">💼</div>
+      <h2>بوابة المحاسب للطلبات والحجوزات</h2>
+      <p>تسجيل الطلبات والحجوزات أوفلاين وتصديرها كشيت إكسيل</p>
+    </div>
+
+    <!-- Step 1: Sync Options -->
+    <div id="step1" class="card">
+      <div class="card-title">📡 تحميل بيانات العملاء والأصناف</div>
+
+      <!-- Tenant Key -->
+      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px">🔑 رمز النشاط / الشركة (Tenant Key)</label>
+        <input type="text" id="txtTenantKey" placeholder="مثال: CompanyA (اختياري)"
+          style="font-size:14px;padding:10px" oninput="onTenantKeyChange()">
+      </div>
+
+      <!-- Cloud Sync -->
+      <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(99,102,241,0.4)">
+        <div style="font-size:13px;font-weight:700;color:#818cf8;margin-bottom:8px">🌐 سحب سحابي من الإنترنت</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">اكتب رمز المزامنة الصادر من البرنامج الرئيسي</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="txtCloudCode" placeholder="اكتب الرمز هنا"
+            style="flex:1;font-size:18px;font-weight:700;text-align:center;letter-spacing:2px;padding:10px"
+            maxlength="25">
+          <button class="btn btn-primary btn-sm" style="padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromCloud()">⬇ سحب</button>
+        </div>
+        <div id="cloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
+      </div>
+
+      <!-- Wi-Fi Local Sync -->
+      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">📶 سحب محلي من شبكة المحل (Wi-Fi)</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">اكتب عنوان IP الخاص بجهاز الكمبيوتر الرئيسي</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="txtWifiIP" placeholder="مثال: 192.168.1.100"
+            style="flex:1;font-size:14px;direction:ltr;text-align:left">
+          <button class="btn btn-sm" style="background:var(--green);color:#fff;padding:10px 18px;font-size:14px;width:auto" onclick="fetchFromWifi()">⬇ سحب</button>
+        </div>
+        <div id="wifiStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
+      </div>
+
+      <!-- Paste Encrypted Code -->
+      <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود البيانات المنسوخ</div>
+        <div style="color:var(--sub);font-size:12px;margin-bottom:10px">الصق كود البيانات المشفر الذي قمت بنسخه من خادم البرنامج</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <textarea id="txtPasteCode" placeholder="الصق كود البيانات المشفر هنا..." 
+                    style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
+          <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="loadFromPastedCode()">⬇ تحميل البيانات</button>
+        </div>
+      </div>
+
+      <!-- Manual File Drop -->
+      <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 اختيار ملف data.json يدوياً</div>
+        <div class="file-drop" onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon">📄</div>
+          <p>اضغط لاختيار ملف <strong>data.json</strong></p>
+          <input type="file" id="fileInput" accept=".json" onchange="loadDataFile(event)">
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <button class="btn btn-ghost" onclick="loadFromStorage()">⚡ استرجاع آخر بيانات مسحوبة</button>
+    </div>
+
+    <!-- Step 2: Confirm Identity -->
+    <div id="step2" class="card" style="display:none">
+      <div class="card-title">👤 تأكيد اسم المستخدم</div>
+      <div class="form-row">
+        <label>اسم المحاسب / مدخل البيانات</label>
+        <input type="text" id="txtAccountantName" placeholder="اكتب اسمك هنا للتوثيق">
+      </div>
+      <button class="btn btn-primary" onclick="confirmSetup()">✅ فتح لوحة التسجيل</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div id="mainApp" style="display:none">
+  <div class="header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <h1>💼 طلبات المحاسب <span style="font-weight:400; font-size:13px; color: rgba(255,255,255,0.6)">| <span id="headerDate"></span></span></h1>
+      <button onclick="showRefreshModal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">🔄 تحديث البيانات</button>
+    </div>
+    <div class="driver-badge" id="headerAccountant">المستخدم: —</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tabNew')">📝 حجز/طلب جديد</div>
+    <div class="tab" onclick="switchTab('tabList')">📋 طلبات اليوم <span id="invCountBadge" style="background:var(--accent);color:#fff;padding:1px 7px;border-radius:20px;font-size:11px;margin-right:4px">0</span></div>
+    <div class="tab" onclick="switchTab('tabExport')">📤 أدوات وتصدير</div>
+  </div>
+
+  <!-- ===== TAB: NEW ORDER ===== -->
+  <div id="tabNew" class="section active">
+    <!-- Client Section -->
+    <div class="card">
+      <div class="card-title">👤 اختيار العميل</div>
+      <div id="clientSearchArea">
+        <div class="search-bar">
+          <input type="text" id="clientSearch" placeholder="ابحث باسم العميل أو رقم هاتفه..." oninput="filterClients()" autocomplete="off">
+        </div>
+        <div class="scroll-list" id="clientList"></div>
+      </div>
+      
+      <div id="selectedClientBadge" style="display:none; background: rgba(99,102,241,0.1); border: 1px solid var(--accent); border-radius:12px; padding:12px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:24px">👤</span>
+        <div style="flex:1">
+          <strong id="selectedClientName" style="font-size:15px; color:#fff;">—</strong>
+          <div style="font-size:12px; color:var(--sub)" id="selectedClientPhone">—</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearClient()">تغيير العميل</button>
+      </div>
+    </div>
+
+    <!-- Product Selection Section -->
+    <div class="card" id="productsCard" style="display:none">
+      <div class="card-title">📦 إضافة الأصناف للطلب</div>
+      <div class="search-bar">
+        <input type="text" id="productSearch" placeholder="ابحث باسم الصنف..." oninput="filterProducts()" autocomplete="off">
+      </div>
+      <div class="scroll-list" id="productList"></div>
+    </div>
+
+    <!-- Order Cart Section -->
+    <div id="itemsSection" style="display:none">
+      <div class="card">
+        <div class="card-title">🛒 الأصناف المختارة وتعديل الأسعار</div>
+        <div class="items-list" id="invoiceItems"></div>
+      </div>
+
+      <div class="summary-bar">
+        <div>
+          <div class="total-label">إجمالي الطلب الحالي</div>
+          <div class="total-val" id="invoiceTotal">0.00 ج</div>
+        </div>
+        <div style="text-align:center">
+          <div class="total-label">عدد الأصناف</div>
+          <div style="font-size:20px; font-weight:800; color:var(--text)" id="itemsCount">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💳 تفاصيل الطلب والدفع</div>
+        <label>نوع السداد للطلب</label>
+        <div class="pay-toggle">
+          <div class="pay-opt active" onclick="setPayment('Cash')">💵 نقدي</div>
+          <div class="pay-opt" onclick="setPayment('Credit')">📋 آجل / مديونية</div>
+          <div class="pay-opt" onclick="setPayment('Bank')">🏦 تحويل بنكي / شيك</div>
+        </div>
+        <div class="form-row">
+          <label>ملاحظات إضافية (أو شروط الحجز)</label>
+          <input type="text" id="invoiceNotes" placeholder="اكتب أي ملاحظة أو تاريخ الحجز الفعلي...">
+        </div>
+      </div>
+
+      <div class="sticky-action">
+        <button class="btn btn-green" onclick="saveInvoice()">💾 حفظ الطلب / الحجز</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: ORDERS LIST ===== -->
+  <div id="tabList" class="section">
+    <div class="stats-row">
+      <div class="stat-card" style="grid-column: span 2; background: linear-gradient(135deg, #1e1b4b, #15182b);">
+        <div class="stat-val" id="statTotal" style="color:#818cf8; font-size:24px;">0</div>
+        <div class="stat-lbl" style="font-weight:700;">إجمالي الطلبات المسجلة اليوم (ج)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statCash" style="color:var(--green);">0</div>
+        <div class="stat-lbl">نقدي</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statCredit" style="color:var(--orange);">0</div>
+        <div class="stat-lbl">آجل</div>
+      </div>
+    </div>
+    <div id="invoiceList"></div>
+    <div class="empty" id="emptyList" style="display:none">
+      <div class="icon">📝</div>
+      <p>لا توجد حجوزات أو طلبات مسجلة اليوم<br>ابدأ بتسجيل طلب جديد في التبويب الأول</p>
+    </div>
+  </div>
+
+  <!-- ===== TAB: EXPORT & TOOLS ===== -->
+  <div id="tabExport" class="section">
+    <div class="card">
+      <div class="card-title">📤 تصدير البيانات إلى كشف إكسيل</div>
+      <div class="form-row">
+        <label>تاريخ العمليات</label>
+        <input type="date" id="exportDate">
+      </div>
+      <div class="form-row">
+        <label>رقم هاتف الواتساب للمزامنة</label>
+        <input type="text" id="accountantPhone" placeholder="مثال: 01001234567">
+      </div>
+      <div style="background:var(--card2); border-radius:12px; padding:14px; margin-bottom:14px; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--sub)">إجمالي الفواتير / الطلبات</span>
+          <strong id="expInvCount" style="color:#fff">0</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--sub)">النقدي</span>
+          <strong style="color:var(--green)" id="expCashTotal">0.00 ج</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--sub)">الآجل</span>
+          <strong style="color:var(--orange)" id="expCreditTotal">0.00 ج</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sub)">التحويلات البنكية</span>
+          <strong style="color:#818cf8;" id="expBankTotal">0.00 ج</strong>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="exportCSV()">📥 تنزيل شيت إكسيل (CSV)</button>
+      <button class="btn btn-green" onclick="shareToWhatsApp()" style="margin-top: 10px; background: #25D366; color: white;">📲 إرسال الكشف كرمز سحابي (واتساب)</button>
+      <button class="btn btn-orange" onclick="shareToWhatsAppOffline()" style="margin-top: 10px; background: #e67e22; color: white;">📲 إرسال الكود مشفر (بدون إنترنت)</button>
+      
+      <div class="sep"></div>
+      <button class="btn btn-ghost" onclick="clearAll()" style="color:var(--red); border-color: rgba(239, 68, 68, 0.4);">🗑️ مسح العمليات وفتح يوم جديد</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ تعليمات الاستخدام</div>
+      <div style="color:var(--sub); font-size:13px; line-height:1.8;">
+        <p>1️⃣ قم بتسجيل كافة طلبات العملاء التي ترد إليك خلال اليوم.</p>
+        <p>2️⃣ يمكنك تعديل الكميات وتعديل أسعار البيع مباشرة لكل صنف بحرية تامة.</p>
+        <p>3️⃣ في نهاية اليوم، اضغط على <strong>تنزيل شيت إكسيل (CSV)</strong> لفتحه ومراجعته على Excel.</p>
+        <p>4️⃣ يمكنك إرسال البيانات فوراً للبرنامج الرئيسي عبر السحاب أو عبر كود مشفر، لتقوم باستيرادها بضغطة زر وتثبيتها في قاعدة البيانات.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============== Refresh Modal =============== -->
+<div class="modal-overlay" id="refreshModal" onclick="if(event.target===this)closeRefreshModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔄 تحديث بيانات العملاء والأصناف</div>
+    <p style="color:var(--sub);font-size:13px;margin-bottom:16px;">قم بإدخال رمز مزامنة جديد لتحديث الأسعار والعملاء المضافين حديثاً مع الاحتفاظ بطلبات اليوم المسجلة حالياً.</p>
+
+    <!-- Cloud Code -->
+    <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(99,102,241,0.4)">
+      <div style="font-size:13px;font-weight:700;color:#818cf8;margin-bottom:8px">🌐 رمز التحديث السحابي</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="txtRefreshCode" placeholder="اكتب الرمز الجديد هنا"
+          style="flex:1;font-size:16px;font-weight:700;text-align:center;letter-spacing:2px;padding:10px"
+          maxlength="25">
+        <button class="btn btn-primary btn-sm" style="padding:10px 18px;font-size:14px;width:auto" onclick="refreshFromCloud()">⬇ تحديث</button>
+      </div>
+      <div id="refreshCloudStatus" style="font-size:12px;color:var(--sub);margin-top:6px;min-height:18px"></div>
+    </div>
+
+    <!-- Paste code -->
+    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 لصق كود التحديث الجديد</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="txtRefreshPasteCode" placeholder="الصق كود البيانات المشفر الجديد هنا..." 
+                  style="width:100%;height:80px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px;font-size:12px;resize:none;direction:ltr;text-align:left;"></textarea>
+        <button class="btn btn-sm" style="background:var(--orange);color:#fff;padding:10px;font-size:14px;width:100%" onclick="refreshFromPastedCode()">⬇ تحديث البيانات</button>
+      </div>
+    </div>
+
+    <!-- File selection -->
+    <div style="background:var(--card2);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px">📂 تحميل ملف data.json يدوياً</div>
+      <div class="file-drop" onclick="document.getElementById('fileInputRefresh').click()">
+        <div class="drop-icon">📄</div>
+        <p>اضغط لاختيار ملف <strong>data.json</strong> جديد</p>
+        <input type="file" id="fileInputRefresh" accept=".json" onchange="refreshFromFile(event)">
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" onclick="closeRefreshModal()">إلغاء</button>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =================== STATE ===================
+let appData = { clients: [], products: [], loads: [], drivers: [] };
+let invoices = [];
+let currentItems = [];
+let selectedClient = null;
+let paymentType = 'Cash';
+let accountantName = '';
+
+// =================== INIT ===================
+window.onload = () => {
+  document.getElementById('exportDate').value = todayStr();
+  
+  // تهيئة مفتاح الشركة (Tenant Key)
+  const tenantInput = document.getElementById('txtTenantKey');
+  if (tenantInput) {
+    if (window.__XOR_KEY__) {
+      const baseKey = "ChickenDistSecureKey2026";
+      if (window.__XOR_KEY__.startsWith(baseKey)) {
+        tenantInput.value = window.__XOR_KEY__.substring(baseKey.length);
+      }
+      tenantInput.disabled = true;
+    } else {
+      tenantInput.value = localStorage.getItem('acc_tenant_key') || '';
+    }
+  }
+
+  // في حال حقن البيانات من السيرفر المحلي تلقائياً
+  if (window.__SERVER_DATA__) {
+    appData = window.__SERVER_DATA__;
+    localStorage.setItem('acc_appData', JSON.stringify(appData));
+    try {
+      const host = window.location.hostname;
+      if (host && host !== 'localhost') {
+        localStorage.setItem('acc_last_ip', host + ':' + window.location.port);
+      }
+    } catch(e) {}
+    loadFromStorageSilent();
+    toast('✅ تم سحب البيانات تلقائياً من خادم المحل', 'success');
+  } else {
+    const lastIP   = localStorage.getItem('acc_last_ip') || '';
+    const lastCode = localStorage.getItem('acc_last_code') || '';
+    if (lastIP)   document.getElementById('txtWifiIP').value  = lastIP;
+    if (lastCode) document.getElementById('txtCloudCode').value = lastCode;
+    loadFromStorageSilent();
+  }
+};
+
+function onTenantKeyChange() {
+  const tenant = (document.getElementById('txtTenantKey').value || '').trim();
+  localStorage.setItem('acc_tenant_key', tenant);
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function todayDisplay() {
+  return new Date().toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+
+// =================== SYNC LOGIC ===================
+function safeParseJSON(text) {
+  const cleaned = text.replace(/^\uFEFF/, '').trim();
+  return JSON.parse(cleaned);
+}
+
+function loadDataFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = safeParseJSON(e.target.result);
+      appData = data;
+      localStorage.setItem('acc_appData', JSON.stringify(data));
+      showStep2();
+      toast('✅ تم تحميل البيانات: ' + (data.clients?.length||0) + ' عميل، ' + (data.products?.length||0) + ' صنف', 'success');
+    } catch (err) {
+      toast('❌ ملف غير صالح: تأكد أنه ملف data.json يدوياً', 'error');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function fetchFromCloud() {
+  const code = (document.getElementById('txtCloudCode').value || '').trim();
+  if (!code) { toast('❌ اكتب رمز المزامنة أولاً', 'error'); return; }
+  const statusEl = document.getElementById('cloudStatus');
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '⏳ جاري الاتصال بالسحاب...';
+  try {
+    const url = 'https://api.pastes.dev/' + code;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('الرمز غير صحيح أو انتهت صلاحيته');
+    const text = await res.text();
+    const decryptedText = decryptIfNeeded(text);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('acc_appData', JSON.stringify(data));
+    localStorage.setItem('acc_last_code', code);
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✅ تم سحب البيانات السحابية بنجاح!';
+    showStep2();
+    toast('✅ تم تحميل ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف', 'success');
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '❌ ' + err.message;
+    toast('❌ ' + err.message, 'error');
+  }
+}
+
+async function fetchFromWifi() {
+  let ip = (document.getElementById('txtWifiIP').value || '').trim();
+  if (!ip) { toast('❌ اكتب عنوان IP للمطعم/المحل أولاً', 'error'); return; }
+  if (!ip.includes(':')) ip = ip + ':8080';
+  const statusEl = document.getElementById('wifiStatus');
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '⏳ جاري سحب البيانات من شبكة الواي فاي...';
+  try {
+    const url  = 'http://' + ip + '/data.json';
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res   = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('فشل الوصول للجهاز الرئيسي');
+    const data  = await res.json();
+    appData = data;
+    localStorage.setItem('acc_appData', JSON.stringify(data));
+    localStorage.setItem('acc_last_ip', ip);
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✅ تم السحب بنجاح!';
+    showStep2();
+    toast('✅ تم تحميل البيانات عبر Wi-Fi بنجاح', 'success');
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '❌ ' + err.message;
+    toast('❌ فشل الاتصال بالشبكة المحلية', 'error');
+  }
+}
+
+function loadFromStorage() {
+  const saved = localStorage.getItem('acc_appData');
+  if (!saved) { toast('⚠️ لا توجد بيانات سابقة محفوظة في المتصفح', 'error'); return; }
+  try {
+    appData = JSON.parse(saved);
+    showStep2();
+    toast('✅ تم استرجاع آخر بيانات مسحوبة بنجاح', 'success');
+  } catch(e) {
+    localStorage.removeItem('acc_appData');
+    toast('❌ البيانات المحفوظة تالفة، أعد تحميل الملف أو الرمز', 'error');
+  }
+}
+
+function loadFromStorageSilent() {
+  const saved = localStorage.getItem('acc_appData');
+  const savedInv = localStorage.getItem('acc_invoices');
+  const savedAcc = localStorage.getItem('acc_name');
+  if (saved) {
+    try { appData = JSON.parse(saved); } catch(e) {}
+  }
+  if (savedInv) {
+    try { invoices = JSON.parse(savedInv); } catch(e) {}
+  }
+  if (savedAcc) {
+    accountantName = savedAcc;
+    if (accountantName && appData.clients && appData.clients.length > 0) {
+      launchApp();
+    }
+  }
+  const savedPhone = localStorage.getItem('acc_phone');
+  if (savedPhone && document.getElementById('accountantPhone')) {
+    document.getElementById('accountantPhone').value = savedPhone;
+  }
+}
+
+function showStep2() {
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('txtAccountantName').value = localStorage.getItem('acc_name') || '';
+}
+
+function confirmSetup() {
+  const name = document.getElementById('txtAccountantName').value.trim();
+  if (!name) { toast('❌ يرجى كتابة اسم المستخدم للمتابعة', 'error'); return; }
+  accountantName = name;
+  localStorage.setItem('acc_name', name);
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('headerAccountant').textContent = 'المستخدم: ' + accountantName;
+  document.getElementById('headerDate').textContent = todayDisplay();
+  
+  renderClients();
+  renderProducts();
+  renderInvoices();
+  updateExportStats();
+}
+
+// =================== CLIENTS ===================
+function renderClients(filter = '') {
+  const list = document.getElementById('clientList');
+  const clients = (appData.clients || []).filter(c => {
+    return !filter || c.name.includes(filter) || (c.phone||'').includes(filter);
+  });
+  
+  list.innerHTML = clients.slice(0, 40).map(c => `
+    <div class="list-item" onclick="selectClient(${c.id})">
+      <div class="item-avatar">${c.name.charAt(0)}</div>
+      <div class="item-info">
+        <strong>${c.name}</strong>
+        <span>${c.phone || 'بدون هاتف'}</span>
+      </div>
+      <span class="check">✓</span>
+    </div>
+  `).join('') || '<div style="padding:16px;color:var(--sub);text-align:center">لا توجد نتائج مطابقة</div>';
+}
+
+function filterClients() {
+  renderClients(document.getElementById('clientSearch').value);
+}
+
+function selectClient(id) {
+  const client = (appData.clients || []).find(c => c.id === id);
+  if (!client) return;
+  selectedClient = client;
+  
+  document.getElementById('clientSearchArea').style.display = 'none';
+  const badge = document.getElementById('selectedClientBadge');
+  badge.style.display = 'flex';
+  document.getElementById('selectedClientName').textContent = client.name;
+  document.getElementById('selectedClientPhone').textContent = client.phone || 'لا يوجد هاتف';
+  document.getElementById('productsCard').style.display = 'block';
+  
+  if (currentItems.length > 0) {
+    document.getElementById('itemsSection').style.display = 'block';
+  }
+}
+
+function clearClient() {
+  selectedClient = null;
+  document.getElementById('clientSearchArea').style.display = 'block';
+  document.getElementById('selectedClientBadge').style.display = 'none';
+  document.getElementById('productsCard').style.display = 'none';
+  document.getElementById('itemsSection').style.display = 'none';
+  currentItems = [];
+  renderClients();
+}
+
+// =================== PRODUCTS ===================
+function renderProducts(filter = '') {
+  const list = document.getElementById('productList');
+  let prods = appData.products || [];
+  
+  if (filter) {
+    const q = filter.trim();
+    prods = prods.filter(p => p.name.includes(q) || (p.unit || '').includes(q));
+  }
+  
+  list.innerHTML = prods.map(p => `
+    <div class="list-item" onclick="addProduct(${p.id})">
+      <div class="item-avatar" style="background:linear-gradient(135deg,#6366f1,#3b82f6)">📦</div>
+      <div class="item-info">
+        <strong>${p.name}</strong>
+        <span>${p.price.toFixed(2)} ج / ${p.unit || 'وحدة'}</span>
+      </div>
+      <span style="color:var(--accent); font-weight:700; font-size:13px">+ إضافة للطلب</span>
+    </div>
+  `).join('') || '<div style="padding:16px;color:var(--sub);text-align:center">لا يوجد أصناف مطابقة</div>';
+}
+
+function filterProducts() {
+  renderProducts(document.getElementById('productSearch').value);
+}
+
+function addProduct(id) {
+  const prod = (appData.products || []).find(p => p.id === id);
+  if (!prod) return;
+  
+  const existing = currentItems.find(i => i.productId === id);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    currentItems.push({ productId: id, name: prod.name, price: prod.price, unit: prod.unit, qty: 1 });
+  }
+  
+  renderItemsList();
+  document.getElementById('itemsSection').style.display = 'block';
+  toast('✅ تمت الإضافة: ' + prod.name, 'success');
+}
+
+function renderItemsList() {
+  const container = document.getElementById('invoiceItems');
+  container.innerHTML = currentItems.map((item, idx) => `
+    <div class="item-row">
+      <div class="item-details-row">
+        <div>
+          <div class="item-name">${item.name}</div>
+          <div class="item-price">الوحدة: ${item.unit || 'وحدة'}</div>
+        </div>
+        <button class="remove-btn" onclick="removeItem(${idx})">🗑 حذف الصنف</button>
+      </div>
+      
+      <div class="inputs-ctrl">
+        <div>
+          <div class="input-label-inline">تعديل كمية البيع</div>
+          <div class="qty-ctrl">
+            <button class="qty-btn minus" onclick="changeQty(${idx}, -1)">−</button>
+            <input class="qty-input" type="number" value="${item.qty}" min="0.1" step="0.1"
+              onchange="setQty(${idx}, this.value)">
+            <button class="qty-btn" onclick="changeQty(${idx}, 1)">+</button>
+          </div>
+        </div>
+        
+        <div>
+          <div class="input-label-inline">تعديل سعر البيع (ج)</div>
+          <input class="price-input" type="number" value="${item.price.toFixed(2)}" min="0" step="0.01"
+            onchange="setPrice(${idx}, this.value)">
+        </div>
+      </div>
+      
+      <div class="item-total-row">
+        <span style="color:var(--sub); font-size:12px">إجمالي البند:</span>
+        <span class="item-total">${(item.qty * item.price).toFixed(2)} ج</span>
+      </div>
+    </div>
+  `).join('');
+  
+  const total = currentItems.reduce((s, i) => s + i.qty * i.price, 0);
+  document.getElementById('invoiceTotal').textContent = total.toFixed(2) + ' ج';
+  document.getElementById('itemsCount').textContent = currentItems.length;
+}
+
+function changeQty(idx, delta) {
+  const item = currentItems[idx];
+  const newQty = item.qty + delta;
+  currentItems[idx].qty = Math.max(0.1, newQty);
+  renderItemsList();
+}
+
+function setQty(idx, val) {
+  const v = parseFloat(val);
+  if (isNaN(v) || v <= 0) return;
+  currentItems[idx].qty = v;
+  renderItemsList();
+}
+
+function setPrice(idx, val) {
+  const p = parseFloat(val);
+  if (isNaN(p) || p < 0) return;
+  currentItems[idx].price = p;
+  renderItemsList();
+}
+
+function removeItem(idx) {
+  currentItems.splice(idx, 1);
+  if (currentItems.length === 0) {
+    document.getElementById('itemsSection').style.display = 'none';
+  } else {
+    renderItemsList();
+  }
+}
+
+// =================== PAYMENT ===================
+function setPayment(type) {
+  paymentType = type;
+  document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// =================== SAVE INVOICE ===================
+function saveInvoice() {
+  if (!selectedClient) { toast('❌ يرجى اختيار العميل أولاً', 'error'); return; }
+  if (currentItems.length === 0) { toast('❌ يرجى إضافة صنف واحد على الأثل للطلب', 'error'); return; }
+
+  const total = currentItems.reduce((s, i) => s + i.qty * i.price, 0);
+  const inv = {
+    id: Date.now(),
+    time: new Date().toISOString(),
+    clientId: selectedClient.id,
+    clientName: selectedClient.name,
+    clientPhone: selectedClient.phone || '',
+    accountantName: accountantName,
+    paymentType: paymentType,
+    notes: document.getElementById('invoiceNotes').value.trim(),
+    total: total,
+    items: currentItems.map(i => ({ ...i }))
+  };
+
+  invoices.push(inv);
+  localStorage.setItem('acc_invoices', JSON.stringify(invoices));
+
+  // إرجاع النموذج للوضع الافتراضي
+  currentItems = [];
+  selectedClient = null;
+  clearClient();
+  document.getElementById('invoiceNotes').value = '';
+  paymentType = 'Cash';
+  document.querySelectorAll('.pay-opt').forEach((el, i) => { el.classList.toggle('active', i===0); });
+
+  renderInvoices();
+  renderProducts();
+  updateExportStats();
+  document.getElementById('invCountBadge').textContent = invoices.length;
+  switchTab('tabList');
+  toast('✅ تم حفظ الطلب/الحجز في القائمة بنجاح!', 'success');
+}
+
+// =================== RENDER INVOICES ===================
+function renderInvoices() {
+  const list = document.getElementById('invoiceList');
+  const empty = document.getElementById('emptyList');
+  if (invoices.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = [...invoices].reverse().map(inv => {
+    const t = new Date(inv.time);
+    const timeStr = t.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+    
+    let badge = '';
+    if (inv.paymentType === 'Cash') badge = '<span class="badge badge-cash">💵 نقدي</span>';
+    else if (inv.paymentType === 'Credit') badge = '<span class="badge badge-credit">📋 آجل</span>';
+    else badge = '<span class="badge badge-bank">🏦 تحويل بنكي</span>';
+    
+    const preview = inv.items.map(i => `${i.name} (${i.qty} × ${i.price.toFixed(2)} ج)`).join('<br>');
+    return `
+      <div class="invoice-card">
+        <div class="inv-header">
+          <div>
+            <div class="inv-client">${inv.clientName}</div>
+            <div class="inv-time">${timeStr} · ${badge}</div>
+          </div>
+          <div style="text-align:left">
+            <div class="inv-total">${inv.total.toFixed(2)} ج</div>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-top:6px; padding:4px 8px; font-size:11px;" onclick="deleteInvoice(${inv.id})">🗑 حذف الطلب</button>
+          </div>
+        </div>
+        <div class="inv-items-preview">${preview}</div>
+        ${inv.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--orange)">📝 ملاحظة: ${inv.notes}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  document.getElementById('invCountBadge').textContent = invoices.length;
+}
+
+function deleteInvoice(id) {
+  if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب بالكامل؟')) return;
+  invoices = invoices.filter(i => i.id !== id);
+  localStorage.setItem('acc_invoices', JSON.stringify(invoices));
+  renderInvoices();
+  renderProducts();
+  updateExportStats();
+}
+
+function updateExportStats() {
+  const cash = invoices.filter(i => i.paymentType === 'Cash').reduce((s, i) => s + i.total, 0);
+  const credit = invoices.filter(i => i.paymentType === 'Credit').reduce((s, i) => s + i.total, 0);
+  const bank = invoices.filter(i => i.paymentType === 'Bank').reduce((s, i) => s + i.total, 0);
+  const total = cash + credit + bank;
+  
+  document.getElementById('statTotal').textContent = total.toFixed(2) + ' ج';
+  document.getElementById('statCash').textContent = cash.toFixed(0) + ' ج';
+  document.getElementById('statCredit').textContent = credit.toFixed(0) + ' ج';
+  
+  document.getElementById('expInvCount').textContent = invoices.length;
+  document.getElementById('expCashTotal').textContent = cash.toFixed(2) + ' ج';
+  document.getElementById('expCreditTotal').textContent = credit.toFixed(2) + ' ج';
+  document.getElementById('expBankTotal').textContent = bank.toFixed(2) + ' ج';
+}
+
+// =================== EXPORT CSV ===================
+function buildCSV() {
+  const dateStr = document.getElementById('exportDate').value.replace(/-/g, '_');
+  const safeAcc = accountantName.replace(/[^a-zA-Z\u0600-\u06FF0-9]/g, '_');
+  const filename = `bookings_${safeAcc}_${dateStr}.csv`;
+
+  let csv = '\uFEFF'; // BOM for Excel Arabic support
+  csv += 'رقم_الطلب,تاريخ,وقت,اسم_العميل,هاتف_العميل,اسم_المحاسب,كود_الصنف,اسم_الصنف,الكمية,سعر_الوحدة,الإجمالي,نوع_الدفع,ملاحظات\n';
+
+  invoices.forEach(inv => {
+    const d = new Date(inv.time);
+    const dateVal = d.toLocaleDateString('en-GB');
+    const timeVal = d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    
+    inv.items.forEach(item => {
+      const row = [
+        inv.id,
+        dateVal,
+        timeVal,
+        `"${inv.clientName}"`,
+        inv.clientPhone,
+        `"${inv.accountantName}"`,
+        item.productId,
+        `"${item.name}"`,
+        item.qty,
+        item.price.toFixed(2),
+        (item.qty * item.price).toFixed(2),
+        inv.paymentType === 'Cash' ? 'نقدي' : (inv.paymentType === 'Credit' ? 'آجل' : 'تحويل بنكي'),
+        `"${inv.notes || ''}"`
+      ];
+      csv += row.join(',') + '\n';
+    });
+  });
+  return { csv, filename };
+}
+
+function exportCSV() {
+  if (invoices.length === 0) { toast('❌ لا توجد فواتير لتصديرها حالياً', 'error'); return; }
+  const { csv, filename } = buildCSV();
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ تم تنزيل شيت الإكسيل بنجاح: ' + filename, 'success');
+}
+
+// =================== SECURITY ENCRYPTION (XOR) ===================
+function getEffectiveXorKey() {
+  if (window.__XOR_KEY__) return window.__XOR_KEY__;
+  const localTenant = localStorage.getItem('acc_tenant_key') || '';
+  if (localTenant.trim()) {
+    return "ChickenDistSecureKey2026" + localTenant.trim();
+  }
+  return "ChickenDistSecureKey2026";
+}
+
+function encryptData(plainText) {
+  const bytes = new TextEncoder().encode(plainText);
+  const keyBytes = new TextEncoder().encode(getEffectiveXorKey());
+  const encryptedBytes = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    encryptedBytes[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+  }
+  let binaryString = '';
+  for (let i = 0; i < encryptedBytes.length; i++) {
+    binaryString += String.fromCharCode(encryptedBytes[i]);
+  }
+  return btoa(binaryString);
+}
+
+function decryptData(cipherText) {
+  const binaryString = atob(cipherText);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const keyBytes = new TextEncoder().encode(getEffectiveXorKey());
+  const decryptedBytes = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    decryptedBytes[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+  }
+  return new TextDecoder().decode(decryptedBytes);
+}
+
+function decryptIfNeeded(text) {
+  text = text.trim();
+  if (text.startsWith('{') || text.startsWith('[')) {
+    return text;
+  }
+  return decryptData(text);
+}
+
+// =================== WHATSAPP SHARE ===================
+function shareToWhatsAppOffline() {
+  if (invoices.length === 0) { toast('❌ لا توجد طلبات للإرسال', 'error'); return; }
+  
+  let phone = document.getElementById('accountantPhone').value.trim();
+  if (!phone) { toast('❌ يرجى إدخال رقم هاتف واتساب المستلم أولاً', 'error'); return; }
+  
+  phone = phone.replace(/\D/g, '');
+  if (phone.startsWith('0')) phone = '2' + phone;
+  
+  localStorage.setItem('acc_phone', document.getElementById('accountantPhone').value.trim());
+  const { csv } = buildCSV();
+  try {
+    const encryptedCsv = encryptData(csv);
+    const msg = `📋 كشف حجوزات وطلبات المحاسب *${accountantName}* (أوفلاين)\n` +
+                `📅 التاريخ: ${document.getElementById('exportDate').value}\n` +
+                `=== كود البيانات المشفر ===\n${encryptedCsv}`;
+
+    navigator.clipboard.writeText(msg).then(() => {
+      toast('✅ تم نسخ كود البيانات المشفر للحافظة تلقائياً!', 'success');
+    }).catch(() => {
+      const textArea = document.createElement("textarea");
+      textArea.value = msg;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    });
+
+    alert("💡 تم نسخ الكود المشفر للحفظ!\nسيفتح واتساب الآن، قم بلصق الكود (Paste) في محادثة المستلم ثم أرسل.");
+    window.location.href = `https://api.whatsapp.com/send?phone=${phone}`;
+  } catch (err) {
+    toast('❌ فشل تشفير البيانات: ' + err.message, 'error');
+  }
+}
+
+async function shareToWhatsApp() {
+  if (invoices.length === 0) { toast('❌ لا توجد طلبات لإرسالها', 'error'); return; }
+  
+  let phone = document.getElementById('accountantPhone').value.trim();
+  if (!phone) { toast('❌ يرجى إدخال رقم واتساب المستلم', 'error'); return; }
+  
+  phone = phone.replace(/\D/g, '');
+  if (phone.startsWith('0')) phone = '2' + phone;
+  
+  localStorage.setItem('acc_phone', document.getElementById('accountantPhone').value.trim());
+  toast('⏳ جاري رفع الكشف وتوليد رمز المزامنة...', 'info');
+
+  const { csv, filename } = buildCSV();
+  try {
+    const encryptedCsv = encryptData(csv);
+    const res = await fetch('https://api.pastes.dev/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: encryptedCsv
+    });
+
+    if (!res.ok) throw new Error('فشل الرفع إلى الخادم السحابي');
+
+    const resJson = await res.json();
+    const code = resJson.key;
+
+    if (!code) throw new Error('لم يتم توليد رمز صالح');
+
+    const msg = `📋 كشف طلبات وحجوزات اليوم للمحاسب *${accountantName}*\n` +
+                `📅 التاريخ: ${document.getElementById('exportDate').value}\n` +
+                `🔑 رمز الاستيراد السحابي: *${code}*\n\n` +
+                `من فضلك افتح شاشة "استيراد مبيعات CSV" في البرنامج، واضغط على "استيراد من السحاب" واكتب الرمز: *${code}*`;
+
+    window.location.href = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    toast('✅ تم الرفع سحابياً وفتح محادثة واتساب!', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('⚠️ فشل الرفع السحابي، جاري تنزيل شيت الإكسيل محلياً يدوياً...', 'error');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// =================== CLEAR / NEW DAY ===================
+function clearAll() {
+  if (!confirm('🚨 انتبه! هل تريد مسح كافة عمليات وطلبات اليوم بالكامل لفتح يوم جديد؟\nهذا الإجراء لا يمكن التراجع عنه!')) return;
+  invoices = [];
+  localStorage.removeItem('acc_invoices');
+  renderInvoices();
+  renderProducts();
+  updateExportStats();
+  toast('🗑 تم مسح كافة الطلبات والبدء من جديد', 'success');
+  
+  setTimeout(() => {
+    if (confirm('هل ترغب في سحب تحديث جديد للأصناف والعملاء من البرنامج الرئيسي لليوم الجديد؟')) {
+      showRefreshModal();
+    }
+  }, 500);
+}
+
+// =================== REFRESH / UPDATE MODAL ===================
+function showRefreshModal() {
+  document.getElementById('txtRefreshCode').value = '';
+  document.getElementById('refreshCloudStatus').textContent = '';
+  document.getElementById('refreshModal').classList.add('open');
+}
+
+function closeRefreshModal() {
+  document.getElementById('refreshModal').classList.remove('open');
+}
+
+async function refreshFromCloud() {
+  const code = (document.getElementById('txtRefreshCode').value || '').trim();
+  if (!code) { toast('❌ اكتب الرمز أولاً', 'error'); return; }
+  const statusEl = document.getElementById('refreshCloudStatus');
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '⏳ جاري الاتصال والتحديث...';
+  try {
+    const url = 'https://api.pastes.dev/' + code;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('الرمز غير صحيح أو انتهت صلاحيته');
+    const text = await res.text();
+    const decryptedText = decryptIfNeeded(text);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('acc_appData', JSON.stringify(data));
+    localStorage.setItem('acc_last_code', code);
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✅ تم تحديث البيانات بنجاح!';
+    
+    renderClients();
+    renderProducts();
+    toast('✅ تم تحديث الأصناف والعملاء: ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف', 'success');
+    setTimeout(() => closeRefreshModal(), 1500);
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '❌ ' + err.message;
+    toast('❌ ' + err.message, 'error');
+  }
+}
+
+function refreshFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = safeParseJSON(e.target.result);
+      appData = data;
+      localStorage.setItem('acc_appData', JSON.stringify(data));
+      renderClients();
+      renderProducts();
+      closeRefreshModal();
+      toast('✅ تم التحديث بنجاح: ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف', 'success');
+    } catch (err) {
+      toast('❌ ملف غير صحيح، تأكد أنه data.json', 'error');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function loadFromPastedCode() {
+  const code = (document.getElementById('txtPasteCode').value || '').trim();
+  if (!code) { toast('❌ الصق الكود المشفر أولاً', 'error'); return; }
+  try {
+    const decryptedText = decryptIfNeeded(code);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('acc_appData', JSON.stringify(data));
+    showStep2();
+    toast('✅ تم تحميل ' + (data.clients?.length||0) + ' عميل و' + (data.products?.length||0) + ' صنف بنجاح!', 'success');
+  } catch(err) {
+    toast('❌ كود غير صحيح أو مشفر بمفتاح شركة آخر: ' + err.message, 'error');
+  }
+}
+
+function refreshFromPastedCode() {
+  const code = (document.getElementById('txtRefreshPasteCode').value || '').trim();
+  if (!code) { toast('❌ الصق الكود أولاً', 'error'); return; }
+  try {
+    const decryptedText = decryptIfNeeded(code);
+    const data = safeParseJSON(decryptedText);
+    appData = data;
+    localStorage.setItem('acc_appData', JSON.stringify(data));
+    renderClients();
+    renderProducts();
+    closeRefreshModal();
+    toast('✅ تم تحديث بيانات المجموعات والأصناف بنجاح', 'success');
+  } catch(err) {
+    toast('❌ كود غير صحيح أو مشفر بمفتاح شركة آخر: ' + err.message, 'error');
+  }
+}
+
+// =================== TABS ===================
+function switchTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['tabNew','tabList','tabExport'].indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  if (id === 'tabList') renderInvoices();
+  if (id === 'tabExport') updateExportStats();
+}
+
+// =================== TOAST ===================
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

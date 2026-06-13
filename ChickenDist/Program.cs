@@ -73,6 +73,7 @@ namespace ChickenDist
 
             // استخراج صفحة المندوب من الموارد المضمنة
             ExtractDriverSalesHtml();
+            ExtractAccountantOrdersHtml();
 
             // Show Login
             var login = new FrmLogin();
@@ -173,6 +174,37 @@ namespace ChickenDist
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("Failed to extract driver_sales.html: " + ex.Message);
+            }
+        }
+
+        private static void ExtractAccountantOrdersHtml()
+        {
+            try
+            {
+                string formsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms");
+                if (!System.IO.Directory.Exists(formsDir))
+                {
+                    System.IO.Directory.CreateDirectory(formsDir);
+                }
+                string path = System.IO.Path.Combine(formsDir, "accountant_orders.html");
+
+                var assembly = typeof(Program).Assembly;
+                string resourceName = "ChickenDist.Forms.accountant_orders.html";
+
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream != null)
+                    {
+                        using (var fileStream = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                        {
+                            stream.CopyTo(fileStream);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to extract accountant_orders.html: " + ex.Message);
             }
         }
     }

@@ -111,6 +111,12 @@ namespace ChickenDist.Core
                         string html = GetDriverSalesHtmlWithData();
                         SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
                     }
+                    else if (path == "/accountant_orders.html")
+                    {
+                        // حقن البيانات مباشرة داخل صفحة الـ HTML للمحاسب
+                        string html = GetAccountantOrdersHtmlWithData();
+                        SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
+                    }
                     else
                     {
                         SendResponse(stream, "404 Not Found", "text/plain", "404 Not Found");
@@ -164,6 +170,32 @@ namespace ChickenDist.Core
                         return r.ReadToEnd();
             }
             return "<html><body>driver_sales.html not found</body></html>";
+        }
+
+        /// <summary>يقرأ accountant_orders.html ويحقن JSON البيانات بداخله مباشرة</summary>
+        private static string GetAccountantOrdersHtmlWithData()
+        {
+            string html = GetAccountantEmbeddedHtml();
+            string json = DAL.DriverDAL.BuildDriverExportJson();
+            string key = SecurityHelper.GetEffectiveKeyForJs();
+            string injection = $"\n<script>\n  window.__SERVER_DATA__ = {json};\n  window.__XOR_KEY__ = \"{key}\";\n</script>\n";
+            return html.Replace("</head>", injection + "</head>");
+        }
+
+        private static string GetAccountantEmbeddedHtml()
+        {
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Forms", "accountant_orders.html");
+            if (File.Exists(filePath))
+                return File.ReadAllText(filePath, Encoding.UTF8);
+
+            var asm = typeof(DriverPortalServer).Assembly;
+            using (var s = asm.GetManifestResourceStream("ChickenDist.Forms.accountant_orders.html"))
+            {
+                if (s != null)
+                    using (var r = new StreamReader(s, Encoding.UTF8))
+                        return r.ReadToEnd();
+            }
+            return "<html><body>accountant_orders.html not found</body></html>";
         }
 
         // ======================== الرفع السحابي ========================
