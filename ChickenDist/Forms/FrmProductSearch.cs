@@ -190,9 +190,9 @@ namespace ChickenDist.Forms
                     decimal oldStockAvailable = Math.Max(0m, Math.Min(totalStock, threshold));
                     decimal newStockAvailable = Math.Max(0m, totalStock - oldStockAvailable);
 
-                    // Row 1: Old Price
-                    if (chkShowZeroStock.Checked || oldStockAvailable > 0m)
+                    if (chkShowZeroStock.Checked || totalStock > 0m)
                     {
+                        // Row 1: Old Price
                         int rowIdx = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
@@ -203,12 +203,9 @@ namespace ChickenDist.Forms
                             oldStockAvailable.ToString("F2")
                         );
                         ColorStockCell(rowIdx, oldStockAvailable);
-                    }
 
-                    // Row 2: Pending Price
-                    if (chkShowZeroStock.Checked || newStockAvailable > 0m)
-                    {
-                        int rowIdx = dgProducts.Rows.Add(
+                        // Row 2: Pending Price
+                        int rowIdx2 = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"].ToString() + " (السعر المعلق)", 
@@ -217,7 +214,7 @@ namespace ChickenDist.Forms
                             pendingPrice.ToString("F2"), 
                             newStockAvailable.ToString("F2")
                         );
-                        ColorStockCell(rowIdx, newStockAvailable);
+                        ColorStockCell(rowIdx2, newStockAvailable);
                     }
                 }
                 else

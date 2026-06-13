@@ -878,10 +878,11 @@ namespace ChickenDist.Forms
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
 				{
-					dgItems.EndEdit();
 					var curCell = dgItems.CurrentCell;
 					if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
 					{
+						int productID = _items[curCell.RowIndex].ProductID;
+
 						// Find next editable cell in the same row
 						int nextCol = -1;
 						for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
@@ -893,22 +894,52 @@ namespace ChickenDist.Forms
 							}
 						}
 
+						dgItems.EndEdit();
+
 						if (nextCol != -1)
 						{
-							dgItems.CurrentCell = dgItems.Rows[curCell.RowIndex].Cells[nextCol];
-							dgItems.BeginEdit(true);
+							string nextColName = dgItems.Columns[nextCol].Name;
+							this.BeginInvoke((MethodInvoker)delegate
+							{
+								int targetRowIndex = -1;
+								for (int i = 0; i < _items.Count; i++)
+								{
+									if (_items[i].ProductID == productID)
+									{
+										targetRowIndex = i;
+										break;
+									}
+								}
+								if (targetRowIndex >= 0 && targetRowIndex < dgItems.Rows.Count)
+								{
+									dgItems.Focus();
+									dgItems.ClearSelection();
+									dgItems.CurrentCell = dgItems.Rows[targetRowIndex].Cells[nextColName];
+									dgItems.BeginEdit(true);
+								}
+								else
+								{
+									cboProduct.Focus();
+								}
+							});
 							return true;
 						}
 						else
 						{
-							// No more editable cells in this row, go to cboProduct
-							cboProduct.Focus();
+							this.BeginInvoke((MethodInvoker)delegate
+							{
+								cboProduct.Focus();
+							});
 							return true;
 						}
 					}
 					else
 					{
-						cboProduct.Focus();
+						dgItems.EndEdit();
+						this.BeginInvoke((MethodInvoker)delegate
+						{
+							cboProduct.Focus();
+						});
 						return true;
 					}
 				}
@@ -1470,7 +1501,7 @@ namespace ChickenDist.Forms
 
 					decimal delta = result - saleItemDTO.Quantity;
 					decimal? manualPrice = saleItemDTO.UnitPrice;
-					AddOrUpdateProduct(saleItemDTO.ProductID, delta, manualPrice);
+					AddOrUpdateProduct(saleItemDTO.ProductID, delta, manualPrice, true);
 					return;
 				}
 				else
@@ -1588,7 +1619,7 @@ namespace ChickenDist.Forms
 			CalculateNet();
 		}
 
-		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null)
+		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false)
 		{
 			ComboItem product = null;
 			foreach (var item in cboProduct.Items)
@@ -1616,7 +1647,8 @@ namespace ChickenDist.Forms
 			if (stock <= 0)
 			{
 				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				RefreshGrid();
+				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+				else RefreshGrid();
 				return;
 			}
 
@@ -1655,7 +1687,8 @@ namespace ChickenDist.Forms
 				if (totalProductQtyInInvoice > stock)
 				{
 					MessageBox.Show($"❌ خطأ: إجمالي الكمية المطلوبة ({totalProductQtyInInvoice:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					RefreshGrid();
+					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+					else RefreshGrid();
 					return;
 				}
 
@@ -1735,7 +1768,8 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			RefreshGrid();
+			if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+			else RefreshGrid();
 		}
 
 		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock)
