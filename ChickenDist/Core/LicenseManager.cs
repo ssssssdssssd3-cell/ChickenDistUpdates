@@ -42,6 +42,12 @@ namespace ChickenDist.Core
         private static readonly string SettingsFilePath =
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
 
+        // ذاكرة تخزين مؤقت لهوية الجهاز لتسريع فتح البرنامج وتفادي تكرار استعلامات WMI البطيئة
+        private static string _cachedMachineId = null;
+        private static string _cachedHddSerial = null;
+        private static string _cachedCpuId = null;
+        private static string _cachedMacAddress = null;
+
         /// <summary>
         /// يقرأ قيمة من ملف الـ INI ويفك تشفيرها لو كانت مشفرة بـ DPAPI
         /// </summary>
@@ -336,6 +342,7 @@ namespace ChickenDist.Core
 
         private static string GetMachineId()
         {
+            if (_cachedMachineId != null) return _cachedMachineId;
             try
             {
                 string cpu = GetCpuId();
@@ -348,7 +355,8 @@ namespace ChickenDist.Core
                     var sb = new StringBuilder(16);
                     for (int i = 0; i < 8; i++)
                         sb.AppendFormat("{0:X2}", hash[i]);
-                    return sb.ToString();
+                    _cachedMachineId = sb.ToString();
+                    return _cachedMachineId;
                 }
             }
             catch { return Environment.MachineName; }
@@ -356,6 +364,7 @@ namespace ChickenDist.Core
 
         private static string GetHddSerial()
         {
+            if (_cachedHddSerial != null) return _cachedHddSerial;
             try
             {
                 using (var searcher = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_DiskDrive"))
@@ -364,16 +373,21 @@ namespace ChickenDist.Core
                     {
                         string s = obj["SerialNumber"]?.ToString()?.Trim();
                         if (!string.IsNullOrEmpty(s) && s != "None")
-                            return s.ToUpper();
+                        {
+                            _cachedHddSerial = s.ToUpper();
+                            return _cachedHddSerial;
+                        }
                     }
                 }
             }
             catch { }
-            return "UNKNOWN";
+            _cachedHddSerial = "UNKNOWN";
+            return _cachedHddSerial;
         }
 
         private static string GetCpuId()
         {
+            if (_cachedCpuId != null) return _cachedCpuId;
             try
             {
                 using (var searcher = new ManagementObjectSearcher("SELECT ProcessorId FROM Win32_Processor"))
@@ -381,16 +395,22 @@ namespace ChickenDist.Core
                     foreach (ManagementObject obj in searcher.Get())
                     {
                         string id = obj["ProcessorId"]?.ToString()?.Trim();
-                        if (!string.IsNullOrEmpty(id)) return id;
+                        if (!string.IsNullOrEmpty(id))
+                        {
+                            _cachedCpuId = id;
+                            return _cachedCpuId;
+                        }
                     }
                 }
             }
             catch { }
-            return Environment.MachineName;
+            _cachedCpuId = Environment.MachineName;
+            return _cachedCpuId;
         }
 
         private static string GetMacAddress()
         {
+            if (_cachedMacAddress != null) return _cachedMacAddress;
             try
             {
                 using (var searcher = new ManagementObjectSearcher(
@@ -399,12 +419,17 @@ namespace ChickenDist.Core
                     foreach (ManagementObject obj in searcher.Get())
                     {
                         string mac = obj["MACAddress"]?.ToString()?.Trim();
-                        if (!string.IsNullOrEmpty(mac)) return mac;
+                        if (!string.IsNullOrEmpty(mac))
+                        {
+                            _cachedMacAddress = mac;
+                            return _cachedMacAddress;
+                        }
                     }
                 }
             }
             catch { }
-            return "";
+            _cachedMacAddress = "";
+            return _cachedMacAddress;
         }
     }
 }
