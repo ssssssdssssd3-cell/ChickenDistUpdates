@@ -2392,11 +2392,25 @@ namespace ChickenDist.Forms
 
 		private void BtnPrint_Click(object sender, EventArgs e)
 		{
-			int printID = _lastSaleID;
+			int printID = 0;
+			if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+			{
+				var clientLastObj = DbHelper.Scalar("SELECT TOP 1 SaleID FROM Sales WHERE ClientID = @cid ORDER BY SaleDate DESC, SaleID DESC", DbHelper.P("@cid", ci.ID));
+				if (clientLastObj != null && clientLastObj != DBNull.Value)
+				{
+					printID = Convert.ToInt32(clientLastObj);
+				}
+			}
+
+			if (printID == 0)
+			{
+				printID = _lastSaleID;
+			}
+
 			if (printID == 0)
 			{
 				var lastObj = DbHelper.Scalar("SELECT COALESCE(MAX(SaleID), 0) FROM Sales");
-				if (lastObj != null)
+				if (lastObj != null && lastObj != DBNull.Value)
 				{
 					printID = Convert.ToInt32(lastObj);
 				}
@@ -2533,11 +2547,25 @@ namespace ChickenDist.Forms
 
 		private void BtnWhatsApp_Click(object sender, EventArgs e)
 		{
-			int saleID = _lastSaleID;
+			int saleID = 0;
+			if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+			{
+				var clientLastObj = DbHelper.Scalar("SELECT TOP 1 SaleID FROM Sales WHERE ClientID = @cid ORDER BY SaleDate DESC, SaleID DESC", DbHelper.P("@cid", ci.ID));
+				if (clientLastObj != null && clientLastObj != DBNull.Value)
+				{
+					saleID = Convert.ToInt32(clientLastObj);
+				}
+			}
+
+			if (saleID == 0)
+			{
+				saleID = _lastSaleID;
+			}
+
 			if (saleID == 0)
 			{
 				var lastObj = DbHelper.Scalar("SELECT COALESCE(MAX(SaleID), 0) FROM Sales");
-				if (lastObj != null) saleID = Convert.ToInt32(lastObj);
+				if (lastObj != null && lastObj != DBNull.Value) saleID = Convert.ToInt32(lastObj);
 			}
 			if (saleID == 0)
 			{
