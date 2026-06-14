@@ -248,6 +248,12 @@ namespace ChickenDist.Core
                     );
                 END");
 
+                SafeMigrate("DriverHandovers.DeadQtyHandling", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('DriverHandovers') AND name = 'DeadQtyHandling')
+                BEGIN
+                    ALTER TABLE DriverHandovers ADD DeadQtyHandling NVARCHAR(50) NULL;
+                END");
+
                 // Add Discount fields to Sales
                 SafeMigrate("Sales.Discount", @"
                 IF OBJECT_ID('Sales', 'U') IS NOT NULL

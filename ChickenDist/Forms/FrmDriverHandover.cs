@@ -15,8 +15,8 @@ namespace ChickenDist.Forms
     {
         private Panel pnlHeader;
         private Label lblTitle;
-        private ComboBox cboDriver, cboLoad;
-        private Label lblDriver, lblLoad;
+        private ComboBox cboDriver, cboLoad, cboDeadQtyHandling;
+        private Label lblDriver, lblLoad, lblDeadQtyHandling;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private DataGridView dgItems;
@@ -95,12 +95,27 @@ namespace ChickenDist.Forms
             };
             cboLoad.SelectedIndexChanged += CboLoad_SelectedIndexChanged;
 
+            lblDeadQtyHandling = new Label { Text = "جهة تحمل النافق:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 5, 0, 0), Font = Theme.FontBold };
+            cboDeadQtyHandling = new ComboBox
+            {
+                Width = 180,
+                Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            cboDeadQtyHandling.Items.Add("عدم تحميله لأحد (خصم فقط)");
+            cboDeadQtyHandling.Items.Add("تحميل على المندوب (عجز)");
+            cboDeadQtyHandling.Items.Add("تحميل على الشركة (مصروف)");
+            cboDeadQtyHandling.SelectedIndex = 0;
+            cboDeadQtyHandling.SelectedIndexChanged += CboDeadQtyHandling_SelectedIndexChanged;
+
             btnLoadItems = Theme.MakeButton("📋 تحميل البيانات", Theme.Accent);
             btnLoadItems.Size = new Size(140, 28);
             btnLoadItems.Margin = new Padding(20, 0, 0, 0);
             btnLoadItems.Click += BtnLoadItems_Click;
 
-            pnlSel.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblDriver, cboDriver, lblLoad, cboLoad, btnLoadItems });
+            pnlSel.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblDriver, cboDriver, lblLoad, cboLoad, lblDeadQtyHandling, cboDeadQtyHandling, btnLoadItems });
 
 
             // ===== 2. Grid Panel (No AutoScroll conflict) =====
@@ -318,6 +333,38 @@ namespace ChickenDist.Forms
             _loadID = (cboLoad.SelectedItem is ComboItem ci) ? ci.ID : 0;
         }
 
+        private void CboDeadQtyHandling_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateDeadQtyHandling();
+        }
+
+        private void UpdateDeadQtyHandling()
+        {
+            string mode = GetSelectedDeadQtyHandlingMode();
+            foreach (var item in _items)
+            {
+                item.DeadQtyHandling = mode;
+            }
+            // Refresh grid and totals
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                if (row.Index >= 0 && row.Index < _items.Count)
+                {
+                    var item = _items[row.Index];
+                    row.Cells["ExtraQty"].Value = item.ExtraQty.ToString("F2");
+                    row.Cells["DeficitQty"].Value = item.DeficitQty.ToString("F2");
+                }
+            }
+            UpdateTotals();
+        }
+
+        private string GetSelectedDeadQtyHandlingMode()
+        {
+            if (cboDeadQtyHandling.SelectedIndex == 1) return "Driver";
+            if (cboDeadQtyHandling.SelectedIndex == 2) return "Company";
+            return "None";
+        }
+
         private void BtnLoadItems_Click(object sender, EventArgs e)
         {
             if (_loadID == 0) { MessageBox.Show("اختر الحمولة أولاً"); return; }
@@ -334,7 +381,8 @@ namespace ChickenDist.Forms
                     ProductName = r["ProductName"].ToString(),
                     LoadedQty = Convert.ToDecimal(r["LoadedQty"]),
                     SoldQty = Convert.ToDecimal(r["SoldQty"]),
-                    UnitPrice = Convert.ToDecimal(r["UnitPrice"])
+                    UnitPrice = Convert.ToDecimal(r["UnitPrice"]),
+                    DeadQtyHandling = GetSelectedDeadQtyHandlingMode()
                 };
                 
                 // حساب تلقائي في حالة عدم وجود مبيعات مسجلة مسبقاً (تسهيلاً على المحاسب)
@@ -501,7 +549,8 @@ namespace ChickenDist.Forms
 
             if (MessageBox.Show("هل تريد تقفيل الحمولة وإغلاقها نهائياً؟", "تأكيد التقفيل", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected, settlementType, totalDeficitValue, settlementNotes);
+            string deadQtyHandling = GetSelectedDeadQtyHandlingMode();
+            int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected, settlementType, totalDeficitValue, settlementNotes, deadQtyHandling);
             if (hvID > 0)
             {
                 string extraMsg = "";
@@ -510,6 +559,15 @@ namespace ChickenDist.Forms
                     if (settlementType == "Advance") extraMsg = "\nتم تسجيل العجز كمديونية/سلفة على المندوب.";
                     else if (settlementType == "Deduction") extraMsg = "\nتم خصم العجز من مستحقات المندوب.";
                     else if (settlementType == "CompanyExpense") extraMsg = "\nتم تحميل العجز على الشركة كمصروف تشغيلي.";
+                }
+                if (deadQtyHandling == "Company")
+                {
+                    decimal totalDeadValue = 0;
+                    foreach (var i in _items) totalDeadValue += (i.DeadQty * i.UnitPrice);
+                    if (totalDeadValue > 0.01m)
+                    {
+                        extraMsg += $"\nتم تسجيل نافق الحمولة بقيمة {totalDeadValue:N2} ج كمصروف على الشركة.";
+                    }
                 }
 
                 MessageBox.Show($"✅ تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة.{extraMsg}", "تم التقفيل", MessageBoxButtons.OK, MessageBoxIcon.Information);

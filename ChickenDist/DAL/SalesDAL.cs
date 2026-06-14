@@ -850,7 +850,8 @@ namespace ChickenDist.DAL
 
         public static int SaveHandover(int loadID, int driverID,
             List<HandoverItemDTO> items, string notes, decimal cashCollected,
-            string settlementType = null, decimal deficitValue = 0m, string settlementNotes = null)
+            string settlementType = null, decimal deficitValue = 0m, string settlementNotes = null,
+            string deadQtyHandling = "None")
         {
             decimal totLoaded = 0, totRet = 0, totDead = 0, totExtra = 0, totDef = 0;
             decimal totalSoldValue = 0;
@@ -874,12 +875,13 @@ namespace ChickenDist.DAL
             {
                 // 1. تسجيل التقفيل
                 hvID = DbHelper.ExecuteInsertTrans(trans,
-                    @"INSERT INTO DriverHandovers(HandoverDate,LoadID,DriverID,TotalLoaded,TotalReturned,TotalDead,TotalExtra,TotalDeficit,Notes,CreatedBy)
-                      VALUES(@dt,@lid,@did,@tl,@tr,@td,@te,@tdf,@n,@by)",
+                    @"INSERT INTO DriverHandovers(HandoverDate,LoadID,DriverID,TotalLoaded,TotalReturned,TotalDead,TotalExtra,TotalDeficit,Notes,CreatedBy,DeadQtyHandling)
+                      VALUES(@dt,@lid,@did,@tl,@tr,@td,@te,@tdf,@n,@by,@dqh)",
                     DbHelper.P("@dt", closedAt), DbHelper.P("@lid", loadID), DbHelper.P("@did", driverID),
                     DbHelper.P("@tl", totLoaded), DbHelper.P("@tr", totRet), DbHelper.P("@td", totDead),
                     DbHelper.P("@te", totExtra), DbHelper.P("@tdf", totDef),
-                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@dqh", deadQtyHandling));
 
                 if (hvID <= 0) throw new Exception("فشل في إنشاء سجل التقفيل.");
 
@@ -933,6 +935,27 @@ namespace ChickenDist.DAL
                               VALUES(GETDATE(), N'عجز حمولة مندوب', @amt, @n, @by)",
                             DbHelper.P("@amt", deficitValue),
                             DbHelper.P("@n", settlementNotes),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
+
+                // 6. تسجيل قيمة النافق كمصروف للشركة في حال تم اختيار ذلك
+                if (deadQtyHandling == "Company" && totDead > 0)
+                {
+                    decimal totalDeadValue = 0;
+                    foreach (var i in items)
+                    {
+                        totalDeadValue += (i.DeadQty * i.UnitPrice);
+                    }
+
+                    if (totalDeadValue > 0)
+                    {
+                        string driverName = DbHelper.ScalarTrans(trans, "SELECT EmpName FROM Employees WHERE EmpID=@did", DbHelper.P("@did", driverID))?.ToString() ?? "";
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO Expenses(ExpenseDate, ExpenseType, Amount, Notes, CreatedBy)
+                              VALUES(GETDATE(), N'نافق حمولة مندوب', @amt, @n, @by)",
+                            DbHelper.P("@amt", totalDeadValue),
+                            DbHelper.P("@n", $"نافق حمولة المندوب ({driverName}) - حمولة #{loadID} - جهة التحمل: الشركة"),
                             DbHelper.P("@by", Session.EmpID));
                     }
                 }
@@ -1463,15 +1486,17 @@ namespace ChickenDist.DAL
         public decimal ReturnedQty { get; set; }
         public decimal DeadQty { get; set; }
         public decimal UnitPrice { get; set; }
+        public string DeadQtyHandling { get; set; } = "None"; // "Driver", "Company", "None"
 
-        // ✅ قاعدة: النافق = عجز — لا يخصم النافق من المتوقع، فكل نافق يحاسب عليه المندوب
-        // المتوقع = المحمل - المرتجع - النافق (النافق يخصم من حمولة المندوب ولا يتحمله أحد)
-        // عجز الكمية = المتوقع - المباع (إذا كان المتوقع > المباع)
         public decimal DeficitQty
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty;
+                if (DeadQtyHandling == "Company" || DeadQtyHandling == "None")
+                {
+                    expected -= DeadQty;
+                }
                 return expected > SoldQty ? expected - SoldQty : 0;
             }
         }
@@ -1480,7 +1505,11 @@ namespace ChickenDist.DAL
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty - DeadQty;
+                decimal expected = LoadedQty - ReturnedQty;
+                if (DeadQtyHandling == "Company" || DeadQtyHandling == "None")
+                {
+                    expected -= DeadQty;
+                }
                 return SoldQty > expected ? SoldQty - expected : 0;
             }
         }

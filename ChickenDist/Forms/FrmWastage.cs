@@ -10,11 +10,11 @@ namespace ChickenDist.Forms
 {
     public class FrmWastage : Form
     {
-        private ComboBox cboWarehouse, cboDriver;
+        private ComboBox cboWarehouse, cboDriver, cboProduct;
         private DateTimePicker dtpDate;
         private TextBox txtNotes;
         private DataGridView dgItems;
-        private Button btnSave, btnAddItem;
+        private Button btnSave, btnAddItem, btnSearchProduct;
         private Label lblTotal;
 
         private DataTable dtProducts;
@@ -36,12 +36,14 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.KeyPreview = true;
+            this.KeyDown += FrmWastage_KeyDown;
 
             // Flow panel for top info
             var pnlInfo = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 160,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 12, 10, 10),
                 RightToLeft = RightToLeft.Yes
@@ -59,19 +61,43 @@ namespace ChickenDist.Forms
             var lblNotes = new Label { Text = "ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtNotes = new TextBox { Width = 200, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
 
-            pnlInfo.Controls.AddRange(new Control[] { lblDate, dtpDate, lblWh, cboWarehouse, lblDriver, cboDriver, lblNotes, txtNotes });
+            // Row 2 of inputs: Product selection
+            var lblProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 15, 0, 0), Font = Theme.FontBold };
+            cboProduct = new ComboBox
+            {
+                Width = 350,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 10, 0, 0)
+            };
+
+            btnSearchProduct = Theme.MakeButton("🔍 بحث بالاسم/الكود (F3)", Theme.Accent);
+            btnSearchProduct.Width = 180;
+            btnSearchProduct.Height = 28;
+            btnSearchProduct.Margin = new Padding(10, 10, 0, 0);
+            btnSearchProduct.Click += BtnSearchProduct_Click;
+
+            btnAddItem = Theme.MakeButton("➕ إضافة صنف", Theme.Primary);
+            btnAddItem.Width = 120;
+            btnAddItem.Height = 28;
+            btnAddItem.Margin = new Padding(10, 10, 0, 0);
+            btnAddItem.Click += BtnAddItem_Click;
+
+            pnlInfo.Controls.AddRange(new Control[] { 
+                lblDate, dtpDate, lblWh, cboWarehouse, lblDriver, cboDriver, lblNotes, txtNotes,
+                lblProd, cboProduct, btnSearchProduct, btnAddItem 
+            });
 
             // Grid Panel
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             
-            // Header panel for Grid with Add Button
+            // Header panel for Grid
             var pnlGridHeader = new Panel { Dock = DockStyle.Top, Height = 40 };
             var lblGridTitle = new Label { Text = "📦 بنود الأصناف التالفة:", Font = Theme.FontHeader, ForeColor = Theme.TextMain, AutoSize = true, Location = new Point(5, 10) };
-            btnAddItem = Theme.MakeButton("➕ إضافة صنف تالف", Theme.Primary);
-            btnAddItem.Location = new Point(810, 5);
-            btnAddItem.Size = new Size(160, 30);
-            btnAddItem.Click += BtnAddItem_Click;
-            pnlGridHeader.Controls.AddRange(new Control[] { lblGridTitle, btnAddItem });
+            pnlGridHeader.Controls.Add(lblGridTitle);
 
             dgItems = new DataGridView
             {
@@ -93,16 +119,8 @@ namespace ChickenDist.Forms
             };
 
             // Columns
-            var colProd = new DataGridViewComboBoxColumn
-            {
-                Name = "ProductID",
-                HeaderText = "الصنف التالف",
-                FlatStyle = FlatStyle.Flat,
-                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
-                FillWeight = 150
-            };
-            dgItems.Columns.Add(colProd);
-
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف التالف", ReadOnly = true, FillWeight = 150 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Qty", HeaderText = "الكمية التالفة", FillWeight = 50, ValueType = typeof(decimal) });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostPrice", HeaderText = "تكلفة الوحدة", ReadOnly = true, FillWeight = 50 });
@@ -155,6 +173,15 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void FrmWastage_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F3)
+            {
+                BtnSearchProduct_Click(null, null);
+                e.Handled = true;
+            }
+        }
+
         private void LoadWarehouseCombo()
         {
             try
@@ -199,14 +226,14 @@ namespace ChickenDist.Forms
             try
             {
                 dtProducts = DbHelper.Query("SELECT ProductID, ProductName, PurchasePrice, ISNULL(Unit, N'وحدة') AS Unit FROM Products WHERE IsActive = 1 ORDER BY ProductName");
-                var col = (DataGridViewComboBoxColumn)dgItems.Columns["ProductID"];
-                col.Items.Clear();
+                cboProduct.Items.Clear();
+                cboProduct.Items.Add(new ComboItem(0, "-- اختر الصنف --"));
                 foreach (DataRow r in dtProducts.Rows)
                 {
-                    col.Items.Add(new ComboItem((int)r["ProductID"], r["ProductName"].ToString()));
+                    cboProduct.Items.Add(new ComboItem((int)r["ProductID"], r["ProductName"].ToString()));
                 }
-                col.DisplayMember = "Text";
-                col.ValueMember = null; // To pass the ComboItem object
+                cboProduct.DisplayMember = "Text";
+                cboProduct.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -214,11 +241,66 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void BtnSearchProduct_Click(object sender, EventArgs e)
+        {
+            int? warehouseID = null;
+            if (cboWarehouse.SelectedItem is ComboItem w && w.ID > 0)
+                warehouseID = w.ID;
+
+            using (var frm = new FrmProductSearch(warehouseID))
+            {
+                if (frm.ShowDialog() == DialogResult.OK)
+                {
+                    for (int i = 0; i < cboProduct.Items.Count; i++)
+                    {
+                        if (cboProduct.Items[i] is ComboItem item && item.ID == frm.SelectedProductID)
+                        {
+                            cboProduct.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                    BtnAddItem_Click(null, null);
+                }
+            }
+        }
+
         private void BtnAddItem_Click(object sender, EventArgs e)
         {
-            int ri = dgItems.Rows.Add();
-            dgItems.CurrentCell = dgItems.Rows[ri].Cells["ProductID"];
-            dgItems.BeginEdit(true);
+            if (!(cboProduct.SelectedItem is ComboItem selectedItem) || selectedItem.ID <= 0)
+            {
+                MessageBox.Show("يرجى اختيار الصنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            foreach (DataGridViewRow r in dgItems.Rows)
+            {
+                if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == selectedItem.ID)
+                {
+                    dgItems.CurrentCell = r.Cells["Qty"];
+                    dgItems.BeginEdit(true);
+                    return;
+                }
+            }
+
+            var rows = dtProducts.Select("ProductID = " + selectedItem.ID);
+            if (rows.Length > 0)
+            {
+                string unit = rows[0]["Unit"].ToString();
+                decimal cost = Convert.ToDecimal(rows[0]["PurchasePrice"]);
+
+                int ri = dgItems.Rows.Add(
+                    selectedItem.ID,
+                    selectedItem.Text,
+                    unit,
+                    1.000m,
+                    cost.ToString("N2"),
+                    cost.ToString("N2")
+                );
+
+                dgItems.CurrentCell = dgItems.Rows[ri].Cells["Qty"];
+                dgItems.BeginEdit(true);
+                CalculateTotal();
+            }
         }
 
         private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -249,29 +331,7 @@ namespace ChickenDist.Forms
             if (e.RowIndex >= 0)
             {
                 var row = dgItems.Rows[e.RowIndex];
-                if (dgItems.Columns[e.ColumnIndex].Name == "ProductID")
-                {
-                    if (row.Cells["ProductID"].Value is ComboItem item)
-                    {
-                        // Load unit and purchase price
-                        var rows = dtProducts.Select("ProductID = " + item.ID);
-                        if (rows.Length > 0)
-                        {
-                            row.Cells["Unit"].Value = rows[0]["Unit"];
-                            decimal cost = Convert.ToDecimal(rows[0]["PurchasePrice"]);
-                            row.Cells["CostPrice"].Value = cost.ToString("N2");
-                            
-                            decimal qty = 1;
-                            if (row.Cells["Qty"].Value != null)
-                                decimal.TryParse(row.Cells["Qty"].Value.ToString(), out qty);
-                            else
-                                row.Cells["Qty"].Value = "1.000";
-
-                            row.Cells["TotalCost"].Value = (qty * cost).ToString("N2");
-                        }
-                    }
-                }
-                else if (dgItems.Columns[e.ColumnIndex].Name == "Qty")
+                if (dgItems.Columns[e.ColumnIndex].Name == "Qty")
                 {
                     decimal qty = 0;
                     if (row.Cells["Qty"].Value != null)
@@ -317,8 +377,8 @@ namespace ChickenDist.Forms
             foreach (DataGridViewRow row in dgItems.Rows)
             {
                 int pid = 0;
-                if (row.Cells["ProductID"].Value is ComboItem item)
-                    pid = item.ID;
+                if (row.Cells["ProductID"].Value != null)
+                    pid = Convert.ToInt32(row.Cells["ProductID"].Value);
 
                 if (pid <= 0)
                 {
@@ -365,7 +425,6 @@ namespace ChickenDist.Forms
                 {
                     try
                     {
-                        // Insert WastageLoss
                         var cmd = new System.Data.SqlClient.SqlCommand(@"
                             INSERT INTO WastageLoss (WastageDate, WarehouseID, ResponsibleDriverID, TotalCost, Notes, CreatedBy)
                             OUTPUT INSERTED.WastageID
@@ -379,7 +438,6 @@ namespace ChickenDist.Forms
 
                         int wastageID = (int)cmd.ExecuteScalar();
 
-                        // Insert WastageLossItems
                         foreach (var it in items)
                         {
                             var cmdItem = new System.Data.SqlClient.SqlCommand(@"
