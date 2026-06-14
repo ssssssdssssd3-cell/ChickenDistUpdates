@@ -66,7 +66,7 @@ namespace ChickenDist.Forms
             cboProduct = new ComboBox
             {
                 Width = 350,
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
                 BackColor = Theme.BgInput,
