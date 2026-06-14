@@ -1465,13 +1465,13 @@ namespace ChickenDist.DAL
         public decimal UnitPrice { get; set; }
 
         // ✅ قاعدة: النافق = عجز — لا يخصم النافق من المتوقع، فكل نافق يحاسب عليه المندوب
-        // المتوقع = المحمل - المرتجع فقط (النافق لا يُعفي المندوب)
+        // المتوقع = المحمل - المرتجع - النافق (النافق يخصم من حمولة المندوب ولا يتحمله أحد)
         // عجز الكمية = المتوقع - المباع (إذا كان المتوقع > المباع)
         public decimal DeficitQty
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
+                decimal expected = LoadedQty - ReturnedQty - DeadQty;
                 return expected > SoldQty ? expected - SoldQty : 0;
             }
         }
@@ -1480,7 +1480,7 @@ namespace ChickenDist.DAL
         {
             get
             {
-                decimal expected = LoadedQty - ReturnedQty; // لا نطرح DeadQty
+                decimal expected = LoadedQty - ReturnedQty - DeadQty;
                 return SoldQty > expected ? SoldQty - expected : 0;
             }
         }

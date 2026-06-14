@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
                     col.Items.Add(new ComboItem((int)r["ProductID"], r["ProductName"].ToString()));
                 }
                 col.DisplayMember = "Text";
-                col.ValueMember = "Self"; // To pass the ComboItem object
+                col.ValueMember = null; // To pass the ComboItem object
             }
             catch (Exception ex)
             {
