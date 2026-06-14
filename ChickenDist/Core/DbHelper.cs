@@ -220,6 +220,34 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD InternationalCode NVARCHAR(100) NULL;
                 END");
 
+                // Add WastageLoss and WastageLossItems tables
+                SafeMigrate("WastageLoss", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WastageLoss')
+                BEGIN
+                    CREATE TABLE WastageLoss (
+                        WastageID INT IDENTITY(1,1) PRIMARY KEY,
+                        WastageDate DATETIME DEFAULT GETDATE(),
+                        WarehouseID INT NULL REFERENCES Warehouses(WarehouseID),
+                        ResponsibleDriverID INT NULL REFERENCES Employees(EmpID),
+                        TotalCost DECIMAL(12,2) DEFAULT 0,
+                        Notes NVARCHAR(500),
+                        CreatedBy INT NULL REFERENCES Employees(EmpID)
+                    );
+                END");
+
+                SafeMigrate("WastageLossItems", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WastageLossItems')
+                BEGIN
+                    CREATE TABLE WastageLossItems (
+                        ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        WastageID INT NOT NULL REFERENCES WastageLoss(WastageID) ON DELETE CASCADE,
+                        ProductID INT NOT NULL REFERENCES Products(ProductID) ON DELETE CASCADE,
+                        Quantity DECIMAL(10,3) NOT NULL,
+                        CostPrice DECIMAL(10,2) NOT NULL,
+                        TotalCost DECIMAL(12,2) NOT NULL
+                    );
+                END");
+
                 // Add Discount fields to Sales
                 SafeMigrate("Sales.Discount", @"
                 IF OBJECT_ID('Sales', 'U') IS NOT NULL
@@ -1085,6 +1113,12 @@ namespace ChickenDist.Core
                                 AND t2.IsPosted = 1
                                 AND t2.FromWarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM(wli.Quantity)
+                              FROM WastageLossItems wli
+                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                              WHERE wli.ProductID = p.ProductID
+                                AND wl.WarehouseID = w.WarehouseID
+                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)), 0)
                     AS CurrentQty,
                     adj.AdjDate AS LastAdjDate
                 FROM Products p

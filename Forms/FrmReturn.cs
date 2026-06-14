@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     public class FrmReturn : Form
     {
         private ComboBox cboSale, cboClient;
-        private TextBox txtNotes;
+        private TextBox txtNotes, txtProductSearch, txtInvoiceBarcode;
         private DataGridView dgItems;
         private Button btnSave;
         private Label lblTotal;
@@ -37,10 +37,44 @@ namespace ChickenDist.Forms
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.Enter && dgItems.IsCurrentCellInEditMode)
+            if (keyData == Keys.Enter)
             {
-                dgItems.EndEdit();
-                return true;
+                if (dgItems.Focused || dgItems.EditingControl != null)
+                {
+                    dgItems.EndEdit();
+                    var curCell = dgItems.CurrentCell;
+                    if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
+                    {
+                        // Find next editable cell in the same row
+                        int nextCol = -1;
+                        for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
+                        {
+                            if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
+                            {
+                                nextCol = col;
+                                break;
+                            }
+                        }
+
+                        if (nextCol != -1)
+                        {
+                            dgItems.CurrentCell = dgItems.Rows[curCell.RowIndex].Cells[nextCol];
+                            dgItems.BeginEdit(true);
+                            return true;
+                        }
+                        else
+                        {
+                            // No more editable cells in this row, go to cboSale
+                            cboSale.Focus();
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        cboSale.Focus();
+                        return true;
+                    }
+                }
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -62,7 +96,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 110,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 12, 10, 10),
                 WrapContents = true
@@ -104,10 +138,50 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain 
             };
 
+            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtProductSearch = new TextBox 
+            { 
+                Width = 150, 
+                Height = 26, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.Yes, 
+                BorderStyle = BorderStyle.FixedSingle 
+            };
+            txtProductSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    LoadSalesCombo();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+
+            var lblInvoiceBarcode = new Label { Text = "باركود/رقم الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtInvoiceBarcode = new TextBox 
+            { 
+                Width = 140, 
+                Height = 26, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.No,
+                BorderStyle = BorderStyle.FixedSingle 
+            };
+            txtInvoiceBarcode.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
+                }
+            };
+
             var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblSale, cboSale, lblClient, cboClient, lblNotes, txtNotes });
+            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblInvoiceBarcode, txtInvoiceBarcode, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
 
             // ===== 2. Grid panel =====
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 10, 10) };
@@ -198,18 +272,43 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlFoot);
             this.Controls.Add(pnlInfo);
             pnlGrid.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
-        private void LoadCombos()
+        private void LoadSalesCombo()
         {
             cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
 
-            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date);
+            int? clientID = null;
+            if (cboClient.SelectedItem is ComboItem cc && cc.ID > 0)
+                clientID = cc.ID;
+
+            string prodSearch = txtProductSearch != null ? txtProductSearch.Text.Trim() : null;
+            if (string.IsNullOrEmpty(prodSearch)) prodSearch = null;
+
+            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, clientID, prodSearch);
             cboSale.Items.Clear();
             cboSale.Items.Add(new ComboItem(0, "-- اختر الفاتورة الأصلية لمرتجعاتها --"));
             foreach (DataRow r in dtS.Rows)
                 cboSale.Items.Add(new ComboItem((int)r["SaleID"], $"{r["SaleCode"]} | {r["ClientName"]}"));
             cboSale.DisplayMember = "Text";
+
+            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+            if (cboSale.Items.Count > 0)
+                cboSale.SelectedIndex = 0;
+        }
+
+        private void CboClient_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboSale.SelectedIndex <= 0)
+            {
+                LoadSalesCombo();
+            }
+        }
+
+        private void LoadCombos()
+        {
+            cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
 
             var dtC = ClientDAL.GetAll(true);
             cboClient.Items.Clear();
@@ -217,13 +316,11 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dtC.Rows)
                 cboClient.Items.Add(new ComboItem((int)r["ClientID"], r["ClientName"].ToString()));
             cboClient.DisplayMember = "Text";
+            cboClient.SelectedIndex = 0;
 
-            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
-            
-            if (cboSale.Items.Count > 0)
-                cboSale.SelectedIndex = 0;
-            if (cboClient.Items.Count > 0)
-                cboClient.SelectedIndex = 0;
+            cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
+
+            LoadSalesCombo();
         }
 
         private void CboSale_SelectedIndexChanged(object sender, EventArgs e)
@@ -240,6 +337,7 @@ namespace ChickenDist.Forms
                 if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
                 {
                     int clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                     foreach (ComboItem item in cboClient.Items)
                     {
                         if (item.ID == clientID)
@@ -248,12 +346,15 @@ namespace ChickenDist.Forms
                             break;
                         }
                     }
+                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
                     cboClient.Enabled = false; // Lock client selection
                 }
                 else
                 {
+                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                     if (cboClient.Items.Count > 0)
                         cboClient.SelectedIndex = 0;
+                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
                     cboClient.Enabled = true;
                 }
 
@@ -288,9 +389,11 @@ namespace ChickenDist.Forms
             }
             else
             {
+                cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
                 cboClient.Enabled = true;
                 if (cboClient.Items.Count > 0)
                     cboClient.SelectedIndex = 0;
+                cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             }
 
             dgItems.CellValueChanged += DgItems_CellValueChanged;
@@ -410,16 +513,85 @@ namespace ChickenDist.Forms
             int saleID = cs.ID;
             int? clientID = (cboClient.SelectedItem is ComboItem cc && cc.ID > 0) ? (int?)cc.ID : null;
 
-            int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems);
-            if (id > 0) 
-            { 
-                MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
-                txtNotes.Text = "";
-                cboSale.SelectedIndex = 0; // Trigger reload
-            }
-            else 
+            try
             {
-                MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems);
+                if (id > 0) 
+                { 
+                    MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                    txtNotes.Text = "";
+                    cboSale.SelectedIndex = 0; // Trigger reload
+                }
+                else 
+                {
+                    MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل حفظ مرتجع المبيعات", ex, "FrmReturn.BtnSave_Click");
+                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void DoBarcodeSearch(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return;
+            try
+            {
+                var dt = DbHelper.Query("SELECT SaleID FROM Sales WHERE SaleCode = @code OR CAST(SaleID AS VARCHAR) = @code", DbHelper.P("@code", code));
+                if (dt.Rows.Count > 0)
+                {
+                    int saleID = Convert.ToInt32(dt.Rows[0]["SaleID"]);
+                    bool found = false;
+                    
+                    cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
+                    for (int i = 0; i < cboSale.Items.Count; i++)
+                    {
+                        if (cboSale.Items[i] is ComboItem item && item.ID == saleID)
+                        {
+                            cboSale.SelectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        var dtSale = DbHelper.Query(@"
+                            SELECT s.SaleID, s.SaleCode, c.ClientName 
+                            FROM Sales s 
+                            LEFT JOIN Clients c ON s.ClientID = c.ClientID 
+                            WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
+                        if (dtSale.Rows.Count > 0)
+                        {
+                            var row = dtSale.Rows[0];
+                            var newItem = new ComboItem(saleID, $"{row["SaleCode"]} | {row["ClientName"]}");
+                            cboSale.Items.Add(newItem);
+                            cboSale.SelectedItem = newItem;
+                            found = true;
+                        }
+                    }
+                    cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+
+                    if (found)
+                    {
+                        CboSale_SelectedIndexChanged(cboSale, EventArgs.Empty);
+                        dgItems.Focus();
+                    }
+                    else
+                    {
+                        MessageBox.Show("الفاتورة غير موجودة أو معطوبة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("عذراً، رقم الفاتورة أو الباركود غير صحيح أو غير مسجل بالنظام.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

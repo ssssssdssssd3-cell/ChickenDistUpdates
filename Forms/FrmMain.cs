@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = AppConfig.CompanyName + " - النظام الرئيسي";
+            this.Text = AppConfig.CompanyName + " - النظام الرئيسي | الإصدار: " + UpdateManager.CurrentVersion;
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -30,7 +30,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgLight;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
             // ===== TopBar =====
             this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };
@@ -119,53 +119,151 @@ namespace ChickenDist.Forms
         private void BuildNavBar()
         {
             pnlNavBar.Controls.Clear();
-            
-            var items = new (string icon, string label, string screen, Action action)[]
+
+            // ── تعريف المجموعات مع قوائمها المنسدلة ──
+            // كل مجموعة: (ايكون، عنوان، لون، قائمة العناصر[(عنوان، screen، action)])
+            var groups = new (string icon, string label, Color color, (string text, string screen, Action action)[] items)[]
             {
-                ("🏠", "الرئيسية",          "",               () => NavigateTo(new FrmDashboard())),
-                ("📦", "الأصناف",            "Products",       () => NavigateTo(new FrmProducts())),
-                ("⚖️", "جرد المخزن",        "Products",       () => NavigateTo(new FrmInventory())),
-                ("👥", "العملاء",            "Clients",        () => NavigateTo(new FrmClients())),
-                ("🤝", "الموردين",           "Suppliers",      () => NavigateTo(new FrmSuppliers())),
-                ("🛒", "فاتورة مبيعات",      "Sales",          () => NavigateTo(new FrmSale())),
-                ("📋", "سجل المبيعات",       "Sales",          () => NavigateTo(new FrmSalesList())),
-                ("↩", "مرتجع بيع",          "Returns",        () => NavigateTo(new FrmReturn())),
-                ("📥", "فاتورة مشتريات",     "Purchases",      () => NavigateTo(new FrmPurchase())),
-                ("🚚", "حمولة مندوب",       "DriverHandover", () => NavigateTo(new FrmDriverHandover())),
-                ("🖥️", "مراقبة المناديب",    "DriverHandover", () => NavigateTo(new FrmDriversMonitor())),
-                ("📋", "عهدة المناديب",      "DriverHandover", () => NavigateTo(new FrmDriverCustody())),
-                ("💰", "الخزنة",             "CashBox",        () => NavigateTo(new FrmCashBox())),
-                ("📊", "التقارير",           "Reports",        () => NavigateTo(new FrmReports())),
-                ("📑", "تقفيل يومية",        "Reports",        () => NavigateTo(new FrmDailyClosing())),
-                ("👔", "الموظفين",           "Employees",      () => NavigateTo(new FrmEmployees())),
-                ("⚙️", "الإعدادات",         "",               () => new FrmSettings().ShowDialog()),
-                ("🔄", "تحديث البرنامج",     "",               () => UpdateManager.CheckForUpdates(true)),
+                ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
+                    ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
+                }),
+
+                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
+                    ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
+                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
+                    ("📋 سجل المبيعات", "Sales",      (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
+                    ("📡 بوابة المحاسب",  "Sales",      (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                }),
+
+                ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
+                    ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
+                    ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
+                    ("📋 سجل المشتريات", "Purchases",      (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                }),
+
+                ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
+                    ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
+                    ("📥 استيراد الأصناف",   "Products",          (Action)(() => NavigateTo(new FrmImportProducts()))),
+                    ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
+                    ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("🗑️ الهوالك والتالف",  "Inventory",         (Action)(() => NavigateTo(new FrmWastage()))),
+                    ("🔄 تحويل مخزني",     "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
+                    ("📋 سجل التحويلات",   "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
+                    ("📊 سجل تغير الأسعار", "Products",          (Action)(() => NavigateTo(new FrmPriceChanges()))),
+                }),
+
+                ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
+                    ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("🤝 الموردين",  "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
+                    ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
+                }),
+
+                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
+                    ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
+                    ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
+                    ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
+                    ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
+                    ("📋 عهدة المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverCustody()))),
+                    ("🏆 أداء المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
+                }),
+
+                ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
+                    ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("📊 التقارير",     "Reports",      (Action)(() => NavigateTo(new FrmReports()))),
+                    ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
+                }),
+
+                ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
+                    ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
+                    ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
+                    ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
+                    ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
+                }),
             };
 
-            foreach (var item in items)
+            foreach (var group in groups)
             {
-                if (!string.IsNullOrEmpty(item.screen) && !Session.CanAccess(item.screen)) continue;
+                // تحقق إذا المجموعة كلها ليس لها صلاحية → تخطَّ
+                bool hasAnyAccess = false;
+                foreach (var item in group.items)
+                {
+                    if (string.IsNullOrEmpty(item.screen) || Session.CanAccess(item.screen))
+                    { hasAnyAccess = true; break; }
+                }
+                if (!hasAnyAccess) continue;
 
+                // بناء القائمة المنسدلة
+                var menu = new ContextMenuStrip();
+                menu.BackColor  = Color.FromArgb(30, 35, 45);
+                menu.ForeColor  = Color.White;
+                menu.Font       = new Font("Segoe UI", 10f);
+                menu.ShowImageMargin = false;
+                menu.Renderer   = new ToolStripProfessionalRenderer(new DarkMenuColorTable());
+
+                foreach (var item in group.items)
+                {
+                    if (!string.IsNullOrEmpty(item.screen) && !Session.CanAccess(item.screen)) continue;
+                    var menuItem = new ToolStripMenuItem(item.text)
+                    {
+                        ForeColor = Color.White,
+                        BackColor = Color.FromArgb(30, 35, 45),
+                        Padding   = new Padding(8, 6, 8, 6)
+                    };
+                    var act = item.action;
+                    menuItem.Click += (s, e) => act();
+                    menu.Items.Add(menuItem);
+                }
+
+                // الزر الرئيسي للمجموعة
                 var btn = new Button
                 {
-                    Text = $"{item.icon} {item.label}",
-                    Size = new Size(130, 45),
+                    Name      = group.label,
+                    Text      = $"{group.icon}\n{group.label} ▾",
+                    Size      = new Size(108, 54),
                     FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.Transparent,
+                    BackColor = group.color,
                     ForeColor = Color.White,
-                    Font = Theme.FontArabic,
+                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Margin = new Padding(5),
-                    Cursor = Cursors.Hand
+                    Margin    = new Padding(3, 4, 3, 4),
+                    Cursor    = Cursors.Hand,
                 };
-                btn.FlatAppearance.BorderSize = 0;
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 255, 255, 255);
-                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(80, Theme.Accent.R, Theme.Accent.G, Theme.Accent.B);
-                var act = item.action;
-                btn.Click += (s, e) => act();
+                btn.FlatAppearance.BorderSize        = 0;
+                btn.FlatAppearance.MouseOverBackColor = ControlPaint.Light(group.color, 0.3f);
+                btn.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(group.color, 0.1f);
+
+                // زر الرئيسية يتنقل مباشرة بدون قائمة
+                if (group.label == "الرئيسية")
+                {
+                    btn.Text = "🏠\nالرئيسية";
+                    btn.Click += (s, e) => NavigateTo(new FrmDashboard());
+                }
+                else
+                {
+                    btn.Click += (s, e) =>
+                    {
+                        menu.Show(btn, new System.Drawing.Point(0, btn.Height));
+                    };
+                }
+
                 pnlNavBar.Controls.Add(btn);
             }
         }
+
+        // جدول ألوان القائمة الداكنة
+        private class DarkMenuColorTable : ProfessionalColorTable
+        {
+            public override Color MenuItemSelected         => Color.FromArgb(55, 65, 90);
+            public override Color MenuItemBorder           => Color.FromArgb(70, 80, 100);
+            public override Color MenuBorder               => Color.FromArgb(50, 55, 70);
+            public override Color ToolStripDropDownBackground => Color.FromArgb(30, 35, 45);
+            public override Color ImageMarginGradientBegin => Color.FromArgb(30, 35, 45);
+            public override Color ImageMarginGradientMiddle => Color.FromArgb(30, 35, 45);
+            public override Color ImageMarginGradientEnd   => Color.FromArgb(30, 35, 45);
+        }
+
 
         public void NavigateTo(Form form)
         {
@@ -182,6 +280,164 @@ namespace ChickenDist.Forms
             pnlContent.Controls.Add(form);
             form.Show();
             form.BringToFront();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
+            Core.DriverPortalServer.Stop();
+            base.OnFormClosed(e);
+        }
+
+        private void OpenCloudImportDialog()
+        {
+            try
+            {
+                string code = "";
+                if (ShowInputDialog("☁️ استيراد من السحاب", "أدخل رمز الاستيراد المكون من 5 حروف أو أكثر:", ref code))
+                {
+                    code = code.Trim();
+                    if (string.IsNullOrEmpty(code)) return;
+
+                    string tempFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scratch", $"temp_import_{code}.csv");
+                    string scratchDir = System.IO.Path.GetDirectoryName(tempFile);
+                    if (!System.IO.Directory.Exists(scratchDir)) System.IO.Directory.CreateDirectory(scratchDir);
+
+                    string csvContent = "";
+                    using (var wc = new System.Net.WebClient())
+                    {
+                        wc.Encoding = System.Text.Encoding.UTF8;
+                        wc.Headers[System.Net.HttpRequestHeader.UserAgent] = "ChickenDistApp";
+                        
+                        string downloadUrl = $"https://api.pastes.dev/raw/{code}";
+                        try
+                        {
+                            csvContent = wc.DownloadString(downloadUrl);
+                        }
+                        catch
+                        {
+                            csvContent = wc.DownloadString($"https://api.pastes.dev/{code}");
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(csvContent) || csvContent.Contains("{\"error\""))
+                    {
+                        throw new Exception("الرمز غير صحيح، أو انتهت صلاحيته.");
+                    }
+
+                    string decryptedCsv = SecurityHelper.Decrypt(csvContent);
+
+                    if (string.IsNullOrWhiteSpace(decryptedCsv) || (!decryptedCsv.Contains("رقم_الفاتورة") && !decryptedCsv.Contains("رقم_الطلب")))
+                    {
+                        throw new Exception("المستند المحمل ليس كشف مبيعات أو طلبات صالح.");
+                    }
+
+                    System.IO.File.WriteAllText(tempFile, decryptedCsv, System.Text.Encoding.UTF8);
+
+                    using (var driverDlg = new Form())
+                    {
+                        driverDlg.Text = "اختر المستخدم للاستيراد";
+                        driverDlg.Size = new Size(350, 180);
+                        driverDlg.StartPosition = FormStartPosition.CenterParent;
+                        driverDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        driverDlg.MaximizeBox = false;
+                        driverDlg.MinimizeBox = false;
+                        driverDlg.RightToLeft = RightToLeft.Yes;
+                        driverDlg.BackColor = Theme.BgMain;
+
+                        var lbl = new Label { Text = "اختر المندوب/المحاسب المنسوب له هذا الاستيراد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                        var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                        // إضافة خيار افتراضي للمحاسب
+                        cbo.Items.Add(new ComboItem(-99, "المحاسب (حجوزات/طلبات)"));
+
+                        var dt = EmployeeDAL.GetDrivers();
+                        foreach (DataRow r in dt.Rows)
+                            cbo.Items.Add(new ComboItem((int)r["EmpID"], r["EmpName"].ToString()));
+                        cbo.DisplayMember = "Text";
+                        cbo.SelectedIndex = 0;
+
+                        var btnOk = Theme.MakeButton("📥 بدء الاستيراد", 180, 90, 130, 32, Theme.Accent);
+                        btnOk.Click += (senderDlg, eDlg) => {
+                            if (cbo.SelectedItem is ComboItem ci)
+                            {
+                                driverDlg.DialogResult = DialogResult.OK;
+                                driverDlg.Close();
+
+                                var preview = new FrmImportPreview(tempFile, DateTime.Today, ci.ID, ci.Text);
+                                preview.FormClosed += (s, ev) => {
+                                    try { if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile); } catch { }
+                                };
+                                NavigateTo(preview);
+                            }
+                        };
+
+                        driverDlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                        driverDlg.ShowDialog(this);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ أثناء تحميل البيانات من السحاب:\n" + ex.Message, "خطأ الاستيراد السحابي", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static bool ShowInputDialog(string title, string promptText, ref string value)
+        {
+            Form form = new Form();
+            Label label = new Label();
+            TextBox textBox = new TextBox();
+            Button buttonOk = new Button();
+            Button buttonCancel = new Button();
+
+            form.Text = title;
+            label.Text = promptText;
+            textBox.Text = value;
+
+            buttonOk.Text = "موافق";
+            buttonCancel.Text = "إلغاء";
+            buttonOk.DialogResult = DialogResult.OK;
+            buttonCancel.DialogResult = DialogResult.Cancel;
+
+            label.SetBounds(9, 20, 372, 13);
+            textBox.SetBounds(12, 36, 372, 20);
+            buttonOk.SetBounds(228, 72, 75, 23);
+            buttonCancel.SetBounds(309, 72, 75, 23);
+
+            label.AutoSize = true;
+            textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
+            buttonOk.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+            form.ClientSize = new Size(396, 107);
+            form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
+            form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
+            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+            form.StartPosition = FormStartPosition.CenterParent;
+            form.MinimizeBox = false;
+            form.MaximizeBox = false;
+            form.AcceptButton = buttonOk;
+            form.CancelButton = buttonCancel;
+            
+            form.RightToLeft = RightToLeft.Yes;
+            form.RightToLeftLayout = true;
+            form.Font = Theme.FontMain;
+            form.BackColor = Theme.BgMain;
+            label.ForeColor = Theme.TextMain;
+            textBox.BackColor = Theme.BgInput;
+            textBox.ForeColor = Theme.TextMain;
+            buttonOk.BackColor = Theme.Accent;
+            buttonOk.ForeColor = Color.White;
+            buttonCancel.BackColor = Theme.BgCard;
+            buttonCancel.ForeColor = Theme.TextMain;
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                value = textBox.Text;
+                return true;
+            }
+            return false;
         }
     }
 
@@ -233,12 +489,22 @@ namespace ChickenDist.Forms
                 var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
                 decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
                 var openLoads = DriverDAL.GetOpenLoads();
+                int belowMinCount = InventoryDAL.GetBelowMinStockCount();
 
                 pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
                 pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
                 pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
+
+                var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
+                cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                foreach (Control child in cardBelowMin.Controls)
+                {
+                    child.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                    child.Cursor = Cursors.Hand;
+                }
+                pnlCards.Controls.Add(cardBelowMin);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
             mainTbl.Controls.Add(pnlCards, 0, 1);
 
             // 3. Lower Split (Quick Actions & Recent Invoices)
@@ -262,16 +528,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15),
                 Margin = new Padding(15, 0, 8, 15)
             };
-            var lblActTitle = new Label { Text = "⚡ الوصول السريع والعمليات", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
+            var lblActTitle = new Label { Text = "⚡ إجراءات سريعة", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
             pnlActions.Controls.Add(lblActTitle);
 
             int btnY = 55;
-            AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
-            AddQuickButton(pnlActions, "🚚 تقفيل حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
-            AddQuickButton(pnlActions, "💰 تسجيل حركة خزنة ومصروف", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
-            AddQuickButton(pnlActions, "⚖️ جرد كميات وتعديل المخزن", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
-            AddQuickButton(pnlActions, "👥 إدارة وبيانات العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
-            AddQuickButton(pnlActions, "📊 عرض التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
+            if (Session.CanAccess("Sales")) AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
+            if (Session.CanAccess("Vehicles")) AddQuickButton(pnlActions, "🚗 المركبات والتحميل", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
+            if (Session.CanAccess("DriverHandover")) AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
+            if (Session.CanAccess("CashBox")) AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
+            if (Session.CanAccess("Inventory")) AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
+            if (Session.CanAccess("Clients")) AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
+            if (Session.CanAccess("Reports")) AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 
@@ -321,7 +588,7 @@ namespace ChickenDist.Forms
                     dgRecent.Rows.Add(r["SaleCode"], typeArabic, clientOrDriver, Convert.ToDecimal(r["TotalAmount"]).ToString("N2") + " ج");
                 }
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load recent sales failed: " + ex.Message); }
 
             pnlRecent.Controls.Add(dgRecent);
             lowerTbl.Controls.Add(pnlRecent, 1, 0);
@@ -385,3 +652,5 @@ namespace ChickenDist.Forms
         }
     }
 }
+
+

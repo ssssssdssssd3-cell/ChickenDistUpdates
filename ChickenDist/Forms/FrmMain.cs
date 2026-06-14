@@ -148,6 +148,7 @@ namespace ChickenDist.Forms
                     ("📥 استيراد الأصناف",   "Products",          (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("🗑️ الهوالك والتالف",  "Inventory",         (Action)(() => NavigateTo(new FrmWastage()))),
                     ("🔄 تحويل مخزني",     "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
                     ("📋 سجل التحويلات",   "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
                     ("📊 سجل تغير الأسعار", "Products",          (Action)(() => NavigateTo(new FrmPriceChanges()))),
@@ -488,10 +489,20 @@ namespace ChickenDist.Forms
                 var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
                 decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
                 var openLoads = DriverDAL.GetOpenLoads();
+                int belowMinCount = InventoryDAL.GetBelowMinStockCount();
 
                 pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
                 pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
                 pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
+
+                var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
+                cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                foreach (Control child in cardBelowMin.Controls)
+                {
+                    child.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                    child.Cursor = Cursors.Hand;
+                }
+                pnlCards.Controls.Add(cardBelowMin);
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
             mainTbl.Controls.Add(pnlCards, 0, 1);

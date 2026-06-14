@@ -9,7 +9,7 @@ namespace ChickenDist.DAL
     public static class InventoryDAL
     {
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "")
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false)
         {
             string filter = "";
             List<SqlParameter> prms = new List<SqlParameter>();
@@ -25,6 +25,7 @@ namespace ChickenDist.DAL
             }
 
             string sql = $@"
+                SELECT * FROM (
                 SELECT 
                     p.ProductID,
                     p.ProductCode,
@@ -90,7 +91,15 @@ namespace ChickenDist.DAL
                             WHERE ti.ProductID = p.ProductID
                               AND t.IsPosted = 1
                               AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0) AS BookQty
+                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Wastage & Loss
+                    - ISNULL((SELECT SUM(wli.Quantity)
+                              FROM WastageLossItems wli
+                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                              WHERE wli.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
+                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
+                    p.IsActive
                 FROM Products p
                 OUTER APPLY (
                     SELECT TOP 1 sa.AdjDate, sa.ActualQty 
@@ -99,8 +108,10 @@ namespace ChickenDist.DAL
                       {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
                     ORDER BY sa.AdjDate DESC
                 ) adj
-                WHERE p.IsActive = 1 {filter}
-                ORDER BY p.ProductName";
+                ) AS t
+                WHERE t.IsActive = 1 {filter}
+                {(belowMinOnly ? " AND t.MinStockLimit > 0 AND t.BookQty <= t.MinStockLimit" : "")}
+                ORDER BY t.ProductName";
 
             return DbHelper.Query(sql, prms.ToArray());
         }
@@ -171,7 +182,14 @@ namespace ChickenDist.DAL
                             WHERE ti.ProductID = p.ProductID
                               AND t.IsPosted = 1
                               AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0) AS BookQty
+                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    -- Outgoing since adjustment: Wastage & Loss
+                    - ISNULL((SELECT SUM(wli.Quantity)
+                              FROM WastageLossItems wli
+                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                              WHERE wli.ProductID = p.ProductID
+                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
+                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
                 FROM Products p
                 OUTER APPLY (
                     SELECT TOP 1 sa.AdjDate, sa.ActualQty 
@@ -441,6 +459,27 @@ namespace ChickenDist.DAL
                 ORDER BY MovDate ASC";
 
             return DbHelper.Query(sql, prms.ToArray());
+        }
+
+        public static int GetBelowMinStockCount()
+        {
+            try
+            {
+                // We sum CurrentQty across all warehouses per product and see if it's below MinStockLimit
+                object val = DbHelper.Scalar(@"
+                    SELECT COUNT(1)
+                    FROM (
+                        SELECT ProductID, MinStockLimit, SUM(CurrentQty) AS TotalStock
+                        FROM vw_CurrentStockByWarehouse
+                        GROUP BY ProductID, MinStockLimit
+                    ) AS t
+                    WHERE t.MinStockLimit > 0 AND t.TotalStock <= t.MinStockLimit");
+                return val != null ? Convert.ToInt32(val) : 0;
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }

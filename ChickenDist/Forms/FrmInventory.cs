@@ -18,6 +18,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock;
+        private CheckBox chkBelowMin;
 
         // Adjustment Form Controls
         private Label lblSelectedProduct, lblBookQtyVal, lblDiffVal;
@@ -40,11 +41,15 @@ namespace ChickenDist.Forms
         private ComboBox cboLogWarehouse;
         private Button btnLoadLogs, btnPrintLogs;
 
-        public FrmInventory()
+        public FrmInventory(bool belowMinOnly = false)
         {
             InitUI();
             LoadWarehouses();
             LoadLogWarehouses();
+            if (belowMinOnly && chkBelowMin != null)
+            {
+                chkBelowMin.Checked = true;
+            }
             LoadStock();
             LoadLogs();
         }
@@ -109,7 +114,18 @@ namespace ChickenDist.Forms
             btnPrintStock.Margin = new Padding(5, 0, 5, 0);
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblSch, txtSearch, btnSearch, btnMovement, btnPrintStock });
+            chkBelowMin = new CheckBox
+            {
+                Text = "⚠️ حد الطلب فقط",
+                ForeColor = Color.Yellow,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(15, 6, 5, 0),
+                RightToLeft = RightToLeft.Yes
+            };
+            chkBelowMin.CheckedChanged += (s, e) => LoadStock();
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblSch, txtSearch, btnSearch, chkBelowMin, btnMovement, btnPrintStock });
 
             dgStock = MakeGrid();
             dgStock.ReadOnly = false;
@@ -285,7 +301,7 @@ namespace ChickenDist.Forms
             {
                 wid = ci.ID;
             }
-            var dt = InventoryDAL.GetStock(wid, txtSearch.Text);
+            var dt = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked);
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (DataRow r in dt.Rows)
             {

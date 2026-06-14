@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     public class FrmReturn : Form
     {
         private ComboBox cboSale, cboClient;
-        private TextBox txtNotes, txtProductSearch;
+        private TextBox txtNotes, txtProductSearch, txtInvoiceBarcode;
         private DataGridView dgItems;
         private Button btnSave;
         private Label lblTotal;
@@ -158,10 +158,30 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var lblInvoiceBarcode = new Label { Text = "باركود/رقم الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            txtInvoiceBarcode = new TextBox 
+            { 
+                Width = 140, 
+                Height = 26, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                RightToLeft = RightToLeft.No,
+                BorderStyle = BorderStyle.FixedSingle 
+            };
+            txtInvoiceBarcode.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
+                }
+            };
+
             var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
             txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
+            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblInvoiceBarcode, txtInvoiceBarcode, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
 
             // ===== 2. Grid panel =====
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 10, 10) };
@@ -511,6 +531,67 @@ namespace ChickenDist.Forms
             {
                 AppLogger.Error("فشل حفظ مرتجع المبيعات", ex, "FrmReturn.BtnSave_Click");
                 MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void DoBarcodeSearch(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return;
+            try
+            {
+                var dt = DbHelper.Query("SELECT SaleID FROM Sales WHERE SaleCode = @code OR CAST(SaleID AS VARCHAR) = @code", DbHelper.P("@code", code));
+                if (dt.Rows.Count > 0)
+                {
+                    int saleID = Convert.ToInt32(dt.Rows[0]["SaleID"]);
+                    bool found = false;
+                    
+                    cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
+                    for (int i = 0; i < cboSale.Items.Count; i++)
+                    {
+                        if (cboSale.Items[i] is ComboItem item && item.ID == saleID)
+                        {
+                            cboSale.SelectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        var dtSale = DbHelper.Query(@"
+                            SELECT s.SaleID, s.SaleCode, c.ClientName 
+                            FROM Sales s 
+                            LEFT JOIN Clients c ON s.ClientID = c.ClientID 
+                            WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
+                        if (dtSale.Rows.Count > 0)
+                        {
+                            var row = dtSale.Rows[0];
+                            var newItem = new ComboItem(saleID, $"{row["SaleCode"]} | {row["ClientName"]}");
+                            cboSale.Items.Add(newItem);
+                            cboSale.SelectedItem = newItem;
+                            found = true;
+                        }
+                    }
+                    cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+
+                    if (found)
+                    {
+                        CboSale_SelectedIndexChanged(cboSale, EventArgs.Empty);
+                        dgItems.Focus();
+                    }
+                    else
+                    {
+                        MessageBox.Show("الفاتورة غير موجودة أو معطوبة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("عذراً، رقم الفاتورة أو الباركود غير صحيح أو غير مسجل بالنظام.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
