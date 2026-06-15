@@ -5,24 +5,24 @@ using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
+using System.Linq;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة مرتجع مبيعات متطورة</summary>
+    /// <summary>شاشة مرتجع مبيعات متطورة بتصميم رئيسي-تفصيلي</summary>
     public class FrmReturn : Form
     {
-        private ComboBox cboSale, cboClient;
-        private TextBox txtNotes, txtProductSearch, txtInvoiceBarcode;
-        private DataGridView dgItems;
-        private Button btnSave;
-        private Label lblTotal;
+        private DataGridView dgSales, dgItems;
+        private TextBox txtSearch, txtInvoiceBarcode, txtNotes;
         private DateTimePicker dtpFrom, dtpTo;
-        private Button btnSearch;
+        private Button btnSearch, btnSave;
+        private Label lblTotal;
+        private DataTable _salesDt;
 
         public FrmReturn()
         {
             InitUI();
-            LoadCombos();
+            LoadSales();
         }
 
         private void FrmReturn_KeyDown(object sender, KeyEventArgs e)
@@ -45,7 +45,7 @@ namespace ChickenDist.Forms
                     var curCell = dgItems.CurrentCell;
                     if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
                     {
-                        // Find next editable cell in the same row
+                        // البحث عن الخلية التالية القابلة للتعديل في نفس السطر
                         int nextCol = -1;
                         for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
                         {
@@ -64,14 +64,13 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            // No more editable cells in this row, go to cboSale
-                            cboSale.Focus();
+                            txtNotes.Focus();
                             return true;
                         }
                     }
                     else
                     {
-                        cboSale.Focus();
+                        txtNotes.Focus();
                         return true;
                     }
                 }
@@ -81,8 +80,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "مرتجع مبيعات - إدخال مباشر";
-            this.Size = new Size(1000, 650);
+            this.Text = "مرتجع مبيعات - تحديد الفاتورة والارتجاع";
+            this.Size = new Size(1100, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -91,83 +90,29 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmReturn_KeyDown;
 
-            // ===== 1. Filter bar (FlowLayoutPanel) =====
-            var pnlInfo = new FlowLayoutPanel
+            // ===== 1. Top Filter panel =====
+            var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
-                FlowDirection = FlowDirection.LeftToRight,
+                Height = 50,
+                FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10, 12, 10, 10),
-                WrapContents = true
+                Padding = new Padding(10, 10, 10, 10),
+                WrapContents = false
             };
 
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
-            dtpFrom = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
-            
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
-            dtpTo = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
 
-            btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
-            btnSearch.Size = new Size(130, 28);
-            btnSearch.Margin = new Padding(10, 0, 0, 0);
-            btnSearch.Click += (s, e) => LoadCombos();
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
 
-            var lblSale = new Label { Text = "الفاتورة الأصلية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            cboSale = new ComboBox 
-            { 
-                Width = 250, 
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown, 
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain 
-            };
-            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+            var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            txtSearch.TextChanged += (s, e) => LoadSales();
 
-            var lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            cboClient = new ComboBox 
-            { 
-                Width = 200, 
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown, 
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain 
-            };
-
-            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            txtProductSearch = new TextBox 
-            { 
-                Width = 150, 
-                Height = 26, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                RightToLeft = RightToLeft.Yes, 
-                BorderStyle = BorderStyle.FixedSingle 
-            };
-            txtProductSearch.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Keys.Enter)
-                {
-                    LoadSalesCombo();
-                    e.Handled = true;
-                    e.SuppressKeyPress = true;
-                }
-            };
-
-            var lblInvoiceBarcode = new Label { Text = "باركود/رقم الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            txtInvoiceBarcode = new TextBox 
-            { 
-                Width = 140, 
-                Height = 26, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                RightToLeft = RightToLeft.No,
-                BorderStyle = BorderStyle.FixedSingle 
-            };
+            var lblBarcode = new Label { Text = "باركود الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            txtInvoiceBarcode = new TextBox { Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
             txtInvoiceBarcode.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
@@ -178,32 +123,38 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            btnSearch = Theme.MakeButton("🔍 تحديث الفواتير", Theme.Accent);
+            btnSearch.Size = new Size(120, 28);
+            btnSearch.Margin = new Padding(20, 0, 0, 0);
+            btnSearch.Click += (s, e) => LoadSales();
 
-            pnlInfo.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblInvoiceBarcode, txtInvoiceBarcode, lblSale, cboSale, lblClient, cboClient, lblProduct, txtProductSearch, lblNotes, txtNotes });
+            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
 
-            // ===== 2. Grid panel =====
-            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 10, 10) };
-            dgItems = new DataGridView
+            // ===== 2. SplitContainer =====
+            var split = new SplitContainer
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                ReadOnly = false, // Enable editing on cells
-                SelectionMode = DataGridViewSelectionMode.CellSelect,
-                RightToLeft = RightToLeft.Yes,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(140, 40, 40), ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
-                GridColor = Theme.BorderColor,
-                ColumnHeadersHeight = 36,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                EnableHeadersVisualStyles = false
+                Orientation = Orientation.Horizontal,
+                SplitterDistance = 260
             };
+            split.Panel1.Padding = new Padding(10, 5, 10, 5);
+            split.Panel2.Padding = new Padding(10, 5, 10, 5);
 
+            // Top Grid: Sales Invoices
+            dgSales = MakeGrid();
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleID", Visible = false });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 70f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 45f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "العميل", FillWeight = 110f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "صافي القيمة", FillWeight = 55f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120f });
+            split.Panel1.Controls.Add(dgSales);
+
+            // Bottom Grid: Selected Sale Items
+            dgItems = MakeGrid();
+            dgItems.ReadOnly = false; // تفعيل التعديل على الخلايا
+            dgItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQty", HeaderText = "الكمية الأصلية بالفاتورة", ReadOnly = true, FillWeight = 50 });
@@ -227,8 +178,8 @@ namespace ChickenDist.Forms
 
             dgItems.CellValidating += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
-
-            pnlGrid.Controls.Add(dgItems);
+            dgItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(140, 40, 40); // اللون الأحمر الغامق لتمييز بنود المرتجع
+            split.Panel2.Controls.Add(dgItems);
 
             // ===== 3. Footer panel =====
             var pnlFoot = new Panel 
@@ -238,6 +189,9 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15, 10, 15, 10)
             };
+
+            var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 20), Anchor = AnchorStyles.Left };
+            txtNotes = new TextBox { Width = 300, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Location = new Point(125, 16), Anchor = AnchorStyles.Left };
             
             lblTotal = new Label 
             { 
@@ -250,8 +204,10 @@ namespace ChickenDist.Forms
             };
 
             btnSave = Theme.MakeButton("💾 حفظ مرتجع البيع", Color.FromArgb(160, 50, 50));
-            btnSave.Dock = DockStyle.Left;
             btnSave.Width = 180;
+            btnSave.Height = 36;
+            btnSave.Location = new Point(450, 12);
+            btnSave.Anchor = AnchorStyles.None;
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
             
@@ -260,105 +216,93 @@ namespace ChickenDist.Forms
                 Text = "الاختصارات: [F5] حفظ المرتجع",
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Location = new Point(10, 20),
+                Location = new Point(650, 20),
                 AutoSize = true,
-                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
+                Anchor = AnchorStyles.Right
             };
 
-            pnlFoot.Controls.AddRange(new Control[] { lblTotal, btnSave, lblHotkeys });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotes, txtNotes, lblTotal, btnSave, lblHotkeys });
 
             // ===== 4. Add controls =====
-            this.Controls.Add(pnlGrid);
+            this.Controls.Add(split);
             this.Controls.Add(pnlFoot);
-            this.Controls.Add(pnlInfo);
-            pnlGrid.BringToFront();
+            this.Controls.Add(pnlFilter);
+            split.BringToFront();
             Theme.ApplyFormRTL(this);
         }
 
-        private void LoadSalesCombo()
+        private DataGridView MakeGrid()
         {
-            cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
-
-            int? clientID = null;
-            if (cboClient.SelectedItem is ComboItem cc && cc.ID > 0)
-                clientID = cc.ID;
-
-            string prodSearch = txtProductSearch != null ? txtProductSearch.Text.Trim() : null;
-            if (string.IsNullOrEmpty(prodSearch)) prodSearch = null;
-
-            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, clientID, prodSearch);
-            cboSale.Items.Clear();
-            cboSale.Items.Add(new ComboItem(0, "-- اختر الفاتورة الأصلية لمرتجعاتها --"));
-            foreach (DataRow r in dtS.Rows)
-                cboSale.Items.Add(new ComboItem((int)r["SaleID"], $"{r["SaleCode"]} | {r["ClientName"]}"));
-            cboSale.DisplayMember = "Text";
-
-            cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
-            if (cboSale.Items.Count > 0)
-                cboSale.SelectedIndex = 0;
+            var dg = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RightToLeft = RightToLeft.Yes,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(40, 50, 70), ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                GridColor = Theme.BorderColor,
+                ColumnHeadersHeight = 36,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                EnableHeadersVisualStyles = false
+            };
+            return dg;
         }
 
-        private void CboClient_SelectedIndexChanged(object sender, EventArgs e)
+        private void LoadSales()
         {
-            if (cboSale.SelectedIndex <= 0)
+            dgSales.SelectionChanged -= DgSales_SelectionChanged;
+            dgSales.Rows.Clear();
+            dgItems.Rows.Clear();
+            lblTotal.Text = "الإجمالي: 0.00 ج";
+
+            string search = txtSearch.Text.Trim();
+            if (string.IsNullOrEmpty(search)) search = null;
+
+            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, null, null);
+            _salesDt = dtS;
+
+            foreach (DataRow r in dtS.Rows)
             {
-                LoadSalesCombo();
+                int saleID = Convert.ToInt32(r["SaleID"]);
+                string saleCode = r["SaleCode"].ToString();
+                string dateStr = Convert.ToDateTime(r["SaleDate"]).ToString("yyyy/MM/dd HH:mm");
+                string type = r["SaleType"].ToString() == "Credit" ? "آجل" : (r["SaleType"].ToString() == "Installment" ? "تقسيط" : "نقدي");
+                string clientName = r["ClientName"].ToString();
+                decimal total = Convert.ToDecimal(r["TotalAmount"]);
+                string notes = r["Notes"].ToString();
+
+                if (search != null)
+                {
+                    bool match = saleCode.Contains(search) || clientName.Contains(search) || notes.Contains(search);
+                    if (!match) continue;
+                }
+
+                dgSales.Rows.Add(saleID, saleCode, dateStr, type, clientName, total.ToString("N2"), notes);
+            }
+
+            dgSales.SelectionChanged += DgSales_SelectionChanged;
+            if (dgSales.Rows.Count > 0)
+            {
+                dgSales.CurrentCell = dgSales.Rows[0].Cells[1];
             }
         }
 
-        private void LoadCombos()
+        private void DgSales_SelectionChanged(object sender, EventArgs e)
         {
-            cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-
-            var dtC = ClientDAL.GetAll(true);
-            cboClient.Items.Clear();
-            cboClient.Items.Add(new ComboItem(0, "-- اختر عميل --"));
-            foreach (DataRow r in dtC.Rows)
-                cboClient.Items.Add(new ComboItem((int)r["ClientID"], r["ClientName"].ToString()));
-            cboClient.DisplayMember = "Text";
-            cboClient.SelectedIndex = 0;
-
-            cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
-
-            LoadSalesCombo();
-        }
-
-        private void CboSale_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            // Temporarily detach events to avoid triggering calculations while loading rows
             dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             lblTotal.Text = "الإجمالي: 0.00 ج";
 
-            if (cboSale.SelectedItem is ComboItem cs && cs.ID > 0)
+            if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
             {
-                // 1. Get Client ID of this sale
-                var dtSale = DbHelper.Query("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", cs.ID));
-                if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
-                {
-                    int clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
-                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                    foreach (ComboItem item in cboClient.Items)
-                    {
-                        if (item.ID == clientID)
-                        {
-                            cboClient.SelectedItem = item;
-                            break;
-                        }
-                    }
-                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
-                    cboClient.Enabled = false; // Lock client selection
-                }
-                else
-                {
-                    cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                    if (cboClient.Items.Count > 0)
-                        cboClient.SelectedIndex = 0;
-                    cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
-                    cboClient.Enabled = true;
-                }
+                int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
 
-                // 2. Fetch sale items and their previously returned quantities using dynamic subquery
                 DataTable dtItems = DbHelper.Query(@"
                     SELECT 
                         si.ProductID, 
@@ -366,15 +310,15 @@ namespace ChickenDist.Forms
                         si.Quantity AS SoldQty, 
                         si.UnitPrice,
                         COALESCE((
-                            SELECT SUM(ri.Quantity)
-                            FROM ReturnItems ri
-                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                            WHERE sr.SaleID = si.SaleID AND ri.ProductID = si.ProductID
+                             SELECT SUM(ri.Quantity)
+                             FROM ReturnItems ri
+                             JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                             WHERE sr.SaleID = si.SaleID AND ri.ProductID = si.ProductID
                         ), 0) AS PrevReturnedQty
                     FROM SaleItems si
                     JOIN Products p ON si.ProductID = p.ProductID
                     WHERE si.SaleID = @sid", 
-                    DbHelper.P("@sid", cs.ID));
+                    DbHelper.P("@sid", saleID));
 
                 foreach (DataRow r in dtItems.Rows)
                 {
@@ -386,14 +330,6 @@ namespace ChickenDist.Forms
 
                     dgItems.Rows.Add(prodID, name, soldQty.ToString("F2"), prevQty.ToString("F2"), "0.00", price.ToString("F2"), "0.00");
                 }
-            }
-            else
-            {
-                cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
-                cboClient.Enabled = true;
-                if (cboClient.Items.Count > 0)
-                    cboClient.SelectedIndex = 0;
-                cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             }
 
             dgItems.CellValueChanged += DgItems_CellValueChanged;
@@ -461,11 +397,13 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (!(cboSale.SelectedItem is ComboItem cs) || cs.ID == 0) 
+            if (dgSales.CurrentRow == null || dgSales.CurrentRow.Cells["SaleID"].Value == null) 
             { 
                 MessageBox.Show("يجب اختيار الفاتورة الأصلية أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); 
                 return; 
             }
+
+            int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
 
             var returnItems = new List<SaleItemDTO>();
             decimal totalReturnAmount = 0;
@@ -510,8 +448,12 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            int saleID = cs.ID;
-            int? clientID = (cboClient.SelectedItem is ComboItem cc && cc.ID > 0) ? (int?)cc.ID : null;
+            int? clientID = null;
+            var dtSale = DbHelper.Query("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
+            if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
+            {
+                clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+            }
 
             try
             {
@@ -520,7 +462,18 @@ namespace ChickenDist.Forms
                 { 
                     MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
                     txtNotes.Text = "";
-                    cboSale.SelectedIndex = 0; // Trigger reload
+                    
+                    LoadSales();
+                    
+                    foreach (DataGridViewRow row in dgSales.Rows)
+                    {
+                        if (row.Cells["SaleID"].Value != null && Convert.ToInt32(row.Cells["SaleID"].Value) == saleID)
+                        {
+                            dgSales.CurrentCell = row.Cells[1];
+                            break;
+                        }
+                    }
+                    DgSales_SelectionChanged(dgSales, EventArgs.Empty);
                 }
                 else 
                 {
@@ -542,46 +495,29 @@ namespace ChickenDist.Forms
                 var dt = DbHelper.Query("SELECT SaleID FROM Sales WHERE SaleCode = @code OR CAST(SaleID AS VARCHAR) = @code", DbHelper.P("@code", code));
                 if (dt.Rows.Count > 0)
                 {
-                    int saleID = Convert.ToInt32(dt.Rows[0]["SaleID"]);
+                    int targetSaleID = Convert.ToInt32(dt.Rows[0]["SaleID"]);
                     bool found = false;
-                    
-                    cboSale.SelectedIndexChanged -= CboSale_SelectedIndexChanged;
-                    for (int i = 0; i < cboSale.Items.Count; i++)
+
+                    dgSales.SelectionChanged -= DgSales_SelectionChanged;
+                    foreach (DataGridViewRow row in dgSales.Rows)
                     {
-                        if (cboSale.Items[i] is ComboItem item && item.ID == saleID)
+                        if (row.Cells["SaleID"].Value != null && Convert.ToInt32(row.Cells["SaleID"].Value) == targetSaleID)
                         {
-                            cboSale.SelectedIndex = i;
+                            dgSales.CurrentCell = row.Cells[1];
                             found = true;
                             break;
                         }
                     }
-
-                    if (!found)
-                    {
-                        var dtSale = DbHelper.Query(@"
-                            SELECT s.SaleID, s.SaleCode, c.ClientName 
-                            FROM Sales s 
-                            LEFT JOIN Clients c ON s.ClientID = c.ClientID 
-                            WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
-                        if (dtSale.Rows.Count > 0)
-                        {
-                            var row = dtSale.Rows[0];
-                            var newItem = new ComboItem(saleID, $"{row["SaleCode"]} | {row["ClientName"]}");
-                            cboSale.Items.Add(newItem);
-                            cboSale.SelectedItem = newItem;
-                            found = true;
-                        }
-                    }
-                    cboSale.SelectedIndexChanged += CboSale_SelectedIndexChanged;
+                    dgSales.SelectionChanged += DgSales_SelectionChanged;
 
                     if (found)
                     {
-                        CboSale_SelectedIndexChanged(cboSale, EventArgs.Empty);
+                        DgSales_SelectionChanged(dgSales, EventArgs.Empty);
                         dgItems.Focus();
                     }
                     else
                     {
-                        MessageBox.Show("الفاتورة غير موجودة أو معطوبة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("الفاتورة غير موجودة في نطاق التواريخ المحدد في الأعلى.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
                 else
@@ -596,4 +532,3 @@ namespace ChickenDist.Forms
         }
     }
 }
-
