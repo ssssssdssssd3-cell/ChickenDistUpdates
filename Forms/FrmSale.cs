@@ -191,7 +191,7 @@ namespace ChickenDist.Forms
 			lblClientBalance = new Label
 			{
 				Text = "رصيد: 0.00 ج",
-				Width = 95,
+				Width = 115,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
@@ -1442,14 +1442,14 @@ namespace ChickenDist.Forms
         private void UpdateClientBalanceLabel(int clientID)
         {
             var status = ClientDAL.GetFinancialStatus(clientID);
-            lblClientBalance.Text = "رصيد: " + status.Balance.ToString("N0") + " ج";
+            lblClientBalance.Text = "رصيد: " + status.Balance.ToString("N2") + " ج";
             if (status.Balance > 0)
             {
-                lblClientBalance.ForeColor = Color.Red;
+                lblClientBalance.ForeColor = Color.FromArgb(255, 110, 110); // Bright light red
             }
             else if (status.Balance < 0)
             {
-                lblClientBalance.ForeColor = Color.Green;
+                lblClientBalance.ForeColor = Color.FromArgb(100, 220, 100); // Bright light green
             }
             else
             {

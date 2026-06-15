@@ -24,6 +24,8 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 
+		private Button btnWhatsAppReport;
+
 		private DataTable _currentDt;
 
 		public FrmReports()
@@ -106,7 +108,14 @@ namespace ChickenDist.Forms
 			btnPrint.Size = new Size(160, 32);
 			btnPrint.Margin = new Padding(10, 0, 0, 0);
 			btnPrint.Click += BtnPrint_Click;
-			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint });
+
+			btnWhatsAppReport = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsAppReport.Size = new Size(180, 32);
+			btnWhatsAppReport.Margin = new Padding(10, 0, 0, 0);
+			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
+			btnWhatsAppReport.Visible = false;
+
+			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint, btnWhatsAppReport });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
@@ -188,6 +197,11 @@ namespace ChickenDist.Forms
 			if (tabReports.SelectedTab == null)
 			{
 				return;
+			}
+			if (btnWhatsAppReport != null)
+			{
+				string text = tabReports.SelectedTab.Tag?.ToString();
+				btnWhatsAppReport.Visible = (text == "ClientBalances");
 			}
 			int? warehouseID = null;
 			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
@@ -312,9 +326,7 @@ namespace ChickenDist.Forms
 						("ReturnedQty",    "مرتجع مبيعات"),
 						("DriverReturnQty","مرتجع مناديب"),
 						("NetSoldQty",     "صافي المبيع"),
-						// TotalSalesAmt و CurrentStock في عمودين مخفيَّين بعد ذلك
 					}, dataGridView);
-					// نضيف عمودين إضافيين: إجمالي القيمة والرصيد الحالي
 					dataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalSalesAmt", HeaderText = "إجمالي قيمة المبيع" });
 					dataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock",  HeaderText = "الرصيد الحالي" });
 					break;
@@ -832,16 +844,14 @@ namespace ChickenDist.Forms
 				var fCell  = new Font("Arial", 7f);
 				var fTotal = new Font("Arial", 8f, FontStyle.Bold);
 
-				// استخدام أبعاد ثابتة لصفحة A4 بالعرض (Landscape)
 				int mL = 20;
 				int mR = 1070;
 				int mT = 40;
 				int mB = 780;
-				int pgW = mR - mL;   // 1050
+				int pgW = mR - mL;
 
 				int y = mT;
 
-				// ─── العنوان (الصفحة الأولى فقط) ───
 				if (pageRow == 0)
 				{
 					string title = $"تقرير التقفيل اليومي  –  {dtpFrom.Value:dd/MM/yyyy}";
@@ -860,22 +870,19 @@ namespace ChickenDist.Forms
 					y += 6;
 				}
 
-				// ─── حساب عرض كل عمود بدقة ───
 				int visColCount = dg.Columns.GetColumnCount(DataGridViewElementStates.Visible);
 				int[] widths = ComputeDailyPrintWidths(pgW, visColCount, dg);
 
-				// التحقق من أن مجموع العروض يساوي pgW بالضبط
 				int totalW = 0;
 				foreach (int w in widths) totalW += w;
 				if (totalW != pgW && widths.Length > 0 && widths[widths.Length - 1] + (pgW - totalW) > 0)
-					widths[widths.Length - 1] += pgW - totalW; // تصحيح الفرق في آخر عمود
+					widths[widths.Length - 1] += pgW - totalW;
 
 				const int HEAD_H = 22;
 				const int ROW_H  = 18;
 
-				// ─── رؤوس الأعمدة (تُرسم في كل صفحة) ───
 				{
-					int cx = mR;   // RTL: نبدأ من اليمين
+					int cx = mR;
 					foreach (DataGridViewColumn col in dg.Columns)
 					{
 						if (!col.Visible) continue;
@@ -896,7 +903,6 @@ namespace ChickenDist.Forms
 					y += HEAD_H + 2;
 				}
 
-				// ─── صفوف البيانات ───
 				while (pageRow < dg.Rows.Count)
 				{
 					var dgRow  = dg.Rows[pageRow];
@@ -940,7 +946,6 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				// ─── تذييل الصفحة ───
 				g.DrawLine(new Pen(Color.Gray, 1f), mL, y + 6, mR, y + 6);
 				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}",
 					fCell, Brushes.Gray, mL, y + 10);
@@ -959,14 +964,12 @@ namespace ChickenDist.Forms
 
 		private int[] ComputeDailyPrintWidths(int pgW, int colCount, DataGridView dg)
 		{
-			// توزيع عرض الصفحة الكامل على الأعمدة بدقة
 			int clientW = (int)(pgW * 0.15);
 			int extraW  = (int)(pgW * 0.09);
 			int reservedW = clientW + extraW * 3;
 			int prodCount = colCount - 4;
 			int prodW = prodCount > 0 ? (pgW - reservedW) / prodCount : 60;
 			
-			// لضمان عدم حدوث عرض سالب
 			if (prodW < 15) prodW = 15;
 
 			var ws = new int[colCount];
@@ -994,6 +997,85 @@ namespace ChickenDist.Forms
 				idx++;
 			}
 			return 0;
+		}
+
+		private void BtnWhatsAppReport_Click(object sender, EventArgs e)
+		{
+			DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+			if (dataGridView == null || dataGridView.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد بيانات للإرسال.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			var dlg = new Form
+			{
+				Width = 420, Height = 190,
+				Text = "إرسال واتساب - أرصدة العملاء",
+				StartPosition = FormStartPosition.CenterParent,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true,
+				BackColor = Theme.BgCard,
+				Font = Theme.FontMain
+			};
+			var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
+			var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
+			var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
+			var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
+			btnSend.Click   += (s2, e2) => { dlg.DialogResult = DialogResult.OK;     dlg.Close(); };
+			btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+			dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
+
+			if (dlg.ShowDialog() != DialogResult.OK) return;
+			string phone = txt.Text.Trim();
+			if (string.IsNullOrWhiteSpace(phone)) return;
+
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine("📋 *تقرير أرصدة وبيانات العملاء*");
+			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+			sb.AppendLine($"📅 التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}");
+			sb.AppendLine("──────────────────────");
+
+			decimal grandTotalBalance = 0;
+			foreach (DataGridViewRow row in dataGridView.Rows)
+			{
+				if (row.Cells["ClientName"].Value == null) continue;
+				string clientName = row.Cells["ClientName"].Value.ToString();
+				string clientCode = row.Cells["ClientCode"].Value?.ToString() ?? "";
+				string phoneNum = row.Cells["Phone"].Value?.ToString() ?? "";
+				decimal balance = 0;
+				if (row.Cells["Balance"].Value != null && row.Cells["Balance"].Value != DBNull.Value)
+				{
+					balance = Convert.ToDecimal(row.Cells["Balance"].Value);
+				}
+
+				grandTotalBalance += balance;
+
+				sb.AppendLine($"• {clientName} (كود: {clientCode})");
+				sb.AppendLine($"  الهاتف: {phoneNum} | المديونية: {balance:N2} ج.م");
+			}
+
+			sb.AppendLine("──────────────────────");
+			sb.AppendLine($"📊 إجمالي مديونيات العملاء: {grandTotalBalance:N2} ج.م");
+			sb.AppendLine("──────────────────────");
+
+			SendWhatsApp(phone, sb.ToString());
+		}
+
+		private static void SendWhatsApp(string phone, string message)
+		{
+			try
+			{
+				string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
+				string encoded = Uri.EscapeDataString(message);
+				string url = $"https://wa.me/{clean}?text={encoded}";
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
 		}
 
 		private void LoadWarehouses()

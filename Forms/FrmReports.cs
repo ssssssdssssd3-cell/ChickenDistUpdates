@@ -22,6 +22,8 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 
+		private Button btnWhatsAppReport;
+
 		private DataTable _currentDt;
 
 		public FrmReports()
@@ -86,7 +88,14 @@ namespace ChickenDist.Forms
 			btnPrint.Size = new Size(160, 32);
 			btnPrint.Margin = new Padding(10, 0, 0, 0);
 			btnPrint.Click += BtnPrint_Click;
-			panel.Controls.AddRange(new Control[6] { label, dtpFrom, label2, dtpTo, btnLoad, btnPrint });
+
+			btnWhatsAppReport = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsAppReport.Size = new Size(180, 32);
+			btnWhatsAppReport.Margin = new Padding(10, 0, 0, 0);
+			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
+			btnWhatsAppReport.Visible = false;
+
+			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, btnLoad, btnPrint, btnWhatsAppReport });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
@@ -169,6 +178,11 @@ namespace ChickenDist.Forms
 			if (tabReports.SelectedTab == null)
 			{
 				return;
+			}
+			if (btnWhatsAppReport != null)
+			{
+				string text = tabReports.SelectedTab.Tag?.ToString();
+				btnWhatsAppReport.Visible = (text == "ClientBalances");
 			}
 			DataGridView dataGridView = tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 			if (dataGridView != null)
@@ -955,6 +969,85 @@ namespace ChickenDist.Forms
 				idx++;
 			}
 			return 0;
+		}
+
+		private void BtnWhatsAppReport_Click(object sender, EventArgs e)
+		{
+			DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+			if (dataGridView == null || dataGridView.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد بيانات للإرسال.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			var dlg = new Form
+			{
+				Width = 420, Height = 190,
+				Text = "إرسال واتساب - أرصدة العملاء",
+				StartPosition = FormStartPosition.CenterParent,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true,
+				BackColor = Theme.BgCard,
+				Font = Theme.FontMain
+			};
+			var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
+			var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
+			var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
+			var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
+			btnSend.Click   += (s2, e2) => { dlg.DialogResult = DialogResult.OK;     dlg.Close(); };
+			btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+			dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
+
+			if (dlg.ShowDialog() != DialogResult.OK) return;
+			string phone = txt.Text.Trim();
+			if (string.IsNullOrWhiteSpace(phone)) return;
+
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine("📋 *تقرير أرصدة وبيانات العملاء*");
+			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+			sb.AppendLine($"📅 التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}");
+			sb.AppendLine("──────────────────────");
+
+			decimal grandTotalBalance = 0;
+			foreach (DataGridViewRow row in dataGridView.Rows)
+			{
+				if (row.Cells["ClientName"].Value == null) continue;
+				string clientName = row.Cells["ClientName"].Value.ToString();
+				string clientCode = row.Cells["ClientCode"].Value?.ToString() ?? "";
+				string phoneNum = row.Cells["Phone"].Value?.ToString() ?? "";
+				decimal balance = 0;
+				if (row.Cells["Balance"].Value != null && row.Cells["Balance"].Value != DBNull.Value)
+				{
+					balance = Convert.ToDecimal(row.Cells["Balance"].Value);
+				}
+
+				grandTotalBalance += balance;
+
+				sb.AppendLine($"• {clientName} (كود: {clientCode})");
+				sb.AppendLine($"  الهاتف: {phoneNum} | المديونية: {balance:N2} ج.م");
+			}
+
+			sb.AppendLine("──────────────────────");
+			sb.AppendLine($"📊 إجمالي مديونيات العملاء: {grandTotalBalance:N2} ج.م");
+			sb.AppendLine("──────────────────────");
+
+			SendWhatsApp(phone, sb.ToString());
+		}
+
+		private static void SendWhatsApp(string phone, string message)
+		{
+			try
+			{
+				string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
+				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
+				string encoded = Uri.EscapeDataString(message);
+				string url = $"https://wa.me/{clean}?text={encoded}";
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
 		}
 	}
 }
