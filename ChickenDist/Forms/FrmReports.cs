@@ -26,6 +26,8 @@ namespace ChickenDist.Forms
 
 		private Button btnWhatsAppReport;
 
+		private Button btnExportExcel;
+
 		private DataTable _currentDt;
 
 		public FrmReports()
@@ -115,7 +117,12 @@ namespace ChickenDist.Forms
 			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
 			btnWhatsAppReport.Visible = false;
 
-			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint, btnWhatsAppReport });
+			btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+			btnExportExcel.Size = new Size(130, 32);
+			btnExportExcel.Margin = new Padding(10, 0, 0, 0);
+			btnExportExcel.Click += BtnExportExcel_Click;
+
+			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblWh, cboWarehouse, btnLoad, btnPrint, btnWhatsAppReport, btnExportExcel });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
@@ -1145,6 +1152,78 @@ namespace ChickenDist.Forms
 			catch (Exception ex)
 			{
 				MessageBox.Show("حدث خطأ أثناء تحميل المخازن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private void BtnExportExcel_Click(object sender, EventArgs e)
+		{
+			DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+			if (dataGridView == null || dataGridView.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد بيانات لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+
+			string tabText = tabReports.SelectedTab?.Text ?? "تقرير";
+			string cleanName = System.Text.RegularExpressions.Regex.Replace(tabText, @"[^\w\s\-\u0600-\u06FF]", "").Trim();
+			string defaultFileName = $"{cleanName}_{DateTime.Now:yyyy_MM_dd}.csv";
+
+			ExportToExcel(dataGridView, defaultFileName);
+		}
+
+		private void ExportToExcel(DataGridView dgv, string defaultFileName)
+		{
+			using (var dlg = new SaveFileDialog())
+			{
+				dlg.Title = "تصدير التقرير إلى Excel";
+				dlg.FileName = defaultFileName;
+				dlg.Filter = "Excel CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
+				if (dlg.ShowDialog() == DialogResult.OK)
+				{
+					try
+					{
+						var sb = new System.Text.StringBuilder();
+
+						// 1. Headers
+						var headers = new List<string>();
+						foreach (DataGridViewColumn col in dgv.Columns)
+						{
+							if (col.Visible)
+							{
+								headers.Add($"\"{col.HeaderText?.Replace("\"", "\"\"")}\"");
+							}
+						}
+						sb.AppendLine(string.Join(",", headers));
+
+						// 2. Rows
+						foreach (DataGridViewRow row in dgv.Rows)
+						{
+							if (row.IsNewRow) continue;
+							var cells = new List<string>();
+							foreach (DataGridViewColumn col in dgv.Columns)
+							{
+								if (col.Visible)
+								{
+									var val = row.Cells[col.Index].Value?.ToString() ?? "";
+									cells.Add($"\"{val.Replace("\"", "\"\"")}\"");
+								}
+							}
+							sb.AppendLine(string.Join(",", cells));
+						}
+
+						// Save with UTF-8 BOM encoding so Excel displays Arabic correctly
+						System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), System.Text.Encoding.UTF8);
+
+						MessageBox.Show("✅ تم تصدير التقرير بنجاح!\nيمكنك الآن فتح الملف مباشرة باستخدام برنامج Excel أو إرساله.", 
+							"تم التصدير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information,
+							MessageBoxDefaultButton.Button1,
+							MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show("❌ فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+				}
 			}
 		}
 	}
