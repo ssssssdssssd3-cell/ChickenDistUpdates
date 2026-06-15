@@ -104,7 +104,8 @@ namespace ChickenDist.Forms
 				("⚖️ أرصدة وبيانات العملاء", "ClientBalances"),
 				("📦 مبيعات الأصناف والصافي", "SalesByProduct"),
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
-				("📋 سجل تقفيل المناديب", "Handovers")
+				("📋 سجل تقفيل المناديب", "Handovers"),
+				("🚨 تقرير الهالك والتالف", "WastageLoss")
 			};
 			if (Session.CanShowCostProfit("Reports"))
 			{
@@ -293,6 +294,20 @@ namespace ChickenDist.Forms
 						("TotalDeficit", "العجز"),
 						("Notes", "ملاحظات التقفيل"),
 						("CreatedBy", "المستلم")
+					}, dataGridView);
+					break;
+				case "WastageLoss":
+					_currentDt = ReportDAL.WastageLossReport(dtpFrom.Value, dtpTo.Value);
+					SetupGrid(new(string, string)[8]
+					{
+						("TransDate", "التاريخ والوقت"),
+						("SourceType", "مصدر الهالك"),
+						("ProductName", "الصنف"),
+						("Quantity", "الكمية التالفة"),
+						("UnitPrice", "سعر الوحدة"),
+						("TotalCost", "التكلفة الإجمالية"),
+						("ResponsibleParty", "المسؤول / المندوب"),
+						("Notes", "البيان / ملاحظات")
 					}, dataGridView);
 					break;
 				case "ClientBalances":

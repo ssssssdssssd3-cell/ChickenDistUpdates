@@ -338,20 +338,10 @@ namespace ChickenDist.Forms
                             decimal currentBalance = 0;
                             decimal paymentToday = 0;
                             decimal returnToday = 0;
-                            decimal previousBalance = 0;
+                            decimal previousBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
-
-                            // حساب الرصيد السابق قبل تاريخ هذه الفاتورة
-                            var dtPrev = DbHelper.Query(@"
-                                SELECT 
-                                    c.OpeningBalance + 
-                                    ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND CAST(TransDate AS DATE) < CAST(@dt AS DATE)), 0) AS PrevBal
-                                FROM Clients c WHERE c.ClientID = @cid",
-                                DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
-                            if (dtPrev.Rows.Count > 0)
-                                previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
 
                             var dtPay = DbHelper.Query(@"
                                 SELECT 
@@ -669,20 +659,12 @@ namespace ChickenDist.Forms
                             decimal currentBalance  = 0;
                             decimal paymentToday    = 0;
                             decimal returnToday     = 0;
-                            decimal previousBalance = 0;
+                            decimal previousBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
                             bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
 
-                            // حساب الرصيد السابق قبل تاريخ هذه الفاتورة
-                            var dtPrev = DbHelper.Query(@"
-                                SELECT 
-                                    c.OpeningBalance + 
-                                    ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID = @cid AND CAST(TransDate AS DATE) < CAST(@dt AS DATE)), 0) AS PrevBal
-                                FROM Clients c WHERE c.ClientID = @cid",
-                                DbHelper.P("@cid", clientID), DbHelper.P("@dt", saleDate));
-                            if (dtPrev.Rows.Count > 0)
-                                previousBalance = Convert.ToDecimal(dtPrev.Rows[0]["PrevBal"]);
+
 
                             var dtPay = DbHelper.Query(@"
                                 SELECT 

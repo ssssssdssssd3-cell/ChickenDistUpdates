@@ -37,6 +37,7 @@ namespace ChickenDist.Forms
 		private Label lblNotes;
 
 		private ComboBox cboClient;
+		private Label lblClientBalance;
 
 		private ComboBox cboDriver;
 
@@ -178,6 +179,7 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Fill,
 				DropDownStyle = ComboBoxStyle.DropDown,
+				DropDownWidth = 250,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
@@ -185,6 +187,17 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboClient);
+
+			lblClientBalance = new Label
+			{
+				Text = "رصيد: 0.00 ج",
+				Width = 95,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				ForeColor = Theme.Accent,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2, 6, 2, 6)
+			};
 
 			Button btnClientStatement = new Button
 			{
@@ -207,7 +220,11 @@ namespace ChickenDist.Forms
 				}
 			};
 			pnlClient.Controls.Add(cboClient);
+			pnlClient.Controls.Add(lblClientBalance);
 			pnlClient.Controls.Add(btnClientStatement);
+
+			btnClientStatement.SendToBack();
+			lblClientBalance.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
 			lblDate.Dock = DockStyle.Fill;
@@ -1122,12 +1139,18 @@ namespace ChickenDist.Forms
                             SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
                     }
                     EvaluateClientFinancials(comboItem2.ID);
+                    UpdateClientBalanceLabel(comboItem2.ID);
 				}
                 else
                 {
                     this.BackColor = Theme.BgMain;
                     pnlItems.Enabled = true;
                     btnSave.Enabled = true;
+                    if (lblClientBalance != null)
+                    {
+                        lblClientBalance.Text = "رصيد: 0.00 ج";
+                        lblClientBalance.ForeColor = Theme.Accent;
+                    }
                 }
 			};
 			DataTable drivers = EmployeeDAL.GetDrivers();
@@ -1413,6 +1436,24 @@ namespace ChickenDist.Forms
                 this.BackColor = Theme.BgMain;
                 pnlItems.Enabled = true;
                 btnSave.Enabled = true;
+            }
+        }
+
+        private void UpdateClientBalanceLabel(int clientID)
+        {
+            var status = ClientDAL.GetFinancialStatus(clientID);
+            lblClientBalance.Text = "رصيد: " + status.Balance.ToString("N0") + " ج";
+            if (status.Balance > 0)
+            {
+                lblClientBalance.ForeColor = Color.Red;
+            }
+            else if (status.Balance < 0)
+            {
+                lblClientBalance.ForeColor = Color.Green;
+            }
+            else
+            {
+                lblClientBalance.ForeColor = Theme.Accent;
             }
         }
 
@@ -2610,7 +2651,7 @@ namespace ChickenDist.Forms
 				DateTime saleDate = Convert.ToDateTime(saleRow["SaleDate"]);
 
 				// الرصيد السابق قبل هذه الفاتورة
-				prevBalance = ClientDAL.GetPreviousBalance(clientID, saleDate);
+				prevBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
 
 				// آخر توريد (دفعة)
 				var lastPayDt = DbHelper.Query(@"

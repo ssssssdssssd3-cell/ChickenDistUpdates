@@ -15,8 +15,8 @@ namespace ChickenDist.Forms
     {
         private Panel pnlHeader;
         private Label lblTitle;
-        private ComboBox cboDriver, cboLoad, cboDeadQtyHandling;
-        private Label lblDriver, lblLoad, lblDeadQtyHandling;
+        private ComboBox cboDriver, cboLoad;
+        private Label lblDriver, lblLoad;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private DataGridView dgItems;
@@ -95,27 +95,12 @@ namespace ChickenDist.Forms
             };
             cboLoad.SelectedIndexChanged += CboLoad_SelectedIndexChanged;
 
-            lblDeadQtyHandling = new Label { Text = "جهة تحمل النافق:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 5, 0, 0), Font = Theme.FontBold };
-            cboDeadQtyHandling = new ComboBox
-            {
-                Width = 180,
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
-            };
-            cboDeadQtyHandling.Items.Add("عدم تحميله لأحد (خصم فقط)");
-            cboDeadQtyHandling.Items.Add("تحميل على المندوب (عجز)");
-            cboDeadQtyHandling.Items.Add("تحميل على الشركة (مصروف)");
-            cboDeadQtyHandling.SelectedIndex = 0;
-            cboDeadQtyHandling.SelectedIndexChanged += CboDeadQtyHandling_SelectedIndexChanged;
-
             btnLoadItems = Theme.MakeButton("📋 تحميل البيانات", Theme.Accent);
             btnLoadItems.Size = new Size(140, 28);
             btnLoadItems.Margin = new Padding(20, 0, 0, 0);
             btnLoadItems.Click += BtnLoadItems_Click;
 
-            pnlSel.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblDriver, cboDriver, lblLoad, cboLoad, lblDeadQtyHandling, cboDeadQtyHandling, btnLoadItems });
+            pnlSel.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnSearch, lblDriver, cboDriver, lblLoad, cboLoad, btnLoadItems });
 
 
             // ===== 2. Grid Panel (No AutoScroll conflict) =====
@@ -333,36 +318,65 @@ namespace ChickenDist.Forms
             _loadID = (cboLoad.SelectedItem is ComboItem ci) ? ci.ID : 0;
         }
 
-        private void CboDeadQtyHandling_SelectedIndexChanged(object sender, EventArgs e)
+        private string ShowWastageBearingDialog(decimal totalDeadValue)
         {
-            UpdateDeadQtyHandling();
-        }
+            string choice = null;
+            using (var dlg = new Form())
+            {
+                dlg.Text = "🚨 تحديد جهة تحمل بضائع النافق/الهالك";
+                dlg.Size = new Size(480, 260);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = Theme.BgMain;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
 
-        private void UpdateDeadQtyHandling()
-        {
-            string mode = GetSelectedDeadQtyHandlingMode();
-            foreach (var item in _items)
-            {
-                item.DeadQtyHandling = mode;
-            }
-            // Refresh grid and totals
-            foreach (DataGridViewRow row in dgItems.Rows)
-            {
-                if (row.Index >= 0 && row.Index < _items.Count)
+                var lblTitle = new Label
                 {
-                    var item = _items[row.Index];
-                    row.Cells["ExtraQty"].Value = item.ExtraQty.ToString("F2");
-                    row.Cells["DeficitQty"].Value = item.DeficitQty.ToString("F2");
-                }
-            }
-            UpdateTotals();
-        }
+                    Text = $"تم تسجيل كميات هالك/نافق في هذه الحمولة.\nإجمالي قيمة النافق بسعر البيع: {totalDeadValue:N2} ج\n\nيرجى تحديد الجهة المسؤولة عن تحمل تكلفة النافق:",
+                    Location = new Point(20, 20),
+                    Width = 440,
+                    Height = 80,
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                    ForeColor = Theme.TextMain,
+                    TextAlign = ContentAlignment.TopCenter
+                };
 
-        private string GetSelectedDeadQtyHandlingMode()
-        {
-            if (cboDeadQtyHandling.SelectedIndex == 1) return "Driver";
-            if (cboDeadQtyHandling.SelectedIndex == 2) return "Company";
-            return "None";
+                var btnDriver = Theme.MakeButton("المندوب (عجز)", Theme.Accent);
+                btnDriver.Size = new Size(130, 40);
+                btnDriver.Location = new Point(20, 120);
+                btnDriver.Click += (s, e) => { choice = "Driver"; dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+
+                var btnCompany = Theme.MakeButton("الشركة (مصروف)", Theme.Primary);
+                btnCompany.Size = new Size(130, 40);
+                btnCompany.Location = new Point(165, 120);
+                btnCompany.Click += (s, e) => { choice = "Company"; dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+
+                var btnNone = Theme.MakeButton("خصم فقط (دون تحميل)", Theme.BgCard);
+                btnNone.Size = new Size(150, 40);
+                btnNone.Location = new Point(310, 120);
+                btnNone.ForeColor = Theme.TextMain;
+                btnNone.Click += (s, e) => { choice = "None"; dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+
+                var btnCancel = new Button
+                {
+                    Text = "إلغاء الحفظ والتراجع",
+                    Size = new Size(440, 30),
+                    Location = new Point(20, 175),
+                    BackColor = Theme.BgInput,
+                    ForeColor = Color.Red,
+                    FlatStyle = FlatStyle.Flat
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.Red;
+                btnCancel.Click += (s, e) => { choice = null; dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+
+                dlg.Controls.AddRange(new Control[] { lblTitle, btnDriver, btnCompany, btnNone, btnCancel });
+                
+                dlg.ShowDialog();
+            }
+            return choice;
         }
 
         private void BtnLoadItems_Click(object sender, EventArgs e)
@@ -382,7 +396,7 @@ namespace ChickenDist.Forms
                     LoadedQty = Convert.ToDecimal(r["LoadedQty"]),
                     SoldQty = Convert.ToDecimal(r["SoldQty"]),
                     UnitPrice = Convert.ToDecimal(r["UnitPrice"]),
-                    DeadQtyHandling = GetSelectedDeadQtyHandlingMode()
+                    DeadQtyHandling = "Driver"
                 };
                 
                 // حساب تلقائي في حالة عدم وجود مبيعات مسجلة مسبقاً (تسهيلاً على المحاسب)
@@ -528,6 +542,34 @@ namespace ChickenDist.Forms
                 }
             }
 
+            decimal totalDeadValue = 0;
+            decimal totalDeadQty = 0;
+            foreach (var item in _items)
+            {
+                totalDeadQty += item.DeadQty;
+                totalDeadValue += (item.DeadQty * item.UnitPrice);
+            }
+
+            // 1. تحديد جهة تحمل النافق إذا وجد نافق/هالك
+            string deadQtyHandling = "Driver"; // الافتراضي
+            if (totalDeadQty > 0.001m)
+            {
+                string choice = ShowWastageBearingDialog(totalDeadValue);
+                if (choice == null)
+                {
+                    MessageBox.Show("❌ تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                deadQtyHandling = choice;
+            }
+
+            // تحديث طريقة تحمل الهالك في العناصر لإعادة الحساب
+            foreach (var item in _items)
+            {
+                item.DeadQtyHandling = deadQtyHandling;
+            }
+
+            // 2. حساب العجز الفعلي للمندوب بعد تحديد جهة التحمل
             decimal totalDeficitValue = 0;
             foreach (var it in _items)
                 totalDeficitValue += it.DeficitValue;
@@ -549,7 +591,6 @@ namespace ChickenDist.Forms
 
             if (MessageBox.Show("هل تريد تقفيل الحمولة وإغلاقها نهائياً؟", "تأكيد التقفيل", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            string deadQtyHandling = GetSelectedDeadQtyHandlingMode();
             int hvID = DriverDAL.SaveHandover(_loadID, _driverID, _items, txtNotes.Text, cashCollected, settlementType, totalDeficitValue, settlementNotes, deadQtyHandling);
             if (hvID > 0)
             {
@@ -562,8 +603,6 @@ namespace ChickenDist.Forms
                 }
                 if (deadQtyHandling == "Company")
                 {
-                    decimal totalDeadValue = 0;
-                    foreach (var i in _items) totalDeadValue += (i.DeadQty * i.UnitPrice);
                     if (totalDeadValue > 0.01m)
                     {
                         extraMsg += $"\nتم تسجيل نافق الحمولة بقيمة {totalDeadValue:N2} ج كمصروف على الشركة.";

@@ -2,7 +2,6 @@ using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
-using System.IO;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using ChickenDist.Core;
@@ -10,52 +9,115 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    public class FrmPrintPurchaseBarcodes : Form
+    public class FrmBulkPrintBarcodes : Form
     {
-        private int _purchaseID;
-        private string _purchaseCode;
+        private ComboBox cboProduct;
+        private Button btnSearchProduct;
+        private NumericUpDown nudQty;
+        private Button btnAdd;
         private DataGridView dgItems;
+
         private ComboBox cboPrinters;
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private CheckBox chkPrintPrice;
         private CheckBox chkPrintCompanyName;
+
         private Button btnPrint;
+        private Button btnPreview;
         private Button btnCancel;
 
-        // متغيرات تتبع حالة الطباعة
+        // Print state tracking
         private List<BarcodePrintItem> _printList;
         private int _currentItemIndex = 0;
         private int _currentLabelIndex = 0;
 
-        public FrmPrintPurchaseBarcodes(int purchaseID, string purchaseCode)
+        public FrmBulkPrintBarcodes()
         {
-            _purchaseID = purchaseID;
-            _purchaseCode = purchaseCode;
-
             InitializeComponent();
-            LoadData();
+            LoadProducts();
         }
 
         private void InitializeComponent()
         {
-            this.Text = $"🏷️ طباعة باركود أصناف الفاتورة: {_purchaseCode}";
-            this.Size = new Size(750, 560);
+            this.Text = "🏷️ طباعة باركود الأصناف (مجمع)";
+            this.Size = new Size(780, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            // شريط العنوان
-            var pnlTop = Theme.MakeTitleBar("🏷️ طباعة ملصقات الباركود", $"تحديد كميات الطباعة للملصقات (الافتراضي هو الكميات المشتراة) للفاتورة {_purchaseCode}");
+            // Title Bar
+            var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
             this.Controls.Add(pnlTop);
 
-            // الجدول
+            // Product Selection Panel
+            var lblSelect = new Label { Text = "اختر الصنف:", Location = new Point(20, 84), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblSelect);
+
+            cboProduct = new ComboBox
+            {
+                Location = new Point(100, 80),
+                Width = 300,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            this.Controls.Add(cboProduct);
+
+            btnSearchProduct = new Button
+            {
+                Text = "🔍 بحث صنف",
+                Location = new Point(410, 79),
+                Width = 90,
+                Height = 28,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            btnSearchProduct.FlatAppearance.BorderSize = 0;
+            this.Controls.Add(btnSearchProduct);
+
+            var lblQty = new Label { Text = "الكمية:", Location = new Point(515, 84), AutoSize = true, ForeColor = Theme.TextMain };
+            this.Controls.Add(lblQty);
+
+            nudQty = new NumericUpDown
+            {
+                Location = new Point(560, 80),
+                Width = 70,
+                Minimum = 1,
+                Maximum = 1000,
+                Value = 1,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            this.Controls.Add(nudQty);
+
+            btnAdd = new Button
+            {
+                Text = "➕ إضافة",
+                Location = new Point(650, 79),
+                Width = 90,
+                Height = 28,
+                BackColor = Theme.Success,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            btnAdd.FlatAppearance.BorderSize = 0;
+            this.Controls.Add(btnAdd);
+
+            // DataGridView Items Table
             dgItems = new DataGridView
             {
-                Location = new Point(20, 80),
-                Size = new Size(700, 300),
+                Location = new Point(20, 125),
+                Size = new Size(720, 240),
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -85,11 +147,20 @@ namespace ChickenDist.Forms
             };
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true, FillWeight = 160 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 160 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود", ReadOnly = true, FillWeight = 90 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Price", HeaderText = "سعر البيع", ReadOnly = true, FillWeight = 70 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty", HeaderText = "الكمية المشتراة", ReadOnly = true, FillWeight = 80 });
             
+            var colPrice = new DataGridViewTextBoxColumn
+            {
+                Name = "Price",
+                HeaderText = "سعر البيع المطبوع",
+                FillWeight = 80
+            };
+            colPrice.DefaultCellStyle.BackColor = Theme.BgInput;
+            colPrice.DefaultCellStyle.ForeColor = Theme.TextMain;
+            colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns.Add(colPrice);
+
             var colPrintQty = new DataGridViewTextBoxColumn
             {
                 Name = "PrintQty",
@@ -104,18 +175,22 @@ namespace ChickenDist.Forms
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", Visible = false });
 
+            var colDelete = new DataGridViewButtonColumn
+            {
+                Name = "Delete",
+                HeaderText = "حذف",
+                Text = "❌",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 40
+            };
+            dgItems.Columns.Add(colDelete);
+
             this.Controls.Add(dgItems);
 
-            // لوحة الإعدادات والطباعة بالأسفل
-            int y = 395;
+            // Printer settings panel (y = 385)
+            int y = 385;
 
-            var lblPrinter = new Label
-            {
-                Text = "اختر طابعة الملصقات:",
-                Location = new Point(20, y + 4),
-                AutoSize = true,
-                ForeColor = Theme.TextMain
-            };
+            var lblPrinter = new Label { Text = "اختر طابعة الملصقات:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
             this.Controls.Add(lblPrinter);
 
             cboPrinters = new ComboBox
@@ -124,7 +199,8 @@ namespace ChickenDist.Forms
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
             };
             try
             {
@@ -139,16 +215,19 @@ namespace ChickenDist.Forms
             }
             catch { }
             this.Controls.Add(cboPrinters);
+
+            chkPrintPrice = new CheckBox
+            {
+                Text = "طباعة السعر على الملصق",
+                Location = new Point(430, y + 2),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = true
+            };
+            this.Controls.Add(chkPrintPrice);
             y += 35;
 
-            // Sticker Template
-            var lblTemplate = new Label
-            {
-                Text = "شكل ملصق الباركود:",
-                Location = new Point(20, y + 4),
-                AutoSize = true,
-                ForeColor = Theme.TextMain
-            };
+            var lblTemplate = new Label { Text = "شكل ملصق الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
             this.Controls.Add(lblTemplate);
 
             cboBarcodeTemplate = new ComboBox
@@ -157,7 +236,8 @@ namespace ChickenDist.Forms
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
@@ -172,16 +252,19 @@ namespace ChickenDist.Forms
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
             this.Controls.Add(cboBarcodeTemplate);
+
+            chkPrintCompanyName = new CheckBox
+            {
+                Text = "طباعة اسم المؤسسة",
+                Location = new Point(430, y + 2),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = true
+            };
+            this.Controls.Add(chkPrintCompanyName);
             y += 35;
 
-            // Barcode Encoding
-            var lblEncoding = new Label
-            {
-                Text = "نوع تشفير الباركود:",
-                Location = new Point(20, y + 4),
-                AutoSize = true,
-                ForeColor = Theme.TextMain
-            };
+            var lblEncoding = new Label { Text = "نوع تشفير الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
             this.Controls.Add(lblEncoding);
 
             cboBarcodeEncoding = new ComboBox
@@ -190,7 +273,8 @@ namespace ChickenDist.Forms
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
             };
             cboBarcodeEncoding.Items.AddRange(new object[]
             {
@@ -199,76 +283,168 @@ namespace ChickenDist.Forms
             });
             cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
             this.Controls.Add(cboBarcodeEncoding);
-
-            chkPrintPrice = new CheckBox
-            {
-                Text = "طباعة السعر على الملصق",
-                Location = new Point(420, 395),
-                AutoSize = true,
-                ForeColor = Theme.TextMain,
-                Checked = true
-            };
-            this.Controls.Add(chkPrintPrice);
-
-            chkPrintCompanyName = new CheckBox
-            {
-                Text = "طباعة اسم المؤسسة",
-                Location = new Point(420, 420),
-                AutoSize = true,
-                ForeColor = Theme.TextMain,
-                Checked = true
-            };
-            this.Controls.Add(chkPrintCompanyName);
-
             y += 45;
 
-            // أزرار
-            btnPrint = Theme.MakeButton("🖨️ طباعة الملصقات", 20, y, 160, 38, Theme.Success);
-            btnPrint.Click += BtnPrint_Click;
+            // Action Buttons
+            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة", 20, y, 160, 38, Theme.Success);
+            btnPrint.Click += (s, e) => StartPrintJob(false);
             this.Controls.Add(btnPrint);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 195, y, 110, 38, Color.FromArgb(70, 80, 95));
-            btnCancel.Click += (s, e) => this.Close();
+            btnPreview = Theme.MakeButton("معاينة 👁️", 195, y, 110, 38, Theme.Accent);
+            btnPreview.Click += (s, e) => StartPrintJob(true);
+            this.Controls.Add(btnPreview);
+
+            btnCancel = Theme.MakeButton("إلغاء ↩", 320, y, 110, 38, Color.FromArgb(70, 80, 95));
+            btnCancel.Click += (s, e) => CloseOrNavigateBack();
             this.Controls.Add(btnCancel);
+
+            // Event Handlers
+            btnSearchProduct.Click += BtnSearchProduct_Click;
+            btnAdd.Click += BtnAdd_Click;
+            dgItems.CellClick += DgItems_CellClick;
+
+            Theme.ApplyFormRTL(this);
         }
 
-        private void LoadData()
+        private void LoadProducts()
         {
             try
             {
-                var dt = DbHelper.Query(@"
-                    SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity,
-                           COALESCE(pi.SuggestedSalePrice, pr.SalePrice, 0) AS Price,
-                           pr.ShelfLocation
-                    FROM PurchaseItems pi
-                    JOIN Products pr ON pi.ProductID = pr.ProductID
-                    WHERE pi.PurchaseID = @id", DbHelper.P("@id", _purchaseID));
-
-                dgItems.Rows.Clear();
+                DataTable dt = ProductDAL.GetAll(true);
+                cboProduct.Items.Clear();
+                cboProduct.Items.Add(new ComboItem(0, "-- اختر الصنف للطباعة --"));
                 foreach (DataRow r in dt.Rows)
                 {
-                    decimal qty = Convert.ToDecimal(r["Quantity"]);
-                    // جعل عدد الملصقات الافتراضي مساوياً للكمية المشتراة (أو 1 كحد أدنى لو كانت الكميات كسرية)
-                    int printQty = (int)Math.Max(1, Math.Floor(qty));
-
-                    dgItems.Rows.Add(
-                        r["ProductID"],
-                        r["ProductName"],
-                        r["ProductCode"],
-                        Convert.ToDecimal(r["Price"]).ToString("N2"),
-                        qty.ToString("N2"),
-                        printQty,
-                        r["ShelfLocation"]?.ToString() ?? ""
-                    );
+                    var ci = new ComboItem(
+                        Convert.ToInt32(r["ProductID"]),
+                        r["ProductName"].ToString(),
+                        r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m);
+                    
+                    ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
+                    ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
+                    ci.ShelfLocation = r["ShelfLocation"]?.ToString() ?? "";
+                    cboProduct.Items.Add(ci);
                 }
+                cboProduct.DisplayMember = "Text";
+                cboProduct.SelectedIndex = 0;
+                SetupSearchableCombo(cboProduct);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل تحميل بيانات الأصناف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل تحميل قائمة الأصناف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void BtnPrint_Click(object sender, EventArgs e)
+        private void SetupSearchableCombo(ComboBox cbo)
+        {
+            cbo.AutoCompleteMode = AutoCompleteMode.None;
+            cbo.TextUpdate += delegate
+            {
+                if (cbo.Tag == null)
+                {
+                    List<ComboItem> list = new List<ComboItem>();
+                    foreach (ComboItem item in cbo.Items)
+                    {
+                        list.Add(item);
+                    }
+                    cbo.Tag = list;
+                }
+                List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
+                string text = cbo.Text;
+                cbo.BeginUpdate();
+                cbo.Items.Clear();
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    ComboBox.ObjectCollection items = cbo.Items;
+                    object[] items2 = list2.ToArray();
+                    items.AddRange(items2);
+                }
+                else
+                {
+                    foreach (ComboItem item2 in list2)
+                    {
+                        if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            cbo.Items.Add(item2);
+                        }
+                    }
+                }
+                cbo.EndUpdate();
+                cbo.SelectionStart = text.Length;
+                cbo.SelectionLength = 0;
+                cbo.DroppedDown = true;
+            };
+        }
+
+        private void BtnSearchProduct_Click(object sender, EventArgs e)
+        {
+            using (var dlgSearch = new FrmProductSearch())
+            {
+                if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
+                {
+                    for (int si = 0; si < cboProduct.Items.Count; si++)
+                    {
+                        if (cboProduct.Items[si] is ComboItem ci && ci.ID == dlgSearch.SelectedProductID)
+                        {
+                            cboProduct.SelectedIndex = si;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BtnAdd_Click(object sender, EventArgs e)
+        {
+            if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                int qty = (int)nudQty.Value;
+                string codeToUse = string.IsNullOrWhiteSpace(ci.InternationalCode) ? ci.ProductCode : ci.InternationalCode;
+                AddProductToGrid(ci.ID, ci.Text, codeToUse, ci.Price, qty, ci.ShelfLocation);
+
+                // Reset selection
+                cboProduct.SelectedIndex = 0;
+                nudQty.Value = 1;
+                cboProduct.Focus();
+            }
+            else
+            {
+                MessageBox.Show("يرجى اختيار صنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void AddProductToGrid(int productID, string name, string code, decimal price, int qty, string shelfLocation)
+        {
+            // Check if product already exists in grid
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                if (Convert.ToInt32(row.Cells["ProductID"].Value) == productID)
+                {
+                    int curQty = Convert.ToInt32(row.Cells["PrintQty"].Value);
+                    row.Cells["PrintQty"].Value = curQty + qty;
+                    return;
+                }
+            }
+
+            dgItems.Rows.Add(
+                productID,
+                name,
+                code,
+                price.ToString("F2"),
+                qty,
+                shelfLocation
+            );
+        }
+
+        private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "Delete")
+            {
+                dgItems.Rows.RemoveAt(e.RowIndex);
+            }
+        }
+
+        private void StartPrintJob(bool isPreview)
         {
             _printList = new List<BarcodePrintItem>();
 
@@ -279,11 +455,12 @@ namespace ChickenDist.Forms
 
                 if (pQty > 0)
                 {
+                    decimal.TryParse(row.Cells["Price"].Value?.ToString(), out decimal prc);
                     _printList.Add(new BarcodePrintItem
                     {
                         ProductName = row.Cells["ProductName"].Value.ToString(),
                         ProductCode = row.Cells["ProductCode"].Value.ToString(),
-                        Price       = Convert.ToDecimal(row.Cells["Price"].Value),
+                        Price       = prc,
                         PrintQty    = pQty,
                         ShelfLocation = row.Cells["ShelfLocation"].Value?.ToString() ?? ""
                     });
@@ -292,7 +469,7 @@ namespace ChickenDist.Forms
 
             if (_printList.Count == 0)
             {
-                MessageBox.Show("يرجى تحديد عدد ملصقات أكبر من الصفر لصنف واحد على الأقل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى إضافة صنف واحد على الأقل وتحديد عدد ملصقات أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -316,18 +493,51 @@ namespace ChickenDist.Forms
                     AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
                 }
 
-                AppConfig.SetPaperSize(pd, AppConfig.BarcodeStickerSize);
+                int targetWidth = (AppConfig.BarcodeStickerSize == "38x26") ? 150 : 200;
+                int targetHeight = (AppConfig.BarcodeStickerSize == "38x26") ? 102 : 120;
+                PaperSize customSize = null;
+                try
+                {
+                    foreach (PaperSize size in pd.PrinterSettings.PaperSizes)
+                    {
+                        if (Math.Abs(size.Width - targetWidth) <= 10 && Math.Abs(size.Height - targetHeight) <= 10)
+                        {
+                            customSize = size;
+                            break;
+                        }
+                    }
+                }
+                catch { }
+
+                if (customSize != null)
+                {
+                    pd.DefaultPageSettings.PaperSize = customSize;
+                }
+                else
+                {
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", targetWidth, targetHeight);
+                }
+                pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
 
                 pd.PrintPage += Pd_PrintPage;
 
-                var prev = new PrintPreviewDialog
+                if (isPreview)
                 {
-                    Document = pd,
-                    Width = 450,
-                    Height = 400,
-                    Text = "معاينة ملصقات الباركود"
-                };
-                prev.ShowDialog(this);
+                    var prev = new PrintPreviewDialog
+                    {
+                        Document = pd,
+                        Width = 450,
+                        Height = 400,
+                        Text = "معاينة ملصقات الباركود"
+                    };
+                    prev.ShowDialog(this);
+                }
+                else
+                {
+                    pd.Print();
+                    MessageBox.Show("تم إرسال أمر الطباعة بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    CloseOrNavigateBack();
+                }
             }
             catch (Exception ex)
             {
@@ -348,7 +558,7 @@ namespace ChickenDist.Forms
 
             string template = "Standard";
             bool isCode128 = true;
-            
+
             if (cboBarcodeTemplate.SelectedItem != null)
             {
                 template = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
@@ -369,13 +579,12 @@ namespace ChickenDist.Forms
             var fCode     = new Font("Courier New", isSmallSticker ? 6.5f : 7.5f, FontStyle.Regular);
             var fLocation = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
 
-            // Large fonts for heavy/shelf templates
             var fPriceLarge    = new Font("Arial", isSmallSticker ? 11f : 14f, FontStyle.Bold);
             var fNameLarge     = new Font("Arial", isSmallSticker ? 8.5f : 10f, FontStyle.Bold);
             var fLocationLarge = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
 
-            int w = e.PageBounds.Width;   // 150 or 200
-            int h = e.PageBounds.Height;  // 102 or 120
+            int w = e.PageBounds.Width;
+            int h = e.PageBounds.Height;
             float y = isSmallSticker ? 2 : 4;
 
             var center = new StringFormat { Alignment = StringAlignment.Center };
@@ -384,7 +593,6 @@ namespace ChickenDist.Forms
 
             if (template == "Shelf")
             {
-                // Template 4: Shelf pricing (No Barcode, Large Text)
                 if (chkPrintCompanyName.Checked)
                 {
                     g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Gray, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
@@ -407,7 +615,6 @@ namespace ChickenDist.Forms
             }
             else if (template == "Small")
             {
-                // Template 3: Small Sticker (Barcode & Price only)
                 g.DrawString(item.ProductName, new Font("Arial", isSmallSticker ? 6f : 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(2, y, w - 4, isSmallSticker ? 12 : 16), center);
                 y += isSmallSticker ? 12 : 16;
 
@@ -428,7 +635,6 @@ namespace ChickenDist.Forms
             }
             else if (template == "PriceHeavy")
             {
-                // Template 2: Price Heavy (Large Price on Top)
                 if (chkPrintPrice.Checked)
                 {
                     g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(5, y, w - 10, isSmallSticker ? 18 : 22), center);
@@ -453,7 +659,6 @@ namespace ChickenDist.Forms
             }
             else
             {
-                // Template 1: Standard (Default)
                 if (chkPrintCompanyName.Checked)
                 {
                     g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(0, y, w, isSmallSticker ? 10 : 12), center);
@@ -484,7 +689,6 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // تتبع الكمية المتبقية من الاستيكر الحالي
             _currentLabelIndex++;
             if (_currentLabelIndex >= item.PrintQty)
             {
@@ -492,7 +696,6 @@ namespace ChickenDist.Forms
                 _currentLabelIndex = 0;
             }
 
-            // تحديد إذا كان هناك صفحات أخرى
             e.HasMorePages = (_currentItemIndex < _printList.Count);
         }
 
@@ -518,21 +721,21 @@ namespace ChickenDist.Forms
                 code = code.Trim();
                 if (string.IsNullOrEmpty(code)) return;
 
-                int sum = 104; // Start B
+                int sum = 104;
                 var symbolIndices = new List<int>();
-                symbolIndices.Add(104); // Start B
+                symbolIndices.Add(104);
 
                 for (int i = 0; i < code.Length; i++)
                 {
                     int val = code[i] - 32;
-                    if (val < 0 || val > 102) val = 0; // fallback to Space
+                    if (val < 0 || val > 102) val = 0;
                     symbolIndices.Add(val);
                     sum += val * (i + 1);
                 }
 
                 int checksum = sum % 103;
                 symbolIndices.Add(checksum);
-                symbolIndices.Add(106); // Stop
+                symbolIndices.Add(106);
 
                 int totalModules = 0;
                 foreach (int index in symbolIndices)
@@ -570,15 +773,12 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        // رسم باركود Code 39 القياسي بألوان GDI+ بدون خطوط خارجية
         private static void DrawCode39(Graphics g, string code, float x, float y, float width, float height)
         {
             try
             {
                 string textToEncode = "*" + code.ToUpper().Trim() + "*";
-                
-                // خريطة ترميز Code 39 (1 = خط عريض/فراغ عريض، 0 = خط رفيع/فراغ رفيع)
-                // يتكون كل حرف من 9 عناصر: 5 خطوط و4 فراغات (3 عريضة و6 رفيعة)
+
                 var map = new Dictionary<char, string>
                 {
                     {'0', "000110100"}, {'1', "100010001"}, {'2', "001010001"}, {'3', "101000001"},
@@ -593,9 +793,6 @@ namespace ChickenDist.Forms
                     {'-', "010000101"}, {'.', "110000100"}, {' ', "011000100"}, {'*', "010010100"}
                 };
 
-                // حساب معامل العرض
-                // كل حرف به: 6 عناصر رفيعة و3 عناصر عريضة + 1 فراغ رفيع فاصل بين الحروف
-                // إجمالي الوحدات لكل حرف: 6 * 1 (رفيع) + 3 * 3 (عريض) + 1 * 1 (فاصل) = 16 وحدة.
                 float totalUnits = textToEncode.Length * 16;
                 float moduleWidth = width / totalUnits;
                 if (moduleWidth < 0.4f) moduleWidth = 0.4f;
@@ -607,7 +804,7 @@ namespace ChickenDist.Forms
                     {
                         string pattern;
                         if (!map.TryGetValue(c, out pattern))
-                            pattern = map['*']; // افتراضي للنجوم الفاصلة
+                            pattern = map['*'];
 
                         for (int i = 0; i < 9; i++)
                         {
@@ -623,21 +820,23 @@ namespace ChickenDist.Forms
                             curX += elementWidth;
                         }
 
-                        // الفراغ الفاصل بين الحروف
                         curX += moduleWidth;
                     }
                 }
             }
             catch { }
         }
-    }
 
-    public class BarcodePrintItem
-    {
-        public string ProductName { get; set; }
-        public string ProductCode { get; set; }
-        public decimal Price { get; set; }
-        public int PrintQty { get; set; }
-        public string ShelfLocation { get; set; }
+        private void CloseOrNavigateBack()
+        {
+            if (this.ParentForm is FrmMain mainForm)
+            {
+                mainForm.NavigateTo(new FrmDashboard());
+            }
+            else
+            {
+                this.Close();
+            }
+        }
     }
 }

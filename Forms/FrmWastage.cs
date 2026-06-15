@@ -453,7 +453,7 @@ namespace ChickenDist.Forms
 
                         trans.Commit();
                         MessageBox.Show("✅ تم حفظ مستند التالف وتعديل كميات المخزن بنجاح.", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        this.Close();
+                        CloseOrNavigateBack();
                     }
                     catch (Exception ex)
                     {
@@ -461,6 +461,18 @@ namespace ChickenDist.Forms
                         MessageBox.Show($"❌ فشل حفظ المستند:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
+            }
+        }
+
+        private void CloseOrNavigateBack()
+        {
+            if (this.ParentForm is FrmMain mainForm)
+            {
+                mainForm.NavigateTo(new FrmDashboard());
+            }
+            else
+            {
+                this.Close();
             }
         }
     }

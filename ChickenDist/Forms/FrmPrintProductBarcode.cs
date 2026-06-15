@@ -256,17 +256,7 @@ namespace ChickenDist.Forms
             try
             {
                 var pd = new PrintDocument();
-                // Sticker size: 50x30 mm (approx 2x1.2 inches)
-                if (AppConfig.BarcodeStickerSize == "38x26")
-                {
-                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", 150, 102);
-                }
-                else
-                {
-                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", 200, 120);
-                }
-                pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
-
+                
                 if (cboPrinters.SelectedIndex > 0)
                 {
                     pd.PrinterSettings.PrinterName = cboPrinters.SelectedItem.ToString();
@@ -279,6 +269,8 @@ namespace ChickenDist.Forms
                 {
                     AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
                 }
+
+                AppConfig.SetPaperSize(pd, AppConfig.BarcodeStickerSize);
 
                 pd.PrintPage += Pd_PrintPage;
 

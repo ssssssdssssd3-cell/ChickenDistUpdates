@@ -1486,7 +1486,7 @@ namespace ChickenDist.DAL
         public decimal ReturnedQty { get; set; }
         public decimal DeadQty { get; set; }
         public decimal UnitPrice { get; set; }
-        public string DeadQtyHandling { get; set; } = "None"; // "Driver", "Company", "None"
+        public string DeadQtyHandling { get; set; } = "Driver"; // "Driver", "Company", "None"
 
         public decimal DeficitQty
         {
@@ -1954,6 +1954,58 @@ namespace ChickenDist.DAL
                 LEFT JOIN StockSinceAdj      sca ON sca.ProductID = p.ProductID
                 WHERE p.IsActive = 1
                 ORDER BY p.ProductName",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        public static DataTable WastageLossReport(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            return DbHelper.Query(
+                @"SELECT 
+                    w.WastageDate AS TransDate,
+                    N'هالك مخزن (' + wh.WarehouseName + ')' AS SourceType,
+                    p.ProductName,
+                    wi.Quantity,
+                    wi.CostPrice AS UnitPrice,
+                    wi.TotalCost,
+                    ISNULL(e.EmpName, N'---') AS ResponsibleParty,
+                    w.Notes
+                  FROM WastageLoss w
+                  JOIN WastageLossItems wi ON w.WastageID = wi.WastageID
+                  JOIN Products p ON wi.ProductID = p.ProductID
+                  JOIN Warehouses wh ON w.WarehouseID = wh.WarehouseID
+                  LEFT JOIN Employees e ON w.ResponsibleDriverID = e.EmpID
+                  WHERE CAST(w.WastageDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR w.WarehouseID = @warehouseID)
+
+                  UNION ALL
+
+                  SELECT 
+                    dh.HandoverDate AS TransDate,
+                    N'نافق مندوب (ح#' + CAST(dh.LoadID AS NVARCHAR) + N')' AS SourceType,
+                    p.ProductName,
+                    hi.DeadQty AS Quantity,
+                    dli.UnitPrice AS UnitPrice,
+                    (hi.DeadQty * dli.UnitPrice) AS TotalCost,
+                    e.EmpName AS ResponsibleParty,
+                    N'جهة التحمل: ' + 
+                      CASE dh.DeadQtyHandling 
+                        WHEN 'Driver' THEN N'المندوب (عجز)'
+                        WHEN 'Company' THEN N'الشركة (مصروف)'
+                        WHEN 'None' THEN N'خصم فقط'
+                        ELSE N'غير محدد'
+                      END + ISNULL(N' - ' + dh.Notes, N'') AS Notes
+                  FROM DriverHandovers dh
+                  JOIN HandoverItems hi ON dh.HandoverID = hi.HandoverID
+                  JOIN Products p ON hi.ProductID = p.ProductID
+                  JOIN Employees e ON dh.DriverID = e.EmpID
+                  JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                  JOIN DriverLoadItems dli ON dh.LoadID = dli.LoadID AND hi.ProductID = dli.ProductID
+                  WHERE hi.DeadQty > 0
+                    AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t
+                    AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
+
+                  ORDER BY TransDate DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }

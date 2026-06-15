@@ -103,6 +103,74 @@ namespace ChickenDist.Core
             catch { /* Ignored */ }
         }
 
+        public static void SetPaperSize(System.Drawing.Printing.PrintDocument pd, string sizeKey)
+        {
+            try
+            {
+                int targetWidth = (sizeKey == "38x26") ? 150 : 200;
+                int targetHeight = (sizeKey == "38x26") ? 102 : 120;
+
+                string part1 = (sizeKey == "38x26") ? "38" : "50";
+                string part2 = (sizeKey == "38x26") ? "26" : "30";
+
+                System.Drawing.Printing.PaperSize matchedSize = null;
+
+                // 1. Search by name first (e.g. contains "38" and "26")
+                foreach (System.Drawing.Printing.PaperSize size in pd.PrinterSettings.PaperSizes)
+                {
+                    string name = size.PaperName;
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        if (name.IndexOf(part1, StringComparison.OrdinalIgnoreCase) >= 0 && 
+                            name.IndexOf(part2, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            matchedSize = size;
+                            break;
+                        }
+                    }
+                }
+
+                // 2. Search by dimensions with a tolerance of 10 hundredths of an inch
+                if (matchedSize == null)
+                {
+                    foreach (System.Drawing.Printing.PaperSize size in pd.PrinterSettings.PaperSizes)
+                    {
+                        if (Math.Abs(size.Width - targetWidth) <= 10 && Math.Abs(size.Height - targetHeight) <= 10)
+                        {
+                            matchedSize = size;
+                            break;
+                        }
+                    }
+                }
+
+                if (matchedSize != null)
+                {
+                    pd.DefaultPageSettings.PaperSize = matchedSize;
+                    pd.PrinterSettings.DefaultPageSettings.PaperSize = matchedSize;
+                }
+                else
+                {
+                    var customSize = new System.Drawing.Printing.PaperSize("StickerLabel", targetWidth, targetHeight);
+                    try
+                    {
+                        customSize.RawKind = 256; // Standard Custom RawKind
+                    }
+                    catch { }
+                    pd.DefaultPageSettings.PaperSize = customSize;
+                    pd.PrinterSettings.DefaultPageSettings.PaperSize = customSize;
+                }
+
+                // Apply margins and layout to both DefaultPageSettings and PrinterSettings
+                var margins = new System.Drawing.Printing.Margins(5, 5, 5, 5);
+                pd.DefaultPageSettings.Margins = margins;
+                pd.PrinterSettings.DefaultPageSettings.Margins = margins;
+
+                pd.DefaultPageSettings.Landscape = false;
+                pd.PrinterSettings.DefaultPageSettings.Landscape = false;
+            }
+            catch { }
+        }
+
         public static int DriverPortalPort
         {
             get => int.TryParse(Get("DriverPortalPort", "8080"), out int p) ? p : 8080;

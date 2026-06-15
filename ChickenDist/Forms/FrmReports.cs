@@ -113,7 +113,7 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Font = Theme.FontMain
 			};
-			(string, string)[] array = new(string, string)[12]
+			(string, string)[] array = new(string, string)[13]
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
@@ -126,6 +126,7 @@ namespace ChickenDist.Forms
 				("📦 مبيعات الأصناف والصافي", "SalesByProduct"),
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
 				("📋 سجل تقفيل المناديب", "Handovers"),
+				("🚨 تقرير الهالك والتالف", "WastageLoss"),
 				("📈 الملخص المالي والتشغيلي", "FinancialSummary")
 			};
 			(string, string)[] array2 = array;
@@ -330,6 +331,20 @@ namespace ChickenDist.Forms
 						("TotalDeficit", "العجز"),
 						("Notes", "ملاحظات التقفيل"),
 						("CreatedBy", "المستلم")
+					}, dataGridView);
+					break;
+				case "WastageLoss":
+					_currentDt = ReportDAL.WastageLossReport(dtpFrom.Value, dtpTo.Value, warehouseID);
+					SetupGrid(new(string, string)[8]
+					{
+						("TransDate", "التاريخ والوقت"),
+						("SourceType", "مصدر الهالك"),
+						("ProductName", "الصنف"),
+						("Quantity", "الكمية التالفة"),
+						("UnitPrice", "سعر الوحدة"),
+						("TotalCost", "التكلفة الإجمالية"),
+						("ResponsibleParty", "المسؤول / المندوب"),
+						("Notes", "البيان / ملاحظات")
 					}, dataGridView);
 					break;
 				case "ClientBalances":

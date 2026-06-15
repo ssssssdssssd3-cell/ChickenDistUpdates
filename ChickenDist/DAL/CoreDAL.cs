@@ -827,6 +827,24 @@ namespace ChickenDist.DAL
             return 0;
         }
 
+        public static decimal GetPreviousBalanceBeforeSale(int clientID, int saleID)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT 
+                    c.OpeningBalance + 
+                    ISNULL((
+                        SELECT SUM(ct.Debit) - SUM(ct.Credit) 
+                        FROM ClientTransactions ct
+                        WHERE ct.ClientID = @cid 
+                          AND ct.TransID < ISNULL((SELECT TOP 1 t.TransID FROM ClientTransactions t WHERE t.ClientID = @cid AND t.TransType = 'Sale' AND t.RefID = @sid ORDER BY t.TransID DESC), 999999999)
+                    ), 0) AS PrevBal
+                FROM Clients c WHERE c.ClientID = @cid", 
+                DbHelper.P("@cid", clientID), DbHelper.P("@sid", saleID));
+            if (dt.Rows.Count > 0 && dt.Rows[0]["PrevBal"] != DBNull.Value)
+                return Convert.ToDecimal(dt.Rows[0]["PrevBal"]);
+            return 0;
+        }
+
         public static void AddPayment(int clientID, decimal amount, string notes, int? safeAccountID = null)
         {
             // FIX: القيدان (حساب العميل + الخزنة) داخل Transaction واحد
