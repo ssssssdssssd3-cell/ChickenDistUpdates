@@ -169,7 +169,7 @@ namespace ChickenDist.Forms
             btnSearch.Margin = new Padding(20, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadSales();
 
-            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblClient, cboClient, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
+            pnlFilter.Controls.AddRange(new Control[] { dtpFrom, lblFrom, dtpTo, lblTo, cboClient, lblClient, txtSearch, lblSearch, txtInvoiceBarcode, lblBarcode, btnSearch });
 
             // ===== 2. SplitContainer =====
             var split = new SplitContainer

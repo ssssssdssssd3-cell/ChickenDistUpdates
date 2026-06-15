@@ -26,6 +26,10 @@ namespace ChickenDist.Forms
 
 		private Button btnExportExcel;
 
+		private TextBox txtSearchClient;
+
+		private Label lblSearchClient;
+
 		private DataTable _currentDt;
 
 		public FrmReports()
@@ -102,7 +106,32 @@ namespace ChickenDist.Forms
 			btnExportExcel.Margin = new Padding(10, 0, 0, 0);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
-			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, btnLoad, btnPrint, btnWhatsAppReport, btnExportExcel });
+			lblSearchClient = new Label
+			{
+				Text = "بحث باسم العميل:",
+				AutoSize = true,
+				ForeColor = Theme.TextMain,
+				Font = Theme.FontBold,
+				Margin = new Padding(20, 8, 0, 0)
+			};
+			txtSearchClient = new TextBox
+			{
+				Width = 150,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				Margin = new Padding(5, 4, 0, 0)
+			};
+			txtSearchClient.TextChanged += (s, e) =>
+			{
+				DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+				if (dataGridView != null)
+				{
+					FilterGrid(dataGridView, txtSearchClient.Text.Trim());
+				}
+			};
+
+			panel.Controls.AddRange(new Control[] { dtpFrom, label, dtpTo, label2, txtSearchClient, lblSearchClient, btnLoad, btnPrint, btnWhatsAppReport, btnExportExcel });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{
@@ -173,6 +202,10 @@ namespace ChickenDist.Forms
 			}
 			tabReports.SelectedIndexChanged += delegate
 			{
+				if (txtSearchClient != null)
+				{
+					txtSearchClient.Text = "";
+				}
 				LoadCurrentTab();
 			};
 			base.Controls.Add(tabReports);
@@ -1171,6 +1204,51 @@ namespace ChickenDist.Forms
 						MessageBox.Show("❌ فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}
 				}
+			}
+		}
+
+		private void FilterGrid(DataGridView dg, string query)
+		{
+			if (dg == null) return;
+
+			dg.SuspendLayout();
+			try
+			{
+				bool hasQuery = !string.IsNullOrWhiteSpace(query);
+				for (int i = 0; i < dg.Rows.Count; i++)
+				{
+					DataGridViewRow row = dg.Rows[i];
+					if (row.IsNewRow) continue;
+
+					if (row.Cells[0].Value?.ToString() == "الإجمالي الكلي")
+					{
+						row.Visible = true;
+						continue;
+					}
+
+					if (!hasQuery)
+					{
+						row.Visible = true;
+						continue;
+					}
+
+					bool match = false;
+					foreach (DataGridViewCell cell in row.Cells)
+					{
+						string val = cell.Value?.ToString();
+						if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+						{
+							match = true;
+							break;
+						}
+					}
+					row.Visible = match;
+				}
+			}
+			catch { }
+			finally
+			{
+				dg.ResumeLayout();
 			}
 		}
 	}
