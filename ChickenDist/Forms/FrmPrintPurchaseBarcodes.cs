@@ -518,6 +518,11 @@ namespace ChickenDist.Forms
                 code = code.Trim();
                 if (string.IsNullOrEmpty(code)) return;
 
+                // Set GDI+ options for crisp, aliased rendering (perfect for barcodes)
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
+
                 int sum = 104; // Start B
                 var symbolIndices = new List<int>();
                 symbolIndices.Add(104); // Start B
@@ -545,9 +550,19 @@ namespace ChickenDist.Forms
                 }
 
                 float moduleWidth = width / totalModules;
-                if (moduleWidth < 0.4f) moduleWidth = 0.4f;
+                
+                // Cap module width to prevent extremely fat bleeding bars for short codes
+                float maxModuleWidth = (width < 140f) ? 0.95f : 1.15f; 
+                if (moduleWidth > maxModuleWidth)
+                {
+                    moduleWidth = maxModuleWidth;
+                }
+                if (moduleWidth < 0.5f) moduleWidth = 0.5f;
 
-                float curX = x;
+                // Center the barcode
+                float actualBarcodeWidth = totalModules * moduleWidth;
+                float curX = x + (width - actualBarcodeWidth) / 2;
+
                 using (var brush = new SolidBrush(Color.Black))
                 {
                     foreach (int index in symbolIndices)
@@ -557,12 +572,15 @@ namespace ChickenDist.Forms
                         {
                             bool isBar = (i % 2 == 0);
                             float elementWidth = (pattern[i] - '0') * moduleWidth;
+                            float nextX = curX + elementWidth;
 
                             if (isBar)
                             {
-                                g.FillRectangle(brush, curX, y, elementWidth, height);
+                                int rectX = (int)Math.Round(curX);
+                                int rectW = (int)Math.Round(nextX) - rectX;
+                                g.FillRectangle(brush, rectX, y, rectW, height);
                             }
-                            curX += elementWidth;
+                            curX = nextX;
                         }
                     }
                 }
@@ -577,6 +595,11 @@ namespace ChickenDist.Forms
             {
                 string textToEncode = "*" + code.ToUpper().Trim() + "*";
                 
+                // Set GDI+ options for crisp, aliased rendering (perfect for barcodes)
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
+
                 // خريطة ترميز Code 39 (1 = خط عريض/فراغ عريض، 0 = خط رفيع/فراغ رفيع)
                 // يتكون كل حرف من 9 عناصر: 5 خطوط و4 فراغات (3 عريضة و6 رفيعة)
                 var map = new Dictionary<char, string>
@@ -598,9 +621,19 @@ namespace ChickenDist.Forms
                 // إجمالي الوحدات لكل حرف: 6 * 1 (رفيع) + 3 * 3 (عريض) + 1 * 1 (فاصل) = 16 وحدة.
                 float totalUnits = textToEncode.Length * 16;
                 float moduleWidth = width / totalUnits;
-                if (moduleWidth < 0.4f) moduleWidth = 0.4f;
+                
+                // Cap module width to prevent extremely fat bleeding bars for short codes
+                float maxModuleWidth = (width < 140f) ? 0.90f : 1.10f; 
+                if (moduleWidth > maxModuleWidth)
+                {
+                    moduleWidth = maxModuleWidth;
+                }
+                if (moduleWidth < 0.5f) moduleWidth = 0.5f;
 
-                float curX = x;
+                // Center the barcode
+                float actualBarcodeWidth = totalUnits * moduleWidth;
+                float curX = x + (width - actualBarcodeWidth) / 2;
+
                 using (var brush = new SolidBrush(Color.Black))
                 {
                     foreach (char c in textToEncode)
@@ -614,13 +647,16 @@ namespace ChickenDist.Forms
                             bool isBar = (i % 2 == 0);
                             bool isWide = (pattern[i] == '1');
                             float elementWidth = isWide ? (moduleWidth * 3) : moduleWidth;
+                            float nextX = curX + elementWidth;
 
                             if (isBar)
                             {
-                                g.FillRectangle(brush, curX, y, elementWidth, height);
+                                int rectX = (int)Math.Round(curX);
+                                int rectW = (int)Math.Round(nextX) - rectX;
+                                g.FillRectangle(brush, rectX, y, rectW, height);
                             }
 
-                            curX += elementWidth;
+                            curX = nextX;
                         }
 
                         // الفراغ الفاصل بين الحروف

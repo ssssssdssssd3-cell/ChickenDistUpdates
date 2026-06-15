@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgSales, dgItems;
         private TextBox txtSearch, txtInvoiceBarcode, txtNotes;
+        private ComboBox cboClient;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch, btnSave;
         private Label lblTotal;
@@ -22,6 +23,32 @@ namespace ChickenDist.Forms
         public FrmReturn()
         {
             InitUI();
+            LoadClients();
+            LoadSales();
+        }
+
+        private void LoadClients()
+        {
+            cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
+            cboClient.Items.Clear();
+            cboClient.Items.Add(new ComboItem(0, "-- الكل --"));
+            try
+            {
+                var dtC = ClientDAL.GetAll(true);
+                foreach (DataRow r in dtC.Rows)
+                {
+                    cboClient.Items.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+                }
+            }
+            catch { }
+            cboClient.DisplayMember = "Text";
+            cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
+            if (cboClient.Items.Count > 0)
+                cboClient.SelectedIndex = 0;
+        }
+
+        private void CboClient_SelectedIndexChanged(object sender, EventArgs e)
+        {
             LoadSales();
         }
 
@@ -103,9 +130,23 @@ namespace ChickenDist.Forms
 
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
+            dtpFrom.ValueChanged += (s, e) => LoadSales();
 
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
             dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpTo.ValueChanged += (s, e) => LoadSales();
+
+            var lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            cboClient = new ComboBox 
+            { 
+                Width = 180, 
+                DropDownStyle = ComboBoxStyle.DropDown, 
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain 
+            };
+            cboClient.SelectedIndexChanged += (s, e) => LoadSales();
 
             var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
             txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
@@ -128,7 +169,7 @@ namespace ChickenDist.Forms
             btnSearch.Margin = new Padding(20, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadSales();
 
-            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
+            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblClient, cboClient, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
 
             // ===== 2. SplitContainer =====
             var split = new SplitContainer
@@ -264,7 +305,13 @@ namespace ChickenDist.Forms
             string search = txtSearch.Text.Trim();
             if (string.IsNullOrEmpty(search)) search = null;
 
-            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, null, null);
+            int? selectedClientID = null;
+            if (cboClient != null && cboClient.SelectedItem is ComboItem cs && cs.ID > 0)
+            {
+                selectedClientID = cs.ID;
+            }
+
+            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, selectedClientID, null);
             _salesDt = dtS;
 
             foreach (DataRow r in dtS.Rows)
