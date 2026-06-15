@@ -2819,8 +2819,23 @@ namespace ChickenDist.Forms
 					}
 					catch
 					{
-						string webUrl = $"https://web.whatsapp.com/send?phone={clean}";
-						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(webUrl) { UseShellExecute = true });
+						string waUrl = $"https://wa.me/{clean}";
+						try
+						{
+							System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(waUrl) { UseShellExecute = true });
+						}
+						catch
+						{
+							try
+							{
+								System.Diagnostics.Process.Start("explorer.exe", $"\"{waUrl}\"");
+							}
+							catch
+							{
+								string webUrl = $"https://web.whatsapp.com/send?phone={clean}";
+								System.Diagnostics.Process.Start("explorer.exe", $"\"{webUrl}\"");
+							}
+						}
 					}
 				}
 				catch (Exception ex)
@@ -2838,16 +2853,35 @@ namespace ChickenDist.Forms
 				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
 				string encoded = Uri.EscapeDataString(message);
 				
+				// 1. Try to open the WhatsApp Desktop App protocol
 				string appUrl = $"whatsapp://send?phone={clean}&text={encoded}";
 				try
 				{
 					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appUrl) { UseShellExecute = true });
+					return;
 				}
-				catch
+				catch { }
+
+				// 2. Try to open wa.me link directly via shell
+				string waUrl = $"https://wa.me/{clean}?text={encoded}";
+				try
 				{
-					string webUrl = $"https://web.whatsapp.com/send?phone={clean}&text={encoded}";
-					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(webUrl) { UseShellExecute = true });
+					System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(waUrl) { UseShellExecute = true });
+					return;
 				}
+				catch { }
+
+				// 3. Fallback: Launch via explorer.exe (highly robust in Windows)
+				try
+				{
+					System.Diagnostics.Process.Start("explorer.exe", $"\"{waUrl}\"");
+					return;
+				}
+				catch { }
+
+				// 4. Try WhatsApp Web as a last resort via explorer.exe
+				string webUrl = $"https://web.whatsapp.com/send?phone={clean}&text={encoded}";
+				System.Diagnostics.Process.Start("explorer.exe", $"\"{webUrl}\"");
 			}
 			catch (Exception ex)
 			{
