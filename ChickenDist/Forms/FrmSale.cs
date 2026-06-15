@@ -2667,13 +2667,29 @@ namespace ChickenDist.Forms
 				}
 
 				// مجموع المدفوعات والمرتجع في تاريخ الفاتورة
+				int saleTransID = 0;
+				var dtTrans = DbHelper.Query(@"
+					SELECT TOP 1 TransID 
+					FROM ClientTransactions 
+					WHERE ClientID = @cid AND TransType = 'Sale' AND RefID = @sid 
+					ORDER BY TransID DESC",
+					DbHelper.P("@cid", clientID), DbHelper.P("@sid", saleID));
+				if (dtTrans.Rows.Count > 0)
+				{
+					saleTransID = Convert.ToInt32(dtTrans.Rows[0]["TransID"]);
+				}
+
 				var todayPayDt = DbHelper.Query(@"
 					SELECT 
 						COALESCE(SUM(CASE WHEN TransType = 'Payment' THEN Credit ELSE 0 END), 0) AS TotalPayment,
 						COALESCE(SUM(CASE WHEN TransType = 'Return' THEN Credit ELSE 0 END), 0) AS TotalReturn
 					FROM ClientTransactions
-					WHERE ClientID=@id AND CAST(TransDate AS DATE) = CAST(@saleDate AS DATE)",
-					DbHelper.P("@id", clientID), DbHelper.P("@saleDate", saleDate));
+					WHERE ClientID=@id 
+					  AND CAST(TransDate AS DATE) = CAST(@saleDate AS DATE)
+					  AND TransID >= @saleTransID",
+					DbHelper.P("@id", clientID), 
+					DbHelper.P("@saleDate", saleDate),
+					DbHelper.P("@saleTransID", saleTransID));
 				if (todayPayDt.Rows.Count > 0)
 				{
 					todayPayments = Convert.ToDecimal(todayPayDt.Rows[0]["TotalPayment"]);
