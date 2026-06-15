@@ -2850,7 +2850,24 @@ namespace ChickenDist.Forms
 			{
 				string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
 				if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
-				string encoded = Uri.EscapeDataString(message);
+				
+				string encoded = "";
+				if (message.Length > 600 || Uri.EscapeDataString(message).Length > 1800)
+				{
+					Clipboard.SetText(message);
+					MessageBox.Show(
+						"⚠️ نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
+						"يرجى الضغط على لصق (Ctrl + V) داخل محادثة الواتساب التي ستفتح الآن لإرساله.",
+						"تم نسخ التقرير", MessageBoxButtons.OK, MessageBoxIcon.Information,
+						MessageBoxDefaultButton.Button1,
+						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+						
+					encoded = Uri.EscapeDataString("📋 تفاصيل فاتورة المبيعات (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
+				}
+				else
+				{
+					encoded = Uri.EscapeDataString(message);
+				}
 				
 				// 1. Try to open the WhatsApp Desktop App protocol
 				string appUrl = $"whatsapp://send?phone={clean}&text={encoded}";
