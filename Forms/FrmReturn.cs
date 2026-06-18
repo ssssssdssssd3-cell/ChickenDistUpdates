@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         private Button btnSearch, btnSave;
         private Label lblTotal;
         private DataTable _salesDt;
+        private bool _isFilteringCombo = false;
 
         public FrmReturn()
         {
@@ -146,7 +147,12 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain 
             };
-            cboClient.SelectedIndexChanged += (s, e) => LoadSales();
+            cboClient.SelectedIndexChanged += (s, e) =>
+            {
+                if (_isFilteringCombo) return;
+                LoadSales();
+            };
+            SetupSearchableCombo(cboClient);
 
             var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
             txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
@@ -169,7 +175,7 @@ namespace ChickenDist.Forms
             btnSearch.Margin = new Padding(20, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadSales();
 
-            pnlFilter.Controls.AddRange(new Control[] { dtpFrom, lblFrom, dtpTo, lblTo, cboClient, lblClient, txtSearch, lblSearch, txtInvoiceBarcode, lblBarcode, btnSearch });
+            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblClient, cboClient, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
 
             // ===== 2. SplitContainer =====
             var split = new SplitContainer
@@ -576,6 +582,56 @@ namespace ChickenDist.Forms
             {
                 MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void SetupSearchableCombo(ComboBox cbo)
+        {
+            cbo.AutoCompleteMode = AutoCompleteMode.None;
+            cbo.TextUpdate += delegate
+            {
+                _isFilteringCombo = true;
+                try
+                {
+                    if (cbo.Tag == null)
+                    {
+                        List<ComboItem> list = new List<ComboItem>();
+                        foreach (ComboItem item in cbo.Items)
+                        {
+                            list.Add(item);
+                        }
+                        cbo.Tag = list;
+                    }
+                    List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
+                    string text = cbo.Text;
+                    cbo.BeginUpdate();
+                    cbo.Items.Clear();
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        foreach (var item in list2)
+                        {
+                            cbo.Items.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        foreach (ComboItem item2 in list2)
+                        {
+                            if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                cbo.Items.Add(item2);
+                            }
+                        }
+                    }
+                    cbo.EndUpdate();
+                    cbo.SelectionStart = text.Length;
+                    cbo.SelectionLength = 0;
+                    cbo.DroppedDown = true;
+                }
+                finally
+                {
+                    _isFilteringCombo = false;
+                }
+            };
         }
     }
 }

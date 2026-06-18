@@ -2069,10 +2069,20 @@ namespace ChickenDist.Forms
 			{
 				if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 				{
-					MessageBox.Show("اختر العميل");
-					return;
+					if (_invoiceType == "Cash")
+					{
+						clientID = null;
+					}
+					else
+					{
+						MessageBox.Show("اختر العميل");
+						return;
+					}
 				}
-				clientID = comboItem.ID;
+				else
+				{
+					clientID = comboItem.ID;
+				}
 				if (cboDriver.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
 					driverID = comboItem2.ID;
 			}
@@ -2093,10 +2103,10 @@ namespace ChickenDist.Forms
 			decimal discountPct = 0m;
 			if (txtInvoiceDiscount != null && decimal.TryParse(txtInvoiceDiscount.Text, out decimal discount) && discount > 0)
 			{
-				if (cboInvoiceDiscountType.SelectedIndex == 1) // نسبة %
+				if (cboInvoiceDiscountType != null && cboInvoiceDiscountType.SelectedIndex == 0) // %
 				{
 					discountPct = discount;
-					discountAmount = Math.Round(gross * discountPct / 100m, 2);
+					discountAmount = Math.Round(gross * (discount / 100m), 2);
 				}
 				else // قيمة
 				{
@@ -2108,10 +2118,23 @@ namespace ChickenDist.Forms
 			string priceTier = _selectedTier ?? "قطاعي";
 
 			// ─── إشعار الدفع النقدي ───
-			if (!isDraft && _invoiceType == "Cash" && _editSaleID == 0)
+			decimal paidAmount = net;
+			if (!isDraft && _invoiceType == "Cash")
 			{
-				using (var frm = new FrmQuickPayment(net))
+				decimal? defaultPaid = null;
+				if (_editSaleID > 0)
+				{
+					var existingPaidObj = DbHelper.Scalar("SELECT CashPaid FROM Sales WHERE SaleID=@id", DbHelper.P("@id", _editSaleID));
+					if (existingPaidObj != null && existingPaidObj != DBNull.Value)
+					{
+						defaultPaid = Convert.ToDecimal(existingPaidObj);
+					}
+				}
+				using (var frm = new FrmQuickPayment(net, clientID.HasValue, defaultPaid))
+				{
 					if (frm.ShowDialog() != DialogResult.OK) return;
+					paidAmount = frm.PaidAmount;
+				}
 			}
 
 			// ─── التحقق من حد الائتمان ───
@@ -2158,7 +2181,7 @@ namespace ChickenDist.Forms
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
-						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID);
+						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount);
 					if (updated)
 					{
 						_isDirty = false;
@@ -2221,7 +2244,7 @@ namespace ChickenDist.Forms
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
-					schedule: schedule, safeAccountID: safeAccountID);
+					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -2619,7 +2642,8 @@ namespace ChickenDist.Forms
 				SELECT s.SaleCode, s.SaleDate, s.SaleType, s.TotalAmount,
 				       COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
 				       s.ClientID,
-				       COALESCE(c.ClientName, N'---') AS ClientName,
+				       s.CashPaid,
+				       COALESCE(c.ClientName, N'عميل نقدي') AS ClientName,
 				       COALESCE(c.Phone, '') AS ClientPhone
 				FROM Sales s
 				LEFT JOIN Clients c ON s.ClientID = c.ClientID
@@ -2631,8 +2655,31 @@ namespace ChickenDist.Forms
 
 			if (string.IsNullOrWhiteSpace(phone))
 			{
-				MessageBox.Show("العميل ليس لديه رقم هاتف مسجل!\nيرجى إضافة رقم الهاتف من شاشة إدارة العملاء.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				return;
+				using (var frmInput = new Form())
+				{
+					frmInput.Text = "إدخال رقم الهاتف";
+					frmInput.Size = new Size(350, 150);
+					frmInput.StartPosition = FormStartPosition.CenterParent;
+					frmInput.FormBorderStyle = FormBorderStyle.FixedDialog;
+					frmInput.MaximizeBox = false;
+					frmInput.MinimizeBox = false;
+					frmInput.RightToLeft = RightToLeft.Yes;
+					frmInput.RightToLeftLayout = true;
+					frmInput.BackColor = Theme.BgMain;
+					frmInput.Font = Theme.FontMain;
+
+					var lbl = new Label { Text = "أدخل رقم هاتف العميل للإرسال:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+					var txt = new TextBox { Location = new Point(20, 45), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+					var btnOk = Theme.MakeButton("✅ موافق", 190, 80, 100, 30, Theme.Success);
+					btnOk.Click += (s, ev) => { phone = txt.Text.Trim(); frmInput.DialogResult = DialogResult.OK; frmInput.Close(); };
+					
+					frmInput.Controls.AddRange(new Control[] { lbl, txt, btnOk });
+					frmInput.AcceptButton = btnOk;
+					if (frmInput.ShowDialog() != DialogResult.OK || string.IsNullOrWhiteSpace(phone))
+					{
+						return;
+					}
+				}
 			}
 
 			// جلب أصناف الفاتورة
@@ -2686,10 +2733,12 @@ namespace ChickenDist.Forms
 					FROM ClientTransactions
 					WHERE ClientID=@id 
 					  AND CAST(TransDate AS DATE) = CAST(@saleDate AS DATE)
-					  AND TransID >= @saleTransID",
+					  AND TransID >= @saleTransID
+					  AND NOT (RefID = @sid AND TransType = 'Payment')",
 					DbHelper.P("@id", clientID), 
 					DbHelper.P("@saleDate", saleDate),
-					DbHelper.P("@saleTransID", saleTransID));
+					DbHelper.P("@saleTransID", saleTransID),
+					DbHelper.P("@sid", saleID));
 				if (todayPayDt.Rows.Count > 0)
 				{
 					todayPayments = Convert.ToDecimal(todayPayDt.Rows[0]["TotalPayment"]);
@@ -2760,16 +2809,55 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"{totalAmount:N2} ج.م");
 				sb.AppendLine("━━━━━━━━━━━━━━━━");
 
+				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount;
+				decimal remainingFromInvoice = isCredit ? totalAmount : (totalAmount - cashPaid);
+
+				if (saleRow["SaleType"].ToString() == "Cash")
+				{
+					sb.AppendLine($"💵 المدفوع نقداً : {cashPaid:N2} ج.م");
+					if (remainingFromInvoice > 0)
+					{
+						sb.AppendLine($"⚠️ المتبقي (آجل) : {remainingFromInvoice:N2} ج.م");
+						sb.AppendLine("📝 (سيتم إضافة المتبقي على حساب العميل)");
+					}
+					else if (remainingFromInvoice < 0)
+					{
+						sb.AppendLine($"➕ الزيادة : {-remainingFromInvoice:N2} ج.م");
+						sb.AppendLine("📝 (سيتم خصم الزيادة من حساب العميل)");
+					}
+					else
+					{
+						sb.AppendLine("✅ (تم سداد الفاتورة بالكامل)");
+					}
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
+				}
+
 				if (saleRow["ClientID"] != DBNull.Value)
 				{
-					decimal currentInvoiceAmt = totalAmount;
-					decimal totalDue = prevBalance + currentInvoiceAmt;
+					decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
 					decimal currentDue = totalDue - todayPayments - todayReturns;
 
 					sb.AppendLine("📊 الوضع المالي");
 					sb.AppendLine($"الرصيد السابق : {prevBalance:N2} ج.م");
-					sb.AppendLine($"+ الفاتورة الحالية : {currentInvoiceAmt:N2} ج.م");
-					sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+					if (isCredit)
+					{
+						sb.AppendLine($"+ الفاتورة الحالية : {totalAmount:N2} ج.م");
+						sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+					}
+					else
+					{
+						if (remainingFromInvoice > 0)
+						{
+							sb.AppendLine($"+ متبقي الفاتورة الحالية : {remainingFromInvoice:N2} ج.م");
+							sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+						}
+						else if (remainingFromInvoice < 0)
+						{
+							sb.AppendLine($"- زيادة الفاتورة الحالية : {-remainingFromInvoice:N2} ج.م");
+							sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
+						}
+					}
 					sb.AppendLine($"- مسدد اليوم : {todayPayments:N2} ج.م");
 					if (todayReturns > 0)
 					{
@@ -2909,14 +2997,39 @@ namespace ChickenDist.Forms
 		{
 			int itemCount = items != null ? items.Rows.Count : 0;
 			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
-			
+			decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
+
 			// حساب الارتفاع المطلوب ديناميكياً
 			int headerH = 110;
 			int metaH = 80;
 			int tableHeaderH = 35;
 			int rowH = 30;
 			int netH = 40;
-			int financialH = showFinancial ? (220 + (todayReturns > 0 ? 28 : 0)) : 0;
+			
+			int financialLines = 0;
+			if (showFinancial)
+			{
+				financialLines = 2 + 1; // "الوضع المالي للحساب" header + "الرصيد السابق" + "الرصيد الحالي المستحق"
+				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal;
+				decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
+
+				if (isCredit)
+				{
+					financialLines += 2; // "الفاتورة الحالية", "إجمالي المستحق"
+				}
+				else
+				{
+					financialLines += 1; // "المدفوع نقداً"
+					if (remainingFromInvoice != 0)
+					{
+						financialLines += 2; // "متبقي الفاتورة"/"زيادة الفاتورة", "إجمالي المستحق"
+					}
+				}
+				financialLines += 1; // "مسدد اليوم"
+				if (todayReturns > 0) financialLines += 1; // "مرتجع اليوم"
+			}
+			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
 			int footerH = 55;
 			
 			int totalH = headerH + metaH + tableHeaderH + (itemCount * rowH) + netH + 15 + financialH + footerH + 30;
@@ -2972,7 +3085,7 @@ namespace ChickenDist.Forms
 
 					// اليسار
 					g.DrawString($"العميل:  {saleRow["ClientName"]}", fBold, Brushes.Black, new RectangleF(25, boxY, w / 2 - 35, 22), rtlNear);
-					string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+					string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
 					g.DrawString($"النوع:  {typeLabel}", fNormal, Brushes.Black, new RectangleF(25, boxY + 26, w / 2 - 35, 22), rtlNear);
 					
 					y += 90;
@@ -3016,7 +3129,6 @@ namespace ChickenDist.Forms
 					g.DrawString("صافي الفاتورة", fBold, Brushes.White, new RectangleF(320, y + 10, 260, netH), rtlCenter);
 					
 					g.DrawRectangle(pNavyThin, 20, y, 300, netH);
-					decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
 					g.DrawString($"{netVal:N2} ج.م", fTitle, bNavy, new RectangleF(20, y + 2, 290, netH), rtlCenter);
 
 					y += netH + 20;
@@ -3024,16 +3136,53 @@ namespace ChickenDist.Forms
 					// الوضع المالي للحساب
 					if (showFinancial)
 					{
-						decimal currentInvoiceAmt = netVal;
-						decimal totalDue = prevBalance + currentInvoiceAmt;
+						bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+						decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal;
+						decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
+
+						decimal totalDue = prevBalance + (isCredit ? netVal : remainingFromInvoice);
 						decimal currentDue = totalDue - todayPayments - todayReturns;
 
 						g.FillRectangle(bNavy, 20, y, w - 40, 30);
 						g.DrawString("الوضع المالي للحساب", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
 						y += 30;
 
-						var labelsList = new System.Collections.Generic.List<string> { "الرصيد السابق", "الفاتورة الحالية", "إجمالي المستحق", "مسدد اليوم" };
-						var valsList = new System.Collections.Generic.List<decimal> { prevBalance, currentInvoiceAmt, totalDue, todayPayments };
+						var labelsList = new System.Collections.Generic.List<string> { "الرصيد السابق" };
+						var valsList = new System.Collections.Generic.List<decimal> { prevBalance };
+
+						if (isCredit)
+						{
+							labelsList.Add("الفاتورة الحالية");
+							valsList.Add(netVal);
+
+							labelsList.Add("إجمالي المستحق");
+							valsList.Add(totalDue);
+						}
+						else
+						{
+							labelsList.Add("المدفوع نقداً");
+							valsList.Add(cashPaid);
+
+							if (remainingFromInvoice > 0)
+							{
+								labelsList.Add("متبقي الفاتورة");
+								valsList.Add(remainingFromInvoice);
+								
+								labelsList.Add("إجمالي المستحق");
+								valsList.Add(totalDue);
+							}
+							else if (remainingFromInvoice < 0)
+							{
+								labelsList.Add("زيادة الفاتورة");
+								valsList.Add(-remainingFromInvoice);
+								
+								labelsList.Add("إجمالي المستحق");
+								valsList.Add(totalDue);
+							}
+						}
+
+						labelsList.Add("مسدد اليوم");
+						valsList.Add(todayPayments);
 
 						if (todayReturns > 0)
 						{

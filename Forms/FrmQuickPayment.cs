@@ -8,12 +8,18 @@ namespace ChickenDist.Forms
     public class FrmQuickPayment : Form
     {
         private decimal _totalAmount;
+        private bool _hasClient;
+        private decimal _defaultPaid;
         private NumericUpDown nudPaid;
         private Label lblChange;
         
-        public FrmQuickPayment(decimal totalAmount)
+        public decimal PaidAmount => nudPaid.Value;
+
+        public FrmQuickPayment(decimal totalAmount, bool hasClient, decimal? defaultPaid = null)
         {
             _totalAmount = totalAmount;
+            _hasClient = hasClient;
+            _defaultPaid = defaultPaid ?? totalAmount;
             InitUI();
         }
 
@@ -42,7 +48,7 @@ namespace ChickenDist.Forms
                 Maximum = 9999999,
                 DecimalPlaces = 2,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                Value = _totalAmount, // Default to total amount
+                Value = _defaultPaid,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain
             };
@@ -53,7 +59,31 @@ namespace ChickenDist.Forms
             lblChange = new Label { Text = "0.00 ج", Location = new Point(150, 115), AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Theme.Success };
 
             Button btnOK = Theme.MakeButton("✔️ تأكيد الحفظ", 150, 160, 120, 35, Theme.Success);
-            btnOK.Click += (s, e) => { this.DialogResult = DialogResult.OK; this.Close(); };
+            btnOK.Click += (s, e) => 
+            {
+                if (!_hasClient && nudPaid.Value != _totalAmount)
+                {
+                    MessageBox.Show("عذراً، يجب دفع كامل قيمة الفاتورة للعميل غير المسجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (_hasClient)
+                {
+                    if (nudPaid.Value < _totalAmount)
+                    {
+                        decimal diff = _totalAmount - nudPaid.Value;
+                        MessageBox.Show($"⚠️ سيتم إضافة المتبقي بقيمة {diff:N2} ج.م على حساب العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else if (nudPaid.Value > _totalAmount)
+                    {
+                        decimal diff = nudPaid.Value - _totalAmount;
+                        MessageBox.Show($"➕ سيتم خصم الزيادة بقيمة {diff:N2} ج.م من حساب العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+
+                this.DialogResult = DialogResult.OK; 
+                this.Close(); 
+            };
 
             Button btnCancel = Theme.MakeButton("❌ إلغاء", 20, 160, 100, 35, Theme.Danger);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };

@@ -31,9 +31,9 @@ namespace ChickenDist.Forms
         private void LoadData()
         {
             var dt = DbHelper.Query(@"
-                SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes,
+                SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
-                       COALESCE(c.ClientName, N'---') AS ClientName,
+                       CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
                        COALESCE(e.EmpName, N'---') AS DriverName
                  FROM Sales s
                  LEFT JOIN Clients c ON s.ClientID = c.ClientID
@@ -328,6 +328,29 @@ namespace ChickenDist.Forms
 
                     g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldBig, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), right); y += 22;
 
+                    bool isReceiptCredit = _saleRow["SaleType"].ToString() == "Credit";
+                    decimal receiptCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount;
+                    decimal receiptRemaining = isReceiptCredit ? netAmount : (netAmount - receiptCashPaid);
+
+                    if (_saleRow["SaleType"].ToString() == "Cash")
+                    {
+                        g.DrawString($"المدفوع نقداً: {receiptCashPaid:N2} جنيه", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 18;
+                        if (receiptRemaining > 0)
+                        {
+                            g.DrawString($"المتبقي (آجل): {receiptRemaining:N2} جنيه", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 18;
+                            g.DrawString("(سيتم إضافة المتبقي على حساب العميل)", small, Brushes.DimGray, new RectangleF(margin, y, pageW - 2 * margin, 14), right); y += 15;
+                        }
+                        else if (receiptRemaining < 0)
+                        {
+                            g.DrawString($"الزيادة: {-receiptRemaining:N2} جنيه", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 18;
+                            g.DrawString("(سيتم خصم الزيادة من حساب العميل)", small, Brushes.DimGray, new RectangleF(margin, y, pageW - 2 * margin, 14), right); y += 15;
+                        }
+                        else
+                        {
+                            g.DrawString("(تم سداد الفاتورة بالكامل)", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                        }
+                    }
+
                     // Client Balance (Skipped in Compact)
                     if (!string.Equals(template, "Compact", StringComparison.OrdinalIgnoreCase) && detailedPrint && _saleRow != null && _saleRow["ClientID"] != DBNull.Value)
                     {
@@ -339,7 +362,6 @@ namespace ChickenDist.Forms
                             decimal paymentToday = 0;
                             decimal returnToday = 0;
                             decimal previousBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
-                            bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
 
                             DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
 
@@ -362,20 +384,20 @@ namespace ChickenDist.Forms
                                 FROM ClientTransactions
                                 WHERE ClientID = @cid 
                                   AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)
-                                  AND TransID >= @saleTransID",
+                                  AND TransID >= @saleTransID
+                                  AND NOT (RefID = @sid AND TransType = 'Payment')",
                                 DbHelper.P("@cid", clientID), 
                                 DbHelper.P("@dt", saleDate),
-                                DbHelper.P("@saleTransID", saleTransID));
+                                DbHelper.P("@saleTransID", saleTransID),
+                                DbHelper.P("@sid", saleID));
                             if (dtPay.Rows.Count > 0)
                             {
                                 paymentToday = Convert.ToDecimal(dtPay.Rows[0]["TotalPayment"]);
                                 returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
                             }
 
-                            if (isCredit)
-                                currentBalance = previousBalance + netAmount - paymentToday - returnToday;
-                            else
-                                currentBalance = previousBalance - paymentToday - returnToday;
+                            decimal remainingFromInvoice = isReceiptCredit ? netAmount : (netAmount - receiptCashPaid);
+                            currentBalance = previousBalance + remainingFromInvoice - paymentToday - returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 6;
                             g.DrawString($"الرصيد السابق: {previousBalance:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
@@ -665,6 +687,29 @@ namespace ChickenDist.Forms
                         g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldSheet, Brushes.DarkRed, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }
 
+                    // print cash paid details for A4 sheet if Cash sale
+                    if (_saleRow != null && _saleRow["SaleType"].ToString() == "Cash")
+                    {
+                        decimal sheetCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount;
+                        decimal remainingFromInvoice = netAmount - sheetCashPaid;
+
+                        y += 5;
+                        g.DrawString($"المدفوع نقداً: {sheetCashPaid:N2} جنيه", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        if (remainingFromInvoice > 0)
+                        {
+                            g.DrawString($"المتبقي (آجل): {remainingFromInvoice:N2} جنيه (سيتم إضافة المتبقي على حساب العميل)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 18), right); y += 20;
+                        }
+                        else if (remainingFromInvoice < 0)
+                        {
+                            g.DrawString($"الزيادة: {-remainingFromInvoice:N2} جنيه (سيتم خصم الزيادة من حساب العميل)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 18), right); y += 20;
+                        }
+                        else
+                        {
+                            g.DrawString("(تم سداد الفاتورة بالكامل)", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 18), right); y += 20;
+                        }
+                        y += 5;
+                    }
+
                     // ===== Balance Section =====
                     if (detailedPrint && _saleRow != null && _saleRow["ClientID"] != DBNull.Value)
                     {
@@ -672,13 +717,12 @@ namespace ChickenDist.Forms
                         if (clientID > 0)
                         {
                             int saleID = Convert.ToInt32(_saleRow["SaleID"]);
+                            DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
+                            decimal previousBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
+                            bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
                             decimal currentBalance  = 0;
                             decimal paymentToday    = 0;
                             decimal returnToday     = 0;
-                            decimal previousBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
-                            bool isCredit = _saleRow["SaleType"].ToString() == "Credit";
-
-                            DateTime saleDate = Convert.ToDateTime(_saleRow["SaleDate"]);
 
                             int saleTransID = 0;
                             var dtTrans = DbHelper.Query(@"
@@ -699,20 +743,21 @@ namespace ChickenDist.Forms
                                 FROM ClientTransactions
                                 WHERE ClientID = @cid 
                                   AND CAST(TransDate AS DATE) = CAST(@dt AS DATE)
-                                  AND TransID >= @saleTransID",
+                                  AND TransID >= @saleTransID
+                                  AND NOT (RefID = @sid AND TransType = 'Payment')",
                                 DbHelper.P("@cid", clientID), 
                                 DbHelper.P("@dt", saleDate),
-                                DbHelper.P("@saleTransID", saleTransID));
+                                DbHelper.P("@saleTransID", saleTransID),
+                                DbHelper.P("@sid", saleID));
                             if (dtPay.Rows.Count > 0)
                             {
                                 paymentToday = Convert.ToDecimal(dtPay.Rows[0]["TotalPayment"]);
                                 returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
                             }
 
-                            if (isCredit)
-                                currentBalance = previousBalance + netAmount - paymentToday - returnToday;
-                            else
-                                currentBalance = previousBalance - paymentToday - returnToday;
+                            decimal sheetCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount;
+                            decimal remainingFromInvoice = isCredit ? netAmount : (netAmount - sheetCashPaid);
+                            currentBalance = previousBalance + remainingFromInvoice - paymentToday - returnToday;
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
 

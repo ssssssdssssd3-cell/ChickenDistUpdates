@@ -131,7 +131,7 @@ namespace ChickenDist.Forms
 				}
 			};
 
-			panel.Controls.AddRange(new Control[] { dtpFrom, label, dtpTo, label2, txtSearchClient, lblSearchClient, btnLoad, btnPrint, btnWhatsAppReport, btnExportExcel });
+			panel.Controls.AddRange(new Control[] { label, dtpFrom, label2, dtpTo, lblSearchClient, txtSearchClient, btnLoad, btnPrint, btnWhatsAppReport, btnExportExcel });
 			base.Controls.Add(panel);
 			tabReports = new TabControl
 			{

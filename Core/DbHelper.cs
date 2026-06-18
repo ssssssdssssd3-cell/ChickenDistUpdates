@@ -282,6 +282,15 @@ namespace ChickenDist.Core
                     CREATE INDEX IX_Sales_CloudID ON Sales(CloudID);
                 END");
 
+                SafeMigrate("Sales.CashPaid", @"
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Sales', 'CashPaid') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD CashPaid DECIMAL(10,2) NULL;
+                    END
+                END");
+
                 // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***
                 SafeMigrate("SaleItems.Discount", @"
                 IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
