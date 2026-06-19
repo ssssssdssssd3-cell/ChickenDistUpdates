@@ -2605,6 +2605,7 @@ namespace ChickenDist.Forms
 					targetSafeID = safeItem.ID;
 				}
 				AccountDAL.SaveCashReceipt(comboItem.ID, result, dtpDate.Value, textBox2.Text, targetSafeID);
+				UpdateClientBalanceLabel(comboItem.ID);
 				MessageBox.Show("✅ تم تسجيل التوريد في الخزنة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 			}
 		}
@@ -2691,6 +2692,7 @@ namespace ChickenDist.Forms
 			DateTime lastPaymentDate = DateTime.MinValue;
 			decimal todayPayments = 0m;
 			decimal todayReturns = 0m;
+			decimal actualCurrentBalance = 0m; // الرصيد الفعلي الحالي من قاعدة البيانات
 
 			if (saleRow["ClientID"] != DBNull.Value)
 			{
@@ -2699,6 +2701,9 @@ namespace ChickenDist.Forms
 
 				// الرصيد السابق قبل هذه الفاتورة
 				prevBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
+
+				// الرصيد الفعلي الحالي (يشمل كل الحركات بما فيها التوريدات)
+				actualCurrentBalance = ClientDAL.GetClientBalance(clientID);
 
 				// آخر توريد (دفعة)
 				var lastPayDt = DbHelper.Query(@"
@@ -2836,7 +2841,9 @@ namespace ChickenDist.Forms
 				if (saleRow["ClientID"] != DBNull.Value)
 				{
 					decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
-					decimal currentDue = totalDue - todayPayments - todayReturns;
+					// استخدام الرصيد الفعلي من قاعدة البيانات بدلاً من الحساب اليدوي
+					// لضمان احتساب التوريدات التي تمت بعد تاريخ الفاتورة
+					decimal currentDue = actualCurrentBalance;
 
 					sb.AppendLine("📊 الوضع المالي");
 					sb.AppendLine($"الرصيد السابق : {prevBalance:N2} ج.م");
@@ -2885,7 +2892,7 @@ namespace ChickenDist.Forms
 			{
 				try
 				{
-					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns))
+					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance))
 					{
 						Clipboard.SetImage(bmp);
 					}
@@ -2993,7 +3000,7 @@ namespace ChickenDist.Forms
 			}
 		}
 
-		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns)
+		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance = 0m)
 		{
 			int itemCount = items != null ? items.Rows.Count : 0;
 			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
@@ -3032,7 +3039,7 @@ namespace ChickenDist.Forms
 			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
 			int footerH = 55;
 			
-			int totalH = headerH + metaH + tableHeaderH + (itemCount * rowH) + netH + 15 + financialH + footerH + 30;
+			int totalH = headerH + metaH + tableHeaderH + (itemCount * rowH) + netH + 15 + financialH + footerH + 50;
 			int w = 600;
 
 			var bmp = new Bitmap(w, totalH);
@@ -3141,7 +3148,8 @@ namespace ChickenDist.Forms
 						decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
 
 						decimal totalDue = prevBalance + (isCredit ? netVal : remainingFromInvoice);
-						decimal currentDue = totalDue - todayPayments - todayReturns;
+						// استخدام الرصيد الفعلي من قاعدة البيانات لضمان احتساب التوريدات
+						decimal currentDue = actualCurrentBalance;
 
 						g.FillRectangle(bNavy, 20, y, w - 40, 30);
 						g.DrawString("الوضع المالي للحساب", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
@@ -3234,6 +3242,14 @@ namespace ChickenDist.Forms
 					
 					DrawChickenSilhouette(g, 100, y + 10, 25);
 					DrawChickenSilhouette(g, w - 125, y + 10, 25);
+
+					// الدعاية للبرنامج
+					var fPromo = new Font("Arial", 8f, FontStyle.Regular);
+					using (var bGray = new SolidBrush(Color.FromArgb(120, 120, 120)))
+					{
+						g.DrawString("✨ تم إصدار هذه الفاتورة بواسطة Pro System لإدارة المبيعات والتوزيع. للاشتراك: 01016517586", fPromo, bGray, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
+					}
+					fPromo.Dispose();
 
 					fTitle.Dispose();
 					fComp.Dispose();

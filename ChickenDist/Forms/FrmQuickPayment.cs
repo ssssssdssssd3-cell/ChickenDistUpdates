@@ -10,10 +10,18 @@ namespace ChickenDist.Forms
         private decimal _totalAmount;
         private bool _hasClient;
         private decimal _defaultPaid;
-        private NumericUpDown nudPaid;
+        private TextBox txtPaid;
         private Label lblChange;
         
-        public decimal PaidAmount => nudPaid.Value;
+        public decimal PaidAmount
+        {
+            get
+            {
+                if (decimal.TryParse(txtPaid.Text, out decimal val))
+                    return val;
+                return 0;
+            }
+        }
 
         public FrmQuickPayment(decimal totalAmount, bool hasClient, decimal? defaultPaid = null)
         {
@@ -40,20 +48,34 @@ namespace ChickenDist.Forms
             Label lblTotal = new Label { Text = _totalAmount.ToString("N2") + " ج", Location = new Point(150, 15), AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Theme.Accent };
 
             Label lblPaidTitle = new Label { Text = "المدفوع من العميل:", Location = new Point(20, 70), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextSub };
-            nudPaid = new NumericUpDown
+            txtPaid = new TextBox
             {
                 Location = new Point(150, 65),
                 Width = 120,
-                Minimum = 0,
-                Maximum = 9999999,
-                DecimalPlaces = 2,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                Value = _defaultPaid,
+                Text = _defaultPaid.ToString("F2"),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                TextAlign = HorizontalAlignment.Center
             };
-            nudPaid.ValueChanged += (s, e) => CalculateChange();
-            nudPaid.KeyUp += (s, e) => CalculateChange();
+            txtPaid.TextChanged += (s, e) => CalculateChange();
+            txtPaid.KeyPress += (s, e) =>
+            {
+                char decimalSeparator = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0];
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '.') && (e.KeyChar != ','))
+                {
+                    e.Handled = true;
+                }
+                if (e.KeyChar == '.' || e.KeyChar == ',')
+                {
+                    e.KeyChar = decimalSeparator;
+                    if (txtPaid.Text.IndexOf(decimalSeparator) > -1)
+                    {
+                        e.Handled = true;
+                    }
+                }
+            };
 
             Label lblChangeTitle = new Label { Text = "الباقي للعميل:", Location = new Point(20, 120), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextSub };
             lblChange = new Label { Text = "0.00 ج", Location = new Point(150, 115), AutoSize = true, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Theme.Success };
@@ -61,7 +83,14 @@ namespace ChickenDist.Forms
             Button btnOK = Theme.MakeButton("✔️ تأكيد الحفظ", 150, 160, 120, 35, Theme.Success);
             btnOK.Click += (s, e) => 
             {
-                if (!_hasClient && nudPaid.Value != _totalAmount)
+                if (!decimal.TryParse(txtPaid.Text, out decimal paidValue) || paidValue < 0)
+                {
+                    MessageBox.Show("يرجى إدخال مبلغ دفع صحيح.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtPaid.Focus();
+                    return;
+                }
+
+                if (!_hasClient && paidValue != _totalAmount)
                 {
                     MessageBox.Show("عذراً، يجب دفع كامل قيمة الفاتورة للعميل غير المسجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
@@ -69,14 +98,14 @@ namespace ChickenDist.Forms
 
                 if (_hasClient)
                 {
-                    if (nudPaid.Value < _totalAmount)
+                    if (paidValue < _totalAmount)
                     {
-                        decimal diff = _totalAmount - nudPaid.Value;
+                        decimal diff = _totalAmount - paidValue;
                         MessageBox.Show($"⚠️ سيتم إضافة المتبقي بقيمة {diff:N2} ج.م على حساب العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
-                    else if (nudPaid.Value > _totalAmount)
+                    else if (paidValue > _totalAmount)
                     {
-                        decimal diff = nudPaid.Value - _totalAmount;
+                        decimal diff = paidValue - _totalAmount;
                         MessageBox.Show($"➕ سيتم خصم الزيادة بقيمة {diff:N2} ج.م من حساب العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
@@ -88,7 +117,7 @@ namespace ChickenDist.Forms
             Button btnCancel = Theme.MakeButton("❌ إلغاء", 20, 160, 100, 35, Theme.Danger);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
-            this.Controls.AddRange(new Control[] { lblTotalTitle, lblTotal, lblPaidTitle, nudPaid, lblChangeTitle, lblChange, btnOK, btnCancel });
+            this.Controls.AddRange(new Control[] { lblTotalTitle, lblTotal, lblPaidTitle, txtPaid, lblChangeTitle, lblChange, btnOK, btnCancel });
 
             this.AcceptButton = btnOK;
             this.CancelButton = btnCancel;
@@ -96,16 +125,23 @@ namespace ChickenDist.Forms
 
         private void CalculateChange()
         {
-            decimal change = nudPaid.Value - _totalAmount;
-            if (change < 0) change = 0;
-            lblChange.Text = change.ToString("N2") + " ج";
+            if (decimal.TryParse(txtPaid.Text, out decimal paidVal))
+            {
+                decimal change = paidVal - _totalAmount;
+                if (change < 0) change = 0;
+                lblChange.Text = change.ToString("N2") + " ج";
+            }
+            else
+            {
+                lblChange.Text = "0.00 ج";
+            }
         }
 
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            nudPaid.Focus();
-            nudPaid.Select(0, nudPaid.Value.ToString().Length + 10);
+            txtPaid.Focus();
+            txtPaid.SelectAll();
         }
     }
 }
