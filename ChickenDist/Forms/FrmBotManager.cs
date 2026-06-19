@@ -460,6 +460,22 @@ namespace ChickenDist.Forms
         {
             try
             {
+                // ── 1. Verify server is up before attempting ──────────────────────
+                try
+                {
+                    var statusResp = await _httpClient.GetAsync("http://localhost:5000/api/status");
+                    if (!statusResp.IsSuccessStatusCode)
+                    {
+                        LogMessage("❌ خادم البوت لا يستجيب — شغّل البوت أولاً.");
+                        return;
+                    }
+                }
+                catch
+                {
+                    LogMessage("❌ تعذّر الاتصال بالخادم على المنفذ 5000 — شغّل البوت أولاً.");
+                    return;
+                }
+
                 LogMessage("جاري قراءة الأصناف النشطة والأسعار الحالية...");
                 
                 // Get active products from local database
@@ -470,40 +486,38 @@ namespace ChickenDist.Forms
                     return;
                 }
 
-                StringBuilder json = new StringBuilder();
-                json.Append("[");
-                for (int i = 0; i < dt.Rows.Count; i++)
+                // Build properly-escaped JSON array for products
+                var items = new System.Collections.Generic.List<string>(dt.Rows.Count);
+                foreach (DataRow row in dt.Rows)
                 {
-                    var row = dt.Rows[i];
-                    string name = row["ProductName"].ToString().Replace("\"", "\\\"");
+                    string name = EscapeJsonString(row["ProductName"].ToString());
                     decimal price = Convert.ToDecimal(row["Price"]);
-                    json.Append("{\"ProductID\":" + row["ProductID"] + ",\"ProductName\":\"" + name + "\",\"Price\":" + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}");
-                    if (i < dt.Rows.Count - 1) json.Append(",");
+                    items.Add("{\"ProductID\":" + row["ProductID"] +
+                              ",\"ProductName\":\"" + name +
+                              "\",\"Price\":" + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}");
                 }
-                json.Append("]");
+                string jsonBody = "[" + string.Join(",", items) + "]";
 
                 // Get active clients from local database to sync with bot
                 DataTable dtClients = DbHelper.Query("SELECT ClientID, ClientName, Phone FROM Clients WHERE IsActive = 1");
                 string clientJson = "[]";
                 if (dtClients != null && dtClients.Rows.Count > 0)
                 {
-                    StringBuilder sbClients = new StringBuilder();
-                    sbClients.Append("[");
-                    for (int i = 0; i < dtClients.Rows.Count; i++)
+                    var clientItems = new System.Collections.Generic.List<string>(dtClients.Rows.Count);
+                    foreach (DataRow row in dtClients.Rows)
                     {
-                        var row = dtClients.Rows[i];
-                        string clientName = row["ClientName"].ToString().Replace("\"", "\\\"");
-                        string clientPhone = row["Phone"].ToString().Replace("\"", "\\\"");
-                        sbClients.Append("{\"ClientID\":" + row["ClientID"] + ",\"ClientName\":\"" + clientName + "\",\"Phone\":\"" + clientPhone + "\"}");
-                        if (i < dtClients.Rows.Count - 1) sbClients.Append(",");
+                        string clientName = EscapeJsonString(row["ClientName"].ToString());
+                        string clientPhone = EscapeJsonString(row["Phone"].ToString());
+                        clientItems.Add("{\"ClientID\":" + row["ClientID"] +
+                                       ",\"ClientName\":\"" + clientName +
+                                       "\",\"Phone\":\"" + clientPhone + "\"}");
                     }
-                    sbClients.Append("]");
-                    clientJson = sbClients.ToString();
+                    clientJson = "[" + string.Join(",", clientItems) + "]";
                 }
 
                 LogMessage($"جاري إرسال {dt.Rows.Count} صنف و {dtClients?.Rows.Count ?? 0} عميل للبوت...");
                 
-                var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync("http://localhost:5000/api/prices", content);
 
                 var clientContent = new StringContent(clientJson, Encoding.UTF8, "application/json");
@@ -516,14 +530,60 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    LogMessage("❌ فشل تحديث البيانات بالبوت (تأكد من عمل الخادم).");
+                    string body = "";
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        try { body = await response.Content.ReadAsStringAsync(); } catch { }
+                        if (body.Length > 120) body = body.Substring(0, 120) + "...";
+                        LogMessage($"❌ فشل تحديث الأسعار — الخادم أعاد HTTP {(int)response.StatusCode}: {body}");
+                    }
+                    if (!clientResponse.IsSuccessStatusCode)
+                    {
+                        try { body = await clientResponse.Content.ReadAsStringAsync(); } catch { }
+                        if (body.Length > 120) body = body.Substring(0, 120) + "...";
+                        LogMessage($"❌ فشل تحديث العملاء — الخادم أعاد HTTP {(int)clientResponse.StatusCode}: {body}");
+                    }
                 }
+            }
+            catch (TaskCanceledException)
+            {
+                LogMessage("❌ انتهت مهلة الطلب — قد يكون الخادم مشغولاً أو بطيئاً.");
             }
             catch (Exception ex)
             {
                 LogMessage($"خطأ أثناء المزامنة: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// يحوّل النص لصيغة JSON آمنة مع تجاوز جميع الأحرف الخاصة بشكل صحيح.
+        /// </summary>
+        private static string EscapeJsonString(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '"':  sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\b': sb.Append("\\b");  break;
+                    case '\f': sb.Append("\\f");  break;
+                    case '\n': sb.Append("\\n");  break;
+                    case '\r': sb.Append("\\r");  break;
+                    case '\t': sb.Append("\\t");  break;
+                    default:
+                        if (c < 0x20)
+                            sb.Append("\\u" + ((int)c).ToString("x4"));
+                        else
+                            sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {

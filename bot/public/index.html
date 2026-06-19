@@ -71,9 +71,9 @@
         <div class="container d-flex justify-content-between align-items-center">
             <div>
                 <h4 class="mb-1 fw-bold">📦 طلبات الواتساب</h4>
-                <p class="mb-0 small opacity-75">لوحة تحكم المحاسب الميدانية</p>
+                <p class="mb-0 small opacity-75">لوحة تحكم المحاسب الميدانية (سحابية)</p>
             </div>
-            <span class="badge bg-success py-2 px-3 rounded-pill" id="liveIndicator">📡 متصل مباشر</span>
+            <span class="badge bg-warning py-2 px-3 rounded-pill" id="liveIndicator">📡 جاري الاتصال بالسحاب...</span>
         </div>
     </div>
 
@@ -95,7 +95,7 @@
         <div id="ordersContainer" class="px-1">
             <div class="text-center py-5 text-muted">
                 <div class="spinner-border text-primary mb-3" role="status"></div>
-                <div>جاري تحميل الطلبات...</div>
+                <div>جاري الاتصال بقاعدة البيانات السحابية...</div>
             </div>
         </div>
     </div>
@@ -137,7 +137,27 @@
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Firebase SDK (Compat version for simplicity) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
+            authDomain: "checkin-192ab.firebaseapp.com",
+            projectId: "checkin-192ab",
+            storageBucket: "checkin-192ab.firebasestorage.app",
+            messagingSenderId: "818712709979",
+            appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
+            measurementId: "G-6YV1QPB7M6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let allOrders = [];
         let allClients = [];
         let activeFilter = 'all';
@@ -161,25 +181,6 @@
             const cleanPhone = normalizePhone(phone);
             if (!cleanPhone) return null;
             return allClients.find(c => normalizePhone(c.Phone) === cleanPhone);
-        }
-
-        // Load initial data
-        async function fetchOrders() {
-            try {
-                // Fetch registered clients first
-                try {
-                    const resClients = await fetch('/api/clients');
-                    allClients = await resClients.json();
-                } catch(e) {
-                    console.error('Failed to load clients list', e);
-                }
-
-                const res = await fetch('/api/orders');
-                allOrders = await res.json();
-                renderOrders();
-            } catch (err) {
-                console.error('Failed to load orders', err);
-            }
         }
 
         // Render orders feed
@@ -276,63 +277,67 @@
             myModal.show();
         }
 
+        // Process Accept/Reject in Firestore
         async function processOrder(status) {
             const message = document.getElementById('modalMessage').value;
             const updatedDetails = document.getElementById('modalDetails').value;
             
             try {
-                const res = await fetch(`/api/orders/${selectedOrderId}/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status, message, details: updatedDetails })
+                await db.collection('orders').doc(selectedOrderId).update({
+                    status: status,
+                    message: message,
+                    details: updatedDetails,
+                    whatsappStatus: 'none' // bot locally will catch this and send message
                 });
-
-                if (res.ok) {
-                    myModal.hide();
-                    fetchOrders();
-                }
+                myModal.hide();
             } catch (err) {
-                alert('خطأ أثناء معالجة الطلب.');
+                console.error('Failed to update order status in Firebase:', err);
+                alert('خطأ أثناء معالجة الطلب في السحابة.');
             }
         }
 
-        // Live updates setup using Server-Sent Events (SSE)
-        function initLiveUpdates() {
-            const source = new EventSource('/api/orders/live');
-            
-            source.addEventListener('new_order', (e) => {
-                const newOrder = JSON.parse(e.data);
-                allOrders.unshift(newOrder);
-                renderOrders();
-                // Play notification chime
-                try {
-                    new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav').play();
-                } catch {}
-            });
-
-            source.addEventListener('order_updated', (e) => {
-                const updated = JSON.parse(e.data);
-                const idx = allOrders.findIndex(o => o.id === updated.id);
-                if (idx !== -1) {
-                    allOrders[idx] = updated;
+        // Listen to Firestore real-time updates
+        function initFirebaseSync() {
+            // 1. Sync clients metadata
+            db.collection('metadata').doc('clients').onSnapshot(doc => {
+                if (doc.exists) {
+                    allClients = doc.data().list || [];
+                    console.log('Synchronized clients list:', allClients.length);
                     renderOrders();
                 }
+            }, err => {
+                console.error('Failed to sync clients from Firebase:', err);
             });
 
-            source.onopen = () => {
-                document.getElementById('liveIndicator').className = "badge bg-success py-2 px-3 rounded-pill";
-                document.getElementById('liveIndicator').innerText = "📡 متصل مباشر";
-            };
+            // 2. Sync orders
+            db.collection('orders').orderBy('time', 'desc').onSnapshot(snapshot => {
+                const prevLength = allOrders.length;
+                allOrders = [];
+                snapshot.forEach(doc => {
+                    allOrders.push(doc.data());
+                });
+                renderOrders();
 
-            source.onerror = () => {
+                // Sound alert for new orders
+                if (allOrders.length > prevLength && prevLength > 0) {
+                    if (allOrders[0] && allOrders[0].status === 'Pending') {
+                        try {
+                            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav').play();
+                        } catch {}
+                    }
+                }
+
+                document.getElementById('liveIndicator').className = "badge bg-success py-2 px-3 rounded-pill";
+                document.getElementById('liveIndicator').innerText = "📡 متصل مباشر (سحابي)";
+            }, err => {
+                console.error('Failed to sync orders from Firebase:', err);
                 document.getElementById('liveIndicator').className = "badge bg-danger py-2 px-3 rounded-pill";
                 document.getElementById('liveIndicator').innerText = "⚠️ غير متصل";
-            };
+            });
         }
 
-        // Initialize
-        fetchOrders();
-        initLiveUpdates();
+        // Initialize Firebase Synchronizer
+        initFirebaseSync();
     </script>
 </body>
 </html>

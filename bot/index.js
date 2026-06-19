@@ -5,6 +5,10 @@ const path = require('path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
+// Firebase Compat
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
+
 const app = express();
 const PORT = 5000;
 
@@ -12,10 +16,33 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Firebase Web Config
+const firebaseConfig = {
+    apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
+    authDomain: "checkin-192ab.firebaseapp.com",
+    projectId: "checkin-192ab",
+    storageBucket: "checkin-192ab.firebasestorage.app",
+    messagingSenderId: "818712709979",
+    appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
+    measurementId: "G-6YV1QPB7M6"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 let botStatus = 'Offline'; // Offline, Connecting, QR_Ready, Online
 let latestQrCode = '';
 let client = null;
-let sseClients = [];
+
+// Write permanent Firebase Hosting URL to tunnel_url.txt so C# app reads it
+try {
+    const permUrl = "https://checkin-192ab.web.app";
+    fs.writeFileSync(path.join(__dirname, 'tunnel_url.txt'), permUrl, 'utf8');
+    console.log(`Configured permanent accountant URL: ${permUrl}`);
+} catch (e) {
+    console.error('Failed to write permanent URL to tunnel_url.txt', e);
+}
 
 // Load cached data
 function readJSON(file, defaultVal) {
@@ -38,15 +65,59 @@ function writeJSON(file, data) {
     }
 }
 
-// real-time notifications for the mobile dashboard
-function notifyClients(event, data) {
-    sseClients.forEach(c => {
-        try {
-            c.res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-        } catch (err) {
-            console.error('Error pushing SSE to client:', err);
-        }
-    });
+// Normalize phone numbers for client matching
+function normalizePhone(phone) {
+    if (!phone) return '';
+    let cleaned = phone.toString().replace(/\D/g, ''); // keep only digits
+    if (cleaned.startsWith('20') && cleaned.length > 10) {
+        cleaned = cleaned.substring(2); // remove country code
+    }
+    if (cleaned.startsWith('0') && cleaned.length > 9) {
+        cleaned = cleaned.substring(1); // remove leading zero
+    }
+    return cleaned;
+}
+
+// Listen to Firestore order changes to send WhatsApp confirmations
+let firestoreUnsubscribe = null;
+function listenForOrderActions() {
+    if (firestoreUnsubscribe) {
+        try { firestoreUnsubscribe(); } catch(e) {}
+    }
+
+    console.log("Starting real-time listener for order status changes...");
+    firestoreUnsubscribe = db.collection('orders')
+        .where('whatsappStatus', '==', 'none')
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(async change => {
+                if (change.type === 'added' || change.type === 'modified') {
+                    const order = change.doc.data();
+                    if (order.status === 'Accepted' || order.status === 'Rejected') {
+                        if (client && botStatus === 'Online') {
+                            const clientJid = `${order.clientPhone}@c.us`;
+                            let msgText = order.status === 'Accepted' 
+                                ? `🟢 *تم قبول طلبك!* \n\n${order.message || 'سيتم تجهيز طلبك وتوصيله فوراً.'}` 
+                                : `🔴 *تم رفض طلبك!* \n\nالسبب: ${order.message || 'غير متوفر حالياً.'}`;
+                            
+                            try {
+                                await client.sendMessage(clientJid, msgText);
+                                console.log(`[WhatsApp]: Sent confirmation for order ${order.id} (${order.status})`);
+                                // Update document to mark it sent
+                                await change.doc.ref.update({ whatsappStatus: 'sent' });
+                            } catch (err) {
+                                console.error(`Failed to send WhatsApp message to ${order.clientPhone}:`, err);
+                            }
+                        } else {
+                            console.log(`[WhatsApp]: Bot is offline, cannot send status update for order ${order.id}`);
+                        }
+                    }
+                }
+            });
+        }, err => {
+            console.error("Firestore listener encountered error:", err);
+            // Reconnect after 5 seconds
+            setTimeout(listenForOrderActions, 5000);
+        });
 }
 
 // -------------------------------------------------------------
@@ -110,22 +181,40 @@ function startBot() {
             if (orderMatch) {
                 const orderContent = orderMatch[2].trim();
                 const contact = await msg.getContact();
-                const orders = readJSON('orders.json', []);
                 
+                const phone = from.split('@')[0];
+                const whatsappPushName = contact.pushname || 'عميل مجهول';
+                
+                // Match client Locally
+                const clients = readJSON('clients.json', []);
+                const cleanPhone = normalizePhone(phone);
+                const matchedClient = clients.find(c => normalizePhone(c.Phone) === cleanPhone);
+                const displayName = matchedClient ? matchedClient.ClientName : whatsappPushName;
+                
+                const orderId = Date.now().toString();
                 const newOrder = {
-                    id: Date.now().toString(),
-                    clientPhone: from.split('@')[0],
-                    clientName: contact.pushname || 'عميل مجهول',
+                    id: orderId,
+                    clientPhone: phone,
+                    clientName: displayName,
                     details: orderContent,
                     time: new Date().toISOString(),
-                    status: 'Pending' // Pending, Accepted, Rejected
+                    status: 'Pending', // Pending, Accepted, Rejected
+                    whatsappStatus: 'none',
+                    message: ''
                 };
                 
-                orders.unshift(newOrder);
-                writeJSON('orders.json', orders);
-                
-                // Notify mobile dashboard via SSE
-                notifyClients('new_order', newOrder);
+                // 1. Save Locally
+                const localOrders = readJSON('orders.json', []);
+                localOrders.unshift(newOrder);
+                writeJSON('orders.json', localOrders);
+
+                // 2. Upload to Firestore
+                try {
+                    await db.collection('orders').doc(orderId).set(newOrder);
+                    console.log(`[Firestore]: Uploaded order ${orderId} from ${displayName}`);
+                } catch (err) {
+                    console.error('Failed to save order in Firestore:', err);
+                }
                 
                 await msg.reply('✅ تم استلام طلبك وهو قيد المراجعة الآن من قبل الإدارة.');
             }
@@ -180,15 +269,39 @@ app.post('/api/control', (req, res) => {
     }
 });
 
-app.post('/api/prices', (req, res) => {
+app.post('/api/prices', async (req, res) => {
     const prices = req.body;
     writeJSON('prices.json', prices);
+
+    // Sync prices to Firestore metadata
+    try {
+        await db.collection('metadata').doc('prices').set({
+            list: prices,
+            updatedTime: new Date().toISOString()
+        });
+        console.log('Synchronized prices with Firestore.');
+    } catch (err) {
+        console.error('Failed to sync prices to Firestore:', err);
+    }
+
     res.json({ success: true, updatedTime: new Date().toISOString() });
 });
 
-app.post('/api/clients', (req, res) => {
+app.post('/api/clients', async (req, res) => {
     const clients = req.body;
     writeJSON('clients.json', clients);
+
+    // Sync clients to Firestore metadata
+    try {
+        await db.collection('metadata').doc('clients').set({
+            list: clients,
+            updatedTime: new Date().toISOString()
+        });
+        console.log('Synchronized clients list with Firestore.');
+    } catch (err) {
+        console.error('Failed to sync clients to Firestore:', err);
+    }
+
     res.json({ success: true, updatedTime: new Date().toISOString() });
 });
 
@@ -226,68 +339,9 @@ app.get('/api/orders', (req, res) => {
     res.json(readJSON('orders.json', []));
 });
 
-// Accept or Reject orders on the dashboard
-app.post('/api/orders/:id/action', async (req, res) => {
-    const { id } = req.params;
-    const { status, message, details } = req.body;
-    const orders = readJSON('orders.json', []);
-    const orderIndex = orders.findIndex(o => o.id === id);
+// Start the Firestore Listener
+listenForOrderActions();
 
-    if (orderIndex === -1) return res.status(404).json({ error: 'Order not found' });
-    
-    orders[orderIndex].status = status;
-    if (details) {
-        orders[orderIndex].details = details;
-    }
-    writeJSON('orders.json', orders);
-
-    // Send WhatsApp notification back to customer if Online
-    if (client && botStatus === 'Online') {
-        const clientJid = `${orders[orderIndex].clientPhone}@c.us`;
-        let msgText = status === 'Accepted' 
-            ? `🟢 *تم قبول طلبك!* \n\n${message || 'سيتم إرسال الشحنة قريباً.'}` 
-            : `🔴 *تم رفض طلبك!* \n\nالسبب: ${message || 'غير متوفر حالياً.'}`;
-        try {
-            await client.sendMessage(clientJid, msgText);
-        } catch (err) {
-            console.error('Error sending message back to customer:', err);
-        }
-    }
-
-    notifyClients('order_updated', orders[orderIndex]);
-    res.json({ success: true });
-});
-
-// SSE endpoint for Server-Sent Events
-app.get('/api/orders/live', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    
-    const clientObj = { id: Date.now(), res };
-    sseClients.push(clientObj);
-
-    req.on('close', () => {
-        sseClients = sseClients.filter(c => c.id !== clientObj.id);
-    });
-});
-
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    try {
-        const localtunnel = require('localtunnel');
-        const subdomain = 'chickendist-' + Math.random().toString(36).substring(2, 8);
-        const tunnel = await localtunnel({ port: PORT, subdomain: subdomain });
-        console.log(`Tunnel is active at: ${tunnel.url}`);
-        fs.writeFileSync(path.join(__dirname, 'tunnel_url.txt'), tunnel.url, 'utf8');
-        
-        tunnel.on('close', () => {
-            console.log('Tunnel closed');
-            try {
-                fs.unlinkSync(path.join(__dirname, 'tunnel_url.txt'));
-            } catch (e) {}
-        });
-    } catch (err) {
-        console.error('Failed to start localtunnel:', err);
-    }
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running locally at http://localhost:${PORT}`);
 });
