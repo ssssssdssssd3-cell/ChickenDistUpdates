@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -11,6 +12,8 @@ namespace ChickenDist.Forms
         private TextBox txtUser, txtPass;
         private Button btnLogin;
         private Label lblError;
+        private ProgressBar pbUpdate;
+        private Label lblUpdateStatus;
 
         public FrmLogin()
         {
@@ -20,7 +23,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "تسجيل الدخول - " + AppConfig.CompanyName;
-            this.Size = new Size(480, 580);
+            this.Size = new Size(480, 610);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -71,7 +74,6 @@ namespace ChickenDist.Forms
                 Location = new Point(60, 200),
                 Padding = new Padding(30)
             };
-            // Round corners effect
             pnlCard.Paint += (s, e) => {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             };
@@ -120,7 +122,98 @@ namespace ChickenDist.Forms
                 Location = new Point(0, 520)
             };
 
-            this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter });
+            // ── شريط تقدم التحديث ─────────────────────────────────────
+            lblUpdateStatus = new Label
+            {
+                Text = $"⟳  جاري فحص التحديثات...   |   الإصدار الحالي: v{UpdateManager.CurrentVersion}",
+                Font = new Font("Segoe UI", 8f),
+                ForeColor = Color.FromArgb(160, 210, 255),
+                AutoSize = false,
+                Size = new Size(480, 20),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Location = new Point(0, 548)
+            };
+
+            pbUpdate = new ProgressBar
+            {
+                Location = new Point(0, 569),
+                Size = new Size(480, 7),
+                Style = ProgressBarStyle.Marquee,
+                MarqueeAnimationSpeed = 25,
+                ForeColor = Color.FromArgb(100, 180, 255)
+            };
+
+            this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, pbUpdate });
+
+            this.Shown += FrmLogin_Shown;
+        }
+
+        // ── فحص التحديثات في الخلفية عند فتح الشاشة ───────────────────
+        private void FrmLogin_Shown(object sender, EventArgs e)
+        {
+            var bw = new BackgroundWorker();
+            bw.DoWork += (s, ev) =>
+            {
+                try
+                {
+                    System.Threading.Thread.Sleep(600);
+                    System.Net.ServicePointManager.SecurityProtocol =
+                        System.Net.SecurityProtocolType.Tls12 |
+                        System.Net.SecurityProtocolType.Tls11 |
+                        System.Net.SecurityProtocolType.Tls |
+                        (System.Net.SecurityProtocolType)12288;
+
+                    using (var client = new System.Net.WebClient())
+                    {
+                        client.Encoding = System.Text.Encoding.UTF8;
+                        client.Headers.Add("User-Agent", "ChickenDist/" + UpdateManager.CurrentVersion);
+                        string cacheBusted = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt"
+                                           + "?t=" + DateTime.Now.Ticks;
+                        string raw = client.DownloadString(cacheBusted).TrimStart('\uFEFF');
+                        string remoteVer = "";
+                        foreach (var line in raw.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            int idx = line.IndexOf('=');
+                            if (idx > 0 && line.Substring(0, idx).Trim().ToLower() == "version")
+                            {
+                                remoteVer = line.Substring(idx + 1).Trim();
+                                break;
+                            }
+                        }
+                        ev.Result = remoteVer;
+                    }
+                }
+                catch { ev.Result = ""; }
+            };
+
+            bw.RunWorkerCompleted += (s, ev) =>
+            {
+                if (this.IsDisposed) return;
+                pbUpdate.Style = ProgressBarStyle.Continuous;
+                pbUpdate.Value = 100;
+
+                string remoteVer = ev.Result as string ?? "";
+                if (!string.IsNullOrEmpty(remoteVer))
+                {
+                    try
+                    {
+                        var local  = new Version(UpdateManager.CurrentVersion);
+                        var remote = new Version(remoteVer);
+                        if (remote > local)
+                        {
+                            lblUpdateStatus.Text = $"🔄  تحديث جديد متاح: v{remoteVer}  — سيظهر بعد تسجيل الدخول";
+                            lblUpdateStatus.ForeColor = Color.FromArgb(255, 220, 80);
+                            pbUpdate.ForeColor = Color.FromArgb(255, 200, 50);
+                            return;
+                        }
+                    }
+                    catch { }
+                }
+                lblUpdateStatus.Text = $"✅  أحدث إصدار مثبت: v{UpdateManager.CurrentVersion}";
+                lblUpdateStatus.ForeColor = Color.FromArgb(100, 230, 150);
+            };
+
+            bw.RunWorkerAsync();
         }
 
         private int _failedAttempts = 0;

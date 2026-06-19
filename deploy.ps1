@@ -1,19 +1,19 @@
-# ============================================================
-#  🚀 Auto-Build and Deploy Script - ChickenDist
+﻿# ============================================================
+#  ðŸš€ Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-# ─────────────────────────────────────────────
-# ⚙️ Settings
-# ─────────────────────────────────────────────
-$VERSION   = "1.7.47"
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# âš™ï¸ Settings
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+$VERSION   = "1.7.48"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
-# ─────────────────────────────────────────────
-# 📁 Paths
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ“ Paths
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $REPO_ROOT    = $PSScriptRoot
 $PROJECT_DIR  = Join-Path $REPO_ROOT "ChickenDist"
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
@@ -21,15 +21,15 @@ $OUT_DIR      = Join-Path $REPO_ROOT "_build_output"
 $BIN_DEST     = Join-Path $REPO_ROOT "ChickenDist.bin"
 $UPDATE_TXT   = Join-Path $REPO_ROOT "update.txt"
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function Write-Step { param($msg) Write-Host "`n===[ $msg ]===" -ForegroundColor Cyan }
-function Write-OK   { param($msg) Write-Host "  ✅ $msg" -ForegroundColor Green }
-function Write-Fail { param($msg) Write-Host "  ❌ $msg" -ForegroundColor Red; exit 1 }
+function Write-OK   { param($msg) Write-Host "  âœ… $msg" -ForegroundColor Green }
+function Write-Fail { param($msg) Write-Host "  âŒ $msg" -ForegroundColor Red; exit 1 }
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Blue
-Write-Host "   🐣 ChickenDist Deploy Script v$VERSION  " -ForegroundColor Yellow
+Write-Host "   ðŸ£ ChickenDist Deploy Script v$VERSION  " -ForegroundColor Yellow
 Write-Host "==========================================" -ForegroundColor Blue
 
 # Step 1: Verify Project
@@ -116,10 +116,11 @@ Write-OK "git push ok"
 # Finish
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
-Write-Host "  ✅ Deploy Successful! Version v$VERSION" -ForegroundColor Green
+Write-Host "  âœ… Deploy Successful! Version v$VERSION" -ForegroundColor Green
 Write-Host "  Size : $([math]::Round($binSize/1024, 0)) KB" -ForegroundColor Green
 Write-Host "  SHA256: $sha256" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
 
 Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue
+
