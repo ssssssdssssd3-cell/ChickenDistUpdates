@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ─────────────────────────────────────────────
 # ⚙️ Settings
 # ─────────────────────────────────────────────
-$VERSION   = "1.7.46"
+$VERSION   = "1.7.47"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -75,7 +75,7 @@ if ($exeSize -lt 500000) {
 
 # Step 4: Calculate SHA256
 Write-Step "Calculating SHA256"
-$sha256 = (Get-FileHash $exePath -Algorithm SHA256).Hash
+$sha256 = [System.BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash([System.IO.File]::ReadAllBytes($exePath))).Replace("-", "")
 Write-OK "SHA256: $sha256"
 
 # Step 5: Copy Bin
