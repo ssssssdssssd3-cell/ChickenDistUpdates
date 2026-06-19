@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(700, 520);
+            this.Size = new Size(700, 570);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -47,10 +47,10 @@ namespace ChickenDist.Forms
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F)); // Status
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));  // QR / Logs
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));  // Padding
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
 
             // Header/Status Label
             lblStatus = new Label 
@@ -126,6 +126,107 @@ namespace ChickenDist.Forms
             };
             mainLayout.Controls.Add(lblLastSync, 0, 3);
             mainLayout.SetColumnSpan(lblLastSync, 2);
+
+            // Accountant Link Panel (Row 4)
+            Panel pnlAccountant = new Panel 
+            { 
+                Dock = DockStyle.Fill, 
+                BackColor = Color.FromArgb(230, 240, 250),
+                Padding = new Padding(8),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            
+            Label lblAccTitle = new Label
+            {
+                Text = "📱 تطبيق المحاسب لاستقبال طلبات البوت (على الموبايل أو المتصفح):",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(10, 8)
+            };
+            pnlAccountant.Controls.Add(lblAccTitle);
+
+            // Fetch local IP for link
+            string accUrl = "http://localhost:5000/";
+            try
+            {
+                var localIPs = DriverPortalServer.GetLocalIPs();
+                if (localIPs != null && localIPs.Count > 0)
+                {
+                    string chosenIP = localIPs[0];
+                    foreach (var ip in localIPs)
+                    {
+                        if (ip.StartsWith("192.168.") || ip.StartsWith("10."))
+                        {
+                            chosenIP = ip;
+                            break;
+                        }
+                    }
+                    accUrl = $"http://{chosenIP}:5000/";
+                }
+            }
+            catch {}
+
+            TextBox txtAccUrl = new TextBox
+            {
+                Text = accUrl,
+                ReadOnly = true,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(41, 128, 185),
+                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
+                Location = new Point(230, 32),
+                Width = 400,
+                RightToLeft = RightToLeft.No
+            };
+            pnlAccountant.Controls.Add(txtAccUrl);
+
+            Button btnCopyAccUrl = new Button
+            {
+                Text = "نسخ الرابط",
+                BackColor = Color.FromArgb(149, 165, 166),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(120, 31),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnCopyAccUrl.FlatAppearance.BorderSize = 0;
+            btnCopyAccUrl.Click += (s, e) => {
+                Clipboard.SetText(txtAccUrl.Text);
+                MessageBox.Show("✅ تم نسخ رابط تطبيق المحاسب إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            pnlAccountant.Controls.Add(btnCopyAccUrl);
+
+            Button btnOpenAccUrl = new Button
+            {
+                Text = "فتح اللوحة",
+                BackColor = Color.FromArgb(52, 73, 94),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(10, 31),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnOpenAccUrl.FlatAppearance.BorderSize = 0;
+            btnOpenAccUrl.Click += (s, e) => {
+                try { Process.Start(txtAccUrl.Text); } catch {}
+            };
+            pnlAccountant.Controls.Add(btnOpenAccUrl);
+
+            Label lblAccTip = new Label
+            {
+                Text = "💡 افتح هذا الرابط من موبايل المحاسب (بشرط الاتصال بنفس شبكة الـ Wi-Fi) لاستقبال وتأكيد طلبات الواتساب مباشرة.",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(127, 140, 141),
+                AutoSize = true,
+                Location = new Point(10, 65)
+            };
+            pnlAccountant.Controls.Add(lblAccTip);
+
+            mainLayout.Controls.Add(pnlAccountant, 0, 4);
+            mainLayout.SetColumnSpan(pnlAccountant, 2);
 
             this.Controls.Add(mainLayout);
 
@@ -322,7 +423,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                bool isRunning = lblStatus.Text.Contains("متصل") || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
+                bool isRunning = (lblStatus.Text.Contains("متصل") && !lblStatus.Text.Contains("غير متصل")) || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
                 string action = isRunning ? "stop" : "start";
                 
                 LogMessage(isRunning ? "جاري إيقاف جلسة الواتساب..." : "جاري تشغيل جلسة الواتساب...");
@@ -344,9 +445,25 @@ namespace ChickenDist.Forms
         {
             try
             {
+                // ── 1. Verify server is up before attempting ──────────────────────
+                try
+                {
+                    var statusResp = await _httpClient.GetAsync("http://localhost:5000/api/status");
+                    if (!statusResp.IsSuccessStatusCode)
+                    {
+                        LogMessage("❌ خادم البوت لا يستجيب — شغّل البوت أولاً.");
+                        return;
+                    }
+                }
+                catch
+                {
+                    LogMessage("❌ تعذّر الاتصال بالخادم على المنفذ 5000 — شغّل البوت أولاً.");
+                    return;
+                }
+
                 LogMessage("جاري قراءة الأصناف النشطة والأسعار الحالية...");
-                
-                // Get active products from local database
+
+                // ── 2. Read products ──────────────────────────────────────────────
                 DataTable dt = DbHelper.Query("SELECT ProductID, ProductName, SalePrice AS Price FROM Products WHERE IsActive = 1");
                 if (dt == null || dt.Rows.Count == 0)
                 {
@@ -354,37 +471,74 @@ namespace ChickenDist.Forms
                     return;
                 }
 
-                StringBuilder json = new StringBuilder();
-                json.Append("[");
-                for (int i = 0; i < dt.Rows.Count; i++)
+                // ── 3. Build properly-escaped JSON array ──────────────────────────
+                var items = new System.Collections.Generic.List<string>(dt.Rows.Count);
+                foreach (DataRow row in dt.Rows)
                 {
-                    var row = dt.Rows[i];
-                    string name = row["ProductName"].ToString().Replace("\"", "\\\"");
+                    string name = EscapeJsonString(row["ProductName"].ToString());
                     decimal price = Convert.ToDecimal(row["Price"]);
-                    json.Append($"{{\"ProductID\":{row["ProductID"]},\"ProductName\":\"{name}\",\"Price\":{price:F2}}}");
-                    if (i < dt.Rows.Count - 1) json.Append(",");
+                    items.Add("{\"ProductID\":" + row["ProductID"] +
+                              ",\"ProductName\":\"" + name +
+                              "\",\"Price\":" + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}");
                 }
-                json.Append("]");
+                string jsonBody = "[" + string.Join(",", items) + "]";
 
                 LogMessage($"جاري إرسال قائمة تحتوي على {dt.Rows.Count} صنف للبوت...");
-                
-                var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
+
+                // ── 4. POST to Node server ────────────────────────────────────────
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync("http://localhost:5000/api/prices", content);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
-                    LogMessage("✅ تم تحديث الأسعار بالبوت وحفظها محلياً بنجاح.");
-                    lblLastSync.Text = $"آخر تحديث للأسعار: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
+                    LogMessage($"✅ تم تحديث الأسعار بنجاح — {dt.Rows.Count} صنف مُحدَّث في البوت.");
+                    lblLastSync.Text = $"آخر تحديث للأسعار: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
                 }
                 else
                 {
-                    LogMessage("❌ فشل تحديث الأسعار بالبوت (تأكد من عمل الخادم).");
+                    string body = "";
+                    try { body = await response.Content.ReadAsStringAsync(); } catch { }
+                    if (body.Length > 120) body = body.Substring(0, 120) + "...";
+                    LogMessage($"❌ فشل التحديث — الخادم أعاد HTTP {(int)response.StatusCode}: {body}");
                 }
+            }
+            catch (TaskCanceledException)
+            {
+                LogMessage("❌ انتهت مهلة الطلب — قد يكون الخادم مشغولاً أو بطيئاً.");
             }
             catch (Exception ex)
             {
                 LogMessage($"خطأ أثناء المزامنة: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// يحوّل النص لصيغة JSON آمنة مع تجاوز جميع الأحرف الخاصة بشكل صحيح.
+        /// </summary>
+        private static string EscapeJsonString(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '"':  sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\b': sb.Append("\\b");  break;
+                    case '\f': sb.Append("\\f");  break;
+                    case '\n': sb.Append("\\n");  break;
+                    case '\r': sb.Append("\\r");  break;
+                    case '\t': sb.Append("\\t");  break;
+                    default:
+                        if (c < 0x20)
+                            sb.Append("\\u" + ((int)c).ToString("x4"));
+                        else
+                            sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
