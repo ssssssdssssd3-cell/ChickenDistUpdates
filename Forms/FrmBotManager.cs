@@ -172,11 +172,37 @@ namespace ChickenDist.Forms
             {
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 string botDir = Path.Combine(baseDir, "bot");
-                
-                // Dev environment fallback
-                if (!Directory.Exists(botDir))
+
+                if (!Directory.Exists(botDir) || !File.Exists(Path.Combine(botDir, "index.js")))
                 {
-                    botDir = Path.Combine(baseDir, "..", "..", "..", "bot");
+                    // Search upwards (e.g. for dev/nested environment or repo root next to release folder)
+                    string current = baseDir;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        current = Path.GetDirectoryName(current);
+                        if (string.IsNullOrEmpty(current)) break;
+
+                        string testPath = Path.Combine(current, "bot");
+                        if (Directory.Exists(testPath) && File.Exists(Path.Combine(testPath, "index.js")))
+                        {
+                            botDir = testPath;
+                            break;
+                        }
+
+                        string repoPath = Path.Combine(current, "ChickenDistUpdates-main", "ChickenDistUpdates-main", "bot");
+                        if (Directory.Exists(repoPath) && File.Exists(Path.Combine(repoPath, "index.js")))
+                        {
+                            botDir = repoPath;
+                            break;
+                        }
+
+                        string repoPath1 = Path.Combine(current, "ChickenDistUpdates-main", "bot");
+                        if (Directory.Exists(repoPath1) && File.Exists(Path.Combine(repoPath1, "index.js")))
+                        {
+                            botDir = repoPath1;
+                            break;
+                        }
+                    }
                 }
 
                 if (!Directory.Exists(botDir) || !File.Exists(Path.Combine(botDir, "index.js")))
