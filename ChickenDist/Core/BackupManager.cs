@@ -163,12 +163,12 @@ namespace ChickenDist.Core
                     }
                 }
 
-                // رفع للتلجرام (لو مُهيأ)
-                bool telegramSuccess = false;
-                string telegramError = "";
-                if (!string.IsNullOrWhiteSpace(AppConfig.TelegramBotToken) && !string.IsNullOrWhiteSpace(AppConfig.TelegramChatId))
+                // إرسال عبر الواتساب (لو مهيأ)
+                bool waSuccess = false;
+                string waError = "";
+                if (!string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
                 {
-                    telegramSuccess = UploadToTelegram(zipPath, out telegramError);
+                    waSuccess = UploadToWhatsApp(zipPath, out waError);
                 }
 
                 // حفظ وقت آخر باكب ناجح
@@ -184,12 +184,12 @@ namespace ChickenDist.Core
                     {
                         successMsg += "\n\n☁️ تم نسخ الملف للمجلد المحلي السحابي بنجاح!";
                     }
-                    if (!string.IsNullOrWhiteSpace(AppConfig.TelegramBotToken))
+                    if (!string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
                     {
-                        if (telegramSuccess)
-                            successMsg += "\n\n📬 تم رفع الملف لقناة التلجرام بنجاح!";
+                        if (waSuccess)
+                            successMsg += "\n\n📬 تم إرسال النسخة الاحتياطية للواتساب بنجاح!";
                         else
-                            successMsg += $"\n\n⚠️ فشل الرفع للتلجرام: {telegramError}";
+                            successMsg += $"\n\n⚠️ فشل الإرسال عبر الواتساب: {waError}";
                     }
 
                     MessageBox.Show(
@@ -229,50 +229,39 @@ namespace ChickenDist.Core
         /// <summary>
         /// يرفع ملف النسخة الاحتياطية إلى التلجرام باستخدام Bot API
         /// </summary>
-        public static bool UploadToTelegram(string filePath, out string errorMessage)
+        /// <summary>
+        /// يرسل ملف النسخة الاحتياطية إلى خادر البوت المحلي بالواتساب
+        /// </summary>
+        public static bool UploadToWhatsApp(string filePath, out string errorMessage)
         {
             errorMessage = "";
             try
             {
-                string token = AppConfig.TelegramBotToken;
-                string chatId = AppConfig.TelegramChatId;
-
-                if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(chatId))
+                string phone = AppConfig.WhatsAppBackupPhone;
+                if (string.IsNullOrWhiteSpace(phone))
                 {
-                    errorMessage = "إعدادات تلجرام غير مكتملة.";
+                    errorMessage = "رقم هاتف الواتساب للنسخ الاحتياطي غير مهيأ.";
                     return false;
                 }
-
-                string url = $"https://api.telegram.org/bot{token}/sendDocument";
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
                     httpClient.Timeout = TimeSpan.FromMinutes(10);
-                    using (var multipartFormContent = new System.Net.Http.MultipartFormDataContent())
+                    string escapedPath = filePath.Replace("\\", "\\\\");
+                    string json = $"{{\"filePath\":\"{escapedPath}\",\"phone\":\"{phone}\"}}";
+                    var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                    var response = httpClient.PostAsync("http://localhost:5000/api/backup", content).Result;
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        multipartFormContent.Add(new System.Net.Http.StringContent(chatId), "chat_id");
-
-                        string caption = $"📦 نسخة احتياطية لقاعدة البيانات\n📅 التاريخ: {DateTime.Now:dd/MM/yyyy hh:mm tt}\n🏢 المنشأة: {AppConfig.CompanyName}";
-                        multipartFormContent.Add(new System.Net.Http.StringContent(caption), "caption");
-
-                        var fileStream = File.OpenRead(filePath);
-                        var fileContent = new System.Net.Http.StreamContent(fileStream);
-                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/zip");
-                        multipartFormContent.Add(fileContent, "document", Path.GetFileName(filePath));
-
-                        var response = httpClient.PostAsync(url, multipartFormContent).Result;
-                        fileStream.Close();
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            string responseContent = response.Content.ReadAsStringAsync().Result;
-                            errorMessage = $"API Code: {response.StatusCode} - {responseContent}";
-                            return false;
-                        }
+                        return true;
+                    }
+                    else
+                    {
+                        string responseContent = response.Content.ReadAsStringAsync().Result;
+                        errorMessage = $"Server Error ({response.StatusCode}): {responseContent}";
+                        return false;
                     }
                 }
             }

@@ -925,6 +925,16 @@ namespace ChickenDist.Forms
             pnlItems.BringToFront();
 			ToggleType();
 			Theme.ApplyFormRTL(this);
+			if (!AppConfig.EnableCratesTracking)
+			{
+				tbl.RowStyles[4] = new RowStyle(SizeType.Absolute, 0f);
+				panel.Height = 183;
+				lblCratesOut.Visible = false;
+				nudCratesOut.Visible = false;
+				lblCratesIn.Visible = false;
+				nudCratesIn.Visible = false;
+				lblClientCratesBalance.Visible = false;
+			}
 		}
 
 		private void FrmSale_KeyDown(object sender, KeyEventArgs e)
@@ -2889,14 +2899,17 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"{totalAmount:N2} ج.م");
 				sb.AppendLine("━━━━━━━━━━━━━━━━");
 
-				int cratesOutValMsg = saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
-				int cratesInValMsg = saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
-				if (cratesOutValMsg > 0 || cratesInValMsg > 0)
+				if (AppConfig.EnableCratesTracking)
 				{
-					sb.AppendLine("📦 حركة الأقفاص");
-					if (cratesOutValMsg > 0) sb.AppendLine($"▪ أقفاص صادرة : {cratesOutValMsg} قفص");
-					if (cratesInValMsg > 0) sb.AppendLine($"▪ أقفاص واردة : {cratesInValMsg} قفص");
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
+					int cratesOutValMsg = saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+					int cratesInValMsg = saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+					if (cratesOutValMsg > 0 || cratesInValMsg > 0)
+					{
+						sb.AppendLine("📦 حركة الأقفاص");
+						if (cratesOutValMsg > 0) sb.AppendLine($"▪ أقفاص صادرة : {cratesOutValMsg} قفص");
+						if (cratesInValMsg > 0) sb.AppendLine($"▪ أقفاص واردة : {cratesInValMsg} قفص");
+						sb.AppendLine("━━━━━━━━━━━━━━━━");
+					}
 				}
 
 				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
@@ -3124,11 +3137,14 @@ namespace ChickenDist.Forms
 				financialLines += 1; // "مسدد اليوم"
 				if (todayReturns > 0) financialLines += 1; // "مرتجع اليوم"
 
-				int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
-				int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
-				if (cratesOutVal > 0) financialLines += 1;
-				if (cratesInVal > 0) financialLines += 1;
-				financialLines += 1; // "رصيد الأقفاص المستحق"
+				if (AppConfig.EnableCratesTracking)
+				{
+					int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+					int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+					if (cratesOutVal > 0) financialLines += 1;
+					if (cratesInVal > 0) financialLines += 1;
+					financialLines += 1; // "رصيد الأقفاص المستحق"
+				}
 			}
 			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
 			int footerH = 55;
@@ -3292,22 +3308,25 @@ namespace ChickenDist.Forms
 							valsList.Add($"{todayReturns:N2} ج.م");
 						}
 
-						int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
-						int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
-						if (cratesOutVal > 0)
+						if (AppConfig.EnableCratesTracking)
 						{
-							labelsList.Add("أقفاص صادرة بالفاتورة");
-							valsList.Add($"{cratesOutVal} قفص");
-						}
-						if (cratesInVal > 0)
-						{
-							labelsList.Add("أقفاص واردة بالفاتورة");
-							valsList.Add($"{cratesInVal} قفص");
-						}
+							int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+							int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+							if (cratesOutVal > 0)
+							{
+								labelsList.Add("أقفاص صادرة بالفاتورة");
+								valsList.Add($"{cratesOutVal} قفص");
+							}
+							if (cratesInVal > 0)
+							{
+								labelsList.Add("أقفاص واردة بالفاتورة");
+								valsList.Add($"{cratesInVal} قفص");
+							}
 
-						int currentCratesDue = ClientDAL.GetClientCratesBalance(Convert.ToInt32(saleRow["ClientID"]));
-						labelsList.Add("رصيد الأقفاص المستحق");
-						valsList.Add($"{currentCratesDue} قفص");
+							int currentCratesDue = ClientDAL.GetClientCratesBalance(Convert.ToInt32(saleRow["ClientID"]));
+							labelsList.Add("رصيد الأقفاص المستحق");
+							valsList.Add($"{currentCratesDue} قفص");
+						}
 
 						labelsList.Add("الرصيد الحالي المستحق");
 						valsList.Add($"{currentDue:N2} ج.م");

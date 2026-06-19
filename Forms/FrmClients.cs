@@ -115,6 +115,10 @@ namespace ChickenDist.Forms
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 60 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الأقفاص", FillWeight = 40 });
+            if (!AppConfig.EnableCratesTracking)
+            {
+                dgClients.Columns["CratesBalance"].Visible = false;
+            }
             dgClients.SelectionChanged += DgClients_SelectionChanged;
             
             pnlGrid.Controls.Add(dgClients);
@@ -150,7 +154,16 @@ namespace ChickenDist.Forms
             var lblOpCrates = new Label { Text = "أقفاص افتتاحية:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(lblOpCrates);
             nudOpeningCrates = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            pnlDetails.Controls.Add(nudOpeningCrates); y += 36;
+            pnlDetails.Controls.Add(nudOpeningCrates);
+            if (!AppConfig.EnableCratesTracking)
+            {
+                lblOpCrates.Visible = false;
+                nudOpeningCrates.Visible = false;
+            }
+            else
+            {
+                y += 36;
+            }
 
             var lblDriver = new Label { Text = "المندوب الافتراضي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(lblDriver);
@@ -246,7 +259,10 @@ namespace ChickenDist.Forms
             cmbPriceTier.Text = dr.Table.Columns.Contains("DefaultPriceTier") && dr["DefaultPriceTier"] != DBNull.Value
                 ? dr["DefaultPriceTier"].ToString()
                 : "قطاعي";
-            lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الأقفاص: " + row.Cells["CratesBalance"].Value;
+            if (AppConfig.EnableCratesTracking)
+                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الأقفاص: " + row.Cells["CratesBalance"].Value;
+            else
+                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value;
         }
 
         private void LoadDrivers()

@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
             try
             {
                 clbProducts.Items.Clear();
-                var dt = DbHelper.Query("SELECT ProductID, ProductName, RetailPrice, Unit FROM Products WHERE IsActive = 1 ORDER BY ProductName");
+                var dt = DbHelper.Query("SELECT ProductID, ProductName, SalePrice AS RetailPrice, Unit FROM Products WHERE IsActive = 1 ORDER BY ProductName");
                 foreach (DataRow r in dt.Rows)
                 {
                     clbProducts.Items.Add(new ProductItem

@@ -22,8 +22,8 @@ namespace ChickenDist.Forms
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
-        private TextBox txtTelegramToken;
-        private TextBox txtTelegramChatId;
+        private TextBox txtWhatsAppPhone;
+        private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
 
         // Scale & Barcode controls
@@ -483,6 +483,18 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkBackupOnExit);
             y += 30;
 
+            // خيار تفعيل تتبع الأقفاص والوزن الفارغ
+            chkEnableCrates = new CheckBox
+            {
+                Text = "تفعيل نظام تتبع الأقفاص والوزن الفارغ للعملاء",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.EnableCratesTracking
+            };
+            this.Controls.Add(chkEnableCrates);
+            y += 30;
+
             // مسار مجلد سحابي محلي
             AddLabel("مسار مجلد سحابي محلي (مثل Google Drive / Dropbox):", 20, ref y, 0);
             txtLocalCloudPath = new TextBox
@@ -512,23 +524,29 @@ namespace ChickenDist.Forms
             this.Controls.Add(btnBrowseCloud);
             y += 38;
 
-            // إعدادات التلجرام
-            AddLabel("توكن بوت التلجرام (Telegram Bot Token):", 20, ref y, 0);
-            txtTelegramToken = new TextBox
+            var btnAutoDetectGDrive = Theme.MakeButton("☁️ كشف تلقائي لجوجل درايف", 20, y, 230, 28, Color.FromArgb(47, 54, 64));
+            btnAutoDetectGDrive.Font = new Font("Segoe UI", 9f);
+            btnAutoDetectGDrive.Click += (s, e) =>
             {
-                Location = new Point(20, y),
-                Width = 500,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 10f)
+                string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string path1 = System.IO.Path.Combine(userProfile, "Google Drive\\My Drive");
+                string path2 = System.IO.Path.Combine(userProfile, "Google Drive");
+                if (System.IO.Directory.Exists(path1)) {
+                    txtLocalCloudPath.Text = path1;
+                    MessageBox.Show("تم العثور على مجلد Google Drive وتعيينه بنجاح!", "كشف تلقائي", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else if (System.IO.Directory.Exists(path2)) {
+                    txtLocalCloudPath.Text = path2;
+                    MessageBox.Show("تم العثور على مجلد Google Drive وتعيينه بنجاح!", "كشف تلقائي", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else {
+                    MessageBox.Show("لم يتم العثور على مجلد Google Drive الافتراضي تلقائياً. يرجى تحديده يدوياً باستخدام زر التصفح.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             };
-            txtTelegramToken.Text = AppConfig.TelegramBotToken;
-            this.Controls.Add(txtTelegramToken);
+            this.Controls.Add(btnAutoDetectGDrive);
             y += 38;
 
-            AddLabel("معرف القناة أو الدردشة (Telegram Chat / Channel ID):", 20, ref y, 0);
-            txtTelegramChatId = new TextBox
+            // إعدادات الواتساب
+            AddLabel("رقم الهاتف للنسخ الاحتياطي بالواتساب (WhatsApp Backup Phone):", 20, ref y, 0);
+            txtWhatsAppPhone = new TextBox
             {
                 Location = new Point(20, y),
                 Width = 330,
@@ -537,40 +555,39 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 10f)
             };
-            txtTelegramChatId.Text = AppConfig.TelegramChatId;
-            this.Controls.Add(txtTelegramChatId);
+            txtWhatsAppPhone.Text = AppConfig.WhatsAppBackupPhone;
+            this.Controls.Add(txtWhatsAppPhone);
 
-            var btnTestTelegram = Theme.MakeButton("📤 اختبار الرفع", 360, y - 1, 160, 28, Color.FromArgb(80, 100, 60));
-            btnTestTelegram.Font = new Font("Segoe UI", 9f);
-            btnTestTelegram.Click += (s, e) =>
+            var btnTestWhatsApp = Theme.MakeButton("📤 اختبار الرفع بالواتس", 360, y - 1, 160, 28, Color.FromArgb(80, 100, 60));
+            btnTestWhatsApp.Font = new Font("Segoe UI", 9f);
+            btnTestWhatsApp.Click += (s, e) =>
             {
-                if (string.IsNullOrWhiteSpace(txtTelegramToken.Text) || string.IsNullOrWhiteSpace(txtTelegramChatId.Text))
+                if (string.IsNullOrWhiteSpace(txtWhatsAppPhone.Text))
                 {
-                    MessageBox.Show("الرجاء إدخال التوكن ومعرف الدردشة أولاً للاختبار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("الرجاء إدخال رقم الهاتف أولاً للاختبار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                AppConfig.TelegramBotToken = txtTelegramToken.Text.Trim();
-                AppConfig.TelegramChatId = txtTelegramChatId.Text.Trim();
+                AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
 
-                MessageBox.Show("جاري إنشاء نسخة احتياطية واختبار رفعها للتلجرام، يرجى الانتظار...", "جاري الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("جاري إنشاء نسخة احتياقيه واختبار رفعها بالواتساب، يرجى الانتظار...", "جاري الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
                 System.Threading.Tasks.Task.Run(() => {
                     bool ok = BackupManager.DoBackup(silent: true);
                     this.Invoke(new Action(() => {
                         if (ok)
                         {
-                            MessageBox.Show("✅ تم إرسال النسخة التجريبية للتلجرام بنجاح! يرجى التحقق من قناتك.", "نجاح الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("✅ تم إرسال النسخة التجريبية بالواتساب بنجاح! يرجى التحقق من هاتفك.", "نجاح الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             RefreshLastBackupLabel();
                         }
                         else
                         {
-                            MessageBox.Show("❌ فشل اختبار الرفع للتلجرام. تحقق من التوكن أو الاتصال بالشبكة.", "خطأ بالاختبار", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("❌ فشل اختبار الرفع بالواتساب. تأكد من تشغيل البوت والاتصال بالشبكة.", "خطأ بالاختبار", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }));
                 });
             };
-            this.Controls.Add(btnTestTelegram);
+            this.Controls.Add(btnTestWhatsApp);
             y += 38;
 
             // آخر نسخة احتياطية
@@ -644,9 +661,9 @@ namespace ChickenDist.Forms
                                           : "Standard";
                 AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
 
-                // حفظ إعدادات التلجرام والباكب عند الإغلاق والمسار السحابي
-                AppConfig.TelegramBotToken = txtTelegramToken.Text.Trim();
-                AppConfig.TelegramChatId = txtTelegramChatId.Text.Trim();
+                // حفظ إعدادات الواتساب وتفعيل الأقفاص والباكب عند الإغلاق والمسار السحابي
+                AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
+                AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 

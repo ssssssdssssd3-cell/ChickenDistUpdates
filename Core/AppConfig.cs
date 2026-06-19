@@ -257,6 +257,19 @@ namespace ChickenDist.Core
             set => Set("BackupLocalPath", value);
         }
 
+        public static string WhatsAppBackupPhone
+        {
+            get => Get("WhatsAppBackupPhone", "");
+            set => Set("WhatsAppBackupPhone", value);
+        }
+
+        public static bool EnableCratesTracking
+        {
+            get => Get("EnableCratesTracking", "True") == "True";
+            set => Set("EnableCratesTracking", value ? "True" : "False");
+        }
+
+
         // ===== دوال القراءة والكتابة =====
 
         public static string Get(string key, string defaultValue)

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
 const app = express();
@@ -181,6 +181,32 @@ app.post('/api/prices', (req, res) => {
     const prices = req.body;
     writeJSON('prices.json', prices);
     res.json({ success: true, updatedTime: new Date().toISOString() });
+});
+
+app.post('/api/backup', async (req, res) => {
+    const { filePath, phone } = req.body;
+    if (!filePath || !phone) {
+        return res.status(400).json({ error: 'Missing filePath or phone' });
+    }
+    if (!client || botStatus !== 'Online') {
+        return res.status(503).json({ error: 'WhatsApp bot is not online' });
+    }
+    try {
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'Backup file not found at local path' });
+        }
+        const media = MessageMedia.fromFilePath(filePath);
+        let targetJid = phone.trim();
+        if (!targetJid.endsWith('@c.us')) {
+            targetJid = `${targetJid}@c.us`;
+        }
+        const caption = `📦 *نسخة احتياطية لقاعدة البيانات*\n📅 *التاريخ:* ${new Date().toLocaleString('ar-EG')}`;
+        await client.sendMessage(targetJid, media, { caption });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Failed to send backup via WhatsApp:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/orders', (req, res) => {
