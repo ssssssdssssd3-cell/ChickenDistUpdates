@@ -102,30 +102,33 @@ function startBot() {
             prices.forEach(p => {
                 replyText += `▪️ *${p.ProductName}*: ${p.Price} ج.م\n`;
             });
-            replyText += '\n*لطلب أوردر، أرسل رسالة بالصيغة التالية:*\nطلب: صنف (كمية)، صنف (كمية)';
+            replyText += '\n*لطلب أوردر، اكتب كلمة (طلب) ثم اكتب طلبك مباشرة بطريقتك:*\n*مثال:* طلب 5 فراخ و 2 بط';
             await msg.reply(replyText);
         }
-        else if (text.startsWith('طلب:')) {
-            const orderContent = text.replace('طلب:', '').trim();
-            const contact = await msg.getContact();
-            const orders = readJSON('orders.json', []);
-            
-            const newOrder = {
-                id: Date.now().toString(),
-                clientPhone: from.split('@')[0],
-                clientName: contact.pushname || 'عميل مجهول',
-                details: orderContent,
-                time: new Date().toISOString(),
-                status: 'Pending' // Pending, Accepted, Rejected
-            };
-            
-            orders.unshift(newOrder);
-            writeJSON('orders.json', orders);
-            
-            // Notify mobile dashboard via SSE
-            notifyClients('new_order', newOrder);
-            
-            await msg.reply('✅ تم استلام طلبك وهو قيد المراجعة الآن من قبل الإدارة.');
+        else {
+            const orderMatch = text.match(/^(طلب:|طلب\s+|اوردر\s+|أوردر\s+)(.+)/is);
+            if (orderMatch) {
+                const orderContent = orderMatch[2].trim();
+                const contact = await msg.getContact();
+                const orders = readJSON('orders.json', []);
+                
+                const newOrder = {
+                    id: Date.now().toString(),
+                    clientPhone: from.split('@')[0],
+                    clientName: contact.pushname || 'عميل مجهول',
+                    details: orderContent,
+                    time: new Date().toISOString(),
+                    status: 'Pending' // Pending, Accepted, Rejected
+                };
+                
+                orders.unshift(newOrder);
+                writeJSON('orders.json', orders);
+                
+                // Notify mobile dashboard via SSE
+                notifyClients('new_order', newOrder);
+                
+                await msg.reply('✅ تم استلام طلبك وهو قيد المراجعة الآن من قبل الإدارة.');
+            }
         }
     });
 
@@ -181,6 +184,16 @@ app.post('/api/prices', (req, res) => {
     const prices = req.body;
     writeJSON('prices.json', prices);
     res.json({ success: true, updatedTime: new Date().toISOString() });
+});
+
+app.post('/api/clients', (req, res) => {
+    const clients = req.body;
+    writeJSON('clients.json', clients);
+    res.json({ success: true, updatedTime: new Date().toISOString() });
+});
+
+app.get('/api/clients', (req, res) => {
+    res.json(readJSON('clients.json', []));
 });
 
 app.post('/api/backup', async (req, res) => {
@@ -259,6 +272,22 @@ app.get('/api/orders/live', (req, res) => {
     });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    try {
+        const localtunnel = require('localtunnel');
+        const subdomain = 'chickendist-' + Math.random().toString(36).substring(2, 8);
+        const tunnel = await localtunnel({ port: PORT, subdomain: subdomain });
+        console.log(`Tunnel is active at: ${tunnel.url}`);
+        fs.writeFileSync(path.join(__dirname, 'tunnel_url.txt'), tunnel.url, 'utf8');
+        
+        tunnel.on('close', () => {
+            console.log('Tunnel closed');
+            try {
+                fs.unlinkSync(path.join(__dirname, 'tunnel_url.txt'));
+            } catch (e) {}
+        });
+    } catch (err) {
+        console.error('Failed to start localtunnel:', err);
+    }
 });

@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private Timer tmrStatus;
         private HttpClient _httpClient;
         private Process _nodeProcess;
+        private TextBox txtAccUrl;
 
         public FrmBotManager()
         {
@@ -167,7 +168,7 @@ namespace ChickenDist.Forms
             }
             catch {}
 
-            TextBox txtAccUrl = new TextBox
+            txtAccUrl = new TextBox
             {
                 Text = accUrl,
                 ReadOnly = true,
@@ -350,6 +351,20 @@ namespace ChickenDist.Forms
                 var response = await _httpClient.GetAsync("http://localhost:5000/api/status");
                 if (response.IsSuccessStatusCode)
                 {
+                    try
+                    {
+                        string tunnelFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot", "tunnel_url.txt");
+                        if (File.Exists(tunnelFilePath))
+                        {
+                            string publicUrl = File.ReadAllText(tunnelFilePath).Trim();
+                            if (!string.IsNullOrEmpty(publicUrl) && txtAccUrl != null && txtAccUrl.Text != publicUrl)
+                            {
+                                txtAccUrl.Text = publicUrl;
+                            }
+                        }
+                    }
+                    catch {}
+
                     string json = await response.Content.ReadAsStringAsync();
                     if (json.Contains("\"Online\""))
                     {
@@ -467,19 +482,41 @@ namespace ChickenDist.Forms
                 }
                 json.Append("]");
 
-                LogMessage($"جاري إرسال قائمة تحتوي على {dt.Rows.Count} صنف للبوت...");
+                // Get active clients from local database to sync with bot
+                DataTable dtClients = DbHelper.Query("SELECT ClientID, ClientName, Phone FROM Clients WHERE IsActive = 1");
+                string clientJson = "[]";
+                if (dtClients != null && dtClients.Rows.Count > 0)
+                {
+                    StringBuilder sbClients = new StringBuilder();
+                    sbClients.Append("[");
+                    for (int i = 0; i < dtClients.Rows.Count; i++)
+                    {
+                        var row = dtClients.Rows[i];
+                        string clientName = row["ClientName"].ToString().Replace("\"", "\\\"");
+                        string clientPhone = row["Phone"].ToString().Replace("\"", "\\\"");
+                        sbClients.Append("{\"ClientID\":" + row["ClientID"] + ",\"ClientName\":\"" + clientName + "\",\"Phone\":\"" + clientPhone + "\"}");
+                        if (i < dtClients.Rows.Count - 1) sbClients.Append(",");
+                    }
+                    sbClients.Append("]");
+                    clientJson = sbClients.ToString();
+                }
+
+                LogMessage($"جاري إرسال {dt.Rows.Count} صنف و {dtClients?.Rows.Count ?? 0} عميل للبوت...");
                 
                 var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync("http://localhost:5000/api/prices", content);
+
+                var clientContent = new StringContent(clientJson, Encoding.UTF8, "application/json");
+                var clientResponse = await _httpClient.PostAsync("http://localhost:5000/api/clients", clientContent);
                 
-                if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode && clientResponse.IsSuccessStatusCode)
                 {
-                    LogMessage("✅ تم تحديث الأسعار بالبوت وحفظها محلياً بنجاح.");
-                    lblLastSync.Text = $"آخر تحديث للأسعار: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
+                    LogMessage("✅ تم تحديث الأسعار والعملاء بالبوت وحفظها محلياً بنجاح.");
+                    lblLastSync.Text = $"آخر تحديث للأسعار والعملاء: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
                 }
                 else
                 {
-                    LogMessage("❌ فشل تحديث الأسعار بالبوت (تأكد من عمل الخادم).");
+                    LogMessage("❌ فشل تحديث البيانات بالبوت (تأكد من عمل الخادم).");
                 }
             }
             catch (Exception ex)
