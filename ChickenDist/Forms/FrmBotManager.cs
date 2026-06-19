@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(700, 520);
+            this.Size = new Size(700, 570);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -47,10 +47,10 @@ namespace ChickenDist.Forms
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F)); // Status
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));  // QR / Logs
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));  // Padding
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
 
             // Header/Status Label
             lblStatus = new Label 
@@ -126,6 +126,107 @@ namespace ChickenDist.Forms
             };
             mainLayout.Controls.Add(lblLastSync, 0, 3);
             mainLayout.SetColumnSpan(lblLastSync, 2);
+
+            // Accountant Link Panel (Row 4)
+            Panel pnlAccountant = new Panel 
+            { 
+                Dock = DockStyle.Fill, 
+                BackColor = Color.FromArgb(230, 240, 250),
+                Padding = new Padding(8),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            
+            Label lblAccTitle = new Label
+            {
+                Text = "📱 تطبيق المحاسب لاستقبال طلبات البوت (على الموبايل أو المتصفح):",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(10, 8)
+            };
+            pnlAccountant.Controls.Add(lblAccTitle);
+
+            // Fetch local IP for link
+            string accUrl = "http://localhost:5000/";
+            try
+            {
+                var localIPs = DriverPortalServer.GetLocalIPs();
+                if (localIPs != null && localIPs.Count > 0)
+                {
+                    string chosenIP = localIPs[0];
+                    foreach (var ip in localIPs)
+                    {
+                        if (ip.StartsWith("192.168.") || ip.StartsWith("10."))
+                        {
+                            chosenIP = ip;
+                            break;
+                        }
+                    }
+                    accUrl = $"http://{chosenIP}:5000/";
+                }
+            }
+            catch {}
+
+            TextBox txtAccUrl = new TextBox
+            {
+                Text = accUrl,
+                ReadOnly = true,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(41, 128, 185),
+                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
+                Location = new Point(230, 32),
+                Width = 400,
+                RightToLeft = RightToLeft.No
+            };
+            pnlAccountant.Controls.Add(txtAccUrl);
+
+            Button btnCopyAccUrl = new Button
+            {
+                Text = "نسخ الرابط",
+                BackColor = Color.FromArgb(149, 165, 166),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(120, 31),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnCopyAccUrl.FlatAppearance.BorderSize = 0;
+            btnCopyAccUrl.Click += (s, e) => {
+                Clipboard.SetText(txtAccUrl.Text);
+                MessageBox.Show("✅ تم نسخ رابط تطبيق المحاسب إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            pnlAccountant.Controls.Add(btnCopyAccUrl);
+
+            Button btnOpenAccUrl = new Button
+            {
+                Text = "فتح اللوحة",
+                BackColor = Color.FromArgb(52, 73, 94),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(10, 31),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnOpenAccUrl.FlatAppearance.BorderSize = 0;
+            btnOpenAccUrl.Click += (s, e) => {
+                try { Process.Start(txtAccUrl.Text); } catch {}
+            };
+            pnlAccountant.Controls.Add(btnOpenAccUrl);
+
+            Label lblAccTip = new Label
+            {
+                Text = "💡 افتح هذا الرابط من موبايل المحاسب (بشرط الاتصال بنفس شبكة الـ Wi-Fi) لاستقبال وتأكيد طلبات الواتساب مباشرة.",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(127, 140, 141),
+                AutoSize = true,
+                Location = new Point(10, 65)
+            };
+            pnlAccountant.Controls.Add(lblAccTip);
+
+            mainLayout.Controls.Add(pnlAccountant, 0, 4);
+            mainLayout.SetColumnSpan(pnlAccountant, 2);
 
             this.Controls.Add(mainLayout);
 
@@ -322,7 +423,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                bool isRunning = lblStatus.Text.Contains("متصل") || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
+                bool isRunning = (lblStatus.Text.Contains("متصل") && !lblStatus.Text.Contains("غير متصل")) || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
                 string action = isRunning ? "stop" : "start";
                 
                 LogMessage(isRunning ? "جاري إيقاف جلسة الواتساب..." : "جاري تشغيل جلسة الواتساب...");
@@ -361,7 +462,7 @@ namespace ChickenDist.Forms
                     var row = dt.Rows[i];
                     string name = row["ProductName"].ToString().Replace("\"", "\\\"");
                     decimal price = Convert.ToDecimal(row["Price"]);
-                    json.Append($"{{\"ProductID\":{row["ProductID"]},\"ProductName\":\"{name}\",\"Price\":{price:F2}}}");
+                    json.Append("{\"ProductID\":" + row["ProductID"] + ",\"ProductName\":\"" + name + "\",\"Price\":" + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}");
                     if (i < dt.Rows.Count - 1) json.Append(",");
                 }
                 json.Append("]");
