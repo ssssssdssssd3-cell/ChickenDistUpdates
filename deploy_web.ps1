@@ -1,42 +1,31 @@
-# ============================================================
-#  🚀 Firebase Web Deploy Script - ChickenDist
-# ============================================================
 $ErrorActionPreference = "Stop"
 
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Blue
-Write-Host "   🔥 Firebase Web Deploy Script v1.0   " -ForegroundColor Yellow
-Write-Host "==========================================" -ForegroundColor Blue
+Write-Host "=========================================="
+Write-Host "      Firebase Web Deploy Script"
+Write-Host "=========================================="
 
-# Step 1: Install firebase-tools globally if not installed
-Write-Host "`n1. جاري التحقق من أدوات Firebase وتثبيتها..." -ForegroundColor Cyan
+Write-Host "1. Installing Firebase Tools globally..."
 try {
     npm install -g firebase-tools
-    Write-Host "✅ تم تثبيت أدوات Firebase بنجاح." -ForegroundColor Green
+    Write-Host "Firebase tools installed successfully."
 } catch {
-    Write-Host "❌ فشل تثبيت أدوات Firebase عبر npm. تأكد من تثبيت Node.js بشكل صحيح." -ForegroundColor Red
+    Write-Host "Failed to install firebase-tools. Please make sure Node.js is installed."
     exit 1
 }
 
-# Step 2: Login to Firebase
-Write-Host "`n2. سيتم الآن فتح المتصفح لتسجيل الدخول إلى حساب جوجل الخاص بك..." -ForegroundColor Cyan
-Write-Host "👉 يرجى تأكيد الدخول في المتصفح ثم العودة هنا لإكمال العملية." -ForegroundColor Yellow
+Write-Host "2. Opening browser for Firebase login..."
 firebase login
 
-# Step 3: Deploy to Firebase Hosting
-Write-Host "`n3. جاري رفع لوحة تحكم المحاسب إلى السيرفر السحابي (Firebase Hosting)..." -ForegroundColor Cyan
+Write-Host "3. Deploying web app to Firebase Hosting..."
 Set-Location -Path (Join-Path $PSScriptRoot "bot")
 
 try {
     firebase deploy --only hosting --project checkin-192ab
-    Write-Host ""
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host "  ✅ تم رفع لوحة المحاسب بنجاح إلى السحابة!" -ForegroundColor Green
-    Write-Host "  🔗 الرابط الدائم والمستقر للمحاسب هو:" -ForegroundColor Green
-    Write-Host "  https://checkin-192ab.web.app" -ForegroundColor Yellow
-    Write-Host "==========================================" -ForegroundColor Green
-    Write-Host ""
+    Write-Host "=========================================="
+    Write-Host "SUCCESS: Web App deployed successfully!"
+    Write-Host "URL: https://checkin-192ab.web.app"
+    Write-Host "=========================================="
 } catch {
-    Write-Host "❌ فشل رفع الملفات. تأكد من أنك قمت بتسجيل الدخول إلى نفس الحساب الذي يحتوي على المشروع checkin-192ab." -ForegroundColor Red
+    Write-Host "Deployment failed. Please check your internet connection and login status."
     exit 1
 }
