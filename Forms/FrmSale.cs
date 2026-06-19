@@ -97,6 +97,11 @@ namespace ChickenDist.Forms
 		private ComboBox cboSafeAccount;
 		private Label lblSafeAccount;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
+		private Label lblCratesOut;
+		private NumericUpDown nudCratesOut;
+		private Label lblCratesIn;
+		private NumericUpDown nudCratesIn;
+		private Label lblClientCratesBalance;
 
 		public FrmSale() : this(0, false)
 		{
@@ -143,7 +148,7 @@ namespace ChickenDist.Forms
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 185,
+				Height = 225,
 				Width = 1020,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(12, 8, 12, 8)
@@ -151,7 +156,7 @@ namespace ChickenDist.Forms
 			var tbl = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				RowCount = 4,
+				RowCount = 5,
 				ColumnCount = 6,
 				BackColor = Color.Transparent,
 				CellBorderStyle = TableLayoutPanelCellBorderStyle.None
@@ -163,6 +168,7 @@ namespace ChickenDist.Forms
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
 			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44f));  // col5: control / buttons
 
+			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
 			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
@@ -523,6 +529,55 @@ namespace ChickenDist.Forms
 			tbl.Controls.Add(lblTierRow, 0, 3);
 			tbl.Controls.Add(pnlTierBtns, 1, 3);
 			tbl.SetColumnSpan(pnlTierBtns, 5);
+
+			lblCratesOut = MakeLabel("أقفاص صادرة :", 0, 0);
+			lblCratesOut.Dock = DockStyle.Fill;
+			lblCratesOut.TextAlign = ContentAlignment.MiddleRight;
+			lblCratesOut.Margin = new Padding(2);
+
+			nudCratesOut = new NumericUpDown
+			{
+				Dock = DockStyle.Fill,
+				Minimum = 0,
+				Maximum = 9999,
+				DecimalPlaces = 0,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			lblCratesIn = MakeLabel("أقفاص واردة :", 0, 0);
+			lblCratesIn.Dock = DockStyle.Fill;
+			lblCratesIn.TextAlign = ContentAlignment.MiddleRight;
+			lblCratesIn.Margin = new Padding(2);
+
+			nudCratesIn = new NumericUpDown
+			{
+				Dock = DockStyle.Fill,
+				Minimum = 0,
+				Maximum = 9999,
+				DecimalPlaces = 0,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			lblClientCratesBalance = new Label
+			{
+				Text = "أقفاص العميل: 0 قفص",
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				ForeColor = Theme.Accent,
+				TextAlign = ContentAlignment.MiddleLeft,
+				Dock = DockStyle.Fill,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+
+			tbl.Controls.Add(lblCratesOut, 0, 4);
+			tbl.Controls.Add(nudCratesOut, 1, 4);
+			tbl.Controls.Add(lblCratesIn, 2, 4);
+			tbl.Controls.Add(nudCratesIn, 3, 4);
+			tbl.Controls.Add(lblClientCratesBalance, 4, 4);
+			tbl.SetColumnSpan(lblClientCratesBalance, 2);
 
 			panel.Controls.Add(tbl);
 			pnlItems = new Panel
@@ -1151,6 +1206,10 @@ namespace ChickenDist.Forms
                         lblClientBalance.Text = "رصيد: 0.00 ج";
                         lblClientBalance.ForeColor = Theme.Accent;
                     }
+                    if (lblClientCratesBalance != null)
+                    {
+                        lblClientCratesBalance.Text = "أقفاص العميل: 0 قفص";
+                    }
                 }
 			};
 			DataTable drivers = EmployeeDAL.GetDrivers();
@@ -1454,6 +1513,12 @@ namespace ChickenDist.Forms
             else
             {
                 lblClientBalance.ForeColor = Theme.Accent;
+            }
+
+            int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
+            if (lblClientCratesBalance != null)
+            {
+                lblClientCratesBalance.Text = "أقفاص العميل: " + cratesBal + " قفص";
             }
         }
 
@@ -1899,6 +1964,8 @@ namespace ChickenDist.Forms
 				         COALESCE(s.DiscountAmount,0) AS DiscountAmount,
 				         COALESCE(s.DiscountPct,0)    AS DiscountPct,
 				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier,
+				         COALESCE(s.CratesOut, 0) AS CratesOut,
+				         COALESCE(s.CratesIn, 0) AS CratesIn,
 				         s.LastModifiedDate
 				  FROM Sales s WHERE s.SaleID=@id",
 				DbHelper.P("@id", saleID));
@@ -1941,6 +2008,10 @@ namespace ChickenDist.Forms
 
 			// ملاحظات
 			txtNotes.Text = row["Notes"].ToString();
+
+			// الأقفاص
+			nudCratesOut.Value = row["CratesOut"] != DBNull.Value ? Convert.ToInt32(row["CratesOut"]) : 0;
+			nudCratesIn.Value = row["CratesIn"] != DBNull.Value ? Convert.ToInt32(row["CratesIn"]) : 0;
 
 			// الخصم
 			decimal discPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
@@ -2181,7 +2252,8 @@ namespace ChickenDist.Forms
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
-						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount);
+						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount,
+						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value);
 					if (updated)
 					{
 						_isDirty = false;
@@ -2244,7 +2316,8 @@ namespace ChickenDist.Forms
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
-					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount);
+					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount,
+					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -2644,6 +2717,8 @@ namespace ChickenDist.Forms
 				       COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
 				       s.ClientID,
 				       s.CashPaid,
+				       COALESCE(s.CratesOut, 0) AS CratesOut,
+				       COALESCE(s.CratesIn, 0) AS CratesIn,
 				       COALESCE(c.ClientName, N'عميل نقدي') AS ClientName,
 				       COALESCE(c.Phone, '') AS ClientPhone
 				FROM Sales s
@@ -2814,6 +2889,16 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"{totalAmount:N2} ج.م");
 				sb.AppendLine("━━━━━━━━━━━━━━━━");
 
+				int cratesOutValMsg = saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+				int cratesInValMsg = saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+				if (cratesOutValMsg > 0 || cratesInValMsg > 0)
+				{
+					sb.AppendLine("📦 حركة الأقفاص");
+					if (cratesOutValMsg > 0) sb.AppendLine($"▪ أقفاص صادرة : {cratesOutValMsg} قفص");
+					if (cratesInValMsg > 0) sb.AppendLine($"▪ أقفاص واردة : {cratesInValMsg} قفص");
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
+				}
+
 				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
 				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount;
 				decimal remainingFromInvoice = isCredit ? totalAmount : (totalAmount - cashPaid);
@@ -2840,6 +2925,7 @@ namespace ChickenDist.Forms
 
 				if (saleRow["ClientID"] != DBNull.Value)
 				{
+					int clientIDVal = Convert.ToInt32(saleRow["ClientID"]);
 					decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
 					// استخدام الرصيد الفعلي من قاعدة البيانات بدلاً من الحساب اليدوي
 					// لضمان احتساب التوريدات التي تمت بعد تاريخ الفاتورة
@@ -2878,6 +2964,8 @@ namespace ChickenDist.Forms
 					{
 						sb.AppendLine("📝 آخر توريد سابق : لا يوجد");
 					}
+					int currentCratesDueMsg = ClientDAL.GetClientCratesBalance(clientIDVal);
+					sb.AppendLine($"أقفاص العميل الحالية : {currentCratesDueMsg} قفص");
 					sb.AppendLine("━━━━━━━━━━━━━━━━");
 					sb.AppendLine($"{currentDue:N2} ج.م");
 					sb.AppendLine("🔴 الرصيد الحالي المستحق");
@@ -3035,6 +3123,12 @@ namespace ChickenDist.Forms
 				}
 				financialLines += 1; // "مسدد اليوم"
 				if (todayReturns > 0) financialLines += 1; // "مرتجع اليوم"
+
+				int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+				int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+				if (cratesOutVal > 0) financialLines += 1;
+				if (cratesInVal > 0) financialLines += 1;
+				financialLines += 1; // "رصيد الأقفاص المستحق"
 			}
 			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
 			int footerH = 55;
@@ -3156,53 +3250,70 @@ namespace ChickenDist.Forms
 						y += 30;
 
 						var labelsList = new System.Collections.Generic.List<string> { "الرصيد السابق" };
-						var valsList = new System.Collections.Generic.List<decimal> { prevBalance };
+						var valsList = new System.Collections.Generic.List<string> { $"{prevBalance:N2} ج.م" };
 
 						if (isCredit)
 						{
 							labelsList.Add("الفاتورة الحالية");
-							valsList.Add(netVal);
+							valsList.Add($"{netVal:N2} ج.م");
 
 							labelsList.Add("إجمالي المستحق");
-							valsList.Add(totalDue);
+							valsList.Add($"{totalDue:N2} ج.م");
 						}
 						else
 						{
 							labelsList.Add("المدفوع نقداً");
-							valsList.Add(cashPaid);
+							valsList.Add($"{cashPaid:N2} ج.م");
 
 							if (remainingFromInvoice > 0)
 							{
 								labelsList.Add("متبقي الفاتورة");
-								valsList.Add(remainingFromInvoice);
+								valsList.Add($"{remainingFromInvoice:N2} ج.م");
 								
 								labelsList.Add("إجمالي المستحق");
-								valsList.Add(totalDue);
+								valsList.Add($"{totalDue:N2} ج.م");
 							}
 							else if (remainingFromInvoice < 0)
 							{
 								labelsList.Add("زيادة الفاتورة");
-								valsList.Add(-remainingFromInvoice);
+								valsList.Add($"{-remainingFromInvoice:N2} ج.م");
 								
 								labelsList.Add("إجمالي المستحق");
-								valsList.Add(totalDue);
+								valsList.Add($"{totalDue:N2} ج.م");
 							}
 						}
 
 						labelsList.Add("مسدد اليوم");
-						valsList.Add(todayPayments);
+						valsList.Add($"{todayPayments:N2} ج.م");
 
 						if (todayReturns > 0)
 						{
 							labelsList.Add("مرتجع اليوم");
-							valsList.Add(todayReturns);
+							valsList.Add($"{todayReturns:N2} ج.م");
 						}
 
+						int cratesOutVal = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+						int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+						if (cratesOutVal > 0)
+						{
+							labelsList.Add("أقفاص صادرة بالفاتورة");
+							valsList.Add($"{cratesOutVal} قفص");
+						}
+						if (cratesInVal > 0)
+						{
+							labelsList.Add("أقفاص واردة بالفاتورة");
+							valsList.Add($"{cratesInVal} قفص");
+						}
+
+						int currentCratesDue = ClientDAL.GetClientCratesBalance(Convert.ToInt32(saleRow["ClientID"]));
+						labelsList.Add("رصيد الأقفاص المستحق");
+						valsList.Add($"{currentCratesDue} قفص");
+
 						labelsList.Add("الرصيد الحالي المستحق");
-						valsList.Add(currentDue);
+						valsList.Add($"{currentDue:N2} ج.م");
 
 						string[] labels = labelsList.ToArray();
-						decimal[] vals = valsList.ToArray();
+						string[] vals = valsList.ToArray();
 
 						for (int i = 0; i < labels.Length; i++)
 						{
@@ -3215,8 +3326,7 @@ namespace ChickenDist.Forms
 							var fontVal = isLast ? fTitle : fBold;
 
 							g.DrawString(labels[i], fontLabel, isLast ? bRed : bNavy, new RectangleF(w / 2 + 10, y + 5, w / 2 - 30, 22), rtlNear);
-							string valStr = $"{vals[i]:N2} ج.م";
-							g.DrawString(valStr, isLast ? fBold : fNormal, brushVal, new RectangleF(25, y + 5, w / 2 - 35, 22), rtlNear);
+							g.DrawString(vals[i], isLast ? fBold : fNormal, brushVal, new RectangleF(25, y + 5, w / 2 - 35, 22), rtlNear);
 
 							y += 28;
 						}
@@ -3308,6 +3418,8 @@ namespace ChickenDist.Forms
 			txtNotes.Clear();
 			txtPrice.Clear();
 			nudQty.Value = 1m;
+			if (nudCratesOut != null) nudCratesOut.Value = 0;
+			if (nudCratesIn != null) nudCratesIn.Value = 0;
 			if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
 			if (cboDriver.Items.Count > 0) cboDriver.SelectedIndex = 0;
 			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;

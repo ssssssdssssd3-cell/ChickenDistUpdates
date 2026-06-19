@@ -27,7 +27,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.Primary;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
             // Logo/Header panel
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary };
@@ -123,8 +123,15 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter });
         }
 
+        private int _failedAttempts = 0;
+        private const int MaxAttempts = 5;
+        private System.Windows.Forms.Timer _lockTimer;
+        private int _lockSecondsLeft = 0;
+
         private void BtnLogin_Click(object sender, EventArgs e)
         {
+            if (!btnLogin.Enabled) return;
+
             if (string.IsNullOrWhiteSpace(txtUser.Text) || string.IsNullOrWhiteSpace(txtPass.Text))
             {
                 lblError.Text = "يرجى إدخال اسم المستخدم وكلمة المرور";
@@ -137,17 +144,48 @@ namespace ChickenDist.Forms
             var row = EmployeeDAL.Login(txtUser.Text.Trim(), txtPass.Text);
             if (row == null)
             {
-                lblError.Text = "اسم المستخدم أو كلمة المرور غير صحيحة";
-                btnLogin.Enabled = true;
-                btnLogin.Text = "تسجيل الدخول";
+                _failedAttempts++;
+                if (_failedAttempts >= MaxAttempts)
+                {
+                    // قفل مؤقت 30 ثانية بعد 5 محاولات فاشلة
+                    _lockSecondsLeft = 30;
+                    lblError.Text = $"تم تجاوز عدد المحاولات. انتظر {_lockSecondsLeft} ثانية.";
+                    _lockTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+                    _lockTimer.Tick += (ts, te) =>
+                    {
+                        _lockSecondsLeft--;
+                        if (_lockSecondsLeft <= 0)
+                        {
+                            _lockTimer.Stop();
+                            _failedAttempts = 0;
+                            btnLogin.Enabled = true;
+                            btnLogin.Text = "تسجيل الدخول";
+                            lblError.Text = "";
+                        }
+                        else
+                        {
+                            lblError.Text = $"تم تجاوز عدد المحاولات. انتظر {_lockSecondsLeft} ثانية.";
+                        }
+                    };
+                    _lockTimer.Start();
+                }
+                else
+                {
+                    lblError.Text = $"اسم المستخدم أو كلمة المرور غير صحيحة ({_failedAttempts}/{MaxAttempts})";
+                    btnLogin.Enabled = true;
+                    btnLogin.Text = "تسجيل الدخول";
+                }
                 return;
             }
 
+            _failedAttempts = 0;
             Session.EmpID = (int)row["EmpID"];
             Session.EmpName = row["EmpName"].ToString();
             Session.UserName = row["UserName"].ToString();
             Session.Role = row["Role"].ToString();
-            Session.IsDriver = (bool)row["IsDriver"];
+            // FIX: استخدام Convert.ToBoolean بدلاً من cast مباشر — يتجنب InvalidCastException
+            // عند قيم NULL أو أنواع غير متوقعة في بيانات قديمة
+            Session.IsDriver = row["IsDriver"] != DBNull.Value && Convert.ToBoolean(row["IsDriver"]);
             Session.LoadPermissions(Session.EmpID);
             this.DialogResult = DialogResult.OK;
             this.Close();

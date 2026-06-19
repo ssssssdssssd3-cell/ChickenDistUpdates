@@ -493,31 +493,7 @@ namespace ChickenDist.Forms
                     AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
                 }
 
-                int targetWidth = (AppConfig.BarcodeStickerSize == "38x26") ? 150 : 200;
-                int targetHeight = (AppConfig.BarcodeStickerSize == "38x26") ? 102 : 120;
-                PaperSize customSize = null;
-                try
-                {
-                    foreach (PaperSize size in pd.PrinterSettings.PaperSizes)
-                    {
-                        if (Math.Abs(size.Width - targetWidth) <= 10 && Math.Abs(size.Height - targetHeight) <= 10)
-                        {
-                            customSize = size;
-                            break;
-                        }
-                    }
-                }
-                catch { }
-
-                if (customSize != null)
-                {
-                    pd.DefaultPageSettings.PaperSize = customSize;
-                }
-                else
-                {
-                    pd.DefaultPageSettings.PaperSize = new PaperSize("StickerLabel", targetWidth, targetHeight);
-                }
-                pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
+                AppConfig.SetPaperSize(pd, AppConfig.BarcodeStickerSize);
 
                 pd.PrintPage += Pd_PrintPage;
 

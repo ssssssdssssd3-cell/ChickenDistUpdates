@@ -233,6 +233,30 @@ namespace ChickenDist.Core
             set => Set("BarcodeScaleDivideBy", value.ToString());
         }
 
+        public static string TelegramBotToken
+        {
+            get => Get("TelegramBotToken", "");
+            set => Set("TelegramBotToken", value);
+        }
+
+        public static string TelegramChatId
+        {
+            get => Get("TelegramChatId", "");
+            set => Set("TelegramChatId", value);
+        }
+
+        public static bool BackupOnExit
+        {
+            get => Get("BackupOnExit", "False") == "True";
+            set => Set("BackupOnExit", value ? "True" : "False");
+        }
+
+        public static string BackupLocalPath
+        {
+            get => Get("BackupLocalPath", "");
+            set => Set("BackupLocalPath", value);
+        }
+
         // ===== دوال القراءة والكتابة =====
 
         public static string Get(string key, string defaultValue)

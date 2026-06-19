@@ -50,12 +50,40 @@ namespace ChickenDist.Core
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.ForeColor = TextMain;
                     tb.BackColor = BgInput;
+
+                    // Auto select all text on focus
+                    tb.Enter += (s, e) => {
+                        tb.BeginInvoke((MethodInvoker)delegate {
+                            tb.SelectAll();
+                        });
+                    };
+
+                    // Move focus on Enter
+                    tb.KeyDown += (s, e) => {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            if (tb.Multiline) return;
+                            e.Handled = true;
+                            e.SuppressKeyPress = true;
+                            tb.FindForm()?.SelectNextControl(tb, true, true, true, true);
+                        }
+                    };
                 }
                 else if (c is ComboBox cb)
                 {
                     cb.FlatStyle = FlatStyle.Flat;
                     cb.ForeColor = TextMain;
                     cb.BackColor = BgInput;
+
+                    // Move focus on Enter
+                    cb.KeyDown += (s, e) => {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            e.Handled = true;
+                            e.SuppressKeyPress = true;
+                            cb.FindForm()?.SelectNextControl(cb, true, true, true, true);
+                        }
+                    };
                 }
                 else if (c is NumericUpDown nud)
                 {
@@ -69,11 +97,55 @@ namespace ChickenDist.Core
                             child.Visible = false;
                             child.Width = 0;
                         }
+
+                        // Attach select all and Enter key navigation to the internal TextBox editor
+                        if (child is TextBox || child.GetType().Name.Contains("Edit"))
+                        {
+                            child.Enter += (s, ev) => {
+                                nud.BeginInvoke((MethodInvoker)delegate {
+                                    nud.Select(0, nud.Text.Length);
+                                });
+                            };
+                            child.KeyDown += (s, ev) => {
+                                if (ev.KeyCode == Keys.Enter)
+                                {
+                                    ev.Handled = true;
+                                    ev.SuppressKeyPress = true;
+                                    nud.FindForm()?.SelectNextControl(nud, true, true, true, true);
+                                }
+                            };
+                        }
                     }
+
+                    // Also attach to parent NumericUpDown
+                    nud.Enter += (s, e) => {
+                        nud.BeginInvoke((MethodInvoker)delegate {
+                            nud.Select(0, nud.Text.Length);
+                        });
+                    };
+
+                    nud.KeyDown += (s, e) => {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            e.Handled = true;
+                            e.SuppressKeyPress = true;
+                            nud.FindForm()?.SelectNextControl(nud, true, true, true, true);
+                        }
+                    };
                 }
                 else if (c is DateTimePicker dtp)
                 {
                     dtp.RightToLeftLayout = true;
+
+                    // Move focus on Enter
+                    dtp.KeyDown += (s, e) => {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            e.Handled = true;
+                            e.SuppressKeyPress = true;
+                            dtp.FindForm()?.SelectNextControl(dtp, true, true, true, true);
+                        }
+                    };
                 }
                 else if (c is SplitContainer sc)
                 {
@@ -102,6 +174,25 @@ namespace ChickenDist.Core
             form.RightToLeft = RightToLeft.Yes;
             form.RightToLeftLayout = true;
             ApplyRTL(form.Controls);
+
+            // Add form-level key listener for Enter as Tab navigation
+            form.KeyPreview = true;
+            form.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    Control activeCtrl = form.ActiveControl;
+                    if (activeCtrl != null)
+                    {
+                        if (activeCtrl is DataGridView) return;
+                        if (activeCtrl is TextBox tb && tb.Multiline) return;
+                        if (activeCtrl is Button) return;
+
+                        e.Handled = true;
+                        e.SuppressKeyPress = true;
+                        form.SelectNextControl(activeCtrl, true, true, true, true);
+                    }
+                }
+            };
         }
 
         private static Color GetHoverColor(Color color)

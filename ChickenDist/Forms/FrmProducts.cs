@@ -141,11 +141,14 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var btnPricePoster = Theme.MakeButton("📢 منشور الأسعار اليومية", 40, y + 160, 290, 32, Color.FromArgb(120, 80, 140));
+            btnPricePoster.Click += (s, e) => new FrmPricePoster().ShowDialog();
+
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnPrintBarcode.Click += BtnPrintBarcode_Click;
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode, btnQuickAdd, btnImportExcel });
+            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPrintBarcode, btnQuickAdd, btnImportExcel, btnPricePoster });
             this.Controls.Add(split);
             split.SplitterDistance = 350;
 

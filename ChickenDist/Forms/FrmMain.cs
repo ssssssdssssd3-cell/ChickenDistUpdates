@@ -157,6 +157,7 @@ namespace ChickenDist.Forms
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("📢 العملاء الرواكد", "Clients",   (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🤝 الموردين",  "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
                 }),
@@ -287,6 +288,8 @@ namespace ChickenDist.Forms
         {
             // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
             Core.DriverPortalServer.Stop();
+            // النسخ الاحتياطي التلقائي عند الخروج
+            BackupManager.AutoBackupOnExit();
             base.OnFormClosed(e);
         }
 

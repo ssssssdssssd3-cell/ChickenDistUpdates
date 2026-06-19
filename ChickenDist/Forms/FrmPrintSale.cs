@@ -32,6 +32,7 @@ namespace ChickenDist.Forms
         {
             var dt = DbHelper.Query(@"
                 SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
+                       COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
                        CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
                        COALESCE(e.EmpName, N'---') AS DriverName
@@ -407,6 +408,18 @@ namespace ChickenDist.Forms
                             }
                             g.DrawString($"المدفوع (التحصيل): {paymentToday:N2}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
                             g.DrawString($"الرصيد الحالي: {currentBalance:N2}", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 20;
+
+                            int cratesOut = _saleRow.Table.Columns.Contains("CratesOut") && _saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(_saleRow["CratesOut"]) : 0;
+                            int cratesIn = _saleRow.Table.Columns.Contains("CratesIn") && _saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(_saleRow["CratesIn"]) : 0;
+                            if (cratesOut > 0 || cratesIn > 0)
+                            {
+                                string cratesText = "";
+                                if (cratesOut > 0) cratesText += $"صادر: {cratesOut} ";
+                                if (cratesIn > 0) cratesText += $"وارد: {cratesIn} ";
+                                g.DrawString($"الأقفاص بالفاتورة: {cratesText}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                            }
+                            int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
+                            g.DrawString($"رصيد الأقفاص الحالي: {cratesBal} قفص", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 20;
                         }
                     }
 
@@ -805,6 +818,20 @@ namespace ChickenDist.Forms
                                 g.DrawString($"الرصيد الحالي: {currentBalance:N2} جنيه", boldBigSheet, Brushes.DarkBlue, new RectangleF(0, y, pageW, 28), center);
                                 y += 35;
                             }
+
+                            // طباعة الأقفاص في تقرير A4/A5
+                            int cratesOut = _saleRow.Table.Columns.Contains("CratesOut") && _saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(_saleRow["CratesOut"]) : 0;
+                            int cratesIn = _saleRow.Table.Columns.Contains("CratesIn") && _saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(_saleRow["CratesIn"]) : 0;
+                            int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
+
+                            string cratesText = "";
+                            if (cratesOut > 0) cratesText += $"أقفاص صادرة: {cratesOut} | ";
+                            if (cratesIn > 0) cratesText += $"أقفاص واردة: {cratesIn} | ";
+                            cratesText += $"رصيد الأقفاص الحالي للعميل: {cratesBal} قفص";
+
+                            g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
+                            g.DrawString(cratesText, boldSheet, Brushes.DarkSlateGray, new RectangleF(margin, y, pageW - 2 * margin, 20), right);
+                            y += 25;
                         }
                     }
 

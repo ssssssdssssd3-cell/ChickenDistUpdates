@@ -22,22 +22,33 @@ namespace ChickenDist.Core
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanShowCostProfit = true };
+                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true };
                 return;
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanShowCostProfit, 0) AS CanShowCostProfit FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
             {
-                _perms[row["ScreenName"].ToString()] = new PermInfo
+                try
                 {
-                    CanAccess    = (bool)row["CanAccess"],
-                    CanEditPrice = (bool)row["CanEditPrice"],
-                    CanShowCostProfit = row.Table.Columns.Contains("CanShowCostProfit") && row["CanShowCostProfit"] != DBNull.Value && Convert.ToBoolean(row["CanShowCostProfit"])
-                };
+                    _perms[row["ScreenName"].ToString()] = new PermInfo
+                    {
+                        CanAccess    = row["CanAccess"]    != DBNull.Value && Convert.ToBoolean(row["CanAccess"]),
+                        CanEditPrice = row["CanEditPrice"] != DBNull.Value && Convert.ToBoolean(row["CanEditPrice"]),
+                        CanEditSalesInvoice = row["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanEditSalesInvoice"]),
+                        CanDeleteSalesInvoice = row.Table.Columns.Contains("CanDeleteSalesInvoice") && row["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanDeleteSalesInvoice"]),
+                        CanCopySalesInvoice = row.Table.Columns.Contains("CanCopySalesInvoice") && row["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanCopySalesInvoice"]),
+                        CanViewCost  = row["CanViewCost"]  != DBNull.Value && Convert.ToBoolean(row["CanViewCost"])
+                    };
+                }
+                catch (Exception ex)
+                {
+                    // تسجيل الخطأ بدلاً من إسقاط البرنامج
+                    AppLogger.Error($"خطأ في قراءة صلاحيات الشاشة: {row["ScreenName"]}", ex, "Session.LoadPermissions");
+                }
             }
         }
 
@@ -53,10 +64,28 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanEditPrice;
         }
 
-        public static bool CanShowCostProfit(string screen = "Sales")
+        public static bool CanEditSalesInvoice(string screen = "Sales")
         {
             if (Role == "Admin") return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanShowCostProfit;
+            return _perms.ContainsKey(screen) && _perms[screen].CanEditSalesInvoice;
+        }
+
+        public static bool CanDeleteSalesInvoice(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanDeleteSalesInvoice;
+        }
+
+        public static bool CanCopySalesInvoice(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanCopySalesInvoice;
+        }
+
+        public static bool CanViewCost(string screen = "Sales")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanViewCost;
         }
 
         public static void Clear()
@@ -66,9 +95,9 @@ namespace ChickenDist.Core
         }
 
         public static readonly string[] AllScreens = {
-            "Sales", "DriverHandover", "Clients", "Products",
-            "CashBox", "Expenses", "Reports", "Employees", "Returns",
-            "Suppliers", "Purchases"
+            "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "Products",
+            "Vehicles", "CashBox", "Expenses", "Reports", "Employees", "Returns",
+            "Suppliers", "Purchases", "Inventory", "Installments"
         };
     }
 
@@ -76,6 +105,9 @@ namespace ChickenDist.Core
     {
         public bool CanAccess { get; set; }
         public bool CanEditPrice { get; set; }
-        public bool CanShowCostProfit { get; set; }
+        public bool CanEditSalesInvoice { get; set; }
+        public bool CanDeleteSalesInvoice { get; set; }
+        public bool CanCopySalesInvoice { get; set; }
+        public bool CanViewCost { get; set; }
     }
 }

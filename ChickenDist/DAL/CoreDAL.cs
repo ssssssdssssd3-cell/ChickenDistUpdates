@@ -702,9 +702,12 @@ namespace ChickenDist.DAL
             string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
                            c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
                            COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
-                           ISNULL(cb.Balance, c.OpeningBalance) AS Balance
+                           ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                           COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
+                           ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
                            FROM Clients c
                            LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                           LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID = ccb.ClientID
                            " + (activeOnly ? "WHERE c.IsActive=1" : "") + " ORDER BY c.ClientName";
             return DbHelper.Query(sql);
         }
@@ -714,8 +717,12 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address, c.DriverID, c.MaxCreditLimit, c.Notes,
                   COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
-                  ISNULL(cb.Balance, c.OpeningBalance) AS Balance
-                  FROM Clients c LEFT JOIN vw_ClientBalance cb ON c.ClientID=cb.ClientID
+                  ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                  COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
+                  ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
+                  FROM Clients c 
+                  LEFT JOIN vw_ClientBalance cb ON c.ClientID=cb.ClientID
+                  LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID=ccb.ClientID
                   WHERE c.ClientName LIKE @t OR c.Phone LIKE @t OR c.ClientCode LIKE @t OR c.Phone2 LIKE @t",
                 DbHelper.P("@t", "%" + term + "%"));
         }
@@ -734,6 +741,43 @@ namespace ChickenDist.DAL
                 LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                 WHERE c.ClientID = @id", DbHelper.P("@id", clientID));
             return dt.Rows.Count > 0 ? Convert.ToDecimal(dt.Rows[0]["Balance"]) : 0;
+        }
+
+        public static int GetClientCratesBalance(int clientID)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT ISNULL(ccb.CratesBalance, c.OpeningCrates) AS CratesBalance
+                FROM Clients c
+                LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID = ccb.ClientID
+                WHERE c.ClientID = @id", DbHelper.P("@id", clientID));
+            return dt.Rows.Count > 0 && dt.Rows[0]["CratesBalance"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["CratesBalance"]) : 0;
+        }
+
+        public static DataTable GetCratesStatement(int clientID, DateTime from, DateTime to)
+        {
+            return DbHelper.Query(
+                @"SELECT cct.TransDate, 
+                         CASE WHEN cct.RefSaleID IS NOT NULL THEN N'فاتورة بيع #' + CAST(cct.RefSaleID AS NVARCHAR(20)) ELSE N'حركة أقفاص يدوي' END AS TransType,
+                         cct.CratesOut, cct.CratesIn, cct.Notes, cct.RefSaleID,
+                         ISNULL(e.EmpName, N'---') AS CreatedByName
+                  FROM ClientCratesTransactions cct
+                  LEFT JOIN Employees e ON cct.CreatedBy = e.EmpID
+                  WHERE cct.ClientID=@id AND CAST(cct.TransDate AS DATE) BETWEEN @f AND @t
+                  ORDER BY cct.TransDate",
+                DbHelper.P("@id", clientID), DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+        }
+
+        public static int GetPreviousCratesBalance(int clientID, DateTime beforeDate)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT 
+                    c.OpeningCrates + 
+                    ISNULL((SELECT SUM(CratesOut) - SUM(CratesIn) FROM ClientCratesTransactions WHERE ClientID=@id AND CAST(TransDate AS DATE) < @dt), 0) AS PrevBal
+                FROM Clients c WHERE c.ClientID=@id", 
+                DbHelper.P("@id", clientID), DbHelper.P("@dt", beforeDate.Date));
+            if (dt.Rows.Count > 0 && dt.Rows[0]["PrevBal"] != DBNull.Value)
+                return Convert.ToInt32(dt.Rows[0]["PrevBal"]);
+            return 0;
         }
 
         public class ClientFinancialStatus
@@ -777,26 +821,28 @@ namespace ChickenDist.DAL
             return result != null ? result.ToString() : "1";
         }
 
-        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي")
+        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي", int openingCrates = 0)
         {
             if (id == 0)
             {
                 int newID = DbHelper.ExecuteInsert(
-                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes,DefaultPriceTier) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes,@dpt)",
+                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes,DefaultPriceTier,OpeningCrates) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes,@dpt,@oc)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
-                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier));
+                    DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
+                    DbHelper.P("@oc", openingCrates));
                 return newID;
             }
             else
             {
                 DbHelper.Execute(
-                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt WHERE ClientID=@id",
+                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt,OpeningCrates=@oc WHERE ClientID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
+                    DbHelper.P("@oc", openingCrates),
                     DbHelper.P("@id", id));
                 return id;
             }

@@ -69,7 +69,8 @@ namespace ChickenDist.DAL
 
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
-            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null)
+            decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
+            int cratesOut = 0, int cratesIn = 0)
         {
             int returnedSaleID = -1;
 
@@ -81,14 +82,15 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,LastModifiedDate) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,GETDATE())",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE())",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
-                    DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value));
+                    DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -162,6 +164,16 @@ namespace ChickenDist.DAL
 
                 if (!isDraft)
                 {
+                    // حركات الأقفاص
+                    if (clientID.HasValue && (cratesOut > 0 || cratesIn > 0))
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+
                     // آجل: أضف للحساب
                     if (typeStr == "Credit" && clientID.HasValue)
                     {
@@ -540,7 +552,8 @@ namespace ChickenDist.DAL
 
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
-            DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null)
+            DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
+            int cratesOut = 0, int cratesIn = 0)
         {
             bool success = false;
 
@@ -612,7 +625,10 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                 }
 
-                // 4. عكس الحركات المالية السابقة (العملاء، الخزينة، المندوب)
+                // 4. عكس الحركات المالية والأقفاص السابقة (العملاء، الخزينة، المندوب، الأقفاص)
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
+                    DbHelper.P("@id", saleID));
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType IN ('Sale', 'Payment')",
                     DbHelper.P("@id", saleID));
@@ -645,7 +661,7 @@ namespace ChickenDist.DAL
                     @"UPDATE Sales 
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
-                          CashPaid=@cp, LastModifiedDate=GETDATE()
+                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE()
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
@@ -658,6 +674,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wid", targetWarehouse),
                     DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@co", cratesOut),
+                    DbHelper.P("@ci", cratesIn),
                     DbHelper.P("@id", saleID));
 
                 // 7. إدخال البنود الجديدة
@@ -723,9 +741,17 @@ namespace ChickenDist.DAL
                     }
                 }
 
-                // 8. إنشاء الحركات المالية الجديدة
+                // 8. إنشاء الحركات المالية والأقفاص الجديدة
                 if (!isDraft)
                 {
+                    if (clientID.HasValue && (cratesOut > 0 || cratesIn > 0))
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
 
                     if (typeStr == "Credit" && clientID.HasValue)
                     {

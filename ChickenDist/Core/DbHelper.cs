@@ -1337,6 +1337,52 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD PendingPriceSourceRefID INT NULL;
                 END";
                 Execute(sqlPriceChangesSchema);
+
+                // Crate tracking migrations
+                SafeMigrate("Clients.OpeningCrates", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'OpeningCrates')
+                BEGIN
+                    ALTER TABLE Clients ADD OpeningCrates INT NOT NULL DEFAULT 0;
+                END");
+
+                SafeMigrate("Sales.Crates", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CratesOut')
+                BEGIN
+                    ALTER TABLE Sales ADD CratesOut INT NOT NULL DEFAULT 0;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'CratesIn')
+                BEGIN
+                    ALTER TABLE Sales ADD CratesIn INT NOT NULL DEFAULT 0;
+                END");
+
+                SafeMigrate("ClientCratesTransactions", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ClientCratesTransactions')
+                BEGIN
+                    CREATE TABLE ClientCratesTransactions (
+                        CrateTransID INT IDENTITY(1,1) PRIMARY KEY,
+                        ClientID INT NOT NULL REFERENCES Clients(ClientID) ON DELETE CASCADE,
+                        TransDate DATETIME DEFAULT GETDATE(),
+                        CratesOut INT DEFAULT 0,
+                        CratesIn INT DEFAULT 0,
+                        RefSaleID INT NULL REFERENCES Sales(SaleID) ON DELETE SET NULL,
+                        Notes NVARCHAR(500),
+                        CreatedBy INT NULL REFERENCES Employees(EmpID)
+                    );
+                END");
+
+                SafeMigrate("vw_ClientCratesBalance.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientCratesBalance') DROP VIEW vw_ClientCratesBalance;");
+                SafeMigrate("vw_ClientCratesBalance.Create", @"
+                EXEC('CREATE VIEW vw_ClientCratesBalance AS
+                SELECT
+                    c.ClientID,
+                    c.OpeningCrates,
+                    ISNULL(SUM(cct.CratesOut),0) AS TotalCratesOut,
+                    ISNULL(SUM(cct.CratesIn),0) AS TotalCratesIn,
+                    c.OpeningCrates + ISNULL(SUM(cct.CratesOut),0) - ISNULL(SUM(cct.CratesIn),0) AS CratesBalance
+                FROM Clients c
+                LEFT JOIN ClientCratesTransactions cct ON c.ClientID = cct.ClientID
+                GROUP BY c.ClientID, c.OpeningCrates');");
             }
             catch (Exception ex)
             {

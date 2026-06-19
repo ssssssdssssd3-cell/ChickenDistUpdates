@@ -162,6 +162,7 @@ namespace ChickenDist.Forms
             toolbar.BringToFront();
             _dg.BringToFront();
             _pnlSummary.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
         private Label MakeSummaryLabel(string text, Color color)
@@ -299,7 +300,7 @@ namespace ChickenDist.Forms
                         decimal qty = 0;
                         if (qtyMap.ContainsKey(cid) && qtyMap[cid].ContainsKey(pid))
                             qty = qtyMap[cid][pid];
-                        row[i + 1] = qty > 0 ? qty.ToString("N0") : "";
+                        row[i + 1] = qty != 0 ? qty.ToString("N0") : "";
                     }
 
                     decimal inv = 0, pay = 0, bal = 0;
@@ -368,6 +369,7 @@ namespace ChickenDist.Forms
             }
 
             var pd  = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.Landscape = true;
             pd.DefaultPageSettings.Margins   = new Margins(20, 20, 30, 30);
 

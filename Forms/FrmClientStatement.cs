@@ -77,6 +77,7 @@ namespace ChickenDist.Forms
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين", FillWeight = 40 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن", FillWeight = 40 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الجاري", FillWeight = 55 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "القائم بالعمل", FillWeight = 50 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "تفاصيل الأصناف والبيان المالي للحساب", FillWeight = 170 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID", Visible = false });
@@ -120,6 +121,7 @@ namespace ChickenDist.Forms
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
             this.Controls.Add(pnlFoot);
             dgStatement.BringToFront();
+            Theme.ApplyFormRTL(this);
         }
 
         private void LoadStatement()
@@ -134,7 +136,7 @@ namespace ChickenDist.Forms
 
             if (prevBalance != 0)
             {
-                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
+                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "---", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
             }
 
             foreach (DataRow r in _dt.Rows)
@@ -197,12 +199,14 @@ namespace ChickenDist.Forms
                     _totalSales += deb;
                 }
 
+                string createdBy = r.Table.Columns.Contains("CreatedByName") && r["CreatedByName"] != DBNull.Value ? r["CreatedByName"].ToString() : "---";
                 var rowIdx = dgStatement.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
                     TransTypeName(typeStr),
                     deb > 0 ? deb.ToString("N2") : "",
                     cred > 0 ? cred.ToString("N2") : "",
                     _runBalance.ToString("N2") + " ج",
+                    createdBy,
                     detailedNotes,
                     typeStr,
                     refID,
@@ -245,6 +249,7 @@ namespace ChickenDist.Forms
         private void BtnPrint_Click(object sender, EventArgs e)
         {
             var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             int currentRowIndex = 0;
             
             pd.BeginPrint += (s, ev) =>
@@ -319,7 +324,13 @@ namespace ChickenDist.Forms
                     g.DrawString(row.Cells["Debit"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[2], y);
                     g.DrawString(row.Cells["Credit"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[3], y);
                     g.DrawString(row.Cells["Balance"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[4], y);
-                    g.DrawString(row.Cells["BaseNotes"].Value?.ToString() ?? "", dataFont, Brushes.Black, cols[5], y);
+                    string printNotes = row.Cells["BaseNotes"].Value?.ToString() ?? "";
+                    string createdByStr = row.Cells["CreatedByName"].Value?.ToString();
+                    if (!string.IsNullOrEmpty(createdByStr) && createdByStr != "---")
+                    {
+                        printNotes += $" (بواسطة: {createdByStr})";
+                    }
+                    g.DrawString(printNotes, dataFont, Brushes.Black, cols[5], y);
                     y += 18;
                     
                     if (dtItems != null && itemsCount > 0)
@@ -379,13 +390,14 @@ namespace ChickenDist.Forms
     {
         private int _clientID;
         private TextBox txtAmount, txtNotes;
+        private ComboBox cboSafe;
         private Button btnOk, btnCancel;
 
         public FrmPayment(int clientID, string clientName)
         {
             _clientID = clientID;
             this.Text = "تحصيل من: " + clientName;
-            this.Size = new Size(360, 220);
+            this.Size = new Size(360, 270);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.RightToLeft = RightToLeft.Yes;
@@ -396,6 +408,33 @@ namespace ChickenDist.Forms
             this.Controls.Add(new Label { Text = "المبلغ المحصل (ج):", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
             txtAmount = new TextBox { Location = new Point(20, y - 2), Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             this.Controls.Add(txtAmount); y += 40;
+
+            this.Controls.Add(new Label { Text = "حساب التحصيل:", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
+            cboSafe = new ComboBox
+            {
+                Location = new Point(20, y - 2),
+                Width = 140,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            // تحميل الحسابات النشطة
+            try
+            {
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                foreach (DataRow row in safes.Rows)
+                {
+                    cboSafe.Items.Add(new ComboItem(
+                        Convert.ToInt32(row["AccountID"]),
+                        row["AccountName"].ToString()
+                    ));
+                }
+                cboSafe.DisplayMember = "Text";
+                if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+            }
+            catch { }
+            this.Controls.Add(cboSafe); y += 40;
 
             this.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(170, y), AutoSize = true, ForeColor = Theme.TextMain });
             txtNotes = new TextBox { Location = new Point(20, y - 2), Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
@@ -411,7 +450,12 @@ namespace ChickenDist.Forms
         private void BtnOk_Click(object sender, EventArgs e)
         {
             if (!decimal.TryParse(txtAmount.Text, out decimal amt) || amt <= 0) { MessageBox.Show("أدخل مبلغاً صحيحاً"); return; }
-            ClientDAL.AddPayment(_clientID, amt, txtNotes.Text);
+            int? targetSafeID = null;
+            if (cboSafe.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+            {
+                targetSafeID = safeItem.ID;
+            }
+            ClientDAL.AddPayment(_clientID, amt, txtNotes.Text, targetSafeID);
             MessageBox.Show("✅ تم تسجيل التحصيل");
             this.DialogResult = DialogResult.OK;
         }

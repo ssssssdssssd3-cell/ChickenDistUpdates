@@ -21,6 +21,10 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeStickerSize;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
+        private CheckBox chkBackupOnExit;
+        private TextBox txtTelegramToken;
+        private TextBox txtTelegramChatId;
+        private TextBox txtLocalCloudPath;
 
         // Scale & Barcode controls
         private CheckBox chkScaleEnabled;
@@ -35,7 +39,7 @@ namespace ChickenDist.Forms
         public FrmSettings()
         {
             this.Text = "إعدادات النظام";
-            this.Size = new Size(560, 780);
+            this.Size = new Size(560, 850);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -467,6 +471,108 @@ namespace ChickenDist.Forms
             this.Controls.Add(btnBrowse);
             y += 38;
 
+            // خيار النسخ الاحتياطي عند الخروج
+            chkBackupOnExit = new CheckBox
+            {
+                Text = "عمل نسخة احتياطية تلقائياً عند إغلاق البرنامج",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.BackupOnExit
+            };
+            this.Controls.Add(chkBackupOnExit);
+            y += 30;
+
+            // مسار مجلد سحابي محلي
+            AddLabel("مسار مجلد سحابي محلي (مثل Google Drive / Dropbox):", 20, ref y, 0);
+            txtLocalCloudPath = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtLocalCloudPath.Text = AppConfig.BackupLocalPath;
+            this.Controls.Add(txtLocalCloudPath);
+
+            var btnBrowseCloud = Theme.MakeButton("📂 تصفح السحابي", 410, y - 1, 110, 28, Color.FromArgb(55, 65, 81));
+            btnBrowseCloud.Font = new Font("Segoe UI", 9f);
+            btnBrowseCloud.Click += (s, e) =>
+            {
+                using (var dlg = new FolderBrowserDialog())
+                {
+                    dlg.Description = "اختر مجلد المزامنة السحابية المحلي";
+                    dlg.SelectedPath = txtLocalCloudPath.Text;
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                        txtLocalCloudPath.Text = dlg.SelectedPath;
+                }
+            };
+            this.Controls.Add(btnBrowseCloud);
+            y += 38;
+
+            // إعدادات التلجرام
+            AddLabel("توكن بوت التلجرام (Telegram Bot Token):", 20, ref y, 0);
+            txtTelegramToken = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtTelegramToken.Text = AppConfig.TelegramBotToken;
+            this.Controls.Add(txtTelegramToken);
+            y += 38;
+
+            AddLabel("معرف القناة أو الدردشة (Telegram Chat / Channel ID):", 20, ref y, 0);
+            txtTelegramChatId = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 330,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtTelegramChatId.Text = AppConfig.TelegramChatId;
+            this.Controls.Add(txtTelegramChatId);
+
+            var btnTestTelegram = Theme.MakeButton("📤 اختبار الرفع", 360, y - 1, 160, 28, Color.FromArgb(80, 100, 60));
+            btnTestTelegram.Font = new Font("Segoe UI", 9f);
+            btnTestTelegram.Click += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtTelegramToken.Text) || string.IsNullOrWhiteSpace(txtTelegramChatId.Text))
+                {
+                    MessageBox.Show("الرجاء إدخال التوكن ومعرف الدردشة أولاً للاختبار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                AppConfig.TelegramBotToken = txtTelegramToken.Text.Trim();
+                AppConfig.TelegramChatId = txtTelegramChatId.Text.Trim();
+
+                MessageBox.Show("جاري إنشاء نسخة احتياطية واختبار رفعها للتلجرام، يرجى الانتظار...", "جاري الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                System.Threading.Tasks.Task.Run(() => {
+                    bool ok = BackupManager.DoBackup(silent: true);
+                    this.Invoke(new Action(() => {
+                        if (ok)
+                        {
+                            MessageBox.Show("✅ تم إرسال النسخة التجريبية للتلجرام بنجاح! يرجى التحقق من قناتك.", "نجاح الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            RefreshLastBackupLabel();
+                        }
+                        else
+                        {
+                            MessageBox.Show("❌ فشل اختبار الرفع للتلجرام. تحقق من التوكن أو الاتصال بالشبكة.", "خطأ بالاختبار", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }));
+                });
+            };
+            this.Controls.Add(btnTestTelegram);
+            y += 38;
+
             // آخر نسخة احتياطية
             var last = BackupManager.LastBackupTime;
             string lastStr = last.HasValue
@@ -537,6 +643,12 @@ namespace ChickenDist.Forms
                                           : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
                                           : "Standard";
                 AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
+
+                // حفظ إعدادات التلجرام والباكب عند الإغلاق والمسار السحابي
+                AppConfig.TelegramBotToken = txtTelegramToken.Text.Trim();
+                AppConfig.TelegramChatId = txtTelegramChatId.Text.Trim();
+                AppConfig.BackupOnExit = chkBackupOnExit.Checked;
+                AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 
                 SaveBackupFolder();
 
