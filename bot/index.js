@@ -177,13 +177,94 @@ function startBot() {
         console.log('Bot disconnected:', reason);
     });
 
+    // ── أرقام التواصل والدعم للبوت (يمكنك تعديلها بأرقامك الفعلية) ─────────────────
+    const COMPLAINTS_PHONE = '01234567890'; // رقم الشكاوى والمشاكل
+    const BOT_SALES_PHONE  = '01234567890'; // رقم شراء وتفعيل البوت
+
+    // دالة للتحقق مما إذا كان النص يحتوي على اسم صنف من قائمة الأسعار
+    function checkContainsProduct(messageText, pricesList) {
+        if (!pricesList || pricesList.length === 0) return false;
+        
+        // تنظيف النص وتبسيطه للمقارنة
+        const cleanMsg = messageText.toLowerCase()
+            .replace(/[أإآ]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/\s+/g, '');
+
+        for (const p of pricesList) {
+            if (!p.ProductName) continue;
+            
+            // تنظيف اسم الصنف
+            const cleanProd = p.ProductName.toLowerCase()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/\s+/g, '');
+
+            if (cleanProd.length > 2) {
+                if (cleanMsg.includes(cleanProd)) {
+                    return true;
+                }
+            } else if (cleanProd.length > 0) {
+                // للأصناف ذات الأسماء القصيرة جداً، نتأكد من مطابقة كلمة كاملة
+                const words = messageText.toLowerCase().split(/[\s\d\+\-\*\/\\_]+/);
+                if (words.includes(cleanProd)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // Handle incoming customer chats
     client.on('message', async msg => {
         const text = msg.body.trim();
         const from = msg.from;
+        const lowerText = text.toLowerCase();
 
-        if (text === 'الأسعار' || text === 'الاسعار') {
-            const prices = readJSON('prices.json', []);
+        const phone = from.split('@')[0];
+        const contact = await msg.getContact();
+        const whatsappPushName = contact.pushname || 'عميل مجهول';
+        
+        // جلب قائمة العملاء لمطابقة الاسم
+        const clients = readJSON('clients.json', []);
+        const cleanPhone = normalizePhone(phone);
+        const matchedClient = clients.find(c => normalizePhone(c.Phone) === cleanPhone);
+        const displayName = matchedClient ? matchedClient.ClientName : whatsappPushName;
+
+        // جلب قائمة الأسعار للفحص
+        const prices = readJSON('prices.json', []);
+
+        // تحديد نوع الرسالة
+        const isPriceQuery = text === '1' || 
+                             text === 'الأسعار' || 
+                             text === 'الاسعار' ||
+                             lowerText.includes('سعر') || 
+                             lowerText.includes('اسعار') || 
+                             lowerText.includes('أسعار') || 
+                             lowerText.includes('بكام') || 
+                             lowerText.includes('بكم');
+
+        const isHelpQuery = text === '3' || 
+                            text === 'مساعدة' || 
+                            text === 'المساعدة' || 
+                            lowerText.includes('help') || 
+                            lowerText.includes('كيف');
+
+        const isContactQuery = text === '4' || 
+                               text === 'تواصل' || 
+                               text === 'اتصال' || 
+                               lowerText.includes('رقم') || 
+                               lowerText.includes('تليفون');
+
+        // قائمة التحيات الشائعة
+        const greetings = ['السلام عليكم', 'مرحبا', 'مرحب', 'هلا', 'سلام', 'صباح الخير', 'مساء الخير', 'hi', 'hello', 'اهلين'];
+        const isGreeting = greetings.includes(lowerText) || greetings.some(g => lowerText.startsWith(g));
+
+        // فحص إذا كان النص يمثل طلباً (يحتوي على اسم صنف من القائمة)
+        const hasProduct = checkContainsProduct(text, prices);
+
+        // 1️⃣ استعلام الأسعار
+        if (isPriceQuery) {
             if (prices.length === 0) {
                 await msg.reply('عذراً، قائمة الأسعار غير متوفرة حالياً.');
                 return;
@@ -192,51 +273,74 @@ function startBot() {
             prices.forEach(p => {
                 replyText += `▪️ *${p.ProductName}*: ${p.Price} ج.م\n`;
             });
-            replyText += '\n*لطلب أوردر، اكتب كلمة (طلب) ثم اكتب طلبك مباشرة بطريقتك:*\n*مثال:* طلب 5 فراخ و 2 بط';
+            replyText += '\n*لطلب أوردر، اكتب الصنف والكمية مباشرة في رسالة.*\n*مثال:* 5 فراخ و 2 بط';
             await msg.reply(replyText);
         }
-        else {
-            const orderMatch = text.match(/^(طلب:|طلب\s+|اوردر\s+|أوردر\s+)(.+)/is);
-            if (orderMatch) {
-                const orderContent = orderMatch[2].trim();
-                const contact = await msg.getContact();
-                
-                const phone = from.split('@')[0];
-                const whatsappPushName = contact.pushname || 'عميل مجهول';
-                
-                // Match client Locally
-                const clients = readJSON('clients.json', []);
-                const cleanPhone = normalizePhone(phone);
-                const matchedClient = clients.find(c => normalizePhone(c.Phone) === cleanPhone);
-                const displayName = matchedClient ? matchedClient.ClientName : whatsappPushName;
-                
-                const orderId = Date.now().toString();
-                const newOrder = {
-                    id: orderId,
-                    clientPhone: phone,
-                    clientName: displayName,
-                    details: orderContent,
-                    time: new Date().toISOString(),
-                    status: 'Pending', // Pending, Accepted, Rejected
-                    whatsappStatus: 'none',
-                    message: ''
-                };
-                
-                // 1. Save Locally
-                const localOrders = readJSON('orders.json', []);
-                localOrders.unshift(newOrder);
-                writeJSON('orders.json', localOrders);
+        // 2️⃣ استعلام المساعدة
+        else if (isHelpQuery) {
+            const helpText = `ℹ️ *دليل الاستخدام السريع للبوت:*
 
-                // 2. Upload to Firestore
-                try {
-                    await db.collection('orders').doc(orderId).set(newOrder);
-                    console.log(`[Firestore]: Uploaded order ${orderId} from ${displayName}`);
-                } catch (err) {
-                    console.error('Failed to save order in Firestore:', err);
-                }
-                
-                await msg.reply('✅ تم استلام طلبك وهو قيد المراجعة الآن من قبل الإدارة.');
+- *لمعرفة الأسعار*: اكتب كلمة *الأسعار* أو رقم *1*.
+- *لطلب أوردر جديد*: اكتب طلبك مباشرة بالكمية والصنف دون الحاجة لكلمات إضافية.
+  *(مثال: 5 كيلو فراخ و 2 بط)*
+- *لأرقام التواصل والشكاوى*: اكتب كلمة *تواصل* أو رقم *4*.`;
+            await msg.reply(helpText);
+        }
+        // 3️⃣ استعلام أرقام التواصل والشكاوى وشراء البوت
+        else if (isContactQuery) {
+            const contactText = `📞 *أرقام التواصل والدعم الفني:*
+
+⚠️ *لقسم المشاكل والشكاوى:*
+- اتصل بنا على: *${COMPLAINTS_PHONE}*
+
+🤖 *لشراء وتفعيل بوت واتساب لمشروعك:*
+- للتواصل مع مطور البوت: *${BOT_SALES_PHONE}*
+
+💬 *للاستفسارات العامة:*
+- الإدارة: يسعدنا دائماً تواصلك معنا مباشرة!`;
+            await msg.reply(contactText);
+        }
+        // 4️⃣ تقديم طلب تلقائي (لو الرسالة تحتوي على اسم صنف)
+        else if (hasProduct) {
+            const orderId = Date.now().toString();
+            const newOrder = {
+                id: orderId,
+                clientPhone: phone,
+                clientName: displayName,
+                details: text, // كامل الرسالة هي تفاصيل الطلب
+                time: new Date().toISOString(),
+                status: 'Pending', // Pending, Accepted, Rejected
+                whatsappStatus: 'none',
+                message: ''
+            };
+            
+            // حفظ محلي
+            const localOrders = readJSON('orders.json', []);
+            localOrders.unshift(newOrder);
+            writeJSON('orders.json', localOrders);
+
+            // رفع سحابي
+            try {
+                await db.collection('orders').doc(orderId).set(newOrder);
+                console.log(`[Firestore]: Auto-detected order ${orderId} from ${displayName}`);
+            } catch (err) {
+                console.error('Failed to save auto-detected order in Firestore:', err);
             }
+            
+            await msg.reply(`✅ أهلاً يا *${displayName}*، تم استلام طلبك بنجاح وجاري مراجعته من قبل الإدارة. ستصلك رسالة هنا فور قبول الطلب وتجهيزه!`);
+        }
+        // 5️⃣ تحية أو أي رسالة أخرى غير مفهومة -> إرسال القائمة الرئيسية الترحيبية
+        else {
+            const welcomeText = `🐓 *أهلاً بك يا ${displayName} في خدمة عملاء موزع الدواجن التلقائية!*
+
+كيف يمكنني مساعدتك اليوم؟ يرجى اختيار أحد الأرقام التالية أو كتابة الكلمة مباشرة:
+
+1️⃣ اكتب *1* أو *الأسعار* 📋 لعرض أسعار الأصناف اليوم.
+2️⃣ اكتب طلبك مباشرة بالكمية والصنف 🛒 (مثال: *5 فراخ و 2 بط*).
+3️⃣ اكتب *3* أو *مساعدة* ℹ️ لمعرفة كيفية استخدام البوت.
+4️⃣ اكتب *4* أو *تواصل* 📞 لأرقام الشكاوى وطلب شراء البوت.`;
+
+            await msg.reply(welcomeText);
         }
     });
 
@@ -457,7 +561,9 @@ function listenForCommands() {
 listenForOrderActions();
 listenToMetadataChanges();
 listenForCommands();
-updateFirebaseStatus('Offline');
+
+// Auto-start WhatsApp Bot on startup
+startBot();
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running locally at http://localhost:${PORT}`);
