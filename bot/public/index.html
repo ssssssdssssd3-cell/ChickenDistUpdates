@@ -187,6 +187,22 @@
             return cleaned;
         }
 
+        // Formats phone numbers to friendly Egyptian format (e.g. 201016517586 -> 01016517586)
+        function formatPhoneFriendly(phone) {
+            if (!phone) return '';
+            let cleaned = phone.toString().replace(/\D/g, '');
+            if (cleaned.startsWith('20') && cleaned.length > 10) {
+                return '0' + cleaned.substring(2);
+            }
+            if (cleaned.startsWith('0')) {
+                return cleaned;
+            }
+            if (cleaned.length === 10) {
+                return '0' + cleaned;
+            }
+            return phone;
+        }
+
         function findClientByPhone(phone) {
             const cleanPhone = normalizePhone(phone);
             if (!cleanPhone) return null;
@@ -245,7 +261,7 @@
                                 <h6 class="fw-bold text-dark mb-0">${displayName}</h6>
                                 <span class="badge badge-status bg-${badgeColor}">${statusText}</span>
                             </div>
-                            <p class="text-muted small mb-2">📱 ${o.clientPhone} ${clientBadge} | 🕒 ${timeStr}</p>
+                            <p class="text-muted small mb-2">📱 ${formatPhoneFriendly(o.clientPhone)} ${clientBadge} | 🕒 ${timeStr}</p>
                             <div class="order-details-box text-dark">${o.details}</div>
                         </div>
                     </div>
@@ -278,7 +294,7 @@
             }
 
             document.getElementById('modalClient').innerText = displayName;
-            document.getElementById('modalPhone').innerText = order.clientPhone;
+            document.getElementById('modalPhone').innerText = formatPhoneFriendly(order.clientPhone);
             document.getElementById('modalDetails').value = order.details;
             
             // Auto message suggestion
