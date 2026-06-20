@@ -241,7 +241,8 @@ namespace ChickenDist.Forms
             tmrStatus.Start();
 
             LogMessage("تم فتح شاشة إدارة البوت الميدانية.");
-            CheckAndStartNodeServer();
+            LogMessage("تم فتح شاشة إدارة البوت الميدانية (سحابي).");
+            LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر ☁️");
         }
 
         private void LogMessage(string msg)
@@ -249,146 +250,66 @@ namespace ChickenDist.Forms
             lbLogs.Items.Insert(0, $"[{DateTime.Now.ToString("HH:mm:ss")}] {msg}");
         }
 
-        // Checks if Node server is running on port 5000, if not, spawns it
-        private async void CheckAndStartNodeServer()
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync("http://localhost:5000/api/status");
-                if (response.IsSuccessStatusCode)
-                {
-                    LogMessage("خادم البوت المحلي نشط بالفعل ويعمل بالخلفية.");
-                    return;
-                }
-            }
-            catch
-            {
-                LogMessage("خادم البوت متوقف. محاولة بدء تشغيل خادم Node.js...");
-                StartNodeProcess();
-            }
-        }
-
-        private void StartNodeProcess()
-        {
-            try
-            {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string botDir = Path.Combine(baseDir, "bot");
-
-                if (!Directory.Exists(botDir) || !File.Exists(Path.Combine(botDir, "index.js")))
-                {
-                    // Search upwards (e.g. for dev/nested environment or repo root next to release folder)
-                    string current = baseDir;
-                    for (int i = 0; i < 4; i++)
-                    {
-                        current = Path.GetDirectoryName(current);
-                        if (string.IsNullOrEmpty(current)) break;
-
-                        string testPath = Path.Combine(current, "bot");
-                        if (Directory.Exists(testPath) && File.Exists(Path.Combine(testPath, "index.js")))
-                        {
-                            botDir = testPath;
-                            break;
-                        }
-
-                        string repoPath = Path.Combine(current, "ChickenDistUpdates-main", "ChickenDistUpdates-main", "bot");
-                        if (Directory.Exists(repoPath) && File.Exists(Path.Combine(repoPath, "index.js")))
-                        {
-                            botDir = repoPath;
-                            break;
-                        }
-
-                        string repoPath1 = Path.Combine(current, "ChickenDistUpdates-main", "bot");
-                        if (Directory.Exists(repoPath1) && File.Exists(Path.Combine(repoPath1, "index.js")))
-                        {
-                            botDir = repoPath1;
-                            break;
-                        }
-                    }
-                }
-
-                if (!Directory.Exists(botDir) || !File.Exists(Path.Combine(botDir, "index.js")))
-                {
-                    LogMessage("خطأ: لم يتم العثور على مجلد البوت أو ملف index.js!");
-                    return;
-                }
-
-                _nodeProcess = new Process();
-                _nodeProcess.StartInfo.FileName = "node";
-                _nodeProcess.StartInfo.Arguments = "index.js";
-                _nodeProcess.StartInfo.WorkingDirectory = botDir;
-                _nodeProcess.StartInfo.CreateNoWindow = true;
-                _nodeProcess.StartInfo.UseShellExecute = false;
-                _nodeProcess.StartInfo.RedirectStandardOutput = true;
-                _nodeProcess.StartInfo.RedirectStandardError = true;
-
-                _nodeProcess.OutputDataReceived += (s, ev) => {
-                    if (!string.IsNullOrEmpty(ev.Data)) 
-                        this.BeginInvoke(new Action(() => LogMessage($"[Server]: {ev.Data}")));
-                };
-                
-                _nodeProcess.ErrorDataReceived += (s, ev) => {
-                    if (!string.IsNullOrEmpty(ev.Data)) 
-                        this.BeginInvoke(new Action(() => LogMessage($"[Error]: {ev.Data}")));
-                };
-
-                _nodeProcess.Start();
-                _nodeProcess.BeginOutputReadLine();
-                _nodeProcess.BeginErrorReadLine();
-
-                LogMessage("تم إطلاق عملية خادم Node.js بنجاح.");
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"فشل تشغيل عملية Node: {ex.Message}");
-            }
-        }
-
         private async void TmrStatus_Tick(object sender, EventArgs e)
         {
             try
             {
-                var response = await _httpClient.GetAsync("http://localhost:5000/api/status");
+                var response = await _httpClient.GetAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/status");
                 if (response.IsSuccessStatusCode)
                 {
-                    try
+                    if (txtAccUrl != null && txtAccUrl.Text != "https://checkin-192ab.web.app")
                     {
-                        string tunnelFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot", "tunnel_url.txt");
-                        if (File.Exists(tunnelFilePath))
+                        txtAccUrl.Text = "https://checkin-192ab.web.app";
+                    }
+
+                    string json = await response.Content.ReadAsStringAsync();
+                    
+                    // Simple string parsing to read the status field
+                    string statusVal = "";
+                    int statusKeyIdx = json.IndexOf("\"status\"");
+                    if (statusKeyIdx != -1)
+                    {
+                        int valStart = json.IndexOf("\"stringValue\":", statusKeyIdx);
+                        if (valStart != -1)
                         {
-                            string publicUrl = File.ReadAllText(tunnelFilePath).Trim();
-                            if (!string.IsNullOrEmpty(publicUrl) && txtAccUrl != null && txtAccUrl.Text != publicUrl)
+                            int quoteStart = json.IndexOf("\"", valStart + 14);
+                            if (quoteStart != -1)
                             {
-                                txtAccUrl.Text = publicUrl;
+                                int quoteEnd = json.IndexOf("\"", quoteStart + 1);
+                                if (quoteEnd != -1)
+                                {
+                                    statusVal = json.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+                                }
                             }
                         }
                     }
-                    catch {}
 
-                    string json = await response.Content.ReadAsStringAsync();
-                    if (json.Contains("\"Online\""))
+                    if (statusVal == "Online")
                     {
-                        lblStatus.Text = "الحالة: متصل بالواتساب ومتاح للعملاء ✅";
+                        lblStatus.Text = "الحالة: متصل بالواتساب ومتاح للعملاء (سحابي) ✅";
                         lblStatus.ForeColor = Color.FromArgb(46, 204, 113);
-                        btnToggle.Text = "إيقاف اتصال الواتساب";
-                        btnToggle.BackColor = Color.FromArgb(231, 76, 60);
+                        btnToggle.Text = "البوت متصل بالكامل";
+                        btnToggle.BackColor = Color.FromArgb(46, 204, 113);
+                        btnToggle.Enabled = false;
                         pbQrCode.Image = null;
                         pbQrCode.BackColor = Color.FromArgb(240, 240, 240);
                     }
-                    else if (json.Contains("\"QR_Ready\""))
+                    else if (statusVal == "QR_Ready")
                     {
                         lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف 📲";
                         lblStatus.ForeColor = Color.FromArgb(230, 126, 34);
-                        btnToggle.Text = "إلغاء الاتصال";
-                        btnToggle.BackColor = Color.FromArgb(231, 76, 60);
-                        LoadQrCodeImage();
+                        btnToggle.Text = "إعادة تشغيل الجلسة";
+                        btnToggle.BackColor = Color.FromArgb(230, 126, 34);
+                        btnToggle.Enabled = true;
+                        LoadQrCodeFromStatusJson(json);
                     }
-                    else if (json.Contains("\"Connecting\""))
+                    else if (statusVal == "Connecting")
                     {
                         lblStatus.Text = "الحالة: جاري تحضير المتصفح الخلفي... ⏳";
                         lblStatus.ForeColor = Color.FromArgb(52, 152, 219);
-                        btnToggle.Text = "إلغاء الاتصال";
-                        btnToggle.BackColor = Color.FromArgb(231, 76, 60);
+                        btnToggle.Text = "جاري التحضير...";
+                        btnToggle.BackColor = Color.FromArgb(52, 152, 219);
+                        btnToggle.Enabled = false;
                         pbQrCode.Image = null;
                     }
                     else
@@ -397,36 +318,49 @@ namespace ChickenDist.Forms
                         lblStatus.ForeColor = Color.FromArgb(120, 120, 120);
                         btnToggle.Text = "ربط وتفعيل البوت";
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
+                        btnToggle.Enabled = true;
                         pbQrCode.Image = null;
                     }
+                }
+                else
+                {
+                    lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️";
+                    lblStatus.ForeColor = Color.Red;
+                    pbQrCode.Image = null;
                 }
             }
             catch
             {
-                lblStatus.Text = "الحالة: خادم البوت غير متصل ⚠️";
+                lblStatus.Text = "الحالة: فشل الاتصال بالسحابة ⚠️";
                 lblStatus.ForeColor = Color.Red;
-                btnToggle.Text = "تشغيل البوت";
-                btnToggle.BackColor = Color.FromArgb(9, 132, 227);
                 pbQrCode.Image = null;
             }
         }
 
-        private async void LoadQrCodeImage()
+        private void LoadQrCodeFromStatusJson(string json)
         {
             try
             {
-                var response = await _httpClient.GetAsync("http://localhost:5000/api/qr");
-                if (response.IsSuccessStatusCode)
+                int qrKeyIdx = json.IndexOf("\"qr\"");
+                if (qrKeyIdx != -1)
                 {
-                    string json = await response.Content.ReadAsStringAsync();
-                    int startIdx = json.IndexOf("data:image/png;base64,");
-                    if (startIdx != -1)
+                    int valStart = json.IndexOf("\"stringValue\":", qrKeyIdx);
+                    if (valStart != -1)
                     {
-                        string base64 = json.Substring(startIdx).Split('"')[0].Replace("data:image/png;base64,", "");
-                        byte[] bytes = Convert.FromBase64String(base64);
-                        using (MemoryStream ms = new MemoryStream(bytes))
+                        int startIdx = json.IndexOf("data:image/png;base64,", valStart);
+                        if (startIdx != -1)
                         {
-                            pbQrCode.Image = Image.FromStream(ms);
+                            int base64Start = startIdx + "data:image/png;base64,".Length;
+                            int quoteEnd = json.IndexOf("\"", base64Start);
+                            if (quoteEnd != -1)
+                            {
+                                string base64 = json.Substring(base64Start, quoteEnd - base64Start);
+                                byte[] bytes = Convert.FromBase64String(base64);
+                                using (MemoryStream ms = new MemoryStream(bytes))
+                                {
+                                    pbQrCode.Image = Image.FromStream(ms);
+                                }
+                            }
                         }
                     }
                 }
@@ -438,16 +372,31 @@ namespace ChickenDist.Forms
         {
             try
             {
-                bool isRunning = (lblStatus.Text.Contains("متصل") && !lblStatus.Text.Contains("غير متصل")) || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
-                string action = isRunning ? "stop" : "start";
+                bool isRunning = lblStatus.Text.Contains("متصل بالواتساب") || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
+                string actionCmd = isRunning ? "stop_bot" : "start_bot";
                 
-                LogMessage(isRunning ? "جاري إيقاف جلسة الواتساب..." : "جاري تشغيل جلسة الواتساب...");
+                LogMessage(isRunning ? "جاري إرسال أمر إيقاف البوت للسحابة..." : "جاري إرسال أمر تشغيل البوت للسحابة...");
                 
-                var content = new StringContent($"{{\"action\":\"{action}\"}}", Encoding.UTF8, "application/json");
-                var res = await _httpClient.PostAsync("http://localhost:5000/api/control", content);
-                if (res.IsSuccessStatusCode)
+                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string json = "{" +
+                              "\"fields\": {" +
+                              "\"type\": {\"stringValue\": \"" + actionCmd + "\"}," +
+                              "\"status\": {\"stringValue\": \"pending\"}," +
+                              "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
+                              "}" +
+                              "}";
+                              
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands", content);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    LogMessage(isRunning ? "تم إرسال أمر الإيقاف بنجاح." : "تم تشغيل المتصفح الخلفي للربط.");
+                    LogMessage(isRunning ? "تم إرسال أمر الإيقاف للسحاب بنجاح." : "تم إرسال أمر تشغيل البوت للسحاب بنجاح.");
+                }
+                else
+                {
+                    string errBody = await response.Content.ReadAsStringAsync();
+                    LogMessage($"❌ فشل إرسال الأمر السحابي: {response.StatusCode} - {errBody}");
                 }
             }
             catch (Exception ex)
@@ -460,22 +409,6 @@ namespace ChickenDist.Forms
         {
             try
             {
-                // ── 1. Verify server is up before attempting ──────────────────────
-                try
-                {
-                    var statusResp = await _httpClient.GetAsync("http://localhost:5000/api/status");
-                    if (!statusResp.IsSuccessStatusCode)
-                    {
-                        LogMessage("❌ خادم البوت لا يستجيب — شغّل البوت أولاً.");
-                        return;
-                    }
-                }
-                catch
-                {
-                    LogMessage("❌ تعذّر الاتصال بالخادم على المنفذ 5000 — شغّل البوت أولاً.");
-                    return;
-                }
-
                 LogMessage("جاري قراءة الأصناف النشطة والأسعار الحالية...");
                 
                 // Get active products from local database
@@ -486,21 +419,27 @@ namespace ChickenDist.Forms
                     return;
                 }
 
-                // Build properly-escaped JSON array for products
+                // Build properly-escaped JSON array for products in Firestore REST format
                 var items = new System.Collections.Generic.List<string>(dt.Rows.Count);
                 foreach (DataRow row in dt.Rows)
                 {
                     string name = EscapeJsonString(row["ProductName"].ToString());
                     decimal price = Convert.ToDecimal(row["Price"]);
-                    items.Add("{\"ProductID\":" + row["ProductID"] +
-                              ",\"ProductName\":\"" + name +
-                              "\",\"Price\":" + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}");
+                    items.Add("{" +
+                              "\"mapValue\": {" +
+                              "\"fields\": {" +
+                              "\"ProductID\": {\"integerValue\": \"" + row["ProductID"] + "\"}," +
+                              "\"ProductName\": {\"stringValue\": \"" + name + "\"}," +
+                              "\"Price\": {\"doubleValue\": " + price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "}" +
+                              "}" +
+                              "}" +
+                              "}");
                 }
-                string jsonBody = "[" + string.Join(",", items) + "]";
+                string pricesListJson = "[" + string.Join(",", items) + "]";
 
                 // Get active clients from local database to sync with bot
                 DataTable dtClients = DbHelper.Query("SELECT ClientID, ClientName, Phone FROM Clients WHERE IsActive = 1");
-                string clientJson = "[]";
+                string clientsListJson = "[]";
                 if (dtClients != null && dtClients.Rows.Count > 0)
                 {
                     var clientItems = new System.Collections.Generic.List<string>(dtClients.Rows.Count);
@@ -508,50 +447,76 @@ namespace ChickenDist.Forms
                     {
                         string clientName = EscapeJsonString(row["ClientName"].ToString());
                         string clientPhone = EscapeJsonString(row["Phone"].ToString());
-                        clientItems.Add("{\"ClientID\":" + row["ClientID"] +
-                                       ",\"ClientName\":\"" + clientName +
-                                       "\",\"Phone\":\"" + clientPhone + "\"}");
+                        clientItems.Add("{" +
+                                        "\"mapValue\": {" +
+                                        "\"fields\": {" +
+                                        "\"ClientID\": {\"integerValue\": \"" + row["ClientID"] + "\"}," +
+                                        "\"ClientName\": {\"stringValue\": \"" + clientName + "\"}," +
+                                        "\"Phone\": {\"stringValue\": \"" + clientPhone + "\"}" +
+                                        "}" +
+                                        "}" +
+                                        "}");
                     }
-                    clientJson = "[" + string.Join(",", clientItems) + "]";
+                    clientsListJson = "[" + string.Join(",", clientItems) + "]";
                 }
 
-                LogMessage($"جاري إرسال {dt.Rows.Count} صنف و {dtClients?.Rows.Count ?? 0} عميل للبوت...");
-                
-                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("http://localhost:5000/api/prices", content);
+                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
-                var clientContent = new StringContent(clientJson, Encoding.UTF8, "application/json");
-                var clientResponse = await _httpClient.PostAsync("http://localhost:5000/api/clients", clientContent);
-                
-                if (response.IsSuccessStatusCode && clientResponse.IsSuccessStatusCode)
+                // Construct full Firestore REST document bodies
+                string pricesBody = "{" +
+                                    "\"fields\": {" +
+                                    "\"updatedTime\": {\"stringValue\": \"" + isoNow + "\"}," +
+                                    "\"list\": {\"arrayValue\": {\"values\": " + pricesListJson + "}}" +
+                                    "}" +
+                                    "}";
+
+                string clientsBody = "{" +
+                                     "\"fields\": {" +
+                                     "\"updatedTime\": {\"stringValue\": \"" + isoNow + "\"}," +
+                                     "\"list\": {\"arrayValue\": {\"values\": " + clientsListJson + "}}" +
+                                     "}" +
+                                     "}";
+
+                LogMessage($"جاري إرسال {dt.Rows.Count} صنف و {dtClients?.Rows.Count ?? 0} عميل للسحابة مباشرة...");
+
+                var pricesContent = new StringContent(pricesBody, Encoding.UTF8, "application/json");
+                var clientsContent = new StringContent(clientsBody, Encoding.UTF8, "application/json");
+
+                var pricesRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/prices?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = pricesContent };
+                var clientsRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/clients?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = clientsContent };
+
+                var pricesResponse = await _httpClient.SendAsync(pricesRequest);
+                var clientsResponse = await _httpClient.SendAsync(clientsRequest);
+
+                if (pricesResponse.IsSuccessStatusCode && clientsResponse.IsSuccessStatusCode)
                 {
-                    LogMessage("✅ تم تحديث الأسعار والعملاء بالبوت وحفظها محلياً بنجاح.");
+                    LogMessage("✅ تم تحديث الأسعار والعملاء بالسحابة بنجاح!");
                     lblLastSync.Text = $"آخر تحديث للأسعار والعملاء: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
                 }
                 else
                 {
                     string body = "";
-                    if (!response.IsSuccessStatusCode)
+                    if (!pricesResponse.IsSuccessStatusCode)
                     {
-                        try { body = await response.Content.ReadAsStringAsync(); } catch { }
+                        try { body = await pricesResponse.Content.ReadAsStringAsync(); } catch { }
                         if (body.Length > 120) body = body.Substring(0, 120) + "...";
-                        LogMessage($"❌ فشل تحديث الأسعار — الخادم أعاد HTTP {(int)response.StatusCode}: {body}");
+                        LogMessage($"❌ فشل تحديث الأسعار بالسحاب — HTTP {(int)pricesResponse.StatusCode}: {body}");
                     }
-                    if (!clientResponse.IsSuccessStatusCode)
+                    if (!clientsResponse.IsSuccessStatusCode)
                     {
-                        try { body = await clientResponse.Content.ReadAsStringAsync(); } catch { }
+                        try { body = await clientsResponse.Content.ReadAsStringAsync(); } catch { }
                         if (body.Length > 120) body = body.Substring(0, 120) + "...";
-                        LogMessage($"❌ فشل تحديث العملاء — الخادم أعاد HTTP {(int)clientResponse.StatusCode}: {body}");
+                        LogMessage($"❌ فشل تحديث العملاء بالسحاب — HTTP {(int)clientsResponse.StatusCode}: {body}");
                     }
                 }
             }
             catch (TaskCanceledException)
             {
-                LogMessage("❌ انتهت مهلة الطلب — قد يكون الخادم مشغولاً أو بطيئاً.");
+                LogMessage("❌ انتهت مهلة الطلب — قد يكون الاتصال بالسحابة ضعيفاً.");
             }
             catch (Exception ex)
             {
-                LogMessage($"خطأ أثناء المزامنة: {ex.Message}");
+                LogMessage($"خطأ أثناء المزامنة السحابية: {ex.Message}");
             }
         }
 

@@ -246,12 +246,20 @@ namespace ChickenDist.Core
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMinutes(10);
+                    httpClient.Timeout = TimeSpan.FromSeconds(30);
                     string escapedPath = filePath.Replace("\\", "\\\\");
-                    string json = $"{{\"filePath\":\"{escapedPath}\",\"phone\":\"{phone}\"}}";
+                    string json = "{" +
+                                  "\"fields\": {" +
+                                  "\"type\": {\"stringValue\": \"send_backup\"}," +
+                                  "\"filePath\": {\"stringValue\": \"" + escapedPath + "\"}," +
+                                  "\"phone\": {\"stringValue\": \"" + phone + "\"}," +
+                                  "\"status\": {\"stringValue\": \"pending\"}," +
+                                  "\"time\": {\"stringValue\": \"" + DateTime.UtcNow.ToString("o") + "\"}" +
+                                  "}" +
+                                  "}";
                     var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                    var response = httpClient.PostAsync("http://localhost:5000/api/backup", content).Result;
+                    var response = httpClient.PostAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands", content).Result;
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -260,7 +268,7 @@ namespace ChickenDist.Core
                     else
                     {
                         string responseContent = response.Content.ReadAsStringAsync().Result;
-                        errorMessage = $"Server Error ({response.StatusCode}): {responseContent}";
+                        errorMessage = $"Firebase Error ({response.StatusCode}): {responseContent}";
                         return false;
                     }
                 }

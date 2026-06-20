@@ -35,6 +35,20 @@ let botStatus = 'Offline'; // Offline, Connecting, QR_Ready, Online
 let latestQrCode = '';
 let client = null;
 
+// Helper to write bot status to Firestore
+async function updateFirebaseStatus(status, qr = '') {
+    try {
+        await db.collection('metadata').doc('status').set({
+            status: status,
+            qr: qr,
+            updatedTime: new Date().toISOString()
+        });
+        console.log(`[FirebaseStatus]: Synced status: ${status}`);
+    } catch (err) {
+        console.error('Failed to sync status to Firebase:', err);
+    }
+}
+
 // Write permanent Firebase Hosting URL to tunnel_url.txt so C# app reads it
 try {
     const permUrl = "https://checkin-192ab.web.app";
@@ -127,6 +141,8 @@ function startBot() {
     if (client) return;
     
     botStatus = 'Connecting';
+    updateFirebaseStatus('Connecting');
+    
     client = new Client({
         authStrategy: new LocalAuth(),
         puppeteer: {
@@ -142,6 +158,7 @@ function startBot() {
                 console.error('Error generating QR code:', err);
             } else {
                 latestQrCode = url; // Base64 data URI
+                updateFirebaseStatus('QR_Ready', url);
             }
         });
     });
@@ -149,12 +166,14 @@ function startBot() {
     client.on('ready', () => {
         botStatus = 'Online';
         latestQrCode = '';
+        updateFirebaseStatus('Online');
         console.log('WhatsApp Bot is ready!');
     });
 
     client.on('disconnected', (reason) => {
         botStatus = 'Offline';
         client = null;
+        updateFirebaseStatus('Offline');
         console.log('Bot disconnected:', reason);
     });
 
@@ -238,6 +257,7 @@ function stopBot() {
         client = null;
         botStatus = 'Offline';
         latestQrCode = '';
+        updateFirebaseStatus('Offline');
     }
 }
 
@@ -339,8 +359,105 @@ app.get('/api/orders', (req, res) => {
     res.json(readJSON('orders.json', []));
 });
 
-// Start the Firestore Listener
+let metadataUnsubscribePrices = null;
+let metadataUnsubscribeClients = null;
+
+function listenToMetadataChanges() {
+    if (metadataUnsubscribePrices) {
+        try { metadataUnsubscribePrices(); } catch (e) {}
+    }
+    if (metadataUnsubscribeClients) {
+        try { metadataUnsubscribeClients(); } catch (e) {}
+    }
+
+    console.log("Starting real-time listener for cloud metadata (prices & clients)...");
+    metadataUnsubscribePrices = db.collection('metadata').doc('prices').onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data && data.list) {
+                writeJSON(path.join(__dirname, 'prices.json'), data.list);
+                console.log(`[FirestoreSync]: Synced ${data.list.length} prices locally.`);
+            }
+        }
+    }, err => {
+        console.error("Prices metadata listener error:", err);
+        setTimeout(listenToMetadataChanges, 5000);
+    });
+
+    metadataUnsubscribeClients = db.collection('metadata').doc('clients').onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data && data.list) {
+                writeJSON(path.join(__dirname, 'clients.json'), data.list);
+                console.log(`[FirestoreSync]: Synced ${data.list.length} clients locally.`);
+            }
+        }
+    }, err => {
+        console.error("Clients metadata listener error:", err);
+        setTimeout(listenToMetadataChanges, 5000);
+    });
+}
+
+let commandsUnsubscribe = null;
+function listenForCommands() {
+    if (commandsUnsubscribe) {
+        try { commandsUnsubscribe(); } catch(e) {}
+    }
+    console.log("Starting real-time listener for cloud commands...");
+    commandsUnsubscribe = db.collection('commands')
+        .where('status', '==', 'pending')
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(async change => {
+                if (change.type === 'added' || change.type === 'modified') {
+                    const cmd = change.doc.data();
+                    if (cmd.type === 'start_bot') {
+                        console.log('[Command]: Received start_bot command');
+                        startBot();
+                        await change.doc.ref.update({ status: 'completed' });
+                    }
+                    else if (cmd.type === 'stop_bot') {
+                        console.log('[Command]: Received stop_bot command');
+                        stopBot();
+                        await change.doc.ref.update({ status: 'completed' });
+                    }
+                    else if (cmd.type === 'send_backup') {
+                        console.log(`[Command]: Received send_backup to ${cmd.phone} for file ${cmd.filePath}`);
+                        if (!client || botStatus !== 'Online') {
+                            console.error('Cannot execute backup command: WhatsApp bot is not online.');
+                            await change.doc.ref.update({ status: 'failed', error: 'WhatsApp bot is offline.' });
+                            return;
+                        }
+                        try {
+                            if (!fs.existsSync(cmd.filePath)) {
+                                throw new Error(`Backup file not found at local path: ${cmd.filePath}`);
+                            }
+                            const media = MessageMedia.fromFilePath(cmd.filePath);
+                            let targetJid = cmd.phone.trim();
+                            if (!targetJid.endsWith('@c.us')) {
+                                targetJid = `${targetJid}@c.us`;
+                            }
+                            const caption = `📦 *نسخة احتياطية لقاعدة البيانات*\n📅 *التاريخ:* ${new Date().toLocaleString('ar-EG')}`;
+                            await client.sendMessage(targetJid, media, { caption });
+                            await change.doc.ref.update({ status: 'completed' });
+                            console.log('[Command]: Backup sent successfully!');
+                        } catch (err) {
+                            console.error('Failed to send backup via WhatsApp:', err);
+                            await change.doc.ref.update({ status: 'failed', error: err.message });
+                        }
+                    }
+                }
+            });
+        }, err => {
+            console.error("Commands listener encountered error:", err);
+            setTimeout(listenForCommands, 5000);
+        });
+}
+
+// Start the Firestore Listeners
 listenForOrderActions();
+listenToMetadataChanges();
+listenForCommands();
+updateFirebaseStatus('Offline');
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running locally at http://localhost:${PORT}`);

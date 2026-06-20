@@ -77,6 +77,16 @@
         </div>
     </div>
 
+    <div class="container mb-3" id="botStatusContainer" style="display: none;">
+        <div class="card p-3 border-0 shadow-sm rounded-4 text-center">
+            <h6 class="fw-bold mb-0">🤖 حالة البوت سحابياً: <span id="webBotStatus">جاري الفحص...</span></h6>
+            <div id="webBotQrWrapper" style="display: none;" class="mt-2 text-center">
+                <p class="text-muted small">يرجى مسح رمز الاستجابة السريع لتفعيل الواتساب:</p>
+                <img id="webBotQrImg" src="" alt="QR Code" style="width: 200px; height: 200px; border: 1px solid #ddd; border-radius: 10px;" />
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Search Bar -->
         <div class="search-container mb-4">
@@ -333,6 +343,42 @@
                 console.error('Failed to sync orders from Firebase:', err);
                 document.getElementById('liveIndicator').className = "badge bg-danger py-2 px-3 rounded-pill";
                 document.getElementById('liveIndicator').innerText = "⚠️ غير متصل";
+            });
+
+            // 3. Sync bot status
+            db.collection('metadata').doc('status').onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const status = data.status || 'Offline';
+                    const qr = data.qr || '';
+                    const statusLabel = document.getElementById('webBotStatus');
+                    const qrWrapper = document.getElementById('webBotQrWrapper');
+                    const qrImg = document.getElementById('webBotQrImg');
+                    const statusContainer = document.getElementById('botStatusContainer');
+
+                    statusContainer.style.display = 'block';
+
+                    if (status === 'Online') {
+                        statusLabel.innerHTML = "<span class='text-success fw-bold'>متصل ومتاح للعملاء ✅</span>";
+                        qrWrapper.style.display = 'none';
+                    } else if (status === 'QR_Ready') {
+                        statusLabel.innerHTML = "<span class='text-warning fw-bold'>في انتظار مسح الرمز 📲</span>";
+                        if (qr) {
+                            qrImg.src = qr;
+                            qrWrapper.style.display = 'block';
+                        } else {
+                            qrWrapper.style.display = 'none';
+                        }
+                    } else if (status === 'Connecting') {
+                        statusLabel.innerHTML = "<span class='text-primary fw-bold'>جاري تحضير المتصفح الخلفي... ⏳</span>";
+                        qrWrapper.style.display = 'none';
+                    } else {
+                        statusLabel.innerHTML = "<span class='text-secondary fw-bold'>متوقف حالياً ❌</span>";
+                        qrWrapper.style.display = 'none';
+                    }
+                }
+            }, err => {
+                console.error('Failed to sync bot status:', err);
             });
         }
 
