@@ -147,26 +147,8 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(lblAccTitle);
 
-            // Fetch local IP for link
-            string accUrl = "http://localhost:5000/";
-            try
-            {
-                var localIPs = DriverPortalServer.GetLocalIPs();
-                if (localIPs != null && localIPs.Count > 0)
-                {
-                    string chosenIP = localIPs[0];
-                    foreach (var ip in localIPs)
-                    {
-                        if (ip.StartsWith("192.168.") || ip.StartsWith("10."))
-                        {
-                            chosenIP = ip;
-                            break;
-                        }
-                    }
-                    accUrl = $"http://{chosenIP}:5000/";
-                }
-            }
-            catch {}
+            // Use permanent cloud URL instead of local IP address
+            string accUrl = "https://checkin-192ab.web.app";
 
             txtAccUrl = new TextBox
             {
@@ -218,7 +200,7 @@ namespace ChickenDist.Forms
 
             Label lblAccTip = new Label
             {
-                Text = "💡 افتح هذا الرابط من موبايل المحاسب (بشرط الاتصال بنفس شبكة الـ Wi-Fi) لاستقبال وتأكيد طلبات الواتساب مباشرة.",
+                Text = "💡 افتح هذا الرابط السحابي من موبايل المحاسب في أي مكان لاستقبال وتأكيد طلبات الواتساب مباشرة.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
@@ -235,8 +217,8 @@ namespace ChickenDist.Forms
             btnToggle.Click += BtnToggle_Click;
             btnPushPrices.Click += BtnPushPrices_Click;
 
-            // Timer setup to poll local server status
-            tmrStatus = new Timer { Interval = 2000 };
+            // Timer setup to poll cloud status (every 10 seconds to avoid 429 Too Many Requests)
+            tmrStatus = new Timer { Interval = 10000 };
             tmrStatus.Tick += TmrStatus_Tick;
             tmrStatus.Start();
 

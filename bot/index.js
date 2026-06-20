@@ -35,6 +35,31 @@ let botStatus = 'Offline'; // Offline, Connecting, QR_Ready, Online
 let latestQrCode = '';
 let client = null;
 
+let clientMappings = {};
+let mappingsUnsubscribe = null;
+
+function listenToClientMappings() {
+    if (mappingsUnsubscribe) {
+        try { mappingsUnsubscribe(); } catch(e) {}
+    }
+    console.log("Starting real-time listener for client mappings...");
+    mappingsUnsubscribe = db.collection('client_mappings').onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+            const id = change.doc.id;
+            const data = change.doc.data();
+            if (change.type === 'added' || change.type === 'modified') {
+                clientMappings[id] = data.phone;
+            } else if (change.type === 'removed') {
+                delete clientMappings[id];
+            }
+        });
+        console.log(`[MappingsSync]: Synced client mappings. Total: ${Object.keys(clientMappings).length}`);
+    }, err => {
+        console.error("Client mappings listener error:", err);
+        setTimeout(listenToClientMappings, 5000);
+    });
+}
+
 // Helper to write bot status to Firestore
 async function updateFirebaseStatus(status, qr = '') {
     try {
@@ -92,6 +117,28 @@ function normalizePhone(phone) {
     return cleaned;
 }
 
+// Helper to construct correct JID (LID or c.us with country code)
+function getJidFromPhone(phone) {
+    if (!phone) return '';
+    const clean = phone.toString().trim();
+    if (clean.endsWith('@c.us') || clean.endsWith('@lid')) {
+        return clean;
+    }
+    if (clean.length > 13 || clean.startsWith('87')) {
+        return `${clean}@lid`;
+    }
+    if (clean.length <= 11 && (clean.startsWith('01') || clean.startsWith('1'))) {
+        let phoneWithCountry = clean;
+        if (clean.startsWith('0')) {
+            phoneWithCountry = '20' + clean.substring(1);
+        } else if (clean.startsWith('1')) {
+            phoneWithCountry = '20' + clean;
+        }
+        return `${phoneWithCountry}@c.us`;
+    }
+    return `${clean}@c.us`;
+}
+
 // Listen to Firestore order changes to send WhatsApp confirmations
 let firestoreUnsubscribe = null;
 function listenForOrderActions() {
@@ -108,18 +155,18 @@ function listenForOrderActions() {
                     const order = change.doc.data();
                     if (order.status === 'Accepted' || order.status === 'Rejected') {
                         if (client && botStatus === 'Online') {
-                            const clientJid = `${order.clientPhone}@c.us`;
+                            const clientJid = getJidFromPhone(order.clientJid || order.clientPhone);
                             let msgText = order.status === 'Accepted' 
                                 ? `🟢 *تم قبول طلبك!* \n\n${order.message || 'سيتم تجهيز طلبك وتوصيله فوراً.'}` 
                                 : `🔴 *تم رفض طلبك!* \n\nالسبب: ${order.message || 'غير متوفر حالياً.'}`;
                             
                             try {
                                 await client.sendMessage(clientJid, msgText);
-                                console.log(`[WhatsApp]: Sent confirmation for order ${order.id} (${order.status})`);
+                                console.log(`[WhatsApp]: Sent confirmation for order ${order.id} (${order.status}) to ${clientJid}`);
                                 // Update document to mark it sent
                                 await change.doc.ref.update({ whatsappStatus: 'sent' });
                             } catch (err) {
-                                console.error(`Failed to send WhatsApp message to ${order.clientPhone}:`, err);
+                                console.error(`Failed to send WhatsApp message to ${order.clientPhone} (${clientJid}):`, err);
                             }
                         } else {
                             console.log(`[WhatsApp]: Bot is offline, cannot send status update for order ${order.id}`);
@@ -226,9 +273,66 @@ function startBot() {
         
         // جلب قائمة العملاء لمطابقة الاسم
         const clients = readJSON('clients.json', []);
+        
+        // 1. Resolve actual phone number from mappings or JID
+        const actualPhone = clientMappings[phone] || phone;
         const cleanPhone = normalizePhone(phone);
-        const matchedClient = clients.find(c => normalizePhone(c.Phone) === cleanPhone);
+        const cleanActualPhone = normalizePhone(actualPhone);
+        
+        // 2. Search by both JID user ID and the resolved phone
+        const matchedClient = clients.find(c => {
+            const cleanCPhone = normalizePhone(c.Phone);
+            return cleanCPhone === cleanPhone || cleanCPhone === cleanActualPhone;
+        });
+        
         const displayName = matchedClient ? matchedClient.ClientName : whatsappPushName;
+        // Display registered phone number if matched, otherwise friendly format of actual resolved phone number
+        const orderPhone = matchedClient ? matchedClient.Phone : actualPhone;
+
+        console.log(`[Message Match]: JID=${from}, Phone=${phone}, MappedPhone=${clientMappings[phone] || 'none'}, ResolvedPhone=${orderPhone}, MatchedName=${displayName}`);
+
+        // Check if user is sending an Egypt mobile number to link/register their account
+        const cleanText = text.replace(/\s+/g, '');
+        const isEgyptPhone = /^(01[0125]\d{8})$/.test(cleanText) || /^(201[0125]\d{8})$/.test(cleanText);
+        
+        if (isEgyptPhone && !matchedClient) {
+            const cleanTargetPhone = normalizePhone(cleanText);
+            const foundInDb = clients.find(c => normalizePhone(c.Phone) === cleanTargetPhone);
+            if (foundInDb) {
+                // Link account to existing client!
+                clientMappings[phone] = foundInDb.Phone;
+                try {
+                    await db.collection('client_mappings').doc(phone).set({
+                        phone: foundInDb.Phone,
+                        name: foundInDb.ClientName,
+                        updatedTime: new Date().toISOString()
+                    });
+                    console.log(`[Mappings]: Mapped LID ${phone} to registered phone ${foundInDb.Phone} (${foundInDb.ClientName})`);
+                    await msg.reply(`✅ تم ربط حساب الواتساب الخاص بك بالعميل المسجل لدينا: *${foundInDb.ClientName}* بنجاح!\nيمكنك الآن كتابة طلبك مباشرة في رسالة (مثال: *5 فراخ و 2 بط*).`);
+                } catch (err) {
+                    console.error('Failed to save mapping to Firestore:', err);
+                    await msg.reply('حدث خطأ أثناء ربط الحساب، يرجى المحاولة مرة أخرى لاحقاً.');
+                }
+                return;
+            } else {
+                // Register LID as a new client mapping!
+                // This lets the accountant see their phone number for communication
+                clientMappings[phone] = cleanText;
+                try {
+                    await db.collection('client_mappings').doc(phone).set({
+                        phone: cleanText,
+                        name: whatsappPushName,
+                        updatedTime: new Date().toISOString()
+                    });
+                    console.log(`[Mappings]: Registered new client LID ${phone} with phone ${cleanText}`);
+                    await msg.reply(`✅ تم تسجيل رقم هاتفك: *${text}* بنجاح كعميل جديد لدينا!\nيمكنك الآن إرسال طلبك مباشرة وسيقوم المحاسب بالتواصل معك على هذا الرقم لتأكيد تفاصيل الطلب.`);
+                } catch (err) {
+                    console.error('Failed to save new client mapping to Firestore:', err);
+                    await msg.reply('حدث خطأ أثناء تسجيل حسابك، يرجى المحاولة مرة أخرى لاحقاً.');
+                }
+                return;
+            }
+        }
 
         // جلب قائمة الأسعار للفحص
         const prices = readJSON('prices.json', []);
@@ -301,7 +405,8 @@ function startBot() {
             const orderId = Date.now().toString();
             const newOrder = {
                 id: orderId,
-                clientPhone: phone,
+                clientPhone: orderPhone,
+                clientJid: from, // Store full JID for replies
                 clientName: displayName,
                 details: text, // كامل الرسالة هي تفاصيل الطلب
                 time: new Date().toISOString(),
@@ -327,7 +432,7 @@ function startBot() {
         }
         // 5️⃣ تحية أو أي رسالة أخرى غير مفهومة -> إرسال القائمة الرئيسية الترحيبية
         else {
-            const welcomeText = `🐓 *أهلاً بك يا ${displayName} في خدمة عملاء موزع الدواجن التلقائية!*
+            let welcomeText = `🐓 *أهلاً بك يا ${displayName} في خدمة عملاء موزع الدواجن التلقائية!*
 
 كيف يمكنني مساعدتك اليوم؟ يرجى اختيار أحد الأرقام التالية أو كتابة الكلمة مباشرة:
 
@@ -335,6 +440,10 @@ function startBot() {
 2️⃣ اكتب طلبك مباشرة بالكمية والصنف 🛒 (مثال: *5 فراخ و 2 بط*).
 3️⃣ اكتب *3* أو *مساعدة* ℹ️ لمعرفة كيفية استخدام البوت.
 4️⃣ اكتب *4* أو *تواصل* 📞 لطلب شراء وتفعيل البوت لمشروعك.`;
+
+            if (!matchedClient) {
+                welcomeText += `\n\n💡 *هل أنت عميل مسجل لدينا؟*\nاكتب *رقم تليفونك المسجل* في رسالة الآن لربط حسابك باسمك الحقيقي وتسهيل تأكيد طلباتك!`;
+            }
 
             await msg.reply(welcomeText);
         }
@@ -442,10 +551,7 @@ app.post('/api/backup', async (req, res) => {
             return res.status(404).json({ error: 'Backup file not found at local path' });
         }
         const media = MessageMedia.fromFilePath(filePath);
-        let targetJid = phone.trim();
-        if (!targetJid.endsWith('@c.us')) {
-            targetJid = `${targetJid}@c.us`;
-        }
+        let targetJid = getJidFromPhone(phone);
         const caption = `📦 *نسخة احتياطية لقاعدة البيانات*\n📅 *التاريخ:* ${new Date().toLocaleString('ar-EG')}`;
         await client.sendMessage(targetJid, media, { caption });
         res.json({ success: true });
@@ -532,10 +638,7 @@ function listenForCommands() {
                                 throw new Error(`Backup file not found at local path: ${cmd.filePath}`);
                             }
                             const media = MessageMedia.fromFilePath(cmd.filePath);
-                            let targetJid = cmd.phone.trim();
-                            if (!targetJid.endsWith('@c.us')) {
-                                targetJid = `${targetJid}@c.us`;
-                            }
+                            let targetJid = getJidFromPhone(cmd.phone);
                             const caption = `📦 *نسخة احتياطية لقاعدة البيانات*\n📅 *التاريخ:* ${new Date().toLocaleString('ar-EG')}`;
                             await client.sendMessage(targetJid, media, { caption });
                             await change.doc.ref.update({ status: 'completed' });
@@ -557,6 +660,7 @@ function listenForCommands() {
 listenForOrderActions();
 listenToMetadataChanges();
 listenForCommands();
+listenToClientMappings();
 
 // Auto-start WhatsApp Bot on startup
 startBot();

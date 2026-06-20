@@ -88,17 +88,45 @@
     </div>
 
     <div class="container">
-        <!-- Search Bar -->
-        <div class="search-container mb-4">
-            <input type="text" id="searchInput" class="form-control form-control-lg search-box" placeholder="🔍 ابحث باسم العميل أو رقم الهاتف...">
+        <!-- Search, Product and Date Filter Bar -->
+        <div class="row g-2 mb-3 px-1">
+            <div class="col-12 col-md-6">
+                <input type="text" id="searchInput" class="form-control search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" placeholder="🔍 ابحث باسم العميل أو رقم الهاتف...">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <select id="productFilter" class="form-select search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" onchange="filterProduct(this.value)">
+                    <option value="all">🔍 تصفية بالصنف (الكل)...</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <input type="date" id="dateFilter" class="form-control search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" onchange="filterDate(this.value)">
+            </div>
         </div>
 
-        <!-- Filters -->
-        <div class="d-flex gap-2 overflow-auto pb-2 mb-3 px-1" style="-webkit-overflow-scrolling: touch;">
+        <!-- Filters Bar (Status & Client Type & Date) -->
+        <div class="d-flex gap-2 overflow-auto pb-2 mb-3 px-1 align-items-center" style="-webkit-overflow-scrolling: touch;">
             <button class="btn btn-sm btn-outline-primary btn-filter active" onclick="filterStatus('all')">الكل</button>
             <button class="btn btn-sm btn-outline-warning btn-filter" onclick="filterStatus('Pending')">المعلقة ⏳</button>
             <button class="btn btn-sm btn-outline-success btn-filter" onclick="filterStatus('Accepted')">المقبولة ✅</button>
             <button class="btn btn-sm btn-outline-danger btn-filter" onclick="filterStatus('Rejected')">المرفوضة ❌</button>
+            
+            <span class="text-muted mx-1">|</span>
+            
+            <button class="btn btn-sm btn-outline-secondary btn-filter-client" id="btnFilterNewClients" onclick="toggleNewClientsFilter()">عملاء جدد فقط ⚪</button>
+            
+            <span class="text-muted mx-1">|</span>
+
+            <button class="btn btn-sm btn-outline-secondary btn-filter-today" id="btnFilterToday" onclick="filterTodayOnly()">حجوزات اليوم فقط 📅</button>
+        </div>
+
+        <!-- Totals Summary Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+            <div class="card-body p-3">
+                <h6 class="fw-bold mb-2">📊 إجمالي مطلوب الأصناف (للطلبات المعروضة):</h6>
+                <div class="row g-2" id="totalsContainer">
+                    <div class="col-12 text-center small opacity-75">لا توجد أصناف مطلوب تجميعها حالياً.</div>
+                </div>
+            </div>
         </div>
 
         <!-- Orders Feed -->
@@ -170,7 +198,11 @@
 
         let allOrders = [];
         let allClients = [];
+        let allPrices = []; // Synced prices/products list
         let activeFilter = 'all';
+        let activeProductFilter = 'all';
+        let activeDateFilter = ''; // YYYY-MM-DD
+        let showOnlyNewClients = false;
         let selectedOrderId = null;
         const myModal = new bootstrap.Modal(document.getElementById('actionModal'));
 
@@ -209,6 +241,74 @@
             return allClients.find(c => normalizePhone(c.Phone) === cleanPhone);
         }
 
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Extracts quantities ordered of each product in the details text
+        function parseQuantities(detailsText, products) {
+            const results = {};
+            if (!detailsText || !products) return results;
+
+            // Clean text for matching
+            const cleanText = detailsText.toLowerCase()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/\s+/g, ' ');
+
+            products.forEach(p => {
+                if (!p.ProductName) return;
+                const prodName = p.ProductName.toLowerCase()
+                    .replace(/[أإآ]/g, 'ا')
+                    .replace(/ة/g, 'ه');
+
+                // Regex 1: number followed by product name
+                const regexBefore = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:كيلو|ك|عد|عدد)?\\s*${escapeRegExp(prodName)}`, 'i');
+                const matchBefore = cleanText.match(regexBefore);
+                if (matchBefore) {
+                    results[p.ProductName] = (results[p.ProductName] || 0) + parseFloat(matchBefore[1]);
+                    return;
+                }
+
+                // Regex 2: product name followed by number
+                const regexAfter = new RegExp(`${escapeRegExp(prodName)}\\s*(\\d+(?:\\.\\d+)?)`, 'i');
+                const matchAfter = cleanText.match(regexAfter);
+                if (matchAfter) {
+                    results[p.ProductName] = (results[p.ProductName] || 0) + parseFloat(matchAfter[1]);
+                }
+            });
+
+            return results;
+        }
+
+        // Calculates and renders summary of quantities required
+        function renderTotals(filteredOrders) {
+            const container = document.getElementById('totalsContainer');
+            const totals = {};
+
+            filteredOrders.forEach(o => {
+                const parsed = parseQuantities(o.details, allPrices);
+                for (const prod in parsed) {
+                    totals[prod] = (totals[prod] || 0) + parsed[prod];
+                }
+            });
+
+            const totalsList = Object.keys(totals).map(prod => {
+                return `
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded-3 text-center" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);">
+                            <div class="small opacity-75 fw-bold" style="font-size: 0.85rem;">${prod}</div>
+                            <h4 class="mb-0 fw-bold" style="font-size: 1.25rem;">${totals[prod]}</h4>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = totalsList || `
+                <div class="col-12 text-center small opacity-75">لا توجد أصناف مطلوب تجميعها حالياً.</div>
+            `;
+        }
+
         // Render orders feed
         function renderOrders() {
             const container = document.getElementById('ordersContainer');
@@ -217,17 +317,42 @@
             let filtered = allOrders.filter(o => {
                 const matchedClient = findClientByPhone(o.clientPhone);
                 const dbName = matchedClient ? matchedClient.ClientName : '';
+                
                 const matchesSearch = o.clientName.toLowerCase().includes(searchVal) || 
                                      dbName.toLowerCase().includes(searchVal) || 
                                      o.clientPhone.includes(searchVal);
-                const matchesFilter = activeFilter === 'all' || o.status === activeFilter;
-                return matchesSearch && matchesFilter;
+                
+                const matchesStatus = activeFilter === 'all' || o.status === activeFilter;
+                
+                const matchesClient = !showOnlyNewClients || !matchedClient;
+                
+                const matchesProduct = activeProductFilter === 'all' || 
+                                       (o.details && o.details.toLowerCase()
+                                           .replace(/[أإآ]/g, 'ا')
+                                           .replace(/ة/g, 'ه')
+                                           .includes(activeProductFilter.toLowerCase()
+                                               .replace(/[أإآ]/g, 'ا')
+                                               .replace(/ة/g, 'ه')));
+                
+                const matchesDate = !activeDateFilter || (() => {
+                    const orderDate = new Date(o.time);
+                    const localYear = orderDate.getFullYear();
+                    const localMonth = String(orderDate.getMonth() + 1).padStart(2, '0');
+                    const localDay = String(orderDate.getDate()).padStart(2, '0');
+                    const formattedOrderDate = `${localYear}-${localMonth}-${localDay}`;
+                    return formattedOrderDate === activeDateFilter;
+                })();
+                
+                return matchesSearch && matchesStatus && matchesClient && matchesProduct && matchesDate;
             });
+
+            // Dynamically render totals panel for the displayed orders
+            renderTotals(filtered);
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5 text-muted">
-                        <p class="fs-5">📭 لا يوجد طلبات حالية</p>
+                        <p class="fs-5">📭 لا يوجد طلبات مطابقة للبحث</p>
                     </div>
                 `;
                 return;
@@ -269,13 +394,75 @@
             }).join('');
         }
 
-        // Filter and Search actions
+        // Filter actions
         function filterStatus(status) {
             activeFilter = status;
             document.querySelectorAll('.btn-filter').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
+            renderOrders();
+        }
+
+        function filterProduct(prod) {
+            activeProductFilter = prod;
+            renderOrders();
+        }
+
+        function filterDate(dateVal) {
+            activeDateFilter = dateVal;
+            updateTodayButtonState();
+            renderOrders();
+        }
+
+        function filterTodayOnly() {
+            const today = new Date();
+            const localYear = today.getFullYear();
+            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const localDay = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${localYear}-${localMonth}-${localDay}`;
+            
+            const dateInput = document.getElementById('dateFilter');
+            if (activeDateFilter === todayStr) {
+                // Toggle off
+                dateInput.value = '';
+                activeDateFilter = '';
+            } else {
+                // Toggle on
+                dateInput.value = todayStr;
+                activeDateFilter = todayStr;
+            }
+            updateTodayButtonState();
+            renderOrders();
+        }
+
+        function updateTodayButtonState() {
+            const btn = document.getElementById('btnFilterToday');
+            const today = new Date();
+            const localYear = today.getFullYear();
+            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const localDay = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${localYear}-${localMonth}-${localDay}`;
+
+            if (activeDateFilter === todayStr) {
+                btn.classList.add('active');
+                btn.className = 'btn btn-sm btn-secondary btn-filter-today';
+            } else {
+                btn.classList.remove('active');
+                btn.className = 'btn btn-sm btn-outline-secondary btn-filter-today';
+            }
+        }
+
+        function toggleNewClientsFilter() {
+            showOnlyNewClients = !showOnlyNewClients;
+            const btn = document.getElementById('btnFilterNewClients');
+            if (showOnlyNewClients) {
+                btn.classList.add('active');
+                btn.className = 'btn btn-sm btn-secondary btn-filter-client';
+            } else {
+                btn.classList.remove('active');
+                btn.className = 'btn btn-sm btn-outline-secondary btn-filter-client';
+            }
             renderOrders();
         }
 
@@ -322,6 +509,17 @@
             }
         }
 
+        function populateProductFilterDropdown() {
+            const select = document.getElementById('productFilter');
+            const prices = allPrices || [];
+            select.innerHTML = '<option value="all">🔍 تصفية بالصنف (الكل)...</option>';
+            prices.forEach(p => {
+                if (p.ProductName) {
+                    select.innerHTML += `<option value="${p.ProductName}">${p.ProductName}</option>`;
+                }
+            });
+        }
+
         // Listen to Firestore real-time updates
         function initFirebaseSync() {
             // 1. Sync clients metadata
@@ -333,6 +531,18 @@
                 }
             }, err => {
                 console.error('Failed to sync clients from Firebase:', err);
+            });
+
+            // 2. Sync prices metadata (to populate product filters and calculations)
+            db.collection('metadata').doc('prices').onSnapshot(doc => {
+                if (doc.exists) {
+                    allPrices = doc.data().list || [];
+                    console.log('Synchronized prices list:', allPrices.length);
+                    populateProductFilterDropdown();
+                    renderOrders();
+                }
+            }, err => {
+                console.error('Failed to sync prices from Firebase:', err);
             });
 
             // 2. Sync orders
@@ -398,7 +608,23 @@
             });
         }
 
-        // Initialize Firebase Synchronizer
+        function initializeDefaultFilters() {
+            const today = new Date();
+            const localYear = today.getFullYear();
+            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const localDay = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${localYear}-${localMonth}-${localDay}`;
+            
+            activeDateFilter = todayStr;
+            const dateInput = document.getElementById('dateFilter');
+            if (dateInput) {
+                dateInput.value = todayStr;
+            }
+            updateTodayButtonState();
+        }
+
+        // Initialize Default Filters & Firebase Synchronizer
+        initializeDefaultFilters();
         initFirebaseSync();
     </script>
 </body>

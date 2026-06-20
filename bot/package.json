@@ -12,6 +12,6 @@
     "firebase": "^12.15.0",
     "localtunnel": "^2.0.2",
     "qrcode": "^1.5.3",
-    "whatsapp-web.js": "^1.25.0"
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js"
   }
 }
