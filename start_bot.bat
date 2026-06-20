@@ -1,9 +1,5 @@
 @echo off
 title ChickenDist WhatsApp Bot
 echo Starting WhatsApp Bot...
-cd /d "%~dp0bot"
-if not exist index.js (
-    cd /d "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\bot"
-)
-node index.js
+powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand UwBlAHQALQBMAG8AYwBhAHQAaQBvAG4AIAAtAFAAYQB0AGgAIAAnAEQAOgBcAEIGNwY5BiAAOgZKBicGMQYgAEgGKgZIBjIGSgY5BlwAQgY3BjkGIAA6BkoGJwYxBiAASAYqBkgGMgZKBjkGXABDAGgAaQBjAGsAZQBuAEQAaQBzAHQAVQBwAGQAYQB0AGUAcwAtAG0AYQBpAG4AXABDAGgAaQBjAGsAZQBuAEQAaQBzAHQAVQBwAGQAYQB0AGUAcwAtAG0AYQBpAG4AXABiAG8AdAAnADsAIABuAG8AZABlACAAaQBuAGQAZQB4AC4AagBzAA==
 pause
