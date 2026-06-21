@@ -1420,6 +1420,7 @@ namespace ChickenDist.Forms
 					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					itemOld.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(itemOld);
 
 					// إضافة السعر المعلق كخيار مستقل
@@ -1439,6 +1440,7 @@ namespace ChickenDist.Forms
 					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					itemPending.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(itemPending);
 				}
 				else
@@ -1459,6 +1461,7 @@ namespace ChickenDist.Forms
 					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(comboItem);
 				}
 			}
@@ -1840,7 +1843,8 @@ namespace ChickenDist.Forms
 				{
 					// استخدام cache — يتم تحديثه عند فتح الشاشة
 					decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var cached3) ? cached3 : 0m;
-					if (result > productStock)
+					// ─── الأصناف الخدمية تتجاوز فحص المخزون ───
+					if (!saleItemDTO.IsService && result > productStock)
 					{
 						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({result:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
@@ -2139,7 +2143,8 @@ namespace ChickenDist.Forms
 				CarModel = product.CarModel,
 				Brand = product.Brand,
 				ShelfLocation = product.ShelfLocation,
-				ProductCode = product.ProductCode
+				ProductCode = product.ProductCode,
+				IsService = product.IsService
 			};
 		}
 
@@ -3914,6 +3919,8 @@ namespace ChickenDist.Forms
 		public decimal PendingQtyThreshold { get; set; } = 0m;
 		public string ProductCode { get; set; } = "";
 		public string InternationalCode { get; set; } = "";
+		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
+		public bool IsService { get; set; } = false;
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

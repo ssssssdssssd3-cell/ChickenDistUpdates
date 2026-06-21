@@ -829,6 +829,8 @@ namespace ChickenDist.DAL
         public string Brand { get; set; } = "";
         public string ShelfLocation { get; set; } = "";
         public string ProductCode { get; set; } = "";
+        /// <summary>صنف خدمة — يُباع بالسالب بدون فحص المخزون</summary>
+        public bool IsService { get; set; } = false;
         /// <summary>نسبة الخصم % على الصنف</summary>
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة الخصم بالجنيه على الصنف</summary>

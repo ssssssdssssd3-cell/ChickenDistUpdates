@@ -221,13 +221,15 @@ namespace ChickenDist.DAL
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.InternationalCode,
-                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode
+                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
+                           COALESCE(p.IsService, 0) AS IsService
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ShelfLocation, p.IsActive, p.InternationalCode,
-                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode
+                           COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
+                           COALESCE(p.IsService, 0) AS IsService
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     ORDER BY p.ProductName";
@@ -245,18 +247,19 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description,
-            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0, string internationalCode = null, bool printLocalBarcode = true)
+            string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0, string internationalCode = null, bool printLocalBarcode = true, bool isService = false)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode) 
-                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb)",
+                    @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService) 
+                      VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
                     DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
                     DbHelper.P("@ic", internationalCode),
-                    DbHelper.P("@plb", printLocalBarcode));
+                    DbHelper.P("@plb", printLocalBarcode),
+                    DbHelper.P("@srv", isService));
             else
             {
                 decimal oldPrice = 0m;
@@ -269,7 +272,7 @@ namespace ChickenDist.DAL
                 DbHelper.Execute(
                     @"UPDATE Products 
                       SET ProductCode=@c,ProductName=@n,Unit=@u,SalePrice=@p,IsActive=@a,PurchasePrice=@pp,MinStockLimit=@msl,Description=@d,
-                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp,InternationalCode=@ic,PrintLocalBarcode=@plb 
+                          PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp,InternationalCode=@ic,PrintLocalBarcode=@plb,IsService=@srv 
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
@@ -277,6 +280,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wp", wholesalePrice), DbHelper.P("@swp", semiWholesalePrice),
                     DbHelper.P("@ic", internationalCode),
                     DbHelper.P("@plb", printLocalBarcode),
+                    DbHelper.P("@srv", isService),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)
@@ -547,6 +551,28 @@ namespace ChickenDist.DAL
                            LEFT JOIN vw_SupplierBalance sb ON s.SupplierID = sb.SupplierID
                            " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
             return DbHelper.Query(sql);
+        }
+
+
+        // ─── فحص التكرار ───
+        /// <summary>هل يوجد مورد آخر بنفس الاسم (لمنع التكرار)</summary>
+        public static bool IsDuplicateName(string name, int currentID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var res = DbHelper.Scalar(
+                "SELECT COUNT(1) FROM Suppliers WHERE SupplierName = @n AND SupplierID != @id",
+                DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentID));
+            return Convert.ToInt32(res) > 0;
+        }
+
+        /// <summary>هل يوجد مورد آخر بنفس رقم الهاتف (لمنع التكرار)</summary>
+        public static bool IsDuplicatePhone(string phone, int currentID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return false;
+            var res = DbHelper.Scalar(
+                "SELECT COUNT(1) FROM Suppliers WHERE Phone = @ph AND SupplierID != @id",
+                DbHelper.P("@ph", phone.Trim()), DbHelper.P("@id", currentID));
+            return Convert.ToInt32(res) > 0;
         }
 
         public static string GetNextSupplierCode()
@@ -829,6 +855,28 @@ namespace ChickenDist.DAL
                 };
             }
             return new ClientFinancialStatus();
+        }
+
+
+        // ─── فحص التكرار ───
+        /// <summary>هل يوجد عميل آخر بنفس الاسم (لمنع التكرار)</summary>
+        public static bool IsDuplicateName(string name, int currentID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var res = DbHelper.Scalar(
+                "SELECT COUNT(1) FROM Clients WHERE ClientName = @n AND ClientID != @id",
+                DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentID));
+            return Convert.ToInt32(res) > 0;
+        }
+
+        /// <summary>هل يوجد عميل آخر بنفس رقم الهاتف (لمنع التكرار)</summary>
+        public static bool IsDuplicatePhone(string phone, int currentID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return false;
+            var res = DbHelper.Scalar(
+                "SELECT COUNT(1) FROM Clients WHERE (Phone = @ph OR Phone2 = @ph) AND ClientID != @id",
+                DbHelper.P("@ph", phone.Trim()), DbHelper.P("@id", currentID));
+            return Convert.ToInt32(res) > 0;
         }
 
         public static string GetNextClientCode()

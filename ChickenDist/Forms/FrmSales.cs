@@ -58,155 +58,127 @@ namespace ChickenDist.Forms
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
+
+			// ─── شريط أدوات البحث — RTL ───
+			// في FlowDirection.RightToLeft: العنصر المضاف أولاً يظهر أقصى اليمين
+			// لذلك نضيف كل مجموعة (حقل + تسمية) في Panel مستقل لضمان ظهور التسمية يمين الحقل
 			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = ScreenHelper.IsSmallScreen ? 90 : 50,
+				Height = ScreenHelper.IsSmallScreen ? 90 : 52,
 				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10),
+				Padding = new Padding(6, 8, 8, 4),
 				WrapContents = true
 			};
-			Label label = new Label
+
+			// دالة مساعدة لإنشاء حاوية (label + control) بشكل صحيح
+			Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 115)
 			{
-				Text = "من:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(10, 16)
-			};
+				inputCtrl.Width = inputWidth;
+				inputCtrl.Height = 26;
+				var lbl = new Label
+				{
+					Text = labelText,
+					AutoSize = true,
+					ForeColor = Theme.TextMain,
+					Margin = new Padding(0, 5, 0, 0),
+					Font = Theme.FontMain
+				};
+				var pnl = new Panel
+				{
+					Height = 36,
+					AutoSize = true,
+					AutoSizeMode = AutoSizeMode.GrowAndShrink,
+					BackColor = Color.Transparent,
+					Margin = new Padding(4, 0, 0, 0),
+					Padding = new Padding(0)
+				};
+				// في اللوحة العادية (LTR): لصق التسمية يسار الحقل، ثم الحقل
+				int lblW = TextRenderer.MeasureText(labelText, Theme.FontMain).Width + 4;
+				lbl.Location = new Point(inputWidth + 4, 5);
+				inputCtrl.Location = new Point(0, 4);
+				pnl.Width = inputWidth + lblW + 4;
+				pnl.Controls.Add(inputCtrl);
+				pnl.Controls.Add(lbl);
+				return pnl;
+			}
+
+			// من التاريخ
 			dtpFrom = new DateTimePicker
 			{
-				Width = 110,
-				Height = 26,
 				Format = DateTimePickerFormat.Short,
-				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
-				Location = new Point(35, 12)
+				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
 			};
-			flowLayoutPanel.Controls.AddRange(new Control[2] { label, dtpFrom });
-			Label label2 = new Label
-			{
-				Text = "إلى:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(155, 16)
-			};
-			dtpTo = new DateTimePicker
-			{
-				Width = 110,
-				Height = 26,
-				Format = DateTimePickerFormat.Short,
-				Location = new Point(185, 12)
-			};
-			flowLayoutPanel.Controls.AddRange(new Control[2] { label2, dtpTo });
-			Label label3 = new Label
-			{
-				Text = "النوع:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(305, 16)
-			};
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 110));
+
+			// إلى التاريخ
+			dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Short };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 110));
+
+			// نوع الفاتورة
 			cboTypeFilter = new ComboBox
 			{
-				Width = 110,
-				Height = 26,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(345, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			cboTypeFilter.Items.AddRange(new object[5] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تقسيط شرعي", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
-			flowLayoutPanel.Controls.AddRange(new Control[2] { label3, cboTypeFilter });
+			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("نوع الفاتورة:", cboTypeFilter, 115));
 
-			Label labelClient = new Label
-			{
-				Text = "العميل:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(465, 16)
-			};
+			// العميل
 			cboClientFilter = new ComboBox
 			{
-				Width = 130,
-				Height = 26,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(515, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
-			{
 				cboClientFilter.Items.Add(new ComboItem((int)row["ClientID"], row["ClientName"].ToString()));
-			}
 			cboClientFilter.DisplayMember = "Text";
 			cboClientFilter.SelectedIndex = 0;
-			cboClientFilter.SelectedIndexChanged += delegate
-			{
-				LoadSales();
-			};
-			flowLayoutPanel.Controls.AddRange(new Control[2] { labelClient, cboClientFilter });
+			cboClientFilter.SelectedIndexChanged += delegate { LoadSales(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 130));
 
-			Label labelProduct = new Label
-			{
-				Text = "بحث صنف:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(655, 16)
-			};
+			// بحث صنف
 			txtProductSearch = new TextBox
 			{
-				Width = 120,
-				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(725, 12)
+				RightToLeft = RightToLeft.Yes
 			};
 			txtProductSearch.KeyDown += (s, e) =>
 			{
-				if (e.KeyCode == Keys.Enter)
-				{
-					LoadSales();
-					e.Handled = true;
-					e.SuppressKeyPress = true;
-				}
+				if (e.KeyCode == Keys.Enter) { LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
 			};
-			flowLayoutPanel.Controls.AddRange(new Control[2] { labelProduct, txtProductSearch });
-			Label label4 = new Label
-			{
-				Text = "بحث:",
-				AutoSize = true,
-				ForeColor = Theme.TextMain,
-				Location = new Point(855, 16)
-			};
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", txtProductSearch, 120));
+
+			// بحث سريع (فلترة محلية)
 			txtSearch = new TextBox
 			{
-				Width = 120,
-				Height = 26,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes,
-				Location = new Point(895, 12)
+				RightToLeft = RightToLeft.Yes
 			};
-			txtSearch.TextChanged += delegate
-			{
-				FilterData();
-			};
-			flowLayoutPanel.Controls.AddRange(new Control[2] { label4, txtSearch });
+			txtSearch.TextChanged += delegate { FilterData(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("🔍 بحث سريع:", txtSearch, 120));
+
+			// زر عرض
 			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
-			btnLoad.Size = new Size(80, 26);
-			btnLoad.Location = new Point(1025, 12);
-			btnLoad.Click += delegate
-			{
-				LoadSales();
-			};
+			btnLoad.Size = new Size(80, 34);
+			btnLoad.Margin = new Padding(4, 0, 0, 0);
+			btnLoad.Click += delegate { LoadSales(); };
 			flowLayoutPanel.Controls.Add(btnLoad);
+
+			// زر فاتورة جديدة
 			btnNewSale = Theme.MakeButton("➕ فاتورة جديدة", Color.FromArgb(40, 150, 80));
-			btnNewSale.Size = new Size(120, 26);
-			btnNewSale.Location = new Point(1115, 12);
+			btnNewSale.Size = new Size(130, 34);
+			btnNewSale.Margin = new Padding(4, 0, 4, 0);
 			btnNewSale.Click += delegate
 			{
 				FrmSale frmSale = new FrmSale();

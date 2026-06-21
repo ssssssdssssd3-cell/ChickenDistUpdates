@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
         private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
         private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
-        private CheckBox chkActive, chkPrintLocalBarcode;
+        private CheckBox chkActive, chkPrintLocalBarcode, chkIsService;
         private Button btnSave, btnCancel;
         private int _selectedID = 0;
 
@@ -80,6 +80,11 @@ namespace ChickenDist.Forms
 
             chkPrintLocalBarcode = new CheckBox { Text = "طباعة باركود محلي", Location = new Point(rx, ry), ForeColor = Theme.TextMain, Checked = true, AutoSize = true };
             pnlDetails.Controls.Add(chkPrintLocalBarcode);
+            ry += 32;
+
+            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(rx, ry), ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = true };
+            chkIsService.Font = new Font(Theme.FontMain, FontStyle.Bold);
+            pnlDetails.Controls.Add(chkIsService);
             ry += 35;
 
             pnlDetails.Controls.Add(new Label { Text = "الوصف:", Location = new Point(rx + 215, ry + 3), Width = 90, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
@@ -184,6 +189,7 @@ namespace ChickenDist.Forms
             txtDescription.Text = dr["Description"].ToString();
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
             chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : true;
+            chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
 
             // تحديد التصنيف في الـ ComboBox
             if (dr["CategoryID"] != DBNull.Value)
@@ -223,13 +229,24 @@ namespace ChickenDist.Forms
             txtDescription.Clear();
             chkActive.Checked = true;
             chkPrintLocalBarcode.Checked = true;
+            chkIsService.Checked = false;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
-            
+
+            // ─── فحص تكرار اسم الصنف ───
+            if (ProductDAL.IsNameExists(txtName.Text.Trim(), _selectedID))
+            {
+                MessageBox.Show($"⚠️ يوجد صنف آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو تعديل الصنف الموجود.",
+                    "تكرار اسم الصنف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtName.Focus();
+                return;
+            }
+
             // تحقق من عدم تكرار الأكواد الدولية
+
             string barcodesInput = txtInternationalCode.Text.Trim();
             if (!string.IsNullOrEmpty(barcodesInput))
             {
@@ -254,7 +271,8 @@ namespace ChickenDist.Forms
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
-                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim(), chkPrintLocalBarcode.Checked);
+                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim(), chkPrintLocalBarcode.Checked,
+                chkIsService.Checked);
             
             if (id > 0) 
             { 

@@ -303,6 +303,28 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم العميل"); return; }
+
+            // ─── فحص تكرار الاسم ───
+            if (ClientDAL.IsDuplicateName(txtName.Text.Trim(), _selectedID))
+            {
+                MessageBox.Show($"⚠️ يوجد عميل آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو البحث عن العميل الموجود.",
+                    "تكرار اسم العميل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtName.Focus();
+                return;
+            }
+
+            // ─── فحص تكرار رقم الهاتف ───
+            if (!string.IsNullOrWhiteSpace(txtPhone.Text))
+            {
+                if (ClientDAL.IsDuplicatePhone(txtPhone.Text.Trim(), _selectedID))
+                {
+                    MessageBox.Show($"⚠️ رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لعميل آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن العميل الموجود.",
+                        "تكرار رقم الهاتف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtPhone.Focus();
+                    return;
+                }
+            }
+
             int? driverID = null;
             if (cmbDriver.SelectedValue != null && cmbDriver.SelectedValue != DBNull.Value)
                 driverID = Convert.ToInt32(cmbDriver.SelectedValue);
@@ -312,6 +334,7 @@ namespace ChickenDist.Forms
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
+
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {

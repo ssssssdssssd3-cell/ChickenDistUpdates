@@ -220,6 +220,14 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD InternationalCode NVARCHAR(100) NULL;
                 END");
 
+                // Add IsService to Products
+                SafeMigrate("Products.IsService", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'IsService')
+                BEGIN
+                    ALTER TABLE Products ADD IsService BIT NOT NULL DEFAULT 0;
+                END");
+
+
                 // Add WastageLoss and WastageLossItems tables
                 SafeMigrate("WastageLoss", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WastageLoss')
