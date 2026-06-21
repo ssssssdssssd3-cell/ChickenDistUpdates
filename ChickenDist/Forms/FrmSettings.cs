@@ -9,6 +9,8 @@ namespace ChickenDist.Forms
     public class FrmSettings : Form
     {
         private TextBox txtCompanyName;
+        private TextBox txtShopLogoPath;
+        private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
@@ -66,6 +68,46 @@ namespace ChickenDist.Forms
             txtCompanyName.Text = AppConfig.CompanyName;
             this.Controls.Add(txtCompanyName);
             y += 40;
+
+            // ── شعار الشركة ──────────────────────────────────────
+            AddLabel("شعار المؤسسة / المحل (يظهر بالطباعة):", 20, ref y, 15);
+            txtShopLogoPath = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtShopLogoPath.Text = AppConfig.ShopLogoPath;
+            this.Controls.Add(txtShopLogoPath);
+
+            var btnBrowseLogo = Theme.MakeButton("📂 تصفح الشعار", 410, y - 1, 110, 28, Color.FromArgb(55, 65, 81));
+            btnBrowseLogo.Font = new Font("Segoe UI", 9f);
+            btnBrowseLogo.Click += (s, e) =>
+            {
+                using (var dlg = new OpenFileDialog())
+                {
+                    dlg.Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files (*.*)|*.*";
+                    dlg.Title = "اختر شعار المؤسسة";
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                        txtShopLogoPath.Text = dlg.FileName;
+                }
+            };
+            this.Controls.Add(btnBrowseLogo);
+            y += 38;
+
+            chkPrintShopLogo = new CheckBox
+            {
+                Text = "طباعة شعار المؤسسة في أعلى الفواتير والريسيت",
+                Location = new Point(20, y),
+                Size = new Size(400, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.PrintShopLogo
+            };
+            this.Controls.Add(chkPrintShopLogo);
+            y += 35;
 
             // ── نمط الطباعة ──────────────────────────────────────
             AddLabel("نمط طباعة الفاتورة:", 20, ref y, 15);
@@ -201,11 +243,13 @@ namespace ChickenDist.Forms
                 "القياسي (Standard)",
                 "العصري (Modern)",
                 "المبسط السريع (Compact)",
-                "الفواتير الاحترافية (Elegant)"
+                "الفواتير الاحترافية (Elegant)",
+                "قالب ميني ماركت (MiniMarket)"
             });
             cboReceiptTemplate.SelectedItem = AppConfig.ReceiptTemplate == "Modern" ? "العصري (Modern)"
                                             : AppConfig.ReceiptTemplate == "Compact" ? "المبسط السريع (Compact)"
                                             : AppConfig.ReceiptTemplate == "Elegant" ? "الفواتير الاحترافية (Elegant)"
+                                            : AppConfig.ReceiptTemplate == "MiniMarket" ? "قالب ميني ماركت (MiniMarket)"
                                             : "القياسي (Standard)";
             if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
             this.Controls.Add(cboReceiptTemplate);
@@ -639,6 +683,8 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
@@ -650,6 +696,7 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
                                           : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
                                           : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : cboReceiptTemplate.SelectedIndex == 4 ? "MiniMarket"
                                           : "Standard";
                 AppConfig.A4Template = cboA4Template.SelectedIndex == 1 ? "Modern"
                                      : cboA4Template.SelectedIndex == 2 ? "Official"

@@ -53,6 +53,8 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 
+		private Button btnPreview;
+
 		private Button btnWhatsApp;
 
 		private Button btnSearchProduct;
@@ -923,6 +925,7 @@ namespace ChickenDist.Forms
 			Button button = Theme.MakeButton("💵 توريد", 0, 0, 100, 32, Theme.Success);
 			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 80, 32, Color.FromArgb(80, 120, 80));
 			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 140, 32, Theme.Primary);
+			btnPreview = Theme.MakeButton("🔍 معاينة الأخيرة", 0, 0, 130, 32, Color.FromArgb(70, 80, 90));
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 130, 32, Color.FromArgb(37, 211, 102));
 			btnSave.Anchor = AnchorStyles.None;
             btnHold.Anchor = AnchorStyles.None;
@@ -930,6 +933,7 @@ namespace ChickenDist.Forms
 			button.Anchor = AnchorStyles.None;
 			btnNew.Anchor = AnchorStyles.None;
 			btnPrint.Anchor = AnchorStyles.None;
+			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
 			btnSave.Click += BtnSave_Click;
             btnHold.Click += BtnHold_Click;
@@ -940,6 +944,7 @@ namespace ChickenDist.Forms
 				ResetForm();
 			};
 			btnPrint.Click += BtnPrint_Click;
+			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
             Label lblHotkeys = new Label
             {
@@ -964,12 +969,13 @@ namespace ChickenDist.Forms
             };
             btnWhatsApp.Margin = new Padding(5, 5, 5, 5);
             btnPrint.Margin = new Padding(5, 5, 5, 5);
+            btnPreview.Margin = new Padding(5, 5, 5, 5);
             btnNew.Margin = new Padding(5, 5, 5, 5);
             button.Margin = new Padding(5, 5, 5, 5);
             btnLoadHold.Margin = new Padding(5, 5, 5, 5);
             btnHold.Margin = new Padding(5, 5, 5, 5);
             btnSave.Margin = new Padding(5, 5, 5, 5);
-            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, button, btnLoadHold, btnHold, btnSave });
+            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, button, btnLoadHold, btnHold, btnSave });
 
 			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, lblCostTitle, lblCostVal, lblProfitTitle, lblProfitVal, pnlFooterButtons, lblHotkeys });
 			base.Controls.Add(pnlItems);
@@ -2564,7 +2570,7 @@ namespace ChickenDist.Forms
 						DialogResult pr = MessageBox.Show(
 							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
 							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID);
+						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID, showPreview: false);
 						this.Close();
 					}
 					else
@@ -2636,7 +2642,7 @@ namespace ChickenDist.Forms
 						DialogResult printResult = MessageBox.Show(
 							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
 							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-						if (printResult == DialogResult.Yes) new FrmPrintSale(num3);
+						if (printResult == DialogResult.Yes) new FrmPrintSale(num3, showPreview: false);
 					}
 					if (!_isCopyMode) ResetForm();
 					else this.Close();
@@ -2865,10 +2871,62 @@ namespace ChickenDist.Forms
 
 			var menu = new ContextMenuStrip();
 			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
-			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt");
+			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: false);
             
 			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
-			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4");
+			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: false);
+
+			menu.Items.Add(itemReceipt);
+			menu.Items.Add(itemA4);
+
+			if (sender is Control ctrl)
+			{
+				menu.Show(ctrl, new Point(0, ctrl.Height));
+			}
+			else
+			{
+				menu.Show(Cursor.Position);
+			}
+		}
+
+		private void BtnPreview_Click(object sender, EventArgs e)
+		{
+			int printID = 0;
+			if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+			{
+				var clientLastObj = DbHelper.Scalar("SELECT TOP 1 SaleID FROM Sales WHERE ClientID = @cid ORDER BY SaleDate DESC, SaleID DESC", DbHelper.P("@cid", ci.ID));
+				if (clientLastObj != null && clientLastObj != DBNull.Value)
+				{
+					printID = Convert.ToInt32(clientLastObj);
+				}
+			}
+
+			if (printID == 0)
+			{
+				printID = _lastSaleID;
+			}
+
+			if (printID == 0)
+			{
+				var lastObj = DbHelper.Scalar("SELECT COALESCE(MAX(SaleID), 0) FROM Sales");
+				if (lastObj != null && lastObj != DBNull.Value)
+				{
+					printID = Convert.ToInt32(lastObj);
+				}
+			}
+
+			if (printID == 0)
+			{
+				MessageBox.Show("لا توجد فواتير مسجلة لمعاينتها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			var menu = new ContextMenuStrip();
+			var itemReceipt = new ToolStripMenuItem("🧾 معاينة ريسيت حراري (Receipt)");
+			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: true);
+            
+			var itemA4 = new ToolStripMenuItem("📄 معاينة فاتورة ورق (A4/A5)");
+			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: true);
 
 			menu.Items.Add(itemReceipt);
 			menu.Items.Add(itemA4);

@@ -586,20 +586,30 @@ namespace ChickenDist.Forms
 		{
 			if (dgSales.SelectedRows.Count == 0)
 			{
-				MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولا\u064b من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
-			itemReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt");
-            
-			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
-			itemA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4");
+			
+			var itemPrintReceipt = new ToolStripMenuItem("🖨️ طباعة ريسيت حراري (Receipt) - مباشر");
+			itemPrintReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: false);
 
-			menu.Items.Add(itemReceipt);
-			menu.Items.Add(itemA4);
+			var itemPreviewReceipt = new ToolStripMenuItem("🔍 معاينة ريسيت حراري (Receipt)");
+			itemPreviewReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: true);
+
+			var itemPrintA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5) - مباشر");
+			itemPrintA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: false);
+
+			var itemPreviewA4 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A4/A5)");
+			itemPreviewA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: true);
+
+			menu.Items.Add(itemPrintReceipt);
+			menu.Items.Add(itemPreviewReceipt);
+			menu.Items.Add(new ToolStripSeparator());
+			menu.Items.Add(itemPrintA4);
+			menu.Items.Add(itemPreviewA4);
 
 			if (sender is Control ctrl)
 			{

@@ -16,13 +16,15 @@ namespace ChickenDist.Forms
         private int _printItemIndex = 0;
         private decimal _runningTotal = 0;
         private string _printFormat;
+        private bool _showPreview;
 
-        public FrmPrintSale(int saleID, string format = null)
+        public FrmPrintSale(int saleID, string format = null, bool showPreview = false)
         {
             _saleID = saleID;
             _printFormat = format ?? AppConfig.DefaultInvoiceFormat;
             if (string.IsNullOrEmpty(_printFormat))
                 _printFormat = "Receipt";
+            _showPreview = showPreview;
 
             LoadData();
             DoPrint();
@@ -82,6 +84,8 @@ namespace ChickenDist.Forms
                 int margin = isReceipt ? 10 : 20;
                 int y = 15;
 
+                DrawShopLogo(g, pageW, ref y, isReceipt);
+
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var right = new StringFormat { Alignment = StringAlignment.Far };
                 var left = new StringFormat { Alignment = StringAlignment.Near };
@@ -94,7 +98,62 @@ namespace ChickenDist.Forms
                     // ==========================================
                     string template = AppConfig.ReceiptTemplate;
                     
-                    if (string.Equals(template, "Modern", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(template, "MiniMarket", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // MiniMarket template: optimized for grocery lists
+                        g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(0, y, pageW, 18), center); y += 18;
+                        g.DrawString("فاتورة مبيعات مبسطة", bold, Brushes.Black, new RectangleF(0, y, pageW, 16), center); y += 16;
+                        g.DrawLine(new Pen(Color.Black, 1.2f), margin, y, pageW - margin, y); y += 6;
+                        
+                        if (_saleRow != null)
+                        {
+                            g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                            g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                            
+                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            g.DrawString($"العميل: {_saleRow["ClientName"]} ({typeLabel})", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 18;
+                        }
+                        
+                        g.DrawLine(new Pen(Color.Black, 1.2f), margin, y, pageW - margin, y); y += 6;
+                        
+                        // Table header
+                        g.DrawString("بيان الأصناف والكميات", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right);
+                        y += 18;
+                        g.DrawLine(Pens.Gray, margin, y, pageW - margin, y); y += 6;
+                        
+                        if (_items != null)
+                        {
+                            while (_printItemIndex < _items.Rows.Count)
+                            {
+                                if (y + 40 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+                                DataRow r = _items.Rows[_printItemIndex];
+                                string prodName = r["ProductName"].ToString();
+                                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+                                
+                                // Line 1: Item Name
+                                g.DrawString(prodName, bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right);
+                                y += 16;
+                                
+                                // Line 2: Qty x Price = Total
+                                g.DrawString($"{qty:0.##} × {price:N2}", normal, Brushes.DimGray, new RectangleF(margin + 80, y, pageW - 2 * margin - 80, 14), right);
+                                g.DrawString(tot.ToString("N2"), bold, Brushes.Black, new RectangleF(margin, y, 80, 14), left);
+                                y += 15;
+                                
+                                _runningTotal += tot;
+                                _printItemIndex++;
+                            }
+                        }
+                        
+                        e.HasMorePages = false;
+                        g.DrawLine(new Pen(Color.Black, 1.2f), margin, y, pageW - margin, y); y += 6;
+                    }
+                    else if (string.Equals(template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
                         // Fill a modern slate gray banner with white text
                         g.FillRectangle(Brushes.DarkSlateGray, margin, y, pageW - 2 * margin, 26);
@@ -862,14 +921,60 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var preview = new PrintPreviewDialog
+            if (_showPreview)
             {
-                Document = pd,
-                Width = isReceipt ? 400 : 650,
-                Height = 700,
-                Text = "معاينة الطباعة"
-            };
-            preview.ShowDialog();
+                var preview = new PrintPreviewDialog
+                {
+                    Document = pd,
+                    Width = isReceipt ? 400 : 650,
+                    Height = 700,
+                    Text = "معاينة الطباعة"
+                };
+                preview.ShowDialog();
+            }
+            else
+            {
+                pd.Print();
+            }
+        }
+
+        private void DrawShopLogo(Graphics g, int pageW, ref int y, bool isReceipt)
+        {
+            if (!AppConfig.PrintShopLogo || string.IsNullOrEmpty(AppConfig.ShopLogoPath))
+                return;
+
+            try
+            {
+                if (System.IO.File.Exists(AppConfig.ShopLogoPath))
+                {
+                    using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                    {
+                        int maxW = isReceipt ? 120 : 150;
+                        int maxH = isReceipt ? 60 : 80;
+                        
+                        int newW = img.Width;
+                        int newH = img.Height;
+
+                        double ratioX = (double)maxW / img.Width;
+                        double ratioY = (double)maxH / img.Height;
+                        double ratio = Math.Min(ratioX, ratioY);
+
+                        if (ratio < 1.0)
+                        {
+                            newW = (int)(img.Width * ratio);
+                            newH = (int)(img.Height * ratio);
+                        }
+
+                        int x = (pageW - newW) / 2;
+                        g.DrawImage(img, x, y, newW, newH);
+                        y += newH + 10;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل طباعة شعار الشركة", ex, "FrmPrintSale");
+            }
         }
 
         private void DrawColHeader(Graphics g, Font f, string text, int x, int w, int y, Brush brush = null)

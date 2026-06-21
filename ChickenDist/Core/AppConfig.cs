@@ -85,6 +85,19 @@ namespace ChickenDist.Core
             set => Set("BarcodeEncoding", value);
         }
 
+        public static string ShopLogoPath
+        {
+            get => Get("ShopLogoPath", "");
+            set => Set("ShopLogoPath", value);
+        }
+
+        public static bool PrintShopLogo
+        {
+            get => Get("PrintShopLogo", "false") == "true";
+            set => Set("PrintShopLogo", value ? "true" : "false");
+        }
+
+
 
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
         {
