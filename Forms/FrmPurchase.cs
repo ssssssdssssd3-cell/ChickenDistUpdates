@@ -49,6 +49,11 @@ namespace ChickenDist.Forms
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
         private int _draftPurchaseID = 0; // 0 = فاتورة جديدة، >0 = مسودة محملة
+        // ── Auto-barcode detection ─────────────────────────────────────────────
+        private System.Windows.Forms.Timer _barcodeTimer;
+        private DateTime _lastKeyTime = DateTime.MinValue;
+        private const int BARCODE_INTERVAL_MS = 50;
+        private const int BARCODE_MIN_LENGTH = 4;
 
         // ══════════════════════════════════════════════════════════════════════
         public FrmPurchase()
@@ -101,6 +106,9 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmPurchase_KeyDown;
             this.FormClosing += FrmPurchase_FormClosing;
+            // ── تهيئة Timer الباركود التلقائي ──
+            _barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            _barcodeTimer.Tick += BarcodeTimer_Tick;
 
             // ══════════════════════════════════════════════════════════════════
             // ── لوحة الرأس — تستخدم TableLayoutPanel للتخطيط المنظم ──────────
@@ -220,6 +228,8 @@ namespace ChickenDist.Forms
             lblProd.Dock = DockStyle.Fill;
             lblProd.TextAlign = ContentAlignment.MiddleRight;
             lblProd.Margin = new Padding(2);
+
+            var pnlProduct = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
             cboProduct = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -227,16 +237,35 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
+            
+            var btnManualAdd = new Button
+            {
+                Text = "➕",
+                Width = 30,
+                Height = 24,
+                BackColor = Color.FromArgb(40, 167, 69),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Left,
+                Margin = new Padding(2, 3, 2, 3)
+            };
+            btnManualAdd.FlatAppearance.BorderSize = 0;
+            btnManualAdd.Click += BtnManualAdd_Click;
+
+            pnlProduct.Controls.Add(cboProduct);
+            pnlProduct.Controls.Add(btnManualAdd);
 
             // إضافة — صف 1
             tbl.Controls.Add(lblNotes,    0, 1);
             tbl.Controls.Add(txtNotes,    1, 1);
             tbl.Controls.Add(lblProd,     2, 1);
-            tbl.Controls.Add(cboProduct,  3, 1);
+            tbl.Controls.Add(pnlProduct,  3, 1);
             tbl.Controls.Add(lblCashBalance, 4, 1);
             tbl.SetColumnSpan(lblCashBalance, 2);
 
             cboProduct.KeyDown += CboProduct_KeyDown;
+            cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect; // اكتشاف الباركود التلقائي
 
             // ── صف 2: المخزن | زر بحث الأصناف ───────────────────────────────────
             var lblWarehouse = MakeLabel("المخزن:", 0, 0);
@@ -605,11 +634,12 @@ namespace ChickenDist.Forms
                 dgItems.EndEdit();
             }
 
-            if      (e.KeyCode == Keys.F2)  { ClearInvoice();          e.Handled = true; }
+            if      (e.KeyCode == Keys.F2)  { ClearInvoice();           e.Handled = true; }
             else if (e.KeyCode == Keys.F5)  { BtnSave_Click(null,null); e.Handled = true; }
             else if (e.KeyCode == Keys.F7)  { BtnHold_Click(null,null); e.Handled = true; }
             else if (e.KeyCode == Keys.F8)  { BtnLoadHold_Click(null,null); e.Handled = true; }
             else if (e.KeyCode == Keys.F12) { cboProduct.Focus();       e.Handled = true; }
+            else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = شاشة البحث
         }
 
         // تنقل بمفتاح Enter داخل الجدول
@@ -800,6 +830,59 @@ namespace ChickenDist.Forms
             return false;
         }
 
+        private void BtnManualAdd_Click(object sender, EventArgs e)
+        {
+            using (var frm = new Form())
+            {
+                frm.Text = "إدخال كود الصنف يدوي";
+                frm.Size = new Size(350, 160);
+                frm.StartPosition = FormStartPosition.CenterParent;
+                frm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                frm.MaximizeBox = false;
+                frm.MinimizeBox = false;
+                frm.RightToLeft = RightToLeft.Yes;
+                frm.RightToLeftLayout = true;
+                frm.BackColor = Theme.BgMain;
+                frm.Font = Theme.FontMain;
+
+                var lbl = new Label { Text = "أدخل كود الصنف أو الباركود الدولي:", Location = new Point(20, 20), Width = 310, AutoSize = false, ForeColor = Theme.TextMain };
+                var txt = new TextBox { Location = new Point(20, 50), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+                
+                var btnOk = Theme.MakeButton("💾 إضافة", 180, 85, 130, 30, Theme.Accent);
+                var btnCancel = Theme.MakeButton("❌ إلغاء", 20, 85, 130, 30, Color.FromArgb(100, 110, 120));
+
+                btnOk.Click += (s, ev) => { frm.DialogResult = DialogResult.OK; frm.Close(); };
+                btnCancel.Click += (s, ev) => { frm.Close(); };
+
+                frm.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
+                frm.AcceptButton = btnOk;
+
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    string code = txt.Text.Trim();
+                    if (!string.IsNullOrEmpty(code))
+                    {
+                        var dt = ProductDAL.FindByCode(code);
+                        if (dt.Rows.Count > 0)
+                        {
+                            var row = dt.Rows[0];
+                            int productID = Convert.ToInt32(row["ProductID"]);
+                            string prodCode = row["ProductCode"].ToString();
+                            string prodName = row["ProductName"].ToString();
+                            decimal purchasePrice = Convert.ToDecimal(row["PurchasePrice"] == DBNull.Value ? 0 : row["PurchasePrice"]);
+                            decimal salePrice = Convert.ToDecimal(row["SalePrice"] == DBNull.Value ? 0 : row["SalePrice"]);
+                            
+                            AddProductToGrid(productID, prodCode, prodName, 1.00m, purchasePrice, 0m, salePrice);
+                        }
+                        else
+                        {
+                            MessageBox.Show("لم يتم العثور على الصنف!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+        }
+
         private void CboProduct_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(cboProduct.Text))
@@ -882,6 +965,89 @@ namespace ChickenDist.Forms
                         _isScanningBarcode = false;
                     }
                     return;
+                }
+            }
+        }
+
+        // ── الاكتشاف التلقائي للباركود ──────────────────────────────────────
+        private void CboProduct_KeyPress_BarcodeDetect(object sender, KeyPressEventArgs e)
+        {
+            var now = DateTime.Now;
+            var interval = (now - _lastKeyTime).TotalMilliseconds;
+            _lastKeyTime = now;
+            _barcodeTimer.Stop();
+            if (interval <= BARCODE_INTERVAL_MS || interval == (DateTime.Now - DateTime.MinValue).TotalMilliseconds)
+                _barcodeTimer.Start();
+        }
+
+        private void BarcodeTimer_Tick(object sender, EventArgs e)
+        {
+            _barcodeTimer.Stop();
+            string text = cboProduct.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(text) || text.Length < BARCODE_MIN_LENGTH) return;
+
+            var res = BarcodeParser.Parse(text);
+
+            List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+            if (allItems == null)
+            {
+                allItems = new List<ComboItem>();
+                foreach (var item in cboProduct.Items)
+                    if (item is ComboItem ci) allItems.Add(ci);
+            }
+
+            ComboItem foundItem = null;
+
+            if (res.IsScaleBarcode)
+            {
+                _pendingBarcodeWeight = res.WeightOrPrice;
+                foreach (var ci in allItems)
+                {
+                    if (ci.ID > 0 && ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+                    {
+                        foundItem = ci;
+                        break;
+                    }
+                }
+                if (foundItem == null) { _pendingBarcodeWeight = null; return; }
+            }
+            else
+            {
+                foreach (var ci in allItems)
+                {
+                    if (ci.ID > 0 &&
+                        (string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
+                         MatchBarcode(ci.InternationalCode, text)))
+                    {
+                        foundItem = ci;
+                        break;
+                    }
+                }
+            }
+
+            if (foundItem != null)
+            {
+                decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
+                _pendingBarcodeWeight = null;
+                _pendingScaleWeight = null;
+
+                _isScanningBarcode = true;
+                try
+                {
+                    decimal price = foundItem.Extra;
+                    decimal salePrice = foundItem.Price;
+                    AddProductToGrid(foundItem.ID, foundItem.ProductCode, foundItem.Text, qtyToAdd, price, 0m, salePrice);
+
+                    cboProduct.Text = "";
+                    cboProduct.Items.Clear();
+                    cboProduct.Items.AddRange(allItems.ToArray());
+                    cboProduct.SelectedIndex = 0;
+                    cboProduct.Focus();
+                }
+                finally
+                {
+                    _isScanningBarcode = false;
                 }
             }
         }

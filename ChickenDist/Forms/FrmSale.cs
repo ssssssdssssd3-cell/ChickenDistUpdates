@@ -89,6 +89,11 @@ namespace ChickenDist.Forms
         private bool _isCopyMode = false;
         private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
+        // ── Auto-barcode detection ─────────────────────────────────────────────
+        private System.Windows.Forms.Timer _barcodeTimer;
+        private DateTime _lastKeyTime = DateTime.MinValue;
+        private const int BARCODE_INTERVAL_MS = 50;
+        private const int BARCODE_MIN_LENGTH = 4;
 		private Button btnTierRetail;
 		private Button btnTierSemi;
 		private Button btnTierWholesale;
@@ -97,6 +102,7 @@ namespace ChickenDist.Forms
 		private ComboBox cboSafeAccount;
 		private Label lblSafeAccount;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
+		private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
 		private Label lblCratesOut;
 		private NumericUpDown nudCratesOut;
 		private Label lblCratesIn;
@@ -145,6 +151,9 @@ namespace ChickenDist.Forms
             KeyPreview = true;
             this.KeyDown += FrmSale_KeyDown;
             this.FormClosing += FrmSale_FormClosing;
+            // ── تهيئة Timer الباركود التلقائي ──────────────────────────────
+            _barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            _barcodeTimer.Tick += BarcodeTimer_Tick;
 			Panel panel = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -364,6 +373,7 @@ namespace ChickenDist.Forms
 			};
 			SetupSearchableCombo(cboProduct);
 			cboProduct.KeyDown += CboProduct_KeyDown;
+			cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect; // اكتشاف الباركود التلقائي
 
 			btnSearchProduct = new Button
 			{
@@ -380,8 +390,24 @@ namespace ChickenDist.Forms
 			btnSearchProduct.FlatAppearance.BorderSize = 0;
 			btnSearchProduct.Click += BtnSearchProduct_Click;
 
+			var btnManualAdd = new Button
+			{
+				Text = "➕",
+				Width = 35,
+				Height = 28,
+				BackColor = Color.FromArgb(40, 167, 69),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+			btnManualAdd.FlatAppearance.BorderSize = 0;
+			btnManualAdd.Click += BtnManualAdd_Click;
+
 			pnlProduct.Controls.Add(cboProduct);
 			pnlProduct.Controls.Add(btnSearchProduct);
+			pnlProduct.Controls.Add(btnManualAdd);
 
 			// Background initialization to prevent NullReferenceException:
 			nudQty = new NumericUpDown { Value = 1m };
@@ -614,6 +640,14 @@ namespace ChickenDist.Forms
 				EnableHeadersVisualStyles = false,
 				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 			};
+			// عمود إدخال الكود (أول عمود - قابل للكتابة مباشرة)
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name       = "CodeEntry",
+				HeaderText = "كود الصنف",
+				ReadOnly   = false,
+				FillWeight = 55f
+			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ProductName",
@@ -717,8 +751,26 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(dataGridViewColumn);
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
-            dgItems.RowsAdded += (s, e) => _isDirty = true;
-            dgItems.RowsRemoved += (s, e) => _isDirty = true;
+			dgItems.RowsAdded   += (s, e) => _isDirty = true;
+			dgItems.RowsRemoved += (s, e) => _isDirty = true;
+			// سهم لأسفل في آخر سطر → يفتح سطر إدخال كود جديد | Insert = نفس الشيء
+			dgItems.KeyDown += (s, ke) =>
+			{
+				if (ke.KeyCode == Keys.Down && dgItems.CurrentCell != null)
+				{
+					int lastReal = _items.Count - 1;
+					if (dgItems.CurrentCell.RowIndex >= lastReal && _pendingRowIdx < 0)
+					{
+						ke.Handled = true;
+						AddNewCodeRow();
+					}
+				}
+				else if (ke.KeyCode == Keys.Insert)
+				{
+					ke.Handled = true;
+					AddNewCodeRow();
+				}
+			};
 			pnlItems.Controls.Add(dgItems);
 
 			// ── زر تخصيص الأعمدة ⚙️ (يظهر في زاوية الجدول) ─────────────────────
@@ -948,14 +1000,20 @@ namespace ChickenDist.Forms
                 }
             }
 
-			if (e.KeyCode == Keys.F2) { btnNew.PerformClick(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F5) { btnSave.PerformClick(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F9) { btnPrint.PerformClick(); e.Handled = true; }
+			if      (e.KeyCode == Keys.F2)  { btnNew.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F9)  { btnPrint.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
+			if (keyData == Keys.Insert)
+			{
+				AddNewCodeRow();
+				return true;
+			}
 			if (keyData == Keys.Enter)
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
@@ -1039,6 +1097,86 @@ namespace ChickenDist.Forms
 					return true;
 			}
 			return false;
+		}
+
+		// ── اكتشاف الباركود التلقائي ───────────────────────────────────────
+		private void CboProduct_KeyPress_BarcodeDetect(object sender, KeyPressEventArgs e)
+		{
+			var now = DateTime.Now;
+			var interval = (now - _lastKeyTime).TotalMilliseconds;
+			_lastKeyTime = now;
+			_barcodeTimer.Stop();
+			if (interval <= BARCODE_INTERVAL_MS || interval == (DateTime.Now - DateTime.MinValue).TotalMilliseconds)
+				_barcodeTimer.Start();
+		}
+
+		private void BarcodeTimer_Tick(object sender, EventArgs e)
+		{
+			_barcodeTimer.Stop();
+			string text = cboProduct.Text?.Trim();
+			if (string.IsNullOrWhiteSpace(text) || text.Length < BARCODE_MIN_LENGTH) return;
+
+			var res = BarcodeParser.Parse(text);
+
+			List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+			if (allItems == null)
+			{
+				allItems = new List<ComboItem>();
+				foreach (var item in cboProduct.Items)
+					if (item is ComboItem ci) allItems.Add(ci);
+			}
+
+			ComboItem foundItem = null;
+
+			if (res.IsScaleBarcode)
+			{
+				_pendingBarcodeWeight = res.WeightOrPrice;
+				foreach (var ci in allItems)
+				{
+					if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
+					{
+						foundItem = ci;
+						break;
+					}
+				}
+				if (foundItem == null) { _pendingBarcodeWeight = null; return; }
+			}
+			else
+			{
+				foreach (var ci in allItems)
+				{
+					if (ci.ID > 0 &&
+						(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
+						 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
+						 MatchBarcode(ci.InternationalCode, text)))
+					{
+						foundItem = ci;
+						break;
+					}
+				}
+			}
+
+			if (foundItem != null)
+			{
+				decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
+				_pendingBarcodeWeight = null;
+				_pendingScaleWeight = null;
+
+				_isScanningBarcode = true;
+				try
+				{
+					AddOrUpdateProduct(foundItem.ID, qtyToAdd);
+					cboProduct.Text = "";
+					cboProduct.Items.Clear();
+					cboProduct.Items.AddRange(allItems.ToArray());
+					cboProduct.SelectedIndex = 0;
+					cboProduct.Focus();
+				}
+				finally
+				{
+					_isScanningBarcode = false;
+				}
+			}
 		}
 
 		private Label MakeLabel(string text, int x, int y)
@@ -1560,6 +1698,38 @@ namespace ChickenDist.Forms
 			}
 		}
 
+		private void BtnManualAdd_Click(object sender, EventArgs e)
+		{
+			AddNewCodeRow();
+		}
+
+		/// <summary>يضيف سطراً فارغاً في الجدول ويضع الكيرسور على عمود كود الصنف مباشرة</summary>
+		private void AddNewCodeRow()
+		{
+			// إزالة سطر الكود المعلق السابق إذا كان فارغاً
+			if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+			{
+				var prevCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+				if (prevCell.Value == null || string.IsNullOrEmpty(prevCell.Value.ToString()))
+					dgItems.Rows.RemoveAt(_pendingRowIdx);
+			}
+
+			// إضافة سطر فارغ جديد
+			_pendingRowIdx = dgItems.Rows.Add();
+			// تلوين السطر الجديد لتمييزه
+			dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(30, 120, 190, 80);
+
+			// الانتقال لخلية الكود في السطر الجديد
+			try
+			{
+				dgItems.ClearSelection();
+				dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+				dgItems.BeginEdit(true);
+				dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
+			}
+			catch { }
+		}
+
 		private void SelectProductByID(int prodID, decimal price)
 		{
 			for (int i = 0; i < cboProduct.Items.Count; i++)
@@ -1612,6 +1782,47 @@ namespace ChickenDist.Forms
 
 		private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
 		{
+			// معالجة خلية كود الصنف (السطر المعلق)
+			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CodeEntry")
+			{
+				string code = dgItems.Rows[e.RowIndex].Cells["CodeEntry"].Value?.ToString()?.Trim() ?? "";
+				int rowIdx  = e.RowIndex;
+				this.BeginInvoke((MethodInvoker)delegate
+				{
+					if (string.IsNullOrEmpty(code))
+					{
+						// كود فارغ → حذف السطر المعلق
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							dgItems.Rows.RemoveAt(rowIdx);
+						_pendingRowIdx = -1;
+						return;
+					}
+					var dt = ProductDAL.FindByCode(code);
+					if (dt.Rows.Count > 0)
+					{
+						int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+						// حذف السطر المعلق ثم إضافة الصنف الحقيقي
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							dgItems.Rows.RemoveAt(rowIdx);
+						_pendingRowIdx = -1;
+						AddOrUpdateProduct(productID, 1.00m);
+						// فتح سطر جديد للإدخال التالي
+						AddNewCodeRow();
+					}
+					else
+					{
+						MessageBox.Show("❌ لم يتم العثور على صنف بالكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						// إعادة التركيز على خلية الكود
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+						{
+							dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
+							dgItems.BeginEdit(true);
+						}
+					}
+				});
+				return;
+			}
+
 			if (e.RowIndex < 0 || e.RowIndex >= _items.Count)
 			{
 				return;
@@ -1713,11 +1924,13 @@ namespace ChickenDist.Forms
 
 		private void RefreshGrid()
 		{
+			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
 			dgItems.Rows.Clear();
 			foreach (SaleItemDTO item in _items)
 			{
 				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
+					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
 					item.ProductName,
 					item.PartNumber,
 					item.CarModel,
@@ -1732,6 +1945,8 @@ namespace ChickenDist.Forms
 					item.PurchasePrice.ToString("F2"),
 					costTotal.ToString("F2")
 				);
+				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
+				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
                 
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
                 if (item.MinStockLimit > 0)
@@ -1918,7 +2133,8 @@ namespace ChickenDist.Forms
 				PartNumber = product.PartNumber,
 				CarModel = product.CarModel,
 				Brand = product.Brand,
-				ShelfLocation = product.ShelfLocation
+				ShelfLocation = product.ShelfLocation,
+				ProductCode = product.ProductCode
 			};
 		}
 

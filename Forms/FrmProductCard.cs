@@ -226,6 +226,22 @@ namespace ChickenDist.Forms
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
             
+            // تحقق من عدم تكرار الأكواد الدولية
+            string barcodesInput = txtInternationalCode.Text.Trim();
+            if (!string.IsNullOrEmpty(barcodesInput))
+            {
+                string[] barcodes = barcodesInput.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var bc in barcodes)
+                {
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _selectedID);
+                    if (owner != null)
+                    {
+                        MessageBox.Show($"تعارض: الكود \"{bc}\" مسجَّل بالفعل لصنف بكود محلي: {owner}", "تعارض كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+
             int? categoryID = null;
             if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
             {
@@ -251,7 +267,7 @@ namespace ChickenDist.Forms
 
         private void BtnMultiBarcode_Click(object sender, EventArgs e)
         {
-            using (var dlg = new FrmMultiBarcodes(txtInternationalCode.Text))
+            using (var dlg = new FrmMultiBarcodes(txtInternationalCode.Text, _selectedID))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
@@ -265,12 +281,14 @@ namespace ChickenDist.Forms
     {
         private TextBox[] txtBarcodes = new TextBox[5];
         private Button btnOk, btnCancel;
+        private int _productID;
         public string ResultBarcodes { get; private set; }
 
-        public FrmMultiBarcodes(string existingBarcodes)
+        public FrmMultiBarcodes(string existingBarcodes, int productID = 0)
         {
+            _productID = productID;
             this.Text = "إدارة الأكواد الدولية (الباركود) - بحد أقصى 5";
-            this.Size = new Size(360, 320);
+            this.Size = new Size(380, 320);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -282,42 +300,54 @@ namespace ChickenDist.Forms
 
             int y = 20;
             string[] parts = (existingBarcodes ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             for (int i = 0; i < 5; i++)
             {
-                this.Controls.Add(new Label { Text = $"كود دولي {i + 1}:", Location = new Point(230, y + 3), AutoSize = true, ForeColor = Theme.TextMain });
-                txtBarcodes[i] = new TextBox 
-                { 
-                    Location = new Point(20, y), 
-                    Width = 200, 
-                    BackColor = Theme.BgInput, 
-                    ForeColor = Theme.TextMain, 
-                    BorderStyle = BorderStyle.FixedSingle 
+                this.Controls.Add(new Label { Text = $"كود دولي {i + 1}:", Location = new Point(250, y + 3), AutoSize = true, ForeColor = Theme.TextMain });
+                txtBarcodes[i] = new TextBox
+                {
+                    Location = new Point(20, y),
+                    Width = 220,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    BorderStyle = BorderStyle.FixedSingle
                 };
                 if (i < parts.Length)
-                {
                     txtBarcodes[i].Text = parts[i].Trim();
-                }
                 this.Controls.Add(txtBarcodes[i]);
                 y += 40;
             }
 
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgCard };
-            btnOk = Theme.MakeButton("💾 حفظ", 180, 12, 140, 36, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 12, 140, 36, Color.FromArgb(100, 110, 120));
+            btnOk     = Theme.MakeButton("💾 حفظ",   190, 12, 150, 36, Theme.Accent);
+            btnCancel = Theme.MakeButton("❌ إلغاء", 20,  12, 150, 36, Color.FromArgb(100, 110, 120));
 
             btnOk.Click += (s, e) =>
             {
-                var list = new System.Collections.Generic.List<string>();
+                var newList = new System.Collections.Generic.List<string>();
                 for (int i = 0; i < 5; i++)
                 {
                     string barcode = txtBarcodes[i].Text.Trim();
-                    if (!string.IsNullOrEmpty(barcode))
+                    if (string.IsNullOrEmpty(barcode)) continue;
+
+                    // تحقق تكرار داخل القائمة نفسها
+                    if (newList.Contains(barcode))
                     {
-                        list.Add(barcode);
+                        MessageBox.Show($"تكرار: الكود \"{barcode}\" مدخل أكثر من مرة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
+
+                    // تحقق وجوده في صنف آخر
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(barcode, _productID);
+                    if (owner != null)
+                    {
+                        MessageBox.Show($"تعارض: الكود \"{barcode}\" مسجَّل بالفعل لصنف بكود محلي: {owner}", "تعارض كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    newList.Add(barcode);
                 }
-                ResultBarcodes = string.Join(",", list);
+                ResultBarcodes = string.Join(",", newList);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };

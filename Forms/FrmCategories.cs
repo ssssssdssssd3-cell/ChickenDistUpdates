@@ -125,6 +125,7 @@ namespace ChickenDist.Forms
 
             this.Controls.Add(split);
             Theme.ApplyFormRTL(this);
+            this.RightToLeftLayout = false; // تعطيل الانعكاس لتجنب قص اللوحة اليمنى عند التضمين كابن
         }
 
         private void LoadCategories()

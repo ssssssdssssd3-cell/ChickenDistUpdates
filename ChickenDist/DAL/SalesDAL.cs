@@ -828,6 +828,7 @@ namespace ChickenDist.DAL
         public string CarModel { get; set; } = "";
         public string Brand { get; set; } = "";
         public string ShelfLocation { get; set; } = "";
+        public string ProductCode { get; set; } = "";
         /// <summary>نسبة الخصم % على الصنف</summary>
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة الخصم بالجنيه على الصنف</summary>

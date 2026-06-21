@@ -40,7 +40,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = $"🏷️ طباعة باركود أصناف الفاتورة: {_purchaseCode}";
-            this.Size = new Size(750, 560);
+            this.Size = new Size(750, 610);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;

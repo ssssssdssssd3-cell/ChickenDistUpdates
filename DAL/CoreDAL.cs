@@ -520,6 +520,20 @@ namespace ChickenDist.DAL
                 DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentProductID));
             return Convert.ToInt32(res) > 0;
         }
+
+        public static string GetOwnerOfInternationalBarcode(string barcode, int currentProductID)
+        {
+            if (string.IsNullOrWhiteSpace(barcode)) return null;
+            var res = DbHelper.Scalar(
+                @"SELECT TOP 1 ProductCode FROM Products 
+                  WHERE ProductID != @id AND (
+                      ProductCode = @bc OR 
+                      InternationalCode = @bc OR 
+                      ',' + InternationalCode + ',' LIKE '%,' + @bc + ',%'
+                  )", 
+                DbHelper.P("@bc", barcode.Trim()), DbHelper.P("@id", currentProductID));
+            return res != null && res != DBNull.Value ? res.ToString() : null;
+        }
     }
 
     // =================== Supplier DAL ===================
