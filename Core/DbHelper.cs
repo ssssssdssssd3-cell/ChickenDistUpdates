@@ -641,6 +641,14 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlProductsPartsFields);
 
+                // 4.1. إضافة حقل طباعة الباركود المحلي PrintLocalBarcode لجدول الأصناف Products
+                string sqlProductsPrintBarcodeField = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PrintLocalBarcode')
+                BEGIN
+                    ALTER TABLE Products ADD PrintLocalBarcode BIT NOT NULL DEFAULT 1;
+                END";
+                Execute(sqlProductsPrintBarcodeField);
+
                 // 5. إضافة معرف المخزن WarehouseID لجداول الحركات وربطه
                 string sqlAddWarehouseID = @"
                 -- Purchases

@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "تسجيل الدخول - " + AppConfig.CompanyName;
+            this.Text = "تسجيل الدخول - " + AppConfig.CompanyName + " | الإصدار: " + UpdateManager.CurrentVersion;
             this.Size = new Size(480, 610);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;

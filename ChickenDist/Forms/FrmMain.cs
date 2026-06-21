@@ -145,6 +145,7 @@ namespace ChickenDist.Forms
 
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
+                    ("🏢 التصنيفات والأقسام", "Products",         (Action)(() => NavigateTo(new FrmCategories()))),
                     ("📥 استيراد الأصناف",   "Products",          (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
@@ -158,8 +159,14 @@ namespace ChickenDist.Forms
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
                     ("📢 العملاء الرواكد", "Clients",   (Action)(() => NavigateTo(new FrmInactiveClients()))),
-                    ("🤝 الموردين",  "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
+                }),
+
+                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
+                    ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
+                    ("📊 كشف حساب مورد", "Suppliers", (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد", "Suppliers", (Action)(() => OpenSupplierPaymentSelector())),
+                    ("⚖️ تسوية أرصدة الموردين", "Suppliers", (Action)(() => OpenSupplierAdjustmentSelector())),
                 }),
 
                 ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
@@ -292,6 +299,249 @@ namespace ChickenDist.Forms
             // النسخ الاحتياطي التلقائي عند الخروج
             BackupManager.AutoBackupOnExit();
             base.OnFormClosed(e);
+        }
+
+        private void OpenSupplierStatementSelector()
+        {
+            try
+            {
+                DataTable dt = SupplierDAL.GetAll(true);
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا يوجد موردين مسجلين حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var dlg = new Form())
+                {
+                    dlg.Text = "📊 اختر المورد لعرض كشف الحساب";
+                    dlg.Size = new Size(350, 180);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.MaximizeBox = false; dlg.MinimizeBox = false;
+                    dlg.RightToLeft = RightToLeft.Yes;
+                    dlg.BackColor = Theme.BgMain;
+                    dlg.Font = Theme.FontMain;
+
+                    var lbl = new Label { Text = "اختر المورد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                    var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                    foreach (DataRow r in dt.Rows)
+                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], r["SupplierName"].ToString()));
+                    cbo.DisplayMember = "Text";
+                    cbo.SelectedIndex = 0;
+
+                    var btnOk = Theme.MakeButton("🔍 عرض الكشف", 180, 90, 130, 32, Theme.Accent);
+                    btnOk.Click += (senderDlg, eDlg) => {
+                        if (cbo.SelectedItem is ComboItem ci)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            new FrmSupplierStatement(ci.ID, ci.Text).ShowDialog(this);
+                        }
+                    };
+
+                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ أثناء فتح شاشة كشف حساب المورد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenSupplierPaymentSelector()
+        {
+            try
+            {
+                DataTable dt = SupplierDAL.GetAll(true);
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا يوجد موردين مسجلين حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var dlg = new Form())
+                {
+                    dlg.Text = "💸 صرف نقدي للمورد";
+                    dlg.Size = new Size(350, 180);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.MaximizeBox = false; dlg.MinimizeBox = false;
+                    dlg.RightToLeft = RightToLeft.Yes;
+                    dlg.BackColor = Theme.BgMain;
+                    dlg.Font = Theme.FontMain;
+
+                    var lbl = new Label { Text = "اختر المورد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                    var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                    foreach (DataRow r in dt.Rows)
+                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], r["SupplierName"].ToString()));
+                    cbo.DisplayMember = "Text";
+                    cbo.SelectedIndex = 0;
+
+                    var btnOk = Theme.MakeButton("💸 صرف نقدي", 180, 90, 130, 32, Theme.Accent);
+                    btnOk.Click += (senderDlg, eDlg) => {
+                        if (cbo.SelectedItem is ComboItem ci)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            ShowSupplierPaymentDialog(ci.ID, ci.Text);
+                        }
+                    };
+
+                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ShowSupplierPaymentDialog(int supplierID, string supplierName)
+        {
+            try
+            {
+                decimal currentBalance = 0;
+                DataTable dt = SupplierDAL.GetAll();
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (Convert.ToInt32(r["SupplierID"]) == supplierID)
+                    {
+                        currentBalance = Convert.ToDecimal(r["Balance"]);
+                        break;
+                    }
+                }
+
+                var dlg = new Form
+                {
+                    Text = "💸 صرف نقدي للمورد - " + supplierName,
+                    Size = new Size(420, 300),
+                    StartPosition = FormStartPosition.CenterParent,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    MaximizeBox = false, MinimizeBox = false,
+                    RightToLeft = RightToLeft.Yes,
+                    RightToLeftLayout = true,
+                    BackColor = Theme.BgMain,
+                    Font = Theme.FontMain
+                };
+
+                int dy = 18;
+                dlg.Controls.Add(new Label
+                {
+                    Text = "المورد: " + supplierName,
+                    Location = new Point(10, dy), Width = 380,
+                    ForeColor = Theme.TextMain,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                }); dy += 30;
+
+                dlg.Controls.Add(new Label
+                {
+                    Text = $"الرصيد الحالي: {currentBalance:N2} ج",
+                    Location = new Point(10, dy), Width = 380,
+                    ForeColor = Theme.Accent,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                }); dy += 36;
+
+                dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+                var nudAmt = new NumericUpDown
+                {
+                    Location = new Point(10, dy), Width = 185,
+                    Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2,
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                };
+                dlg.Controls.Add(nudAmt); dy += 40;
+
+                dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+                var txtNote = new TextBox
+                {
+                    Location = new Point(10, dy), Width = 185,
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                    Text = "سداد جزء من المديونية"
+                };
+                dlg.Controls.Add(txtNote); dy += 40;
+
+                var btnOk     = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 175, 38, Color.FromArgb(140, 80, 0));
+                var btnCancel = Theme.MakeButton("❌ إلغاء",        10,  dy, 120, 38, Color.FromArgb(100, 40, 40));
+                btnOk.Font    = new Font("Segoe UI", 10, FontStyle.Bold);
+
+                btnOk.Click += (s2, e2) =>
+                {
+                    if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                    try
+                    {
+                        string code = SupplierDAL.AddSupplierPayment(supplierID, nudAmt.Value, txtNote.Text.Trim());
+                        MessageBox.Show(
+                            $"✅ تم الصرف بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج\nالمورد: {supplierName}",
+                            "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        dlg.DialogResult = DialogResult.OK;
+                        dlg.Close();
+                    }
+                    catch { }
+                };
+                btnCancel.Click += (s2, e2) => dlg.Close();
+
+                dlg.Controls.Add(btnOk);
+                dlg.Controls.Add(btnCancel);
+                dlg.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenSupplierAdjustmentSelector()
+        {
+            try
+            {
+                DataTable dt = SupplierDAL.GetAll(true);
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا يوجد موردين مسجلين حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var dlg = new Form())
+                {
+                    dlg.Text = "⚖️ تسوية أرصدة الموردين";
+                    dlg.Size = new Size(350, 180);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.MaximizeBox = false; dlg.MinimizeBox = false;
+                    dlg.RightToLeft = RightToLeft.Yes;
+                    dlg.BackColor = Theme.BgMain;
+                    dlg.Font = Theme.FontMain;
+
+                    var lbl = new Label { Text = "اختر المورد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                    var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+                    foreach (DataRow r in dt.Rows)
+                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], r["SupplierName"].ToString()));
+                    cbo.DisplayMember = "Text";
+                    cbo.SelectedIndex = 0;
+
+                    var btnOk = Theme.MakeButton("⚖️ تسوية الرصيد", 180, 90, 130, 32, Theme.Accent);
+                    btnOk.Click += (senderDlg, eDlg) => {
+                        if (cbo.SelectedItem is ComboItem ci)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            new FrmAdjustment(ci.ID, ci.Text, false).ShowDialog(this);
+                        }
+                    };
+
+                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OpenCloudImportDialog()

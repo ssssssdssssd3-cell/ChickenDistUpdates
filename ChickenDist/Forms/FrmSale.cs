@@ -1029,6 +1029,18 @@ namespace ChickenDist.Forms
 			return base.ProcessCmdKey(ref msg, keyData);
 		}
 
+		private bool MatchBarcode(string barcodes, string scanText)
+		{
+			if (string.IsNullOrEmpty(barcodes)) return false;
+			var parts = barcodes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			foreach (var part in parts)
+			{
+				if (string.Equals(part.Trim(), scanText, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+			return false;
+		}
+
 		private Label MakeLabel(string text, int x, int y)
 		{
 			return new Label
@@ -1088,7 +1100,7 @@ namespace ChickenDist.Forms
 						if (ci.ID > 0 && 
 							(string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
 							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-							 string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase)))
+							 MatchBarcode(ci.InternationalCode, scanText)))
 						{
 							foundItem = ci;
 							break;
@@ -1153,7 +1165,11 @@ namespace ChickenDist.Forms
 				{
 					foreach (ComboItem item2 in list2)
 					{
-						if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+						if (item2.ID == 0 || 
+							item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+							(item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
 						{
 							cbo.Items.Add(item2);
 						}

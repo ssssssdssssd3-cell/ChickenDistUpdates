@@ -327,6 +327,7 @@ namespace ChickenDist.Forms
             };
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "الكود المحلي", ReadOnly = true, FillWeight = 50 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
@@ -733,7 +734,7 @@ namespace ChickenDist.Forms
                         decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
                         _pendingBarcodeWeight = null;
                         _pendingScaleWeight = null;
-                        AddProductToGrid(ci.ID, ci.Text, qtyToAdd, price, 0m, salePrice);
+                        AddProductToGrid(ci.ID, ci.ProductCode, ci.Text, qtyToAdd, price, 0m, salePrice);
                         cboProduct.SelectedIndex = 0;
                     };
                     timer.Start();
@@ -755,7 +756,7 @@ namespace ChickenDist.Forms
 
         // ══════════════════════════════════════════════════════════════════════
         // إضافة صنف
-        private void AddProductToGrid(int prodId, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice)
+        private void AddProductToGrid(int prodId, string prodCode, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice)
         {
             if (prodId <= 0) return;
 
@@ -774,6 +775,7 @@ namespace ChickenDist.Forms
             _items.Add(new PurchaseItemDTO
             {
                 ProductID   = prodId,
+                ProductCode = prodCode,
                 ProductName = prodName,
                 Quantity    = qty,
                 UnitPrice   = price,
@@ -784,6 +786,18 @@ namespace ChickenDist.Forms
             RefreshGrid();
             SelectQuantityCell(prodId);
             _isDirty = true;
+        }
+
+        private bool MatchBarcode(string barcodes, string scanText)
+        {
+            if (string.IsNullOrEmpty(barcodes)) return false;
+            var parts = barcodes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                if (string.Equals(part.Trim(), scanText, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         private void CboProduct_KeyDown(object sender, KeyEventArgs e)
@@ -833,7 +847,7 @@ namespace ChickenDist.Forms
                         if (ci.ID > 0 && 
                             (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
                              string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-                             string.Equals(ci.InternationalCode, scanText, StringComparison.OrdinalIgnoreCase)))
+                             MatchBarcode(ci.InternationalCode, scanText)))
                         {
                             foundItem = ci;
                             break;
@@ -855,7 +869,7 @@ namespace ChickenDist.Forms
                     {
                         decimal price = foundItem.Extra;
                         decimal salePrice = foundItem.Price;
-                        AddProductToGrid(foundItem.ID, foundItem.Text, qtyToAdd, price, 0m, salePrice);
+                        AddProductToGrid(foundItem.ID, foundItem.ProductCode, foundItem.Text, qtyToAdd, price, 0m, salePrice);
                         
                         cboProduct.Text = "";
                         cboProduct.Items.Clear();
@@ -903,6 +917,7 @@ namespace ChickenDist.Forms
 
                 dgItems.Rows.Add(
                     item.ProductID,
+                    item.ProductCode,
                     item.ProductName,
                     item.Quantity.ToString("F3"),
                     item.UnitPrice.ToString("F2"),
@@ -1222,6 +1237,7 @@ namespace ChickenDist.Forms
                     _items.Add(new PurchaseItemDTO
                     {
                         ProductID   = Convert.ToInt32(iRow["ProductID"]),
+                        ProductCode = iRow["ProductCode"].ToString(),
                         ProductName = iRow["ProductName"].ToString(),
                         Quantity    = Convert.ToDecimal(iRow["Quantity"]),
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
@@ -1372,6 +1388,19 @@ namespace ChickenDist.Forms
                         (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : "") +
                         (priceDecision == "Pending" ? "\n⚠️ تم تعليق أسعار البيع الجديدة وسوف تتفعل تلقائياً عند نفاد الكميات الحالية." : ""),
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    try
+                    {
+                        using (var printDlg = new FrmPrintPurchaseBarcodes(id, $"PUR-{id}"))
+                        {
+                            printDlg.ShowDialog(this);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("Failed to open FrmPrintPurchaseBarcodes automatically", ex, "FrmPurchase.BtnSave_Click");
+                    }
+
                     ClearInvoice();
                     LoadCombos();
                 }

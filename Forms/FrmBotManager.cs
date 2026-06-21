@@ -275,6 +275,7 @@ namespace ChickenDist.Forms
                         btnToggle.Enabled = false;
                         pbQrCode.Image = null;
                         pbQrCode.BackColor = Color.FromArgb(240, 240, 240);
+                        tmrStatus.Interval = 20000; // Poll less frequently when online
                     }
                     else if (statusVal == "QR_Ready")
                     {
@@ -284,6 +285,7 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(230, 126, 34);
                         btnToggle.Enabled = true;
                         LoadQrCodeFromStatusJson(json);
+                        tmrStatus.Interval = 5000; // Poll faster when QR is ready
                     }
                     else if (statusVal == "Connecting")
                     {
@@ -293,6 +295,7 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(52, 152, 219);
                         btnToggle.Enabled = false;
                         pbQrCode.Image = null;
+                        tmrStatus.Interval = 5000; // Poll faster when connecting
                     }
                     else
                     {
@@ -302,6 +305,7 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
                         btnToggle.Enabled = true;
                         pbQrCode.Image = null;
+                        tmrStatus.Interval = 10000; // Default offline polling
                     }
                 }
                 else
@@ -309,6 +313,7 @@ namespace ChickenDist.Forms
                     lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️";
                     lblStatus.ForeColor = Color.Red;
                     pbQrCode.Image = null;
+                    tmrStatus.Interval = 15000; // Cool down on error
                 }
             }
             catch
@@ -316,6 +321,7 @@ namespace ChickenDist.Forms
                 lblStatus.Text = "الحالة: فشل الاتصال بالسحابة ⚠️";
                 lblStatus.ForeColor = Color.Red;
                 pbQrCode.Image = null;
+                tmrStatus.Interval = 15000; // Cool down on connection error
             }
         }
 

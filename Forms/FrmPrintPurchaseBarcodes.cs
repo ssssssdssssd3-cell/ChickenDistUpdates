@@ -239,7 +239,7 @@ namespace ChickenDist.Forms
                 var dt = DbHelper.Query(@"
                     SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity,
                            COALESCE(pi.SuggestedSalePrice, pr.SalePrice, 0) AS Price,
-                           pr.ShelfLocation
+                           pr.ShelfLocation, pr.PrintLocalBarcode
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
                     WHERE pi.PurchaseID = @id", DbHelper.P("@id", _purchaseID));
@@ -248,8 +248,15 @@ namespace ChickenDist.Forms
                 foreach (DataRow r in dt.Rows)
                 {
                     decimal qty = Convert.ToDecimal(r["Quantity"]);
-                    // جعل عدد الملصقات الافتراضي مساوياً للكمية المشتراة (أو 1 كحد أدنى لو كانت الكميات كسرية)
-                    int printQty = (int)Math.Max(1, Math.Floor(qty));
+                    
+                    bool printLocal = true;
+                    if (r.Table.Columns.Contains("PrintLocalBarcode") && r["PrintLocalBarcode"] != DBNull.Value)
+                    {
+                        printLocal = Convert.ToBoolean(r["PrintLocalBarcode"]);
+                    }
+
+                    // جعل عدد الملصقات الافتراضي مساوياً للكمية المشتراة لو الصنف يطبع له باركود محلي، وإلا 0
+                    int printQty = printLocal ? (int)Math.Max(1, Math.Floor(qty)) : 0;
 
                     dgItems.Rows.Add(
                         r["ProductID"],

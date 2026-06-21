@@ -9,6 +9,7 @@ namespace ChickenDist.DAL
     public class PurchaseItemDTO
     {
         public int ProductID { get; set; }
+        public string ProductCode { get; set; } = "";
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
@@ -80,14 +81,14 @@ namespace ChickenDist.DAL
         // ─── أصناف فاتورة معينة ──────────────────────────────────────────────────
         public static DataTable GetItems(int purchaseID)
         {
-            return DbHelper.Query(
-                @"SELECT pi.ProductID, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
-                         COALESCE(pi.DiscountPct, 0) AS DiscountPct,
-                         COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
-                         pi.SuggestedSalePrice
-                  FROM PurchaseItems pi
-                  JOIN Products pr ON pi.ProductID = pr.ProductID
-                  WHERE pi.PurchaseID = @id",
+             return DbHelper.Query(
+                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
+                          COALESCE(pi.DiscountPct, 0) AS DiscountPct,
+                          COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
+                          pi.SuggestedSalePrice
+                   FROM PurchaseItems pi
+                   JOIN Products pr ON pi.ProductID = pr.ProductID
+                   WHERE pi.PurchaseID = @id",
                 DbHelper.P("@id", purchaseID));
         }
 
