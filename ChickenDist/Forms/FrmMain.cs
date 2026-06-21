@@ -132,41 +132,41 @@ namespace ChickenDist.Forms
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
-                    ("📋 سجل المبيعات", "Sales",      (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
-                    ("📡 بوابة المحاسب",  "Sales",      (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
                 }),
 
                 ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
                     ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
                     ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
-                    ("📋 سجل المشتريات", "Purchases",      (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
                 }),
 
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
-                    ("🏢 التصنيفات والأقسام", "Products",         (Action)(() => NavigateTo(new FrmCategories()))),
-                    ("📥 استيراد الأصناف",   "Products",          (Action)(() => NavigateTo(new FrmImportProducts()))),
+                    ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
+                    ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
-                    ("🗑️ الهوالك والتالف",  "Inventory",         (Action)(() => NavigateTo(new FrmWastage()))),
-                    ("🔄 تحويل مخزني",     "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
-                    ("📋 سجل التحويلات",   "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
-                    ("📊 سجل تغير الأسعار", "Products",          (Action)(() => NavigateTo(new FrmPriceChanges()))),
-                    ("🏷️ طباعة الباركود (مجمع)", "Products",     (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
+                    ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
+                    ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
+                    ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
+                    ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
                 }),
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
-                    ("📢 العملاء الرواكد", "Clients",   (Action)(() => NavigateTo(new FrmInactiveClients()))),
+                    ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
                 }),
 
                 ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
                     ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
-                    ("📊 كشف حساب مورد", "Suppliers", (Action)(() => OpenSupplierStatementSelector())),
-                    ("💸 صرف نقدي لمورد", "Suppliers", (Action)(() => OpenSupplierPaymentSelector())),
-                    ("⚖️ تسوية أرصدة الموردين", "Suppliers", (Action)(() => OpenSupplierAdjustmentSelector())),
+                    ("📊 كشف حساب مورد", "SupplierStatement", (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد", "SupplierPayment", (Action)(() => OpenSupplierPaymentSelector())),
+                    ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
                 }),
 
                 ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
@@ -174,8 +174,8 @@ namespace ChickenDist.Forms
                     ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
                     ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
                     ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
-                    ("📋 عهدة المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverCustody()))),
-                    ("🏆 أداء المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
+                    ("📋 عهدة المناديب",   "DriverCustody",  (Action)(() => NavigateTo(new FrmDriverCustody()))),
+                    ("🏆 أداء المناديب",   "DriverLeaderboard", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
                 }),
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
@@ -188,7 +188,7 @@ namespace ChickenDist.Forms
                     ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
                     ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
-                    ("🤖 إدارة بوت الواتساب", "Settings",            (Action)(() => new FrmBotManager().ShowDialog())),
+                    ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };

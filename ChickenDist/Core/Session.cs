@@ -104,9 +104,15 @@ namespace ChickenDist.Core
         }
 
         public static readonly string[] AllScreens = {
-            "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "Products",
-            "Vehicles", "CashBox", "Expenses", "Reports", "Employees", "Returns",
-            "Suppliers", "Purchases", "Inventory", "Installments"
+            "Sales", "Returns", "Installments", "SalesList", "SalesAudit", "AccountantPortal",
+            "Clients", "InactiveClients", "Vehicles",
+            "Purchases", "PurchaseReturn", "PurchasesList",
+            "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
+            "Products", "Categories", "ImportProducts", "Warehouses", "Inventory", "Wastage",
+            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "BulkPrintBarcodes",
+            "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
+            "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
+            "Settings", "BotManager"
         };
     }
 

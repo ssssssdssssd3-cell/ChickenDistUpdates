@@ -313,41 +313,147 @@ namespace ChickenDist.Forms
         }
     }
 
-    /// <summary>شاشة الصلاحيات</summary>
+    /// <summary>شاشة الصلاحيات المحسنة والمنسقة بالتبويبات</summary>
     public class FrmPermissions : Form
     {
         private int _empID;
-        private DataGridView dgPerms;
+        private TabControl tcPerms;
+        private DataGridView dgSales;
+        private DataGridView dgPurchases;
+        private DataGridView dgInventory;
+        private DataGridView dgAdmin;
         private Button btnSave;
 
-        private static readonly string[] Screens = {
-            "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "CashBox",
-            "Products", "Returns", "Reports", "Employees", "Suppliers", "Purchases", "Vehicles", "Inventory",
-            "Settings", "Categories", "DailyClosing", "EmployeeTransactions", "WarehouseTransfers", "Warehouses",
-            "ClientStatement", "SupplierStatement", "ProductMovement", "SalesAudit", "PurchaseReturn", "DriversMonitor", "QuickPayment", "Installments"
-        };
-        private static readonly string[] ScreenNames = {
-            "المبيعات", "تسليم السائقين", "مبيعات السائقين", "مراجعة الاستيراد", "العملاء", "الخزينة",
-            "الأصناف", "المرتجعات", "التقارير", "الموظفين", "الموردين", "المشتريات", "السيارات", "الجرد",
-            "إعدادات النظام", "التصنيفات", "التقفيل اليومي", "حركة الموظفين", "تحويلات المخازن", "المخازن",
-            "كشف حساب عميل", "كشف حساب مورد", "حركة صنف", "مراجعة المبيعات", "مرتجع المشتريات", "مراقبة السائقين", "السداد السريع", "عقود التقسيط"
+        private struct ScreenInfo
+        {
+            public string Key;
+            public string Name;
+            public int TabIndex; // 0: Sales & Clients, 1: Purchases & Suppliers, 2: Inventory & Products, 3: Finance & Administration
+            public ScreenInfo(string key, string name, int tabIndex)
+            {
+                Key = key;
+                Name = name;
+                TabIndex = tabIndex;
+            }
+        }
+
+        private static readonly ScreenInfo[] ScreensList = {
+            // Tab 0: Sales & Clients (9)
+            new ScreenInfo("Sales", "شاشة المبيعات الجديدة", 0),
+            new ScreenInfo("Returns", "مرتجع المبيعات", 0),
+            new ScreenInfo("Installments", "عقود التقسيط الشرعي", 0),
+            new ScreenInfo("SalesList", "سجل الفواتير والمبيعات", 0),
+            new ScreenInfo("SalesAudit", "سجل تعديلات وحذف الفواتير", 0),
+            new ScreenInfo("AccountantPortal", "بوابة المحاسبة الميدانية", 0),
+            new ScreenInfo("Clients", "إدارة وتعديل العملاء", 0),
+            new ScreenInfo("InactiveClients", "شاشة تنشيط العملاء الراكدين", 0),
+            new ScreenInfo("Vehicles", "إدارة المركبات والسيارات", 0),
+
+            // Tab 1: Purchases & Suppliers (7)
+            new ScreenInfo("Purchases", "شاشة المشتريات الجديدة", 1),
+            new ScreenInfo("PurchaseReturn", "مرتجع المشتريات", 1),
+            new ScreenInfo("PurchasesList", "سجل الفواتير والمشتريات", 1),
+            new ScreenInfo("Suppliers", "إدارة وتعديل الموردين", 1),
+            new ScreenInfo("SupplierStatement", "كشف حساب المورد", 1),
+            new ScreenInfo("SupplierPayment", "صرف نقدي لمورد", 1),
+            new ScreenInfo("SupplierAdjustment", "تسوية أرصدة الموردين", 1),
+
+            // Tab 2: Inventory & Products (10)
+            new ScreenInfo("Products", "إدارة وتعديل الأصناف", 2),
+            new ScreenInfo("Categories", "التصنيفات والأقسام", 2),
+            new ScreenInfo("ImportProducts", "استيراد الأصناف من إكسيل", 2),
+            new ScreenInfo("Warehouses", "إدارة المخازن والمستودعات", 2),
+            new ScreenInfo("Inventory", "جرد وتعديل رصيد المخزن", 2),
+            new ScreenInfo("Wastage", "تسجيل الهوالك والتالف", 2),
+            new ScreenInfo("WarehouseTransfer", "تحويل مخزني صادر", 2),
+            new ScreenInfo("WarehouseTransfersList", "سجل التحويلات المخزنية", 2),
+            new ScreenInfo("PriceChanges", "سجل تغير وحركات الأسعار", 2),
+            new ScreenInfo("BulkPrintBarcodes", "طباعة الباركود (مجمع)", 2),
+
+            // Tab 3: Finance, Drivers & Settings (13)
+            new ScreenInfo("CashBox", "حركات الخزينة والصندوق", 3),
+            new ScreenInfo("Reports", "التقارير والإحصائيات المالية", 3),
+            new ScreenInfo("DailyClosing", "تقفيل يومية المبيعات", 3),
+            new ScreenInfo("Employees", "إدارة الموظفين والرواتب", 3),
+            new ScreenInfo("EmployeeTransactions", "حسابات وحركات الموظفين", 3),
+            new ScreenInfo("DriverHandover", "تسليم وحمولة المندوب", 3),
+            new ScreenInfo("DriverPortal", "بوابة المندوب الميداني", 3),
+            new ScreenInfo("ImportPreview", "استيراد مبيعات المناديب", 3),
+            new ScreenInfo("DriversMonitor", "شاشة مراقبة السائقين", 3),
+            new ScreenInfo("DriverCustody", "عهدة المناديب المالية", 3),
+            new ScreenInfo("DriverLeaderboard", "أداء وتقييم المناديب", 3),
+            new ScreenInfo("Settings", "إعدادات النظام العامة", 3),
+            new ScreenInfo("BotManager", "إدارة بوت الواتساب التلقائي", 3)
         };
 
         public FrmPermissions(int empID, string empName)
         {
             _empID = empID;
-            this.Text = "صلاحيات: " + empName;
-            this.Size = new Size(780, 450);
+            this.Text = "🔐 تحديد الصلاحيات للموظف: " + empName;
+            this.Size = new Size(950, 600);
             this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.RightToLeft = RightToLeft.Yes;
-            this.BackColor = Theme.BgCard;
+            this.RightToLeftLayout = true;
+            this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            dgPerms = new DataGridView
+            // Title panel
+            var pnlTop = Theme.MakeTitleBar($"🔐 صلاحيات الموظف: {empName}", "حدد الصلاحيات الدقيقة التي يستطيع هذا المستخدم الوصول إليها والتحكم بها.");
+            this.Controls.Add(pnlTop);
+
+            // Tab control
+            tcPerms = new TabControl
             {
-                Location = new Point(10, 10),
-                Size = new Size(745, 340),
+                Location = new Point(15, 75),
+                Size = new Size(905, 410),
+                RightToLeftLayout = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+
+            var tpSales = new TabPage("🛒 المبيعات والعملاء") { BackColor = Theme.BgCard };
+            var tpPurchases = new TabPage("📥 المشتريات والموردين") { BackColor = Theme.BgCard };
+            var tpInventory = new TabPage("📦 المخازن والأصناف") { BackColor = Theme.BgCard };
+            var tpAdmin = new TabPage("⚙️ المالية والمناديب والإدارة") { BackColor = Theme.BgCard };
+
+            dgSales = CreatePermissionsGrid();
+            dgPurchases = CreatePermissionsGrid();
+            dgInventory = CreatePermissionsGrid();
+            dgAdmin = CreatePermissionsGrid();
+
+            tpSales.Controls.Add(dgSales);
+            tpPurchases.Controls.Add(dgPurchases);
+            tpInventory.Controls.Add(dgInventory);
+            tpAdmin.Controls.Add(dgAdmin);
+
+            tcPerms.TabPages.Add(tpSales);
+            tcPerms.TabPages.Add(tpPurchases);
+            tcPerms.TabPages.Add(tpInventory);
+            tcPerms.TabPages.Add(tpAdmin);
+
+            this.Controls.Add(tcPerms);
+
+            // Bottom Buttons
+            var btnSelectAll = Theme.MakeButton("✔️ تحديد الكل", 15, 505, 120, 36, Color.FromArgb(70, 80, 95));
+            btnSelectAll.Click += (s, e) => ToggleAllPermissions(true);
+            this.Controls.Add(btnSelectAll);
+
+            var btnDeselectAll = Theme.MakeButton("❌ إلغاء الكل", 145, 505, 120, 36, Color.FromArgb(70, 80, 95));
+            btnDeselectAll.Click += (s, e) => ToggleAllPermissions(false);
+            this.Controls.Add(btnDeselectAll);
+
+            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات", 760, 505, 160, 36, Theme.Accent);
+            btnSave.Click += BtnSave_Click;
+            this.Controls.Add(btnSave);
+
+            LoadPermissions();
+            Theme.ApplyFormRTL(this);
+        }
+
+        private DataGridView CreatePermissionsGrid()
+        {
+            var dg = new DataGridView
+            {
+                Dock = DockStyle.Fill,
                 BackgroundColor = Theme.BgCard,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
@@ -355,36 +461,55 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) },
                 EnableHeadersVisualStyles = false
             };
-            dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dgPerms.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "الشاشة", ReadOnly = true, FillWeight = 60 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "وصول", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "تعديل سعر", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "تعديل فاتورة", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "حذف فاتورة", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "نسخ فاتورة", FillWeight = 30 });
-            dgPerms.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "عرض التكلفة", FillWeight = 30 });
-            dgPerms.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            this.Controls.Add(dgPerms);
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, FillWeight = 70 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "رؤية ودخول", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "تعديل السعر", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "تعديل الفاتورة", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "حذف الفاتورة", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "نسخ الفاتورة", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "رؤية التكلفة", FillWeight = 25 });
+            dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            return dg;
+        }
 
-            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات", 300, 360, 160, 34, Theme.Accent);
-            btnSave.Click += BtnSave_Click;
-            this.Controls.Add(btnSave);
-
-            LoadPermissions();
+        private void ToggleAllPermissions(bool check)
+        {
+            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
+            foreach (var grid in grids)
+            {
+                if (grid == null) continue;
+                foreach (DataGridViewRow row in grid.Rows)
+                {
+                    for (int i = 2; i < grid.Columns.Count; i++)
+                    {
+                        if (row.Cells[i] is DataGridViewCheckBoxCell cell)
+                        {
+                            cell.Value = check;
+                        }
+                    }
+                }
+            }
         }
 
         private void LoadPermissions()
         {
             var dt = EmployeeDAL.GetPermissions(_empID);
-            dgPerms.Rows.Clear();
-            for (int i = 0; i < Screens.Length; i++)
+            
+            dgSales.Rows.Clear();
+            dgPurchases.Rows.Clear();
+            dgInventory.Rows.Clear();
+            dgAdmin.Rows.Clear();
+
+            foreach (var screen in ScreensList)
             {
                 bool access = false, editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false;
                 foreach (DataRow r in dt.Rows)
-                    if (r["ScreenName"].ToString() == Screens[i])
+                {
+                    if (string.Equals(r["ScreenName"].ToString(), screen.Key, StringComparison.OrdinalIgnoreCase))
                     {
                         access = Convert.ToBoolean(r["CanAccess"]);
                         editPrice = Convert.ToBoolean(r["CanEditPrice"]);
@@ -394,24 +519,43 @@ namespace ChickenDist.Forms
                         viewCost = r.Table.Columns.Contains("CanViewCost") && r["CanViewCost"] != DBNull.Value && Convert.ToBoolean(r["CanViewCost"]);
                         break;
                     }
-                dgPerms.Rows.Add(Screens[i], ScreenNames[i], access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                }
+
+                DataGridView targetGrid = null;
+                if (screen.TabIndex == 0) targetGrid = dgSales;
+                else if (screen.TabIndex == 1) targetGrid = dgPurchases;
+                else if (screen.TabIndex == 2) targetGrid = dgInventory;
+                else if (screen.TabIndex == 3) targetGrid = dgAdmin;
+
+                if (targetGrid != null)
+                {
+                    targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                }
             }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            foreach (DataGridViewRow row in dgPerms.Rows)
+            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
+            foreach (var grid in grids)
             {
-                string screen = row.Cells["Screen"].Value?.ToString();
-                bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
-                bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                bool editI = Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
-                bool deleteI = Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
-                bool copyI = Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
-                bool viewC = Convert.ToBoolean(row.Cells["CanViewCost"].Value);
-                EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
+                if (grid == null) continue;
+                foreach (DataGridViewRow row in grid.Rows)
+                {
+                    string screen = row.Cells["Screen"].Value?.ToString();
+                    if (string.IsNullOrEmpty(screen)) continue;
+
+                    bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
+                    bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
+                    bool editI = Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
+                    bool deleteI = Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
+                    bool copyI = Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
+                    bool viewC = Convert.ToBoolean(row.Cells["CanViewCost"].Value);
+                    
+                    EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
+                }
             }
-            MessageBox.Show("✅ تم حفظ الصلاحيات");
+            MessageBox.Show("✅ تم حفظ الصلاحيات بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }
