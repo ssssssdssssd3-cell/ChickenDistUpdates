@@ -1399,6 +1399,36 @@ namespace ChickenDist.Core
                 FROM Clients c
                 LEFT JOIN ClientCratesTransactions cct ON c.ClientID = cct.ClientID
                 GROUP BY c.ClientID, c.OpeningCrates');");
+
+                // ===== أعمدة صلاحيات الخزائن وطرق البيع للموظفين =====
+                SafeMigrate("Employees.PermissionsAndSafes", @"
+                IF OBJECT_ID('Employees', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Employees', 'DefaultSafeID') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD DefaultSafeID INT NULL;
+                    END
+                    IF COL_LENGTH('Employees', 'AllowedSafeIDs') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD AllowedSafeIDs VARCHAR(255) NULL;
+                    END
+                    IF COL_LENGTH('Employees', 'CanSellCash') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellCash BIT NOT NULL DEFAULT 1;
+                    END
+                    IF COL_LENGTH('Employees', 'CanSellCredit') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellCredit BIT NOT NULL DEFAULT 1;
+                    END
+                    IF COL_LENGTH('Employees', 'CanSellDriverLoad') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellDriverLoad BIT NOT NULL DEFAULT 1;
+                    END
+                    IF COL_LENGTH('Employees', 'CanSellInstallment') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellInstallment BIT NOT NULL DEFAULT 1;
+                    END
+                END");
             }
             catch (Exception ex)
             {

@@ -219,11 +219,34 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم المورد"); return; }
+
+            // ─── فحص تكرار الاسم ───
+            if (SupplierDAL.IsDuplicateName(txtName.Text.Trim(), _selectedID))
+            {
+                MessageBox.Show($"⚠️ يوجد مورد آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو البحث عن المورد الموجود.",
+                    "تكرار اسم المورد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtName.Focus();
+                return;
+            }
+
+            // ─── فحص تكرار رقم الهاتف ───
+            if (!string.IsNullOrWhiteSpace(txtPhone.Text))
+            {
+                if (SupplierDAL.IsDuplicatePhone(txtPhone.Text.Trim(), _selectedID))
+                {
+                    MessageBox.Show($"⚠️ رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لمورد آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن المورد الموجود.",
+                        "تكرار رقم الهاتف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtPhone.Focus();
+                    return;
+                }
+            }
+
             int id = SupplierDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text,
                 txtAddress.Text, nudOpening.Value, chkActive.Checked);
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadSuppliers(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
+
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {

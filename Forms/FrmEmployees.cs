@@ -18,6 +18,10 @@ namespace ChickenDist.Forms
         private Button btnNew, btnSave, btnDelete, btnPerms;
         private int _selectedID = 0;
 
+        private ComboBox cboDefaultSafe;
+        private CheckedListBox clbAllowedSafes;
+        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment;
+
         public FrmEmployees()
         {
             if (Session.Role != "Admin") { MessageBox.Show("غير مصرح لك بالوصول"); this.Close(); return; }
@@ -106,6 +110,27 @@ namespace ChickenDist.Forms
             chkActive = new CheckBox { Text = "موظف نشط", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true }; y += 40;
             pnlDetails.Controls.AddRange(new Control[] { chkDriver, chkActive });
 
+            // Default Safe
+            pnlDetails.Controls.Add(new Label { Text = "الخزينة الافتراضية:", Location = new Point(220, y), AutoSize = true, ForeColor = Theme.TextMain });
+            cboDefaultSafe = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            pnlDetails.Controls.Add(cboDefaultSafe); y += 38;
+
+            // Allowed Safes CheckedListBox
+            pnlDetails.Controls.Add(new Label { Text = "الخزائن المسموحة:", Location = new Point(220, y), AutoSize = true, ForeColor = Theme.TextMain });
+            clbAllowedSafes = new CheckedListBox { Location = new Point(15, y), Width = 180, Height = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlDetails.Controls.Add(clbAllowedSafes); y += 105;
+
+            // Selling permissions checkboxes
+            pnlDetails.Controls.Add(new Label { Text = "طرق البيع المسموحة:", Location = new Point(200, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            y += 24;
+            chkCanSellCash = new CheckBox { Text = "بيع نقدي (كاش)", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSellCredit = new CheckBox { Text = "بيع آجل", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            y += 28;
+            chkCanSellDriverLoad = new CheckBox { Text = "تحميل مندوب", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSellInstallment = new CheckBox { Text = "تقسيط شرعي", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment });
+            y += 35;
+
             btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
             btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
             btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 44;
@@ -122,6 +147,7 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
             this.Controls.Add(tbl);
 
+            LoadSafesList();
             Theme.ApplyFormRTL(this);
         }
 
@@ -163,6 +189,36 @@ namespace ChickenDist.Forms
             cboRole.Text = dr["Role"].ToString();
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
+
+            // Default Safe
+            int defaultSafeId = dr["DefaultSafeID"] != DBNull.Value ? Convert.ToInt32(dr["DefaultSafeID"]) : 0;
+            cboDefaultSafe.SelectedIndex = 0; // Default none
+            for (int i = 0; i < cboDefaultSafe.Items.Count; i++)
+            {
+                if (cboDefaultSafe.Items[i] is ComboItem item && item.ID == defaultSafeId)
+                {
+                    cboDefaultSafe.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            // Allowed Safes
+            string allowedSafesStr = dr["AllowedSafeIDs"] != DBNull.Value ? dr["AllowedSafeIDs"].ToString() : "";
+            var allowedIds = new System.Collections.Generic.HashSet<string>(allowedSafesStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
+            for (int i = 0; i < clbAllowedSafes.Items.Count; i++)
+            {
+                if (clbAllowedSafes.Items[i] is ComboItem item)
+                {
+                    bool shouldCheck = allowedIds.Contains(item.ID.ToString());
+                    clbAllowedSafes.SetItemChecked(i, shouldCheck);
+                }
+            }
+
+            // Selling Permissions Checkboxes
+            chkCanSellCash.Checked = dr["CanSellCash"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCash"]);
+            chkCanSellCredit.Checked = dr["CanSellCredit"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCredit"]);
+            chkCanSellDriverLoad.Checked = dr["CanSellDriverLoad"] == DBNull.Value || Convert.ToBoolean(dr["CanSellDriverLoad"]);
+            chkCanSellInstallment.Checked = dr["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(dr["CanSellInstallment"]);
         }
 
         private void ClearDetail()
@@ -171,6 +227,16 @@ namespace ChickenDist.Forms
             txtName.Clear(); txtUsername.Clear(); txtPassword.Clear(); txtPhone.Clear();
             cboRole.SelectedIndex = 4;
             chkDriver.Checked = false; chkActive.Checked = true;
+
+            if (cboDefaultSafe.Items.Count > 0) cboDefaultSafe.SelectedIndex = 0;
+            for (int i = 0; i < clbAllowedSafes.Items.Count; i++)
+            {
+                clbAllowedSafes.SetItemChecked(i, false);
+            }
+            chkCanSellCash.Checked = true;
+            chkCanSellCredit.Checked = true;
+            chkCanSellDriverLoad.Checked = true;
+            chkCanSellInstallment.Checked = true;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -179,8 +245,26 @@ namespace ChickenDist.Forms
             if (string.IsNullOrWhiteSpace(txtUsername.Text)) { MessageBox.Show("أدخل اسم المستخدم"); return; }
             if (_selectedID == 0 && string.IsNullOrWhiteSpace(txtPassword.Text)) { MessageBox.Show("أدخل كلمة المرور"); return; }
 
+            int? defaultSafeID = null;
+            if (cboDefaultSafe.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+            {
+                defaultSafeID = safeItem.ID;
+            }
+
+            var allowedList = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < clbAllowedSafes.CheckedItems.Count; i++)
+            {
+                if (clbAllowedSafes.CheckedItems[i] is ComboItem item)
+                {
+                    allowedList.Add(item.ID.ToString());
+                }
+            }
+            string allowedSafeIDs = string.Join(",", allowedList);
+
             int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
-                txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked);
+                txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
+                defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
+                chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked);
             if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
@@ -190,6 +274,36 @@ namespace ChickenDist.Forms
             if (_selectedID == 0) return;
             if (MessageBox.Show("إيقاف الموظف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { EmployeeDAL.Delete(_selectedID); LoadEmployees(); ClearDetail(); }
+        }
+
+        private void LoadSafesList()
+        {
+            try
+            {
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                
+                // For cboDefaultSafe
+                cboDefaultSafe.Items.Clear();
+                cboDefaultSafe.Items.Add(new ComboItem(0, "--- بدون خزينة افتراضية ---"));
+                
+                clbAllowedSafes.Items.Clear();
+                
+                foreach (DataRow r in safes.Rows)
+                {
+                    int id = Convert.ToInt32(r["AccountID"]);
+                    string name = r["AccountName"].ToString();
+                    
+                    var item = new ComboItem(id, name);
+                    cboDefaultSafe.Items.Add(item);
+                    clbAllowedSafes.Items.Add(item);
+                }
+                cboDefaultSafe.DisplayMember = "Text";
+                cboDefaultSafe.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadSafesList failed", ex);
+            }
         }
 
         private void BtnPerms_Click(object sender, EventArgs e)

@@ -52,7 +52,8 @@ namespace ChickenDist.DAL
             return row;
         }
 
-        public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive)
+        public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive,
+            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment)
         {
             // تشفير كلمة المرور قبل الحفظ (فقط إذا أُدخلت كلمة مرور جديدة)
             string hashedPassword = string.IsNullOrWhiteSpace(password)
@@ -61,18 +62,47 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive) VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment) " +
+                    "VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password),
-                    DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive));
+                    DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
+                    DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
+                    DbHelper.P("@asids", string.IsNullOrEmpty(allowedSafeIDs) ? (object)DBNull.Value : (object)allowedSafeIDs),
+                    DbHelper.P("@csc", canSellCash), DbHelper.P("@ccr", canSellCredit),
+                    DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment));
             else
             {
-                DbHelper.Execute(
-                    "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a" +
-                    (hashedPassword == null ? "" : ",Password=@p,PlainPassword=@pp") + " WHERE EmpID=@id",
-                    hashedPassword == null
-                        ? new[] { DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive), DbHelper.P("@id", id) }
-                        : new[] { DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword), DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password), DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive), DbHelper.P("@id", id) });
+                var prmsList = new System.Collections.Generic.List<SqlParameter>
+                {
+                    DbHelper.P("@n", name),
+                    DbHelper.P("@u", username),
+                    DbHelper.P("@r", role),
+                    DbHelper.P("@ph", phone),
+                    DbHelper.P("@dr", isDriver),
+                    DbHelper.P("@a", isActive),
+                    DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
+                    DbHelper.P("@asids", string.IsNullOrEmpty(allowedSafeIDs) ? (object)DBNull.Value : (object)allowedSafeIDs),
+                    DbHelper.P("@csc", canSellCash),
+                    DbHelper.P("@ccr", canSellCredit),
+                    DbHelper.P("@cdl", canSellDriverLoad),
+                    DbHelper.P("@cins", canSellInstallment),
+                    DbHelper.P("@id", id)
+                };
+
+                string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
+                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins";
+
+                if (hashedPassword != null)
+                {
+                    updateSql += ",Password=@p,PlainPassword=@pp";
+                    prmsList.Add(DbHelper.P("@p", hashedPassword));
+                    prmsList.Add(DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password));
+                }
+
+                updateSql += " WHERE EmpID=@id";
+
+                DbHelper.Execute(updateSql, prmsList.ToArray());
                 return id;
             }
         }

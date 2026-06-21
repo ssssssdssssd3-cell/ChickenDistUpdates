@@ -12,6 +12,13 @@ namespace ChickenDist.Core
         public static string Role { get; set; }
         public static bool IsDriver { get; set; }
 
+        public static int? DefaultSafeID { get; set; }
+        public static string AllowedSafeIDs { get; set; }
+        public static bool CanSellCash { get; set; }
+        public static bool CanSellCredit { get; set; }
+        public static bool CanSellDriverLoad { get; set; }
+        public static bool CanSellInstallment { get; set; }
+
         // قائمة الشاشات المسموح بها
         private static Dictionary<string, PermInfo> _perms = new Dictionary<string, PermInfo>();
 
@@ -91,6 +98,8 @@ namespace ChickenDist.Core
         public static void Clear()
         {
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
+            DefaultSafeID = null; AllowedSafeIDs = "";
+            CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
             _perms.Clear();
         }
 

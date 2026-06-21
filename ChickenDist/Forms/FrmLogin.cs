@@ -279,6 +279,14 @@ namespace ChickenDist.Forms
             // FIX: استخدام Convert.ToBoolean بدلاً من cast مباشر — يتجنب InvalidCastException
             // عند قيم NULL أو أنواع غير متوقعة في بيانات قديمة
             Session.IsDriver = row["IsDriver"] != DBNull.Value && Convert.ToBoolean(row["IsDriver"]);
+
+            Session.DefaultSafeID = row.Table.Columns.Contains("DefaultSafeID") && row["DefaultSafeID"] != DBNull.Value ? (int?)Convert.ToInt32(row["DefaultSafeID"]) : null;
+            Session.AllowedSafeIDs = row.Table.Columns.Contains("AllowedSafeIDs") && row["AllowedSafeIDs"] != DBNull.Value ? row["AllowedSafeIDs"].ToString() : "";
+            Session.CanSellCash = !row.Table.Columns.Contains("CanSellCash") || row["CanSellCash"] == DBNull.Value || Convert.ToBoolean(row["CanSellCash"]);
+            Session.CanSellCredit = !row.Table.Columns.Contains("CanSellCredit") || row["CanSellCredit"] == DBNull.Value || Convert.ToBoolean(row["CanSellCredit"]);
+            Session.CanSellDriverLoad = !row.Table.Columns.Contains("CanSellDriverLoad") || row["CanSellDriverLoad"] == DBNull.Value || Convert.ToBoolean(row["CanSellDriverLoad"]);
+            Session.CanSellInstallment = !row.Table.Columns.Contains("CanSellInstallment") || row["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(row["CanSellInstallment"]);
+
             Session.LoadPermissions(Session.EmpID);
             this.DialogResult = DialogResult.OK;
             this.Close();

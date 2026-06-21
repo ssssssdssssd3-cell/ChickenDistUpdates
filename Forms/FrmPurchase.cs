@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         // ── جدول الأصناف ───────────────────────────────────────────────────────
         private DataGridView dgItems;
         private Panel pnlItems, pnlFooter;
+        private Button btnCustomizeCols; // زر تخصيص الأعمدة
 
         // ── الذيل — خصم الفاتورة ───────────────────────────────────────────────
         private Label lblTotalVal, lblNetVal, lblDiscType, lblDiscVal;
@@ -54,6 +55,7 @@ namespace ChickenDist.Forms
         private DateTime _lastKeyTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
+        private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
 
         // ══════════════════════════════════════════════════════════════════════
         public FrmPurchase()
@@ -356,7 +358,7 @@ namespace ChickenDist.Forms
             };
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "الكود المحلي", ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
@@ -369,9 +371,49 @@ namespace ChickenDist.Forms
 
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
-            dgItems.CellEndEdit       += (s, e) => RecalcTotals();
+            dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
+
+            // سهم لأسفل في آخر سطر → سطر كود جديد | Insert = نفس الشيء
+            dgItems.KeyDown += (s, ke) =>
+            {
+                if (ke.KeyCode == Keys.Down && dgItems.CurrentCell != null)
+                {
+                    int lastReal = _items.Count - 1;
+                    if (dgItems.CurrentCell.RowIndex >= lastReal && _pendingRowIdx < 0)
+                    {
+                        ke.Handled = true;
+                        AddNewCodeRow();
+                    }
+                }
+                else if (ke.KeyCode == Keys.Insert)
+                {
+                    ke.Handled = true;
+                    AddNewCodeRow();
+                }
+            };
 
             pnlItems.Controls.Add(dgItems);
+
+            // ── زر تخصيص الأعمدة ⚙️ (يظهر في زاوية الجدول) ─────────────────────
+            btnCustomizeCols = new Button
+            {
+                Text      = "⚙️ الأعمدة",
+                Size      = new Size(90, 26),
+                Anchor    = AnchorStyles.Top | AnchorStyles.Left,
+                Location  = new Point(5, 5),
+                BackColor = Color.FromArgb(55, 65, 81),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            btnCustomizeCols.FlatAppearance.BorderSize = 0;
+            btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
+            pnlItems.Controls.Add(btnCustomizeCols);
+            btnCustomizeCols.BringToFront();
+
+            // تحميل إعدادات الأعمدة المحفوظة
+            LoadColumnSettings();
 
             // ══════════════════════════════════════════════════════════════════
             // ── الذيل — تخطيط منظم: إجماليات يمين + أزرار يسار ───────────────
@@ -645,6 +687,11 @@ namespace ChickenDist.Forms
         // تنقل بمفتاح Enter داخل الجدول
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (keyData == Keys.Insert)
+            {
+                AddNewCodeRow();
+                return true;
+            }
             if (keyData == Keys.Enter &&
                 (dgItems.Focused || dgItems.EditingControl != null))
             {
@@ -687,7 +734,15 @@ namespace ChickenDist.Forms
                     "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                     MessageBoxDefaultButton.Button2);
                 if (res == DialogResult.No)
+                {
                     e.Cancel = true;
+                    return;
+                }
+            }
+            // ✅ حفظ ترتيب الأعمدة عند إغلاق الشاشة
+            if (!e.Cancel)
+            {
+                SaveColumnSettings();
             }
         }
 
@@ -832,55 +887,78 @@ namespace ChickenDist.Forms
 
         private void BtnManualAdd_Click(object sender, EventArgs e)
         {
-            using (var frm = new Form())
+            AddNewCodeRow();
+        }
+
+        /// <summary>يضيف سطراً فارغاً ويضع الكيرسور على عمود كود الصنف</summary>
+        private void AddNewCodeRow()
+        {
+            if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
             {
-                frm.Text = "إدخال كود الصنف يدوي";
-                frm.Size = new Size(350, 160);
-                frm.StartPosition = FormStartPosition.CenterParent;
-                frm.FormBorderStyle = FormBorderStyle.FixedDialog;
-                frm.MaximizeBox = false;
-                frm.MinimizeBox = false;
-                frm.RightToLeft = RightToLeft.Yes;
-                frm.RightToLeftLayout = true;
-                frm.BackColor = Theme.BgMain;
-                frm.Font = Theme.FontMain;
+                var prevCell = dgItems.Rows[_pendingRowIdx].Cells["ProductCode"];
+                if (prevCell.Value == null || string.IsNullOrEmpty(prevCell.Value.ToString()))
+                    dgItems.Rows.RemoveAt(_pendingRowIdx);
+            }
+            _pendingRowIdx = dgItems.Rows.Add();
+            dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(30, 120, 190, 80);
+            try
+            {
+                dgItems.ClearSelection();
+                dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["ProductCode"];
+                dgItems.BeginEdit(true);
+                dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
+            }
+            catch { }
+        }
 
-                var lbl = new Label { Text = "أدخل كود الصنف أو الباركود الدولي:", Location = new Point(20, 20), Width = 310, AutoSize = false, ForeColor = Theme.TextMain };
-                var txt = new TextBox { Location = new Point(20, 50), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-                
-                var btnOk = Theme.MakeButton("💾 إضافة", 180, 85, 130, 30, Theme.Accent);
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 20, 85, 130, 30, Color.FromArgb(100, 110, 120));
-
-                btnOk.Click += (s, ev) => { frm.DialogResult = DialogResult.OK; frm.Close(); };
-                btnCancel.Click += (s, ev) => { frm.Close(); };
-
-                frm.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
-                frm.AcceptButton = btnOk;
-
-                if (frm.ShowDialog(this) == DialogResult.OK)
+        private void DgItems_CellEndEdit_Purchase(object sender, DataGridViewCellEventArgs e)
+        {
+            // معالجة عمود كود الصنف (السطر المعلق)
+            if (e.RowIndex == _pendingRowIdx && e.ColumnIndex >= 0
+                && dgItems.Columns[e.ColumnIndex].Name == "ProductCode")
+            {
+                string code  = dgItems.Rows[e.RowIndex].Cells["ProductCode"].Value?.ToString()?.Trim() ?? "";
+                int rowIdx   = e.RowIndex;
+                this.BeginInvoke((MethodInvoker)delegate
                 {
-                    string code = txt.Text.Trim();
-                    if (!string.IsNullOrEmpty(code))
+                    if (string.IsNullOrEmpty(code))
                     {
-                        var dt = ProductDAL.FindByCode(code);
-                        if (dt.Rows.Count > 0)
+                        if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                            dgItems.Rows.RemoveAt(rowIdx);
+                        _pendingRowIdx = -1;
+                        return;
+                    }
+                    var dt = ProductDAL.FindByCode(code);
+                    if (dt.Rows.Count > 0)
+                    {
+                        var row     = dt.Rows[0];
+                        int pid     = Convert.ToInt32(row["ProductID"]);
+                        string pCode= row["ProductCode"].ToString();
+                        string pName= row["ProductName"].ToString();
+                        decimal pp  = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
+                        decimal sp  = row["SalePrice"]     != DBNull.Value ? Convert.ToDecimal(row["SalePrice"])     : 0m;
+
+                        if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                            dgItems.Rows.RemoveAt(rowIdx);
+                        _pendingRowIdx = -1;
+
+                        AddProductToGrid(pid, pCode, pName, 1.00m, pp, 0m, sp);
+                        // فتح سطر جديد للإدخال التالي
+                        AddNewCodeRow();
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ لم يتم العثور على صنف بالكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                         {
-                            var row = dt.Rows[0];
-                            int productID = Convert.ToInt32(row["ProductID"]);
-                            string prodCode = row["ProductCode"].ToString();
-                            string prodName = row["ProductName"].ToString();
-                            decimal purchasePrice = Convert.ToDecimal(row["PurchasePrice"] == DBNull.Value ? 0 : row["PurchasePrice"]);
-                            decimal salePrice = Convert.ToDecimal(row["SalePrice"] == DBNull.Value ? 0 : row["SalePrice"]);
-                            
-                            AddProductToGrid(productID, prodCode, prodName, 1.00m, purchasePrice, 0m, salePrice);
-                        }
-                        else
-                        {
-                            MessageBox.Show("لم يتم العثور على الصنف!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
+                            dgItems.BeginEdit(true);
                         }
                     }
-                }
+                });
+                return;
             }
+            RecalcTotals();
         }
 
         private void CboProduct_KeyDown(object sender, KeyEventArgs e)
@@ -1073,6 +1151,7 @@ namespace ChickenDist.Forms
         // تحديث الجدول
         private void RefreshGrid()
         {
+            _pendingRowIdx = -1;
             dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             foreach (var item in _items)
@@ -1081,7 +1160,7 @@ namespace ChickenDist.Forms
                 decimal sell = item.SuggestedSalePrice ?? 0m;
                 decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
 
-                dgItems.Rows.Add(
+                int rIdx = dgItems.Rows.Add(
                     item.ProductID,
                     item.ProductCode,
                     item.ProductName,
@@ -1091,6 +1170,8 @@ namespace ChickenDist.Forms
                     item.TotalPrice.ToString("F2"),
                     sell.ToString("F2"),
                     margin.ToString("F1") + "%");
+                // عمود الكود للسطور المضافة = قراءة فقط
+                dgItems.Rows[rIdx].Cells["ProductCode"].ReadOnly = true;
             }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
             RecalcTotals();
@@ -1662,6 +1743,221 @@ namespace ChickenDist.Forms
                 cbo.SelectionLength = 0;
                 cbo.DroppedDown = true;
             };
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // ── تخصيص أعمدة الجدول ────────────────────────────────────────────────
+        // ══════════════════════════════════════════════════════════════════════
+
+        /// <summary>يفتح نافذة تخصيص الأعمدة (إظهار/إخفاء + ترتيب)</summary>
+        private void ShowColumnCustomizer()
+        {
+            var dlg = new Form
+            {
+                Text            = "⚙️ تخصيص أعمدة الفاتورة",
+                Size            = new Size(360, 480),
+                StartPosition   = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                RightToLeft     = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor       = Color.FromArgb(30, 30, 45),
+                Font            = new Font("Segoe UI", 10f)
+            };
+
+            var lblHint = new Label
+            {
+                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Dock      = DockStyle.Top,
+                Height    = 32,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(150, 200, 255),
+                Font      = new Font("Segoe UI", 9f)
+            };
+
+            var clb = new CheckedListBox
+            {
+                Dock            = DockStyle.Fill,
+                CheckOnClick    = true,
+                BackColor       = Color.FromArgb(40, 42, 58),
+                ForeColor       = Color.White,
+                BorderStyle     = BorderStyle.None,
+                Font            = new Font("Segoe UI", 10f),
+                RightToLeft     = RightToLeft.Yes
+            };
+
+            // ملء القائمة بالأعمدة (ما عدا عمود الحذف)
+            foreach (DataGridViewColumn col in dgItems.Columns)
+            {
+                if (col.Name == "Delete") continue;
+                clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
+            }
+
+            // أزرار ▲▼
+            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
+
+            btnUp.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i <= 0) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i - 1, item);
+                clb.SetItemChecked(i - 1, chk);
+                clb.SelectedIndex = i - 1;
+            };
+            btnDown.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i < 0 || i >= clb.Items.Count - 1) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i + 1, item);
+                clb.SetItemChecked(i + 1, chk);
+                clb.SelectedIndex = i + 1;
+            };
+
+            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
+
+            var pnlArrows = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 40,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlArrows.Controls.AddRange(new Control[] { btnDown, btnUp });
+
+            var pnlFooter = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 44,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlFooter.Controls.AddRange(new Control[] { btnCancel, btnOk });
+
+            dlg.Controls.Add(clb);
+            dlg.Controls.Add(pnlArrows);
+            dlg.Controls.Add(pnlFooter);
+            dlg.Controls.Add(lblHint);
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                // تطبيق الترتيب والإظهار على الجدول
+                int displayIndex = 0;
+                var hiddenNames  = new System.Collections.Generic.List<string>();
+                var orderedNames = new System.Collections.Generic.List<string>();
+
+                for (int i = 0; i < clb.Items.Count; i++)
+                {
+                    if (!(clb.Items[i] is ColEntry ce)) continue;
+                    orderedNames.Add(ce.ColName);
+                    bool visible = clb.GetItemChecked(i);
+                    if (!visible) hiddenNames.Add(ce.ColName);
+
+                    if (dgItems.Columns.Contains(ce.ColName))
+                    {
+                        dgItems.Columns[ce.ColName].Visible      = visible;
+                        dgItems.Columns[ce.ColName].DisplayIndex = displayIndex++;
+                    }
+                }
+                // عمود الحذف دائماً في الآخر
+                if (dgItems.Columns.Contains("Delete"))
+                    dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
+
+                SaveColumnSettings(orderedNames, hiddenNames);
+            }
+        }
+
+        /// <summary>يحفظ ترتيب الأعمدة وما هو مخفي في Settings.ini</summary>
+        private void SaveColumnSettings(
+            System.Collections.Generic.List<string> ordered = null,
+            System.Collections.Generic.List<string> hidden = null)
+        {
+            try
+            {
+                if (ordered == null || hidden == null)
+                {
+                    ordered = new System.Collections.Generic.List<string>();
+                    hidden = new System.Collections.Generic.List<string>();
+
+                    var cols = new System.Collections.Generic.List<DataGridViewColumn>();
+                    foreach (DataGridViewColumn col in dgItems.Columns)
+                    {
+                        if (col.Name == "Delete") continue;
+                        cols.Add(col);
+                    }
+                    cols.Sort((x, y) => x.DisplayIndex.CompareTo(y.DisplayIndex));
+
+                    foreach (var col in cols)
+                    {
+                        ordered.Add(col.Name);
+                        if (!col.Visible) hidden.Add(col.Name);
+                    }
+                }
+
+                Core.LicenseManager.WriteIniValue("PurchaseGridColumns", "Order",  string.Join(",", ordered));
+                Core.LicenseManager.WriteIniValue("PurchaseGridColumns", "Hidden", string.Join(",", hidden));
+            }
+            catch { }
+        }
+
+        /// <summary>يحمّل ترتيب الأعمدة من Settings.ini عند بداية التشغيل</summary>
+        private void LoadColumnSettings()
+        {
+            try
+            {
+                string orderVal  = Core.LicenseManager.ReadIniValue("PurchaseGridColumns", "Order",  "");
+                string hiddenVal = Core.LicenseManager.ReadIniValue("PurchaseGridColumns", "Hidden", "");
+
+                if (string.IsNullOrWhiteSpace(orderVal)) return;
+
+                var ordered = new System.Collections.Generic.List<string>(
+                    orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+                var hidden  = new System.Collections.Generic.List<string>(
+                    string.IsNullOrEmpty(hiddenVal) ? new string[0]
+                    : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها في النهاية
+                foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)
+                {
+                    if (col.Name == "Delete") continue;
+                    if (!ordered.Contains(col.Name))
+                    {
+                        ordered.Add(col.Name);
+                    }
+                }
+
+                int displayIndex = 0;
+                foreach (string colName in ordered)
+                {
+                    if (!dgItems.Columns.Contains(colName)) continue;
+                    dgItems.Columns[colName].Visible      = !hidden.Contains(colName);
+                    dgItems.Columns[colName].DisplayIndex = displayIndex++;
+                }
+                if (dgItems.Columns.Contains("Delete"))
+                    dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
+            }
+            catch { }
+        }
+
+        // مساعد: تمثيل عمود في القائمة
+        private class ColEntry
+        {
+            public string ColName    { get; }
+            public string HeaderText { get; }
+            public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
+            public override string ToString() => HeaderText;
         }
     }
 

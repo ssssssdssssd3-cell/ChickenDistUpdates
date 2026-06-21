@@ -119,6 +119,7 @@ namespace ChickenDist.Forms
 			_isCopyMode = isCopyMode;
 			InitUI();
 			LoadCombos();
+			ApplyInvoiceTypePermissions();
 			if (saleID > 0)
 			{
 				LoadInvoiceForEdit(saleID);
@@ -1499,7 +1500,7 @@ namespace ChickenDist.Forms
 				}
 			};
 			dtpDate.Value = DateTime.Today;
-			SetInvoiceType("Credit");
+			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
 			// تحميل المخازن
 			try
@@ -1525,15 +1526,46 @@ namespace ChickenDist.Forms
 			{
 				DataTable safes = AccountDAL.GetActiveSafeAccounts();
 				cboSafeAccount.Items.Clear();
+
+				// Get allowed safes from Session
+				System.Collections.Generic.HashSet<int> allowedSafes = null;
+				if (Session.Role != "Admin")
+				{
+					allowedSafes = new System.Collections.Generic.HashSet<int>();
+					if (!string.IsNullOrEmpty(Session.AllowedSafeIDs))
+					{
+						foreach (var part in Session.AllowedSafeIDs.Split(','))
+						{
+							if (int.TryParse(part, out int id))
+								allowedSafes.Add(id);
+						}
+					}
+				}
+
+				int selectedIdx = -1;
+				int defaultSafeID = Session.DefaultSafeID ?? 0;
+
 				foreach (DataRow row in safes.Rows)
 				{
-					cboSafeAccount.Items.Add(new ComboItem(
-						Convert.ToInt32(row["AccountID"]),
-						row["AccountName"].ToString()
-					));
+					int accID = Convert.ToInt32(row["AccountID"]);
+					if (allowedSafes != null && !allowedSafes.Contains(accID))
+					{
+						continue; // Filter out if not allowed
+					}
+
+					var comboItem = new ComboItem(accID, row["AccountName"].ToString());
+					int addedIdx = cboSafeAccount.Items.Add(comboItem);
+
+					if (accID == defaultSafeID)
+					{
+						selectedIdx = addedIdx;
+					}
 				}
 				cboSafeAccount.DisplayMember = "Text";
-				if (cboSafeAccount.Items.Count > 0) cboSafeAccount.SelectedIndex = 0;
+				if (cboSafeAccount.Items.Count > 0)
+				{
+					cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+				}
 			}
 			catch { }
 		}
@@ -1621,6 +1653,26 @@ namespace ChickenDist.Forms
 			btnTypeInstallment.BackColor = ((_invoiceType == "Installment") ? Theme.Accent : Theme.BgInput);
 			btnTypeInstallment.ForeColor = ((_invoiceType == "Installment") ? Color.White : Theme.TextMain);
 			ToggleType();
+		}
+
+		private string GetDefaultAllowedInvoiceType()
+		{
+			if (Session.Role == "Admin") return "Credit";
+			if (Session.CanSellCredit) return "Credit";
+			if (Session.CanSellCash) return "Cash";
+			if (Session.CanSellDriverLoad) return "DriverLoad";
+			if (Session.CanSellInstallment) return "Installment";
+			return "Credit"; // Fallback
+		}
+
+		private void ApplyInvoiceTypePermissions()
+		{
+			if (Session.Role == "Admin") return;
+
+			btnTypeCash.Visible = Session.CanSellCash;
+			btnTypeCredit.Visible = Session.CanSellCredit;
+			btnTypeDriverLoad.Visible = Session.CanSellDriverLoad;
+			btnTypeInstallment.Visible = Session.CanSellInstallment;
 		}
 
 		private void ToggleType()
@@ -2903,10 +2955,33 @@ namespace ChickenDist.Forms
 			try
 			{
 				DataTable safes = AccountDAL.GetActiveSafeAccounts();
+				cboSafe.Items.Clear();
+
+				// Get allowed safes from Session
+				System.Collections.Generic.HashSet<int> allowedSafes = null;
+				if (Session.Role != "Admin")
+				{
+					allowedSafes = new System.Collections.Generic.HashSet<int>();
+					if (!string.IsNullOrEmpty(Session.AllowedSafeIDs))
+					{
+						foreach (var part in Session.AllowedSafeIDs.Split(','))
+						{
+							if (int.TryParse(part, out int id))
+								allowedSafes.Add(id);
+						}
+					}
+				}
+
 				foreach (DataRow row in safes.Rows)
 				{
+					int accID = Convert.ToInt32(row["AccountID"]);
+					if (allowedSafes != null && !allowedSafes.Contains(accID))
+					{
+						continue; // Filter out if not allowed
+					}
+
 					cboSafe.Items.Add(new ComboItem(
-						Convert.ToInt32(row["AccountID"]),
+						accID,
 						row["AccountName"].ToString()
 					));
 				}
@@ -3686,7 +3761,7 @@ namespace ChickenDist.Forms
 			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
 			SetTierButtons("قطاعي");
 			dtpDate.Value = DateTime.Today;
-			SetInvoiceType("Credit");
+			SetInvoiceType(GetDefaultAllowedInvoiceType());
 			Text = "شاشة المبيعات";
 			_editSaleID = 0;
 			_isCopyMode = false;

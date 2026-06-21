@@ -102,6 +102,7 @@ namespace ChickenDist.Forms
 		private ComboBox cboSafeAccount;
 		private Label lblSafeAccount;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
+		private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
 		private Label lblCratesOut;
 		private NumericUpDown nudCratesOut;
 		private Label lblCratesIn;
@@ -118,6 +119,7 @@ namespace ChickenDist.Forms
 			_isCopyMode = isCopyMode;
 			InitUI();
 			LoadCombos();
+			ApplyInvoiceTypePermissions();
 			if (saleID > 0)
 			{
 				LoadInvoiceForEdit(saleID);
@@ -639,6 +641,14 @@ namespace ChickenDist.Forms
 				EnableHeadersVisualStyles = false,
 				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 			};
+			// عمود إدخال الكود (أول عمود - قابل للكتابة مباشرة)
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name       = "CodeEntry",
+				HeaderText = "كود الصنف",
+				ReadOnly   = false,
+				FillWeight = 55f
+			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ProductName",
@@ -742,8 +752,26 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(dataGridViewColumn);
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
-            dgItems.RowsAdded += (s, e) => _isDirty = true;
-            dgItems.RowsRemoved += (s, e) => _isDirty = true;
+			dgItems.RowsAdded   += (s, e) => _isDirty = true;
+			dgItems.RowsRemoved += (s, e) => _isDirty = true;
+			// سهم لأسفل في آخر سطر → يفتح سطر إدخال كود جديد | Insert = نفس الشيء
+			dgItems.KeyDown += (s, ke) =>
+			{
+				if (ke.KeyCode == Keys.Down && dgItems.CurrentCell != null)
+				{
+					int lastReal = _items.Count - 1;
+					if (dgItems.CurrentCell.RowIndex >= lastReal && _pendingRowIdx < 0)
+					{
+						ke.Handled = true;
+						AddNewCodeRow();
+					}
+				}
+				else if (ke.KeyCode == Keys.Insert)
+				{
+					ke.Handled = true;
+					AddNewCodeRow();
+				}
+			};
 			pnlItems.Controls.Add(dgItems);
 
 			// ── زر تخصيص الأعمدة ⚙️ (يظهر في زاوية الجدول) ─────────────────────
@@ -1393,6 +1421,7 @@ namespace ChickenDist.Forms
 					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					itemOld.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(itemOld);
 
 					// إضافة السعر المعلق كخيار مستقل
@@ -1412,6 +1441,7 @@ namespace ChickenDist.Forms
 					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					itemPending.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(itemPending);
 				}
 				else
@@ -1432,6 +1462,7 @@ namespace ChickenDist.Forms
 					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					cboProduct.Items.Add(comboItem);
 				}
 			}
@@ -1469,7 +1500,7 @@ namespace ChickenDist.Forms
 				}
 			};
 			dtpDate.Value = DateTime.Today;
-			SetInvoiceType("Credit");
+			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
 			// تحميل المخازن
 			try
@@ -1495,15 +1526,46 @@ namespace ChickenDist.Forms
 			{
 				DataTable safes = AccountDAL.GetActiveSafeAccounts();
 				cboSafeAccount.Items.Clear();
+
+				// Get allowed safes from Session
+				System.Collections.Generic.HashSet<int> allowedSafes = null;
+				if (Session.Role != "Admin")
+				{
+					allowedSafes = new System.Collections.Generic.HashSet<int>();
+					if (!string.IsNullOrEmpty(Session.AllowedSafeIDs))
+					{
+						foreach (var part in Session.AllowedSafeIDs.Split(','))
+						{
+							if (int.TryParse(part, out int id))
+								allowedSafes.Add(id);
+						}
+					}
+				}
+
+				int selectedIdx = -1;
+				int defaultSafeID = Session.DefaultSafeID ?? 0;
+
 				foreach (DataRow row in safes.Rows)
 				{
-					cboSafeAccount.Items.Add(new ComboItem(
-						Convert.ToInt32(row["AccountID"]),
-						row["AccountName"].ToString()
-					));
+					int accID = Convert.ToInt32(row["AccountID"]);
+					if (allowedSafes != null && !allowedSafes.Contains(accID))
+					{
+						continue; // Filter out if not allowed
+					}
+
+					var comboItem = new ComboItem(accID, row["AccountName"].ToString());
+					int addedIdx = cboSafeAccount.Items.Add(comboItem);
+
+					if (accID == defaultSafeID)
+					{
+						selectedIdx = addedIdx;
+					}
 				}
 				cboSafeAccount.DisplayMember = "Text";
-				if (cboSafeAccount.Items.Count > 0) cboSafeAccount.SelectedIndex = 0;
+				if (cboSafeAccount.Items.Count > 0)
+				{
+					cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+				}
 			}
 			catch { }
 		}
@@ -1593,6 +1655,26 @@ namespace ChickenDist.Forms
 			ToggleType();
 		}
 
+		private string GetDefaultAllowedInvoiceType()
+		{
+			if (Session.Role == "Admin") return "Credit";
+			if (Session.CanSellCredit) return "Credit";
+			if (Session.CanSellCash) return "Cash";
+			if (Session.CanSellDriverLoad) return "DriverLoad";
+			if (Session.CanSellInstallment) return "Installment";
+			return "Credit"; // Fallback
+		}
+
+		private void ApplyInvoiceTypePermissions()
+		{
+			if (Session.Role == "Admin") return;
+
+			btnTypeCash.Visible = Session.CanSellCash;
+			btnTypeCredit.Visible = Session.CanSellCredit;
+			btnTypeDriverLoad.Visible = Session.CanSellDriverLoad;
+			btnTypeInstallment.Visible = Session.CanSellInstallment;
+		}
+
 		private void ToggleType()
 		{
 			bool flag = _invoiceType == "Credit" || _invoiceType == "Installment";
@@ -1678,49 +1760,34 @@ namespace ChickenDist.Forms
 
 		private void BtnManualAdd_Click(object sender, EventArgs e)
 		{
-			using (var frm = new Form())
+			AddNewCodeRow();
+		}
+
+		/// <summary>يضيف سطراً فارغاً في الجدول ويضع الكيرسور على عمود كود الصنف مباشرة</summary>
+		private void AddNewCodeRow()
+		{
+			// إزالة سطر الكود المعلق السابق إذا كان فارغاً
+			if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 			{
-				frm.Text = "إدخال كود الصنف يدوي";
-				frm.Size = new Size(350, 160);
-				frm.StartPosition = FormStartPosition.CenterParent;
-				frm.FormBorderStyle = FormBorderStyle.FixedDialog;
-				frm.MaximizeBox = false;
-				frm.MinimizeBox = false;
-				frm.RightToLeft = RightToLeft.Yes;
-				frm.RightToLeftLayout = true;
-				frm.BackColor = Theme.BgMain;
-				frm.Font = Theme.FontMain;
-
-				var lbl = new Label { Text = "أدخل كود الصنف أو الباركود الدولي:", Location = new Point(20, 20), Width = 310, AutoSize = false, ForeColor = Theme.TextMain };
-				var txt = new TextBox { Location = new Point(20, 50), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-				
-				var btnOk = Theme.MakeButton("💾 إضافة", 180, 85, 130, 30, Theme.Accent);
-				var btnCancel = Theme.MakeButton("❌ إلغاء", 20, 85, 130, 30, Color.FromArgb(100, 110, 120));
-
-				btnOk.Click += (s, ev) => { frm.DialogResult = DialogResult.OK; frm.Close(); };
-				btnCancel.Click += (s, ev) => { frm.Close(); };
-
-				frm.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
-				frm.AcceptButton = btnOk;
-
-				if (frm.ShowDialog(this) == DialogResult.OK)
-				{
-					string code = txt.Text.Trim();
-					if (!string.IsNullOrEmpty(code))
-					{
-						var dt = ProductDAL.FindByCode(code);
-						if (dt.Rows.Count > 0)
-						{
-							int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-							AddOrUpdateProduct(productID, 1.00m);
-						}
-						else
-						{
-							MessageBox.Show("لم يتم العثور على الصنف!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-						}
-					}
-				}
+				var prevCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+				if (prevCell.Value == null || string.IsNullOrEmpty(prevCell.Value.ToString()))
+					dgItems.Rows.RemoveAt(_pendingRowIdx);
 			}
+
+			// إضافة سطر فارغ جديد
+			_pendingRowIdx = dgItems.Rows.Add();
+			// تلوين السطر الجديد لتمييزه
+			dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(30, 120, 190, 80);
+
+			// الانتقال لخلية الكود في السطر الجديد
+			try
+			{
+				dgItems.ClearSelection();
+				dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+				dgItems.BeginEdit(true);
+				dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
+			}
+			catch { }
 		}
 
 		private void SelectProductByID(int prodID, decimal price)
@@ -1775,6 +1842,47 @@ namespace ChickenDist.Forms
 
 		private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
 		{
+			// معالجة خلية كود الصنف (السطر المعلق)
+			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CodeEntry")
+			{
+				string code = dgItems.Rows[e.RowIndex].Cells["CodeEntry"].Value?.ToString()?.Trim() ?? "";
+				int rowIdx  = e.RowIndex;
+				this.BeginInvoke((MethodInvoker)delegate
+				{
+					if (string.IsNullOrEmpty(code))
+					{
+						// كود فارغ → حذف السطر المعلق
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							dgItems.Rows.RemoveAt(rowIdx);
+						_pendingRowIdx = -1;
+						return;
+					}
+					var dt = ProductDAL.FindByCode(code);
+					if (dt.Rows.Count > 0)
+					{
+						int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+						// حذف السطر المعلق ثم إضافة الصنف الحقيقي
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							dgItems.Rows.RemoveAt(rowIdx);
+						_pendingRowIdx = -1;
+						AddOrUpdateProduct(productID, 1.00m);
+						// فتح سطر جديد للإدخال التالي
+						AddNewCodeRow();
+					}
+					else
+					{
+						MessageBox.Show("❌ لم يتم العثور على صنف بالكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						// إعادة التركيز على خلية الكود
+						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+						{
+							dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
+							dgItems.BeginEdit(true);
+						}
+					}
+				});
+				return;
+			}
+
 			if (e.RowIndex < 0 || e.RowIndex >= _items.Count)
 			{
 				return;
@@ -1787,7 +1895,8 @@ namespace ChickenDist.Forms
 				{
 					// استخدام cache — يتم تحديثه عند فتح الشاشة
 					decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var cached3) ? cached3 : 0m;
-					if (result > productStock)
+					// ─── الأصناف الخدمية تتجاوز فحص المخزون ───
+					if (!saleItemDTO.IsService && result > productStock)
 					{
 						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({result:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
@@ -1876,11 +1985,13 @@ namespace ChickenDist.Forms
 
 		private void RefreshGrid()
 		{
+			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
 			dgItems.Rows.Clear();
 			foreach (SaleItemDTO item in _items)
 			{
 				decimal costTotal = item.PurchasePrice * item.Quantity;
 				int rIndex = dgItems.Rows.Add(
+					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
 					item.ProductName,
 					item.PartNumber,
 					item.CarModel,
@@ -1895,6 +2006,8 @@ namespace ChickenDist.Forms
 					item.PurchasePrice.ToString("F2"),
 					costTotal.ToString("F2")
 				);
+				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
+				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
                 
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
                 if (item.MinStockLimit > 0)
@@ -2081,7 +2194,9 @@ namespace ChickenDist.Forms
 				PartNumber = product.PartNumber,
 				CarModel = product.CarModel,
 				Brand = product.Brand,
-				ShelfLocation = product.ShelfLocation
+				ShelfLocation = product.ShelfLocation,
+				ProductCode = product.ProductCode,
+				IsService = product.IsService
 			};
 		}
 
@@ -2840,10 +2955,33 @@ namespace ChickenDist.Forms
 			try
 			{
 				DataTable safes = AccountDAL.GetActiveSafeAccounts();
+				cboSafe.Items.Clear();
+
+				// Get allowed safes from Session
+				System.Collections.Generic.HashSet<int> allowedSafes = null;
+				if (Session.Role != "Admin")
+				{
+					allowedSafes = new System.Collections.Generic.HashSet<int>();
+					if (!string.IsNullOrEmpty(Session.AllowedSafeIDs))
+					{
+						foreach (var part in Session.AllowedSafeIDs.Split(','))
+						{
+							if (int.TryParse(part, out int id))
+								allowedSafes.Add(id);
+						}
+					}
+				}
+
 				foreach (DataRow row in safes.Rows)
 				{
+					int accID = Convert.ToInt32(row["AccountID"]);
+					if (allowedSafes != null && !allowedSafes.Contains(accID))
+					{
+						continue; // Filter out if not allowed
+					}
+
 					cboSafe.Items.Add(new ComboItem(
-						Convert.ToInt32(row["AccountID"]),
+						accID,
 						row["AccountName"].ToString()
 					));
 				}
@@ -3623,7 +3761,7 @@ namespace ChickenDist.Forms
 			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
 			SetTierButtons("قطاعي");
 			dtpDate.Value = DateTime.Today;
-			SetInvoiceType("Credit");
+			SetInvoiceType(GetDefaultAllowedInvoiceType());
 			Text = "شاشة المبيعات";
 			_editSaleID = 0;
 			_isCopyMode = false;
@@ -3856,6 +3994,8 @@ namespace ChickenDist.Forms
 		public decimal PendingQtyThreshold { get; set; } = 0m;
 		public string ProductCode { get; set; } = "";
 		public string InternationalCode { get; set; } = "";
+		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
+		public bool IsService { get; set; } = false;
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

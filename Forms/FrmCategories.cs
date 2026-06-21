@@ -32,20 +32,28 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var split = new SplitContainer
+            var tbl = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                FixedPanel = FixedPanel.Panel1,
-                SplitterDistance = 280
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Theme.BgMain
+            };
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f)); // العمود الأيمن: المدخلات
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // العمود الأيسر: الجدول
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            // Details Panel (Inputs)
+            var pnlDetails = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15)
             };
 
-            // Right Panel: Inputs
-            split.Panel1.BackColor = Theme.BgCard;
-            split.Panel1.Padding = new Padding(15);
-
             int y = 30;
-            split.Panel1.Controls.Add(new Label
+            pnlDetails.Controls.Add(new Label
             {
                 Text = "اسم التصنيف:",
                 Location = new Point(160, y),
@@ -63,7 +71,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            split.Panel1.Controls.Add(txtName);
+            pnlDetails.Controls.Add(txtName);
             y += 45;
 
             chkActive = new CheckBox
@@ -73,7 +81,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Checked = true
             };
-            split.Panel1.Controls.Add(chkActive);
+            pnlDetails.Controls.Add(chkActive);
             y += 50;
 
             btnNew = Theme.MakeButton("🆕 جديد", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
@@ -84,7 +92,7 @@ namespace ChickenDist.Forms
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
 
-            split.Panel1.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
 
             // Left Panel: Grid (Panel2)
             dgCategories = new DataGridView
@@ -121,9 +129,10 @@ namespace ChickenDist.Forms
             dgCategories.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "الحالة", FillWeight = 40 });
             dgCategories.SelectionChanged += DgCategories_SelectionChanged;
 
-            split.Panel2.Controls.Add(dgCategories);
+            tbl.Controls.Add(pnlDetails, 0, 0); // العمود 0 (اليمين بسبب RTL)
+            tbl.Controls.Add(dgCategories, 1, 0); // العمود 1 (اليسار بسبب RTL)
 
-            this.Controls.Add(split);
+            this.Controls.Add(tbl);
             Theme.ApplyFormRTL(this);
             this.RightToLeftLayout = false; // تعطيل الانعكاس لتجنب قص اللوحة اليمنى عند التضمين كابن
         }
