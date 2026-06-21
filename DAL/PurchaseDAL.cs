@@ -132,7 +132,7 @@ namespace ChickenDist.DAL
             {
                 var nextResult = DbHelper.ScalarTrans(trans,
                     "SELECT COALESCE(MAX(PurchaseID), 0) + 1 FROM Purchases");
-                string code = "PUR-" + (nextResult != null ? nextResult.ToString() : "1");
+                string code = nextResult != null ? nextResult.ToString() : "1";
 
                 // فحص رصيد الخزنة للمشتريات النقدية المؤكدة فقط
                 if (purchaseType == "Cash" && !isDraft)

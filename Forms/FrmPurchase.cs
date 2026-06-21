@@ -1550,14 +1550,14 @@ namespace ChickenDist.Forms
 
                     _lastPurchaseID = id;
                     MessageBox.Show(
-                        $"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: PUR-{id}" +
+                        $"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: {id}" +
                         (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : "") +
                         (priceDecision == "Pending" ? "\n⚠️ تم تعليق أسعار البيع الجديدة وسوف تتفعل تلقائياً عند نفاد الكميات الحالية." : ""),
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     
                     try
                     {
-                        using (var printDlg = new FrmPrintPurchaseBarcodes(id, $"PUR-{id}"))
+                        using (var printDlg = new FrmPrintPurchaseBarcodes(id, id.ToString()))
                         {
                             printDlg.ShowDialog(this);
                         }
