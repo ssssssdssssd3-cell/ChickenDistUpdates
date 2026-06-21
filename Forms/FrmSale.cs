@@ -982,6 +982,11 @@ namespace ChickenDist.Forms
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
+			if (keyData == Keys.Insert)
+			{
+				AddNewCodeRow();
+				return true;
+			}
 			if (keyData == Keys.Enter)
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
@@ -989,6 +994,11 @@ namespace ChickenDist.Forms
 					var curCell = dgItems.CurrentCell;
 					if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
 					{
+						if (curCell.RowIndex >= _items.Count)
+						{
+							dgItems.EndEdit();
+							return true;
+						}
 						int productID = _items[curCell.RowIndex].ProductID;
 
 						// Find next editable cell in the same row
