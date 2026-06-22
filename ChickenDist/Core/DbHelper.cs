@@ -1096,40 +1096,40 @@ namespace ChickenDist.Core
                     w.WarehouseID,
                     w.WarehouseName,
                     ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0)
-                    + ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    + ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN ri.Factor IS NULL THEN ri.Quantity ELSE 0 END)
                               FROM ReturnItems ri
                               JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                               WHERE ri.ProductID = p.ProductID
                                 AND sr.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    + ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN hi.Factor IS NULL THEN hi.ReturnedQty ELSE 0 END)
                               FROM HandoverItems hi
                               JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                               JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
                               WHERE hi.ProductID = p.ProductID
                                 AND dl.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    + ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN pi.Factor IS NULL THEN pi.Quantity ELSE 0 END)
                               FROM PurchaseItems pi
                               JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                               WHERE pi.ProductID = p.ProductID
                                 AND pu.IsPosted = 1
                                 AND pu.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    + ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN ti.Factor IS NULL THEN ti.Quantity ELSE 0 END)
                               FROM WarehouseTransferItems ti
                               JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
                               WHERE ti.ProductID = p.ProductID
                                 AND t.IsPosted = 1
                                 AND t.ToWarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN pri.Factor IS NULL THEN pri.Quantity ELSE 0 END)
                               FROM PurchaseReturnItems pri
                               JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                               WHERE pri.ProductID = p.ProductID
                                 AND pr.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN si.Factor IS NULL THEN si.Quantity ELSE 0 END)
                               FROM SaleItems si
                               JOIN Sales s ON si.SaleID = s.SaleID
                               WHERE si.ProductID = p.ProductID
@@ -1137,14 +1137,14 @@ namespace ChickenDist.Core
                                 AND s.WarehouseID = w.WarehouseID
                                 AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL))
                                 AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(ti2.Quantity * COALESCE(ti2.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    - ISNULL((SELECT SUM(ti2.Quantity * ISNULL(ti2.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN ti2.Factor IS NULL THEN ti2.Quantity ELSE 0 END)
                               FROM WarehouseTransferItems ti2
                               JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID
                               WHERE ti2.ProductID = p.ProductID
                                 AND t2.IsPosted = 1
                                 AND t2.FromWarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
+                    - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * SUM(CASE WHEN wli.Factor IS NULL THEN wli.Quantity ELSE 0 END)
                               FROM WastageLossItems wli
                               JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
                               WHERE wli.ProductID = p.ProductID

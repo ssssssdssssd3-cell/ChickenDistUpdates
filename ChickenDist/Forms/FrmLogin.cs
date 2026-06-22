@@ -71,16 +71,32 @@ namespace ChickenDist.Forms
             }
             else
             {
-                logoControl = new Label
+                try
                 {
-                    Text = "\ud83d\ude9a",
-                    Font = new Font("Segoe UI Emoji", 50f),
-                    ForeColor = Theme.Accent,
-                    AutoSize = false,
-                    Size = new Size(480, 90),
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Top = 10
-                };
+                    var pb = new PictureBox
+                    {
+                        Size = new Size(480, 100),
+                        Top = 5,
+                        Left = 0,
+                        SizeMode = PictureBoxSizeMode.Zoom,
+                        BackColor = Color.Transparent
+                    };
+                    pb.Image = this.Icon.ToBitmap();
+                    logoControl = pb;
+                }
+                catch
+                {
+                    logoControl = new Label
+                    {
+                        Text = "🚚",
+                        Font = new Font("Segoe UI Emoji", 50f),
+                        ForeColor = Theme.Accent,
+                        AutoSize = false,
+                        Size = new Size(480, 90),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Top = 10
+                    };
+                }
             }
 
             var lblTitle = new Label
@@ -95,7 +111,7 @@ namespace ChickenDist.Forms
             };
             var lblSub = new Label
             {
-                Text = "\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a \u0648\u0627\u0644\u062a\u0648\u0632\u064a\u0639",
+                Text = "برو سوفت",
                 Font = new Font("Segoe UI", 10f),
                 ForeColor = Color.FromArgb(180, 220, 255),
                 AutoSize = false,
