@@ -1434,75 +1434,72 @@ namespace ChickenDist.Core
                 SafeMigrate("Products.MultiUnits", @"
                 IF OBJECT_ID('Products', 'U') IS NOT NULL
                 BEGIN
-                    IF COL_LENGTH('Products', 'Unit1Name') IS NULL
-                    BEGIN
-                        ALTER TABLE Products ADD Unit1Name NVARCHAR(50) NULL;
-                        ALTER TABLE Products ADD Unit1Barcode NVARCHAR(50) NULL;
-                        ALTER TABLE Products ADD Unit1SalePrice DECIMAL(10,2) NULL;
-                        ALTER TABLE Products ADD Unit1PurchasePrice DECIMAL(10,2) NULL;
-                        
-                        ALTER TABLE Products ADD Unit2Name NVARCHAR(50) NULL;
-                        ALTER TABLE Products ADD Unit2Factor DECIMAL(10,3) NULL;
-                        ALTER TABLE Products ADD Unit2Barcode NVARCHAR(50) NULL;
-                        ALTER TABLE Products ADD Unit2SalePrice DECIMAL(10,2) NULL;
-                        ALTER TABLE Products ADD Unit2PurchasePrice DECIMAL(10,2) NULL;
-                        
-                        ALTER TABLE Products ADD Unit3Factor DECIMAL(10,3) NULL;
-                    END
+                    IF COL_LENGTH('Products', 'Unit1Name') IS NULL ALTER TABLE Products ADD Unit1Name NVARCHAR(50) NULL;
+                    IF COL_LENGTH('Products', 'Unit1Barcode') IS NULL ALTER TABLE Products ADD Unit1Barcode NVARCHAR(50) NULL;
+                    IF COL_LENGTH('Products', 'Unit1SalePrice') IS NULL ALTER TABLE Products ADD Unit1SalePrice DECIMAL(10,2) NULL;
+                    IF COL_LENGTH('Products', 'Unit1PurchasePrice') IS NULL ALTER TABLE Products ADD Unit1PurchasePrice DECIMAL(10,2) NULL;
+                    
+                    IF COL_LENGTH('Products', 'Unit2Name') IS NULL ALTER TABLE Products ADD Unit2Name NVARCHAR(50) NULL;
+                    IF COL_LENGTH('Products', 'Unit2Factor') IS NULL ALTER TABLE Products ADD Unit2Factor DECIMAL(10,3) NULL;
+                    IF COL_LENGTH('Products', 'Unit2Barcode') IS NULL ALTER TABLE Products ADD Unit2Barcode NVARCHAR(50) NULL;
+                    IF COL_LENGTH('Products', 'Unit2SalePrice') IS NULL ALTER TABLE Products ADD Unit2SalePrice DECIMAL(10,2) NULL;
+                    IF COL_LENGTH('Products', 'Unit2PurchasePrice') IS NULL ALTER TABLE Products ADD Unit2PurchasePrice DECIMAL(10,2) NULL;
+                    
+                    IF COL_LENGTH('Products', 'Unit3Factor') IS NULL ALTER TABLE Products ADD Unit3Factor DECIMAL(10,3) NULL;
                 END");
 
                 SafeMigrate("TransactionItems.MultiUnits", @"
-                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'UnitName') IS NULL
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE SaleItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE SaleItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('SaleItems', 'UnitName') IS NULL ALTER TABLE SaleItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('SaleItems', 'Factor') IS NULL ALTER TABLE SaleItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('SaleItemsHistory', 'U') IS NOT NULL AND COL_LENGTH('SaleItemsHistory', 'UnitName') IS NULL
+                IF OBJECT_ID('SaleItemsHistory', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE SaleItemsHistory ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE SaleItemsHistory ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('SaleItemsHistory', 'UnitName') IS NULL ALTER TABLE SaleItemsHistory ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('SaleItemsHistory', 'Factor') IS NULL ALTER TABLE SaleItemsHistory ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseItems', 'UnitName') IS NULL
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE PurchaseItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE PurchaseItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('PurchaseItems', 'UnitName') IS NULL ALTER TABLE PurchaseItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('PurchaseItems', 'Factor') IS NULL ALTER TABLE PurchaseItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL AND COL_LENGTH('ReturnItems', 'UnitName') IS NULL
+                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE ReturnItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE ReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('ReturnItems', 'UnitName') IS NULL ALTER TABLE ReturnItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('ReturnItems', 'Factor') IS NULL ALTER TABLE ReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseReturnItems', 'UnitName') IS NULL
+                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE PurchaseReturnItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE PurchaseReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('PurchaseReturnItems', 'UnitName') IS NULL ALTER TABLE PurchaseReturnItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('PurchaseReturnItems', 'Factor') IS NULL ALTER TABLE PurchaseReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('WarehouseTransferItems', 'U') IS NOT NULL AND COL_LENGTH('WarehouseTransferItems', 'UnitName') IS NULL
+                IF OBJECT_ID('WarehouseTransferItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE WarehouseTransferItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE WarehouseTransferItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('WarehouseTransferItems', 'UnitName') IS NULL ALTER TABLE WarehouseTransferItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('WarehouseTransferItems', 'Factor') IS NULL ALTER TABLE WarehouseTransferItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL AND COL_LENGTH('WastageLossItems', 'UnitName') IS NULL
+                IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE WastageLossItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE WastageLossItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('WastageLossItems', 'UnitName') IS NULL ALTER TABLE WastageLossItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('WastageLossItems', 'Factor') IS NULL ALTER TABLE WastageLossItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('DriverLoadItems', 'U') IS NOT NULL AND COL_LENGTH('DriverLoadItems', 'UnitName') IS NULL
+                IF OBJECT_ID('DriverLoadItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE DriverLoadItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE DriverLoadItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('DriverLoadItems', 'UnitName') IS NULL ALTER TABLE DriverLoadItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('DriverLoadItems', 'Factor') IS NULL ALTER TABLE DriverLoadItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END
-                IF OBJECT_ID('HandoverItems', 'U') IS NOT NULL AND COL_LENGTH('HandoverItems', 'UnitName') IS NULL
+                IF OBJECT_ID('HandoverItems', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE HandoverItems ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE HandoverItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('HandoverItems', 'UnitName') IS NULL ALTER TABLE HandoverItems ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('HandoverItems', 'Factor') IS NULL ALTER TABLE HandoverItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END");
 
                 SafeMigrate("StockAdjustments.MultiUnits", @"
-                IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL AND COL_LENGTH('StockAdjustments', 'UnitName') IS NULL
+                IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE StockAdjustments ADD UnitName NVARCHAR(50) NULL;
-                    ALTER TABLE StockAdjustments ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('StockAdjustments', 'UnitName') IS NULL ALTER TABLE StockAdjustments ADD UnitName NVARCHAR(50) NULL;
+                    IF COL_LENGTH('StockAdjustments', 'Factor') IS NULL ALTER TABLE StockAdjustments ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END");
             }
             catch (Exception ex)
