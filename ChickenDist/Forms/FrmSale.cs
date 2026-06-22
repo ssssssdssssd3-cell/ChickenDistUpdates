@@ -1738,9 +1738,9 @@ namespace ChickenDist.Forms
 			_selectedTier = tier;
 			if (btnTierRetail == null) return;
 
-			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
-			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
-			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
+			Color clrRetailOn    = Color.FromArgb(0, 136, 255);
+			Color clrSemiOn      = Color.FromArgb(155, 38, 224);
+			Color clrWholesaleOn = Theme.Accent;
 			Color clrOff         = Theme.BgInput;
 
 			btnTierRetail.BackColor    = tier == "قطاعي"    ? clrRetailOn    : clrOff;
