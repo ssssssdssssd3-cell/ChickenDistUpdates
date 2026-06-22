@@ -11,10 +11,10 @@ namespace ChickenDist.Core
 {
     public static class UpdateManager
     {
-        // Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ù„Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬
-        public const string CurrentVersion = "1.9.17";
+        // الإصدار الحالي للبرنامج
+        public const string CurrentVersion = "1.9.18";
         
-        // Ø±Ø§Ø¨Ø· Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù†ØµÙŠ Ø¹Ù„Ù‰ GitHub
+        // Ø±Ø§Ø¨Ø· Ù…Ù„Ù  Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù†ØµÙŠ Ø¹Ù„Ù‰ GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
 
         public static void CheckForUpdates(bool showNoUpdateMsg = false)

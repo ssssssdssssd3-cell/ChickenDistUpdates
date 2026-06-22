@@ -81,7 +81,33 @@ namespace ChickenDist.Forms
                         SizeMode = PictureBoxSizeMode.Zoom,
                         BackColor = Color.Transparent
                     };
-                    pb.Image = this.Icon.ToBitmap();
+
+                    Image img = null;
+                    try
+                    {
+                        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                        using (var stream = assembly.GetManifestResourceStream("ChickenDist.pro_soft_logo.png"))
+                        {
+                            if (stream != null)
+                            {
+                                using (var tempImg = Image.FromStream(stream))
+                                {
+                                    img = new Bitmap(tempImg);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Failed to load embedded logo: " + ex.Message);
+                    }
+
+                    if (img == null)
+                    {
+                        img = this.Icon.ToBitmap();
+                    }
+
+                    pb.Image = img;
                     logoControl = pb;
                 }
                 catch

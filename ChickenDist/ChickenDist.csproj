@@ -22,6 +22,7 @@
     <Reference Include="System.Net.Http" />
     <EmbeddedResource Include="Forms\driver_sales.html" />
     <EmbeddedResource Include="Forms\accountant_orders.html" />
+    <EmbeddedResource Include="pro_soft_logo.png" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
     <EmbeddedResource Include="QRCoder.dll" />
     <None Include="app.config" />
