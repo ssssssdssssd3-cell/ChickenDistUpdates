@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ù„Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬
-        public const string CurrentVersion = "1.9.7";
+        public const string CurrentVersion = "1.9.8";
         
         // Ø±Ø§Ø¨Ø· Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù†ØµÙŠ Ø¹Ù„Ù‰ GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -46,7 +46,7 @@ namespace ChickenDist.Core
                             string key = line.Substring(0, index).Trim().ToLower();
                             string val = line.Substring(index + 1).Trim();
                             if      (key == "version")   remoteVersion  = val;
-                            else if (key == "url")        downloadUrl    = val;
+                            else if (key == "url" || key == "download")        downloadUrl    = val;
                             else if (key == "changelog")  changelog      = val;
                             else if (key == "sha256")     expectedSha256 = val; // FIX: Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù€ checksum
                         }

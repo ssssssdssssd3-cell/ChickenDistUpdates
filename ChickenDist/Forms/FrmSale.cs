@@ -132,6 +132,7 @@ namespace ChickenDist.Forms
 			{
 				ScaleService.Instance.WeightChanged += ScaleService_WeightChanged;
 			}
+			this.Load += (s, e) => { this.ActiveControl = cboProduct; cboProduct.Focus(); };
 		}
 
 		private void ScaleService_WeightChanged(decimal weight, bool isStable)
