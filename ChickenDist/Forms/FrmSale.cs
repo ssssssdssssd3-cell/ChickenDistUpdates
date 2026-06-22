@@ -2045,25 +2045,35 @@ namespace ChickenDist.Forms
 
 			dto.UnitName = newUnit;
 
-			// تحديد الـ Factor والسعر بناء على الوحدة المختارة
-			string bigUnit = !string.IsNullOrEmpty(prod.Unit1Name) ? prod.Unit1Name
-				         : !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "";
-
 			if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
 			{
-				// وحدة ثانوية (علبة مثلاً)
+				// 1. الوحدة الوسطى
 				dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
 				if (prod.Unit2SalePrice > 0) dto.UnitPrice = prod.Unit2SalePrice;
 				if (prod.Unit2PurchasePrice > 0) dto.PurchasePrice = prod.Unit2PurchasePrice;
 			}
-			else // الوحدة الكبرى (الأساسية)
+			else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
 			{
+				// 2. الوحدة الصغرى (التجزئة)
 				dto.Factor = 1m;
-				// إعادة السعر الأصلي من combo
 				if (prod.Unit1SalePrice > 0) dto.UnitPrice = prod.Unit1SalePrice;
 				else dto.UnitPrice = prod.Price;
 				if (prod.Unit1PurchasePrice > 0) dto.PurchasePrice = prod.Unit1PurchasePrice;
 				else dto.PurchasePrice = prod.PurchasePrice;
+			}
+			else if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
+			{
+				// 3. الوحدة الكبرى (الأساسية)
+				dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
+				dto.UnitPrice = prod.Price;
+				dto.PurchasePrice = prod.PurchasePrice;
+			}
+			else
+			{
+				// احتياطي
+				dto.Factor = 1m;
+				dto.UnitPrice = prod.Price;
+				dto.PurchasePrice = prod.PurchasePrice;
 			}
 
 			// تحديث الجدول
@@ -2110,13 +2120,27 @@ namespace ChickenDist.Forms
 					ComboItem prod = GetProductComboItem(item.ProductID);
 					if (prod != null)
 					{
-						// الوحدة الكبرى (الأساسية) دائماً متاحة
-						string bigUnit = !string.IsNullOrEmpty(prod.Unit1Name) ? prod.Unit1Name
-							         : !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName
-							         : "وحدة";
-						unitList.Add(bigUnit);
-						// الوحدة2 إن وُجدت
-						if (!string.IsNullOrEmpty(prod.Unit2Name)) unitList.Add(prod.Unit2Name);
+						// 1. الوحدة الكبرى (الأساسية)
+						if (!string.IsNullOrEmpty(prod.BaseUnitName))
+						{
+							unitList.Add(prod.BaseUnitName);
+						}
+						else
+						{
+							unitList.Add("وحدة");
+						}
+
+						// 2. الوحدة الوسطى (إن وُجدت)
+						if (!string.IsNullOrEmpty(prod.Unit2Name))
+						{
+							unitList.Add(prod.Unit2Name);
+						}
+
+						// 3. الوحدة الصغرى (إن وُجدت وليست مكررة مع الكبرى)
+						if (!string.IsNullOrEmpty(prod.Unit1Name) && prod.Unit1Name != prod.BaseUnitName)
+						{
+							unitList.Add(prod.Unit1Name);
+						}
 					}
 					else
 					{
