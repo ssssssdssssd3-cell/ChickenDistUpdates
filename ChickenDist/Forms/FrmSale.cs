@@ -4242,6 +4242,8 @@ namespace ChickenDist.Forms
 		public decimal Unit2PurchasePrice { get; set; } = 0m;
 		/// <summary>عامل الوحدة3 (الوحدة الأكبر مثل كرتون كبير)</summary>
 		public decimal Unit3Factor { get; set; } = 1m;
+		public string Unit1Barcode { get; set; } = "";
+		public string Unit2Barcode { get; set; } = "";
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{
