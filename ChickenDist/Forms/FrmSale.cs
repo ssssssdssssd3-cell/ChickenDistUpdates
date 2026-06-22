@@ -272,26 +272,65 @@ namespace ChickenDist.Forms
 				if (e.KeyCode == Keys.Enter)
 				{
 					string term = txtClientSearchCode.Text.Trim();
-					if (string.IsNullOrEmpty(term)) return;
+					if (string.IsNullOrEmpty(term))
+					{
+						cboClient.SelectedIndex = 0;
+						return;
+					}
 
 					ComboItem found = null;
-					foreach (var item in cboClient.Items)
+					var allClients = cboClient.Tag as List<ComboItem>;
+					if (allClients != null)
 					{
-						if (item is ComboItem ci && ci.ID > 0)
+						foreach (var ci in allClients)
 						{
-							if (string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
-								string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
-								(ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase)))
+							if (ci.ID > 0 &&
+								(ci.ID.ToString() == term ||
+								 string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
+								 string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
+								 (ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase))))
 							{
 								found = ci;
 								break;
 							}
 						}
 					}
+					else
+					{
+						foreach (var item in cboClient.Items)
+						{
+							if (item is ComboItem ci && ci.ID > 0)
+							{
+								if (ci.ID.ToString() == term ||
+									string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
+									string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
+									(ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase)))
+								{
+									found = ci;
+									break;
+								}
+							}
+						}
+					}
 
 					if (found != null)
 					{
-						cboClient.SelectedItem = found;
+						if (allClients != null)
+						{
+							cboClient.BeginUpdate();
+							cboClient.Items.Clear();
+							cboClient.Items.AddRange(allClients.ToArray());
+							cboClient.EndUpdate();
+						}
+						for (int i = 0; i < cboClient.Items.Count; i++)
+						{
+							if (cboClient.Items[i] is ComboItem ci && ci.ID == found.ID)
+							{
+								cboClient.SelectedIndex = i;
+								break;
+							}
+						}
+						txtClientSearchCode.Clear();
 						e.Handled = true;
 						e.SuppressKeyPress = true;
 					}
@@ -630,7 +669,11 @@ namespace ChickenDist.Forms
 				if (e.KeyCode == Keys.Enter)
 				{
 					string scanText = txtProductCode.Text.Trim();
-					if (string.IsNullOrEmpty(scanText)) return;
+					if (string.IsNullOrEmpty(scanText))
+					{
+						cboProduct.SelectedIndex = 0;
+						return;
+					}
 
 					List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
 					if (allItems == null)
@@ -646,7 +689,8 @@ namespace ChickenDist.Forms
 					foreach (var ci in allItems)
 					{
 						if (ci.ID > 0 && 
-							(string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+							(ci.ID.ToString() == scanText ||
+							 string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
 							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
 							 MatchBarcode(ci.InternationalCode, scanText)))
 						{
@@ -668,7 +712,14 @@ namespace ChickenDist.Forms
 							cboProduct.Text = "";
 							cboProduct.Items.Clear();
 							cboProduct.Items.AddRange(allItems.ToArray());
-							cboProduct.SelectedItem = foundItem;
+							for (int i = 0; i < cboProduct.Items.Count; i++)
+							{
+								if (cboProduct.Items[i] is ComboItem ci && ci.ID == foundItem.ID)
+								{
+									cboProduct.SelectedIndex = i;
+									break;
+								}
+							}
 
 							txtProductCode.Clear();
 							txtProductCode.Focus();
@@ -1408,6 +1459,10 @@ namespace ChickenDist.Forms
 
 		private void LoadCombos()
 		{
+			cboClient.Tag = null;
+			cboProduct.Tag = null;
+			cboDriver.Tag = null;
+
 			// FIX: تحميل كل أرصدة المخزون مرة واحدة بدلاً من رحلة DB لكل صنف
 			_stockCache.Clear();
 			var stockTable = InventoryDAL.GetStock();
@@ -1419,9 +1474,9 @@ namespace ChickenDist.Forms
 			foreach (DataRow row in all.Rows)
 			{
 				var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
-				item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString() : "";
-				item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString() : "";
-				item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString() : "";
+				item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString().Trim() : "";
+				item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString().Trim() : "";
+				item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString().Trim() : "";
 				cboClient.Items.Add(item);
 			}
 			cboClient.DisplayMember = "Text";
@@ -1441,17 +1496,24 @@ namespace ChickenDist.Forms
 						cboDriver.SelectedIndex = 0;
 					}
                     // تطبيق فئة السعر الافتراضية للعميل
-                    if (byID != null && byID["DefaultPriceTier"] != DBNull.Value)
+                    if (byID != null && byID["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrEmpty(byID["DefaultPriceTier"].ToString()))
                     {
                         string clientTier = byID["DefaultPriceTier"].ToString();
                         if (clientTier != _selectedTier)
                             SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
+                    }
+                    else
+                    {
+                        if (_selectedTier != "قطاعي")
+                            SetTierButtons("قطاعي");
                     }
                     EvaluateClientFinancials(comboItem2.ID);
                     UpdateClientBalanceLabel(comboItem2.ID);
 				}
                 else
                 {
+                    if (_selectedTier != "قطاعي")
+                        SetTierButtons("قطاعي");
                     this.BackColor = Theme.BgMain;
                     pnlItems.Enabled = true;
                     btnSave.Enabled = true;
@@ -1510,12 +1572,12 @@ namespace ChickenDist.Forms
 					);
 					itemOld.PendingSalePrice = 0m;
 					itemOld.PendingQtyThreshold = 0m;
-					itemOld.PartNumber = row3["PartNumber"]?.ToString() ?? "";
-					itemOld.CarModel = row3["CarModel"]?.ToString() ?? "";
-					itemOld.Brand = row3["Brand"]?.ToString() ?? "";
-					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
-					itemOld.ProductCode = row3["ProductCode"]?.ToString() ?? "";
-					itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemOld.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
+					itemOld.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
+					itemOld.Brand = row3["Brand"]?.ToString().Trim() ?? "";
+					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
+					itemOld.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
+					itemOld.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
 					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					// وحدات متعددة
 					itemOld.BaseUnitName = baseUnit;
@@ -1535,12 +1597,12 @@ namespace ChickenDist.Forms
 					);
 					itemPending.PendingSalePrice = 0m;
 					itemPending.PendingQtyThreshold = 0m;
-					itemPending.PartNumber = row3["PartNumber"]?.ToString() ?? "";
-					itemPending.CarModel = row3["CarModel"]?.ToString() ?? "";
-					itemPending.Brand = row3["Brand"]?.ToString() ?? "";
-					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
-					itemPending.ProductCode = row3["ProductCode"]?.ToString() ?? "";
-					itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					itemPending.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
+					itemPending.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
+					itemPending.Brand = row3["Brand"]?.ToString().Trim() ?? "";
+					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
+					itemPending.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
+					itemPending.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
 					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					// وحدات متعددة
 					itemPending.BaseUnitName = baseUnit;
