@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -227,7 +227,7 @@ namespace ChickenDist.Forms
 			lblClientBalance = new Label
 			{
 				Text = "رصيد: 0.00 ج",
-				Width = 115,
+				Width = 85,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
@@ -238,7 +238,7 @@ namespace ChickenDist.Forms
 			Button btnClientStatement = new Button
 			{
 				Text = "📋 كشف",
-				Width = 65,
+				Width = 55,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = Theme.Primary,
@@ -258,12 +258,12 @@ namespace ChickenDist.Forms
 
 			txtClientSearchCode = new TextBox
 			{
-				Width = 90,
+				Width = 75,
 				Font = Theme.FontMain,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
-				Dock = DockStyle.Left,
+				Dock = DockStyle.Right,
 				Margin = new Padding(2),
 				RightToLeft = RightToLeft.Yes
 			};
@@ -306,9 +306,9 @@ namespace ChickenDist.Forms
 			pnlClient.Controls.Add(txtClientSearchCode);
 			pnlClient.Controls.Add(lblClientBalance);
 			pnlClient.Controls.Add(btnClientStatement);
+			txtClientSearchCode.SendToBack();
 			btnClientStatement.SendToBack();
 			lblClientBalance.SendToBack();
-			txtClientSearchCode.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
 			lblDate.Dock = DockStyle.Fill;
@@ -483,7 +483,7 @@ namespace ChickenDist.Forms
 			// Group 1: Invoice Type Card
 			var pnlTypeGroup = new Panel
 			{
-				Width = 300,
+				Width = 320,
 				Height = 44,
 				BackColor = Color.FromArgb(43, 50, 70),
 				Padding = new Padding(6, 2, 6, 2),
@@ -509,19 +509,19 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 			
-			btnTypeCredit = new Button { Text = "آجل", Width = 60, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCredit = new Button { Text = "آجل", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
 			btnTypeCredit.Click += delegate { SetInvoiceType("Credit"); };
 
-			btnTypeCash = new Button { Text = "نقدي", Width = 60, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCash = new Button { Text = "نقدي", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate { SetInvoiceType("Cash"); };
 
-			btnTypeDriverLoad = new Button { Text = "تحميل", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeDriverLoad = new Button { Text = "تحميل", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
 			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
 
-			btnTypeInstallment = new Button { Text = "تقسيط", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeInstallment = new Button { Text = "تقسيط", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
@@ -535,7 +535,7 @@ namespace ChickenDist.Forms
 			// Group 2: Price Tiers Card
 			var pnlTierGroup = new Panel
 			{
-				Width = 300,
+				Width = 320,
 				Height = 44,
 				BackColor = Color.FromArgb(43, 50, 70),
 				Padding = new Padding(6, 2, 6, 2),
@@ -561,15 +561,15 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 
-			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierRetail.FlatAppearance.BorderSize = 0;
 			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
 
-			btnTierSemi = new Button { Text = "🟣 نصف", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierSemi = new Button { Text = "🟣 نصف", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierSemi.FlatAppearance.BorderSize = 0;
 			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
 
-			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierWholesale.FlatAppearance.BorderSize = 0;
 			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
 
