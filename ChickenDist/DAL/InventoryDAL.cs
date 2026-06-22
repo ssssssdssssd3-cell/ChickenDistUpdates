@@ -41,67 +41,29 @@ namespace ChickenDist.DAL
                     p.Unit3Factor,
                     ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0) + 
                     -- Incoming since adjustment: Sales Returns
-                    ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM ReturnItems ri 
-                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                            WHERE ri.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Driver Handover Returns
-                    ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM HandoverItems hi 
-                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                            WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM PurchaseItems pi
-                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                            WHERE pi.ProductID = p.ProductID
-                              AND pu.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Warehouse Transfers
-                    ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                    ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                              FROM PurchaseReturnItems pri
-                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                              WHERE pri.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM SaleItems si 
-                            JOIN Sales s ON si.SaleID = s.SaleID
-                            WHERE si.ProductID = p.ProductID 
-                              AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
-                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
-                    - ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                              FROM WastageLossItems wli
-                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
-                              WHERE wli.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
+                    - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
                     p.IsActive
                 FROM Products p
                 OUTER APPLY (
@@ -132,67 +94,29 @@ namespace ChickenDist.DAL
                 SELECT 
                     ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0) + 
                     -- Incoming since adjustment: Sales Returns
-                    ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM ReturnItems ri 
-                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                            WHERE ri.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Driver Handover Returns
-                    ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM HandoverItems hi 
-                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                            WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM PurchaseItems pi
-                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                            WHERE pi.ProductID = p.ProductID
-                              AND pu.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Warehouse Transfers
-                    ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                    ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                              FROM PurchaseReturnItems pri
-                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                              WHERE pri.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0))) 
-                            FROM SaleItems si 
-                            JOIN Sales s ON si.SaleID = s.SaleID
-                            WHERE si.ProductID = p.ProductID 
-                              AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
-                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
-                    - ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
-                              FROM WastageLossItems wli
-                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
-                              WHERE wli.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
+                    - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
                 FROM Products p
                 OUTER APPLY (
                     SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
