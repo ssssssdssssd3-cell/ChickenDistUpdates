@@ -56,6 +56,7 @@ namespace ChickenDist.Forms
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
         private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
+        private int? _pendingMatchedUnit = null;
 
         // ══════════════════════════════════════════════════════════════════════
         public FrmPurchase()
@@ -361,6 +362,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
+            dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
@@ -798,6 +800,21 @@ namespace ChickenDist.Forms
                 ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
                 ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
                 ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
+
+                // وحدات متعددة
+                ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
+                ci.Unit1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
+                ci.Unit1SalePrice = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                ci.Unit1PurchasePrice = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                ci.Unit1Factor = 1m;
+                ci.Unit2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
+                ci.Unit2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                ci.Unit2SalePrice = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+                ci.Unit2PurchasePrice = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+                ci.Unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                ci.Unit1Barcode = r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
+
                 cboProduct.Items.Add(ci);
             }
             cboProduct.DisplayMember = "Text";
@@ -840,16 +857,84 @@ namespace ChickenDist.Forms
             catch { /* تجاهل لو مافيش مخازن */ }
         }
 
+        private ComboItem GetProductComboItem(int productID)
+        {
+            foreach (var item in cboProduct.Items)
+            {
+                if (item is ComboItem ci && ci.ID == productID)
+                    return ci;
+            }
+            if (cboProduct.Tag is List<ComboItem> allItems)
+            {
+                foreach (var ci in allItems)
+                {
+                    if (ci.ID == productID)
+                        return ci;
+                }
+            }
+            return null;
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // إضافة صنف
         private void AddProductToGrid(int prodId, string prodCode, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice)
         {
             if (prodId <= 0) return;
 
-            // دمج إذا كان الصنف موجوداً مسبقاً
+            ComboItem product = GetProductComboItem(prodId);
+
+            string defaultUnit = null;
+            decimal defaultFactor = 1m;
+            decimal defaultPrice = price;
+            decimal defaultSalePrice = salePrice;
+
+            int matchedUnit = _pendingMatchedUnit ?? 3;
+            _pendingMatchedUnit = null; // إعادة تعيين
+
+            if (product != null)
+            {
+                defaultUnit = !string.IsNullOrEmpty(product.Unit1Name) ? product.Unit1Name
+                            : !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName
+                            : null;
+
+                if (matchedUnit == 1 && !string.IsNullOrEmpty(product.Unit1Name))
+                {
+                    defaultUnit = product.Unit1Name;
+                    defaultFactor = 1m;
+                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
+                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                }
+                else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
+                {
+                    defaultUnit = product.Unit2Name;
+                    defaultFactor = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
+                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : price;
+                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice : salePrice;
+                }
+                else if (matchedUnit == 3)
+                {
+                    if (!string.IsNullOrEmpty(product.BaseUnitName))
+                    {
+                        defaultUnit = product.BaseUnitName;
+                        defaultFactor = (product.Unit3Factor > 0 ? product.Unit3Factor : 1m) * (product.Unit2Factor > 0 ? product.Unit2Factor : 1m);
+                        defaultPrice = product.PurchasePrice > 0 ? product.PurchasePrice : price;
+                        defaultSalePrice = product.Price > 0 ? product.Price : salePrice;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(product.Unit1Name))
+                    {
+                        defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
+                        defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                    }
+                }
+            }
+
+            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة
             foreach (var item in _items)
             {
-                if (item.ProductID == prodId)
+                if (item.ProductID == prodId && item.UnitName == defaultUnit)
                 {
                     item.Quantity += qty;
                     RefreshGrid();
@@ -864,9 +949,11 @@ namespace ChickenDist.Forms
                 ProductCode = prodCode,
                 ProductName = prodName,
                 Quantity    = qty,
-                UnitPrice   = price,
+                UnitPrice   = defaultPrice,
                 DiscountPct = disc,
-                SuggestedSalePrice = salePrice
+                SuggestedSalePrice = defaultSalePrice,
+                UnitName = defaultUnit,
+                Factor = defaultFactor
             });
 
             RefreshGrid();
@@ -938,6 +1025,15 @@ namespace ChickenDist.Forms
                         string pName= row["ProductName"].ToString();
                         decimal pp  = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
                         decimal sp  = row["SalePrice"]     != DBNull.Value ? Convert.ToDecimal(row["SalePrice"])     : 0m;
+
+                        if (dt.Columns.Contains("MatchedUnit") && row["MatchedUnit"] != DBNull.Value)
+                        {
+                            _pendingMatchedUnit = Convert.ToInt32(row["MatchedUnit"]);
+                        }
+                        else
+                        {
+                            _pendingMatchedUnit = 3; // Default to main/base unit
+                        }
 
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             dgItems.Rows.RemoveAt(rowIdx);
@@ -1165,6 +1261,7 @@ namespace ChickenDist.Forms
                     item.ProductID,
                     item.ProductCode,
                     item.ProductName,
+                    null, // UnitName
                     item.Quantity.ToString("F3"),
                     item.UnitPrice.ToString("F2"),
                     item.DiscountPct.ToString("F2"),
@@ -1173,8 +1270,104 @@ namespace ChickenDist.Forms
                     margin.ToString("F1") + "%");
                 // عمود الكود للسطور المضافة = قراءة فقط
                 dgItems.Rows[rIdx].Cells["ProductCode"].ReadOnly = true;
+
+                // ─── تهيئة ComboBox الوحدة ──────────────────────────────────────────
+                if (dgItems.Columns.Contains("UnitName") && dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
+                {
+                    var unitCell = (DataGridViewComboBoxCell)dgItems.Rows[rIdx].Cells["UnitName"];
+                    var unitList = new System.Collections.ArrayList();
+
+                    ComboItem prod = GetProductComboItem(item.ProductID);
+                    if (prod != null)
+                    {
+                        // 1. الوحدة الكبرى (الأساسية)
+                        if (!string.IsNullOrEmpty(prod.BaseUnitName))
+                        {
+                            unitList.Add(prod.BaseUnitName);
+                        }
+                        else
+                        {
+                            unitList.Add("وحدة");
+                        }
+
+                        // 2. الوحدة الوسطى (إن وُجدت)
+                        if (!string.IsNullOrEmpty(prod.Unit2Name))
+                        {
+                            unitList.Add(prod.Unit2Name);
+                        }
+
+                        // 3. الوحدة الصغرى (إن وُجدت وليست مكررة مع الكبرى)
+                        if (!string.IsNullOrEmpty(prod.Unit1Name) && prod.Unit1Name != prod.BaseUnitName)
+                        {
+                            unitList.Add(prod.Unit1Name);
+                        }
+                    }
+                    else
+                    {
+                        unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة");
+                    }
+
+                    unitCell.DataSource = unitList;
+                    string savedUnit = item.UnitName;
+                    if (!string.IsNullOrEmpty(savedUnit) && unitList.Contains(savedUnit))
+                        unitCell.Value = savedUnit;
+                    else if (unitList.Count > 0)
+                        unitCell.Value = unitList[0];
+                }
             }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
+            RecalcTotals();
+        }
+
+        private void HandleUnitChange(DataGridViewRow row, PurchaseItemDTO dto, string newUnit)
+        {
+            if (string.IsNullOrEmpty(newUnit)) return;
+            ComboItem prod = GetProductComboItem(dto.ProductID);
+            if (prod == null) return;
+
+            dto.UnitName = newUnit;
+
+            if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
+            {
+                // 1. الوحدة الوسطى
+                dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
+                if (prod.Unit2PurchasePrice > 0) dto.UnitPrice = prod.Unit2PurchasePrice;
+                if (prod.Unit2SalePrice > 0) dto.SuggestedSalePrice = prod.Unit2SalePrice;
+            }
+            else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
+            {
+                // 2. الوحدة الصغرى (التجزئة)
+                dto.Factor = 1m;
+                if (prod.Unit1PurchasePrice > 0) dto.UnitPrice = prod.Unit1PurchasePrice;
+                else dto.UnitPrice = prod.PurchasePrice;
+                if (prod.Unit1SalePrice > 0) dto.SuggestedSalePrice = prod.Unit1SalePrice;
+                else dto.SuggestedSalePrice = prod.Price;
+            }
+            else if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
+            {
+                // 3. الوحدة الكبرى (الأساسية)
+                dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
+                dto.UnitPrice = prod.PurchasePrice;
+                dto.SuggestedSalePrice = prod.Price;
+            }
+            else
+            {
+                // احتياطي
+                dto.Factor = 1m;
+                dto.UnitPrice = prod.PurchasePrice;
+                dto.SuggestedSalePrice = prod.Price;
+            }
+
+            // تحديث الجدول
+            row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
+            row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
+            row.Cells["SuggestedSalePrice"].Value = (dto.SuggestedSalePrice ?? 0m).ToString("F2");
+
+            decimal buy = dto.UnitPrice;
+            decimal sell = dto.SuggestedSalePrice ?? 0m;
+            decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
+            row.Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+
             RecalcTotals();
         }
 
@@ -1186,6 +1379,16 @@ namespace ChickenDist.Forms
             var item    = _items[e.RowIndex];
             var colName = dgItems.Columns[e.ColumnIndex].Name;
             var cellVal = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+
+            if (colName == "UnitName")
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
+                        HandleUnitChange(dgItems.Rows[e.RowIndex], _items[e.RowIndex], cellVal);
+                });
+                return;
+            }
 
             if (colName == "Quantity")
             {
@@ -1491,7 +1694,9 @@ namespace ChickenDist.Forms
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
                         DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
                         DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
-                        SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null
+                        SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
+                        UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
+                        Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m
                     });
                 }
                 RefreshGrid();

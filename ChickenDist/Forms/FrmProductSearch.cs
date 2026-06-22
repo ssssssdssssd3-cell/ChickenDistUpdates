@@ -262,7 +262,7 @@ namespace ChickenDist.Forms
             string filter = "";
             if (!string.IsNullOrEmpty(term))
             {
-                filter = $"(ProductName LIKE '%{term}%' OR ProductCode LIKE '%{term}%' OR PartNumber LIKE '%{term}%' OR InternationalCode LIKE '%{term}%')";
+                filter = $"(ProductName LIKE '%{term}%' OR ProductCode LIKE '%{term}%' OR PartNumber LIKE '%{term}%' OR InternationalCode LIKE '%{term}%' OR Unit1Barcode LIKE '%{term}%' OR Unit2Barcode LIKE '%{term}%')";
             }
 
             if (catID > 0)

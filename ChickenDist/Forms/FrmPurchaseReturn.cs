@@ -205,8 +205,9 @@ namespace ChickenDist.Forms
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",       Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",     HeaderText = "الصنف",                     ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty",    HeaderText = "الكمية الأصلية بالفاتورة",  ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty",    HeaderText = "الكمية الأصلية",            ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق",            ReadOnly = true, FillWeight = 40 });
+            dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40 });
 
             var colNew = new DataGridViewTextBoxColumn
             {
@@ -221,8 +222,21 @@ namespace ChickenDist.Forms
             colNew.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             dgItems.Columns.Add(colNew);
 
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",  HeaderText = "سعر الشراء الأصلي",  ReadOnly = true, FillWeight = 40 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",  HeaderText = "سعر المرتجع",        ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي المرتجع",     ReadOnly = true, FillWeight = 50 });
+
+            // Hidden helper columns
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalFactor", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalUnitPrice", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQtyInSmallest", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQtyInSmallest", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseUnitName", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Name", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1PurchasePrice", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Name", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Factor", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2PurchasePrice", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor", Visible = false });
 
             dgItems.CellValidating  += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
@@ -327,6 +341,7 @@ namespace ChickenDist.Forms
 
         private void CboPurchase_SelectedIndexChanged(object sender, EventArgs e)
         {
+            dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             lblTotal.Text = "الإجمالي: 0.00 ج";
             lblPurchaseInfo.Text = "";
@@ -338,6 +353,7 @@ namespace ChickenDist.Forms
                 if (cboSupplier.Items.Count > 0)
                     cboSupplier.SelectedIndex = 0;
                 cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
+                dgItems.CellValueChanged += DgItems_CellValueChanged;
                 return;
             }
 
@@ -373,9 +389,23 @@ namespace ChickenDist.Forms
             }
 
             // تحميل أصناف الفاتورة مع المرتجع السابق
-            var dtItems = PurchaseDAL.GetItems(purchaseID);
+            var dtItems = DbHelper.Query(
+                @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
+                         pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor,
+                         pr.Unit AS BaseUnitName,
+                         pr.Unit1Name,
+                         pr.Unit1PurchasePrice,
+                         pr.Unit2Name,
+                         pr.Unit2Factor,
+                         pr.Unit2PurchasePrice,
+                         pr.Unit3Factor
+                  FROM PurchaseItems pi
+                  JOIN Products pr ON pi.ProductID = pr.ProductID
+                  WHERE pi.PurchaseID = @id",
+                DbHelper.P("@id", purchaseID));
+
             var dtPrevRet = DbHelper.Query(
-                @"SELECT pri.ProductID, ISNULL(SUM(pri.Quantity),0) AS ReturnedQty
+                @"SELECT pri.ProductID, ISNULL(SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)),0) AS ReturnedQtyInSmallest
                   FROM PurchaseReturnItems pri
                   JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                   WHERE pr.PurchaseID = @pid
@@ -384,51 +414,198 @@ namespace ChickenDist.Forms
 
             var prevMap = new System.Collections.Generic.Dictionary<int, decimal>();
             foreach (DataRow r in dtPrevRet.Rows)
-                prevMap[Convert.ToInt32(r["ProductID"])] = Convert.ToDecimal(r["ReturnedQty"]);
+                prevMap[Convert.ToInt32(r["ProductID"])] = Convert.ToDecimal(r["ReturnedQtyInSmallest"]);
 
             foreach (DataRow r in dtItems.Rows)
             {
                 int pid = Convert.ToInt32(r["ProductID"]);
                 decimal purQty = Convert.ToDecimal(r["Quantity"]);
-                decimal prevRet = prevMap.ContainsKey(pid) ? prevMap[pid] : 0m;
-                decimal remaining = purQty - prevRet;
+                decimal origFactor = Convert.ToDecimal(r["Factor"]);
+                decimal purQtyInSmallest = purQty * origFactor;
 
-                if (remaining <= 0) continue; // تم إرجاع الكل مسبقاً
+                decimal prevRetInSmallest = prevMap.ContainsKey(pid) ? prevMap[pid] : 0m;
+                decimal remainingInSmallest = purQtyInSmallest - prevRetInSmallest;
+
+                if (remainingInSmallest <= 0) continue; // تم إرجاع الكل مسبقاً
+
+                decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                decimal prevQty = prevRetInSmallest / (origFactor > 0 ? origFactor : 1m);
+
+                string baseUnit = r["BaseUnitName"]?.ToString() ?? "";
+                string u1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
+                decimal u1Price = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                string u2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
+                decimal u2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                decimal u2Price = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+                decimal u3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
 
                 int rowIdx = dgItems.Rows.Add();
                 var row = dgItems.Rows[rowIdx];
                 row.Cells["ProductID"].Value       = pid;
                 row.Cells["ProductName"].Value     = r["ProductName"].ToString();
                 row.Cells["PurchasedQty"].Value    = purQty.ToString("N3");
-                row.Cells["PrevReturnedQty"].Value = prevRet.ToString("N3");
-                row.Cells["NewReturnedQty"].Value  = 0;
-                row.Cells["UnitPrice"].Value       = Convert.ToDecimal(r["UnitPrice"]).ToString("N2");
+                row.Cells["PrevReturnedQty"].Value = prevQty.ToString("N3");
+                row.Cells["NewReturnedQty"].Value  = "0";
+                row.Cells["UnitPrice"].Value       = price.ToString("N2");
                 row.Cells["TotalPrice"].Value      = "0.00";
+                
+                // Hidden columns
+                row.Cells["OriginalFactor"].Value = origFactor;
+                row.Cells["OriginalUnitPrice"].Value = price;
+                row.Cells["PurchasedQtyInSmallest"].Value = purQtyInSmallest;
+                row.Cells["PrevReturnedQtyInSmallest"].Value = prevRetInSmallest;
+                row.Cells["BaseUnitName"].Value = baseUnit;
+                row.Cells["Unit1Name"].Value = u1Name;
+                row.Cells["Unit1PurchasePrice"].Value = u1Price;
+                row.Cells["Unit2Name"].Value = u2Name;
+                row.Cells["Unit2Factor"].Value = u2Factor;
+                row.Cells["Unit2PurchasePrice"].Value = u2Price;
+                row.Cells["Unit3Factor"].Value = u3Factor;
+
+                // Populate UnitName combobox cell
+                if (dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
+                {
+                    var unitCell = (DataGridViewComboBoxCell)row.Cells["UnitName"];
+                    var unitList = new System.Collections.ArrayList();
+
+                    if (!string.IsNullOrEmpty(baseUnit)) unitList.Add(baseUnit);
+                    else unitList.Add("وحدة");
+
+                    if (!string.IsNullOrEmpty(u2Name)) unitList.Add(u2Name);
+                    if (!string.IsNullOrEmpty(u1Name) && u1Name != baseUnit) unitList.Add(u1Name);
+
+                    unitCell.DataSource = unitList;
+
+                    string purUnitName = r["UnitName"]?.ToString();
+                    if (!string.IsNullOrEmpty(purUnitName) && unitList.Contains(purUnitName))
+                        unitCell.Value = purUnitName;
+                    else if (unitList.Count > 0)
+                        unitCell.Value = unitList[0];
+                }
             }
 
             if (dgItems.Rows.Count > 0)
                 dgItems.CurrentCell = dgItems.Rows[0].Cells["NewReturnedQty"];
+
+            dgItems.CellValueChanged += DgItems_CellValueChanged;
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
             if (dgItems.Columns[e.ColumnIndex].Name != "NewReturnedQty") return;
-            if (e.FormattedValue?.ToString() == "") return;
-            if (!decimal.TryParse(e.FormattedValue.ToString(), out decimal val) || val < 0)
+            string valStr = e.FormattedValue?.ToString()?.Trim() ?? "";
+            if (string.IsNullOrEmpty(valStr)) return;
+            if (!decimal.TryParse(valStr, out decimal newQty) || newQty < 0)
             {
                 MessageBox.Show("أدخل كمية صالحة (رقم موجب أو صفر)", "تحقق من الإدخال",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                e.Cancel = true;
+                return;
+            }
+
+            var row = dgItems.Rows[e.RowIndex];
+            string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+            string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
+            string u1Name = row.Cells["Unit1Name"].Value?.ToString();
+            string u2Name = row.Cells["Unit2Name"].Value?.ToString();
+
+            decimal selectedFactor = 1m;
+            if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
+            {
+                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                selectedFactor = u2Factor > 0 ? u2Factor : 1m;
+            }
+            else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
+            {
+                selectedFactor = 1m;
+            }
+            else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
+            {
+                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
+                selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
+            }
+
+            decimal purQtyInSmallest = Convert.ToDecimal(row.Cells["PurchasedQtyInSmallest"].Value);
+            decimal prevQtyInSmallest = Convert.ToDecimal(row.Cells["PrevReturnedQtyInSmallest"].Value);
+            decimal newQtyInSmallest = newQty * selectedFactor;
+
+            if (newQtyInSmallest + prevQtyInSmallest > purQtyInSmallest)
+            {
+                decimal maxAllowedInSmallest = purQtyInSmallest - prevQtyInSmallest;
+                decimal maxAllowedInSelected = maxAllowedInSmallest / selectedFactor;
+                MessageBox.Show($"الكمية المرتجعة الجديدة ({newQty} {selectedUnit}) مع المرتجع السابق لا يمكن أن تتجاوز الكمية الأصلية بالفاتورة.\n\nالحد الأقصى المسموح به حالياً للمرتجع الجديد هو: {maxAllowedInSelected:N3} {selectedUnit}", "تجاوز الكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 e.Cancel = true;
             }
         }
 
         private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || dgItems.Columns[e.ColumnIndex].Name != "NewReturnedQty") return;
+            if (e.RowIndex < 0) return;
             var row = dgItems.Rows[e.RowIndex];
-            decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal qty);
-            decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal price);
-            row.Cells["TotalPrice"].Value = (qty * price).ToString("N2");
+            var colName = dgItems.Columns[e.ColumnIndex].Name;
+
+            if (colName == "UnitName")
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+                    {
+                        var curRow = dgItems.Rows[e.RowIndex];
+                        HandleUnitChange(curRow);
+                    }
+                });
+                return;
+            }
+
+            if (colName == "NewReturnedQty")
+            {
+                decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal qty);
+                decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal price);
+                row.Cells["TotalPrice"].Value = (qty * price).ToString("N2");
+                RecalcTotal();
+            }
+        }
+
+        private void HandleUnitChange(DataGridViewRow row)
+        {
+            string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+            if (string.IsNullOrEmpty(selectedUnit)) return;
+
+            string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
+            string u1Name = row.Cells["Unit1Name"].Value?.ToString();
+            string u2Name = row.Cells["Unit2Name"].Value?.ToString();
+
+            decimal origUnitPrice = Convert.ToDecimal(row.Cells["OriginalUnitPrice"].Value);
+            decimal origFactor = Convert.ToDecimal(row.Cells["OriginalFactor"].Value);
+            if (origFactor <= 0) origFactor = 1m;
+
+            decimal selectedFactor = 1m;
+            if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
+            {
+                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                selectedFactor = u2Factor > 0 ? u2Factor : 1m;
+            }
+            else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
+            {
+                selectedFactor = 1m;
+            }
+            else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
+            {
+                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
+                selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
+            }
+
+            decimal returnedUnitPrice = origUnitPrice * (selectedFactor / origFactor);
+            row.Cells["UnitPrice"].Value = returnedUnitPrice.ToString("F2");
+
+            decimal newQty = 0;
+            if (row.Cells["NewReturnedQty"].Value != null)
+            {
+                decimal.TryParse(row.Cells["NewReturnedQty"].Value.ToString(), out newQty);
+            }
+            row.Cells["TotalPrice"].Value = (newQty * returnedUnitPrice).ToString("F2");
             RecalcTotal();
         }
 
@@ -464,14 +641,36 @@ namespace ChickenDist.Forms
                 decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal newQty);
                 if (newQty <= 0) continue;
 
-                decimal.TryParse(row.Cells["PurchasedQty"].Value?.ToString(), out decimal purQty);
-                decimal.TryParse(row.Cells["PrevReturnedQty"].Value?.ToString(), out decimal prevQty);
+                string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
+                string u1Name = row.Cells["Unit1Name"].Value?.ToString();
+                string u2Name = row.Cells["Unit2Name"].Value?.ToString();
 
-                if (newQty + prevQty > purQty)
+                decimal selectedFactor = 1m;
+                if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
+                {
+                    decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                    selectedFactor = u2Factor > 0 ? u2Factor : 1m;
+                }
+                else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
+                {
+                    selectedFactor = 1m;
+                }
+                else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
+                {
+                    decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
+                    decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
+                    selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
+                }
+
+                decimal purQtyInSmallest = Convert.ToDecimal(row.Cells["PurchasedQtyInSmallest"].Value);
+                decimal prevQtyInSmallest = Convert.ToDecimal(row.Cells["PrevReturnedQtyInSmallest"].Value);
+                decimal newQtyInSmallest = newQty * selectedFactor;
+
+                if (newQtyInSmallest + prevQtyInSmallest > purQtyInSmallest)
                 {
                     MessageBox.Show(
-                        $"الكمية المرتجعة للصنف ({name}) تتجاوز الكمية الأصلية!\n" +
-                        $"المشتريات: {purQty:N3} | السابق: {prevQty:N3} | الجديد: {newQty:N3}",
+                        $"الكمية المرتجعة للصنف ({name}) تتجاوز الكمية الأصلية!",
                         "تجاوز الكمية", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -480,7 +679,9 @@ namespace ChickenDist.Forms
                 returnItems.Add(new PurchaseItemDTO
                 {
                     ProductID = prodID, ProductName = name,
-                    Quantity = newQty, UnitPrice = price
+                    Quantity = newQty, UnitPrice = price,
+                    UnitName = selectedUnit,
+                    Factor = selectedFactor
                 });
                 totalReturnAmount += newQty * price;
             }

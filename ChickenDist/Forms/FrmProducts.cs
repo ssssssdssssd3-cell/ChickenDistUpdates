@@ -204,12 +204,16 @@ namespace ChickenDist.Forms
                 string code = r["ProductCode"]?.ToString() ?? "";
                 string partNum = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
                 string barcode = r.Table.Columns.Contains("InternationalCode") && r["InternationalCode"] != DBNull.Value ? r["InternationalCode"].ToString() : "";
+                string u1Barcode = r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                string u2Barcode = r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
                 
                 if (string.IsNullOrEmpty(query) || 
                     name.ToLower().Contains(query) || 
                     code.ToLower().Contains(query) || 
                     partNum.ToLower().Contains(query) || 
-                    barcode.ToLower().Contains(query))
+                    barcode.ToLower().Contains(query) ||
+                    u1Barcode.ToLower().Contains(query) ||
+                    u2Barcode.ToLower().Contains(query))
                 {
                     bool active = Convert.ToBoolean(r["IsActive"]);
                     var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
