@@ -34,16 +34,55 @@ namespace ChickenDist.Forms
 
             // Logo/Header panel
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary };
-            var lblLogo = new Label
+
+            // \u2500\u2500 \u0645\u062d\u0627\u0648\u0644\u0629 \u062a\u062d\u0645\u064a\u0644 \u0644\u0648\u062c\u0648 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062c \u0623\u0648\u0644\u0627\u064b \u0645\u0646 \u0645\u0633\u0627\u0631 \u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            Control logoControl;
+            string logoPath = AppConfig.ShopLogoPath;
+            bool hasLogo = !string.IsNullOrEmpty(logoPath) && System.IO.File.Exists(logoPath);
+            if (hasLogo)
             {
-                Text = "🚚",
-                Font = new Font("Segoe UI Emoji", 50f),
-                ForeColor = Theme.Accent,
-                AutoSize = false,
-                Size = new Size(480, 90),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Top = 10
-            };
+                try
+                {
+                    var pb = new PictureBox
+                    {
+                        Size = new Size(480, 100),
+                        Top = 5,
+                        Left = 0,
+                        SizeMode = PictureBoxSizeMode.Zoom,
+                        BackColor = Color.Transparent
+                    };
+                    pb.Image = Image.FromFile(logoPath);
+                    logoControl = pb;
+                }
+                catch
+                {
+                    hasLogo = false;
+                    logoControl = new Label
+                    {
+                        Text = "\ud83d\ude9a",
+                        Font = new Font("Segoe UI Emoji", 50f),
+                        ForeColor = Theme.Accent,
+                        AutoSize = false,
+                        Size = new Size(480, 90),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Top = 10
+                    };
+                }
+            }
+            else
+            {
+                logoControl = new Label
+                {
+                    Text = "\ud83d\ude9a",
+                    Font = new Font("Segoe UI Emoji", 50f),
+                    ForeColor = Theme.Accent,
+                    AutoSize = false,
+                    Size = new Size(480, 90),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Top = 10
+                };
+            }
+
             var lblTitle = new Label
             {
                 Text = AppConfig.CompanyName,
@@ -56,7 +95,7 @@ namespace ChickenDist.Forms
             };
             var lblSub = new Label
             {
-                Text = "نظام المبيعات والتوزيع",
+                Text = "\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a \u0648\u0627\u0644\u062a\u0648\u0632\u064a\u0639",
                 Font = new Font("Segoe UI", 10f),
                 ForeColor = Color.FromArgb(180, 220, 255),
                 AutoSize = false,
@@ -64,7 +103,8 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleCenter,
                 Top = 144
             };
-            pnlTop.Controls.AddRange(new Control[] { lblLogo, lblTitle, lblSub });
+            pnlTop.Controls.AddRange(new Control[] { logoControl, lblTitle, lblSub });
+
 
             // White card panel
             var pnlCard = new Panel

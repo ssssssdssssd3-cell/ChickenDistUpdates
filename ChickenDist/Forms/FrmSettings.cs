@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
@@ -21,6 +22,8 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
+        private CheckBox chkReceiptShowDiscount;
+        private CheckBox chkReceiptShowClientInfo;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
@@ -254,6 +257,72 @@ namespace ChickenDist.Forms
             if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
             this.Controls.Add(cboReceiptTemplate);
             y += 40;
+
+            // ── خيارات محتوى الريسيت ─────────────────────────────────
+            var lblReceiptOptions = new Label
+            {
+                Text = "📋 خيارات محتوى الريسيت الحراري:",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblReceiptOptions);
+            y += 28;
+
+            chkReceiptShowDiscount = new CheckBox
+            {
+                Text = "إظهار عمود الخصم في جدول الأصناف",
+                Location = new Point(20, y),
+                Size = new Size(400, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ReceiptShowDiscount
+            };
+            this.Controls.Add(chkReceiptShowDiscount);
+            y += 28;
+
+            chkReceiptShowClientInfo = new CheckBox
+            {
+                Text = "إظهار بيانات العميل (اسم + هاتف + عنوان) في رأس الريسيت",
+                Location = new Point(20, y),
+                Size = new Size(460, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ReceiptShowClientInfo
+            };
+            this.Controls.Add(chkReceiptShowClientInfo);
+            y += 32;
+
+            // زر معاينة الريسيت
+            var btnPreviewReceipt = Theme.MakeButton("🖨️ معاينة نموذج الريسيت", 20, y, 220, 36, Theme.Primary);
+            btnPreviewReceipt.Click += (s, e) =>
+            {
+                // حفظ الإعدادات الحالية أولاً قبل المعاينة
+                AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
+                                          : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
+                                          : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : cboReceiptTemplate.SelectedIndex == 4 ? "MiniMarket"
+                                          : "Standard";
+                AppConfig.ReceiptShowDiscount = chkReceiptShowDiscount.Checked;
+                AppConfig.ReceiptShowClientInfo = chkReceiptShowClientInfo.Checked;
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                AppConfig.CompanyName = string.IsNullOrWhiteSpace(txtCompanyName.Text) ? AppConfig.CompanyName : txtCompanyName.Text.Trim();
+
+                // بحث عن أي فاتورة موجودة للمعاينة
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    new FrmPrintSale(previewSaleID, "Receipt", showPreview: true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير محفوظة للمعاينة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewReceipt);
+            y += 50;
 
             // ── قالب طباعة A4 ───────────────────
             AddLabel("قالب طباعة ورق A4/A5:", 20, ref y, 10);

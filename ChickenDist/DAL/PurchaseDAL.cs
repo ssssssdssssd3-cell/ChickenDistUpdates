@@ -19,6 +19,8 @@ namespace ChickenDist.DAL
         public decimal DiscountAmt { get; set; } = 0m;
         /// <summary>سعر البيع المقترح</summary>
         public decimal? SuggestedSalePrice { get; set; } = null;
+        public string UnitName { get; set; } = null;
+        public decimal Factor { get; set; } = 1.0m;
 
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
@@ -83,12 +85,13 @@ namespace ChickenDist.DAL
         {
              return DbHelper.Query(
                  @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
-                          COALESCE(pi.DiscountPct, 0) AS DiscountPct,
-                          COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
-                          pi.SuggestedSalePrice
-                   FROM PurchaseItems pi
-                   JOIN Products pr ON pi.ProductID = pr.ProductID
-                   WHERE pi.PurchaseID = @id",
+                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
+                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
+                           pi.SuggestedSalePrice,
+                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor
+                    FROM PurchaseItems pi
+                    JOIN Products pr ON pi.ProductID = pr.ProductID
+                    WHERE pi.PurchaseID = @id",
                 DbHelper.P("@id", purchaseID));
         }
 
@@ -178,8 +181,8 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp)",
+                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor)
+                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
@@ -187,7 +190,9 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp",     item.TotalPrice),
                         DbHelper.P("@dpct",   item.DiscountPct),
                         DbHelper.P("@damt",   item.DiscountAmt),
-                        DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value));
+                        DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
+                        DbHelper.P("@un",     item.UnitName),
+                        DbHelper.P("@fac",    item.Factor));
                 }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────
@@ -250,7 +255,8 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int returnID)
         {
             return DbHelper.Query(
-                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice
+                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice,
+                         pri.UnitName, COALESCE(pri.Factor, 1.0) AS Factor
                   FROM PurchaseReturnItems pri
                   JOIN Products p ON pri.ProductID = p.ProductID
                   WHERE pri.ReturnID = @id",
@@ -297,13 +303,15 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice)" +
-                        " VALUES(@rid,@pid,@qty,@up,@tp)",
+                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor)" +
+                        " VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
                         DbHelper.P("@rid", retID),
                         DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity),
                         DbHelper.P("@up",  item.UnitPrice),
-                        DbHelper.P("@tp",  item.TotalPrice));
+                        DbHelper.P("@tp",  item.TotalPrice),
+                        DbHelper.P("@un",  item.UnitName),
+                        DbHelper.P("@fac", item.Factor));
                 }
 
                 // القيد المحاسبي السليم

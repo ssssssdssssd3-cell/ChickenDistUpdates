@@ -692,6 +692,13 @@ namespace ChickenDist.Forms
 				ReadOnly = true,
 				FillWeight = 40f
 			});
+			dgItems.Columns.Add(new DataGridViewComboBoxColumn
+			{
+				Name = "UnitName",
+				HeaderText = "الوحدة",
+				ReadOnly = false,
+				FillWeight = 40f
+			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "Quantity",
@@ -1408,6 +1415,17 @@ namespace ChickenDist.Forms
 				decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
 
+				// ── بيانات الوحدات المتعددة (مشتركة بين كل فروع الـ if/else) ──
+				string unit1Name   = row3.Table.Columns.Contains("Unit1Name")   && row3["Unit1Name"]   != DBNull.Value ? row3["Unit1Name"].ToString()   : null;
+				decimal unit1SP    = row3.Table.Columns.Contains("Unit1SalePrice") && row3["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1SalePrice"]) : 0m;
+				decimal unit1PP    = row3.Table.Columns.Contains("Unit1PurchasePrice") && row3["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1PurchasePrice"]) : 0m;
+				string unit2Name   = row3.Table.Columns.Contains("Unit2Name")   && row3["Unit2Name"]   != DBNull.Value ? row3["Unit2Name"].ToString()   : null;
+				decimal unit2Factor = row3.Table.Columns.Contains("Unit2Factor") && row3["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2Factor"]) : 1m;
+				decimal unit2SP    = row3.Table.Columns.Contains("Unit2SalePrice") && row3["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2SalePrice"]) : 0m;
+				decimal unit2PP    = row3.Table.Columns.Contains("Unit2PurchasePrice") && row3["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2PurchasePrice"]) : 0m;
+				decimal unit3Factor = row3.Table.Columns.Contains("Unit3Factor") && row3["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit3Factor"]) : 1m;
+				string baseUnit    = row3.Table.Columns.Contains("Unit")         && row3["Unit"]         != DBNull.Value ? row3["Unit"].ToString()         : "";
+
 				if (pendingPrice > 0m && pendingQtyThreshold > 0m)
 				{
 					// إضافة السعر الحالي كخيار مستقل
@@ -1428,6 +1446,11 @@ namespace ChickenDist.Forms
 					itemOld.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
 					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					// وحدات متعددة
+					itemOld.BaseUnitName = baseUnit;
+					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
+					itemOld.Unit2Name = unit2Name; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
+					itemOld.Unit3Factor = unit3Factor;
 					cboProduct.Items.Add(itemOld);
 
 					// إضافة السعر المعلق كخيار مستقل
@@ -1448,6 +1471,11 @@ namespace ChickenDist.Forms
 					itemPending.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
 					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					// وحدات متعددة
+					itemPending.BaseUnitName = baseUnit;
+					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
+					itemPending.Unit2Name = unit2Name; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
+					itemPending.Unit3Factor = unit3Factor;
 					cboProduct.Items.Add(itemPending);
 				}
 				else
@@ -1469,6 +1497,11 @@ namespace ChickenDist.Forms
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
 					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					// وحدات متعددة
+					comboItem.BaseUnitName = baseUnit;
+					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
+					comboItem.Unit2Name = unit2Name; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
+					comboItem.Unit3Factor = unit3Factor;
 					cboProduct.Items.Add(comboItem);
 				}
 			}
@@ -1889,6 +1922,19 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			// ─── معالجة تغيير الوحدة ────────────────────────────────────────────
+			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+			{
+				if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
+				string newUnit = dgItems.Rows[e.RowIndex].Cells["UnitName"].Value?.ToString() ?? "";
+				this.BeginInvoke((MethodInvoker)delegate
+				{
+					if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
+						HandleUnitChange(dgItems.Rows[e.RowIndex], _items[e.RowIndex], newUnit);
+				});
+				return;
+			}
+
 			if (e.RowIndex < 0 || e.RowIndex >= _items.Count)
 			{
 				return;
@@ -1989,6 +2035,44 @@ namespace ChickenDist.Forms
 			CalculateNet();
 		}
 
+		/// <summary>معالجة تغيير الوحدة في عمود UnitName — يُحدِّث Factor وسعر البيع وسعر الشراء</summary>
+		private void HandleUnitChange(DataGridViewRow row, SaleItemDTO dto, string newUnit)
+		{
+			if (string.IsNullOrEmpty(newUnit)) return;
+			ComboItem prod = GetProductComboItem(dto.ProductID);
+			if (prod == null) return;
+
+			dto.UnitName = newUnit;
+
+			// تحديد الـ Factor والسعر بناء على الوحدة المختارة
+			string bigUnit = !string.IsNullOrEmpty(prod.Unit1Name) ? prod.Unit1Name
+				         : !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "";
+
+			if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
+			{
+				// وحدة ثانوية (علبة مثلاً)
+				dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
+				if (prod.Unit2SalePrice > 0) dto.UnitPrice = prod.Unit2SalePrice;
+				if (prod.Unit2PurchasePrice > 0) dto.PurchasePrice = prod.Unit2PurchasePrice;
+			}
+			else // الوحدة الكبرى (الأساسية)
+			{
+				dto.Factor = 1m;
+				// إعادة السعر الأصلي من combo
+				if (prod.Unit1SalePrice > 0) dto.UnitPrice = prod.Unit1SalePrice;
+				else dto.UnitPrice = prod.Price;
+				if (prod.Unit1PurchasePrice > 0) dto.PurchasePrice = prod.Unit1PurchasePrice;
+				else dto.PurchasePrice = prod.PurchasePrice;
+			}
+
+			// تحديث الجدول
+			row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
+			row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
+			if (dgItems.Columns.Contains("PurchasePrice"))
+				row.Cells["PurchasePrice"].Value = dto.PurchasePrice.ToString("F2");
+			CalculateNet();
+		}
+
 		private void RefreshGrid()
 		{
 			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
@@ -2004,6 +2088,7 @@ namespace ChickenDist.Forms
 					item.Brand,
 					item.ShelfLocation,
 					item.StockQty.ToString("F2"),
+					null,              // UnitName - سيُعيَّن بالكود أدناه
 					item.Quantity.ToString("F2"),
 					item.UnitPrice.ToString("F2"),
 					item.DiscountPct.ToString("F2"),
@@ -2014,7 +2099,38 @@ namespace ChickenDist.Forms
 				);
 				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
 				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
-                
+
+				// ─── تهيئة ComboBox الوحدة ──────────────────────────────────────────
+				if (dgItems.Columns.Contains("UnitName") && dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
+				{
+					var unitCell = (DataGridViewComboBoxCell)dgItems.Rows[rIndex].Cells["UnitName"];
+					var unitList = new System.Collections.ArrayList();
+
+					ComboItem prod = GetProductComboItem(item.ProductID);
+					if (prod != null)
+					{
+						// الوحدة الكبرى (الأساسية) دائماً متاحة
+						string bigUnit = !string.IsNullOrEmpty(prod.Unit1Name) ? prod.Unit1Name
+							         : !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName
+							         : "وحدة";
+						unitList.Add(bigUnit);
+						// الوحدة2 إن وُجدت
+						if (!string.IsNullOrEmpty(prod.Unit2Name)) unitList.Add(prod.Unit2Name);
+					}
+					else
+					{
+						unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة");
+					}
+
+					unitCell.DataSource = unitList;
+					// تعيين القيمة المحفوظة (أو الافتراضية)
+					string savedUnit = item.UnitName;
+					if (!string.IsNullOrEmpty(savedUnit) && unitList.Contains(savedUnit))
+						unitCell.Value = savedUnit;
+					else if (unitList.Count > 0)
+						unitCell.Value = unitList[0];
+				}
+
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
                 if (item.MinStockLimit > 0)
                 {
@@ -2188,6 +2304,12 @@ namespace ChickenDist.Forms
 
 		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock)
 		{
+			// الوحدة الافتراضية = الوحدة الكبرى (Unit1Name إن وجدت وإلا Unit الأساسية)
+			string defaultUnit = !string.IsNullOrEmpty(product.Unit1Name) ? product.Unit1Name
+				               : !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName
+				               : null;
+			decimal defaultFactor = 1m; // الوحدة الكبرى دائما factor = 1 (هي الوحدة الأساسية للمخزون)
+
 			return new SaleItemDTO
 			{
 				ProductID = product.ID,
@@ -2202,8 +2324,25 @@ namespace ChickenDist.Forms
 				Brand = product.Brand,
 				ShelfLocation = product.ShelfLocation,
 				ProductCode = product.ProductCode,
-				IsService = product.IsService
+				IsService = product.IsService,
+				UnitName = defaultUnit,
+				Factor = defaultFactor
 			};
+		}
+
+		/// <summary>
+		/// يجلب بيانات الوحدات المتعددة للصنف من ComboItem (أو يستعلم إذا لم يكن في الـ cache)
+		/// </summary>
+		private ComboItem GetProductComboItem(int productID)
+		{
+			// بحث في العناصر المرئية أولاً
+			foreach (var obj in cboProduct.Items)
+				if (obj is ComboItem ci && ci.ID == productID) return ci;
+			// بحث في cache الـ Tag
+			if (cboProduct.Tag is List<ComboItem> all)
+				foreach (var ci in all)
+					if (ci.ID == productID) return ci;
+			return null;
 		}
 
 		private void CalculateNet()
@@ -2373,7 +2512,9 @@ namespace ChickenDist.Forms
 					PartNumber  = iRow["PartNumber"]?.ToString() ?? "",
 					CarModel    = iRow["CarModel"]?.ToString() ?? "",
 					Brand       = iRow["Brand"]?.ToString() ?? "",
-					ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? ""
+					ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? "",
+					UnitName    = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
+					Factor      = iRow.Table.Columns.Contains("Factor")   && iRow["Factor"]   != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1m
 				});
 			}
 			RefreshGrid();
@@ -4054,6 +4195,28 @@ namespace ChickenDist.Forms
 		public string InternationalCode { get; set; } = "";
 		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
 		public bool IsService { get; set; } = false;
+
+		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
+		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>
+		public string BaseUnitName { get; set; } = "";
+		/// <summary>اسم الوحدة1 (مثل كرتونة)</summary>
+		public string Unit1Name { get; set; } = null;
+		/// <summary>سعر بيع الوحدة1</summary>
+		public decimal Unit1SalePrice { get; set; } = 0m;
+		/// <summary>سعر شراء الوحدة1</summary>
+		public decimal Unit1PurchasePrice { get; set; } = 0m;
+		/// <summary>عامل تحويل الوحدة1 (عدد الوحدات الأساسية في الوحدة1)</summary>
+		public decimal Unit1Factor { get; set; } = 1m;
+		/// <summary>اسم الوحدة2 (مثل علبة)</summary>
+		public string Unit2Name { get; set; } = null;
+		/// <summary>عامل تحويل الوحدة2</summary>
+		public decimal Unit2Factor { get; set; } = 1m;
+		/// <summary>سعر بيع الوحدة2</summary>
+		public decimal Unit2SalePrice { get; set; } = 0m;
+		/// <summary>سعر شراء الوحدة2</summary>
+		public decimal Unit2PurchasePrice { get; set; } = 0m;
+		/// <summary>عامل الوحدة3 (الوحدة الأكبر مثل كرتون كبير)</summary>
+		public decimal Unit3Factor { get; set; } = 1m;
 
 		public ComboItem(int id, string text, decimal price = 0m, decimal minStockLimit = 0m, decimal purchasePrice = 0m)
 		{

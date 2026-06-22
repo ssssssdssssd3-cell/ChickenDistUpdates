@@ -37,6 +37,8 @@ namespace ChickenDist.Forms
                        COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
                        CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
+                       COALESCE(c.Phone, N'') AS ClientPhone,
+                       COALESCE(c.Address, N'') AS ClientAddress,
                        COALESCE(e.EmpName, N'---') AS DriverName
                  FROM Sales s
                  LEFT JOIN Clients c ON s.ClientID = c.ClientID
@@ -310,7 +312,7 @@ namespace ChickenDist.Forms
                     else
                     {
                         // ==========================================
-                        // STANDARD (DEFAULT) LAYOUT
+                        // STANDARD (DEFAULT) LAYOUT — جدول أعمدة واضح
                         // ==========================================
                         g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(0, y, pageW, 25), center); y += 22;
                         g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 20;
@@ -320,21 +322,61 @@ namespace ChickenDist.Forms
                         {
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 16;
                             g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 16;
-                            
+
                             string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل"
                                              : _saleRow["SaleType"].ToString() == "Cash"   ? "نقدي"
                                              : "تحميل مندوب";
                             string driverText = _saleRow["DriverName"].ToString() != "---" ? $" | مندوب: {_saleRow["DriverName"]}" : "";
                             g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 16;
-                            g.DrawString($"الدفع: {typeLabel}{driverText}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 18;
+                            g.DrawString($"طريقة الدفع: {typeLabel}{driverText}", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right); y += 16;
+
+                            // بيانات العميل الإضافية (هاتف + عنوان)
+                            if (AppConfig.ReceiptShowClientInfo)
+                            {
+                                string phone = _saleRow.Table.Columns.Contains("ClientPhone") ? _saleRow["ClientPhone"].ToString() : "";
+                                string addr  = _saleRow.Table.Columns.Contains("ClientAddress") ? _saleRow["ClientAddress"].ToString() : "";
+                                if (!string.IsNullOrEmpty(phone))
+                                { g.DrawString($"الهاتف: {phone}", normal, Brushes.DimGray, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 15; }
+                                if (!string.IsNullOrEmpty(addr))
+                                { g.DrawString($"العنوان: {addr}", normal, Brushes.DimGray, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 15; }
+                            }
+                            y += 2;
                         }
-                        g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 6;
+                        g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 4;
+
+                        // ─── جدول رأس الأعمدة ──────────────────────────────────────
+                        // توزيع العرض (من اليسار إلى اليمين RTL):
+                        // [  الإجمالي ] [ خصم  ] [ سعر  ] [ كمية ] [    اسم الصنف     ]
+                        //    55px       50px     50px     40px        (remainder)
+                        bool showDisc = AppConfig.ReceiptShowDiscount;
+                        int colTot  = margin;          // إجمالي — بداية الجدول (LTR)
+                        int wTot    = 55;
+                        int colDisc = colTot + wTot;   // خصم
+                        int wDisc   = showDisc ? 48 : 0;
+                        int colPrice = colDisc + wDisc; // سعر
+                        int wPrice  = 55;
+                        int colQty  = colPrice + wPrice; // كمية
+                        int wQty    = 38;
+                        int colName = colQty + wQty;    // اسم الصنف (يمتد حتى النهاية)
+                        int wName   = pageW - 2 * margin - colName + margin;
+
+                        // لون رأس الجدول
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(45, 45, 45)), margin, y, pageW - 2 * margin, 16);
+                        var hdr = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString("الإجمالي", small, Brushes.White, new RectangleF(colTot,   y, wTot,   16), hdr);
+                        if (showDisc)
+                            g.DrawString("خصم",     small, Brushes.White, new RectangleF(colDisc,  y, wDisc,  16), hdr);
+                        g.DrawString("سعر",      small, Brushes.White, new RectangleF(colPrice, y, wPrice, 16), hdr);
+                        g.DrawString("كمية",    small, Brushes.White, new RectangleF(colQty,   y, wQty,   16), hdr);
+                        g.DrawString("الصنف",   small, Brushes.White, new RectangleF(colName,  y, wName,  16), right);
+                        y += 17;
+                        g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 3;
 
                         if (_items != null)
                         {
                             while (_printItemIndex < _items.Rows.Count)
                             {
-                                if (y + 60 > e.PageBounds.Height)
+                                if (y + 40 > e.PageBounds.Height)
                                 {
                                     e.HasMorePages = true;
                                     return;
@@ -342,21 +384,30 @@ namespace ChickenDist.Forms
 
                                 DataRow r = _items.Rows[_printItemIndex];
                                 string prodName = r["ProductName"].ToString();
-                                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                decimal qty   = Convert.ToDecimal(r["Quantity"]);
                                 decimal price = Convert.ToDecimal(r["UnitPrice"]);
-                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
-                                decimal itemDisc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"]) : 0m;
-                                decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"]) : 0m;
+                                decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
+                                decimal itemDisc    = r.Table.Columns.Contains("DiscountAmt")  && r["DiscountAmt"]  != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"])  : 0m;
+                                decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct")  && r["DiscountPct"]  != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"])  : 0m;
 
-                                g.DrawString(prodName, bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
+                                // رسم الاسم (RTL — يمتد من اليمين)
+                                g.DrawString(prodName, small, Brushes.Black, new RectangleF(colName, y, wName, 16), right);
+                                // كمية
+                                g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQty, y, wQty, 16), hdr);
+                                // سعر الوحدة
+                                g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPrice, y, wPrice, 16), hdr);
+                                // خصم
+                                if (showDisc)
+                                {
+                                    string discTxt = itemDiscPct > 0 ? $"{itemDiscPct:0.#}%" : (itemDisc > 0 ? itemDisc.ToString("0.##") : "-");
+                                    g.DrawString(discTxt, small, Brushes.DimGray, new RectangleF(colDisc, y, wDisc, 16), hdr);
+                                }
+                                // إجمالي
+                                g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTot, y, wTot, 16), hdr);
                                 y += 16;
 
-                                string details = $"{qty:0.##} x {price:N2} = {tot:N2}";
-                                if (itemDiscPct > 0) details += $" (خصم {itemDiscPct:0.##}%)";
-                                else if (itemDisc > 0) details += $" (خصم {itemDisc:N2})";
-
-                                g.DrawString(details, normal, Brushes.DimGray, new RectangleF(margin, y, pageW - 2 * margin, 16), right);
-                                y += 16;
+                                // خط فاصل خفيف بين الأصناف
+                                g.DrawLine(new Pen(Color.FromArgb(200, 200, 200)), margin, y, pageW - margin, y); y += 1;
 
                                 _runningTotal += tot;
                                 _printItemIndex++;

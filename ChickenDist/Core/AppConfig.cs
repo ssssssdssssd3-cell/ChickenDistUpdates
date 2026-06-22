@@ -97,6 +97,20 @@ namespace ChickenDist.Core
             set => Set("PrintShopLogo", value ? "true" : "false");
         }
 
+        /// <summary>إظهار عمود الخصم في جدول أصناف الريسيت</summary>
+        public static bool ReceiptShowDiscount
+        {
+            get => Get("ReceiptShowDiscount", "true") == "true";
+            set => Set("ReceiptShowDiscount", value ? "true" : "false");
+        }
+
+        /// <summary>إظهار بيانات العميل (اسم + هاتف + عنوان) في رأس الريسيت</summary>
+        public static bool ReceiptShowClientInfo
+        {
+            get => Get("ReceiptShowClientInfo", "false") == "true";
+            set => Set("ReceiptShowClientInfo", value ? "true" : "false");
+        }
+
 
 
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)

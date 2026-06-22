@@ -1083,7 +1083,7 @@ namespace ChickenDist.Core
                 // ===== عرض الكميات الفعلية الحالية لكل صنف في كل مخزن =====
                 SafeMigrate("vw_CurrentStockByWarehouse.Drop",
                     "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;");
-                SafeMigrate("vw_CurrentStockByWarehouse.Create", @"
+                SafeMigrate("vw_CurrentStockByWarehouse.Create_MultiUnits", @"
                 EXEC('CREATE VIEW vw_CurrentStockByWarehouse AS
                 SELECT
                     p.ProductID,
@@ -1095,41 +1095,41 @@ namespace ChickenDist.Core
                     p.MinStockLimit,
                     w.WarehouseID,
                     w.WarehouseName,
-                    ISNULL(adj.ActualQty, 0)
-                    + ISNULL((SELECT SUM(ri.Quantity)
+                    ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0)
+                    + ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM ReturnItems ri
                               JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                               WHERE ri.ProductID = p.ProductID
                                 AND sr.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(hi.ReturnedQty)
+                    + ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM HandoverItems hi
                               JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                               JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
                               WHERE hi.ProductID = p.ProductID
                                 AND dl.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(pi.Quantity)
+                    + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM PurchaseItems pi
                               JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                               WHERE pi.ProductID = p.ProductID
                                 AND pu.IsPosted = 1
                                 AND pu.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(ti.Quantity)
+                    + ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM WarehouseTransferItems ti
                               JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
                               WHERE ti.ProductID = p.ProductID
                                 AND t.IsPosted = 1
                                 AND t.ToWarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(pri.Quantity)
+                    - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM PurchaseReturnItems pri
                               JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                               WHERE pri.ProductID = p.ProductID
                                 AND pr.WarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(si.Quantity)
+                    - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM SaleItems si
                               JOIN Sales s ON si.SaleID = s.SaleID
                               WHERE si.ProductID = p.ProductID
@@ -1137,14 +1137,14 @@ namespace ChickenDist.Core
                                 AND s.WarehouseID = w.WarehouseID
                                 AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL))
                                 AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(ti2.Quantity)
+                    - ISNULL((SELECT SUM(ti2.Quantity * COALESCE(ti2.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM WarehouseTransferItems ti2
                               JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID
                               WHERE ti2.ProductID = p.ProductID
                                 AND t2.IsPosted = 1
                                 AND t2.FromWarehouseID = w.WarehouseID
                                 AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(wli.Quantity)
+                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)))
                               FROM WastageLossItems wli
                               JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
                               WHERE wli.ProductID = p.ProductID
@@ -1155,7 +1155,7 @@ namespace ChickenDist.Core
                 FROM Products p
                 CROSS JOIN Warehouses w
                 OUTER APPLY (
-                    SELECT TOP 1 sa.AdjDate, sa.ActualQty
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
                     FROM StockAdjustments sa
                     WHERE sa.ProductID = p.ProductID
                       AND sa.WarehouseID = w.WarehouseID
@@ -1428,6 +1428,81 @@ namespace ChickenDist.Core
                     BEGIN
                         ALTER TABLE Employees ADD CanSellInstallment BIT NOT NULL DEFAULT 1;
                     END
+                END");
+
+                // ===== ميزة الوحدات المتعددة (كرتونة، علبة، قطعة) =====
+                SafeMigrate("Products.MultiUnits", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'Unit1Name') IS NULL
+                    BEGIN
+                        ALTER TABLE Products ADD Unit1Name NVARCHAR(50) NULL;
+                        ALTER TABLE Products ADD Unit1Barcode NVARCHAR(50) NULL;
+                        ALTER TABLE Products ADD Unit1SalePrice DECIMAL(10,2) NULL;
+                        ALTER TABLE Products ADD Unit1PurchasePrice DECIMAL(10,2) NULL;
+                        
+                        ALTER TABLE Products ADD Unit2Name NVARCHAR(50) NULL;
+                        ALTER TABLE Products ADD Unit2Factor DECIMAL(10,3) NULL;
+                        ALTER TABLE Products ADD Unit2Barcode NVARCHAR(50) NULL;
+                        ALTER TABLE Products ADD Unit2SalePrice DECIMAL(10,2) NULL;
+                        ALTER TABLE Products ADD Unit2PurchasePrice DECIMAL(10,2) NULL;
+                        
+                        ALTER TABLE Products ADD Unit3Factor DECIMAL(10,3) NULL;
+                    END
+                END");
+
+                SafeMigrate("TransactionItems.MultiUnits", @"
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE SaleItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE SaleItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('SaleItemsHistory', 'U') IS NOT NULL AND COL_LENGTH('SaleItemsHistory', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE SaleItemsHistory ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE SaleItemsHistory ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE PurchaseItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE PurchaseItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL AND COL_LENGTH('ReturnItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE ReturnItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE ReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseReturnItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE PurchaseReturnItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE PurchaseReturnItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('WarehouseTransferItems', 'U') IS NOT NULL AND COL_LENGTH('WarehouseTransferItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE WarehouseTransferItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE WarehouseTransferItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL AND COL_LENGTH('WastageLossItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE WastageLossItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE WastageLossItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('DriverLoadItems', 'U') IS NOT NULL AND COL_LENGTH('DriverLoadItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE DriverLoadItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE DriverLoadItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END
+                IF OBJECT_ID('HandoverItems', 'U') IS NOT NULL AND COL_LENGTH('HandoverItems', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE HandoverItems ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE HandoverItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                END");
+
+                SafeMigrate("StockAdjustments.MultiUnits", @"
+                IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL AND COL_LENGTH('StockAdjustments', 'UnitName') IS NULL
+                BEGIN
+                    ALTER TABLE StockAdjustments ADD UnitName NVARCHAR(50) NULL;
+                    ALTER TABLE StockAdjustments ADD Factor DECIMAL(10,3) DEFAULT 1.0;
                 END");
             }
             catch (Exception ex)
