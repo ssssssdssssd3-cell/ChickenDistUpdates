@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -74,6 +74,8 @@ namespace ChickenDist.Forms
 		private Label lblProfitVal;
 
 		private ComboBox cboProduct;
+		private TextBox txtProductCode;
+		private TextBox txtClientSearchCode;
 
 		private NumericUpDown nudQty;
 
@@ -146,48 +148,63 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "شاشة المبيعات";
-			base.Size = new Size(1020, 680);
+			base.Size = new Size(1024, 700);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
 			Font = Theme.FontMain;
-            KeyPreview = true;
-            this.KeyDown += FrmSale_KeyDown;
-            this.FormClosing += FrmSale_FormClosing;
-            // ── تهيئة Timer الباركود التلقائي ──────────────────────────────
-            _barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
-            _barcodeTimer.Tick += BarcodeTimer_Tick;
-			Panel panel = new Panel
+			KeyPreview = true;
+			this.KeyDown += FrmSale_KeyDown;
+			this.FormClosing += FrmSale_FormClosing;
+			
+			_barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
+			_barcodeTimer.Tick += BarcodeTimer_Tick;
+
+			// ── 1. رأس الصفحة (Header Panel) ──────────────────────────────────
+			pnlHeader = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 225,
-				Width = 1020,
+				Height = AppConfig.EnableCratesTracking ? 140 : 108,
+				Width = 1024,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(12, 8, 12, 8)
 			};
-			var tbl = new TableLayoutPanel
+
+			var tblHeaderMain = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				RowCount = 5,
-				ColumnCount = 6,
+				RowCount = 1,
+				ColumnCount = 2,
 				BackColor = Color.Transparent,
-				CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+				Padding = new Padding(0)
 			};
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // col0: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f));  // col1: control
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col2: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f));  // col3: control
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));   // col4: label
-			tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44f));  // col5: control / buttons
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66f)); // Left: Invoice details
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f)); // Right: Invoice options (Type & Tier)
+			tblHeaderMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-			tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+			var tblDetails = new TableLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				RowCount = AppConfig.EnableCratesTracking ? 4 : 3,
+				ColumnCount = 4,
+				BackColor = Color.Transparent,
+				Padding = new Padding(0)
+			};
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 0: Label
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 1: Control
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Label
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 3: Control
 
-			// Row 0: Client & Statement, Date, Type Buttons
+			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
+			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
+			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
+			if (AppConfig.EnableCratesTracking)
+			{
+				tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
+			}
+
+			// Row 0: Client & Date
 			lblClient = MakeLabel("العميل :", 0, 0);
 			lblClient.Dock = DockStyle.Fill;
 			lblClient.TextAlign = ContentAlignment.MiddleRight;
@@ -203,7 +220,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2)
 			};
 			SetupSearchableCombo(cboClient);
 
@@ -215,7 +232,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
 				Dock = DockStyle.Left,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2)
 			};
 
 			Button btnClientStatement = new Button
@@ -228,7 +245,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.White,
 				Cursor = Cursors.Hand,
 				Dock = DockStyle.Left,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2)
 			};
 			btnClientStatement.FlatAppearance.BorderSize = 0;
 			btnClientStatement.Click += (s, e) => {
@@ -238,12 +255,60 @@ namespace ChickenDist.Forms
 					MessageBox.Show("الرجاء اختيار عميل أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				}
 			};
+
+			txtClientSearchCode = new TextBox
+			{
+				Width = 90,
+				Font = Theme.FontMain,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2),
+				RightToLeft = RightToLeft.Yes
+			};
+			txtClientSearchCode.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Enter)
+				{
+					string term = txtClientSearchCode.Text.Trim();
+					if (string.IsNullOrEmpty(term)) return;
+
+					ComboItem found = null;
+					foreach (var item in cboClient.Items)
+					{
+						if (item is ComboItem ci && ci.ID > 0)
+						{
+							if (string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
+								string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
+								(ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase)))
+							{
+								found = ci;
+								break;
+							}
+						}
+					}
+
+					if (found != null)
+					{
+						cboClient.SelectedItem = found;
+						e.Handled = true;
+						e.SuppressKeyPress = true;
+					}
+					else
+					{
+						MessageBox.Show("لم يتم العثور على العميل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+				}
+			};
+
 			pnlClient.Controls.Add(cboClient);
+			pnlClient.Controls.Add(txtClientSearchCode);
 			pnlClient.Controls.Add(lblClientBalance);
 			pnlClient.Controls.Add(btnClientStatement);
-
 			btnClientStatement.SendToBack();
 			lblClientBalance.SendToBack();
+			txtClientSearchCode.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
 			lblDate.Dock = DockStyle.Fill;
@@ -256,92 +321,15 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Short,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-
-			Label label = MakeLabel("نوع الفاتورة :", 0, 0);
-			label.Dock = DockStyle.Fill;
-			label.TextAlign = ContentAlignment.MiddleRight;
-			label.Margin = new Padding(2);
-
-			btnTypeCredit = new Button
-			{
-				Text = "آجل",
-				Width = 65,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
 				Margin = new Padding(2)
 			};
-			btnTypeCredit.FlatAppearance.BorderSize = 0;
-			btnTypeCredit.Click += delegate
-			{
-				SetInvoiceType("Credit");
-			};
 
-			btnTypeCash = new Button
-			{
-				Text = "نقدي",
-				Width = 65,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2)
-			};
-			btnTypeCash.FlatAppearance.BorderSize = 0;
-			btnTypeCash.Click += delegate
-			{
-				SetInvoiceType("Cash");
-			};
+			tblDetails.Controls.Add(lblClient, 0, 0);
+			tblDetails.Controls.Add(pnlClient, 1, 0);
+			tblDetails.Controls.Add(lblDate, 2, 0);
+			tblDetails.Controls.Add(dtpDate, 3, 0);
 
-			btnTypeDriverLoad = new Button
-			{
-				Text = "تحميل مندوب",
-				Width = 90,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2)
-			};
-			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
-			btnTypeDriverLoad.Click += delegate
-			{
-				SetInvoiceType("DriverLoad");
-			};
-
-			btnTypeInstallment = new Button
-			{
-				Text = "تقسيط شرعي",
-				Width = 95,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2)
-			};
-			btnTypeInstallment.FlatAppearance.BorderSize = 0;
-			btnTypeInstallment.Click += delegate
-			{
-				SetInvoiceType("Installment");
-			};
-
-			var pnlTypeBtns = new FlowLayoutPanel
-			{
-				FlowDirection = FlowDirection.RightToLeft,
-				BackColor = Color.Transparent,
-				Dock = DockStyle.Fill,
-				WrapContents = false,
-				Margin = new Padding(0, 4, 0, 0)
-			};
-			pnlTypeBtns.Controls.Add(btnTypeInstallment);
-			pnlTypeBtns.Controls.Add(btnTypeDriverLoad);
-			pnlTypeBtns.Controls.Add(btnTypeCash);
-			pnlTypeBtns.Controls.Add(btnTypeCredit);
-
-			// Row 1: Driver, Product & Search (spanning 3 columns)
+			// Row 1: Driver & Warehouse
 			lblDriver = MakeLabel("المندوب :", 0, 0);
 			lblDriver.Dock = DockStyle.Fill;
 			lblDriver.TextAlign = ContentAlignment.MiddleRight;
@@ -355,84 +343,9 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2)
 			};
 			SetupSearchableCombo(cboDriver);
-
-			Label label2 = MakeLabel("الصنف :", 0, 0);
-			label2.Dock = DockStyle.Fill;
-			label2.TextAlign = ContentAlignment.MiddleRight;
-			label2.Margin = new Padding(2);
-
-			var pnlProduct = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
-			cboProduct = new ComboBox
-			{
-				Dock = DockStyle.Fill,
-				DropDownStyle = ComboBoxStyle.DropDown,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-			SetupSearchableCombo(cboProduct);
-			cboProduct.KeyDown += CboProduct_KeyDown;
-			cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect; // اكتشاف الباركود التلقائي
-
-			btnSearchProduct = new Button
-			{
-				Text = "🔍",
-				Width = 35,
-				Height = 28,
-				BackColor = Theme.Accent,
-				ForeColor = Color.White,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Dock = DockStyle.Left,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-			btnSearchProduct.FlatAppearance.BorderSize = 0;
-			btnSearchProduct.Click += BtnSearchProduct_Click;
-
-			var btnManualAdd = new Button
-			{
-				Text = "➕",
-				Width = 35,
-				Height = 28,
-				BackColor = Color.FromArgb(40, 167, 69),
-				ForeColor = Color.White,
-				FlatStyle = FlatStyle.Flat,
-				Cursor = Cursors.Hand,
-				Dock = DockStyle.Left,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-			btnManualAdd.FlatAppearance.BorderSize = 0;
-			btnManualAdd.Click += BtnManualAdd_Click;
-
-			pnlProduct.Controls.Add(cboProduct);
-			pnlProduct.Controls.Add(btnSearchProduct);
-			pnlProduct.Controls.Add(btnManualAdd);
-
-			// Background initialization to prevent NullReferenceException:
-			nudQty = new NumericUpDown { Value = 1m };
-			txtPrice = new TextBox();
-			btnAddItem = new Button();
-
-			// Row 2: Notes, Warehouse
-			lblNotes = MakeLabel("ملاحظات :", 0, 0);
-			lblNotes.Dock = DockStyle.Fill;
-			lblNotes.TextAlign = ContentAlignment.MiddleRight;
-			lblNotes.Margin = new Padding(2);
-
-			txtNotes = new TextBox
-			{
-				Dock = DockStyle.Fill,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				BorderStyle = BorderStyle.FixedSingle,
-				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
-			};
 
 			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
 			lblWarehouse.Dock = DockStyle.Fill;
@@ -447,9 +360,15 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2)
 			};
 
+			tblDetails.Controls.Add(lblDriver, 0, 1);
+			tblDetails.Controls.Add(cboDriver, 1, 1);
+			tblDetails.Controls.Add(lblWarehouse, 2, 1);
+			tblDetails.Controls.Add(cboWarehouse, 3, 1);
+
+			// Row 2: Safe Account & Notes
 			lblSafeAccount = MakeLabel("حساب الدفع :", 0, 0);
 			lblSafeAccount.Dock = DockStyle.Fill;
 			lblSafeAccount.TextAlign = ContentAlignment.MiddleRight;
@@ -463,103 +382,30 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-
-			// Row 3: Price Tiers (spanning 5 columns)
-			Color clrRetailOn    = Color.FromArgb(30,  100, 200);
-			Color clrSemiOn      = Color.FromArgb(130,  50, 180);
-			Color clrWholesaleOn = Color.FromArgb(200,  90,   0);
-			Color clrOff         = Theme.BgInput;
-
-			var lblTierRow = MakeLabel("فئة السعر :", 0, 0);
-			lblTierRow.Dock = DockStyle.Fill;
-			lblTierRow.TextAlign = ContentAlignment.MiddleRight;
-			lblTierRow.ForeColor = Theme.TextSub;
-			lblTierRow.Margin = new Padding(2);
-
-			btnTierRetail = new Button
-			{
-				Text = "🔵 قطاعي",
-				Width = 95,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrRetailOn,
-				ForeColor = Color.White,
-				Cursor = Cursors.Hand,
 				Margin = new Padding(2)
 			};
-			btnTierRetail.FlatAppearance.BorderSize = 0;
-			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
 
-			btnTierSemi = new Button
-			{
-				Text = "🟣 نصف جملة",
-				Width = 105,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrOff,
-				ForeColor = Theme.TextMain,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2)
-			};
-			btnTierSemi.FlatAppearance.BorderSize = 0;
-			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+			lblNotes = MakeLabel("ملاحظات :", 0, 0);
+			lblNotes.Dock = DockStyle.Fill;
+			lblNotes.TextAlign = ContentAlignment.MiddleRight;
+			lblNotes.Margin = new Padding(2);
 
-			btnTierWholesale = new Button
+			txtNotes = new TextBox
 			{
-				Text = "🟠 جملة",
-				Width = 105,
-				Height = 28,
-				Font = Theme.FontBold,
-				FlatStyle = FlatStyle.Flat,
-				BackColor = clrOff,
-				ForeColor = Theme.TextMain,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2)
-			};
-			btnTierWholesale.FlatAppearance.BorderSize = 0;
-			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
-
-			var pnlTierBtns = new FlowLayoutPanel
-			{
-				FlowDirection = FlowDirection.RightToLeft,
-				BackColor = Color.Transparent,
 				Dock = DockStyle.Fill,
-				WrapContents = false,
-				Margin = new Padding(0, 4, 0, 0)
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2)
 			};
-			pnlTierBtns.Controls.Add(btnTierWholesale);
-			pnlTierBtns.Controls.Add(btnTierSemi);
-			pnlTierBtns.Controls.Add(btnTierRetail);
 
-			// Add to TableLayoutPanel
-			tbl.Controls.Add(lblClient, 0, 0);
-			tbl.Controls.Add(pnlClient, 1, 0);
-			tbl.Controls.Add(lblDate, 2, 0);
-			tbl.Controls.Add(dtpDate, 3, 0);
-			tbl.Controls.Add(label, 4, 0);
-			tbl.Controls.Add(pnlTypeBtns, 5, 0);
+			tblDetails.Controls.Add(lblSafeAccount, 0, 2);
+			tblDetails.Controls.Add(cboSafeAccount, 1, 2);
+			tblDetails.Controls.Add(lblNotes, 2, 2);
+			tblDetails.Controls.Add(txtNotes, 3, 2);
 
-			tbl.Controls.Add(lblDriver, 0, 1);
-			tbl.Controls.Add(cboDriver, 1, 1);
-			tbl.Controls.Add(label2, 2, 1);
-			tbl.Controls.Add(pnlProduct, 3, 1);
-			tbl.SetColumnSpan(pnlProduct, 3);
-
-			tbl.Controls.Add(lblNotes, 0, 2);
-			tbl.Controls.Add(txtNotes, 1, 2);
-			tbl.Controls.Add(lblWarehouse, 2, 2);
-			tbl.Controls.Add(cboWarehouse, 3, 2);
-			tbl.Controls.Add(lblSafeAccount, 4, 2);
-			tbl.Controls.Add(cboSafeAccount, 5, 2);
-
-			tbl.Controls.Add(lblTierRow, 0, 3);
-			tbl.Controls.Add(pnlTierBtns, 1, 3);
-			tbl.SetColumnSpan(pnlTierBtns, 5);
-
+			// Row 3: Crates Tracking (only if enabled)
 			lblCratesOut = MakeLabel("أقفاص صادرة :", 0, 0);
 			lblCratesOut.Dock = DockStyle.Fill;
 			lblCratesOut.TextAlign = ContentAlignment.MiddleRight;
@@ -573,7 +419,7 @@ namespace ChickenDist.Forms
 				DecimalPlaces = 0,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(2, 4, 2, 4)
 			};
 
 			lblCratesIn = MakeLabel("أقفاص واردة :", 0, 0);
@@ -583,13 +429,14 @@ namespace ChickenDist.Forms
 
 			nudCratesIn = new NumericUpDown
 			{
-				Dock = DockStyle.Fill,
 				Minimum = 0,
 				Maximum = 9999,
 				DecimalPlaces = 0,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				Margin = new Padding(2, 6, 2, 6)
+				Width = 80,
+				Dock = DockStyle.Right,
+				Margin = new Padding(2, 4, 2, 4)
 			};
 
 			lblClientCratesBalance = new Label
@@ -599,17 +446,316 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
 				Dock = DockStyle.Fill,
-				Margin = new Padding(2, 6, 2, 6)
+				Margin = new Padding(6, 4, 2, 4)
 			};
 
-			tbl.Controls.Add(lblCratesOut, 0, 4);
-			tbl.Controls.Add(nudCratesOut, 1, 4);
-			tbl.Controls.Add(lblCratesIn, 2, 4);
-			tbl.Controls.Add(nudCratesIn, 3, 4);
-			tbl.Controls.Add(lblClientCratesBalance, 4, 4);
-			tbl.SetColumnSpan(lblClientCratesBalance, 2);
+			var pnlCratesInBalance = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
+			pnlCratesInBalance.Controls.Add(lblClientCratesBalance);
+			pnlCratesInBalance.Controls.Add(nudCratesIn);
+			lblClientCratesBalance.SendToBack();
 
-			panel.Controls.Add(tbl);
+			if (AppConfig.EnableCratesTracking)
+			{
+				tblDetails.Controls.Add(lblCratesOut, 0, 3);
+				tblDetails.Controls.Add(nudCratesOut, 1, 3);
+				tblDetails.Controls.Add(lblCratesIn, 2, 3);
+				tblDetails.Controls.Add(pnlCratesInBalance, 3, 3);
+			}
+			else
+			{
+				lblCratesOut.Visible = false;
+				nudCratesOut.Visible = false;
+				lblCratesIn.Visible = false;
+				nudCratesIn.Visible = false;
+				lblClientCratesBalance.Visible = false;
+			}
+
+			// Right side options (Type & Tier Grouping)
+			var pnlOptions = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.TopDown,
+				BackColor = Color.Transparent,
+				Padding = new Padding(10, 0, 10, 0),
+				WrapContents = false
+			};
+
+			// Group 1: Invoice Type Card
+			var pnlTypeGroup = new Panel
+			{
+				Width = 300,
+				Height = 44,
+				BackColor = Color.FromArgb(43, 50, 70),
+				Padding = new Padding(6, 2, 6, 2),
+				Margin = new Padding(0, 0, 0, 4)
+			};
+			var lblTypeHeader = new Label
+			{
+				Text = "نوع الفاتورة :",
+				Font = Theme.FontSmall,
+				ForeColor = Theme.TextSub,
+				Dock = DockStyle.Top,
+				Height = 15,
+				TextAlign = ContentAlignment.TopRight
+			};
+			pnlTypeGroup.Controls.Add(lblTypeHeader);
+
+			var pnlTypeButtonsFlow = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Color.Transparent,
+				WrapContents = false,
+				Margin = new Padding(0)
+			};
+			
+			btnTypeCredit = new Button { Text = "آجل", Width = 60, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCredit.FlatAppearance.BorderSize = 0;
+			btnTypeCredit.Click += delegate { SetInvoiceType("Credit"); };
+
+			btnTypeCash = new Button { Text = "نقدي", Width = 60, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCash.FlatAppearance.BorderSize = 0;
+			btnTypeCash.Click += delegate { SetInvoiceType("Cash"); };
+
+			btnTypeDriverLoad = new Button { Text = "تحميل", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
+			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
+
+			btnTypeInstallment = new Button { Text = "تقسيط", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeInstallment.FlatAppearance.BorderSize = 0;
+			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
+
+			pnlTypeButtonsFlow.Controls.Add(btnTypeInstallment);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeDriverLoad);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeCash);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeCredit);
+			pnlTypeGroup.Controls.Add(pnlTypeButtonsFlow);
+			pnlTypeButtonsFlow.BringToFront();
+
+			// Group 2: Price Tiers Card
+			var pnlTierGroup = new Panel
+			{
+				Width = 300,
+				Height = 44,
+				BackColor = Color.FromArgb(43, 50, 70),
+				Padding = new Padding(6, 2, 6, 2),
+				Margin = new Padding(0, 0, 0, 4)
+			};
+			var lblTierHeader = new Label
+			{
+				Text = "فئة السعر :",
+				Font = Theme.FontSmall,
+				ForeColor = Theme.TextSub,
+				Dock = DockStyle.Top,
+				Height = 15,
+				TextAlign = ContentAlignment.TopRight
+			};
+			pnlTierGroup.Controls.Add(lblTierHeader);
+
+			var pnlTierButtonsFlow = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Color.Transparent,
+				WrapContents = false,
+				Margin = new Padding(0)
+			};
+
+			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierRetail.FlatAppearance.BorderSize = 0;
+			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
+
+			btnTierSemi = new Button { Text = "🟣 نصف", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierSemi.FlatAppearance.BorderSize = 0;
+			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+
+			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 75, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierWholesale.FlatAppearance.BorderSize = 0;
+			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
+
+			pnlTierButtonsFlow.Controls.Add(btnTierWholesale);
+			pnlTierButtonsFlow.Controls.Add(btnTierSemi);
+			pnlTierButtonsFlow.Controls.Add(btnTierRetail);
+			pnlTierGroup.Controls.Add(pnlTierButtonsFlow);
+			pnlTierButtonsFlow.BringToFront();
+
+			pnlOptions.Controls.Add(pnlTypeGroup);
+			pnlOptions.Controls.Add(pnlTierGroup);
+
+			tblHeaderMain.Controls.Add(tblDetails, 0, 0);
+			tblHeaderMain.Controls.Add(pnlOptions, 1, 0);
+			pnlHeader.Controls.Add(tblHeaderMain);
+
+			// ── 2. شريط اختيار وإدخال الأصناف (Product Entry Bar) ───────────────
+			var pnlProductBar = new Panel
+			{
+				Dock = DockStyle.Top,
+				Height = 44,
+				BackColor = Theme.BgCard,
+				Padding = new Padding(6, 4, 6, 4)
+			};
+
+			var tblProductBar = new TableLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				RowCount = 1,
+				ColumnCount = 6,
+				BackColor = Color.Transparent,
+				Padding = new Padding(0)
+			};
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));   // Col 0: Label
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));  // Col 1: txtProductCode
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Col 2: cboProduct (Fills space)
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));  // Col 3: btnSearchProduct
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));   // Col 4: btnManualAdd
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));  // Col 5: btnCustomizeCols
+
+			var lblProductTitle = MakeLabel("الصنف (F12) :", 0, 0);
+			lblProductTitle.Dock = DockStyle.Fill;
+			lblProductTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblProductTitle.Margin = new Padding(2);
+
+			txtProductCode = new TextBox
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6),
+				Font = Theme.FontMain
+			};
+			txtProductCode.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Enter)
+				{
+					string scanText = txtProductCode.Text.Trim();
+					if (string.IsNullOrEmpty(scanText)) return;
+
+					List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+					if (allItems == null)
+					{
+						allItems = new List<ComboItem>();
+						foreach (var item in cboProduct.Items)
+						{
+							if (item is ComboItem ci) allItems.Add(ci);
+						}
+					}
+
+					ComboItem foundItem = null;
+					foreach (var ci in allItems)
+					{
+						if (ci.ID > 0 && 
+							(string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+							 MatchBarcode(ci.InternationalCode, scanText)))
+						{
+							foundItem = ci;
+							break;
+						}
+					}
+
+					if (foundItem != null)
+					{
+						e.Handled = true;
+						e.SuppressKeyPress = true;
+
+						_isScanningBarcode = true;
+						try
+						{
+							AddOrUpdateProduct(foundItem.ID, 1.00m);
+							
+							cboProduct.Text = "";
+							cboProduct.Items.Clear();
+							cboProduct.Items.AddRange(allItems.ToArray());
+							cboProduct.SelectedItem = foundItem;
+
+							txtProductCode.Clear();
+							txtProductCode.Focus();
+						}
+						finally
+						{
+							_isScanningBarcode = false;
+						}
+					}
+					else
+					{
+						MessageBox.Show("لم يتم العثور على الصنف!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
+				}
+			};
+
+			cboProduct = new ComboBox
+			{
+				Dock = DockStyle.Fill,
+				DropDownStyle = ComboBoxStyle.DropDown,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat,
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(2, 6, 2, 6)
+			};
+			SetupSearchableCombo(cboProduct);
+			cboProduct.KeyDown += CboProduct_KeyDown;
+			cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect;
+
+			btnSearchProduct = new Button
+			{
+				Text = "🔍 بحث سريع (F3)",
+				Dock = DockStyle.Fill,
+				BackColor = Theme.Accent,
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Font = Theme.FontBold,
+				Margin = new Padding(4, 2, 4, 2)
+			};
+			btnSearchProduct.FlatAppearance.BorderSize = 0;
+			btnSearchProduct.Click += BtnSearchProduct_Click;
+
+			var btnManualAdd = new Button
+			{
+				Text = "➕ إضافة",
+				Dock = DockStyle.Fill,
+				BackColor = Color.FromArgb(40, 167, 69),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Font = Theme.FontBold,
+				Margin = new Padding(4, 2, 4, 2)
+			};
+			btnManualAdd.FlatAppearance.BorderSize = 0;
+			btnManualAdd.Click += BtnManualAdd_Click;
+
+			btnCustomizeCols = new Button
+			{
+				Text      = "⚙️ الأعمدة",
+				Dock = DockStyle.Fill,
+				BackColor = Color.FromArgb(55, 65, 81),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Font      = Theme.FontBold,
+				Cursor    = Cursors.Hand,
+				Margin = new Padding(4, 2, 4, 2)
+			};
+			btnCustomizeCols.FlatAppearance.BorderSize = 0;
+			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
+
+			tblProductBar.Controls.Add(lblProductTitle, 0, 0);
+			tblProductBar.Controls.Add(txtProductCode, 1, 0);
+			tblProductBar.Controls.Add(cboProduct, 2, 0);
+			tblProductBar.Controls.Add(btnSearchProduct, 3, 0);
+			tblProductBar.Controls.Add(btnManualAdd, 4, 0);
+			tblProductBar.Controls.Add(btnCustomizeCols, 5, 0);
+
+			pnlProductBar.Controls.Add(tblProductBar);
+
+			// Background initialization to prevent NullReferenceException:
+			nudQty = new NumericUpDown { Value = 1m };
+			txtPrice = new TextBox();
+			btnAddItem = new Button();
+
+			// ── 3. جدول الأصناف (Items Panel & Grid) ──────────────────────────
 			pnlItems = new Panel
 			{
 				Dock = DockStyle.Fill,
@@ -644,114 +790,24 @@ namespace ChickenDist.Forms
 				EnableHeadersVisualStyles = false,
 				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 			};
-			// عمود إدخال الكود (أول عمود - قابل للكتابة مباشرة)
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name       = "CodeEntry",
-				HeaderText = "كود الصنف",
-				ReadOnly   = false,
-				FillWeight = 55f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "ProductName",
-				HeaderText = "الصنف",
-				ReadOnly = true
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PartNumber",
-				HeaderText = "رقم القطعة",
-				ReadOnly = true,
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "CarModel",
-				HeaderText = "الموديل",
-				ReadOnly = true,
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "Brand",
-				HeaderText = "الماركة",
-				ReadOnly = true,
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "ShelfLocation",
-				HeaderText = "الرف",
-				ReadOnly = true,
-				FillWeight = 30f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "StockQty",
-				HeaderText = "الرصيد الفعلي",
-				ReadOnly = true,
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewComboBoxColumn
-			{
-				Name = "UnitName",
-				HeaderText = "الوحدة",
-				ReadOnly = false,
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "Quantity",
-				HeaderText = "الكمية",
-				ReadOnly = false, // Always editable for speed
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "UnitPrice",
-				HeaderText = "السعر",
-				ReadOnly = !Session.CanEditPrice(), // Only editable if user has permission
-				FillWeight = 40f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "DiscountPct",
-				HeaderText = "خصم %",
-				ReadOnly = false,
-				FillWeight = 30f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "DiscountAmt",
-				HeaderText = "قيمة خصم",
-				ReadOnly = false,
-				FillWeight = 35f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "TotalPrice",
-				HeaderText = "الإجمالي",
-				ReadOnly = true,
-				FillWeight = 50f
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "PurchasePrice",
-				HeaderText = "سعر التكلفة",
-				ReadOnly = true,
-				FillWeight = 40f,
-				Visible = Session.CanViewCost("Sales")
-			});
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn
-			{
-				Name = "CostTotal",
-				HeaderText = "إجمالي التكلفة",
-				ReadOnly = true,
-				FillWeight = 50f,
-				Visible = Session.CanViewCost("Sales")
-			});
-			DataGridViewButtonColumn dataGridViewColumn = new DataGridViewButtonColumn
+			
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CodeEntry", HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CarModel", HeaderText = "الموديل", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الماركة", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "الرف", ReadOnly = true, FillWeight = 30f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "خصم %", ReadOnly = false, FillWeight = 30f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
+			
+			DataGridViewButtonColumn delCol = new DataGridViewButtonColumn
 			{
 				Name = "Delete",
 				HeaderText = "",
@@ -759,12 +815,13 @@ namespace ChickenDist.Forms
 				UseColumnTextForButtonValue = true,
 				FillWeight = 20f
 			};
-			dgItems.Columns.Add(dataGridViewColumn);
+			dgItems.Columns.Add(delCol);
+			
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
 			dgItems.RowsAdded   += (s, e) => _isDirty = true;
 			dgItems.RowsRemoved += (s, e) => _isDirty = true;
-			// سهم لأسفل في آخر سطر → يفتح سطر إدخال كود جديد | Insert = نفس الشيء
+			
 			dgItems.KeyDown += (s, ke) =>
 			{
 				if (ke.KeyCode == Keys.Down && dgItems.CurrentCell != null)
@@ -782,227 +839,236 @@ namespace ChickenDist.Forms
 					AddNewCodeRow();
 				}
 			};
+
 			pnlItems.Controls.Add(dgItems);
-
-			// ── زر تخصيص الأعمدة ⚙️ (يظهر في زاوية الجدول) ─────────────────────
-			btnCustomizeCols = new Button
-			{
-				Text      = "⚙️ الأعمدة",
-				Size      = new Size(90, 26),
-				Anchor    = AnchorStyles.Top | AnchorStyles.Left,
-				Location  = new Point(5, 5),
-				BackColor = Color.FromArgb(55, 65, 81),
-				ForeColor = Color.White,
-				FlatStyle = FlatStyle.Flat,
-				Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-				Cursor    = Cursors.Hand
-			};
-			btnCustomizeCols.FlatAppearance.BorderSize = 0;
-			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
-			pnlItems.Controls.Add(btnCustomizeCols);
-			btnCustomizeCols.BringToFront();
-
-			// تحميل إعدادات الأعمدة المحفوظة
+			pnlItems.Controls.Add(pnlProductBar);
 			LoadColumnSettings();
+
+			// ── 4. تذييل الصفحة (Footer Panel & Summary) ─────────────────────
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 110,
-				Width = 950,
+				Height = Session.CanViewCost("Sales") ? 104 : 76,
+				Width = 1024,
 				BackColor = Theme.BgCard
 			};
-			Label label5 = new Label
+
+			var tblSummary = new TableLayoutPanel
 			{
-				Text = "إجمالي الأصناف:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(830, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Top,
+				Height = Session.CanViewCost("Sales") ? 48 : 24,
+				RowCount = Session.CanViewCost("Sales") ? 2 : 1,
+				ColumnCount = 8,
+				BackColor = Color.Transparent,
+				Padding = new Padding(10, 1, 10, 1)
 			};
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
+			if (Session.CanViewCost("Sales"))
+			{
+				tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
+			}
+
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Disc Type Label
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 3: Disc Type
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // Col 4: Disc Amt Label
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 5: Disc Amt
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // Col 6: Net Label
+			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 7: Net Val
+
+			// Row 0
+			Label lblTotalTitle = MakeLabel("إجمالي الأصناف:", 0, 0);
+			lblTotalTitle.Dock = DockStyle.Fill;
+			lblTotalTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblTotalTitle.ForeColor = Theme.TextSub;
+
 			lblTotalVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(740, 13),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft
 			};
-			Label lblDiscType = new Label
-			{
-				Text = "نوع الخصم:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(660, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
+
+			Label lblDiscType = MakeLabel("نوع الخصم:", 0, 0);
+			lblDiscType.Dock = DockStyle.Fill;
+			lblDiscType.TextAlign = ContentAlignment.MiddleRight;
+			lblDiscType.ForeColor = Theme.TextSub;
+
 			cboInvoiceDiscountType = new ComboBox
 			{
-				Location = new Point(570, 11),
-				Width = 80,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Width = 90,
+				Anchor = AnchorStyles.Left
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
 			cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => CalculateNet();
 
-			Label lblDiscVal = new Label
-			{
-				Text = "خصم الفاتورة:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(480, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
+			Label lblDiscVal = MakeLabel("خصم الفاتورة:", 0, 0);
+			lblDiscVal.Dock = DockStyle.Fill;
+			lblDiscVal.TextAlign = ContentAlignment.MiddleRight;
+			lblDiscVal.ForeColor = Theme.TextSub;
+
 			txtInvoiceDiscount = new TextBox
 			{
-				Location = new Point(390, 11),
-				Width = 80,
 				Text = "0",
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Width = 90,
+				Anchor = AnchorStyles.Left
 			};
 			txtInvoiceDiscount.TextChanged += (s, e) => CalculateNet();
 
-			Label lblNetTitle = new Label
-			{
-				Text = "صافي الفاتورة:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(280, 15),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
+			Label lblNetTitle = MakeLabel("صافي الفاتورة:", 0, 0);
+			lblNetTitle.Dock = DockStyle.Fill;
+			lblNetTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblNetTitle.ForeColor = Theme.TextSub;
+
 			lblNetVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.Accent,
 				Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-				Location = new Point(160, 10),
-				AutoSize = true,
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleLeft
 			};
-			lblCostTitle = new Label
+
+			tblSummary.Controls.Add(lblTotalTitle, 0, 0);
+			tblSummary.Controls.Add(lblTotalVal, 1, 0);
+			tblSummary.Controls.Add(lblDiscType, 2, 0);
+			tblSummary.Controls.Add(cboInvoiceDiscountType, 3, 0);
+			tblSummary.Controls.Add(lblDiscVal, 4, 0);
+			tblSummary.Controls.Add(txtInvoiceDiscount, 5, 0);
+			tblSummary.Controls.Add(lblNetTitle, 6, 0);
+			tblSummary.Controls.Add(lblNetVal, 7, 0);
+
+			// Row 1 (if cost shown)
+			if (Session.CanViewCost("Sales"))
 			{
-				Text = "إجمالي التكلفة:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(830, 42),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			lblCostVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.TextMain,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(740, 40),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			lblProfitTitle = new Label
-			{
-				Text = "صافي الربح:",
-				ForeColor = Theme.TextSub,
-				Location = new Point(660, 42),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			lblProfitVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.Success,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Location = new Point(570, 40),
-				AutoSize = true,
-				Visible = Session.CanViewCost("Sales"),
-				Anchor = (AnchorStyles.Top | AnchorStyles.Right)
-			};
-			btnSave = Theme.MakeButton("💾 حفظ الفاتورة", 0, 0, 130, 32, Theme.Accent);
-            Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 100, 32, Color.FromArgb(200, 140, 50));
-			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 100, 32, Color.FromArgb(100, 100, 150));
-			Button button = Theme.MakeButton("💵 توريد", 0, 0, 100, 32, Theme.Success);
-			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 80, 32, Color.FromArgb(80, 120, 80));
-			btnPrint = Theme.MakeButton("🖨️ طباعة الأخيرة", 0, 0, 140, 32, Theme.Primary);
-			btnPreview = Theme.MakeButton("🔍 معاينة الأخيرة", 0, 0, 130, 32, Color.FromArgb(70, 80, 90));
-			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 130, 32, Color.FromArgb(37, 211, 102));
+				lblCostTitle = MakeLabel("إجمالي التكلفة:", 0, 0);
+				lblCostTitle.Dock = DockStyle.Fill;
+				lblCostTitle.TextAlign = ContentAlignment.MiddleRight;
+				lblCostTitle.ForeColor = Theme.TextSub;
+
+				lblCostVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Theme.TextMain,
+					Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleLeft
+				};
+
+				lblProfitTitle = MakeLabel("صافي الربح:", 0, 0);
+				lblProfitTitle.Dock = DockStyle.Fill;
+				lblProfitTitle.TextAlign = ContentAlignment.MiddleRight;
+				lblProfitTitle.ForeColor = Theme.TextSub;
+
+				lblProfitVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Theme.Success,
+					Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleLeft
+				};
+
+				tblSummary.Controls.Add(lblCostTitle, 0, 1);
+				tblSummary.Controls.Add(lblCostVal, 1, 1);
+				tblSummary.Controls.Add(lblProfitTitle, 2, 1);
+				tblSummary.Controls.Add(lblProfitVal, 3, 1);
+			}
+
+			// Footer buttons (RTL flow)
+			btnSave = Theme.MakeButton("💾 حفظ", 0, 0, 90, 26, Theme.Accent);
+			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 26, Color.FromArgb(200, 140, 50));
+			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 90, 26, Color.FromArgb(100, 100, 150));
+			Button btnTawreed = Theme.MakeButton("💵 توريد", 0, 0, 80, 26, Theme.Success);
+			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 26, Color.FromArgb(80, 120, 80));
+			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
+			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
+			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
+
 			btnSave.Anchor = AnchorStyles.None;
-            btnHold.Anchor = AnchorStyles.None;
-            btnLoadHold.Anchor = AnchorStyles.None;
-			button.Anchor = AnchorStyles.None;
+			btnHold.Anchor = AnchorStyles.None;
+			btnLoadHold.Anchor = AnchorStyles.None;
+			btnTawreed.Anchor = AnchorStyles.None;
 			btnNew.Anchor = AnchorStyles.None;
 			btnPrint.Anchor = AnchorStyles.None;
 			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
+
 			btnSave.Click += BtnSave_Click;
-            btnHold.Click += BtnHold_Click;
-            btnLoadHold.Click += BtnLoadHold_Click;
-			button.Click += BtnTawreed_Click;
-			btnNew.Click += delegate
-			{
-				ResetForm();
-			};
+			btnHold.Click += BtnHold_Click;
+			btnLoadHold.Click += BtnLoadHold_Click;
+			btnTawreed.Click += BtnTawreed_Click;
+			btnNew.Click += delegate { ResetForm(); };
 			btnPrint.Click += BtnPrint_Click;
 			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
-            Label lblHotkeys = new Label
-            {
-                Text = "الاختصارات: [F2] فاتورة جديدة  |  [F5] حفظ الفاتورة  |  [F9] طباعة  |  [F12] بحث سريع عن صنف",
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Location = new Point(15, 70),
-                AutoSize = true,
-                Anchor = (AnchorStyles.Bottom | AnchorStyles.Left)
-            };
 
-            var pnlFooterButtons = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.RightToLeft,
-                Dock = DockStyle.Bottom,
-                Height = 42,
-                Padding = new Padding(15, 5, 15, 5),
-                BackColor = Color.Transparent,
-                RightToLeft = RightToLeft.Yes,
-                WrapContents = false,
-                AutoSize = false
-            };
-            btnWhatsApp.Margin = new Padding(5, 5, 5, 5);
-            btnPrint.Margin = new Padding(5, 5, 5, 5);
-            btnPreview.Margin = new Padding(5, 5, 5, 5);
-            btnNew.Margin = new Padding(5, 5, 5, 5);
-            button.Margin = new Padding(5, 5, 5, 5);
-            btnLoadHold.Margin = new Padding(5, 5, 5, 5);
-            btnHold.Margin = new Padding(5, 5, 5, 5);
-            btnSave.Margin = new Padding(5, 5, 5, 5);
-            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, button, btnLoadHold, btnHold, btnSave });
+			var pnlFooterButtons = new FlowLayoutPanel
+			{
+				FlowDirection = FlowDirection.RightToLeft,
+				Dock = DockStyle.Bottom,
+				Height = 34,
+				Padding = new Padding(10, 3, 10, 3),
+				BackColor = Color.Transparent,
+				RightToLeft = RightToLeft.Yes,
+				WrapContents = false,
+				AutoSize = false
+			};
+			btnWhatsApp.Margin = new Padding(2);
+			btnPrint.Margin = new Padding(2);
+			btnPreview.Margin = new Padding(2);
+			btnNew.Margin = new Padding(2);
+			btnTawreed.Margin = new Padding(2);
+			btnLoadHold.Margin = new Padding(2);
+			btnHold.Margin = new Padding(2);
+			btnSave.Margin = new Padding(2);
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnSave });
 
-			pnlFooter.Controls.AddRange(new Control[] { label5, lblTotalVal, lblDiscType, cboInvoiceDiscountType, lblDiscVal, txtInvoiceDiscount, lblNetTitle, lblNetVal, lblCostTitle, lblCostVal, lblProfitTitle, lblProfitVal, pnlFooterButtons, lblHotkeys });
+			// Status bar for Hotkeys
+			var pnlStatus = new Panel
+			{
+				Dock = DockStyle.Bottom,
+				Height = 18,
+				BackColor = Theme.BgMain,
+				Padding = new Padding(10, 1, 10, 1)
+			};
+			var lblHotkeys = new Label
+			{
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع",
+				ForeColor = Theme.TextSub,
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleRight,
+				RightToLeft = RightToLeft.Yes
+			};
+			pnlStatus.Controls.Add(lblHotkeys);
+
+			pnlFooter.Controls.Add(tblSummary);
+			pnlFooter.Controls.Add(pnlFooterButtons);
+			pnlFooter.Controls.Add(pnlStatus);
+
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
-			base.Controls.Add(panel);
-            pnlItems.BringToFront();
+			base.Controls.Add(pnlHeader);
+			
+			pnlItems.BringToFront();
 			ToggleType();
 			Theme.ApplyFormRTL(this);
-			if (!AppConfig.EnableCratesTracking)
-			{
-				tbl.RowStyles[4] = new RowStyle(SizeType.Absolute, 0f);
-				panel.Height = 183;
-				lblCratesOut.Visible = false;
-				nudCratesOut.Visible = false;
-				lblCratesIn.Visible = false;
-				nudCratesIn.Visible = false;
-				lblClientCratesBalance.Visible = false;
-			}
 		}
+
 
 		private void FrmSale_KeyDown(object sender, KeyEventArgs e)
 		{
@@ -1352,7 +1418,11 @@ namespace ChickenDist.Forms
 			cboClient.Items.Add(new ComboItem(0, "-- اختر عميل --"));
 			foreach (DataRow row in all.Rows)
 			{
-				cboClient.Items.Add(new ComboItem((int)row["ClientID"], row["ClientName"].ToString()));
+				var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
+				item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString() : "";
+				item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString() : "";
+				item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString() : "";
+				cboClient.Items.Add(item);
 			}
 			cboClient.DisplayMember = "Text";
 			cboClient.SelectedIndex = 0;
@@ -4209,6 +4279,10 @@ namespace ChickenDist.Forms
 		public decimal MinStockLimit { get; }
 
 		public decimal PurchasePrice { get; }
+
+		public string ClientCode { get; set; } = "";
+		public string Phone { get; set; } = "";
+		public string Phone2 { get; set; } = "";
 
 		public string PartNumber { get; set; } = "";
 		public string CarModel { get; set; } = "";
