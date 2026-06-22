@@ -9,17 +9,20 @@ namespace ChickenDist.Forms
 {
     public class FrmProductCard : Form
     {
-        private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
-        private ComboBox cboCategory;
+        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
+        private ComboBox cboCategory, cboUnit;
+        private Button btnAddUnit;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService;
         private Button btnSave, btnCancel;
         private int _selectedID = 0;
 
         // Multi-Unit Controls
-        private TextBox txtUnit1Name, txtUnit1Barcode;
+        private TextBox txtUnit1Barcode;
+        private ComboBox cboUnit1Name, cboUnit2Name;
+        private Button btnAddUnit1Name, btnAddUnit2Name;
         private NumericUpDown nudUnit1SalePrice, nudUnit1PurchasePrice;
-        private TextBox txtUnit2Name, txtUnit2Barcode;
+        private TextBox txtUnit2Barcode;
         private NumericUpDown nudUnit2Factor, nudUnit2SalePrice, nudUnit2PurchasePrice;
         private NumericUpDown nudUnit3Factor;
 
@@ -28,6 +31,7 @@ namespace ChickenDist.Forms
             _selectedID = id;
             InitUI();
             LoadCategoriesCombo();
+            LoadUnitsCombos();
             if (_selectedID > 0)
             {
                 LoadProductDetails();
@@ -80,7 +84,8 @@ namespace ChickenDist.Forms
             AddField(tabBasic, "الماركة:", rx, ry, out txtBrand);
             ry += 35;
 
-            AddField(tabBasic, "الوحدة الكبرى:", rx, ry, out txtUnit);
+            AddUnitComboField(tabBasic, "الوحدة الكبرى:", rx, ry, out cboUnit, out btnAddUnit);
+            btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             ry += 35;
 
             chkActive = new CheckBox { Text = "صنف نشط", Location = new Point(rx + 35, ry), ForeColor = Theme.TextMain, Checked = true, AutoSize = true };
@@ -145,7 +150,8 @@ namespace ChickenDist.Forms
             // Unit 2 (Middle Unit) Group on the Right
             tabUnits.Controls.Add(new Label { Text = "⚙️ الوحدة الوسطى (مثال: علبة):", Location = new Point(ux, uy), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary });
             uy += 30;
-            AddField(tabUnits, "اسم الوحدة الوسطى:", ux, uy, out txtUnit2Name);
+            AddUnitComboField(tabUnits, "اسم الوحدة الوسطى:", ux, uy, out cboUnit2Name, out btnAddUnit2Name);
+            btnAddUnit2Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             uy += 35;
             AddNud(tabUnits, "تحتوي على كم صغرى؟:", ux, uy, out nudUnit2Factor, 0);
             uy += 35;
@@ -161,7 +167,8 @@ namespace ChickenDist.Forms
 
             tabUnits.Controls.Add(new Label { Text = "⚙️ الوحدة الصغرى (التجزئة/القطعة):", Location = new Point(ux2, uy2), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary });
             uy2 += 30;
-            AddField(tabUnits, "اسم الوحدة الصغرى:", ux2, uy2, out txtUnit1Name);
+            AddUnitComboField(tabUnits, "اسم الوحدة الصغرى:", ux2, uy2, out cboUnit1Name, out btnAddUnit1Name);
+            btnAddUnit1Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             uy2 += 35;
             AddField(tabUnits, "باركود الصغرى:", ux2, uy2, out txtUnit1Barcode);
             uy2 += 35;
@@ -198,6 +205,52 @@ namespace ChickenDist.Forms
             parent.Controls.Add(txt);
         }
 
+        private void AddUnitComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
+        {
+            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 215, y + 3), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
+            cbo = new ComboBox { Location = new Point(x + 35, y), Width = 170, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            btnAdd = new Button { Text = "➕", Location = new Point(x, y), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.AddRange(new Control[] { cbo, btnAdd });
+        }
+
+        private void LoadUnitsCombos()
+        {
+            try
+            {
+                DataTable dt = UnitDAL.GetAll();
+                var units = new System.Collections.Generic.List<string>();
+                foreach (DataRow r in dt.Rows)
+                {
+                    units.Add(r["UnitName"].ToString());
+                }
+
+                string valUnit = cboUnit != null ? cboUnit.Text : "";
+                if (cboUnit != null)
+                {
+                    cboUnit.Items.Clear();
+                    cboUnit.Items.AddRange(units.ToArray());
+                    cboUnit.Text = valUnit;
+                }
+
+                string valUnit1 = cboUnit1Name != null ? cboUnit1Name.Text : "";
+                if (cboUnit1Name != null)
+                {
+                    cboUnit1Name.Items.Clear();
+                    cboUnit1Name.Items.AddRange(units.ToArray());
+                    cboUnit1Name.Text = valUnit1;
+                }
+
+                string valUnit2 = cboUnit2Name != null ? cboUnit2Name.Text : "";
+                if (cboUnit2Name != null)
+                {
+                    cboUnit2Name.Items.Clear();
+                    cboUnit2Name.Items.AddRange(units.ToArray());
+                    cboUnit2Name.Text = valUnit2;
+                }
+            }
+            catch {}
+        }
+
         private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals)
         {
             parent.Controls.Add(new Label { Text = label, Location = new Point(x + 215, y + 3), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
@@ -229,7 +282,7 @@ namespace ChickenDist.Forms
             txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
             txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
             txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
-            txtUnit.Text = dr["Unit"].ToString();
+            cboUnit.Text = dr["Unit"].ToString();
             nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
             nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
             nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
@@ -241,12 +294,12 @@ namespace ChickenDist.Forms
             chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
 
             // Multi-Unit Details
-            txtUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
+            cboUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
             txtUnit1Barcode.Text = dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value ? dr["Unit1Barcode"].ToString() : "";
             nudUnit1SalePrice.Value = dr.Table.Columns.Contains("Unit1SalePrice") && dr["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1SalePrice"]) : 0m;
             nudUnit1PurchasePrice.Value = dr.Table.Columns.Contains("Unit1PurchasePrice") && dr["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1PurchasePrice"]) : 0m;
 
-            txtUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
+            cboUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
             txtUnit2Barcode.Text = dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value ? dr["Unit2Barcode"].ToString() : "";
             nudUnit2Factor.Value = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
             nudUnit2SalePrice.Value = dr.Table.Columns.Contains("Unit2SalePrice") && dr["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2SalePrice"]) : 0m;
@@ -283,7 +336,7 @@ namespace ChickenDist.Forms
             txtBrand.Clear();
             txtShelfLocation.Clear();
             if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
-            txtUnit.Text = "كرتونة";
+            cboUnit.Text = "كرتونة";
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
             nudWholesalePrice.Value = 0;
@@ -295,12 +348,12 @@ namespace ChickenDist.Forms
             chkIsService.Checked = false;
 
             // Multi-Unit default
-            txtUnit1Name.Text = "قطعة";
+            cboUnit1Name.Text = "القطعة";
             txtUnit1Barcode.Clear();
             nudUnit1SalePrice.Value = 0;
             nudUnit1PurchasePrice.Value = 0;
 
-            txtUnit2Name.Clear();
+            cboUnit2Name.Text = "";
             txtUnit2Barcode.Clear();
             nudUnit2Factor.Value = 0;
             nudUnit2SalePrice.Value = 0;
@@ -368,13 +421,13 @@ namespace ChickenDist.Forms
             }
 
             // الحفظ في قاعدة البيانات
-            int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
+            int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
                 nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim(), chkPrintLocalBarcode.Checked,
                 chkIsService.Checked,
-                txtUnit1Name.Text.Trim(), string.IsNullOrEmpty(u1Barcode) ? null : u1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
-                txtUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, string.IsNullOrEmpty(u2Barcode) ? null : u2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
+                cboUnit1Name.Text.Trim(), string.IsNullOrEmpty(u1Barcode) ? null : u1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
+                cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, string.IsNullOrEmpty(u2Barcode) ? null : u2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null);
 
             if (id > 0)

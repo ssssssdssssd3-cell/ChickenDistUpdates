@@ -21,6 +21,7 @@ namespace ChickenDist.Forms
         private Label lblTitle, lblDesc;
         private DataGridView dgPreview;
         private ComboBox cboStockPolicy;
+        private ComboBox cboPriceFilter;
         private Button btnBrowse, btnCopyTemplate, btnImport, btnCancel, btnPreview;
         private GroupBox grpMapping;
         private Label lblStats;
@@ -112,7 +113,7 @@ namespace ChickenDist.Forms
             AddMappingField("ProductName", "اسم الصنف (*):", 0, 1);
             AddMappingField("PartNumber", "رقم القطعة (OEM):", 0, 2);
             AddMappingField("CategoryName", "التصنيف / القسم:", 0, 3);
-            AddMappingField("Unit", "الوحدة الأساسية:", 0, 4);
+            AddMappingField("ShelfLocation", "موقع الرف:", 0, 4);
 
             AddMappingField("PurchasePrice", "سعر الشراء:", 1, 0);
             AddMappingField("SalePrice", "سعر البيع قطاعي:", 1, 1);
@@ -124,7 +125,12 @@ namespace ChickenDist.Forms
             AddMappingField("WarehouseName", "المخزن المستهدف:", 2, 1);
             AddMappingField("CarModel", "الموديل المتوافق:", 2, 2);
             AddMappingField("Brand", "الماركة / الشركة:", 2, 3);
-            AddMappingField("ShelfLocation", "موقع الرف:", 2, 4);
+            AddMappingField("Unit", "الوحدة الأساسية:", 2, 4);
+
+            AddMappingField("Unit1Name", "اسم الوحدة الصغرى:", 3, 0);
+            AddMappingField("Unit1SalePrice", "سعر بيع الصغرى:", 3, 1);
+            AddMappingField("Unit2Name", "اسم الوحدة الوسطى:", 3, 2);
+            AddMappingField("Unit2SalePrice", "سعر بيع الوسطى:", 3, 3);
 
             this.Controls.Add(grpMapping);
 
@@ -133,11 +139,42 @@ namespace ChickenDist.Forms
             {
                 Text = "يرجى اختيار ملف Excel (.xlsx) للبدء بالمعاينة والمطابقة...",
                 Location = new Point(20, 340),
-                Size = new Size(830, 24),
+                Size = new Size(420, 24),
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             this.Controls.Add(lblStats);
+
+            var lblFilter = new Label
+            {
+                Text = "تصفية المعاينة حسب السعر:",
+                Location = new Point(450, 339),
+                Size = new Size(160, 20),
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.TopRight
+            };
+            this.Controls.Add(lblFilter);
+
+            cboPriceFilter = new ComboBox
+            {
+                Location = new Point(620, 335),
+                Width = 230,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+            cboPriceFilter.Items.AddRange(new object[]
+            {
+                "عرض جميع الأصناف",
+                "أصناف بها سعر بيع قطاعي",
+                "أصناف بها سعر بيع جملة",
+                "أصناف بها سعر بيع قطعة (صغرى)"
+            });
+            cboPriceFilter.SelectedIndex = 0;
+            cboPriceFilter.SelectedIndexChanged += (s, e) => ApplyPriceFilter();
+            this.Controls.Add(cboPriceFilter);
 
             btnPreview = Theme.MakeButton("👁️ معاينة ومطابقة البيانات", 865, 335, 200, 32, Theme.Primary);
             btnPreview.Enabled = false;
@@ -208,26 +245,28 @@ namespace ChickenDist.Forms
 
         private void AddMappingField(string key, string arabicLabel, int colIdx, int rowIdx)
         {
-            int colX = colIdx == 0 ? 20 : colIdx == 1 ? 360 : 700;
+            int colX = colIdx == 0 ? 15 : colIdx == 1 ? 275 : colIdx == 2 ? 535 : 795;
             int y = 25 + rowIdx * 28;
 
             var lbl = new Label
             {
                 Text = arabicLabel,
-                Location = new Point(colX + 210, y + 3),
-                Size = new Size(110, 22),
+                Location = new Point(colX + 145, y + 3),
+                Size = new Size(95, 22),
                 ForeColor = Theme.TextMain,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font("Segoe UI", 8.5f)
             };
 
             var cbo = new ComboBox
             {
                 Location = new Point(colX, y),
-                Width = 200,
+                Width = 140,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f)
             };
 
             grpMapping.Controls.Add(lbl);
@@ -285,7 +324,11 @@ namespace ChickenDist.Forms
                 { "WholesalePrice", new[] { "جملة", "wholesale", "سعر الجملة" } },
                 { "MinStockLimit", new[] { "حد الطلب", "الطلب", "min", "limit", "minimum", "حد_الطلب" } },
                 { "InitialStock", new[] { "افتتاحي", "رصيد", "كمية", "qty", "quantity", "stock", "initial", "الرصيد الافتتاحي" } },
-                { "WarehouseName", new[] { "مخزن", "مستودع", "warehouse", "store", "المخزن" } }
+                { "WarehouseName", new[] { "مخزن", "مستودع", "warehouse", "store", "المخزن" } },
+                { "Unit1Name", new[] { "اسم الوحدة الصغرى", "وحدة صغرى", "الوحدة الصغرى", "unit1name", "unit1_name", "الوحدة الصغري" } },
+                { "Unit1SalePrice", new[] { "سعر الصغرى", "سعر بيع الصغرى", "سعر الصغري", "سعر بيع الصغري", "unit1saleprice", "unit1_sale_price", "سعر قطعة" } },
+                { "Unit2Name", new[] { "اسم الوحدة الوسطى", "وحدة وسطى", "الوحدة الوسطى", "unit2name", "unit2_name", "الوحدة الوسطي" } },
+                { "Unit2SalePrice", new[] { "سعر الوسطى", "سعر بيع الوسطى", "سعر الوسطي", "سعر بيع الوسطي", "unit2saleprice", "unit2_sale_price", "سعر علبة" } }
             };
 
             foreach (var kv in _mappings)
@@ -505,6 +548,14 @@ namespace ChickenDist.Forms
                     decimal.TryParse(GetValue("MinStockLimit"), out minStock);
                     decimal.TryParse(GetValue("InitialStock"), out initialStock);
 
+                    string u1n = GetValue("Unit1Name");
+                    decimal u1sp = 0;
+                    decimal.TryParse(GetValue("Unit1SalePrice"), out u1sp);
+
+                    string u2n = GetValue("Unit2Name");
+                    decimal u2sp = 0;
+                    decimal.TryParse(GetValue("Unit2SalePrice"), out u2sp);
+
                     string warehouseName = GetValue("WarehouseName");
                     if (string.IsNullOrEmpty(warehouseName)) warehouseName = "المخزن الرئيسي";
 
@@ -554,42 +605,17 @@ namespace ChickenDist.Forms
                         MinStockLimit = minStock,
                         InitialStock = initialStock,
                         WarehouseName = warehouseName,
-                        CurrentStock = currentStock
+                        CurrentStock = currentStock,
+                        Unit1Name = u1n,
+                        Unit1SalePrice = u1sp,
+                        Unit2Name = u2n,
+                        Unit2SalePrice = u2sp
                     };
 
                     _parsedRows.Add(row);
-
-                    string statusText = isExisting ? "⚠️ تعديل صنف موجود" : "🆕 صنف جديد";
-                    int gridIdx = dgPreview.Rows.Add(
-                        statusText,
-                        row.ProductCode,
-                        row.PartNumber,
-                        row.ProductName,
-                        row.CategoryName,
-                        row.PurchasePrice.ToString("N2"),
-                        row.SalePrice.ToString("N2"),
-                        row.InitialStock.ToString("N2"),
-                        isExisting ? row.CurrentStock.ToString("N2") : "0.00",
-                        row.WarehouseName
-                    );
-
-                    if (isExisting)
-                    {
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(45, 40, 20);
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(240, 200, 100);
-                        updateCount++;
-                    }
-                    else
-                    {
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(20, 40, 30);
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(120, 230, 150);
-                        newCount++;
-                    }
                 }
 
-                lblStats.Text = $"📊 المعاينة: إجمالي الأصناف: {_parsedRows.Count} | أصناف جديدة: {newCount} | أصناف للتعديل: {updateCount}";
-                lblStats.ForeColor = Theme.Accent;
-                btnImport.Enabled = _parsedRows.Count > 0;
+                ApplyPriceFilter();
             }
             catch (Exception ex)
             {
@@ -622,8 +648,13 @@ namespace ChickenDist.Forms
                     if (defaultWhRes != null && defaultWhRes != DBNull.Value)
                         defaultWarehouseID = Convert.ToInt32(defaultWhRes);
 
+                    int filterIdx = cboPriceFilter.SelectedIndex;
                     foreach (var row in _parsedRows)
                     {
+                        if (filterIdx == 1 && row.SalePrice <= 0) continue;
+                        if (filterIdx == 2 && row.WholesalePrice <= 0) continue;
+                        if (filterIdx == 3 && row.Unit1SalePrice <= 0) continue;
+
                         try
                         {
                             int? catID = null;
@@ -648,7 +679,8 @@ namespace ChickenDist.Forms
                                     @"UPDATE Products
                                       SET ProductName=@n, Unit=@u, SalePrice=@sp, PurchasePrice=@pp, MinStockLimit=@msl,
                                           PartNumber=@pn, CategoryID=@cat, CarModel=@cm, Brand=@b, ShelfLocation=@sl, 
-                                          WholesalePrice=@wp, SemiWholesalePrice=@swp
+                                          WholesalePrice=@wp, SemiWholesalePrice=@swp,
+                                          Unit1Name=@u1n, Unit1SalePrice=@u1sp, Unit2Name=@u2n, Unit2SalePrice=@u2sp
                                       WHERE ProductID=@id",
                                     DbHelper.P("@n", row.ProductName),
                                     DbHelper.P("@u", row.Unit),
@@ -662,6 +694,10 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@sl", row.ShelfLocation),
                                     DbHelper.P("@wp", row.WholesalePrice),
                                     DbHelper.P("@swp", row.SemiWholesalePrice),
+                                    DbHelper.P("@u1n", row.Unit1Name ?? ""),
+                                    DbHelper.P("@u1sp", row.Unit1SalePrice),
+                                    DbHelper.P("@u2n", row.Unit2Name ?? ""),
+                                    DbHelper.P("@u2sp", row.Unit2SalePrice),
                                     DbHelper.P("@id", row.ProductID));
 
                                 finalProductID = row.ProductID;
@@ -676,8 +712,8 @@ namespace ChickenDist.Forms
                                 }
 
                                 finalProductID = DbHelper.ExecuteInsertTrans(trans,
-                                    @"INSERT INTO Products (ProductCode, ProductName, Unit, SalePrice, IsActive, PurchasePrice, MinStockLimit, Description, PartNumber, CategoryID, CarModel, Brand, ShelfLocation, WholesalePrice, SemiWholesalePrice)
-                                      VALUES (@c, @n, @u, @sp, 1, @pp, @msl, '', @pn, @cat, @cm, @b, @sl, @wp, @swp)",
+                                    @"INSERT INTO Products (ProductCode, ProductName, Unit, SalePrice, IsActive, PurchasePrice, MinStockLimit, Description, PartNumber, CategoryID, CarModel, Brand, ShelfLocation, WholesalePrice, SemiWholesalePrice, Unit1Name, Unit1SalePrice, Unit2Name, Unit2SalePrice)
+                                      VALUES (@c, @n, @u, @sp, 1, @pp, @msl, '', @pn, @cat, @cm, @b, @sl, @wp, @swp, @u1n, @u1sp, @u2n, @u2sp)",
                                     DbHelper.P("@c", codeToUse),
                                     DbHelper.P("@n", row.ProductName),
                                     DbHelper.P("@u", row.Unit),
@@ -690,7 +726,11 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@b", row.Brand),
                                     DbHelper.P("@sl", row.ShelfLocation),
                                     DbHelper.P("@wp", row.WholesalePrice),
-                                    DbHelper.P("@swp", row.SemiWholesalePrice));
+                                    DbHelper.P("@swp", row.SemiWholesalePrice),
+                                    DbHelper.P("@u1n", row.Unit1Name ?? ""),
+                                    DbHelper.P("@u1sp", row.Unit1SalePrice),
+                                    DbHelper.P("@u2n", row.Unit2Name ?? ""),
+                                    DbHelper.P("@u2sp", row.Unit2SalePrice));
                             }
 
                             if (finalProductID > 0)
@@ -797,6 +837,55 @@ namespace ChickenDist.Forms
         private static string Normalize(string s)
             => (s ?? "").Trim().ToLowerInvariant()
                         .Replace("ة", "ه").Replace("أ", "ا").Replace("إ", "ا").Replace("آ", "ا");
+
+        private void ApplyPriceFilter()
+        {
+            if (_parsedRows == null) return;
+            dgPreview.Rows.Clear();
+
+            int newCount = 0;
+            int updateCount = 0;
+            int filterIdx = cboPriceFilter.SelectedIndex;
+
+            foreach (var row in _parsedRows)
+            {
+                // 1 = Retail, 2 = Wholesale, 3 = Piece/Unit1
+                if (filterIdx == 1 && row.SalePrice <= 0) continue;
+                if (filterIdx == 2 && row.WholesalePrice <= 0) continue;
+                if (filterIdx == 3 && row.Unit1SalePrice <= 0) continue;
+
+                string statusText = row.IsExisting ? "⚠️ تعديل صنف موجود" : "🆕 صنف جديد";
+                int gridIdx = dgPreview.Rows.Add(
+                    statusText,
+                    row.ProductCode,
+                    row.PartNumber,
+                    row.ProductName,
+                    row.CategoryName,
+                    row.PurchasePrice.ToString("N2"),
+                    row.SalePrice.ToString("N2"),
+                    row.InitialStock.ToString("N2"),
+                    row.IsExisting ? row.CurrentStock.ToString("N2") : "0.00",
+                    row.WarehouseName
+                );
+
+                if (row.IsExisting)
+                {
+                    dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(45, 40, 20);
+                    dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(240, 200, 100);
+                    updateCount++;
+                }
+                else
+                {
+                    dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(20, 40, 30);
+                    dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(120, 230, 150);
+                    newCount++;
+                }
+            }
+
+            lblStats.Text = $"📊 المعاينة: إجمالي المعروض: {dgPreview.Rows.Count} | جديدة: {newCount} | للتعديل: {updateCount}";
+            lblStats.ForeColor = Theme.Accent;
+            btnImport.Enabled = dgPreview.Rows.Count > 0;
+        }
     }
 
     public class ParsedProductRow
@@ -819,5 +908,9 @@ namespace ChickenDist.Forms
         public decimal InitialStock { get; set; }
         public string WarehouseName { get; set; }
         public decimal CurrentStock { get; set; }
+        public string Unit1Name { get; set; }
+        public decimal Unit1SalePrice { get; set; }
+        public string Unit2Name { get; set; }
+        public decimal Unit2SalePrice { get; set; }
     }
 }

@@ -10,6 +10,8 @@ namespace ChickenDist.Forms
     public class FrmSettings : Form
     {
         private TextBox txtCompanyName;
+        private TextBox txtCompanyPhone1;
+        private TextBox txtCompanyPhone2;
         private TextBox txtShopLogoPath;
         private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
@@ -70,6 +72,43 @@ namespace ChickenDist.Forms
             };
             txtCompanyName.Text = AppConfig.CompanyName;
             this.Controls.Add(txtCompanyName);
+            y += 40;
+
+            // ── أرقام الهواتف ───────────────────────────────────
+            AddLabel("هاتف الشركة 1:", 20, ref y, 0);
+            txtCompanyPhone1 = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyPhone1.Text = AppConfig.CompanyPhone1;
+            this.Controls.Add(txtCompanyPhone1);
+
+            var lblPhone2 = new Label
+            {
+                Text = "هاتف الشركة 2:",
+                Location = new Point(280, y - 22),
+                Width = 110,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            this.Controls.Add(lblPhone2);
+
+            txtCompanyPhone2 = new TextBox
+            {
+                Location = new Point(280, y),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyPhone2.Text = AppConfig.CompanyPhone2;
+            this.Controls.Add(txtCompanyPhone2);
             y += 40;
 
             // ── شعار الشركة ──────────────────────────────────────
@@ -752,6 +791,8 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
+                AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
