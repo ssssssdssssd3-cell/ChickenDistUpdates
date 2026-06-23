@@ -27,6 +27,7 @@ namespace ChickenDist.DAL
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
+                         ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL((
                              SELECT SUM(ri.Quantity * ri.UnitPrice)
                              FROM SalesReturns r
@@ -71,7 +72,7 @@ namespace ChickenDist.DAL
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
         {
             int returnedSaleID = -1;
 
@@ -83,7 +84,7 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE())",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -91,7 +92,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
-                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn));
+                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -555,7 +556,7 @@ namespace ChickenDist.DAL
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
         {
             bool success = false;
 
@@ -663,7 +664,7 @@ namespace ChickenDist.DAL
                     @"UPDATE Sales 
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
-                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE()
+                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
@@ -678,6 +679,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut),
                     DbHelper.P("@ci", cratesIn),
+                    DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@id", saleID));
 
                 // 7. إدخال البنود الجديدة

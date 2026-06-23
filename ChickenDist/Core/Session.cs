@@ -18,6 +18,7 @@ namespace ChickenDist.Core
         public static bool CanSellCredit { get; set; }
         public static bool CanSellDriverLoad { get; set; }
         public static bool CanSellInstallment { get; set; }
+        public static bool CanEditShippingCharge { get; set; }
 
         // قائمة الشاشات المسموح بها
         private static Dictionary<string, PermInfo> _perms = new Dictionary<string, PermInfo>();
@@ -100,6 +101,7 @@ namespace ChickenDist.Core
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
             DefaultSafeID = null; AllowedSafeIDs = "";
             CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
+            CanEditShippingCharge = true;
             _perms.Clear();
         }
 

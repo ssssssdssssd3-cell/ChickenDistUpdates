@@ -72,6 +72,8 @@ namespace ChickenDist.Forms
 		private Label lblCostVal;
 		private Label lblProfitTitle;
 		private Label lblProfitVal;
+		private Label lblItemCountTitle;
+		private Label lblItemCountVal;
 
 		private ComboBox cboProduct;
 		private TextBox txtProductCode;
@@ -112,6 +114,8 @@ namespace ChickenDist.Forms
 		private Label lblCratesIn;
 		private NumericUpDown nudCratesIn;
 		private Label lblClientCratesBalance;
+		private Label lblShippingChargeTitle;
+		private NumericUpDown nudShippingCharge;
 
 		public FrmSale() : this(0, false)
 		{
@@ -899,7 +903,7 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = Session.CanViewCost("Sales") ? 104 : 76,
+				Height = 104,
 				Width = 1024,
 				BackColor = Theme.BgCard
 			};
@@ -907,17 +911,14 @@ namespace ChickenDist.Forms
 			var tblSummary = new TableLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = Session.CanViewCost("Sales") ? 48 : 24,
-				RowCount = Session.CanViewCost("Sales") ? 2 : 1,
+				Height = 48,
+				RowCount = 2,
 				ColumnCount = 8,
 				BackColor = Color.Transparent,
 				Padding = new Padding(10, 1, 10, 1)
 			};
 			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
-			if (Session.CanViewCost("Sales"))
-			{
-				tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
-			}
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
 
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val
@@ -1038,6 +1039,43 @@ namespace ChickenDist.Forms
 				tblSummary.Controls.Add(lblProfitTitle, 2, 1);
 				tblSummary.Controls.Add(lblProfitVal, 3, 1);
 			}
+
+			lblShippingChargeTitle = MakeLabel("شحن / تحميل:", 0, 0);
+			lblShippingChargeTitle.Dock = DockStyle.Fill;
+			lblShippingChargeTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblShippingChargeTitle.ForeColor = Theme.TextSub;
+
+			nudShippingCharge = new NumericUpDown
+			{
+				Minimum = 0,
+				Maximum = 1000000,
+				DecimalPlaces = 2,
+				Value = 0,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes,
+				Width = 90,
+				Anchor = AnchorStyles.Left
+			};
+			nudShippingCharge.ValueChanged += (s, e) => CalculateNet();
+
+			tblSummary.Controls.Add(lblShippingChargeTitle, 4, 1);
+			tblSummary.Controls.Add(nudShippingCharge, 5, 1);
+
+			lblItemCountTitle = MakeLabel("عدد الأصناف:", 0, 0);
+			lblItemCountTitle.Dock = DockStyle.Fill;
+			lblItemCountTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblItemCountTitle.ForeColor = Theme.TextSub;
+
+			lblItemCountVal = MakeLabel("0", 0, 0);
+			lblItemCountVal.Dock = DockStyle.Fill;
+			lblItemCountVal.TextAlign = ContentAlignment.MiddleLeft;
+			lblItemCountVal.ForeColor = Theme.Accent;
+			lblItemCountVal.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+
+			tblSummary.Controls.Add(lblItemCountTitle, 6, 1);
+			tblSummary.Controls.Add(lblItemCountVal, 7, 1);
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ", 0, 0, 90, 26, Theme.Accent);
@@ -1839,12 +1877,21 @@ namespace ChickenDist.Forms
 
 		private void ApplyInvoiceTypePermissions()
 		{
-			if (Session.Role == "Admin") return;
+			if (Session.Role == "Admin")
+			{
+				if (nudShippingCharge != null) nudShippingCharge.Enabled = true;
+				return;
+			}
 
 			btnTypeCash.Visible = Session.CanSellCash;
 			btnTypeCredit.Visible = Session.CanSellCredit;
 			btnTypeDriverLoad.Visible = Session.CanSellDriverLoad;
 			btnTypeInstallment.Visible = Session.CanSellInstallment;
+
+			if (nudShippingCharge != null)
+			{
+				nudShippingCharge.Enabled = Session.CanEditShippingCharge;
+			}
 		}
 
 		private void ToggleType()
@@ -2533,10 +2580,16 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			decimal net = Math.Max(0m, gross - discountAmt);
+			decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
+			decimal net = Math.Max(0m, gross - discountAmt) + shippingVal;
 			if (lblNetVal != null)
 			{
 				lblNetVal.Text = net.ToString("N2") + " ج";
+			}
+
+			if (lblItemCountVal != null)
+			{
+				lblItemCountVal.Text = _items.Count.ToString();
 			}
 
 			// Cost & Profit (only if user has CanViewCost permission)
@@ -2572,6 +2625,7 @@ namespace ChickenDist.Forms
 				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier,
 				         COALESCE(s.CratesOut, 0) AS CratesOut,
 				         COALESCE(s.CratesIn, 0) AS CratesIn,
+				         COALESCE(s.ShippingCharge, 0.0) AS ShippingCharge,
 				         s.LastModifiedDate
 				  FROM Sales s WHERE s.SaleID=@id",
 				DbHelper.P("@id", saleID));
@@ -2618,6 +2672,14 @@ namespace ChickenDist.Forms
 			// الأقفاص
 			nudCratesOut.Value = row["CratesOut"] != DBNull.Value ? Convert.ToInt32(row["CratesOut"]) : 0;
 			nudCratesIn.Value = row["CratesIn"] != DBNull.Value ? Convert.ToInt32(row["CratesIn"]) : 0;
+
+			// الشحن
+			if (nudShippingCharge != null)
+			{
+				nudShippingCharge.Value = row.Table.Columns.Contains("ShippingCharge") && row["ShippingCharge"] != DBNull.Value
+					? Convert.ToDecimal(row["ShippingCharge"])
+					: 0m;
+			}
 
 			// الخصم
 			decimal discPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
@@ -2857,11 +2919,12 @@ namespace ChickenDist.Forms
 					{
 						safeAccountID = safeItem.ID;
 					}
+					decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount,
-						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value);
+						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingVal);
 					if (updated)
 					{
 						_isDirty = false;
@@ -2919,13 +2982,14 @@ namespace ChickenDist.Forms
 				{
 					safeAccountID = safeItem.ID;
 				}
+				decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
 					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
 					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount,
-					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value);
+					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingVal);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -4105,6 +4169,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			lblTotalVal.Text = "0.00 ج";
 			if (txtInvoiceDiscount != null) txtInvoiceDiscount.Text = "0";
+			if (nudShippingCharge != null) nudShippingCharge.Value = 0;
 			if (cboInvoiceDiscountType != null) cboInvoiceDiscountType.SelectedIndex = 0;
 			if (lblNetVal != null) lblNetVal.Text = "0.00 ج";
 			txtNotes.Clear();

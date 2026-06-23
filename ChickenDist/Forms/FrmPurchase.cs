@@ -31,6 +31,7 @@ namespace ChickenDist.Forms
 
         // ── الذيل — خصم الفاتورة ───────────────────────────────────────────────
         private Label lblTotalVal, lblNetVal, lblDiscType, lblDiscVal;
+        private Label lblItemCount;
         private TextBox txtInvoiceDiscount;
         private ComboBox cboInvoiceDiscountType;
 
@@ -566,13 +567,23 @@ namespace ChickenDist.Forms
             tblTotals.Controls.Add(cboInvoiceDiscountType,   3, 0);
             tblTotals.Controls.Add(lblDiscVal,               4, 0);
             tblTotals.Controls.Add(txtInvoiceDiscount,       5, 0);
-            // صف 1: [ضريبة% lbl][nudTax][قيمة الضريبة][صافي lbl][صافي val span2]
+            lblItemCount = new Label
+            {
+                Text = "📦 عدد الأصناف: 0",
+                ForeColor = Theme.TextSub,
+                Font = Theme.FontMain,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(2)
+            };
+
+            // صف 1: [ضريبة% lbl][nudTax][قيمة الضريبة][صافي lbl][صافي val][عدد الأصناف]
             tblTotals.Controls.Add(lblTaxLbl,   0, 1);
             tblTotals.Controls.Add(nudTaxPct,   1, 1);
             tblTotals.Controls.Add(lblTaxAmt,   2, 1);
             tblTotals.Controls.Add(lblNetTitle, 3, 1);
             tblTotals.Controls.Add(lblNetVal,   4, 1);
-            tblTotals.SetColumnSpan(lblNetVal, 2);
+            tblTotals.Controls.Add(lblItemCount, 5, 1);
 
             pnlTotals.Controls.Add(tblTotals);
 
@@ -1473,6 +1484,11 @@ namespace ChickenDist.Forms
             // الصافي النهائي
             decimal net = afterDisc + taxAmt;
             lblNetVal.Text = net.ToString("N2") + " ج";
+
+            if (lblItemCount != null)
+            {
+                lblItemCount.Text = "📦 عدد الأصناف: " + _items.Count;
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════

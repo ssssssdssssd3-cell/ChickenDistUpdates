@@ -36,6 +36,7 @@ namespace ChickenDist.Forms
                 SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
                        COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
+                       COALESCE(s.ShippingCharge, 0) AS ShippingCharge,
                        CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
                        COALESCE(c.Phone, N'') AS ClientPhone,
                        COALESCE(c.Address, N'') AS ClientAddress,
@@ -467,17 +468,26 @@ namespace ChickenDist.Forms
                     decimal invDiscountAmt = 0;
                     decimal invDiscountPct = 0;
                     decimal netAmount = _runningTotal;
+                    decimal shippingAmt = 0;
                     if (_saleRow != null)
                     {
                         invDiscountAmt = _saleRow.Table.Columns.Contains("DiscountAmount") && _saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountAmount"]) : 0m;
                         invDiscountPct = _saleRow.Table.Columns.Contains("DiscountPct") && _saleRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountPct"]) : 0m;
+                        shippingAmt = _saleRow.Table.Columns.Contains("ShippingCharge") && _saleRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(_saleRow["ShippingCharge"]) : 0m;
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 
-                    if (invDiscountAmt > 0)
+                    if (invDiscountAmt > 0 || shippingAmt > 0)
                     {
                         g.DrawString($"إجمالي الأصناف: {_runningTotal:N2}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
-                        g.DrawString($"خصم الفاتورة: {invDiscountAmt:N2} ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                    }
+                    if (invDiscountAmt > 0)
+                    {
+                        g.DrawString($"خصم الفاتورة: -{invDiscountAmt:N2} ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                    }
+                    if (shippingAmt > 0)
+                    {
+                        g.DrawString($"خدمة الشحن: +{shippingAmt:N2}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
                     }
 
                     g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), right); y += 22;
@@ -802,20 +812,29 @@ namespace ChickenDist.Forms
                     decimal invDiscountAmt = 0;
                     decimal invDiscountPct = 0;
                     decimal netAmount = _runningTotal;
+                    decimal shippingAmt = 0;
                     if (_saleRow != null)
                     {
                         invDiscountAmt = _saleRow.Table.Columns.Contains("DiscountAmount") && _saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountAmount"]) : 0m;
                         invDiscountPct = _saleRow.Table.Columns.Contains("DiscountPct") && _saleRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(_saleRow["DiscountPct"]) : 0m;
+                        shippingAmt = _saleRow.Table.Columns.Contains("ShippingCharge") && _saleRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(_saleRow["ShippingCharge"]) : 0m;
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 
                     if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
                         g.DrawLine(new Pen(Color.DarkSlateGray, 1.5f), margin, y, pageW - margin, y); y += 8;
-                        if (invDiscountAmt > 0)
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
                         {
                             g.DrawString($"إجمالي الأصناف: {_runningTotal:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
-                            g.DrawString($"خصم الفاتورة: {invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (invDiscountAmt > 0)
+                        {
+                            g.DrawString($"خصم الفاتورة: -{invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (shippingAmt > 0)
+                        {
+                            g.DrawString($"خدمة الشحن: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
                         }
                         g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }
@@ -839,19 +858,29 @@ namespace ChickenDist.Forms
                     else if (string.Equals(a4Template, "Simple", StringComparison.OrdinalIgnoreCase))
                     {
                         g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 8;
-                        if (invDiscountAmt > 0)
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
                         {
-                            g.DrawString($"الإجمالي: {_runningTotal:N2} | الخصم: {invDiscountAmt:N2}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                            string summaryStr = $"الإجمالي: {_runningTotal:N2}";
+                            if (invDiscountAmt > 0) summaryStr += $" | الخصم: {invDiscountAmt:N2}";
+                            if (shippingAmt > 0) summaryStr += $" | الشحن: {shippingAmt:N2}";
+                            g.DrawString(summaryStr, normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
                         }
                         g.DrawString($"الصافي المطلوب: {netAmount:N2} جنيه", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }
                     else
                     {
                         g.DrawLine(new Pen(Color.DarkBlue, 1.5f), margin, y, pageW - margin, y); y += 8;
-                        if (invDiscountAmt > 0)
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
                         {
                             g.DrawString($"إجمالي الأصناف: {_runningTotal:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
-                            g.DrawString($"خصم الفاتورة: {invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (invDiscountAmt > 0)
+                        {
+                            g.DrawString($"خصم الفاتورة: -{invDiscountAmt:N2} جنيه ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (shippingAmt > 0)
+                        {
+                            g.DrawString($"خدمة الشحن: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
                         }
                         g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldSheet, Brushes.DarkRed, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }

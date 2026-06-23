@@ -53,8 +53,21 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive,
-            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment)
+            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment, bool canEditShippingCharge = true)
         {
+            // التحقق من عدم تكرار اسم المستخدم
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                object exists = DbHelper.Scalar(
+                    "SELECT TOP 1 EmpID FROM Employees WHERE UserName = @u AND EmpID <> @id",
+                    DbHelper.P("@u", username.Trim()),
+                    DbHelper.P("@id", id));
+                if (exists != null)
+                {
+                    throw new Exception("اسم المستخدم هذا مسجل بالفعل لموظف آخر. يرجى اختيار اسم مستخدم مختلف.");
+                }
+            }
+
             // تشفير كلمة المرور قبل الحفظ (فقط إذا أُدخلت كلمة مرور جديدة)
             string hashedPassword = string.IsNullOrWhiteSpace(password)
                 ? null
@@ -62,15 +75,16 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment) " +
-                    "VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge) " +
+                    "VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
                     DbHelper.P("@asids", string.IsNullOrEmpty(allowedSafeIDs) ? (object)DBNull.Value : (object)allowedSafeIDs),
                     DbHelper.P("@csc", canSellCash), DbHelper.P("@ccr", canSellCredit),
-                    DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment));
+                    DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment),
+                    DbHelper.P("@cesc", canEditShippingCharge));
             else
             {
                 var prmsList = new System.Collections.Generic.List<SqlParameter>
@@ -87,11 +101,12 @@ namespace ChickenDist.DAL
                     DbHelper.P("@ccr", canSellCredit),
                     DbHelper.P("@cdl", canSellDriverLoad),
                     DbHelper.P("@cins", canSellInstallment),
+                    DbHelper.P("@cesc", canEditShippingCharge),
                     DbHelper.P("@id", id)
                 };
 
                 string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
-                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins";
+                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc";
 
                 if (hashedPassword != null)
                 {

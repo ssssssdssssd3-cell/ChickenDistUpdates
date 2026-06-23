@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
 
         private ComboBox cboDefaultSafe;
         private CheckedListBox clbAllowedSafes;
-        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment;
+        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge;
 
         public FrmEmployees()
         {
@@ -128,7 +128,9 @@ namespace ChickenDist.Forms
             y += 28;
             chkCanSellDriverLoad = new CheckBox { Text = "تحميل مندوب", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
             chkCanSellInstallment = new CheckBox { Text = "تقسيط شرعي", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment });
+            y += 28;
+            chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(100, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge });
             y += 35;
 
             btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
@@ -219,6 +221,7 @@ namespace ChickenDist.Forms
             chkCanSellCredit.Checked = dr["CanSellCredit"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCredit"]);
             chkCanSellDriverLoad.Checked = dr["CanSellDriverLoad"] == DBNull.Value || Convert.ToBoolean(dr["CanSellDriverLoad"]);
             chkCanSellInstallment.Checked = dr["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(dr["CanSellInstallment"]);
+            chkCanEditShippingCharge.Checked = dr.Table.Columns.Contains("CanEditShippingCharge") && (dr["CanEditShippingCharge"] == DBNull.Value || Convert.ToBoolean(dr["CanEditShippingCharge"]));
         }
 
         private void ClearDetail()
@@ -237,6 +240,7 @@ namespace ChickenDist.Forms
             chkCanSellCredit.Checked = true;
             chkCanSellDriverLoad.Checked = true;
             chkCanSellInstallment.Checked = true;
+            chkCanEditShippingCharge.Checked = true;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -261,12 +265,19 @@ namespace ChickenDist.Forms
             }
             string allowedSafeIDs = string.Join(",", allowedList);
 
-            int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
-                txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
-                defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
-                chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked);
-            if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
-            else MessageBox.Show("❌ فشل الحفظ");
+            try
+            {
+                int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
+                    txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
+                    defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
+                    chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked);
+                if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
+                else MessageBox.Show("❌ فشل الحفظ");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ فشل الحفظ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)

@@ -629,6 +629,10 @@ namespace ChickenDist.Forms
                         if (ok)
                         {
                             MessageBox.Show("✅ تم سداد القسط وتحديث القيود بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            if (MessageBox.Show("هل تريد طباعة إيصال سداد القسط؟", "طباعة الإيصال", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                            {
+                                new FrmPrintInstallmentPayment(_selectedContractID, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes, showPreview: false);
+                            }
                             LoadDashboard();
                             SearchContracts();
                         }
@@ -666,6 +670,10 @@ namespace ChickenDist.Forms
                         if (ok)
                         {
                             MessageBox.Show("✅ تم تحصيل المبلغ وتوزيعه بنجاح على الأقساط من الأقدم للأحدث.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            if (MessageBox.Show("هل تريد طباعة إيصال تحصيل المبلغ؟", "طباعة الإيصال", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                            {
+                                new FrmPrintInstallmentPayment(_selectedContractID, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes, showPreview: false);
+                            }
                             LoadDashboard();
                             SearchContracts();
                         }
@@ -819,6 +827,10 @@ namespace ChickenDist.Forms
                         if (ok)
                         {
                             MessageBox.Show("✅ تم إجراء التسوية والسداد المبكر وإغلاق العقد بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            if (MessageBox.Show("هل تريد طباعة إيصال سداد العقد بالكامل؟", "طباعة الإيصال", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                            {
+                                new FrmPrintInstallmentPayment(_selectedContractID, payoffAmount, frm.PaymentMethod, frm.SelectedSafeID, "سداد مبكر وتسوية كاملة للعقد", showPreview: false);
+                            }
                             LoadDashboard();
                             SearchContracts();
                         }
