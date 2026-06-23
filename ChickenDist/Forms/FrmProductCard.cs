@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         private TextBox txtUnit2Barcode;
         private NumericUpDown nudUnit2Factor, nudUnit2SalePrice, nudUnit2PurchasePrice;
         private NumericUpDown nudUnit3Factor;
+        private Button btnUnit1MultiBarcode, btnUnit2MultiBarcode;
+        private Label lblUnit1Header, lblUnit2Header;
 
         public FrmProductCard(int id = 0)
         {
@@ -148,14 +150,21 @@ namespace ChickenDist.Forms
             int uy = 15;
 
             // Unit 2 (Middle Unit) Group on the Right
-            tabUnits.Controls.Add(new Label { Text = "⚙️ الوحدة الوسطى (مثال: علبة):", Location = new Point(ux, uy), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary });
+            lblUnit2Header = new Label { Text = "⚙️ خانات الوحدة الوسطى:", Location = new Point(ux, uy), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            tabUnits.Controls.Add(lblUnit2Header);
             uy += 30;
             AddUnitComboField(tabUnits, "اسم الوحدة الوسطى:", ux, uy, out cboUnit2Name, out btnAddUnit2Name);
             btnAddUnit2Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             uy += 35;
             AddNud(tabUnits, "تحتوي على كم صغرى؟:", ux, uy, out nudUnit2Factor, 0);
             uy += 35;
-            AddField(tabUnits, "باركود الوسطى:", ux, uy, out txtUnit2Barcode);
+            
+            tabUnits.Controls.Add(new Label { Text = "باركود الوسطى:", Location = new Point(ux + 215, uy + 3), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
+            txtUnit2Barcode = new TextBox { Location = new Point(ux + 35, uy), Width = 170, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            btnUnit2MultiBarcode = new Button { Text = "➕", Location = new Point(ux, uy), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnUnit2MultiBarcode.Click += BtnUnit2MultiBarcode_Click;
+            tabUnits.Controls.AddRange(new Control[] { txtUnit2Barcode, btnUnit2MultiBarcode });
+            
             uy += 35;
             AddNud(tabUnits, "شراء الوسطى:", ux, uy, out nudUnit2PurchasePrice, 2);
             uy += 35;
@@ -165,12 +174,19 @@ namespace ChickenDist.Forms
             int ux2 = 20;
             int uy2 = 15;
 
-            tabUnits.Controls.Add(new Label { Text = "⚙️ الوحدة الصغرى (التجزئة/القطعة):", Location = new Point(ux2, uy2), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary });
+            lblUnit1Header = new Label { Text = "⚙️ خانات الوحدة الصغرى (التجزئة/القطعة):", Location = new Point(ux2, uy2), Width = 300, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            tabUnits.Controls.Add(lblUnit1Header);
             uy2 += 30;
             AddUnitComboField(tabUnits, "اسم الوحدة الصغرى:", ux2, uy2, out cboUnit1Name, out btnAddUnit1Name);
             btnAddUnit1Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             uy2 += 35;
-            AddField(tabUnits, "باركود الصغرى:", ux2, uy2, out txtUnit1Barcode);
+            
+            tabUnits.Controls.Add(new Label { Text = "باركود الصغرى:", Location = new Point(ux2 + 215, uy2 + 3), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
+            txtUnit1Barcode = new TextBox { Location = new Point(ux2 + 35, uy2), Width = 170, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            btnUnit1MultiBarcode = new Button { Text = "➕", Location = new Point(ux2, uy2), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnUnit1MultiBarcode.Click += BtnUnit1MultiBarcode_Click;
+            tabUnits.Controls.AddRange(new Control[] { txtUnit1Barcode, btnUnit1MultiBarcode });
+            
             uy2 += 35;
             AddNud(tabUnits, "شراء الصغرى:", ux2, uy2, out nudUnit1PurchasePrice, 2);
             uy2 += 35;
@@ -183,6 +199,11 @@ namespace ChickenDist.Forms
             AddNud(tabUnits, "الكبرى تحتوي كم وسطى؟:", ux2, uy2, out nudUnit3Factor, 0);
             tabUnits.Controls.Add(new Label { Text = "*(أو تحتوي كم صغرى مباشرة في حال عدم تفعيل الوحدة الوسطى)", Location = new Point(ux2, uy2 + 30), Width = 300, ForeColor = Color.Gray, Font = new Font("Segoe UI", 8.5f, FontStyle.Italic) });
 
+            // Bind Combo events to update Headers
+            cboUnit2Name.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
+            cboUnit2Name.TextChanged += (s, e) => UpdateUnitHeaders();
+            cboUnit1Name.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
+            cboUnit1Name.TextChanged += (s, e) => UpdateUnitHeaders();
 
             // Footer Panel for Save / Cancel
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgCard };
@@ -194,6 +215,8 @@ namespace ChickenDist.Forms
 
             pnlFooter.Controls.AddRange(new Control[] { btnSave, btnCancel });
             this.Controls.Add(pnlFooter);
+
+            UpdateUnitHeaders();
 
             Theme.ApplyFormRTL(this);
         }
@@ -324,6 +347,7 @@ namespace ChickenDist.Forms
             {
                 cboCategory.SelectedIndex = 0;
             }
+            UpdateUnitHeaders();
         }
 
         private void ClearDetail()
@@ -360,6 +384,7 @@ namespace ChickenDist.Forms
             nudUnit2PurchasePrice.Value = 0;
 
             nudUnit3Factor.Value = 0;
+            UpdateUnitHeaders();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -377,9 +402,11 @@ namespace ChickenDist.Forms
 
             // تحقق الباركودات
             string barcodesInput = txtInternationalCode.Text.Trim();
+            string normalisedIntlBarcodes = null;
             if (!string.IsNullOrEmpty(barcodesInput))
             {
                 string[] barcodes = barcodesInput.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                normalisedIntlBarcodes = string.Join(",", barcodes);
                 foreach (var bc in barcodes)
                 {
                     string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _selectedID);
@@ -393,24 +420,36 @@ namespace ChickenDist.Forms
 
             // فحص باركود الوحدة الصغرى والوسطى
             string u1Barcode = txtUnit1Barcode.Text.Trim();
+            string normalisedU1Barcode = null;
             if (!string.IsNullOrEmpty(u1Barcode))
             {
-                string owner = ProductDAL.GetOwnerOfInternationalBarcode(u1Barcode, _selectedID);
-                if (owner != null)
+                string[] barcodes = u1Barcode.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                normalisedU1Barcode = string.Join(",", barcodes);
+                foreach (var bc in barcodes)
                 {
-                    MessageBox.Show($"تعارض: باركود الوحدة الصغرى \"{u1Barcode}\" مسجَّل لصنف بكود محلي: {owner}", "تعارض باركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _selectedID);
+                    if (owner != null)
+                    {
+                        MessageBox.Show($"تعارض: باركود الوحدة الصغرى \"{bc}\" مسجَّل لصنف بكود محلي: {owner}", "تعارض باركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
                 }
             }
 
             string u2Barcode = txtUnit2Barcode.Text.Trim();
+            string normalisedU2Barcode = null;
             if (!string.IsNullOrEmpty(u2Barcode))
             {
-                string owner = ProductDAL.GetOwnerOfInternationalBarcode(u2Barcode, _selectedID);
-                if (owner != null)
+                string[] barcodes = u2Barcode.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                normalisedU2Barcode = string.Join(",", barcodes);
+                foreach (var bc in barcodes)
                 {
-                    MessageBox.Show($"تعارض: باركود الوحدة الوسطى \"{u2Barcode}\" مسجَّل لصنف بكود محلي: {owner}", "تعارض باركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _selectedID);
+                    if (owner != null)
+                    {
+                        MessageBox.Show($"تعارض: باركود الوحدة الوسطى \"{bc}\" مسجَّل لصنف بكود محلي: {owner}", "تعارض باركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
                 }
             }
 
@@ -424,10 +463,10 @@ namespace ChickenDist.Forms
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
-                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim(), chkPrintLocalBarcode.Checked,
+                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
                 chkIsService.Checked,
-                cboUnit1Name.Text.Trim(), string.IsNullOrEmpty(u1Barcode) ? null : u1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
-                cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, string.IsNullOrEmpty(u2Barcode) ? null : u2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
+                cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
+                cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null);
 
             if (id > 0)
@@ -450,6 +489,42 @@ namespace ChickenDist.Forms
                 {
                     txtInternationalCode.Text = dlg.ResultBarcodes;
                 }
+            }
+        }
+
+        private void BtnUnit1MultiBarcode_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new FrmMultiBarcodes(txtUnit1Barcode.Text, _selectedID))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    txtUnit1Barcode.Text = dlg.ResultBarcodes;
+                }
+            }
+        }
+
+        private void BtnUnit2MultiBarcode_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new FrmMultiBarcodes(txtUnit2Barcode.Text, _selectedID))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    txtUnit2Barcode.Text = dlg.ResultBarcodes;
+                }
+            }
+        }
+
+        private void UpdateUnitHeaders()
+        {
+            if (lblUnit2Header != null && cboUnit2Name != null)
+            {
+                string unit2 = string.IsNullOrWhiteSpace(cboUnit2Name.Text) ? "غير محددة" : cboUnit2Name.Text;
+                lblUnit2Header.Text = $"⚙️ خانات الوحدة الوسطى ({unit2}):";
+            }
+            if (lblUnit1Header != null && cboUnit1Name != null)
+            {
+                string unit1 = string.IsNullOrWhiteSpace(cboUnit1Name.Text) ? "غير محددة" : cboUnit1Name.Text;
+                lblUnit1Header.Text = $"⚙️ خانات الوحدة الصغرى ({unit1}):";
             }
         }
     }

@@ -364,14 +364,15 @@ namespace ChickenDist.DAL
                          p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                          p.Unit3Factor,
                          CASE 
-                             WHEN p.Unit1Barcode = @code THEN 1
-                             WHEN p.Unit2Barcode = @code THEN 2
+                             WHEN p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' THEN 1
+                             WHEN p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' THEN 2
                              ELSE 3 -- الوحدة الكبرى (الافتراضية) للصنف المتطابق بالكود الصغير أو الدولي
                           END AS MatchedUnit
                   FROM Products p
                   WHERE p.IsActive = 1
                     AND (p.ProductCode = @code OR p.PartNumber = @code OR p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%'
-                         OR p.Unit1Barcode = @code OR p.Unit2Barcode = @code)",
+                         OR p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%'
+                         OR p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%')",
                 DbHelper.P("@code", code));
         }
 
@@ -592,7 +593,11 @@ namespace ChickenDist.DAL
                   WHERE ProductID != @id AND (
                       ProductCode = @bc OR 
                       InternationalCode = @bc OR 
-                      ',' + InternationalCode + ',' LIKE '%,' + @bc + ',%'
+                      ',' + InternationalCode + ',' LIKE '%,' + @bc + ',%' OR
+                      Unit1Barcode = @bc OR
+                      ',' + Unit1Barcode + ',' LIKE '%,' + @bc + ',%' OR
+                      Unit2Barcode = @bc OR
+                      ',' + Unit2Barcode + ',' LIKE '%,' + @bc + ',%'
                   )", 
                 DbHelper.P("@bc", barcode.Trim()), DbHelper.P("@id", currentProductID));
             return res != null && res != DBNull.Value ? res.ToString() : null;
