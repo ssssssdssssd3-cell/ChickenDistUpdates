@@ -1484,35 +1484,6 @@ namespace ChickenDist.Core
                     END
                 END");
 
-                    IF COL_LENGTH('HandoverItems', 'Factor') IS NULL ALTER TABLE HandoverItems ADD Factor DECIMAL(10,3) DEFAULT 1.0;
-                END");
-
-                SafeMigrate("StockAdjustments.MultiUnits", @"
-                IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
-                BEGIN
-                    IF COL_LENGTH('StockAdjustments', 'UnitName') IS NULL ALTER TABLE StockAdjustments ADD UnitName NVARCHAR(50) NULL;
-                    IF COL_LENGTH('StockAdjustments', 'Factor') IS NULL ALTER TABLE StockAdjustments ADD Factor DECIMAL(10,3) DEFAULT 1.0;
-                END");
-
-                SafeMigrate("UnitsTable", @"
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Units')
-                BEGIN
-                    CREATE TABLE Units (
-                        UnitID INT IDENTITY(1,1) PRIMARY KEY,
-                        UnitName NVARCHAR(50) UNIQUE NOT NULL
-                    );
-                END
-                IF NOT EXISTS (SELECT * FROM Units)
-                BEGIN
-                    INSERT INTO Units (UnitName) VALUES 
-                    (N'قطعة'),
-                    (N'علبة'),
-                    (N'كرتونة'),
-                    (N'كيس'),
-                    (N'كيلو'),
-                    (N'متر'),
-                    (N'جوز');
-                END");
 
                 SafeMigrate("Sales.ShippingCharge", @"
                 IF OBJECT_ID('Sales', 'U') IS NOT NULL
