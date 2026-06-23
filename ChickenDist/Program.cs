@@ -296,31 +296,44 @@ namespace ChickenDist
         {
             if (m.Msg == WM_MOUSEWHEEL)
             {
-                // احصل على الموقع الفعلي لمؤشر الماوس
-                var pt = new System.Drawing.Point(
-                    (int)(short)((uint)m.LParam & 0xFFFF),         // X
-                    (int)(short)(((uint)m.LParam >> 16) & 0xFFFF)  // Y
-                );
+                // احصل على الموقع الفعلي لمؤشر الماوس في الشاشة
+                var pt = Cursor.Position;
 
-                var ctrl = Control.FromHandle(m.HWnd);
-                if (ctrl == null) return false;
+                IntPtr hWnd = Win32.WindowFromPoint(pt);
+                if (hWnd == IntPtr.Zero) return false;
 
-                // ابحث عن العنصر تحت المؤشر
-                var target = ctrl.TopLevelControl?.GetChildAtPoint(
-                    ctrl.TopLevelControl.PointToClient(pt),
-                    GetChildAtPointSkip.Invisible | GetChildAtPointSkip.Disabled);
+                var target = Control.FromHandle(hWnd);
+                if (target == null) return false;
 
-                if (target == null) target = ctrl;
-
-                // إذا كان العنصر المستهدف مختلفاً عن مستقبل الرسالة الأصلي، أعد التوجيه
-                if (target.Handle != m.HWnd)
+                // ابحث عن أول عنصر أب قابل للتمرير
+                var scrollTarget = FindScrollableControl(target);
+                if (scrollTarget != null && scrollTarget.Handle != m.HWnd)
                 {
                     // أرسل رسالة التمرير للعنصر الصحيح
-                    Win32.SendMessage(target.Handle, WM_MOUSEWHEEL, m.WParam, m.LParam);
+                    Win32.SendMessage(scrollTarget.Handle, WM_MOUSEWHEEL, m.WParam, m.LParam);
                     return true; // منع المعالجة الافتراضية
                 }
             }
             return false;
+        }
+
+        private Control FindScrollableControl(Control control)
+        {
+            Control current = control;
+            while (current != null)
+            {
+                if (current is DataGridView || 
+                    current is ListBox || 
+                    current is ListView || 
+                    current is TreeView ||
+                    current is ComboBox ||
+                    (current is ScrollableControl sc && sc.AutoScroll))
+                {
+                    return current;
+                }
+                current = current.Parent;
+            }
+            return null;
         }
     }
 
@@ -329,5 +342,8 @@ namespace ChickenDist
     {
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(System.Drawing.Point point);
     }
 }
