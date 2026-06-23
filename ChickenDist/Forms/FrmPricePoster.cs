@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private TextBox txtPosterTitle;
         private TextBox txtPosterNotes;
         private ComboBox cboPriceTier;
+        private ComboBox cboBannerStyle;
         private Bitmap _posterBitmap;
 
         public FrmPricePoster()
@@ -97,6 +98,32 @@ namespace ChickenDist.Forms
             cboPriceTier.SelectedIndex = 0;
             cboPriceTier.SelectedIndexChanged += (s, e) => { LoadProductsList(); GeneratePoster(); };
             pnlControls.Controls.Add(cboPriceTier);
+            y += 35;
+
+            var lblBannerStyle = new Label { Text = "شكل وبانر الترويسة (PDF):", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            pnlControls.Controls.Add(lblBannerStyle);
+            y += 22;
+
+            cboBannerStyle = new ComboBox
+            {
+                Location = new Point(10, y),
+                Width = 280,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboBannerStyle.Items.AddRange(new object[]
+            {
+                "رمادي كلاسيك (Classic Slate)",
+                "أزرق ملكي (Royal Blue)",
+                "أخضر هادئ (Forest Green)",
+                "عنابي فاخر (Crimson Red)",
+                "ذهبي داكن (Golden Amber)"
+            });
+            cboBannerStyle.SelectedIndex = 0;
+            cboBannerStyle.SelectedIndexChanged += (s, e) => GeneratePoster();
+            pnlControls.Controls.Add(cboBannerStyle);
             y += 35;
 
             var lblNotes = new Label { Text = "ملاحظات في الترويسة:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
@@ -225,7 +252,7 @@ namespace ChickenDist.Forms
             }
 
             int totalW = 750;
-            int headerH = 150;
+            int headerH = 160;
             int notesH = string.IsNullOrWhiteSpace(txtPosterNotes.Text) ? 0 : 50;
             int tableHeaderH = 35;
             int rowH = 30;
@@ -260,31 +287,47 @@ namespace ChickenDist.Forms
 
                 float yCur = 25;
 
-                // Draw logo if enabled
+                // Draw Header Banner Box
+                int bannerStyle = cboBannerStyle != null ? cboBannerStyle.SelectedIndex : 0;
+                Color bannerBgColor = Color.FromArgb(30, 41, 59); // default classic slate
+                Color bannerTextColor = Color.White;
+
+                if (bannerStyle == 1) bannerBgColor = Color.FromArgb(30, 58, 138); // Royal Blue
+                else if (bannerStyle == 2) bannerBgColor = Color.FromArgb(6, 78, 59); // Forest Green
+                else if (bannerStyle == 3) bannerBgColor = Color.FromArgb(127, 29, 29); // Crimson Red
+                else if (bannerStyle == 4) bannerBgColor = Color.FromArgb(120, 53, 15); // Golden Amber
+
+                // Draw banner rectangle
+                var bannerRect = new RectangleF(40, yCur, totalW - 80, 110);
+                using (var brushBanner = new SolidBrush(bannerBgColor))
+                {
+                    g.FillRectangle(brushBanner, bannerRect);
+                }
+
+                // Draw logo inside the banner if enabled
                 if (AppConfig.PrintShopLogo && !string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
                 {
                     try
                     {
                         using (var img = Image.FromFile(AppConfig.ShopLogoPath))
                         {
-                            g.DrawImage(img, 40, yCur, 80, 80);
+                            g.DrawImage(img, 50, yCur + 15, 80, 80);
                         }
                     }
                     catch {}
                 }
 
-                // Draw Header Text
-                using (var brushText = new SolidBrush(Color.FromArgb(17, 24, 39)))
+                // Draw Text inside the banner
+                using (var brushBannerText = new SolidBrush(bannerTextColor))
                 {
-                    g.DrawString(AppConfig.CompanyName, fComp, brushText, new RectangleF(0, yCur, totalW, 25), center);
-                    yCur += 25;
+                    float textY = yCur + 15;
+                    g.DrawString(AppConfig.CompanyName, fComp, brushBannerText, new RectangleF(0, textY, totalW, 25), center);
+                    textY += 25;
 
-                    g.DrawString(txtPosterTitle.Text, fTitle, brushText, new RectangleF(0, yCur, totalW, 35), center);
-                    yCur += 35;
+                    g.DrawString(txtPosterTitle.Text, fTitle, brushBannerText, new RectangleF(0, textY, totalW, 35), center);
+                    textY += 35;
 
-                    g.DrawString($"التاريخ: {DateTime.Today:dd/MM/yyyy}", fSub, Brushes.Gray, new RectangleF(0, yCur, totalW, 20), center);
-                    yCur += 20;
-
+                    string infoStr = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
                     string phoneStr = "";
                     if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone1)) phoneStr += AppConfig.CompanyPhone1;
                     if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone2))
@@ -292,14 +335,12 @@ namespace ChickenDist.Forms
                         if (phoneStr != "") phoneStr += " - ";
                         phoneStr += AppConfig.CompanyPhone2;
                     }
-                    if (phoneStr != "")
-                    {
-                        g.DrawString($"📞 هاتف: {phoneStr}", fSub, Brushes.DimGray, new RectangleF(0, yCur, totalW, 20), center);
-                        yCur += 20;
-                    }
+                    if (phoneStr != "") infoStr += $"  |  📞 هاتف: {phoneStr}";
+
+                    g.DrawString(infoStr, fSub, brushBannerText, new RectangleF(0, textY, totalW, 20), center);
                 }
 
-                yCur += 10;
+                yCur += 120;
 
                 // Notes Box (if any)
                 if (notesH > 0)
@@ -346,13 +387,18 @@ namespace ChickenDist.Forms
                 int idx = 1;
                 using (var penGrid = new Pen(Color.FromArgb(229, 231, 235), 1))
                 using (var brushBlack = new SolidBrush(Color.Black))
-                using (var brushAltRow = new SolidBrush(Color.FromArgb(249, 250, 251)))
+                using (var brushLightRow = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                using (var brushDarkRow = new SolidBrush(Color.FromArgb(225, 225, 225)))
                 {
                     foreach (ProductItem item in clbProducts.CheckedItems)
                     {
                         if (idx % 2 == 0)
                         {
-                            g.FillRectangle(brushAltRow, 40, yCur, totalW - 80, rowH);
+                            g.FillRectangle(brushDarkRow, 40, yCur, totalW - 80, rowH);
+                        }
+                        else
+                        {
+                            g.FillRectangle(brushLightRow, 40, yCur, totalW - 80, rowH);
                         }
 
                         g.DrawString(idx.ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur + 6, 40, rowH), rtlCenter);
@@ -414,23 +460,77 @@ namespace ChickenDist.Forms
 
             using (var sfd = new SaveFileDialog())
             {
-                sfd.Filter = "CSV Files (*.csv)|*.csv";
-                sfd.FileName = $"{txtPosterTitle.Text}_{DateTime.Today:yyyy-MM-dd}.csv";
+                sfd.Filter = "Excel Files (*.xls)|*.xls|HTML Files (*.html)|*.html";
+                sfd.FileName = $"{txtPosterTitle.Text}_{DateTime.Today:yyyy-MM-dd}.xls";
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
                         var sb = new StringBuilder();
-                        sb.Append('\uFEFF'); // BOM for UTF-8 Excel support
-                        sb.AppendLine("م,اسم الصنف,الوحدة,السعر");
+                        sb.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
+                        sb.AppendLine("<head>");
+                        sb.AppendLine("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">");
+                        sb.AppendLine("<style>");
+                        sb.AppendLine("  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; }");
+                        sb.AppendLine("  table { border-collapse: collapse; width: 100%; border: 2px solid #1e293b; }");
+                        sb.AppendLine("  th { background-color: #1e293b; color: #ffffff; border: 1px solid #cbd5e1; padding: 12px; font-weight: bold; text-align: center; font-size: 11pt; }");
+                        sb.AppendLine("  td { border: 1px solid #cbd5e1; padding: 10px; text-align: center; font-size: 10pt; }");
+                        sb.AppendLine("  .title-row { font-size: 16pt; font-weight: bold; color: #ffffff; background-color: #1e3a8a; text-align: center; padding: 15px; }");
+                        sb.AppendLine("  .info-row { font-size: 10pt; color: #ffffff; background-color: #3b82f6; text-align: center; padding: 8px; }");
+                        sb.AppendLine("  .notes-row { font-size: 10pt; color: #7f1d1d; background-color: #fee2e2; text-align: right; padding: 10px; font-weight: bold; }");
+                        sb.AppendLine("  .row-light { background-color: #f8fafc; }");
+                        sb.AppendLine("  .row-dark { background-color: #e2e8f0; }");
+                        sb.AppendLine("  .price-cell { font-weight: bold; color: #b91c1c; font-size: 11pt; }");
+                        sb.AppendLine("  .name-cell { text-align: right; padding-right: 15px; font-weight: bold; }");
+                        sb.AppendLine("</style>");
+                        sb.AppendLine("</head>");
+                        sb.AppendLine("<body>");
+                        sb.AppendLine("<table>");
+                        
+                        // Header rows
+                        sb.AppendLine($"  <tr><td colspan=\"4\" class=\"title-row\">{AppConfig.CompanyName} - {txtPosterTitle.Text}</td></tr>");
+                        
+                        string phoneStr = "";
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone1)) phoneStr += AppConfig.CompanyPhone1;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone2))
+                        {
+                            if (phoneStr != "") phoneStr += " - ";
+                            phoneStr += AppConfig.CompanyPhone2;
+                        }
+                        string infoText = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
+                        if (phoneStr != "") infoText += $" | هاتف: {phoneStr}";
+                        sb.AppendLine($"  <tr><td colspan=\"4\" class=\"info-row\">{infoText}</td></tr>");
+                        
+                        if (!string.IsNullOrWhiteSpace(txtPosterNotes.Text))
+                        {
+                            sb.AppendLine($"  <tr><td colspan=\"4\" class=\"notes-row\">ملاحظات: {txtPosterNotes.Text}</td></tr>");
+                        }
+
+                        // Table Headers
+                        sb.AppendLine("  <tr>");
+                        sb.AppendLine("    <th style=\"width: 8%;\">م</th>");
+                        sb.AppendLine("    <th style=\"width: 60%;\">اسم الصنف</th>");
+                        sb.AppendLine("    <th style=\"width: 16%;\">الوحدة</th>");
+                        sb.AppendLine("    <th style=\"width: 16%;\">السعر</th>");
+                        sb.AppendLine("  </tr>");
+
+                        // Rows
                         int idx = 1;
                         foreach (ProductItem item in clbProducts.CheckedItems)
                         {
-                            string name = item.Name.Contains(",") ? $"\"{item.Name}\"" : item.Name;
-                            string unit = item.Unit.Contains(",") ? $"\"{item.Unit}\"" : item.Unit;
-                            sb.AppendLine($"{idx},{name},{unit},{item.Price:0.##}");
+                            string rowClass = (idx % 2 == 0) ? "row-dark" : "row-light";
+                            sb.AppendLine($"  <tr class=\"{rowClass}\">");
+                            sb.AppendLine($"    <td>{idx}</td>");
+                            sb.AppendLine($"    <td class=\"name-cell\">{item.Name}</td>");
+                            sb.AppendLine($"    <td>{(string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit)}</td>");
+                            sb.AppendLine($"    <td class=\"price-cell\">{item.Price:N2} ج</td>");
+                            sb.AppendLine("  </tr>");
                             idx++;
                         }
+                        
+                        sb.AppendLine("</table>");
+                        sb.AppendLine("</body>");
+                        sb.AppendLine("</html>");
 
                         System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
                         MessageBox.Show("✅ تم تصدير الملف بنجاح!", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
