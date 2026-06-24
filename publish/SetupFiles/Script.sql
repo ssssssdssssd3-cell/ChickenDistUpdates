@@ -47,7 +47,8 @@ CREATE TABLE Products (
     ProductName NVARCHAR(100) NOT NULL,
     Unit        NVARCHAR(20)  DEFAULT N'كتكوت',
     SalePrice   DECIMAL(10,2) DEFAULT 0,
-    IsActive    BIT DEFAULT 1
+    IsActive    BIT DEFAULT 1,
+    IsQuickItem BIT NOT NULL DEFAULT 0
 )
 
 -- ========================================

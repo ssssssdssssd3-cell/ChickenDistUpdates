@@ -13,7 +13,7 @@ namespace ChickenDist.Forms
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
-        private CheckBox chkActive, chkPrintLocalBarcode, chkIsService;
+        private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem;
         private Button btnSave, btnCancel;
         private int _selectedID = 0;
 
@@ -94,13 +94,18 @@ namespace ChickenDist.Forms
             tabBasic.Controls.Add(chkActive);
             ry += 28;
 
-            chkPrintLocalBarcode = new CheckBox { Text = "طباعة باركود محلي", Location = new Point(rx + 35, ry), ForeColor = Theme.TextMain, Checked = true, AutoSize = true };
+            chkPrintLocalBarcode = new CheckBox { Text = "طباعة باركود محلي", Location = new Point(rx + 35, ry), ForeColor = Theme.TextMain, Checked = false, AutoSize = true };
             tabBasic.Controls.Add(chkPrintLocalBarcode);
             ry += 28;
 
             chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(rx + 35, ry), ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = true };
             chkIsService.Font = new Font(Theme.FontMain, FontStyle.Bold);
             tabBasic.Controls.Add(chkIsService);
+            ry += 30;
+
+            chkIsQuickItem = new CheckBox { Text = "⭐ صنف سريع (مبيعات)", Location = new Point(rx + 35, ry), ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = true };
+            chkIsQuickItem.Font = new Font(Theme.FontMain, FontStyle.Bold);
+            tabBasic.Controls.Add(chkIsQuickItem);
             ry += 30;
 
             tabBasic.Controls.Add(new Label { Text = "الوصف:", Location = new Point(rx + 215, ry + 3), Width = 90, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
@@ -313,8 +318,9 @@ namespace ChickenDist.Forms
             nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
             txtDescription.Text = dr["Description"].ToString();
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
-            chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : true;
+            chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : false;
             chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
+            chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
 
             // Multi-Unit Details
             cboUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
@@ -368,8 +374,9 @@ namespace ChickenDist.Forms
             nudMinStockLimit.Value = 0;
             txtDescription.Clear();
             chkActive.Checked = true;
-            chkPrintLocalBarcode.Checked = true;
+            chkPrintLocalBarcode.Checked = false;
             chkIsService.Checked = false;
+            chkIsQuickItem.Checked = false;
 
             // Multi-Unit default
             cboUnit1Name.Text = "القطعة";
@@ -467,7 +474,7 @@ namespace ChickenDist.Forms
                 chkIsService.Checked,
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
-                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null);
+                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked);
 
             if (id > 0)
             {

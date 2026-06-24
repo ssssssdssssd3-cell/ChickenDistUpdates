@@ -114,7 +114,7 @@ namespace ChickenDist.Forms
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "اسم العميل" });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 60 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
-            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الأقفاص", FillWeight = 40 });
+            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الفوارغ", FillWeight = 40 });
             if (!AppConfig.EnableCratesTracking)
             {
                 dgClients.Columns["CratesBalance"].Visible = false;
@@ -151,7 +151,7 @@ namespace ChickenDist.Forms
             nudOpening = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(nudOpening); y += 36;
 
-            var lblOpCrates = new Label { Text = "رصيد الأقفاص الأولي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblOpCrates = new Label { Text = "رصيد الفوارغ الأولي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(lblOpCrates);
             nudOpeningCrates = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(nudOpeningCrates);
@@ -230,7 +230,7 @@ namespace ChickenDist.Forms
             {
                 decimal bal = Convert.ToDecimal(r["Balance"]);
                 int cratesBal = Convert.ToInt32(r["CratesBalance"]);
-                var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " قفص");
+                var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " فارغ");
                 if (bal > 0) dgClients.Rows[row].DefaultCellStyle.ForeColor = Color.OrangeRed;
             }
         }
@@ -260,7 +260,7 @@ namespace ChickenDist.Forms
                 ? dr["DefaultPriceTier"].ToString()
                 : "قطاعي";
             if (AppConfig.EnableCratesTracking)
-                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الأقفاص: " + row.Cells["CratesBalance"].Value;
+                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الفوارغ: " + row.Cells["CratesBalance"].Value;
             else
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value;
         }

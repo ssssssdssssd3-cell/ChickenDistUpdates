@@ -227,6 +227,13 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD IsService BIT NOT NULL DEFAULT 0;
                 END");
 
+                // Add IsQuickItem to Products
+                SafeMigrate("Products.IsQuickItem", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'IsQuickItem')
+                BEGIN
+                    ALTER TABLE Products ADD IsQuickItem BIT NOT NULL DEFAULT 0;
+                END");
+
 
                 // Add WastageLoss and WastageLossItems tables
                 SafeMigrate("WastageLoss", @"

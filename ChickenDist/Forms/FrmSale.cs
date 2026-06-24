@@ -116,6 +116,8 @@ namespace ChickenDist.Forms
 		private Label lblClientCratesBalance;
 		private Label lblShippingChargeTitle;
 		private NumericUpDown nudShippingCharge;
+		private Panel pnlQuickItems;
+		private FlowLayoutPanel flowQuickItems;
 
 		public FrmSale() : this(0, false)
 		{
@@ -127,6 +129,7 @@ namespace ChickenDist.Forms
 			_isCopyMode = isCopyMode;
 			InitUI();
 			LoadCombos();
+			LoadQuickItems();
 			ApplyInvoiceTypePermissions();
 			if (saleID > 0)
 			{
@@ -449,7 +452,7 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(txtNotes, 3, 2);
 
 			// Row 3: Crates Tracking (only if enabled)
-			lblCratesOut = MakeLabel("أقفاص صادرة :", 0, 0);
+			lblCratesOut = MakeLabel("فوارغ صادرة :", 0, 0);
 			lblCratesOut.Dock = DockStyle.Fill;
 			lblCratesOut.TextAlign = ContentAlignment.MiddleRight;
 			lblCratesOut.Margin = new Padding(2);
@@ -465,7 +468,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 4, 2, 4)
 			};
 
-			lblCratesIn = MakeLabel("أقفاص واردة :", 0, 0);
+			lblCratesIn = MakeLabel("فوارغ واردة :", 0, 0);
 			lblCratesIn.Dock = DockStyle.Fill;
 			lblCratesIn.TextAlign = ContentAlignment.MiddleRight;
 			lblCratesIn.Margin = new Padding(2);
@@ -484,7 +487,7 @@ namespace ChickenDist.Forms
 
 			lblClientCratesBalance = new Label
 			{
-				Text = "أقفاص العميل: 0 قفص",
+				Text = "فوارغ العميل: 0 فارغ",
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
@@ -816,6 +819,37 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Padding = new Padding(5)
 			};
+
+			pnlQuickItems = new Panel
+			{
+				Dock = DockStyle.Left,
+				Width = 210,
+				BackColor = Theme.BgCard,
+				Padding = new Padding(5),
+				BorderStyle = BorderStyle.FixedSingle
+			};
+
+			var lblQuickTitle = new Label
+			{
+				Text = "⭐ أصناف سريعة",
+				Dock = DockStyle.Top,
+				Height = 30,
+				Font = new Font(Theme.FontMain.FontFamily, 11f, FontStyle.Bold),
+				ForeColor = Theme.Accent,
+				TextAlign = ContentAlignment.MiddleCenter
+			};
+			pnlQuickItems.Controls.Add(lblQuickTitle);
+
+			flowQuickItems = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				AutoScroll = true,
+				FlowDirection = FlowDirection.LeftToRight,
+				RightToLeft = RightToLeft.Yes,
+				Padding = new Padding(2)
+			};
+			pnlQuickItems.Controls.Add(flowQuickItems);
+
 			dgItems = new DataGridView
 			{
 				Dock = DockStyle.Fill,
@@ -896,6 +930,7 @@ namespace ChickenDist.Forms
 			};
 
 			pnlItems.Controls.Add(dgItems);
+			pnlItems.Controls.Add(pnlQuickItems);
 			pnlItems.Controls.Add(pnlProductBar);
 			LoadColumnSettings();
 
@@ -1562,7 +1597,7 @@ namespace ChickenDist.Forms
                     }
                     if (lblClientCratesBalance != null)
                     {
-                        lblClientCratesBalance.Text = "أقفاص العميل: 0 قفص";
+                        lblClientCratesBalance.Text = "فوارغ العميل: 0 فارغ";
                     }
                 }
 			};
@@ -1780,6 +1815,43 @@ namespace ChickenDist.Forms
 			catch { }
 		}
 
+		private void LoadQuickItems()
+		{
+			flowQuickItems.Controls.Clear();
+			try
+			{
+				DataTable dt = ProductDAL.GetQuickItems();
+				foreach (DataRow row in dt.Rows)
+				{
+					int id = Convert.ToInt32(row["ProductID"]);
+					string name = row["ProductName"].ToString();
+					decimal price = Convert.ToDecimal(row["SalePrice"]);
+					bool isService = Convert.ToBoolean(row["IsService"]);
+
+					Button btn = new Button
+					{
+						Width = 90,
+						Height = 55,
+						FlatStyle = FlatStyle.Flat,
+						BackColor = isService ? Color.FromArgb(45, 55, 72) : Theme.Primary,
+						ForeColor = Color.White,
+						Font = new Font(Theme.FontMain.FontFamily, 8.5f, FontStyle.Bold),
+						Cursor = Cursors.Hand,
+						Text = $"{name}\n{price:N2} ج",
+						Margin = new Padding(3),
+						Tag = id
+					};
+					btn.FlatAppearance.BorderSize = 0;
+					btn.Click += (s, e) =>
+					{
+						AddOrUpdateProduct(id, 1.00m);
+					};
+					flowQuickItems.Controls.Add(btn);
+				}
+			}
+			catch { }
+		}
+
 		/// <summary>
 		/// يُطبِّق فئة السعر على جميع البنود الموجودة في الجدول عند تغيير الفئة.
 		/// </summary>
@@ -1961,7 +2033,7 @@ namespace ChickenDist.Forms
             int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
             if (lblClientCratesBalance != null)
             {
-                lblClientCratesBalance.Text = "أقفاص العميل: " + cratesBal + " قفص";
+                lblClientCratesBalance.Text = "فوارغ العميل: " + cratesBal + " فارغ";
             }
         }
 
@@ -2378,7 +2450,7 @@ namespace ChickenDist.Forms
 			if (product == null) return;
 
 			decimal stock = _stockCache.TryGetValue(productID, out var cached) ? cached : 0m;
-			if (stock <= 0)
+			if (stock <= 0 && !product.IsService)
 			{
 				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
@@ -2418,7 +2490,7 @@ namespace ChickenDist.Forms
 					totalProductQtyInInvoice -= existingRow.Quantity;
 				}
 
-				if (totalProductQtyInInvoice > stock)
+				if (totalProductQtyInInvoice > stock && !product.IsService)
 				{
 					MessageBox.Show($"❌ خطأ: إجمالي الكمية المطلوبة ({totalProductQtyInInvoice:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
@@ -2460,7 +2532,7 @@ namespace ChickenDist.Forms
 
 				decimal totalQty = existingQty + qtyToAdd;
 
-				if (totalQty > stock)
+				if (totalQty > stock && !product.IsService)
 				{
 					MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					RefreshGrid();
@@ -3642,9 +3714,9 @@ namespace ChickenDist.Forms
 					int cratesInValMsg = saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 					if (cratesOutValMsg > 0 || cratesInValMsg > 0)
 					{
-						sb.AppendLine("📦 حركة الأقفاص");
-						if (cratesOutValMsg > 0) sb.AppendLine($"▪ أقفاص صادرة : {cratesOutValMsg} قفص");
-						if (cratesInValMsg > 0) sb.AppendLine($"▪ أقفاص واردة : {cratesInValMsg} قفص");
+						sb.AppendLine("📦 حركة الفوارغ");
+						if (cratesOutValMsg > 0) sb.AppendLine($"▪ فوارغ صادرة : {cratesOutValMsg} فارغ");
+						if (cratesInValMsg > 0) sb.AppendLine($"▪ فوارغ واردة : {cratesInValMsg} فارغ");
 						sb.AppendLine("━━━━━━━━━━━━━━━━");
 					}
 				}
@@ -3715,7 +3787,7 @@ namespace ChickenDist.Forms
 						sb.AppendLine("📝 آخر توريد سابق : لا يوجد");
 					}
 					int currentCratesDueMsg = ClientDAL.GetClientCratesBalance(clientIDVal);
-					sb.AppendLine($"أقفاص العميل الحالية : {currentCratesDueMsg} قفص");
+					sb.AppendLine($"فوارغ العميل الحالية : {currentCratesDueMsg} فارغ");
 					sb.AppendLine("━━━━━━━━━━━━━━━━");
 					sb.AppendLine($"{currentDue:N2} ج.م");
 					sb.AppendLine("🔴 الرصيد الحالي المستحق");
@@ -3880,7 +3952,7 @@ namespace ChickenDist.Forms
 					int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 					if (cratesOutVal > 0) financialLines += 1;
 					if (cratesInVal > 0) financialLines += 1;
-					financialLines += 1; // "رصيد الأقفاص المستحق"
+					financialLines += 1; // "رصيد الفوارغ المستحق"
 				}
 			}
 			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
@@ -4051,18 +4123,18 @@ namespace ChickenDist.Forms
 							int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 							if (cratesOutVal > 0)
 							{
-								labelsList.Add("أقفاص صادرة بالفاتورة");
-								valsList.Add($"{cratesOutVal} قفص");
+								labelsList.Add("فوارغ صادرة بالفاتورة");
+								valsList.Add($"{cratesOutVal} فارغ");
 							}
 							if (cratesInVal > 0)
 							{
-								labelsList.Add("أقفاص واردة بالفاتورة");
-								valsList.Add($"{cratesInVal} قفص");
+								labelsList.Add("فوارغ واردة بالفاتورة");
+								valsList.Add($"{cratesInVal} فارغ");
 							}
 
 							int currentCratesDue = ClientDAL.GetClientCratesBalance(Convert.ToInt32(saleRow["ClientID"]));
-							labelsList.Add("رصيد الأقفاص المستحق");
-							valsList.Add($"{currentCratesDue} قفص");
+							labelsList.Add("رصيد الفوارغ المستحق");
+							valsList.Add($"{currentCratesDue} فارغ");
 						}
 
 						labelsList.Add("الرصيد الحالي المستحق");

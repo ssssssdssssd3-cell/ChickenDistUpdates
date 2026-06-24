@@ -581,10 +581,10 @@ namespace ChickenDist.Forms
                                     string cratesText = "";
                                     if (cratesOut > 0) cratesText += $"صادر: {cratesOut} ";
                                     if (cratesIn > 0) cratesText += $"وارد: {cratesIn} ";
-                                    g.DrawString($"الأقفاص بالفاتورة: {cratesText}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                                    g.DrawString($"الفوارغ بالفاتورة: {cratesText}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
                                 }
                                 int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
-                                g.DrawString($"رصيد الأقفاص الحالي: {cratesBal} قفص", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 20;
+                                g.DrawString($"رصيد الفوارغ الحالي: {cratesBal} فارغ", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 20;
                             }
                         }
                     }
@@ -1012,9 +1012,9 @@ namespace ChickenDist.Forms
                                 int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
 
                                 string cratesText = "";
-                                if (cratesOut > 0) cratesText += $"أقفاص صادرة: {cratesOut} | ";
-                                if (cratesIn > 0) cratesText += $"أقفاص واردة: {cratesIn} | ";
-                                cratesText += $"رصيد الأقفاص الحالي للعميل: {cratesBal} قفص";
+                                if (cratesOut > 0) cratesText += $"فوارغ صادرة: {cratesOut} | ";
+                                if (cratesIn > 0) cratesText += $"فوارغ واردة: {cratesIn} | ";
+                                cratesText += $"رصيد الفوارغ الحالي للعميل: {cratesBal} فارغ";
 
                                 g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
                                 g.DrawString(cratesText, boldSheet, Brushes.DarkSlateGray, new RectangleF(margin, y, pageW - 2 * margin, 20), right);

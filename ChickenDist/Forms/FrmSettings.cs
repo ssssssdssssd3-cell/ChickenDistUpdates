@@ -635,10 +635,10 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkBackupOnExit);
             y += 30;
 
-            // خيار تفعيل تتبع الأقفاص والوزن الفارغ
+            // خيار تفعيل تتبع الفوارغ والوزن الفارغ
             chkEnableCrates = new CheckBox
             {
-                Text = "تفعيل نظام تتبع الأقفاص والوزن الفارغ للعملاء",
+                Text = "تفعيل نظام تتبع الفوارغ والوزن الفارغ للعملاء",
                 Location = new Point(20, y),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
@@ -818,7 +818,7 @@ namespace ChickenDist.Forms
                                           : "Standard";
                 AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
 
-                // حفظ إعدادات الواتساب وتفعيل الأقفاص والباكب عند الإغلاق والمسار السحابي
+                // حفظ إعدادات الواتساب وتفعيل الفوارغ والباكب عند الإغلاق والمسار السحابي
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;

@@ -185,7 +185,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
-                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "حركة فوارغ فاتورة مبيعات " + code),
                             DbHelper.P("@by", Session.EmpID));
                     }
 
@@ -640,7 +640,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                 }
 
-                // 4. عكس الحركات المالية والأقفاص السابقة (العملاء، الخزينة، المندوب، الأقفاص)
+                // 4. عكس الحركات المالية والفوارغ السابقة (العملاء، الخزينة، المندوب، الأقفاص)
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
                     DbHelper.P("@id", saleID));
@@ -757,7 +757,7 @@ namespace ChickenDist.DAL
                     }
                 }
 
-                // 8. إنشاء الحركات المالية والأقفاص الجديدة
+                // 8. إنشاء الحركات المالية والفوارغ الجديدة
                 if (!isDraft)
                 {
                     if (clientID.HasValue && (cratesOut > 0 || cratesIn > 0))
@@ -765,7 +765,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
-                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل حركة فوارغ فاتورة مبيعات " + code),
                             DbHelper.P("@by", Session.EmpID));
                     }
 
