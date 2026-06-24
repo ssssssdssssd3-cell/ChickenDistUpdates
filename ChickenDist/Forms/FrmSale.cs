@@ -4187,6 +4187,12 @@ namespace ChickenDist.Forms
 			_editSaleID = 0;
 			_isCopyMode = false;
 			_isDirty = false;
+						// Auto focus on cboProduct for the scanner
+			this.BeginInvoke((MethodInvoker)delegate
+			{
+				this.ActiveControl = cboProduct;
+				cboProduct.Focus();
+			});
 		}
 
 		private int? GetSelectedWarehouseID()

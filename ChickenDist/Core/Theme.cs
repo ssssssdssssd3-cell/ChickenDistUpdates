@@ -9,11 +9,11 @@ namespace ChickenDist.Core
     public static class Theme
     {
         // الألوان الرئيسية
-        public static Color Primary    = Color.FromArgb(26, 43, 75);    // Navy
+        public static Color Primary    = Color.FromArgb(43, 54, 76);    // Soft warm Navy
         public static Color Accent     = Color.FromArgb(243, 156, 18);  // Gold
         public static Color AccentDark = Color.FromArgb(211, 128, 0);
-        public static Color Success    = Color.FromArgb(39, 174, 96);
-        public static Color Danger     = Color.FromArgb(231, 76, 60);
+        public static Color Success    = Color.FromArgb(34, 197, 94);   // Softer green
+        public static Color Danger     = Color.FromArgb(239, 68, 68);   // Softer red
         public static Color BgLight    = Color.FromArgb(245, 247, 250);
         public static Color BgWhite    = Color.White;
         public static Color TextDark   = Color.FromArgb(30, 39, 46);
@@ -21,13 +21,17 @@ namespace ChickenDist.Core
         public static Color Sidebar    = Color.FromArgb(43, 54, 76);
         public static Color SidebarBtn = Color.FromArgb(15, 255, 255, 255);
 
-        // ألوان النمط الداكن (للشاشات الداخلية)
-        public static Color BgMain      = Color.FromArgb(28, 33, 45);
-        public static Color BgCard      = Color.FromArgb(36, 42, 58);
-        public static Color BgInput     = Color.FromArgb(48, 55, 72);
-        public static Color TextMain    = Color.FromArgb(220, 225, 235);
-        public static Color TextSub     = Color.FromArgb(150, 160, 180);
-        public static Color BorderColor = Color.FromArgb(55, 65, 85);
+        // ألوان النمط الداكن (للشاشات الداخلية) - دافئ ولطيف ومريح جداً للعين
+        public static Color BgMain      = Color.FromArgb(30, 31, 34);     // Deep Warm Charcoal (same as Discord/VS Code background)
+        public static Color BgCard      = Color.FromArgb(43, 45, 49);     // Softer warm card background
+        public static Color BgInput     = Color.FromArgb(56, 58, 64);     // Warm input fields
+        public static Color TextMain    = Color.FromArgb(240, 242, 245);  // Soft cream white for texts
+        public static Color TextSub     = Color.FromArgb(170, 175, 185);  // Warm muted gray for details
+        public static Color BorderColor = Color.FromArgb(65, 67, 74);     // Subtle soft warm gray border
+
+        // ألوان اللوحات الرئيسية (رأس الصفحة والنابار)
+        public static Color BgHeader    = Color.FromArgb(24, 25, 28);     // Header background
+        public static Color BgNavBar    = Color.FromArgb(32, 33, 36);     // NavBar background
 
         // الخطوط
         public static Font FontMain   = new Font("Segoe UI", 9.5f);

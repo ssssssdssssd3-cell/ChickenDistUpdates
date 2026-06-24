@@ -203,11 +203,55 @@ CREATE TABLE ReturnItems (
 )
 
 -- ========================================
+-- المخازن
+-- ========================================
+CREATE TABLE Warehouses (
+    WarehouseID INT IDENTITY(1,1) PRIMARY KEY,
+    WarehouseName NVARCHAR(100) NOT NULL,
+    Location NVARCHAR(200) NULL,
+    Notes NVARCHAR(500) NULL,
+    IsActive BIT DEFAULT 1,
+    CreatedAt DATETIME DEFAULT GETDATE()
+)
+
+-- ========================================
+-- كميات الأصناف لكل مخزن
+-- ========================================
+CREATE TABLE ProductStock (
+    StockID     INT IDENTITY(1,1) PRIMARY KEY,
+    ProductID   INT NOT NULL REFERENCES Products(ProductID) ON DELETE CASCADE,
+    WarehouseID INT NOT NULL REFERENCES Warehouses(WarehouseID),
+    Quantity    DECIMAL(10,3) NOT NULL DEFAULT 0,
+    LastUpdated DATETIME DEFAULT GETDATE(),
+    CONSTRAINT UQ_ProductStock UNIQUE (ProductID, WarehouseID)
+)
+
+-- ========================================
+-- تسويات وتعديلات كميات الأصناف
+-- ========================================
+CREATE TABLE StockAdjustments (
+    AdjID INT IDENTITY(1,1) PRIMARY KEY,
+    AdjDate DATETIME DEFAULT GETDATE(),
+    ProductID INT NOT NULL REFERENCES Products(ProductID) ON DELETE CASCADE,
+    WarehouseID INT NULL REFERENCES Warehouses(WarehouseID),
+    BookQty DECIMAL(10,3) NOT NULL,
+    ActualQty DECIMAL(10,3) NOT NULL,
+    Notes NVARCHAR(500),
+    CreatedBy INT REFERENCES Employees(EmpID),
+    UnitName NVARCHAR(50) NULL,
+    Factor DECIMAL(10,3) NULL
+)
+
+-- ========================================
 -- بيانات ابتدائية
 -- ========================================
 -- مدير النظام الافتراضي (كلمة المرور: 1)
 INSERT INTO Employees (EmpName, UserName, Password, Role, IsActive)
 VALUES (N'مدير النظام', '1', '1', 'Admin', 1)
+
+-- المخزن الرئيسي الافتراضي
+INSERT INTO Warehouses (WarehouseName, Location, Notes, IsActive)
+VALUES (N'المخزن الرئيسي', N'المقر الرئيسي', N'المخزن الأساسي للنظام', 1)
 
 -- صنف تجريبي
 INSERT INTO Products (ProductCode, ProductName, Unit, SalePrice)
