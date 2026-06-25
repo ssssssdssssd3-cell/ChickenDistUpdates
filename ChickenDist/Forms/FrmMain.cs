@@ -405,10 +405,10 @@ namespace ChickenDist.Forms
                 // Build context menu dropdown
                 var menu = new ContextMenuStrip();
                 menu.BackColor  = Theme.BgCard;
-                menu.ForeColor  = Color.White;
+                menu.ForeColor  = Theme.TextMain;
                 menu.Font       = new Font("Segoe UI", 9.5f);
                 menu.ShowImageMargin = false;
-                menu.Renderer   = new ToolStripProfessionalRenderer(new DarkMenuColorTable());
+                menu.Renderer   = new ToolStripProfessionalRenderer(new MenuColorTable());
 
                 foreach (var item in group.items)
                 {
@@ -416,7 +416,7 @@ namespace ChickenDist.Forms
                     
                     var menuItem = new ToolStripMenuItem(item.text)
                     {
-                        ForeColor = Color.White,
+                        ForeColor = Theme.TextMain,
                         BackColor = Theme.BgCard,
                         Padding   = new Padding(8, 6, 8, 6)
                     };
@@ -487,15 +487,15 @@ namespace ChickenDist.Forms
             }
         }
 
-        private class DarkMenuColorTable : ProfessionalColorTable
+        private class MenuColorTable : ProfessionalColorTable
         {
-            public override Color MenuItemSelected         => Color.FromArgb(55, 65, 90);
-            public override Color MenuItemBorder           => Color.FromArgb(70, 80, 100);
-            public override Color MenuBorder               => Color.FromArgb(50, 55, 70);
-            public override Color ToolStripDropDownBackground => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientBegin => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientMiddle => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientEnd   => Color.FromArgb(30, 35, 45);
+            public override Color MenuItemSelected         => Theme.BgLight;
+            public override Color MenuItemBorder           => Theme.BorderColor;
+            public override Color MenuBorder               => Theme.BorderColor;
+            public override Color ToolStripDropDownBackground => Theme.BgCard;
+            public override Color ImageMarginGradientBegin => Theme.BgCard;
+            public override Color ImageMarginGradientMiddle => Theme.BgCard;
+            public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
 
         public void NavigateTo(Form form)

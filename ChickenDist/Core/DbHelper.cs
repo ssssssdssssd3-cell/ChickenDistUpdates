@@ -653,6 +653,10 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ShelfLocation')
                 BEGIN
                     ALTER TABLE Products ADD ShelfLocation NVARCHAR(100) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ProducerCompany')
+                BEGIN
+                    ALTER TABLE Products ADD ProducerCompany NVARCHAR(200) NULL;
                 END";
                 Execute(sqlProductsPartsFields);
 

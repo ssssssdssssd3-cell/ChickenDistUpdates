@@ -9,7 +9,7 @@ namespace ChickenDist.Forms
 {
     public class FrmProductCard : Form
     {
-        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
+        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtInternationalCode;
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
@@ -84,6 +84,9 @@ namespace ChickenDist.Forms
             ry += 35;
 
             AddField(tabBasic, "الماركة:", rx, ry, out txtBrand);
+            ry += 35;
+
+            AddField(tabBasic, "الشركة المنتجة:", rx, ry, out txtProducerCompany);
             ry += 35;
 
             AddUnitComboField(tabBasic, "الوحدة الكبرى:", rx, ry, out cboUnit, out btnAddUnit);
@@ -309,6 +312,7 @@ namespace ChickenDist.Forms
             txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
             txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
             txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
+            txtProducerCompany.Text = dr.Table.Columns.Contains("ProducerCompany") && dr["ProducerCompany"] != DBNull.Value ? dr["ProducerCompany"].ToString() : "";
             txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
             cboUnit.Text = dr["Unit"].ToString();
             nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
@@ -364,6 +368,7 @@ namespace ChickenDist.Forms
             txtInternationalCode.Clear();
             txtCarModel.Clear();
             txtBrand.Clear();
+            txtProducerCompany.Clear();
             txtShelfLocation.Clear();
             if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
             cboUnit.Text = "كرتونة";
@@ -474,7 +479,7 @@ namespace ChickenDist.Forms
                 chkIsService.Checked,
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
-                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked);
+                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, txtProducerCompany.Text.Trim());
 
             if (id > 0)
             {

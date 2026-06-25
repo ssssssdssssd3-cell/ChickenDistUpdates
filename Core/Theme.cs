@@ -8,26 +8,30 @@ namespace ChickenDist.Core
     /// <summary>ألوان وأنماط النظام</summary>
     public static class Theme
     {
-        // الألوان الرئيسية
-        public static Color Primary    = Color.FromArgb(26, 43, 75);    // Navy
-        public static Color Accent     = Color.FromArgb(243, 156, 18);  // Gold
-        public static Color AccentDark = Color.FromArgb(211, 128, 0);
-        public static Color Success    = Color.FromArgb(39, 174, 96);
-        public static Color Danger     = Color.FromArgb(231, 76, 60);
-        public static Color BgLight    = Color.FromArgb(245, 247, 250);
+        // الألوان الرئيسية - هادئة ومريحة جداً للعين (Eye-Comfort Soft Palette)
+        public static Color Primary    = Color.FromArgb(45, 55, 72);    // Slate Blue / Navy هادئ
+        public static Color Accent     = Color.FromArgb(212, 163, 89);  // Sand Gold / ذهبي رملي ناعم غير متوهج
+        public static Color AccentDark = Color.FromArgb(180, 135, 20);
+        public static Color Success    = Color.FromArgb(46, 117, 89);   // Sage Green / أخضر هادئ
+        public static Color Danger     = Color.FromArgb(186, 73, 73);   // Terracotta Red / أحمر طوبي هادئ
+        public static Color BgLight    = Color.FromArgb(245, 247, 250); // رمادي-أزرق فاتح وناعم
         public static Color BgWhite    = Color.White;
-        public static Color TextDark   = Color.FromArgb(30, 39, 46);
-        public static Color TextGray   = Color.FromArgb(127, 140, 141);
-        public static Color Sidebar    = Color.FromArgb(43, 54, 76);
-        public static Color SidebarBtn = Color.FromArgb(15, 255, 255, 255);
+        public static Color TextDark   = Color.FromArgb(45, 55, 72);
+        public static Color TextGray   = Color.FromArgb(115, 125, 140);
+        public static Color Sidebar    = Color.FromArgb(240, 244, 248);
+        public static Color SidebarBtn = Color.FromArgb(25, 45, 55, 72);
 
-        // ألوان النمط الداكن (للشاشات الداخلية)
-        public static Color BgMain      = Color.FromArgb(28, 33, 45);
-        public static Color BgCard      = Color.FromArgb(36, 42, 58);
-        public static Color BgInput     = Color.FromArgb(48, 55, 72);
-        public static Color TextMain    = Color.FromArgb(220, 225, 235);
-        public static Color TextSub     = Color.FromArgb(150, 160, 180);
-        public static Color BorderColor = Color.FromArgb(55, 65, 85);
+        // ألوان النمط الفاتح المريح للعين
+        public static Color BgMain      = Color.FromArgb(245, 247, 250); // خلفية النوافذ
+        public static Color BgCard      = Color.FromArgb(255, 255, 255); // خلفية البطاقات والألواح
+        public static Color BgInput     = Color.FromArgb(255, 255, 255); // خلفية حقول الإدخال
+        public static Color TextMain    = Color.FromArgb(45, 55, 72);     // النص الرئيسي (داكن وواضح)
+        public static Color TextSub     = Color.FromArgb(100, 110, 125);  // النص الفرعي
+        public static Color BorderColor = Color.FromArgb(218, 224, 233);  // حدود خفيفة وناعمة
+
+        // ألوان اللوحات الرئيسية (رأس الصفحة والنابار)
+        public static Color BgHeader    = Color.FromArgb(45, 55, 72);     // رأس الصفحة (كحلي هادئ)
+        public static Color BgNavBar    = Color.FromArgb(240, 244, 248);  // شريط الأزرار (رمادي فاتح)
 
         // الخطوط
         public static Font FontMain   = new Font("Segoe UI", 9.5f);
@@ -273,14 +277,14 @@ namespace ChickenDist.Core
             grid.BackgroundColor = BgWhite;
             grid.BorderStyle = BorderStyle.None;
             grid.DefaultCellStyle.Font = FontSmall;
-            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219);
+            grid.DefaultCellStyle.SelectionBackColor = Primary;
             grid.DefaultCellStyle.SelectionForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.BackColor = Primary;
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.Font = FontBold;
             grid.ColumnHeadersHeight = 36;
             grid.RowTemplate.Height = 30;
-            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250);
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 247, 250);
             grid.EnableHeadersVisualStyles = false;
             grid.GridColor = Color.FromArgb(220, 220, 220);
             grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;

@@ -11,8 +11,9 @@ namespace ChickenDist.Forms
     {
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
-        private Label lblUserInfo, lblCompany;
+        private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
+        private Button _activeGroupBtn;
 
         public FrmMain()
         {
@@ -27,38 +28,42 @@ namespace ChickenDist.Forms
             this.MinimumSize = new Size(1024, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.WindowState = FormWindowState.Maximized;
-            this.BackColor = Theme.BgLight;
+            this.BackColor = Theme.BgMain;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
-            // ===== TopBar =====
-            this.pnlTopBar = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Theme.Primary };
+            // ===== pnlTopBar =====
+            this.pnlTopBar = new Panel 
+            { 
+                Dock = DockStyle.Top, 
+                Height = 65, 
+                BackColor = Theme.BgHeader 
+            };
+
             this.lblCompany = new Label
             {
-                Text = "🐣  " + AppConfig.CompanyName,
+                Text = "🐣 " + AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
-                AutoSize = false,
-                Dock = DockStyle.Fill,
+                Width = 250,
+                Dock = DockStyle.Right,
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            this.lblUserInfo = new Label
+
+            var pnlProfile = new Panel
             {
-                Text = $"👤 {Session.EmpName}  |  {Session.Role}",
-                Font = Theme.FontSmall,
-                ForeColor = Color.FromArgb(200, 230, 255),
-                AutoSize = false,
-                Width = 250,
                 Dock = DockStyle.Left,
-                TextAlign = ContentAlignment.MiddleRight,
-                Padding = new Padding(10, 0, 0, 0)
+                Width = 300,
+                Padding = new Padding(10, 16, 10, 16),
+                BackColor = Color.Transparent
             };
+
             var btnLogoutTop = new Button
             {
                 Text = "خروج ↩",
-                Width = 100,
-                Dock = DockStyle.Right,
+                Width = 85,
+                Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Danger,
                 ForeColor = Color.White,
@@ -66,48 +71,113 @@ namespace ChickenDist.Forms
                 Cursor = Cursors.Hand
             };
             btnLogoutTop.FlatAppearance.BorderSize = 0;
-            btnLogoutTop.Click += (s, e) => { if (MessageBox.Show("هل تريد تسجيل الخروج؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) { Session.Clear(); this.Close(); } };
-            this.pnlTopBar.Controls.AddRange(new Control[] { lblCompany, lblUserInfo, btnLogoutTop });
+            btnLogoutTop.Click += (s, e) => 
+            { 
+                if (MessageBox.Show("هل تريد تسجيل الخروج؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) 
+                { 
+                    Session.Clear(); 
+                    this.Close(); 
+                } 
+            };
 
-            // ===== NavBar (previously Sidebar) =====
-            pnlNavBar = new FlowLayoutPanel
+            this.lblUserInfo = new Label
             {
+                Text = $"👤 {Session.EmpName}  |  💼 {Session.Role}",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 190, 210),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 0, 0)
+            };
+
+            pnlProfile.Controls.Add(lblUserInfo);
+            pnlProfile.Controls.Add(btnLogoutTop);
+
+            this.lblTitle = new Label
+            {
+                Text = "لوحة التحكم الرئيسية",
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                ForeColor = Theme.Accent,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            this.pnlTopBar.Controls.Add(this.lblCompany);
+            this.pnlTopBar.Controls.Add(pnlProfile);
+            this.pnlTopBar.Controls.Add(this.lblTitle);
+
+            this.lblCompany.SendToBack();
+            pnlProfile.SendToBack();
+            this.lblTitle.BringToFront();
+
+            // ===== pnlNavBar =====
+            this.pnlNavBar = new FlowLayoutPanel
+            {
+                Name = "pnlNavBar",
                 Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                BackColor = Theme.Sidebar,
-                Padding = new Padding(10, 5, 10, 5)
+                BackColor = Theme.BgNavBar,
+                Padding = new Padding(10, 5, 10, 5),
+                AllowDrop = true
             };
-            BuildNavBar();
 
-            // ===== Content =====
+            this.pnlNavBar.DragEnter += (s, e) =>
+            {
+                if (e.Data.GetDataPresent(typeof(Button)))
+                {
+                    e.Effect = DragDropEffects.Move;
+                }
+                else
+                {
+                    e.Effect = DragDropEffects.None;
+                }
+            };
+
+            this.pnlNavBar.DragOver += (s, e) =>
+            {
+                e.Effect = DragDropEffects.Move;
+                Point clientPoint = this.pnlNavBar.PointToClient(new Point(e.X, e.Y));
+                Control dragControl = (Control)e.Data.GetData(typeof(Button));
+                if (dragControl != null)
+                {
+                    Control targetControl = this.pnlNavBar.GetChildAtPoint(clientPoint);
+                    if (targetControl != null && targetControl != dragControl)
+                    {
+                        int targetIndex = this.pnlNavBar.Controls.GetChildIndex(targetControl);
+                        this.pnlNavBar.Controls.SetChildIndex(dragControl, targetIndex);
+                    }
+                }
+            };
+
+            // ===== Content Panel =====
             pnlContent = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgLight,
+                BackColor = Theme.BgMain,
                 Padding = new Padding(0)
             };
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlNavBar);
-            this.Controls.Add(this.pnlTopBar);
-            
-            this.pnlTopBar.SendToBack(); // Docks first (takes top edge)
-            pnlNavBar.SendToBack();      // Docks second (takes space below top edge)
-            pnlContent.BringToFront();   // Docks last (fills remaining space)
-            
+            this.Controls.Add(pnlTopBar);
+
+            pnlTopBar.SendToBack(); // Docks first at the top
+            pnlNavBar.SendToBack();  // Docks second below top bar
+            pnlContent.BringToFront(); // Fills the rest
+
             this.Resize += (s, e) => UpdateLayout();
             UpdateLayout();
+            
+            // Build the menu
+            BuildNavBar(pnlNavBar);
         }
 
         private void UpdateLayout()
         {
-            pnlTopBar.Dock = DockStyle.Top;
-            pnlNavBar.Dock = DockStyle.Top; 
-            pnlContent.Dock = DockStyle.Fill;
-            pnlContent.Padding = new Padding(0);
+            // Do not override docking built in InitializeComponent
         }
 
         public void UpdateCompanyName(string newName)
@@ -116,12 +186,130 @@ namespace ChickenDist.Forms
             this.Text = $"{newName} - النظام الرئيسي";
         }
 
-        private void BuildNavBar()
+        private void HighlightActiveGroup(string className)
+        {
+            string targetGroup = "";
+            switch (className)
+            {
+                case "FrmDashboard":
+                    targetGroup = "الرئيسية";
+                    break;
+                case "FrmSale":
+                case "FrmReturn":
+                case "FrmInstallments":
+                case "FrmSalesList":
+                case "FrmSalesAuditList":
+                case "FrmAccountantPortal":
+                    targetGroup = "المبيعات";
+                    break;
+                case "FrmPurchase":
+                case "FrmPurchaseReturn":
+                case "FrmPurchasesList":
+                    targetGroup = "المشتريات";
+                    break;
+                case "FrmProducts":
+                case "FrmCategories":
+                case "FrmUnits":
+                case "FrmImportProducts":
+                case "FrmWarehouses":
+                case "FrmInventory":
+                case "FrmWastage":
+                case "FrmWarehouseTransfer":
+                case "FrmWarehouseTransfersList":
+                case "FrmPriceChanges":
+                case "FrmBulkPrintBarcodes":
+                    targetGroup = "المخازن";
+                    break;
+                case "FrmClients":
+                case "FrmInactiveClients":
+                case "FrmVehicles":
+                    targetGroup = "العملاء";
+                    break;
+                case "FrmSuppliers":
+                case "FrmSupplierStatement":
+                case "FrmSupplierPayment":
+                case "FrmSupplierAdjustment":
+                    targetGroup = "الموردين";
+                    break;
+                case "FrmDriverHandover":
+                case "FrmDriverPortal":
+                case "FrmImportPreview":
+                case "FrmDriversMonitor":
+                case "FrmDriverCustody":
+                case "FrmDriverLeaderboard":
+                    targetGroup = "المناديب";
+                    break;
+                case "FrmCashBox":
+                case "FrmDailyClosing":
+                    targetGroup = "المالية";
+                    break;
+                case "FrmReports":
+                    if (_currentChild is FrmReports rptForm)
+                    {
+                        if (rptForm.TargetModule == "Sales") targetGroup = "المبيعات";
+                        else if (rptForm.TargetModule == "Purchases") targetGroup = "المشتريات";
+                        else if (rptForm.TargetModule == "Stores") targetGroup = "المخازن";
+                        else if (rptForm.TargetModule == "Clients") targetGroup = "العملاء";
+                        else if (rptForm.TargetModule == "Drivers") targetGroup = "المناديب";
+                        else if (rptForm.TargetModule == "Financials") targetGroup = "المالية";
+                        else targetGroup = "الإدارة";
+                    }
+                    else
+                    {
+                        targetGroup = "المالية";
+                    }
+                    break;
+                case "FrmEmployees":
+                case "FrmEmployeeTransactions":
+                    targetGroup = "الإدارة";
+                    break;
+            }
+
+            if (_activeGroupBtn != null)
+            {
+                if (_activeGroupBtn.Tag is Color originalColor)
+                {
+                    _activeGroupBtn.BackColor = originalColor;
+                }
+                else
+                {
+                    _activeGroupBtn.BackColor = Color.Transparent;
+                }
+                _activeGroupBtn.ForeColor = Color.White;
+                _activeGroupBtn.FlatAppearance.BorderSize = 0;
+            }
+
+            // Find button in pnlNavBar
+            if (pnlNavBar != null)
+            {
+                foreach (Control ctrl in pnlNavBar.Controls)
+                {
+                    if (ctrl is Button btn && btn.Name == targetGroup)
+                    {
+                        _activeGroupBtn = btn;
+                        btn.FlatAppearance.BorderSize = 2;
+                        btn.FlatAppearance.BorderColor = Theme.Accent; // Gold highlight
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool UserCanAccess(string screenList)
+        {
+            if (string.IsNullOrEmpty(screenList)) return true;
+            string[] screens = screenList.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var scr in screens)
+            {
+                if (!Session.CanAccess(scr.Trim())) return false;
+            }
+            return true;
+        }
+
+        private void BuildNavBar(FlowLayoutPanel pnlNavBar)
         {
             pnlNavBar.Controls.Clear();
 
-            // ── تعريف المجموعات مع قوائمها المنسدلة ──
-            // كل مجموعة: (ايكون، عنوان، لون، قائمة العناصر[(عنوان، screen، action)])
             var groups = new (string icon, string label, Color color, (string text, string screen, Action action)[] items)[]
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
@@ -132,41 +320,46 @@ namespace ChickenDist.Forms
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
-                    ("📋 سجل المبيعات", "Sales",      (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
-                    ("📡 بوابة المحاسب",  "Sales",      (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
                 }),
 
                 ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
                     ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
                     ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
-                    ("📋 سجل المشتريات", "Purchases",      (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("📊 تقارير المشتريات", "Reports,Purchases",      (Action)(() => NavigateTo(new FrmReports("Purchases")))),
                 }),
 
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
-                    ("🏢 التصنيفات والأقسام", "Products",         (Action)(() => NavigateTo(new FrmCategories()))),
-                    ("📥 استيراد الأصناف",   "Products",          (Action)(() => NavigateTo(new FrmImportProducts()))),
+                    ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
+                    ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
+                    ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
-                    ("🗑️ الهوالك والتالف",  "Inventory",         (Action)(() => NavigateTo(new FrmWastage()))),
-                    ("🔄 تحويل مخزني",     "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
-                    ("📋 سجل التحويلات",   "WarehouseTransfers",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
-                    ("📊 سجل تغير الأسعار", "Products",          (Action)(() => NavigateTo(new FrmPriceChanges()))),
-                    ("🏷️ طباعة الباركود (مجمع)", "Products",     (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
+                    ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
+                    ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
+                    ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
+                    ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("📊 تقارير المخازن",   "Reports,Products",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
                 }),
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
-                    ("📢 العملاء الرواكد", "Clients",   (Action)(() => NavigateTo(new FrmInactiveClients()))),
+                    ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
+                    ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
                 }),
 
                 ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
                     ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
-                    ("📊 كشف حساب مورد", "Suppliers", (Action)(() => OpenSupplierStatementSelector())),
-                    ("💸 صرف نقدي لمورد", "Suppliers", (Action)(() => OpenSupplierPaymentSelector())),
-                    ("⚖️ تسوية أرصدة الموردين", "Suppliers", (Action)(() => OpenSupplierAdjustmentSelector())),
+                    ("📊 كشف حساب مورد", "SupplierStatement", (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد", "SupplierPayment", (Action)(() => OpenSupplierPaymentSelector())),
+                    ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
                 }),
 
                 ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
@@ -174,13 +367,14 @@ namespace ChickenDist.Forms
                     ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
                     ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
                     ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
-                    ("📋 عهدة المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverCustody()))),
-                    ("🏆 أداء المناديب",   "DriverHandover", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
+                    ("📋 عهدة المناديب",   "DriverCustody",  (Action)(() => NavigateTo(new FrmDriverCustody()))),
+                    ("🏆 أداء المناديب",   "DriverLeaderboard", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
+                    ("📊 تقارير المناديب", "Reports,DriverHandover",         (Action)(() => NavigateTo(new FrmReports("Drivers")))),
                 }),
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
-                    ("📊 التقارير",     "Reports",      (Action)(() => NavigateTo(new FrmReports()))),
+                    ("📊 التقارير المالية", "Reports",   (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -188,37 +382,42 @@ namespace ChickenDist.Forms
                     ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
                     ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
-                    ("🤖 إدارة بوت الواتساب", "Settings",            (Action)(() => new FrmBotManager().ShowDialog())),
+                    ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
+                    ("📊 التقارير الشاملة", "Reports",              (Action)(() => NavigateTo(new FrmReports(null)))),
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
 
             foreach (var group in groups)
             {
-                // تحقق إذا المجموعة كلها ليس لها صلاحية → تخطَّ
+                // Check permissions
                 bool hasAnyAccess = false;
                 foreach (var item in group.items)
                 {
-                    if (string.IsNullOrEmpty(item.screen) || Session.CanAccess(item.screen))
-                    { hasAnyAccess = true; break; }
+                    if (UserCanAccess(item.screen))
+                    { 
+                        hasAnyAccess = true; 
+                        break; 
+                    }
                 }
                 if (!hasAnyAccess) continue;
 
-                // بناء القائمة المنسدلة
+                // Build context menu dropdown
                 var menu = new ContextMenuStrip();
-                menu.BackColor  = Color.FromArgb(30, 35, 45);
-                menu.ForeColor  = Color.White;
-                menu.Font       = new Font("Segoe UI", 10f);
+                menu.BackColor  = Theme.BgCard;
+                menu.ForeColor  = Theme.TextMain;
+                menu.Font       = new Font("Segoe UI", 9.5f);
                 menu.ShowImageMargin = false;
-                menu.Renderer   = new ToolStripProfessionalRenderer(new DarkMenuColorTable());
+                menu.Renderer   = new ToolStripProfessionalRenderer(new MenuColorTable());
 
                 foreach (var item in group.items)
                 {
-                    if (!string.IsNullOrEmpty(item.screen) && !Session.CanAccess(item.screen)) continue;
+                    if (!UserCanAccess(item.screen)) continue;
+                    
                     var menuItem = new ToolStripMenuItem(item.text)
                     {
-                        ForeColor = Color.White,
-                        BackColor = Color.FromArgb(30, 35, 45),
+                        ForeColor = Theme.TextMain,
+                        BackColor = Theme.BgCard,
                         Padding   = new Padding(8, 6, 8, 6)
                     };
                     var act = item.action;
@@ -226,28 +425,27 @@ namespace ChickenDist.Forms
                     menu.Items.Add(menuItem);
                 }
 
-                // الزر الرئيسي للمجموعة
+                // Main navigation button
                 var btn = new Button
                 {
                     Name      = group.label,
-                    Text      = $"{group.icon}\n{group.label} ▾",
+                    Text      = group.label == "الرئيسية" ? "🏠\nالرئيسية" : $"{group.icon}\n{group.label} ▾",
                     Size      = new Size(108, 54),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = group.color,
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleCenter,
                     Margin    = new Padding(3, 4, 3, 4),
                     Cursor    = Cursors.Hand,
+                    Tag       = group.color, // Store original color for highlighting
                 };
-                btn.FlatAppearance.BorderSize        = 0;
+                btn.FlatAppearance.BorderSize = 0;
                 btn.FlatAppearance.MouseOverBackColor = ControlPaint.Light(group.color, 0.3f);
                 btn.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(group.color, 0.1f);
 
-                // زر الرئيسية يتنقل مباشرة بدون قائمة
                 if (group.label == "الرئيسية")
                 {
-                    btn.Text = "🏠\nالرئيسية";
                     btn.Click += (s, e) => NavigateTo(new FrmDashboard());
                 }
                 else
@@ -258,22 +456,47 @@ namespace ChickenDist.Forms
                     };
                 }
 
+                // Drag and Drop support
+                Point dragStart = Point.Empty;
+                btn.MouseDown += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        dragStart = e.Location;
+                    }
+                };
+                btn.MouseMove += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left && dragStart != Point.Empty)
+                    {
+                        int dx = e.X - dragStart.X;
+                        int dy = e.Y - dragStart.Y;
+                        if (Math.Sqrt(dx * dx + dy * dy) > 4)
+                        {
+                            btn.DoDragDrop(btn, DragDropEffects.Move);
+                            dragStart = Point.Empty;
+                        }
+                    }
+                };
+                btn.MouseUp += (s, e) =>
+                {
+                    dragStart = Point.Empty;
+                };
+
                 pnlNavBar.Controls.Add(btn);
             }
         }
 
-        // جدول ألوان القائمة الداكنة
-        private class DarkMenuColorTable : ProfessionalColorTable
+        private class MenuColorTable : ProfessionalColorTable
         {
-            public override Color MenuItemSelected         => Color.FromArgb(55, 65, 90);
-            public override Color MenuItemBorder           => Color.FromArgb(70, 80, 100);
-            public override Color MenuBorder               => Color.FromArgb(50, 55, 70);
-            public override Color ToolStripDropDownBackground => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientBegin => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientMiddle => Color.FromArgb(30, 35, 45);
-            public override Color ImageMarginGradientEnd   => Color.FromArgb(30, 35, 45);
+            public override Color MenuItemSelected         => Theme.BgLight;
+            public override Color MenuItemBorder           => Theme.BorderColor;
+            public override Color MenuBorder               => Theme.BorderColor;
+            public override Color ToolStripDropDownBackground => Theme.BgCard;
+            public override Color ImageMarginGradientBegin => Theme.BgCard;
+            public override Color ImageMarginGradientMiddle => Theme.BgCard;
+            public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
-
 
         public void NavigateTo(Form form)
         {
@@ -290,6 +513,13 @@ namespace ChickenDist.Forms
             pnlContent.Controls.Add(form);
             form.Show();
             form.BringToFront();
+
+            if (lblTitle != null)
+            {
+                lblTitle.Text = form.Text;
+            }
+
+            HighlightActiveGroup(form.GetType().Name);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

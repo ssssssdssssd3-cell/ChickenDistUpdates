@@ -20,6 +20,9 @@ namespace ChickenDist.Forms
         private Label lblTotal;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
+        private decimal _selectedSaleTotalAmount = 0m;
+        private decimal _selectedSaleShippingCharge = 0m;
+        private decimal _selectedSalePrevReturnedAmount = 0m;
 
         public FrmReturn()
         {
@@ -365,10 +368,28 @@ namespace ChickenDist.Forms
             dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             lblTotal.Text = "الإجمالي: 0.00 ج";
+            _selectedSaleTotalAmount = 0m;
+            _selectedSaleShippingCharge = 0m;
+            _selectedSalePrevReturnedAmount = 0m;
 
             if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
             {
                 int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+
+                var dtSaleInfo = DbHelper.Query(@"
+                    SELECT TotalAmount, COALESCE(ShippingCharge, 0.0) AS ShippingCharge 
+                    FROM Sales 
+                    WHERE SaleID = @sid", 
+                    DbHelper.P("@sid", saleID));
+                if (dtSaleInfo.Rows.Count > 0)
+                {
+                    _selectedSaleTotalAmount = Convert.ToDecimal(dtSaleInfo.Rows[0]["TotalAmount"]);
+                    _selectedSaleShippingCharge = Convert.ToDecimal(dtSaleInfo.Rows[0]["ShippingCharge"]);
+                }
+
+                _selectedSalePrevReturnedAmount = Convert.ToDecimal(DbHelper.Scalar(
+                    "SELECT COALESCE(SUM(TotalAmount), 0.0) FROM SalesReturns WHERE SaleID = @sid",
+                    DbHelper.P("@sid", saleID)));
 
                 DataTable dtItems = DbHelper.Query(@"
                     SELECT 
@@ -605,7 +626,19 @@ namespace ChickenDist.Forms
                     total += rowTotal;
                 }
             }
-            lblTotal.Text = "الإجمالي: " + total.ToString("N2") + " ج";
+
+            decimal maxAllowed = Math.Max(0m, _selectedSaleTotalAmount - _selectedSaleShippingCharge - _selectedSalePrevReturnedAmount);
+
+            if (total > maxAllowed)
+            {
+                lblTotal.Text = $"الإجمالي: {total:N2} ج (المرتجع المسموح: {maxAllowed:N2} ج)";
+                lblTotal.ForeColor = Color.FromArgb(220, 100, 100);
+            }
+            else
+            {
+                lblTotal.Text = "الإجمالي: " + total.ToString("N2") + " ج";
+                lblTotal.ForeColor = Theme.Accent;
+            }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -691,6 +724,12 @@ namespace ChickenDist.Forms
             if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
             {
                 clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+            }
+
+            decimal maxAllowedReturn = Math.Max(0m, _selectedSaleTotalAmount - _selectedSaleShippingCharge - _selectedSalePrevReturnedAmount);
+            if (totalReturnAmount > maxAllowedReturn)
+            {
+                totalReturnAmount = maxAllowedReturn;
             }
 
             try

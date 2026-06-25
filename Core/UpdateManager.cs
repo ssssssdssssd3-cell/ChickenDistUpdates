@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "1.9.4";
+        public const string CurrentVersion = "1.9.40";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -35,7 +35,7 @@ namespace ChickenDist.Core
                     string remoteVersion = "";
                     string downloadUrl   = "";
                     string changelog     = "";
-                    string expectedSha256 = ""; // FIX: checksum للتحقق من سلامة الملف
+                    string expectedSha256 = ""; // checksum للتحقق من سلامة الملف
 
                     string[] lines = rawData.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (string line in lines)
@@ -46,9 +46,9 @@ namespace ChickenDist.Core
                             string key = line.Substring(0, index).Trim().ToLower();
                             string val = line.Substring(index + 1).Trim();
                             if      (key == "version")   remoteVersion  = val;
-                            else if (key == "url")        downloadUrl    = val;
+                            else if (key == "url" || key == "download")        downloadUrl    = val;
                             else if (key == "changelog")  changelog      = val;
-                            else if (key == "sha256")     expectedSha256 = val; // FIX: قراءة الـ checksum
+                            else if (key == "sha256")     expectedSha256 = val; // قراءة الـ checksum
                         }
                     }
 
@@ -106,7 +106,7 @@ namespace ChickenDist.Core
             }
         }
 
-        // ── التحقق من SHA-256 ───────────────────────────────────────────────────
+        // ── التحقق من SHA-256 ──────────────────────────────
         private static string ComputeSha256(string filePath)
         {
             using (var sha = SHA256.Create())
@@ -141,7 +141,7 @@ namespace ChickenDist.Core
             }
 
             // FIX: استخدام BackgroundWorker بدلاً من DownloadFile المتزامن
-            // الكود القديم كان يُجمّد الـ UI Thread طوال مدة التحميل مع Thread.Sleep على UI
+            // الكود القديم كان يجمد الـ UI Thread طوال مدة التحميل مع Thread.Sleep على UI
             // الحل: التحميل في background thread مع ProgressBar حقيقي يتحدث عبر ReportProgress
 
             Exception downloadException = null;
@@ -228,7 +228,7 @@ namespace ChickenDist.Core
                                 client.DownloadProgressChanged += (cs, ce) =>
                                     worker.ReportProgress(ce.ProgressPercentage, null);
 
-                                // DownloadFileAsync + AutoResetEvent لتحويل async → sync في background thread
+                                // DownloadFileAsync + AutoResetEvent لتحويل async -> sync في background thread
                                 var done = new System.Threading.AutoResetEvent(false);
                                 Exception innerEx = null;
                                 client.DownloadFileCompleted += (cs, ce) =>
@@ -238,7 +238,7 @@ namespace ChickenDist.Core
                                 };
                                 string cacheBustedDownloadUrl = downloadUrl + (downloadUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
                                 client.DownloadFileAsync(new Uri(cacheBustedDownloadUrl), newExePath);
-                                done.WaitOne(); // ننتظر في الـ background thread — لا يُجمّد الـ UI
+                                done.WaitOne(); // ننتظر في الـ background thread — لا يجمد الـ UI
 
                                 if (innerEx != null) throw innerEx;
                             }
@@ -325,7 +325,7 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show(
                     "✅ تم تحميل التحديث بنجاح!\n\n" +
-                    $"📁 تم حفظ ملف البرنامج الجديد باسم {versionedExeName} داخل مجلد (Updates).\n\n" +
+                    $"📝 تم حفظ ملف البرنامج الجديد باسم {versionedExeName} داخل مجلد (Updates).\n\n" +
                     "سيتم الآن تحديد الملف الجديد تلقائياً وإغلاق البرنامج الحالي.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,
