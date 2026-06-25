@@ -2076,6 +2076,149 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
+
+        public static DataTable GetClientProductSalesReport(DateTime from, DateTime to, int? clientID, int? productID, string saleType, int? warehouseID = null)
+        {
+            string query = @"
+                SELECT 
+                    s.SaleCode AS [رقم الفاتورة],
+                    s.SaleDate AS [تاريخ الفاتورة],
+                    c.ClientName AS [العميل],
+                    p.ProductName AS [الصنف],
+                    si.Quantity AS [الكمية],
+                    si.UnitPrice AS [سعر الوحدة],
+                    si.TotalPrice AS [الصافي],
+                    CASE s.SaleType
+                        WHEN 'Cash' THEN N'نقدي'
+                        WHEN 'Credit' THEN N'آجل'
+                        WHEN 'Installment' THEN N'تقسيط'
+                        WHEN 'DriverLoad' THEN N'حملة مندوب'
+                        ELSE s.SaleType
+                    END AS [نوع البيع]
+                FROM SaleItems si
+                JOIN Sales s ON si.SaleID = s.SaleID
+                JOIN Products p ON si.ProductID = p.ProductID
+                LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                WHERE s.IsPosted = 1
+                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t";
+
+            if (clientID.HasValue && clientID.Value > 0)
+            {
+                query += " AND s.ClientID = @clientID";
+            }
+            if (productID.HasValue && productID.Value > 0)
+            {
+                query += " AND si.ProductID = @productID";
+            }
+            if (warehouseID.HasValue && warehouseID.Value > 0)
+            {
+                query += " AND s.WarehouseID = @warehouseID";
+            }
+            if (!string.IsNullOrEmpty(saleType) && saleType != "الكل")
+            {
+                query += " AND s.SaleType = @saleType";
+            }
+
+            query += " ORDER BY s.SaleDate DESC, s.SaleID DESC";
+
+            return DbHelper.Query(query,
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date),
+                DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@productID", productID.HasValue ? (object)productID.Value : DBNull.Value),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@saleType", !string.IsNullOrEmpty(saleType) ? (object)saleType : DBNull.Value));
+        }
+
+        public static DataTable GetSupplierItemActivityReport(DateTime from, DateTime to, int? supplierID, string producerCompany, string searchTerm)
+        {
+            string query = @"
+                SELECT 
+                    p.ProductName AS [الصنف],
+                    p.ProducerCompany AS [الشركة المنتجة],
+                    -- Current Stock
+                    ISNULL((
+                        SELECT SUM(v.CurrentQty)
+                        FROM vw_CurrentStockByWarehouse v
+                        WHERE v.ProductID = p.ProductID
+                    ), 0) AS [المخزون الحالي],
+                    -- Quantity sold in period
+                    ISNULL((
+                        SELECT SUM(si.Quantity)
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        WHERE si.ProductID = p.ProductID
+                          AND s.IsPosted = 1
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS [الكمية المباعة],
+                    -- Total sales value in period
+                    ISNULL((
+                        SELECT SUM(si.TotalPrice)
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        WHERE si.ProductID = p.ProductID
+                          AND s.IsPosted = 1
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS [قيمة المبيعات],
+                    -- Quantity purchased in period
+                    ISNULL((
+                        SELECT SUM(pi.Quantity)
+                        FROM PurchaseItems pi
+                        JOIN Purchases pur ON pi.PurchaseID = pur.PurchaseID
+                        WHERE pi.ProductID = p.ProductID
+                          AND pur.IsPosted = 1
+                          AND CAST(pur.PurchaseDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS [الكمية المشتراة],
+                    -- Total purchases value in period
+                    ISNULL((
+                        SELECT SUM(pi.TotalPrice)
+                        FROM PurchaseItems pi
+                        JOIN Purchases pur ON pi.PurchaseID = pur.PurchaseID
+                        WHERE pi.ProductID = p.ProductID
+                          AND pur.IsPosted = 1
+                          AND CAST(pur.PurchaseDate AS DATE) BETWEEN @f AND @t
+                    ), 0) AS [قيمة المشتريات],
+                    -- Status
+                    CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        WHERE si.ProductID = p.ProductID
+                          AND s.IsPosted = 1
+                          AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                    ) THEN N'نشط' ELSE N'راكد' END AS [الحالة]
+                FROM Products p
+                WHERE p.IsActive = 1";
+
+            if (supplierID.HasValue && supplierID.Value > 0)
+            {
+                query += @" AND EXISTS (
+                    SELECT 1 
+                    FROM PurchaseItems pi2 
+                    JOIN Purchases pur ON pi2.PurchaseID = pur.PurchaseID 
+                    WHERE pi2.ProductID = p.ProductID AND pur.SupplierID = @supplierID AND pur.IsPosted = 1
+                )";
+            }
+
+            if (!string.IsNullOrEmpty(producerCompany) && producerCompany != "الكل")
+            {
+                query += " AND p.ProducerCompany = @producerCompany";
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query += " AND (p.ProductName LIKE @search OR p.ProductCode LIKE @search OR p.InternationalCode LIKE @search)";
+            }
+
+            query += " ORDER BY [الكمية المباعة] DESC, p.ProductName ASC";
+
+            return DbHelper.Query(query,
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date),
+                DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@producerCompany", !string.IsNullOrEmpty(producerCompany) ? (object)producerCompany : DBNull.Value),
+                DbHelper.P("@search", !string.IsNullOrEmpty(searchTerm) ? (object)("%" + searchTerm + "%") : DBNull.Value));
+        }
     }
 }
 

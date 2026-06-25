@@ -5,15 +5,16 @@
 $ErrorActionPreference = "Stop"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# âš™ï¸ Settings
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-$VERSION   = "1.9.43"
+# ────────────────────────────────────────────────────────────
+# ⚙️ Settings
+# ────────────────────────────────────────────────────────────
+$VERSION   = "1.9.44"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# ðŸ“ Paths
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ────────────────────────────────────────────────────────────
+# 📁 Paths
+# ────────────────────────────────────────────────────────────
 $REPO_ROOT    = $PSScriptRoot
 $PROJECT_DIR  = Join-Path $REPO_ROOT "ChickenDist"
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
@@ -38,6 +39,21 @@ if (-not (Test-Path $CSPROJ)) {
     Write-Fail "Project not found at: $CSPROJ"
 }
 Write-OK "Project found: $CSPROJ"
+
+# Step 1.5: Patch Version in UpdateManager.cs
+Write-Step "Patching Version in UpdateManager.cs to $VERSION"
+$updateManagerPaths = @(
+    "$PROJECT_DIR\Core\UpdateManager.cs",
+    "$REPO_ROOT\Core\UpdateManager.cs"
+)
+foreach ($path in $updateManagerPaths) {
+    if (Test-Path $path) {
+        $content = Get-Content $path -Raw
+        $content = $content -replace 'public const string CurrentVersion = "[^"]+";', "public const string CurrentVersion = `"$VERSION`";"
+        [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)
+        Write-OK "Patched $path"
+    }
+}
 
 # Step 2: Build
 Write-Step "Building (dotnet publish)"

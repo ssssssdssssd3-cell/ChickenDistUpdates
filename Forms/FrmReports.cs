@@ -33,9 +33,15 @@ namespace ChickenDist.Forms
 		private Label lblSearchClient;
 
 		private DataTable _currentDt;
+		private string _targetModule = null;
+		private int _preFilteredID = 0;
 
-		public FrmReports()
+		public string TargetModule => _targetModule;
+
+		public FrmReports(string targetModule = null, int preFilteredID = 0)
 		{
+			_targetModule = targetModule;
+			_preFilteredID = preFilteredID;
 			InitUI();
 		}
 
@@ -144,10 +150,24 @@ namespace ChickenDist.Forms
 			};
 			txtSearchClient.TextChanged += (s, e) =>
 			{
-				DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
-				if (dataGridView != null)
+				string tabTag = tabReports.SelectedTab?.Tag?.ToString();
+				if (tabTag == "IncomeStatementAndProfitability")
 				{
-					FilterGrid(dataGridView, txtSearchClient.Text.Trim());
+					var dgPL = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgIncomeStatement");
+					var dgProd = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgProductProfit");
+					var dgCli = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientProfit");
+
+					if (dgPL != null) FilterGrid(dgPL, txtSearchClient.Text.Trim());
+					if (dgProd != null) FilterGrid(dgProd, txtSearchClient.Text.Trim());
+					if (dgCli != null) FilterGrid(dgCli, txtSearchClient.Text.Trim());
+				}
+				else
+				{
+					DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+					if (dataGridView != null)
+					{
+						FilterGrid(dataGridView, txtSearchClient.Text.Trim());
+					}
 				}
 			};
 
@@ -158,7 +178,7 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				Font = Theme.FontMain
 			};
-			(string, string)[] array = new(string, string)[13]
+			var allReports = new List<(string name, string tag)>
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
@@ -172,19 +192,459 @@ namespace ChickenDist.Forms
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
 				("📋 سجل تقفيل المناديب", "Handovers"),
 				("🚨 تقرير الهالك والتالف", "WastageLoss"),
-				("📈 الملخص المالي والتشغيلي", "FinancialSummary")
+				("📈 الملخص المالي والتشغيلي", "FinancialSummary"),
+				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
+				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
+				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
+				("📊 حركة أصناف الموردين", "SupplierItemActivity")
 			};
-			(string, string)[] array2 = array;
-			for (int i = 0; i < array2.Length; i++)
+
+			var filteredReports = new List<(string name, string tag)>();
+			if (string.IsNullOrEmpty(_targetModule))
 			{
-				(string, string) tuple = array2[i];
-				string item = tuple.Item1;
-				string item2 = tuple.Item2;
+				filteredReports = allReports;
+			}
+			else
+			{
+				foreach (var report in allReports)
+				{
+					bool keep = false;
+					if (_targetModule == "Sales")
+					{
+						keep = (report.tag == "DetailedSales" || report.tag == "DetailedReturns" || report.tag == "SalesByDay" || report.tag == "SalesByProduct");
+					}
+					else if (_targetModule == "Purchases")
+					{
+						keep = (report.tag == "DetailedPurchaseReturns");
+					}
+					else if (_targetModule == "Stores")
+					{
+						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity");
+					}
+					else if (_targetModule == "Clients")
+					{
+						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales");
+					}
+					else if (_targetModule == "Suppliers")
+					{
+						keep = (report.tag == "SupplierItemActivity");
+					}
+					else if (_targetModule == "Drivers")
+					{
+						keep = (report.tag == "SalesByDriver" || report.tag == "Handovers");
+					}
+					else if (_targetModule == "Financials")
+					{
+						keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability");
+					}
+
+					if (keep)
+					{
+						filteredReports.Add(report);
+					}
+				}
+			}
+
+			foreach (var tuple in filteredReports)
+			{
+				string item = tuple.name;
+				string item2 = tuple.tag;
 				TabPage tabPage = new TabPage(item)
 				{
 					Tag = item2,
 					BackColor = Theme.BgMain
 				};
+				if (item2 == "ClientProductSales")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 3,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(5)
+					};
+
+					Label lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboClient = new ComboBox { Name = "cboFilterClient", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					
+					Label lblProduct = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboProduct = new ComboBox { Name = "cboFilterProduct", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblType = new Label { Text = "نوع البيع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboSaleType = new ComboBox { Name = "cboFilterSaleType", Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					cboClient.Items.Add(new ComboItem(0, "كل العملاء"));
+					try
+					{
+						DataTable dtClients = ClientDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtClients.Rows)
+						{
+							cboClient.Items.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+						}
+					}
+					catch { }
+					cboClient.DisplayMember = "Text";
+					cboClient.SelectedIndex = 0;
+
+					cboProduct.Items.Add(new ComboItem(0, "كل الأصناف"));
+					try
+					{
+						DataTable dtProducts = ProductDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtProducts.Rows)
+						{
+							cboProduct.Items.Add(new ComboItem(Convert.ToInt32(r["ProductID"]), r["ProductName"].ToString()));
+						}
+					}
+					catch { }
+					cboProduct.DisplayMember = "Text";
+					cboProduct.SelectedIndex = 0;
+
+					cboSaleType.Items.Add(new ComboItem(0, "كل المبيعات"));
+					cboSaleType.Items.Add(new ComboItem(1, "نقدي"));
+					cboSaleType.Items.Add(new ComboItem(2, "آجل"));
+					cboSaleType.Items.Add(new ComboItem(3, "تقسيط شرعي"));
+					cboSaleType.Items.Add(new ComboItem(4, "حملة مندوب"));
+					cboSaleType.DisplayMember = "Text";
+					cboSaleType.SelectedIndex = 0;
+
+					if (_preFilteredID > 0)
+					{
+						foreach (ComboItem itemObj in cboClient.Items)
+						{
+							if (itemObj.ID == _preFilteredID)
+							{
+								cboClient.SelectedItem = itemObj;
+								break;
+							}
+						}
+					}
+
+					cboClient.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboProduct.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboSaleType.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblClient, cboClient, lblProduct, cboProduct, lblType, cboSaleType });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgClientSales = new DataGridView
+					{
+						Name = "dgClientSales",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgClientSales, 0, 1);
+
+					TableLayoutPanel pnlKPIs = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 2,
+						RowCount = 1,
+						BackColor = Theme.BgCard,
+						Padding = new Padding(10, 5, 10, 5)
+					};
+					pnlKPIs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+					pnlKPIs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+
+					Label lblTotalSales = new Label
+					{
+						Name = "lblTotalSales",
+						Text = "إجمالي مبيعات الفترة: 0.00 ج.م",
+						Dock = DockStyle.Fill,
+						ForeColor = Theme.Accent,
+						Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+						TextAlign = ContentAlignment.MiddleLeft
+					};
+					Label lblTotalQty = new Label
+					{
+						Name = "lblTotalQty",
+						Text = "إجمالي كمية البيع: 0.00",
+						Dock = DockStyle.Fill,
+						ForeColor = Theme.TextMain,
+						Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+						TextAlign = ContentAlignment.MiddleRight
+					};
+					pnlKPIs.Controls.Add(lblTotalSales, 0, 0);
+					pnlKPIs.Controls.Add(lblTotalQty, 1, 0);
+					layout.Controls.Add(pnlKPIs, 0, 2);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
+				if (item2 == "SupplierItemActivity")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 2,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(5)
+					};
+
+					Label lblSupplier = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboSupplier = new ComboBox { Name = "cboFilterSupplier", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					
+					Label lblCompany = new Label { Text = "الشركة المنتجة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboCompany = new ComboBox { Name = "cboFilterCompany", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblSearch = new Label { Text = "بحث بالاسم/الكود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					TextBox txtSearch = new TextBox { Name = "txtFilterSearch", Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
+
+					cboSupplier.Items.Add(new ComboItem(0, "كل الموردين"));
+					try
+					{
+						DataTable dtSuppliers = SupplierDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtSuppliers.Rows)
+						{
+							cboSupplier.Items.Add(new ComboItem(Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+						}
+					}
+					catch { }
+					cboSupplier.DisplayMember = "Text";
+					cboSupplier.SelectedIndex = 0;
+
+					cboCompany.Items.Add(new ComboItem(0, "كل الشركات"));
+					try
+					{
+						DataTable dtComp = DbHelper.Query("SELECT DISTINCT ProducerCompany FROM Products WHERE IsActive = 1 AND ProducerCompany IS NOT NULL AND ProducerCompany != '' ORDER BY ProducerCompany");
+						foreach (DataRow r in dtComp.Rows)
+						{
+							string compName = r["ProducerCompany"].ToString();
+							cboCompany.Items.Add(new ComboItem(cboCompany.Items.Count, compName));
+						}
+					}
+					catch { }
+					cboCompany.DisplayMember = "Text";
+					cboCompany.SelectedIndex = 0;
+
+					if (_preFilteredID > 0)
+					{
+						foreach (ComboItem itemObj in cboSupplier.Items)
+						{
+							if (itemObj.ID == _preFilteredID)
+							{
+								cboSupplier.SelectedItem = itemObj;
+								break;
+							}
+						}
+					}
+
+					cboSupplier.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboCompany.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					txtSearch.TextChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblSupplier, cboSupplier, lblCompany, cboCompany, lblSearch, txtSearch });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgSupplierActivity = new DataGridView
+					{
+						Name = "dgSupplierActivity",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgSupplierActivity, 0, 1);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
+				if (item2 == "IncomeStatementAndProfitability")
+				{
+					TableLayoutPanel splitPanel = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 2,
+						RowCount = 1,
+						RightToLeft = RightToLeft.Yes
+					};
+					splitPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f));
+					splitPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60f));
+
+					GroupBox grpPL = new GroupBox
+					{
+						Text = "📊 قائمة الدخل وقيمة الربحية",
+						Dock = DockStyle.Fill,
+						Font = Theme.FontBold,
+						ForeColor = Theme.TextMain,
+						RightToLeft = RightToLeft.Yes
+					};
+					DataGridView dgPL = new DataGridView
+					{
+						Name = "dgIncomeStatement",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					grpPL.Controls.Add(dgPL);
+					splitPanel.Controls.Add(grpPL, 0, 0);
+
+					TabControl subTab = new TabControl
+					{
+						Name = "subTabProfitability",
+						Dock = DockStyle.Fill,
+						Font = Theme.FontMain,
+						RightToLeft = RightToLeft.Yes
+					};
+					
+					TabPage subTabProduct = new TabPage("📦 ربحية الأصناف")
+					{
+						BackColor = Theme.BgMain
+					};
+					DataGridView dgProdProfit = new DataGridView
+					{
+						Name = "dgProductProfit",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = dgPL.DefaultCellStyle,
+						ColumnHeadersDefaultCellStyle = dgPL.ColumnHeadersDefaultCellStyle,
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					subTabProduct.Controls.Add(dgProdProfit);
+					subTab.TabPages.Add(subTabProduct);
+
+					TabPage subTabClient = new TabPage("👥 ربحية العملاء")
+					{
+						BackColor = Theme.BgMain
+					};
+					DataGridView dgCliProfit = new DataGridView
+					{
+						Name = "dgClientProfit",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = dgPL.DefaultCellStyle,
+						ColumnHeadersDefaultCellStyle = dgPL.ColumnHeadersDefaultCellStyle,
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					subTabClient.Controls.Add(dgCliProfit);
+					subTab.TabPages.Add(subTabClient);
+
+					splitPanel.Controls.Add(subTab, 1, 0);
+					tabPage.Controls.Add(splitPanel);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
 				DataGridView value = new DataGridView
 				{
 					Dock = DockStyle.Fill,
@@ -238,9 +698,9 @@ namespace ChickenDist.Forms
 			{
 				return;
 			}
+			string text = tabReports.SelectedTab.Tag?.ToString();
 			if (btnWhatsAppReport != null)
 			{
-				string text = tabReports.SelectedTab.Tag?.ToString();
 				btnWhatsAppReport.Visible = (text == "ClientBalances");
 			}
 			int? warehouseID = null;
@@ -248,17 +708,21 @@ namespace ChickenDist.Forms
 			{
 				warehouseID = wh.ID;
 			}
-			DataGridView dataGridView = tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
+			if (text == "IncomeStatementAndProfitability")
+			{
+				LoadIncomeStatementAndProfitability(warehouseID);
+				return;
+			}
+			DataGridView dataGridView = GetActiveGrid();
 			if (dataGridView != null)
 			{
-				string text = tabReports.SelectedTab.Tag?.ToString();
 				dataGridView.Columns.Clear();
 				dataGridView.Rows.Clear();
 				switch (text)
 				{
 				case "DetailedSales":
 					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[8]
+					SetupGrid(new(string, string)[10]
 					{
 						("SaleCode", "رقم الفاتورة"),
 						("SaleDate", "التاريخ والوقت"),
@@ -266,6 +730,8 @@ namespace ChickenDist.Forms
 						("ClientName", "العميل"),
 						("DriverName", "المندوب"),
 						("TotalAmount", "قيمة الفاتورة"),
+						("TotalCost", "التكلفة"),
+						("NetProfit", "الربح"),
 						("Notes", "الملاحظات"),
 						("SaleID", "معرف الفاتورة")
 					}, dataGridView);
@@ -299,30 +765,34 @@ namespace ChickenDist.Forms
 					break;
 				case "SalesByDay":
 					_currentDt = ReportDAL.SalesByDay(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[6]
+					SetupGrid(new(string, string)[8]
 					{
 						("SaleDay", "اليوم"),
 						("Count", "عدد الفواتير"),
 						("CashTotal", "مبيعات نقدي"),
 						("CreditTotal", "مبيعات آجل"),
 						("LoadTotal", "حمولات مناديب"),
-						("Total", "إجمالي اليوم")
+						("Total", "إجمالي اليوم"),
+						("TotalCost", "إجمالي التكلفة"),
+						("NetProfit", "صافي الربح")
 					}, dataGridView);
 					break;
 				case "SalesByDriver":
 					_currentDt = ReportDAL.SalesByDriver(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[5]
+					SetupGrid(new(string, string)[7]
 					{
 						("DriverName", "المندوب"),
 						("Count", "عدد فواتيره"),
 						("CashTotal", "مبيعات نقدي"),
 						("CreditTotal", "مبيعات آجل"),
-						("Total", "إجمالي المبيعات")
+						("Total", "إجمالي المبيعات"),
+						("TotalCost", "التكلفة"),
+						("NetProfit", "الربح")
 					}, dataGridView);
 					break;
 				case "SalesByClient":
 					_currentDt = ReportDAL.SalesByClient(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[9]
+					SetupGrid(new(string, string)[11]
 					{
 						("ClientName", "العميل"),
 						("Phone", "الهاتف"),
@@ -332,12 +802,14 @@ namespace ChickenDist.Forms
 						("ReturnsTotal", "إجمالي مرتجعاته"),
 						("PaidTotal", "إجمالي مسدداته"),
 						("Total", "إجمالي الشراء"),
-						("CurrentBalance", "المديونية الحالية")
+						("CurrentBalance", "المديونية الحالية"),
+						("TotalCost", "التكلفة"),
+						("NetProfit", "صافي الربح")
 					}, dataGridView);
 					break;
 				case "SalesByProduct":
 					_currentDt = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[9]
+					SetupGrid(new(string, string)[12]
 					{
 						("ProductName", "الصنف"),
 						("Unit", "الوحدة"),
@@ -347,7 +819,25 @@ namespace ChickenDist.Forms
 						("ReturnedQty", "الكمية المرتجعة"),
 						("ReturnedAmount", "إجمالي المرتجعات"),
 						("NetQty", "صافي الكمية"),
-						("NetAmount", "صافي المبيعات")
+						("NetAmount", "صافي المبيعات"),
+						("TotalCost", "التكلفة"),
+						("NetProfit", "الربح"),
+						("ProfitMargin", "نسبة الربح %")
+					}, dataGridView);
+					break;
+				case "DetailedInventoryValuation":
+					_currentDt = ReportDAL.GetInventoryValuation(warehouseID);
+					SetupGrid(new(string, string)[9]
+					{
+						("ProductCode", "كود الصنف"),
+						("ProductName", "اسم الصنف"),
+						("Unit", "الوحدة"),
+						("PurchasePrice", "سعر التكلفة"),
+						("SalePrice", "سعر البيع"),
+						("CurrentStock", "الرصيد الحالي"),
+						("StockValue", "قيمة المخزن بالتكلفة"),
+						("StockSaleValue", "قيمة المخزن بسعر البيع"),
+						("ExpectedProfit", "الأرباح المتوقعة")
 					}, dataGridView);
 					break;
 				case "ProductQtyDetail":
@@ -427,9 +917,347 @@ namespace ChickenDist.Forms
 					_currentDt = new DataTable();
 					LoadDailyClosingReport(dataGridView, warehouseID);
 					break;
+				case "ClientProductSales":
+					{
+						int? clientID = null;
+						int? productID = null;
+						string saleType = "الكل";
+
+						var cboC = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterClient");
+						var cboP = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterProduct");
+						var cboT = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterSaleType");
+
+						if (cboC != null && cboC.SelectedItem is ComboItem cli && cli.ID > 0)
+						{
+							clientID = cli.ID;
+						}
+						if (cboP != null && cboP.SelectedItem is ComboItem prod && prod.ID > 0)
+						{
+							productID = prod.ID;
+						}
+						if (cboT != null && cboT.SelectedItem is ComboItem itemType)
+						{
+							if (itemType.ID == 1) saleType = "Cash";
+							else if (itemType.ID == 2) saleType = "Credit";
+							else if (itemType.ID == 3) saleType = "Installment";
+							else if (itemType.ID == 4) saleType = "DriverLoad";
+						}
+
+						_currentDt = ReportDAL.GetClientProductSalesReport(dtpFrom.Value, dtpTo.Value, clientID, productID, saleType, warehouseID);
+						
+						SetupGrid(new(string, string)[]
+						{
+							("رقم الفاتورة", "رقم الفاتورة"),
+							("تاريخ الفاتورة", "التاريخ والوقت"),
+							("العميل", "العميل"),
+							("الصنف", "الصنف"),
+							("الكمية", "الكمية"),
+							("سعر الوحدة", "سعر الوحدة"),
+							("الصافي", "الصافي"),
+							("نوع البيع", "نوع البيع")
+						}, dataGridView);
+
+						decimal totalSales = 0;
+						decimal totalQty = 0;
+						foreach (DataRow r in _currentDt.Rows)
+						{
+							totalSales += Convert.ToDecimal(r["الصافي"]);
+							totalQty += Convert.ToDecimal(r["الكمية"]);
+						}
+
+						var lblSales = FindControlByName<Label>(tabReports.SelectedTab, "lblTotalSales");
+						var lblQty = FindControlByName<Label>(tabReports.SelectedTab, "lblTotalQty");
+						if (lblSales != null) lblSales.Text = $"إجمالي مبيعات الفترة: {totalSales:N2} ج.م";
+						if (lblQty != null) lblQty.Text = $"إجمالي كمية البيع: {totalQty:N2}";
+					}
+					break;
+				case "SupplierItemActivity":
+					{
+						int? supplierID = null;
+						string producerCompany = "الكل";
+						string search = "";
+
+						var cboS = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterSupplier");
+						var cboC = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterCompany");
+						var txtS = FindControlByName<TextBox>(tabReports.SelectedTab, "txtFilterSearch");
+
+						if (cboS != null && cboS.SelectedItem is ComboItem sup && sup.ID > 0)
+						{
+							supplierID = sup.ID;
+						}
+						if (cboC != null && cboC.SelectedItem is ComboItem comp && comp.ID > 0)
+						{
+							producerCompany = comp.Text;
+						}
+						if (txtS != null)
+						{
+							search = txtS.Text.Trim();
+						}
+
+						_currentDt = ReportDAL.GetSupplierItemActivityReport(dtpFrom.Value, dtpTo.Value, supplierID, producerCompany, search);
+
+						SetupGrid(new(string, string)[]
+						{
+							("الصنف", "الصنف"),
+							("الشركة المنتجة", "الشركة المنتجة"),
+							("المخزون الحالي", "المخزون الحالي"),
+							("الكمية المباعة", "الكمية المباعة"),
+							("قيمة المبيعات", "قيمة المبيعات"),
+							("الكمية المشتراة", "الكمية المشتراة"),
+							("قيمة المشتريات", "قيمة المشتريات"),
+							("الحالة", "الحالة")
+						}, dataGridView);
+					}
+					break;
 				}
 				FillGrid(dataGridView);
 			}
+		}
+
+		private void LoadIncomeStatementAndProfitability(int? warehouseID)
+		{
+			TabPage tab = tabReports.TabPages.Cast<TabPage>().FirstOrDefault(t => t.Tag?.ToString() == "IncomeStatementAndProfitability");
+			if (tab == null) return;
+
+			DataGridView dgPL = FindControlByName<DataGridView>(tab, "dgIncomeStatement");
+			DataGridView dgProd = FindControlByName<DataGridView>(tab, "dgProductProfit");
+			DataGridView dgCli = FindControlByName<DataGridView>(tab, "dgClientProfit");
+
+			if (dgPL == null || dgProd == null || dgCli == null) return;
+
+			_currentDt = new DataTable();
+
+			// 1. Income Statement (P&L)
+			dgPL.Columns.Clear();
+			dgPL.Rows.Clear();
+			dgPL.Columns.Add("Item", "البند التشغيلي");
+			dgPL.Columns.Add("Value", "القيمة (ج.م)");
+
+			try
+			{
+				DataTable dt = ReportDAL.GetIncomeStatement(dtpFrom.Value, dtpTo.Value, warehouseID);
+				if (dt.Rows.Count > 0)
+				{
+					DataRow r = dt.Rows[0];
+					decimal grossSales = Convert.ToDecimal(r["GrossSales"]);
+					decimal returns = Convert.ToDecimal(r["SalesReturns"]);
+					decimal netSales = grossSales - returns;
+
+					decimal grossCOGS = Convert.ToDecimal(r["GrossCOGS"]);
+					decimal returnsCOGS = Convert.ToDecimal(r["ReturnsCOGS"]);
+					decimal netCOGS = grossCOGS - returnsCOGS;
+
+					decimal grossProfit = netSales - netCOGS;
+
+					decimal expenses = Convert.ToDecimal(r["GeneralExpenses"]);
+					decimal whWastage = Convert.ToDecimal(r["WarehouseWastage"]);
+					decimal drWastage = Convert.ToDecimal(r["DriverWastage"]);
+
+					decimal netProfit = grossProfit - expenses - whWastage - drWastage;
+
+					AddPlRow(dgPL, "🟢 إجمالي المبيعات", grossSales, false);
+					AddPlRow(dgPL, "🔴 مرتجعات المبيعات (-)", returns, true);
+					AddPlRow(dgPL, "⚖️ صافي الإيرادات", netSales, false, Color.FromArgb(30, 45, 60));
+					AddPlRow(dgPL, "🔴 تكلفة البضاعة المباعة (-)", grossCOGS, true);
+					AddPlRow(dgPL, "🟢 تكلفة مرتجع المبيعات (+)", returnsCOGS, false);
+					AddPlRow(dgPL, "⚖️ صافي تكلفة المبيعات", netCOGS, true, Color.FromArgb(45, 45, 30));
+					AddPlRow(dgPL, "💰 مجمل الأرباح التشغيلية", grossProfit, grossProfit < 0, Color.FromArgb(30, 30, 50));
+					AddPlRow(dgPL, "🔴 المصاريف التشغيلية والعمومية (-)", expenses, true);
+					AddPlRow(dgPL, "🔴 هالك وتالف المستودعات (-)", whWastage, true);
+					AddPlRow(dgPL, "🔴 هالك وتالف المناديب (-)", drWastage, true);
+					AddPlRow(dgPL, "🏆 صافي الربح / الخسارة النهائي", netProfit, netProfit < 0, Color.FromArgb(30, 60, 30));
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("حدث خطأ أثناء تحميل قائمة الدخل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+
+			// 2. Product Profitability
+			dgProd.Columns.Clear();
+			dgProd.Rows.Clear();
+			SetupGrid(new(string, string)[]
+			{
+				("ProductName", "الصنف"),
+				("NetQty", "الكمية الصافية"),
+				("NetAmount", "صافي المبيعات"),
+				("TotalCost", "صافي التكلفة"),
+				("NetProfit", "صافي الربح"),
+				("ProfitMargin", "نسبة الربح %")
+			}, dgProd);
+
+			try
+			{
+				DataTable dtProd = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value, warehouseID);
+				decimal totalNetAmt = 0, totalCost = 0, totalProfit = 0;
+				foreach (DataRow row in dtProd.Rows)
+				{
+					decimal netAmt = Convert.ToDecimal(row["NetAmount"]);
+					decimal cost = Convert.ToDecimal(row["TotalCost"]);
+					decimal profit = Convert.ToDecimal(row["NetProfit"]);
+					decimal margin = netAmt != 0 ? (profit / netAmt) * 100 : 0;
+
+					totalNetAmt += netAmt;
+					totalCost += cost;
+					totalProfit += profit;
+
+					dgProd.Rows.Add(
+						row["ProductName"],
+						Convert.ToDecimal(row["NetQty"]).ToString("N2"),
+						netAmt.ToString("N2"),
+						cost.ToString("N2"),
+						profit.ToString("N2"),
+						margin.ToString("N1") + " %"
+					);
+				}
+				if (dgProd.Rows.Count > 0)
+				{
+					int idx = dgProd.Rows.Add();
+					dgProd.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(30, 60, 30);
+					dgProd.Rows[idx].DefaultCellStyle.ForeColor = Color.LightGreen;
+					dgProd.Rows[idx].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+					dgProd.Rows[idx].Cells[0].Value = "الإجمالي";
+					dgProd.Rows[idx].Cells[2].Value = totalNetAmt.ToString("N2");
+					dgProd.Rows[idx].Cells[3].Value = totalCost.ToString("N2");
+					dgProd.Rows[idx].Cells[4].Value = totalProfit.ToString("N2");
+					dgProd.Rows[idx].Cells[5].Value = (totalNetAmt != 0 ? (totalProfit / totalNetAmt) * 100 : 0).ToString("N1") + " %";
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("حدث خطأ أثناء تحميل ربحية الأصناف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+
+			// 3. Client Profitability
+			dgCli.Columns.Clear();
+			dgCli.Rows.Clear();
+			SetupGrid(new(string, string)[]
+			{
+				("ClientName", "العميل"),
+				("NetAmount", "صافي المبيعات"),
+				("TotalCost", "صافي التكلفة"),
+				("NetProfit", "صافي الربح"),
+				("ProfitMargin", "نسبة الربح %")
+			}, dgCli);
+
+			try
+			{
+				DataTable dtCli = ReportDAL.SalesByClient(dtpFrom.Value, dtpTo.Value, warehouseID);
+				decimal totalCliNet = 0, totalCliCost = 0, totalCliProfit = 0;
+				foreach (DataRow row in dtCli.Rows)
+				{
+					decimal grossSales = Convert.ToDecimal(row["Total"]);
+					decimal returns = Convert.ToDecimal(row["ReturnsTotal"]);
+					decimal netAmt = grossSales - returns;
+					decimal cost = Convert.ToDecimal(row["TotalCost"]);
+					decimal profit = Convert.ToDecimal(row["NetProfit"]);
+					decimal margin = netAmt != 0 ? (profit / netAmt) * 100 : 0;
+
+					totalCliNet += netAmt;
+					totalCliCost += cost;
+					totalCliProfit += profit;
+
+					dgCli.Rows.Add(
+						row["ClientName"],
+						netAmt.ToString("N2"),
+						cost.ToString("N2"),
+						profit.ToString("N2"),
+						margin.ToString("N1") + " %"
+					);
+				}
+				if (dgCli.Rows.Count > 0)
+				{
+					int idx = dgCli.Rows.Add();
+					dgCli.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(30, 60, 30);
+					dgCli.Rows[idx].DefaultCellStyle.ForeColor = Color.LightGreen;
+					dgCli.Rows[idx].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+					dgCli.Rows[idx].Cells[0].Value = "الإجمالي";
+					dgCli.Rows[idx].Cells[1].Value = totalCliNet.ToString("N2");
+					dgCli.Rows[idx].Cells[2].Value = totalCliCost.ToString("N2");
+					dgCli.Rows[idx].Cells[3].Value = totalCliProfit.ToString("N2");
+					dgCli.Rows[idx].Cells[4].Value = (totalCliNet != 0 ? (totalCliProfit / totalCliNet) * 100 : 0).ToString("N1") + " %";
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("حدث خطأ أثناء تحميل ربحية العملاء:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private void AddPlRow(DataGridView dg, string name, decimal val, bool isNegative, Color? customBg = null)
+		{
+			int index = dg.Rows.Add(name, (isNegative && val != 0 ? "-" : "") + val.ToString("N2"));
+			if (customBg.HasValue)
+			{
+				dg.Rows[index].DefaultCellStyle.BackColor = customBg.Value;
+				dg.Rows[index].DefaultCellStyle.ForeColor = Color.White;
+				dg.Rows[index].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+			}
+			if (isNegative && val != 0)
+			{
+				dg.Rows[index].Cells[1].Style.ForeColor = Color.OrangeRed;
+				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+			}
+			else
+			{
+				dg.Rows[index].Cells[1].Style.ForeColor = Color.LightGreen;
+				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+			}
+		}
+
+		private T FindControlByName<T>(Control parent, string name) where T : Control
+		{
+			if ((string.IsNullOrEmpty(name) || parent.Name == name) && parent is T typed)
+			{
+				return typed;
+			}
+			foreach (Control child in parent.Controls)
+			{
+				T val = FindControlByName<T>(child, name);
+				if (val != null)
+				{
+					return val;
+				}
+			}
+			return null;
+		}
+
+		private DataGridView GetActiveGrid()
+		{
+			if (tabReports.SelectedTab == null) return null;
+			
+			string text = tabReports.SelectedTab.Tag?.ToString();
+			if (text == "IncomeStatementAndProfitability")
+			{
+				var subTab = FindControlByName<TabControl>(tabReports.SelectedTab, "subTabProfitability");
+				if (subTab != null)
+				{
+					var dgProd = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgProductProfit");
+					var dgCli = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientProfit");
+					var dgPL = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgIncomeStatement");
+
+					if (dgProd != null && (dgProd.ContainsFocus || dgProd.Focused)) return dgProd;
+					if (dgCli != null && (dgCli.ContainsFocus || dgCli.Focused)) return dgCli;
+					if (dgPL != null && (dgPL.ContainsFocus || dgPL.Focused)) return dgPL;
+
+					if (subTab.ContainsFocus)
+					{
+						return (subTab.SelectedIndex == 0) ? dgProd : dgCli;
+					}
+					return dgPL;
+				}
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgIncomeStatement");
+			}
+			if (text == "ClientProductSales")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientSales");
+			}
+			if (text == "SupplierItemActivity")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgSupplierActivity");
+			}
+			
+			return tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 		}
 
 		private void SetupGrid((string field, string header)[] cols, DataGridView dg)
@@ -516,6 +1344,18 @@ namespace ChickenDist.Forms
 							array[i] += num9;
 							flag = true;
 						}
+						else if (obj is double dblVal)
+						{
+							array2[i] = dblVal.ToString("N2");
+							array[i] += (decimal)dblVal;
+							flag = true;
+						}
+						else if (obj is float fltVal)
+						{
+							array2[i] = fltVal.ToString("N2");
+							array[i] += (decimal)fltVal;
+							flag = true;
+						}
 						else if (obj is int num10)
 						{
 							array2[i] = num10.ToString();
@@ -539,9 +1379,38 @@ namespace ChickenDist.Forms
 							}
 						}
 					}
+					else if (name == "ProfitMargin")
+					{
+						decimal netAmt = _currentDt.Columns.Contains("NetAmount") ? Convert.ToDecimal(row["NetAmount"]) : 0;
+						decimal profit = _currentDt.Columns.Contains("NetProfit") ? Convert.ToDecimal(row["NetProfit"]) : 0;
+						decimal margin = netAmt != 0 ? (profit / netAmt) * 100 : 0;
+						array2[i] = margin.ToString("N1") + " %";
+					}
 				}
 				dg.Rows.Add(array2);
 			}
+			if (text == "SupplierItemActivity")
+			{
+				for (int r = 0; r < dg.Rows.Count; r++)
+				{
+					var row = dg.Rows[r];
+					if (row.Cells["الحالة"] != null && row.Cells["الحالة"].Value != null)
+					{
+						string status = row.Cells["الحالة"].Value.ToString();
+						if (status == "نشط")
+						{
+							row.DefaultCellStyle.BackColor = Color.FromArgb(230, 245, 230);
+							row.DefaultCellStyle.ForeColor = Color.DarkGreen;
+						}
+						else if (status == "راكد")
+						{
+							row.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
+							row.DefaultCellStyle.ForeColor = Color.DarkRed;
+						}
+					}
+				}
+			}
+
 			if (!flag || dg.Rows.Count <= 0)
 			{
 				return;
@@ -554,6 +1423,24 @@ namespace ChickenDist.Forms
 			for (int j = 1; j < dg.Columns.Count; j++)
 			{
 				string name2 = dg.Columns[j].Name;
+				if (name2 == "ProfitMargin")
+				{
+					int netAmtIdx = -1;
+					int netProfitIdx = -1;
+					for (int k = 0; k < dg.Columns.Count; k++)
+					{
+						if (dg.Columns[k].Name == "NetAmount" || dg.Columns[k].Name == "Total" || dg.Columns[k].Name == "TotalAmount") netAmtIdx = k;
+						if (dg.Columns[k].Name == "NetProfit") netProfitIdx = k;
+					}
+					if (netAmtIdx >= 0 && netProfitIdx >= 0)
+					{
+						decimal totAmt = array[netAmtIdx];
+						decimal totProfit = array[netProfitIdx];
+						decimal totMargin = totAmt != 0 ? (totProfit / totAmt) * 100 : 0;
+						dg.Rows[index].Cells[j].Value = totMargin.ToString("N1") + " %";
+					}
+					continue;
+				}
 				switch (name2)
 				{
 				default:
@@ -593,9 +1480,21 @@ namespace ChickenDist.Forms
 				case "TotalDeficit":
 				case "Balance":
 				case "OpeningBalance":
+				case "TotalCost":
+				case "NetProfit":
+				case "StockValue":
+				case "StockSaleValue":
+				case "ExpectedProfit":
+				case "الكمية":
+				case "الصافي":
+				case "المخزون الحالي":
+				case "الكمية المباعة":
+				case "قيمة المبيعات":
+				case "الكمية المشتراة":
+				case "قيمة المشتريات":
 					break;
 				}
-				string text2 = ((name2 == "Count") ? "N0" : "N2");
+				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية") ? "N0" : "N2");
 				dg.Rows[index].Cells[j].Value = array[j].ToString(text2);
 			}
 		}
@@ -623,10 +1522,10 @@ namespace ChickenDist.Forms
 
 		private void BtnPrint_Click(object sender, EventArgs e)
 		{
-			DataGridView dg = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+			DataGridView dg = GetActiveGrid();
 			if (_currentDt == null || dg == null || dg.Rows.Count == 0)
 			{
-				MessageBox.Show("لا توجد بيانات متاحة للطباعة حاليا\u064b.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("لا توجد بيانات متاحة للطباعة حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			if (tabReports.SelectedTab?.Tag?.ToString() == "DailyClosing")
@@ -1190,7 +2089,7 @@ namespace ChickenDist.Forms
 
 		private void BtnExportExcel_Click(object sender, EventArgs e)
 		{
-			DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+			DataGridView dataGridView = GetActiveGrid();
 			if (dataGridView == null || dataGridView.Rows.Count == 0)
 			{
 				MessageBox.Show("لا توجد بيانات لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);

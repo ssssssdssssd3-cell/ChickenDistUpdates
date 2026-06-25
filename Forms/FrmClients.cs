@@ -16,7 +16,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudOpening, nudCreditLimit, nudOpeningCrates;
         private ComboBox cmbDriver, cmbPriceTier;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment;
+        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -114,7 +114,7 @@ namespace ChickenDist.Forms
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "اسم العميل" });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 60 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
-            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الأقفاص", FillWeight = 40 });
+            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الفوارغ", FillWeight = 40 });
             if (!AppConfig.EnableCratesTracking)
             {
                 dgClients.Columns["CratesBalance"].Visible = false;
@@ -151,7 +151,7 @@ namespace ChickenDist.Forms
             nudOpening = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(nudOpening); y += 36;
 
-            var lblOpCrates = new Label { Text = "رصيد الأقفاص الأولي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblOpCrates = new Label { Text = "رصيد الفوارغ الأولي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(lblOpCrates);
             nudOpeningCrates = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             pnlDetails.Controls.Add(nudOpeningCrates);
@@ -190,16 +190,18 @@ namespace ChickenDist.Forms
             btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 44;
             btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Color.FromArgb(80, 100, 60));
             btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Color.FromArgb(120, 80, 140));
-            btnStatement = Theme.MakeButton("📄 كشف", 10, y, 95, 32, Theme.Primary);
-
+            btnStatement = Theme.MakeButton("📄 كشف", 10, y, 95, 32, Theme.Primary); y += 44;
+            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 290, 32, Color.FromArgb(70, 130, 180)); y += 44;
+ 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnStatement.Click += BtnStatement_Click;
             btnPayment.Click += BtnPayment_Click;
             btnAdjustment.Click += BtnAdjustment_Click;
-
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment });
+            btnSalesReport.Click += BtnSalesReport_Click;
+ 
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport });
             
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
@@ -230,7 +232,7 @@ namespace ChickenDist.Forms
             {
                 decimal bal = Convert.ToDecimal(r["Balance"]);
                 int cratesBal = Convert.ToInt32(r["CratesBalance"]);
-                var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " قفص");
+                var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " فارغ");
                 if (bal > 0) dgClients.Rows[row].DefaultCellStyle.ForeColor = Color.OrangeRed;
             }
         }
@@ -260,7 +262,7 @@ namespace ChickenDist.Forms
                 ? dr["DefaultPriceTier"].ToString()
                 : "قطاعي";
             if (AppConfig.EnableCratesTracking)
-                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الأقفاص: " + row.Cells["CratesBalance"].Value;
+                lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الفوارغ: " + row.Cells["CratesBalance"].Value;
             else
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value;
         }
@@ -372,6 +374,12 @@ namespace ChickenDist.Forms
             var frm = new FrmAdjustment(_selectedID, txtName.Text, true);
             if (frm.ShowDialog() == DialogResult.OK)
                 LoadClients();
+        }
+
+        private void BtnSalesReport_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0) { MessageBox.Show("اختر عميلاً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            new FrmReports("Clients", _selectedID).ShowDialog();
         }
     }
 }

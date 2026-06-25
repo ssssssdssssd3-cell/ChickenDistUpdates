@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtAddress;
         private NumericUpDown nudOpening;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnStatement;
+        private Button btnNew, btnSave, btnDelete, btnStatement, btnItemMovementReport;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -148,7 +148,10 @@ namespace ChickenDist.Forms
                 new FrmSupplierStatement(_selectedID, txtName.Text).ShowDialog();
             };
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement });
+            btnItemMovementReport = Theme.MakeButton("📊 حركة الأصناف", 10, y + 80, 290, 32, Color.FromArgb(70, 130, 180));
+            btnItemMovementReport.Click += BtnItemMovementReport_Click;
+
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement, btnItemMovementReport });
 
             tbl.Controls.Add(pnlDetails, 0, 0);
             tbl.Controls.Add(pnlGrid, 1, 0);
@@ -355,6 +358,16 @@ namespace ChickenDist.Forms
             var frm = new FrmAdjustment(_selectedID, txtName.Text, false);
             if (frm.ShowDialog() == DialogResult.OK)
                 LoadSuppliers();
+        }
+
+        private void BtnItemMovementReport_Click(object sender, EventArgs e)
+        {
+            if (_selectedID == 0)
+            {
+                MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            new FrmReports("Suppliers", _selectedID).ShowDialog();
         }
     }
 }

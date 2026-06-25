@@ -34,12 +34,14 @@ namespace ChickenDist.Forms
 
 		private DataTable _currentDt;
 		private string _targetModule = null;
+		private int _preFilteredID = 0;
 
 		public string TargetModule => _targetModule;
 
-		public FrmReports(string targetModule = null)
+		public FrmReports(string targetModule = null, int preFilteredID = 0)
 		{
 			_targetModule = targetModule;
+			_preFilteredID = preFilteredID;
 			InitUI();
 		}
 
@@ -192,7 +194,9 @@ namespace ChickenDist.Forms
 				("🚨 تقرير الهالك والتالف", "WastageLoss"),
 				("📈 الملخص المالي والتشغيلي", "FinancialSummary"),
 				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
-				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability")
+				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
+				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
+				("📊 حركة أصناف الموردين", "SupplierItemActivity")
 			};
 
 			var filteredReports = new List<(string name, string tag)>();
@@ -215,11 +219,15 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Stores")
 					{
-						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation");
+						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity");
 					}
 					else if (_targetModule == "Clients")
 					{
-						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances");
+						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales");
+					}
+					else if (_targetModule == "Suppliers")
+					{
+						keep = (report.tag == "SupplierItemActivity");
 					}
 					else if (_targetModule == "Drivers")
 					{
@@ -246,6 +254,277 @@ namespace ChickenDist.Forms
 					Tag = item2,
 					BackColor = Theme.BgMain
 				};
+				if (item2 == "ClientProductSales")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 3,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(5)
+					};
+
+					Label lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboClient = new ComboBox { Name = "cboFilterClient", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					
+					Label lblProduct = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboProduct = new ComboBox { Name = "cboFilterProduct", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblType = new Label { Text = "نوع البيع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboSaleType = new ComboBox { Name = "cboFilterSaleType", Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					cboClient.Items.Add(new ComboItem(0, "كل العملاء"));
+					try
+					{
+						DataTable dtClients = ClientDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtClients.Rows)
+						{
+							cboClient.Items.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+						}
+					}
+					catch { }
+					cboClient.DisplayMember = "Text";
+					cboClient.SelectedIndex = 0;
+
+					cboProduct.Items.Add(new ComboItem(0, "كل الأصناف"));
+					try
+					{
+						DataTable dtProducts = ProductDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtProducts.Rows)
+						{
+							cboProduct.Items.Add(new ComboItem(Convert.ToInt32(r["ProductID"]), r["ProductName"].ToString()));
+						}
+					}
+					catch { }
+					cboProduct.DisplayMember = "Text";
+					cboProduct.SelectedIndex = 0;
+
+					cboSaleType.Items.Add(new ComboItem(0, "كل المبيعات"));
+					cboSaleType.Items.Add(new ComboItem(1, "نقدي"));
+					cboSaleType.Items.Add(new ComboItem(2, "آجل"));
+					cboSaleType.Items.Add(new ComboItem(3, "تقسيط شرعي"));
+					cboSaleType.Items.Add(new ComboItem(4, "حملة مندوب"));
+					cboSaleType.DisplayMember = "Text";
+					cboSaleType.SelectedIndex = 0;
+
+					if (_preFilteredID > 0)
+					{
+						foreach (ComboItem itemObj in cboClient.Items)
+						{
+							if (itemObj.ID == _preFilteredID)
+							{
+								cboClient.SelectedItem = itemObj;
+								break;
+							}
+						}
+					}
+
+					cboClient.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboProduct.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboSaleType.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblClient, cboClient, lblProduct, cboProduct, lblType, cboSaleType });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgClientSales = new DataGridView
+					{
+						Name = "dgClientSales",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgClientSales, 0, 1);
+
+					TableLayoutPanel pnlKPIs = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 2,
+						RowCount = 1,
+						BackColor = Theme.BgCard,
+						Padding = new Padding(10, 5, 10, 5)
+					};
+					pnlKPIs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+					pnlKPIs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+
+					Label lblTotalSales = new Label
+					{
+						Name = "lblTotalSales",
+						Text = "إجمالي مبيعات الفترة: 0.00 ج.م",
+						Dock = DockStyle.Fill,
+						ForeColor = Theme.Accent,
+						Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+						TextAlign = ContentAlignment.MiddleLeft
+					};
+					Label lblTotalQty = new Label
+					{
+						Name = "lblTotalQty",
+						Text = "إجمالي كمية البيع: 0.00",
+						Dock = DockStyle.Fill,
+						ForeColor = Theme.TextMain,
+						Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+						TextAlign = ContentAlignment.MiddleRight
+					};
+					pnlKPIs.Controls.Add(lblTotalSales, 0, 0);
+					pnlKPIs.Controls.Add(lblTotalQty, 1, 0);
+					layout.Controls.Add(pnlKPIs, 0, 2);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
+				if (item2 == "SupplierItemActivity")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 2,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(5)
+					};
+
+					Label lblSupplier = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboSupplier = new ComboBox { Name = "cboFilterSupplier", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					
+					Label lblCompany = new Label { Text = "الشركة المنتجة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboCompany = new ComboBox { Name = "cboFilterCompany", Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblSearch = new Label { Text = "بحث بالاسم/الكود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					TextBox txtSearch = new TextBox { Name = "txtFilterSearch", Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
+
+					cboSupplier.Items.Add(new ComboItem(0, "كل الموردين"));
+					try
+					{
+						DataTable dtSuppliers = SupplierDAL.GetAll(activeOnly: true);
+						foreach (DataRow r in dtSuppliers.Rows)
+						{
+							cboSupplier.Items.Add(new ComboItem(Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+						}
+					}
+					catch { }
+					cboSupplier.DisplayMember = "Text";
+					cboSupplier.SelectedIndex = 0;
+
+					cboCompany.Items.Add(new ComboItem(0, "كل الشركات"));
+					try
+					{
+						DataTable dtComp = DbHelper.Query("SELECT DISTINCT ProducerCompany FROM Products WHERE IsActive = 1 AND ProducerCompany IS NOT NULL AND ProducerCompany != '' ORDER BY ProducerCompany");
+						foreach (DataRow r in dtComp.Rows)
+						{
+							string compName = r["ProducerCompany"].ToString();
+							cboCompany.Items.Add(new ComboItem(cboCompany.Items.Count, compName));
+						}
+					}
+					catch { }
+					cboCompany.DisplayMember = "Text";
+					cboCompany.SelectedIndex = 0;
+
+					if (_preFilteredID > 0)
+					{
+						foreach (ComboItem itemObj in cboSupplier.Items)
+						{
+							if (itemObj.ID == _preFilteredID)
+							{
+								cboSupplier.SelectedItem = itemObj;
+								break;
+							}
+						}
+					}
+
+					cboSupplier.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboCompany.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					txtSearch.TextChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblSupplier, cboSupplier, lblCompany, cboCompany, lblSearch, txtSearch });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgSupplierActivity = new DataGridView
+					{
+						Name = "dgSupplierActivity",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgSupplierActivity, 0, 1);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
 				if (item2 == "IncomeStatementAndProfitability")
 				{
 					TableLayoutPanel splitPanel = new TableLayoutPanel
@@ -434,7 +713,7 @@ namespace ChickenDist.Forms
 				LoadIncomeStatementAndProfitability(warehouseID);
 				return;
 			}
-			DataGridView dataGridView = tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
+			DataGridView dataGridView = GetActiveGrid();
 			if (dataGridView != null)
 			{
 				dataGridView.Columns.Clear();
@@ -637,6 +916,98 @@ namespace ChickenDist.Forms
 				case "DailyClosing":
 					_currentDt = new DataTable();
 					LoadDailyClosingReport(dataGridView, warehouseID);
+					break;
+				case "ClientProductSales":
+					{
+						int? clientID = null;
+						int? productID = null;
+						string saleType = "الكل";
+
+						var cboC = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterClient");
+						var cboP = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterProduct");
+						var cboT = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterSaleType");
+
+						if (cboC != null && cboC.SelectedItem is ComboItem cli && cli.ID > 0)
+						{
+							clientID = cli.ID;
+						}
+						if (cboP != null && cboP.SelectedItem is ComboItem prod && prod.ID > 0)
+						{
+							productID = prod.ID;
+						}
+						if (cboT != null && cboT.SelectedItem is ComboItem itemType)
+						{
+							if (itemType.ID == 1) saleType = "Cash";
+							else if (itemType.ID == 2) saleType = "Credit";
+							else if (itemType.ID == 3) saleType = "Installment";
+							else if (itemType.ID == 4) saleType = "DriverLoad";
+						}
+
+						_currentDt = ReportDAL.GetClientProductSalesReport(dtpFrom.Value, dtpTo.Value, clientID, productID, saleType, warehouseID);
+						
+						SetupGrid(new(string, string)[]
+						{
+							("رقم الفاتورة", "رقم الفاتورة"),
+							("تاريخ الفاتورة", "التاريخ والوقت"),
+							("العميل", "العميل"),
+							("الصنف", "الصنف"),
+							("الكمية", "الكمية"),
+							("سعر الوحدة", "سعر الوحدة"),
+							("الصافي", "الصافي"),
+							("نوع البيع", "نوع البيع")
+						}, dataGridView);
+
+						decimal totalSales = 0;
+						decimal totalQty = 0;
+						foreach (DataRow r in _currentDt.Rows)
+						{
+							totalSales += Convert.ToDecimal(r["الصافي"]);
+							totalQty += Convert.ToDecimal(r["الكمية"]);
+						}
+
+						var lblSales = FindControlByName<Label>(tabReports.SelectedTab, "lblTotalSales");
+						var lblQty = FindControlByName<Label>(tabReports.SelectedTab, "lblTotalQty");
+						if (lblSales != null) lblSales.Text = $"إجمالي مبيعات الفترة: {totalSales:N2} ج.م";
+						if (lblQty != null) lblQty.Text = $"إجمالي كمية البيع: {totalQty:N2}";
+					}
+					break;
+				case "SupplierItemActivity":
+					{
+						int? supplierID = null;
+						string producerCompany = "الكل";
+						string search = "";
+
+						var cboS = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterSupplier");
+						var cboC = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterCompany");
+						var txtS = FindControlByName<TextBox>(tabReports.SelectedTab, "txtFilterSearch");
+
+						if (cboS != null && cboS.SelectedItem is ComboItem sup && sup.ID > 0)
+						{
+							supplierID = sup.ID;
+						}
+						if (cboC != null && cboC.SelectedItem is ComboItem comp && comp.ID > 0)
+						{
+							producerCompany = comp.Text;
+						}
+						if (txtS != null)
+						{
+							search = txtS.Text.Trim();
+						}
+
+						_currentDt = ReportDAL.GetSupplierItemActivityReport(dtpFrom.Value, dtpTo.Value, supplierID, producerCompany, search);
+
+						SetupGrid(new(string, string)[]
+						{
+							("الصنف", "الصنف"),
+							("الشركة المنتجة", "الشركة المنتجة"),
+							("المخزون الحالي", "المخزون الحالي"),
+							("الكمية المباعة", "الكمية المباعة"),
+							("قيمة المبيعات", "قيمة المبيعات"),
+							("الكمية المشتراة", "الكمية المشتراة"),
+							("قيمة المشتريات", "قيمة المشتريات"),
+							("الحالة", "الحالة")
+						}, dataGridView);
+					}
 					break;
 				}
 				FillGrid(dataGridView);
@@ -877,6 +1248,14 @@ namespace ChickenDist.Forms
 				}
 				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgIncomeStatement");
 			}
+			if (text == "ClientProductSales")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientSales");
+			}
+			if (text == "SupplierItemActivity")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgSupplierActivity");
+			}
 			
 			return tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 		}
@@ -1010,6 +1389,28 @@ namespace ChickenDist.Forms
 				}
 				dg.Rows.Add(array2);
 			}
+			if (text == "SupplierItemActivity")
+			{
+				for (int r = 0; r < dg.Rows.Count; r++)
+				{
+					var row = dg.Rows[r];
+					if (row.Cells["الحالة"] != null && row.Cells["الحالة"].Value != null)
+					{
+						string status = row.Cells["الحالة"].Value.ToString();
+						if (status == "نشط")
+						{
+							row.DefaultCellStyle.BackColor = Color.FromArgb(230, 245, 230);
+							row.DefaultCellStyle.ForeColor = Color.DarkGreen;
+						}
+						else if (status == "راكد")
+						{
+							row.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
+							row.DefaultCellStyle.ForeColor = Color.DarkRed;
+						}
+					}
+				}
+			}
+
 			if (!flag || dg.Rows.Count <= 0)
 			{
 				return;
@@ -1084,9 +1485,16 @@ namespace ChickenDist.Forms
 				case "StockValue":
 				case "StockSaleValue":
 				case "ExpectedProfit":
+				case "الكمية":
+				case "الصافي":
+				case "المخزون الحالي":
+				case "الكمية المباعة":
+				case "قيمة المبيعات":
+				case "الكمية المشتراة":
+				case "قيمة المشتريات":
 					break;
 				}
-				string text2 = ((name2 == "Count") ? "N0" : "N2");
+				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية") ? "N0" : "N2");
 				dg.Rows[index].Cells[j].Value = array[j].ToString(text2);
 			}
 		}
