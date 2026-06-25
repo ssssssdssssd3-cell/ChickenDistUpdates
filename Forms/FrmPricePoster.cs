@@ -3,7 +3,9 @@ using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Drawing.Printing;
 using System.Windows.Forms;
+using System.Text;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
@@ -15,8 +17,16 @@ namespace ChickenDist.Forms
         private PictureBox pbPreview;
         private Button btnRefresh;
         private Button btnCopy;
+        private Button btnExportExcel;
+        private Button btnExportPdf;
         private TextBox txtPosterTitle;
+        private TextBox txtPosterNotes;
+        private ComboBox cboPriceTier;
+        private ComboBox cboBannerStyle;
+        private CheckBox chkShowQty;
         private Bitmap _posterBitmap;
+        private int _printItemIndex = 0;
+        private int _pageNum = 1;
 
         public FrmPricePoster()
         {
@@ -28,7 +38,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "منشور الأسعار اليومية";
-            this.Size = new Size(950, 720);
+            this.Size = new Size(1150, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -47,14 +57,16 @@ namespace ChickenDist.Forms
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Right: Preview
 
             // Left panel (Controls)
-            var pnlControls = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10), BackColor = Theme.BgCard };
+            var pnlControls = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10), BackColor = Theme.BgCard, AutoScroll = true };
             
-            var lblTitle = new Label { Text = "عنوان المنشور:", Location = new Point(10, 10), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            int y = 10;
+            var lblTitle = new Label { Text = "عنوان المنشور:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
             pnlControls.Controls.Add(lblTitle);
+            y += 22;
 
             txtPosterTitle = new TextBox
             {
-                Location = new Point(10, 32),
+                Location = new Point(10, y),
                 Width = 280,
                 Text = "قائمة أسعار اليوم",
                 BackColor = Theme.BgInput,
@@ -63,15 +75,102 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 11f)
             };
             pnlControls.Controls.Add(txtPosterTitle);
+            y += 35;
 
-            var lblProducts = new Label { Text = "اختر الأصناف لتضمينها:", Location = new Point(10, 75), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            var lblPriceTier = new Label { Text = "فئة السعر المعروض:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            pnlControls.Controls.Add(lblPriceTier);
+            y += 22;
+
+            cboPriceTier = new ComboBox
+            {
+                Location = new Point(10, y),
+                Width = 280,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboPriceTier.Items.AddRange(new object[]
+            {
+                "سعر البيع قطاعي",
+                "سعر البيع جملة",
+                "سعر البيع نصف جملة",
+                "سعر بيع قطعة (صغرى)",
+                "سعر بيع علبة (وسطى)"
+            });
+            cboPriceTier.SelectedIndex = 0;
+            cboPriceTier.SelectedIndexChanged += (s, e) => { LoadProductsList(); GeneratePoster(); };
+            pnlControls.Controls.Add(cboPriceTier);
+            y += 35;
+
+            var lblBannerStyle = new Label { Text = "شكل وبانر الترويسة (PDF):", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            pnlControls.Controls.Add(lblBannerStyle);
+            y += 22;
+
+            cboBannerStyle = new ComboBox
+            {
+                Location = new Point(10, y),
+                Width = 280,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboBannerStyle.Items.AddRange(new object[]
+            {
+                "رمادي كلاسيك (Classic Slate)",
+                "أزرق ملكي (Royal Blue)",
+                "أخضر هادئ (Forest Green)",
+                "عنابي فاخر (Crimson Red)",
+                "ذهبي داكن (Golden Amber)"
+            });
+            cboBannerStyle.SelectedIndex = 0;
+            cboBannerStyle.SelectedIndexChanged += (s, e) => GeneratePoster();
+            pnlControls.Controls.Add(cboBannerStyle);
+            y += 35;
+
+            chkShowQty = new CheckBox
+            {
+                Text = "إظهار عمود الكمية (الرصيد المتاح)",
+                Location = new Point(10, y),
+                Width = 280,
+                Height = 25,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold,
+                Checked = false
+            };
+            chkShowQty.CheckedChanged += (s, e) => GeneratePoster();
+            pnlControls.Controls.Add(chkShowQty);
+            y += 30;
+
+            var lblNotes = new Label { Text = "ملاحظات في الترويسة:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            pnlControls.Controls.Add(lblNotes);
+            y += 22;
+
+            txtPosterNotes = new TextBox
+            {
+                Location = new Point(10, y),
+                Width = 280,
+                Height = 60,
+                Multiline = true,
+                Text = "الأسعار سارية حتى نفاذ الكمية أو تحديث آخر.",
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+            pnlControls.Controls.Add(txtPosterNotes);
+            y += 70;
+
+            var lblProducts = new Label { Text = "اختر الأصناف لتضمينها:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
             pnlControls.Controls.Add(lblProducts);
+            y += 22;
 
             clbProducts = new CheckedListBox
             {
-                Location = new Point(10, 97),
+                Location = new Point(10, y),
                 Width = 280,
-                Height = 380,
+                Height = 220,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -79,15 +178,30 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f)
             };
             pnlControls.Controls.Add(clbProducts);
+            y += 230;
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث الملصق", 10, 490, 280, 38, Theme.Primary);
+            btnRefresh = Theme.MakeButton("🔄 تحديث المعاينة", 10, y, 280, 36, Theme.Primary);
             btnRefresh.Click += (s, e) => GeneratePoster();
             pnlControls.Controls.Add(btnRefresh);
+            y += 42;
 
-            btnCopy = Theme.MakeButton("📋 نسخ الصورة للحافظة", 10, 538, 280, 44, Theme.Success);
-            btnCopy.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            btnCopy = Theme.MakeButton("📋 نسخ الصورة للحافظة", 10, y, 280, 38, Theme.Success);
+            btnCopy.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnCopy.Click += BtnCopy_Click;
             pnlControls.Controls.Add(btnCopy);
+            y += 44;
+
+            btnExportExcel = Theme.MakeButton("📊 تصدير إكسيل (Excel)", 10, y, 280, 38, Color.FromArgb(30, 96, 64));
+            btnExportExcel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnExportExcel.Click += BtnExportExcel_Click;
+            pnlControls.Controls.Add(btnExportExcel);
+            y += 44;
+
+            btnExportPdf = Theme.MakeButton("🖨️ طباعة وتصدير PDF", 10, y, 280, 38, Color.FromArgb(70, 80, 95));
+            btnExportPdf.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnExportPdf.Click += BtnExportPdf_Click;
+            pnlControls.Controls.Add(btnExportPdf);
+            y += 44;
 
             // Right panel (Preview)
             var pnlPreview = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.BgMain, Padding = new Padding(15) };
@@ -105,6 +219,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(tbl);
 
             Theme.ApplyFormRTL(this);
+            this.RightToLeftLayout = false;
         }
 
         private void LoadProductsList()
@@ -112,15 +227,70 @@ namespace ChickenDist.Forms
             try
             {
                 clbProducts.Items.Clear();
-                var dt = DbHelper.Query("SELECT ProductID, ProductName, SalePrice AS RetailPrice, Unit FROM Products WHERE IsActive = 1 ORDER BY ProductName");
+                string priceField = "SalePrice"; // default
+                int tierIdx = cboPriceTier.SelectedIndex;
+                if (tierIdx == 1) priceField = "WholesalePrice";
+                else if (tierIdx == 2) priceField = "SemiWholesalePrice";
+                else if (tierIdx == 3) priceField = "Unit1SalePrice";
+                else if (tierIdx == 4) priceField = "Unit2SalePrice";
+
+                string unitSelect = (tierIdx == 3) ? "COALESCE(Unit1Name, N'قطعة')" 
+                                  : (tierIdx == 4) ? "COALESCE(Unit2Name, N'علبة')" 
+                                  : "COALESCE(Unit, N'قطعة')";
+
+                string sql = $@"
+                    SELECT 
+                        p.ProductID, 
+                        p.ProductCode, 
+                        p.ProductName, 
+                        COALESCE(p.Unit1Name, N'قطعة') AS Unit1Name,
+                        COALESCE(p.Unit2Name, N'علبة') AS Unit2Name,
+                        COALESCE(p.Unit, N'قطعة') AS Unit3Name,
+                        COALESCE(p.Unit2Factor, 1.0) AS Unit2Factor,
+                        COALESCE(p.Unit3Factor, 1.0) AS Unit3Factor,
+                        COALESCE(p.{priceField}, 0) AS PriceVal, 
+                        {unitSelect} AS UnitName,
+                        ISNULL(s.StockQty, 0) AS StockQty
+                    FROM Products p
+                    LEFT JOIN (
+                        SELECT ProductID, SUM(CurrentQty) AS StockQty 
+                        FROM vw_CurrentStockByWarehouse 
+                        GROUP BY ProductID
+                    ) s ON p.ProductID = s.ProductID
+                    WHERE p.IsActive = 1 
+                    ORDER BY p.ProductName";
+
+                var dt = DbHelper.Query(sql);
                 foreach (DataRow r in dt.Rows)
                 {
+                    decimal stockQty = Convert.ToDecimal(r["StockQty"]);
+                    decimal unit2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                    decimal unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                    
+                    decimal convertedQty = 0m;
+                    if (tierIdx == 3)
+                    {
+                        convertedQty = stockQty;
+                    }
+                    else if (tierIdx == 4)
+                    {
+                        decimal div = (unit2Factor > 0m) ? unit2Factor : 1m;
+                        convertedQty = stockQty / div;
+                    }
+                    else
+                    {
+                        decimal div = (unit3Factor * unit2Factor > 0m) ? (unit3Factor * unit2Factor) : (unit3Factor > 0m ? unit3Factor : 1m);
+                        convertedQty = stockQty / div;
+                    }
+
                     clbProducts.Items.Add(new ProductItem
                     {
                         ID = Convert.ToInt32(r["ProductID"]),
+                        Code = r["ProductCode"]?.ToString() ?? "",
                         Name = r["ProductName"].ToString(),
-                        Price = Convert.ToDecimal(r["RetailPrice"]),
-                        Unit = r["Unit"].ToString()
+                        Price = Convert.ToDecimal(r["PriceVal"]),
+                        Unit = r["UnitName"].ToString(),
+                        Qty = convertedQty
                     }, true); // check by default
                 }
             }
@@ -139,106 +309,221 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            // Calculate height dynamically
-            int headerH = 120;
+            int totalW = 750;
+            int headerH = 160;
+            int notesH = string.IsNullOrWhiteSpace(txtPosterNotes.Text) ? 0 : 50;
+            int tableHeaderH = 35;
+            int rowH = 30;
             int footerH = 60;
-            int cardW = 265;
-            int cardH = 75;
-            int gap = 12;
-            int colsCount = 2;
-
-            int rowsCount = (selectedCount + 1) / colsCount;
-            int totalH = headerH + (rowsCount * (cardH + gap)) + footerH + 30;
-            int totalW = 600;
+            int totalH = headerH + notesH + tableHeaderH + (selectedCount * rowH) + footerH + 40;
 
             if (_posterBitmap != null) _posterBitmap.Dispose();
             _posterBitmap = new Bitmap(totalW, totalH);
 
             using (var g = Graphics.FromImage(_posterBitmap))
             {
-                g.Clear(Color.FromArgb(17, 24, 39)); // Modern Dark slate color (Tailwind Slate-900)
+                g.Clear(Color.White);
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
-                // Border
-                var cBorder = Color.FromArgb(59, 130, 246); // Royal Blue
-                using (var penBorder = new Pen(cBorder, 4))
+                // Thin elegant border around the page
+                using (var penBorder = new Pen(Color.FromArgb(200, 200, 200), 1))
                 {
-                    g.DrawRectangle(penBorder, 8, 8, totalW - 16, totalH - 16);
-                }
-
-                // Decorative header glow/banner
-                using (var brushBanner = new LinearGradientBrush(new Rectangle(12, 12, totalW - 24, headerH - 10), Color.FromArgb(30, 58, 138), Color.FromArgb(17, 24, 39), LinearGradientMode.Vertical))
-                {
-                    g.FillRectangle(brushBanner, 12, 12, totalW - 24, headerH - 10);
+                    g.DrawRectangle(penBorder, 10, 10, totalW - 20, totalH - 20);
                 }
 
                 // Fonts
-                var fTitle = new Font("Arial", 22f, FontStyle.Bold);
+                var fTitle = new Font("Arial", 18f, FontStyle.Bold);
                 var fComp = new Font("Arial", 13f, FontStyle.Bold);
-                var fDate = new Font("Arial", 9.5f);
-                var fProdName = new Font("Arial", 11f, FontStyle.Bold);
-                var fProdUnit = new Font("Arial", 8.5f);
-                var fProdPrice = new Font("Arial", 13f, FontStyle.Bold);
+                var fSub = new Font("Arial", 9.5f);
+                var fBold = new Font("Arial", 10.5f, FontStyle.Bold);
+                var fRegular = new Font("Arial", 10f);
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
-                // Draw Header Text
-                using (var bWhite = new SolidBrush(Color.White))
-                using (var bGold = new SolidBrush(Color.FromArgb(245, 158, 11))) // Amber/Gold color
+                float yCur = 25;
+
+                // Draw Header Banner Box
+                int bannerStyle = cboBannerStyle != null ? cboBannerStyle.SelectedIndex : 0;
+                Color bannerBgColor = Color.FromArgb(30, 41, 59); // default classic slate
+                Color bannerTextColor = Color.White;
+
+                if (bannerStyle == 1) bannerBgColor = Color.FromArgb(30, 58, 138); // Royal Blue
+                else if (bannerStyle == 2) bannerBgColor = Color.FromArgb(6, 78, 59); // Forest Green
+                else if (bannerStyle == 3) bannerBgColor = Color.FromArgb(127, 29, 29); // Crimson Red
+                else if (bannerStyle == 4) bannerBgColor = Color.FromArgb(120, 53, 15); // Golden Amber
+
+                // Draw banner rectangle
+                var bannerRect = new RectangleF(40, yCur, totalW - 80, 110);
+                using (var brushBanner = new SolidBrush(bannerBgColor))
                 {
-                    g.DrawString(txtPosterTitle.Text, fTitle, bGold, new RectangleF(0, 22, totalW, 35), center);
-                    g.DrawString(AppConfig.CompanyName, fComp, bWhite, new RectangleF(0, 62, totalW, 25), center);
-                    g.DrawString($"التاريخ: {DateTime.Today:dd/MM/yyyy}", fDate, Brushes.LightGray, new RectangleF(0, 88, totalW, 20), center);
+                    g.FillRectangle(brushBanner, bannerRect);
                 }
 
-                // Draw Products
-                float startX = 25;
-                float startY = headerH + 10;
-
-                int i = 0;
-                foreach (ProductItem item in clbProducts.CheckedItems)
+                // Draw logo inside the banner if enabled
+                if (AppConfig.PrintShopLogo && !string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
                 {
-                    int col = i % colsCount;
-                    int row = i / colsCount;
-
-                    float x = startX + col * (cardW + gap + 10);
-                    float y = startY + row * (cardH + gap);
-
-                    // Card background
-                    using (var brushCard = new SolidBrush(Color.FromArgb(31, 41, 55))) // Tailwind Slate-800
-                    using (var penCardBorder = new Pen(Color.FromArgb(75, 85, 99), 1.5f)) // Border Slate-600
+                    try
                     {
-                        // Draw card
-                        g.FillRectangle(brushCard, x, y, cardW, cardH);
-                        g.DrawRectangle(penCardBorder, x, y, cardW, cardH);
+                        using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                        {
+                            g.DrawImage(img, 50, yCur + 15, 80, 80);
+                        }
                     }
+                    catch {}
+                }
 
-                    // Product Name
-                    g.DrawString(item.Name, fProdName, Brushes.White, new RectangleF(x + 85, y + 14, cardW - 95, 25), rtlNear);
-                    // Product Unit
-                    string unitStr = string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit;
-                    g.DrawString($"الوحدة: {unitStr}", fProdUnit, Brushes.LightGray, new RectangleF(x + 85, y + 42, cardW - 95, 20), rtlNear);
+                // Draw Text inside the banner
+                using (var brushBannerText = new SolidBrush(bannerTextColor))
+                {
+                    float textY = yCur + 15;
+                    g.DrawString(AppConfig.CompanyName, fComp, brushBannerText, new RectangleF(0, textY, totalW, 25), center);
+                    textY += 25;
 
-                    // Product Price (drawn in an accent box on the left)
-                    using (var brushPriceBox = new SolidBrush(Color.FromArgb(239, 68, 68))) // Bright Red
+                    g.DrawString(txtPosterTitle.Text, fTitle, brushBannerText, new RectangleF(0, textY, totalW, 35), center);
+                    textY += 35;
+
+                    string infoStr = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
+                    string phoneStr = "";
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone1)) phoneStr += AppConfig.CompanyPhone1;
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone2))
                     {
-                        g.FillRectangle(brushPriceBox, x + 10, y + 15, 70, 45);
+                        if (phoneStr != "") phoneStr += " - ";
+                        phoneStr += AppConfig.CompanyPhone2;
                     }
-                    g.DrawString($"{item.Price:0.##}", fProdPrice, Brushes.White, new RectangleF(x + 10, y + 20, 70, 25), rtlCenter);
-                    g.DrawString("جنيه", fProdUnit, Brushes.White, new RectangleF(x + 10, y + 43, 70, 15), rtlCenter);
+                    if (phoneStr != "") infoStr += $"  |  📞 هاتف: {phoneStr}";
 
-                    i++;
+                    g.DrawString(infoStr, fSub, brushBannerText, new RectangleF(0, textY, totalW, 20), center);
+                }
+
+                yCur += 120;
+
+                // Notes Box (if any)
+                if (notesH > 0)
+                {
+                    var notesRect = new RectangleF(40, yCur, totalW - 80, notesH - 10);
+                    using (var brushBox = new SolidBrush(Color.FromArgb(249, 250, 251)))
+                    using (var penBox = new Pen(Color.FromArgb(229, 231, 235), 1))
+                    {
+                        g.FillRectangle(brushBox, notesRect);
+                        g.DrawRectangle(penBox, notesRect.X, notesRect.Y, notesRect.Width, notesRect.Height);
+                    }
+                    g.DrawString("ملاحظات: " + txtPosterNotes.Text, fRegular, Brushes.DarkRed, new RectangleF(notesRect.X + 10, notesRect.Y + 8, notesRect.Width - 20, notesRect.Height - 16), rtlNear);
+                    yCur += notesH;
+                }
+
+                bool showQty = chkShowQty != null && chkShowQty.Checked;
+                int colSerialX, colNameX, colUnitX, colQtyX, colPriceX;
+                int colSerialW, colNameW, colUnitW, colQtyW, colPriceW;
+
+                if (showQty)
+                {
+                    colSerialX = totalW - 40 - 40; // 670
+                    colSerialW = 40;
+                    colNameX = 290;
+                    colNameW = 380;
+                    colUnitX = 200;
+                    colUnitW = 90;
+                    colQtyX = 120;
+                    colQtyW = 80;
+                    colPriceX = 40;
+                    colPriceW = 80;
+                }
+                else
+                {
+                    colSerialX = totalW - 40 - 40; // 670
+                    colSerialW = 40;
+                    colNameX = 260;
+                    colNameW = 410;
+                    colUnitX = 140;
+                    colUnitW = 120;
+                    colQtyX = 0;
+                    colQtyW = 0;
+                    colPriceX = 40;
+                    colPriceW = 100;
+                }
+
+                // Draw Table Header
+                using (var brushHeader = new SolidBrush(Color.FromArgb(30, 41, 59)))
+                {
+                    g.FillRectangle(brushHeader, 40, yCur, totalW - 80, tableHeaderH);
+                }
+
+                using (var brushWhite = new SolidBrush(Color.White))
+                {
+                    g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur + 8, colSerialW, tableHeaderH), rtlCenter);
+                    g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX, yCur + 8, colNameW, tableHeaderH), rtlNear);
+                    g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur + 8, colUnitW, tableHeaderH), rtlCenter);
+                    if (showQty)
+                    {
+                        g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur + 8, colQtyW, tableHeaderH), rtlCenter);
+                    }
+                    g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur + 8, colPriceW, tableHeaderH), rtlCenter);
+                }
+
+                using (var penGrid = new Pen(Color.FromArgb(229, 231, 235), 1))
+                {
+                    g.DrawRectangle(penGrid, 40, yCur, totalW - 80, tableHeaderH);
+                }
+
+                yCur += tableHeaderH;
+
+                // Draw Table Rows
+                int idx = 1;
+                using (var penGrid = new Pen(Color.FromArgb(229, 231, 235), 1))
+                using (var brushBlack = new SolidBrush(Color.Black))
+                using (var brushLightRow = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                using (var brushDarkRow = new SolidBrush(Color.FromArgb(225, 225, 225)))
+                {
+                    foreach (ProductItem item in clbProducts.CheckedItems)
+                    {
+                        if (idx % 2 == 0)
+                        {
+                            g.FillRectangle(brushDarkRow, 40, yCur, totalW - 80, rowH);
+                        }
+                        else
+                        {
+                            g.FillRectangle(brushLightRow, 40, yCur, totalW - 80, rowH);
+                        }
+
+                        g.DrawString(idx.ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur + 6, colSerialW, rowH), rtlCenter);
+                        g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX, yCur + 6, colNameW, rowH), rtlNear);
+                        
+                        string unitStr = string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit;
+                        g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur + 6, colUnitW, rowH), rtlCenter);
+                        
+                        if (showQty)
+                        {
+                            g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur + 6, colQtyW, rowH), rtlCenter);
+                        }
+
+                        g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur + 6, colPriceW, rowH), rtlCenter);
+
+                        // Draw Grid Lines
+                        g.DrawLine(penGrid, 40, yCur + rowH, totalW - 40, yCur + rowH);
+                        g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + rowH);
+                        g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + rowH);
+                        g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + rowH);
+                        if (showQty)
+                        {
+                            g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + rowH);
+                        }
+                        g.DrawLine(penGrid, 40, yCur, 40, yCur + rowH);
+                        g.DrawLine(penGrid, totalW - 40, yCur, totalW - 40, yCur + rowH);
+
+                        yCur += rowH;
+                        idx++;
+                    }
                 }
 
                 // Draw Footer
-                g.DrawLine(new Pen(Color.FromArgb(55, 65, 81), 1.5f), 20, totalH - footerH, totalW - 20, totalH - footerH);
-                using (var bWhite = new SolidBrush(Color.White))
-                {
-                    g.DrawString("🙏 شكراً لتعاملكم معنا  |  نتشرف بخدمتكم دائماً", fComp, bWhite, new RectangleF(0, totalH - footerH + 18, totalW, 25), center);
-                }
+                yCur += 15;
+                g.DrawLine(new Pen(Color.FromArgb(200, 200, 200), 1), 40, yCur, totalW - 40, yCur);
+                yCur += 10;
+                var fFooter = new Font("Arial", 11f, FontStyle.Bold | FontStyle.Italic);
+                g.DrawString("نشرف بخدمتكم دائماً  |  شكراً لتعاملكم معنا", fFooter, Brushes.DimGray, new RectangleF(0, yCur, totalW, 25), center);
             }
 
             pbPreview.Image = _posterBitmap;
@@ -261,12 +546,352 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void BtnExportExcel_Click(object sender, EventArgs e)
+        {
+            if (clbProducts.CheckedItems.Count == 0)
+            {
+                MessageBox.Show("يرجى اختيار أصناف للتصدير أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "Excel Files (*.xls)|*.xls|HTML Files (*.html)|*.html";
+                sfd.FileName = $"{txtPosterTitle.Text}_{DateTime.Today:yyyy-MM-dd}.xls";
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        bool showQty = chkShowQty != null && chkShowQty.Checked;
+                        int colCount = showQty ? 6 : 5;
+
+                        var sb = new StringBuilder();
+                        sb.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
+                        sb.AppendLine("<head>");
+                        sb.AppendLine("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">");
+                        sb.AppendLine("<style>");
+                        sb.AppendLine("  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; }");
+                        sb.AppendLine("  table { border-collapse: collapse; width: 100%; border: 2px solid #1e293b; }");
+                        sb.AppendLine("  th { background-color: #1e293b; color: #ffffff; border: 1px solid #cbd5e1; padding: 12px; font-weight: bold; text-align: center; font-size: 11pt; }");
+                        sb.AppendLine("  td { border: 1px solid #cbd5e1; padding: 10px; text-align: center; font-size: 10pt; }");
+                        sb.AppendLine("  .title-row { font-size: 16pt; font-weight: bold; color: #ffffff; background-color: #1e3a8a; text-align: center; padding: 15px; }");
+                        sb.AppendLine("  .info-row { font-size: 10pt; color: #ffffff; background-color: #3b82f6; text-align: center; padding: 8px; }");
+                        sb.AppendLine("  .notes-row { font-size: 10pt; color: #7f1d1d; background-color: #fee2e2; text-align: right; padding: 10px; font-weight: bold; }");
+                        sb.AppendLine("  .row-light { background-color: #f8fafc; }");
+                        sb.AppendLine("  .row-dark { background-color: #e2e8f0; }");
+                        sb.AppendLine("  .price-cell { font-weight: bold; color: #b91c1c; font-size: 11pt; }");
+                        sb.AppendLine("  .name-cell { text-align: right; padding-right: 15px; font-weight: bold; }");
+                        sb.AppendLine("</style>");
+                        sb.AppendLine("</head>");
+                        sb.AppendLine("<body>");
+                        sb.AppendLine("<table>");
+                        
+                        // Header rows
+                        sb.AppendLine($"  <tr><td colspan=\"{colCount}\" class=\"title-row\">{AppConfig.CompanyName} - {txtPosterTitle.Text}</td></tr>");
+                        
+                        string phoneStr = "";
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone1)) phoneStr += AppConfig.CompanyPhone1;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone2))
+                        {
+                            if (phoneStr != "") phoneStr += " - ";
+                            phoneStr += AppConfig.CompanyPhone2;
+                        }
+                        string infoText = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
+                        if (phoneStr != "") infoText += $" | هاتف: {phoneStr}";
+                        sb.AppendLine($"  <tr><td colspan=\"{colCount}\" class=\"info-row\">{infoText}</td></tr>");
+                        
+                        if (!string.IsNullOrWhiteSpace(txtPosterNotes.Text))
+                        {
+                            sb.AppendLine($"  <tr><td colspan=\"{colCount}\" class=\"notes-row\">ملاحظات: {txtPosterNotes.Text}</td></tr>");
+                        }
+
+                        // Table Headers
+                        sb.AppendLine("  <tr>");
+                        sb.AppendLine("    <th style=\"width: 6%;\">م</th>");
+                        sb.AppendLine("    <th style=\"width: 14%;\">كود الصنف</th>");
+                        sb.AppendLine("    <th style=\"width: 44%;\">اسم الصنف</th>");
+                        sb.AppendLine("    <th style=\"width: 12%;\">الوحدة</th>");
+                        if (showQty)
+                        {
+                            sb.AppendLine("    <th style=\"width: 12%;\">الكمية</th>");
+                        }
+                        sb.AppendLine("    <th style=\"width: 12%;\">السعر</th>");
+                        sb.AppendLine("  </tr>");
+
+                        // Rows
+                        int idx = 1;
+                        foreach (ProductItem item in clbProducts.CheckedItems)
+                        {
+                            string rowClass = (idx % 2 == 0) ? "row-dark" : "row-light";
+                            sb.AppendLine($"  <tr class=\"{rowClass}\">");
+                            sb.AppendLine($"    <td>{idx}</td>");
+                            sb.AppendLine($"    <td>{item.Code}</td>");
+                            sb.AppendLine($"    <td class=\"name-cell\">{item.Name}</td>");
+                            sb.AppendLine($"    <td>{(string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit)}</td>");
+                            if (showQty)
+                            {
+                                sb.AppendLine($"    <td>{item.Qty:N0}</td>");
+                            }
+                            sb.AppendLine($"    <td class=\"price-cell\">{item.Price:N2} ج</td>");
+                            sb.AppendLine("  </tr>");
+                            idx++;
+                        }
+                        
+                        sb.AppendLine("</table>");
+                        sb.AppendLine("</body>");
+                        sb.AppendLine("</html>");
+
+                        System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
+                        MessageBox.Show("✅ تم تصدير الملف بنجاح!", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnExportPdf_Click(object sender, EventArgs e)
+        {
+            if (clbProducts.CheckedItems.Count == 0)
+            {
+                MessageBox.Show("يرجى اختيار أصناف أولاً للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            _printItemIndex = 0;
+            _pageNum = 1;
+            using (var pd = new PrintDocument())
+            {
+                pd.PrintPage += PrintDoc_PrintPage;
+                using (var dlg = new PrintDialog())
+                {
+                    dlg.Document = pd;
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                    {
+                        pd.Print();
+                    }
+                }
+            }
+        }
+
+        private void PrintDoc_PrintPage(object sender, PrintPageEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            float xStart = e.MarginBounds.Left;
+            float yStart = e.MarginBounds.Top;
+            float pageWidth = e.MarginBounds.Width;
+            float pageHeight = e.MarginBounds.Height;
+            float yCur = yStart;
+
+            // Draw border
+            using (var penBorder = new Pen(Color.FromArgb(200, 200, 200), 1))
+            {
+                g.DrawRectangle(penBorder, xStart, yStart, pageWidth, pageHeight);
+            }
+
+            // Fonts
+            var fTitle = new Font("Arial", 16f, FontStyle.Bold);
+            var fComp = new Font("Arial", 12f, FontStyle.Bold);
+            var fSub = new Font("Arial", 9f);
+            var fBold = new Font("Arial", 10f, FontStyle.Bold);
+            var fRegular = new Font("Arial", 9.5f);
+
+            var center = new StringFormat { Alignment = StringAlignment.Center };
+            var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+            var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+            bool showQty = chkShowQty != null && chkShowQty.Checked;
+
+            // Page 1 Header
+            if (_pageNum == 1)
+            {
+                int bannerStyle = cboBannerStyle != null ? cboBannerStyle.SelectedIndex : 0;
+                Color bannerBgColor = Color.FromArgb(30, 41, 59); // default classic slate
+
+                if (bannerStyle == 1) bannerBgColor = Color.FromArgb(30, 58, 138); // Royal Blue
+                else if (bannerStyle == 2) bannerBgColor = Color.FromArgb(6, 78, 59); // Forest Green
+                else if (bannerStyle == 3) bannerBgColor = Color.FromArgb(127, 29, 29); // Crimson Red
+                else if (bannerStyle == 4) bannerBgColor = Color.FromArgb(120, 53, 15); // Golden Amber
+
+                // Draw banner
+                var bannerRect = new RectangleF(xStart + 20, yCur + 10, pageWidth - 40, 90);
+                using (var brushBanner = new SolidBrush(bannerBgColor))
+                {
+                    g.FillRectangle(brushBanner, bannerRect);
+                }
+
+                // Draw Logo if enabled
+                if (AppConfig.PrintShopLogo && !string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                {
+                    try
+                    {
+                        using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                        {
+                            g.DrawImage(img, xStart + 30, yCur + 20, 70, 70);
+                        }
+                    }
+                    catch {}
+                }
+
+                // Draw Banner Text
+                using (var brushWhite = new SolidBrush(Color.White))
+                {
+                    float textY = yCur + 20;
+                    g.DrawString(AppConfig.CompanyName, fComp, brushWhite, new RectangleF(xStart, textY, pageWidth, 20), center);
+                    textY += 20;
+                    g.DrawString(txtPosterTitle.Text, fTitle, brushWhite, new RectangleF(xStart, textY, pageWidth, 30), center);
+                    textY += 28;
+
+                    string infoStr = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
+                    string phoneStr = "";
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone1)) phoneStr += AppConfig.CompanyPhone1;
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone2))
+                    {
+                        if (phoneStr != "") phoneStr += " - ";
+                        phoneStr += AppConfig.CompanyPhone2;
+                    }
+                    if (phoneStr != "") infoStr += $"  |  📞 هاتف: {phoneStr}";
+
+                    g.DrawString(infoStr, fSub, brushWhite, new RectangleF(xStart, textY, pageWidth, 18), center);
+                }
+
+                yCur += 110;
+
+                // Notes Box
+                if (!string.IsNullOrWhiteSpace(txtPosterNotes.Text))
+                {
+                    var notesRect = new RectangleF(xStart + 20, yCur, pageWidth - 40, 35);
+                    using (var brushBox = new SolidBrush(Color.FromArgb(249, 250, 251)))
+                    using (var penBox = new Pen(Color.FromArgb(229, 231, 235), 1))
+                    {
+                        g.FillRectangle(brushBox, notesRect);
+                        g.DrawRectangle(penBox, notesRect.X, notesRect.Y, notesRect.Width, notesRect.Height);
+                    }
+                    g.DrawString("ملاحظات: " + txtPosterNotes.Text, fRegular, Brushes.DarkRed, new RectangleF(notesRect.X + 10, notesRect.Y + 8, notesRect.Width - 20, notesRect.Height - 16), rtlNear);
+                    yCur += 45;
+                }
+            }
+
+            // Columns sizing based on pageWidth
+            float colSerialW = 45;
+            float colNameW = showQty ? (pageWidth - 280) : (pageWidth - 200);
+            float colUnitW = showQty ? 80 : 85;
+            float colQtyW = showQty ? 75 : 0;
+            float colPriceW = showQty ? 80 : 70;
+
+            float colSerialX = xStart + pageWidth - colSerialW;
+            float colNameX = colSerialX - colNameW;
+            float colUnitX = colNameX - colUnitW;
+            float colQtyX = showQty ? (colUnitX - colQtyW) : 0;
+            float colPriceX = xStart; // aligned to far left
+
+            float headerH = 28;
+            float rowH = 24;
+
+            // Draw Table Header
+            using (var brushHeader = new SolidBrush(Color.FromArgb(30, 41, 59)))
+            {
+                g.FillRectangle(brushHeader, xStart, yCur, pageWidth, headerH);
+            }
+            using (var brushWhite = new SolidBrush(Color.White))
+            {
+                g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur + 6, colSerialW, headerH), rtlCenter);
+                g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX, yCur + 6, colNameW, headerH), rtlNear);
+                g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur + 6, colUnitW, headerH), rtlCenter);
+                if (showQty)
+                {
+                    g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur + 6, colQtyW, headerH), rtlCenter);
+                }
+                g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur + 6, colPriceW, headerH), rtlCenter);
+            }
+            yCur += headerH;
+
+            // Print rows
+            int itemsCount = clbProducts.CheckedItems.Count;
+            using (var penGrid = new Pen(Color.FromArgb(229, 231, 235), 1))
+            using (var brushBlack = new SolidBrush(Color.Black))
+            using (var brushLightRow = new SolidBrush(Color.FromArgb(249, 250, 251)))
+            using (var brushDarkRow = new SolidBrush(Color.FromArgb(241, 245, 249)))
+            {
+                while (_printItemIndex < itemsCount)
+                {
+                    // Check page boundary. Leave 50 units for page footer
+                    if (yCur + rowH + 50 > yStart + pageHeight)
+                    {
+                        // Draw page number in footer before leaving
+                        g.DrawString($"صفحة {_pageNum}", fSub, Brushes.DimGray, new RectangleF(xStart, yStart + pageHeight - 25, pageWidth, 20), center);
+                        
+                        _pageNum++;
+                        e.HasMorePages = true;
+                        return;
+                    }
+
+                    var item = (ProductItem)clbProducts.CheckedItems[_printItemIndex];
+
+                    // Draw alternating row background
+                    var rowRect = new RectangleF(xStart, yCur, pageWidth, rowH);
+                    g.FillRectangle((_printItemIndex % 2 == 0) ? brushLightRow : brushDarkRow, rowRect);
+
+                    // Draw row texts
+                    g.DrawString((_printItemIndex + 1).ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur + 4, colSerialW, rowH), rtlCenter);
+                    g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX, yCur + 4, colNameW, rowH), rtlNear);
+                    
+                    string unitStr = string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit;
+                    g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur + 4, colUnitW, rowH), rtlCenter);
+                    
+                    if (showQty)
+                    {
+                        g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur + 4, colQtyW, rowH), rtlCenter);
+                    }
+                    
+                    g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur + 4, colPriceW, rowH), rtlCenter);
+
+                    // Draw Grid Lines
+                    g.DrawLine(penGrid, xStart, yCur + rowH, xStart + pageWidth, yCur + rowH);
+                    g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + rowH);
+                    g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + rowH);
+                    g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + rowH);
+                    if (showQty)
+                    {
+                        g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + rowH);
+                    }
+
+                    yCur += rowH;
+                    _printItemIndex++;
+                }
+            }
+
+            // Draw final footer
+            yCur += 10;
+            if (yCur + 40 <= yStart + pageHeight)
+            {
+                g.DrawLine(new Pen(Color.FromArgb(200, 200, 200), 1), xStart + 20, yCur, xStart + pageWidth - 40, yCur);
+                yCur += 8;
+                var fFooter = new Font("Arial", 10f, FontStyle.Bold | FontStyle.Italic);
+                g.DrawString("نشرف بخدمتكم دائماً  |  شكراً لتعاملكم معنا", fFooter, Brushes.DimGray, new RectangleF(xStart, yCur, pageWidth, 20), center);
+            }
+
+            // Draw page number on last page
+            g.DrawString($"صفحة {_pageNum}", fSub, Brushes.DimGray, new RectangleF(xStart, yStart + pageHeight - 25, pageWidth, 20), center);
+
+            // Reset print state
+            e.HasMorePages = false;
+            _printItemIndex = 0;
+            _pageNum = 1;
+        }
+
         private class ProductItem
         {
             public int ID { get; set; }
+            public string Code { get; set; }
             public string Name { get; set; }
             public decimal Price { get; set; }
             public string Unit { get; set; }
+            public decimal Qty { get; set; }
 
             public override string ToString()
             {
