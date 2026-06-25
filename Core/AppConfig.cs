@@ -25,6 +25,24 @@ namespace ChickenDist.Core
             set => Set("CompanyName", value);
         }
 
+        public static string AppTheme
+        {
+            get => Get("AppTheme", "Dark");
+            set => Set("AppTheme", value);
+        }
+
+        public static string CompanyPhone1
+        {
+            get => Get("CompanyPhone1", "");
+            set => Set("CompanyPhone1", value);
+        }
+
+        public static string CompanyPhone2
+        {
+            get => Get("CompanyPhone2", "");
+            set => Set("CompanyPhone2", value);
+        }
+
         public static string ReceiptPrintMode
         {
             get => Get("ReceiptPrintMode", "Detailed");
@@ -84,6 +102,33 @@ namespace ChickenDist.Core
             get => Get("BarcodeEncoding", "Code128");
             set => Set("BarcodeEncoding", value);
         }
+
+        public static string ShopLogoPath
+        {
+            get => Get("ShopLogoPath", "");
+            set => Set("ShopLogoPath", value);
+        }
+
+        public static bool PrintShopLogo
+        {
+            get => Get("PrintShopLogo", "false") == "true";
+            set => Set("PrintShopLogo", value ? "true" : "false");
+        }
+
+        /// <summary>إظهار عمود الخصم في جدول أصناف الريسيت</summary>
+        public static bool ReceiptShowDiscount
+        {
+            get => Get("ReceiptShowDiscount", "true") == "true";
+            set => Set("ReceiptShowDiscount", value ? "true" : "false");
+        }
+
+        /// <summary>إظهار بيانات العميل (اسم + هاتف + عنوان) في رأس الريسيت</summary>
+        public static bool ReceiptShowClientInfo
+        {
+            get => Get("ReceiptShowClientInfo", "false") == "true";
+            set => Set("ReceiptShowClientInfo", value ? "true" : "false");
+        }
+
 
 
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)

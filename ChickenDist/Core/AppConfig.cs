@@ -25,6 +25,12 @@ namespace ChickenDist.Core
             set => Set("CompanyName", value);
         }
 
+        public static string AppTheme
+        {
+            get => Get("AppTheme", "Dark");
+            set => Set("AppTheme", value);
+        }
+
         public static string CompanyPhone1
         {
             get => Get("CompanyPhone1", "");

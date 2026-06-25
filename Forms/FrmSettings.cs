@@ -3,12 +3,17 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
     public class FrmSettings : Form
     {
         private TextBox txtCompanyName;
+        private TextBox txtCompanyPhone1;
+        private TextBox txtCompanyPhone2;
+        private TextBox txtShopLogoPath;
+        private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
@@ -19,12 +24,15 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
+        private CheckBox chkReceiptShowDiscount;
+        private CheckBox chkReceiptShowClientInfo;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
         private TextBox txtWhatsAppPhone;
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
+        private ComboBox cboAppTheme;
 
         // Scale & Barcode controls
         private CheckBox chkScaleEnabled;
@@ -66,6 +74,83 @@ namespace ChickenDist.Forms
             txtCompanyName.Text = AppConfig.CompanyName;
             this.Controls.Add(txtCompanyName);
             y += 40;
+
+            // ── أرقام الهواتف ───────────────────────────────────
+            AddLabel("هاتف الشركة 1:", 20, ref y, 0);
+            txtCompanyPhone1 = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyPhone1.Text = AppConfig.CompanyPhone1;
+            this.Controls.Add(txtCompanyPhone1);
+
+            var lblPhone2 = new Label
+            {
+                Text = "هاتف الشركة 2:",
+                Location = new Point(280, y - 22),
+                Width = 110,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            this.Controls.Add(lblPhone2);
+
+            txtCompanyPhone2 = new TextBox
+            {
+                Location = new Point(280, y),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyPhone2.Text = AppConfig.CompanyPhone2;
+            this.Controls.Add(txtCompanyPhone2);
+            y += 40;
+
+            // ── شعار الشركة ──────────────────────────────────────
+            AddLabel("شعار المؤسسة / المحل (يظهر بالطباعة):", 20, ref y, 15);
+            txtShopLogoPath = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtShopLogoPath.Text = AppConfig.ShopLogoPath;
+            this.Controls.Add(txtShopLogoPath);
+
+            var btnBrowseLogo = Theme.MakeButton("📂 تصفح الشعار", 410, y - 1, 110, 28, Color.FromArgb(55, 65, 81));
+            btnBrowseLogo.Font = new Font("Segoe UI", 9f);
+            btnBrowseLogo.Click += (s, e) =>
+            {
+                using (var dlg = new OpenFileDialog())
+                {
+                    dlg.Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files (*.*)|*.*";
+                    dlg.Title = "اختر شعار المؤسسة";
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                        txtShopLogoPath.Text = dlg.FileName;
+                }
+            };
+            this.Controls.Add(btnBrowseLogo);
+            y += 38;
+
+            chkPrintShopLogo = new CheckBox
+            {
+                Text = "طباعة شعار المؤسسة في أعلى الفواتير والريسيت",
+                Location = new Point(20, y),
+                Size = new Size(400, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.PrintShopLogo
+            };
+            this.Controls.Add(chkPrintShopLogo);
+            y += 35;
 
             // ── نمط الطباعة ──────────────────────────────────────
             AddLabel("نمط طباعة الفاتورة:", 20, ref y, 15);
@@ -201,15 +286,83 @@ namespace ChickenDist.Forms
                 "القياسي (Standard)",
                 "العصري (Modern)",
                 "المبسط السريع (Compact)",
-                "الفواتير الاحترافية (Elegant)"
+                "الفواتير الاحترافية (Elegant)",
+                "قالب ميني ماركت (MiniMarket)"
             });
             cboReceiptTemplate.SelectedItem = AppConfig.ReceiptTemplate == "Modern" ? "العصري (Modern)"
                                             : AppConfig.ReceiptTemplate == "Compact" ? "المبسط السريع (Compact)"
                                             : AppConfig.ReceiptTemplate == "Elegant" ? "الفواتير الاحترافية (Elegant)"
+                                            : AppConfig.ReceiptTemplate == "MiniMarket" ? "قالب ميني ماركت (MiniMarket)"
                                             : "القياسي (Standard)";
             if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
             this.Controls.Add(cboReceiptTemplate);
             y += 40;
+
+            // ── خيارات محتوى الريسيت ─────────────────────────────────
+            var lblReceiptOptions = new Label
+            {
+                Text = "📋 خيارات محتوى الريسيت الحراري:",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.Accent
+            };
+            this.Controls.Add(lblReceiptOptions);
+            y += 28;
+
+            chkReceiptShowDiscount = new CheckBox
+            {
+                Text = "إظهار عمود الخصم في جدول الأصناف",
+                Location = new Point(20, y),
+                Size = new Size(400, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ReceiptShowDiscount
+            };
+            this.Controls.Add(chkReceiptShowDiscount);
+            y += 28;
+
+            chkReceiptShowClientInfo = new CheckBox
+            {
+                Text = "إظهار بيانات العميل (اسم + هاتف + عنوان) في رأس الريسيت",
+                Location = new Point(20, y),
+                Size = new Size(460, 22),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ReceiptShowClientInfo
+            };
+            this.Controls.Add(chkReceiptShowClientInfo);
+            y += 32;
+
+            // زر معاينة الريسيت
+            var btnPreviewReceipt = Theme.MakeButton("🖨️ معاينة نموذج الريسيت", 20, y, 220, 36, Theme.Primary);
+            btnPreviewReceipt.Click += (s, e) =>
+            {
+                // حفظ الإعدادات الحالية أولاً قبل المعاينة
+                AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
+                                          : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
+                                          : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : cboReceiptTemplate.SelectedIndex == 4 ? "MiniMarket"
+                                          : "Standard";
+                AppConfig.ReceiptShowDiscount = chkReceiptShowDiscount.Checked;
+                AppConfig.ReceiptShowClientInfo = chkReceiptShowClientInfo.Checked;
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                AppConfig.CompanyName = string.IsNullOrWhiteSpace(txtCompanyName.Text) ? AppConfig.CompanyName : txtCompanyName.Text.Trim();
+
+                // بحث عن أي فاتورة موجودة للمعاينة
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    new FrmPrintSale(previewSaleID, "Receipt", showPreview: true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير محفوظة للمعاينة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewReceipt);
+            y += 50;
 
             // ── قالب طباعة A4 ───────────────────
             AddLabel("قالب طباعة ورق A4/A5:", 20, ref y, 10);
@@ -483,10 +636,10 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkBackupOnExit);
             y += 30;
 
-            // خيار تفعيل تتبع الأقفاص والوزن الفارغ
+            // خيار تفعيل تتبع الفوارغ والوزن الفارغ
             chkEnableCrates = new CheckBox
             {
-                Text = "تفعيل نظام تتبع الأقفاص والوزن الفارغ للعملاء",
+                Text = "تفعيل نظام تتبع الفوارغ والوزن الفارغ للعملاء",
                 Location = new Point(20, y),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
@@ -626,7 +779,31 @@ namespace ChickenDist.Forms
                 BackupManager.OpenBackupFolder();
             };
             this.Controls.Add(btnOpenFolder);
-            y += 55;
+            // ── طابع ألوان البرنامج (Theme Selection) ──────────────────────────────────
+            AddLabel("طابع ألوان البرنامج (الثيم المفضل):", 20, ref y, 15);
+            cboAppTheme = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboAppTheme.Items.AddRange(new object[]
+            {
+                "داكن هادئ مريح (Dark Theme)",
+                "رمادي ناعم هادئ (Slate Theme)",
+                "فاتح مريح للعين (Light Theme)"
+            });
+            cboAppTheme.SelectedItem = AppConfig.AppTheme switch
+            {
+                "Light" => "فاتح مريح للعين (Light Theme)",
+                "Slate" => "رمادي ناعم هادئ (Slate Theme)",
+                _       => "داكن هادئ مريح (Dark Theme)"
+            };
+            this.Controls.Add(cboAppTheme);
+            y += 45;
 
             // ── زر الحفظ الرئيسي ──────────────────────────────────
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, y, 180, 44, Theme.Accent);
@@ -639,6 +816,10 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
+                AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
@@ -650,6 +831,7 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
                                           : cboReceiptTemplate.SelectedIndex == 2 ? "Compact"
                                           : cboReceiptTemplate.SelectedIndex == 3 ? "Elegant"
+                                          : cboReceiptTemplate.SelectedIndex == 4 ? "MiniMarket"
                                           : "Standard";
                 AppConfig.A4Template = cboA4Template.SelectedIndex == 1 ? "Modern"
                                      : cboA4Template.SelectedIndex == 2 ? "Official"
@@ -661,12 +843,20 @@ namespace ChickenDist.Forms
                                           : "Standard";
                 AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
 
-                // حفظ إعدادات الواتساب وتفعيل الأقفاص والباكب عند الإغلاق والمسار السحابي
+                // حفظ إعدادات الواتساب وتفعيل الفوارغ والباكب عند الإغلاق والمسار السحابي
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 
+                // Save Theme
+                AppConfig.AppTheme = cboAppTheme.SelectedIndex switch
+                {
+                    1 => "Slate",
+                    2 => "Light",
+                    _ => "Dark"
+                };
+ 
                 SaveBackupFolder();
 
                 // Save Scale Settings
@@ -687,7 +877,7 @@ namespace ChickenDist.Forms
 
 
                 MessageBox.Show(
-                    "✅ تم حفظ الإعدادات بنجاح!\nقد تحتاج لإعادة فتح بعض الشاشات ليتم تحديث الاسم.",
+                    "✅ تم حفظ الإعدادات بنجاح!\nيرجى إعادة تشغيل البرنامج لتطبيق المظهر المختار بالكامل.",
                     "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);

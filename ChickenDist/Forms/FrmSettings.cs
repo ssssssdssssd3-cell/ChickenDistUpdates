@@ -32,6 +32,7 @@ namespace ChickenDist.Forms
         private TextBox txtWhatsAppPhone;
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
+        private ComboBox cboAppTheme;
 
         // Scale & Barcode controls
         private CheckBox chkScaleEnabled;
@@ -778,7 +779,31 @@ namespace ChickenDist.Forms
                 BackupManager.OpenBackupFolder();
             };
             this.Controls.Add(btnOpenFolder);
-            y += 55;
+            // ── طابع ألوان البرنامج (Theme Selection) ──────────────────────────────────
+            AddLabel("طابع ألوان البرنامج (الثيم المفضل):", 20, ref y, 15);
+            cboAppTheme = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboAppTheme.Items.AddRange(new object[]
+            {
+                "داكن هادئ مريح (Dark Theme)",
+                "رمادي ناعم هادئ (Slate Theme)",
+                "فاتح مريح للعين (Light Theme)"
+            });
+            cboAppTheme.SelectedItem = AppConfig.AppTheme switch
+            {
+                "Light" => "فاتح مريح للعين (Light Theme)",
+                "Slate" => "رمادي ناعم هادئ (Slate Theme)",
+                _       => "داكن هادئ مريح (Dark Theme)"
+            };
+            this.Controls.Add(cboAppTheme);
+            y += 45;
 
             // ── زر الحفظ الرئيسي ──────────────────────────────────
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, y, 180, 44, Theme.Accent);
@@ -824,6 +849,14 @@ namespace ChickenDist.Forms
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 
+                // Save Theme
+                AppConfig.AppTheme = cboAppTheme.SelectedIndex switch
+                {
+                    1 => "Slate",
+                    2 => "Light",
+                    _ => "Dark"
+                };
+ 
                 SaveBackupFolder();
 
                 // Save Scale Settings
@@ -844,7 +877,7 @@ namespace ChickenDist.Forms
 
 
                 MessageBox.Show(
-                    "✅ تم حفظ الإعدادات بنجاح!\nقد تحتاج لإعادة فتح بعض الشاشات ليتم تحديث الاسم.",
+                    "✅ تم حفظ الإعدادات بنجاح!\nيرجى إعادة تشغيل البرنامج لتطبيق المظهر المختار بالكامل.",
                     "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);

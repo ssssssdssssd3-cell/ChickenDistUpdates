@@ -21,17 +21,57 @@ namespace ChickenDist.Core
         public static Color Sidebar    = Color.FromArgb(240, 244, 248);
         public static Color SidebarBtn = Color.FromArgb(25, 45, 55, 72);
 
-        // ألوان النمط الفاتح المريح للعين
-        public static Color BgMain      = Color.FromArgb(245, 247, 250); // خلفية النوافذ
-        public static Color BgCard      = Color.FromArgb(255, 255, 255); // خلفية البطاقات والألواح
-        public static Color BgInput     = Color.FromArgb(255, 255, 255); // خلفية حقول الإدخال
-        public static Color TextMain    = Color.FromArgb(45, 55, 72);     // النص الرئيسي (داكن وواضح)
-        public static Color TextSub     = Color.FromArgb(100, 110, 125);  // النص الفرعي
-        public static Color BorderColor = Color.FromArgb(218, 224, 233);  // حدود خفيفة وناعمة
+        // ألوان النمط المختار ديناميكياً
+        public static Color BgMain => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(245, 247, 250),
+            "Slate" => Color.FromArgb(226, 232, 240),
+            _       => Color.FromArgb(40, 44, 52) // Dark
+        };
 
-        // ألوان اللوحات الرئيسية (رأس الصفحة والنابار)
-        public static Color BgHeader    = Color.FromArgb(45, 55, 72);     // رأس الصفحة (كحلي هادئ)
-        public static Color BgNavBar    = Color.FromArgb(240, 244, 248);  // شريط الأزرار (رمادي فاتح)
+        public static Color BgCard => AppConfig.AppTheme switch
+        {
+            "Light" => Color.White,
+            "Slate" => Color.FromArgb(241, 245, 249),
+            _       => Color.FromArgb(50, 54, 64) // Dark
+        };
+
+        public static Color BgInput => Color.White; // خانات الإدخال باللون الأبيض دائماً بطلب العميل
+
+        public static Color TextMain => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(45, 55, 72),
+            "Slate" => Color.FromArgb(15, 23, 42),
+            _       => Color.FromArgb(235, 240, 245) // Dark
+        };
+
+        public static Color TextSub => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(100, 110, 125),
+            "Slate" => Color.FromArgb(71, 85, 105),
+            _       => Color.FromArgb(160, 172, 190) // Dark
+        };
+
+        public static Color BorderColor => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(218, 224, 233),
+            "Slate" => Color.FromArgb(203, 213, 225),
+            _       => Color.FromArgb(68, 74, 88) // Dark
+        };
+
+        public static Color BgHeader => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(45, 55, 72),
+            "Slate" => Color.FromArgb(45, 55, 72),
+            _       => Color.FromArgb(30, 34, 42) // Dark
+        };
+
+        public static Color BgNavBar => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(240, 244, 248),
+            "Slate" => Color.FromArgb(226, 232, 240),
+            _       => Color.FromArgb(35, 39, 48) // Dark
+        };
 
         // الخطوط
         public static Font FontMain   = new Font("Segoe UI", 9.5f);
@@ -52,7 +92,7 @@ namespace ChickenDist.Core
                 if (c is TextBox tb)
                 {
                     tb.BorderStyle = BorderStyle.FixedSingle;
-                    tb.ForeColor = TextMain;
+                    tb.ForeColor = TextDark;
                     tb.BackColor = BgInput;
 
                     // Auto select all text on focus
@@ -76,7 +116,7 @@ namespace ChickenDist.Core
                 else if (c is ComboBox cb)
                 {
                     cb.FlatStyle = FlatStyle.Flat;
-                    cb.ForeColor = TextMain;
+                    cb.ForeColor = TextDark;
                     cb.BackColor = BgInput;
 
                     // Move focus on Enter
@@ -92,7 +132,7 @@ namespace ChickenDist.Core
                 else if (c is NumericUpDown nud)
                 {
                     nud.BorderStyle = BorderStyle.FixedSingle;
-                    nud.ForeColor = TextMain;
+                    nud.ForeColor = TextDark;
                     nud.BackColor = BgInput;
                     foreach (Control child in nud.Controls)
                     {
@@ -277,6 +317,8 @@ namespace ChickenDist.Core
             grid.BackgroundColor = BgWhite;
             grid.BorderStyle = BorderStyle.None;
             grid.DefaultCellStyle.Font = FontSmall;
+            grid.DefaultCellStyle.ForeColor = TextDark;
+            grid.DefaultCellStyle.BackColor = BgWhite;
             grid.DefaultCellStyle.SelectionBackColor = Primary;
             grid.DefaultCellStyle.SelectionForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.BackColor = Primary;
