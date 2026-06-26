@@ -351,6 +351,7 @@ namespace ChickenDist.Forms
         private static readonly ScreenInfo[] ScreensList = {
             // Tab 0: Sales & Clients (9)
             new ScreenInfo("Sales", "شاشة المبيعات الجديدة", 0),
+            new ScreenInfo("POS", "🛒 شاشة نقطة البيع السريعة POS", 0),
             new ScreenInfo("Returns", "مرتجع المبيعات", 0),
             new ScreenInfo("Installments", "عقود التقسيط الشرعي", 0),
             new ScreenInfo("SalesList", "سجل الفواتير والمبيعات", 0),
@@ -385,6 +386,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("CashBox", "حركات الخزينة والصندوق", 3),
             new ScreenInfo("Reports", "التقارير والإحصائيات المالية", 3),
             new ScreenInfo("DailyClosing", "تقفيل يومية المبيعات", 3),
+            new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
             new ScreenInfo("Employees", "إدارة الموظفين والرواتب", 3),
             new ScreenInfo("EmployeeTransactions", "حسابات وحركات الموظفين", 3),
             new ScreenInfo("DriverHandover", "تسليم وحمولة المندوب", 3),
