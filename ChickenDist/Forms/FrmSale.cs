@@ -4227,10 +4227,10 @@ namespace ChickenDist.Forms
 					DrawChickenSilhouette(g, w - 125, y + 10, 25);
 
 					// الدعاية للبرنامج
-					var fPromo = new Font("Arial", 8f, FontStyle.Regular);
-					using (var bGray = new SolidBrush(Color.FromArgb(120, 120, 120)))
+					var fPromo = new Font("Arial", 8.5f, FontStyle.Bold);
+					using (var bPromo = new SolidBrush(Color.FromArgb(0, 51, 153)))
 					{
-						g.DrawString("✨ تم إصدار هذه الفاتورة بواسطة Pro System لإدارة المبيعات والتوزيع. للاشتراك: 01016517586", fPromo, bGray, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
+						g.DrawString("✨ تم إصدار هذه الفاتورة بواسطة Pro System لإدارة المبيعات والتوزيع. للاشتراك: 01016517586", fPromo, bPromo, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
 					}
 					fPromo.Dispose();
 
