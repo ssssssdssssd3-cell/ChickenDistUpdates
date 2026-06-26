@@ -285,6 +285,25 @@ namespace ChickenDist.Core
             return btn;
         }
 
+        /// <summary>تصميم زر مع موقع وحجم محددين</summary>
+        public static Button MakeButton(string text, Color backColor, Point location, Size size)
+        {
+            var btn = MakeButton(text, backColor);
+            btn.Location = location;
+            btn.Size = size;
+            return btn;
+        }
+
+        /// <summary>رسم إطار الكارت</summary>
+        public static void DrawCardBorder(Graphics g, Control ctrl)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var pen = new Pen(BorderColor, 1.5f))
+            {
+                g.DrawRectangle(pen, 0, 0, ctrl.Width - 1, ctrl.Height - 1);
+            }
+        }
+
         /// <summary>تصميم Label عنوان</summary>
         public static Label MakeLabel(string text, Font font = null)
         {

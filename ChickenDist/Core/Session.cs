@@ -20,6 +20,10 @@ namespace ChickenDist.Core
         public static bool CanSellInstallment { get; set; }
         public static bool CanEditShippingCharge { get; set; }
 
+        /// <summary>معرف الوردية الحالية المفتوحة (null = لا توجد وردية مفتوحة)</summary>
+        public static int? CurrentShiftID { get; set; }
+
+
         // قائمة الشاشات المسموح بها
         private static Dictionary<string, PermInfo> _perms = new Dictionary<string, PermInfo>();
 
@@ -102,8 +106,10 @@ namespace ChickenDist.Core
             DefaultSafeID = null; AllowedSafeIDs = "";
             CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
+            CurrentShiftID = null;
             _perms.Clear();
         }
+
 
         public static readonly string[] AllScreens = {
             "Sales", "Returns", "Installments", "SalesList", "SalesAudit", "AccountantPortal",
@@ -114,7 +120,8 @@ namespace ChickenDist.Core
             "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "BulkPrintBarcodes",
             "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
             "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
-            "Settings", "BotManager"
+            "Settings", "BotManager",
+            "POS", "ShiftClose"
         };
     }
 

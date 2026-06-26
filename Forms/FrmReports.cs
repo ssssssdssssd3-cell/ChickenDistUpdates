@@ -196,7 +196,8 @@ namespace ChickenDist.Forms
 				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
 				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
 				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
-				("📊 حركة أصناف الموردين", "SupplierItemActivity")
+				("📊 حركة أصناف الموردين", "SupplierItemActivity"),
+				("⚠️ تقرير انتهاء الصلاحية", "ExpiryReport")
 			};
 
 			var filteredReports = new List<(string name, string tag)>();
@@ -219,7 +220,7 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Stores")
 					{
-						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity");
+						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport");
 					}
 					else if (_targetModule == "Clients")
 					{
@@ -888,6 +889,49 @@ namespace ChickenDist.Forms
 						("ResponsibleParty", "المسؤول / المندوب"),
 						("Notes", "البيان / ملاحظات")
 					}, dataGridView);
+					break;
+				case "ExpiryReport":
+					_currentDt = DbHelper.Query(@"
+						SELECT
+							p.ProductCode AS ProductCode,
+							p.ProductName AS ProductName,
+							pb.BatchNumber AS BatchNumber,
+							p.Unit AS Unit,
+							pb.Quantity AS Quantity,
+							w.WarehouseName AS WarehouseName,
+							pb.ExpiryDate AS ExpiryDate,
+							CASE
+								WHEN pb.ExpiryDate < CAST(GETDATE() AS DATE) THEN N'منتهي'
+								WHEN pb.ExpiryDate < DATEADD(DAY, 30, CAST(GETDATE() AS DATE)) THEN N'قريب الانتهاء'
+								ELSE N'سليم'
+							END AS ExpiryStatus
+						FROM ProductBatches pb
+						JOIN Products p ON pb.ProductID = p.ProductID
+						JOIN Warehouses w ON pb.WarehouseID = w.WarehouseID
+						WHERE pb.Quantity > 0 AND pb.ExpiryDate IS NOT NULL
+						ORDER BY pb.ExpiryDate ASC");
+					SetupGrid(new(string, string)[]
+					{
+						("ProductCode", "كود الصنف"),
+						("ProductName", "اسم الصنف"),
+						("BatchNumber", "رقم الدفعة"),
+						("Unit", "الوحدة"),
+						("Quantity", "الكمية"),
+						("WarehouseName", "المخزن"),
+						("ExpiryDate", "تاريخ الانتهاء"),
+						("ExpiryStatus", "الحالة")
+					}, dataGridView);
+					foreach (DataGridViewRow dgRow in dataGridView.Rows)
+					{
+						if (dgRow.IsNewRow) continue;
+						string status = dgRow.Cells["ExpiryStatus"]?.Value?.ToString() ?? "";
+						if (status == "منتهي")
+							dgRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 202, 202);
+						else if (status == "قريب الانتهاء")
+							dgRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 235, 200);
+						else
+							dgRow.DefaultCellStyle.BackColor = Color.FromArgb(198, 246, 213);
+					}
 					break;
 				case "ClientBalances":
 					_currentDt = ReportDAL.ClientsReport();

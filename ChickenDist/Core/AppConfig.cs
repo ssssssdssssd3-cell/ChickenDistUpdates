@@ -314,6 +314,34 @@ namespace ChickenDist.Core
             set => Set("EnableCratesTracking", value ? "True" : "False");
         }
 
+        // ===== إعدادات نقاط الولاء =====
+        public static bool LoyaltyEnabled
+        {
+            get => Get("LoyaltyEnabled", "False") == "True";
+            set => Set("LoyaltyEnabled", value ? "True" : "False");
+        }
+
+        /// <summary>كل كم جنيه يكسب العميل نقطة واحدة (افتراضي: كل 10 جنيه = 1 نقطة)</summary>
+        public static decimal LoyaltyPointsPerCurrency
+        {
+            get => decimal.TryParse(Get("LoyaltyPointsPerCurrency", "10"), out decimal v) ? v : 10m;
+            set => Set("LoyaltyPointsPerCurrency", value.ToString());
+        }
+
+        /// <summary>قيمة النقطة عند الاسترداد (افتراضي: 1 نقطة = 0.10 جنيه)</summary>
+        public static decimal LoyaltyRedemptionRate
+        {
+            get => decimal.TryParse(Get("LoyaltyRedemptionRate", "0.1"), out decimal v) ? v : 0.1m;
+            set => Set("LoyaltyRedemptionRate", value.ToString());
+        }
+
+        // ===== إعدادات الوردية =====
+        public static bool ShiftRequired
+        {
+            get => Get("ShiftRequired", "False") == "True";
+            set => Set("ShiftRequired", value ? "True" : "False");
+        }
+
 
         // ===== دوال القراءة والكتابة =====
 

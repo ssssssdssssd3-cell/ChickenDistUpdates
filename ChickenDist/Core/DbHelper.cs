@@ -1513,6 +1513,86 @@ namespace ChickenDist.Core
                         ALTER TABLE Employees ADD CanEditShippingCharge BIT NOT NULL DEFAULT 1;
                     END
                 END");
+
+                // ===== ميزات السوبر ماركت =====
+
+                // 1. إدارة الورديات (Shifts)
+                SafeMigrate("Shifts", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='Shifts')
+                BEGIN
+                    CREATE TABLE Shifts (
+                        ShiftID       INT IDENTITY(1,1) PRIMARY KEY,
+                        ShiftDate     DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE),
+                        OpenTime      DATETIME NOT NULL DEFAULT GETDATE(),
+                        CloseTime     DATETIME NULL,
+                        OpenedBy      INT NOT NULL REFERENCES Employees(EmpID),
+                        ClosedBy      INT NULL REFERENCES Employees(EmpID),
+                        OpeningCash   DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        TotalSales    DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        TotalReturns  DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        CashSales     DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        VisaSales     DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        OtherSales    DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        ExpectedCash  DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        ActualCash    DECIMAL(10,2) NULL,
+                        Difference    DECIMAL(10,2) NULL,
+                        Notes         NVARCHAR(500) NULL,
+                        Status        NVARCHAR(20) NOT NULL DEFAULT 'Open'
+                    );
+                END");
+
+                SafeMigrate("Sales.ShiftID", @"
+                IF OBJECT_ID('Sales','U') IS NOT NULL AND COL_LENGTH('Sales','ShiftID') IS NULL
+                BEGIN
+                    ALTER TABLE Sales ADD ShiftID INT NULL REFERENCES Shifts(ShiftID);
+                END");
+
+                // 2. دفعات الأصناف مع تاريخ الانتهاء (ProductBatches)
+                SafeMigrate("ProductBatches", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='ProductBatches')
+                BEGIN
+                    CREATE TABLE ProductBatches (
+                        BatchID       INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID     INT NOT NULL REFERENCES Products(ProductID) ON DELETE CASCADE,
+                        WarehouseID   INT NOT NULL REFERENCES Warehouses(WarehouseID),
+                        BatchNumber   NVARCHAR(50) NULL,
+                        Quantity      DECIMAL(10,3) NOT NULL DEFAULT 0,
+                        ExpiryDate    DATE NULL,
+                        PurchaseID    INT NULL REFERENCES Purchases(PurchaseID) ON DELETE SET NULL,
+                        CreatedAt     DATETIME DEFAULT GETDATE()
+                    );
+                END");
+
+                SafeMigrate("Products.DefaultExpiryDays", @"
+                IF OBJECT_ID('Products','U') IS NOT NULL AND COL_LENGTH('Products','DefaultExpiryDays') IS NULL
+                BEGIN
+                    ALTER TABLE Products ADD DefaultExpiryDays INT NULL;
+                END");
+
+                // 3. نظام نقاط الولاء (Loyalty)
+                SafeMigrate("Clients.LoyaltyPoints", @"
+                IF OBJECT_ID('Clients','U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Clients','LoyaltyPoints') IS NULL
+                        ALTER TABLE Clients ADD LoyaltyPoints DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Clients','TotalPointsEarned') IS NULL
+                        ALTER TABLE Clients ADD TotalPointsEarned DECIMAL(10,2) NOT NULL DEFAULT 0;
+                END");
+
+                SafeMigrate("LoyaltyTransactions", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='LoyaltyTransactions')
+                BEGIN
+                    CREATE TABLE LoyaltyTransactions (
+                        TransID    INT IDENTITY(1,1) PRIMARY KEY,
+                        ClientID   INT NOT NULL REFERENCES Clients(ClientID) ON DELETE CASCADE,
+                        TransDate  DATETIME DEFAULT GETDATE(),
+                        TransType  NVARCHAR(20) NOT NULL,
+                        Points     DECIMAL(10,2) NOT NULL,
+                        RefSaleID  INT NULL REFERENCES Sales(SaleID) ON DELETE SET NULL,
+                        Notes      NVARCHAR(200) NULL,
+                        CreatedBy  INT NULL REFERENCES Employees(EmpID)
+                    );
+                END");
             }
             catch (Exception ex)
             {

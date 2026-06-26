@@ -18,6 +18,11 @@ namespace ChickenDist.Core
         public static bool CanSellCredit { get; set; }
         public static bool CanSellDriverLoad { get; set; }
         public static bool CanSellInstallment { get; set; }
+        public static bool CanEditShippingCharge { get; set; }
+
+        /// <summary>معرف الوردية الحالية المفتوحة (null = لا توجد وردية مفتوحة)</summary>
+        public static int? CurrentShiftID { get; set; }
+
 
         // قائمة الشاشات المسموح بها
         private static Dictionary<string, PermInfo> _perms = new Dictionary<string, PermInfo>();
@@ -100,13 +105,23 @@ namespace ChickenDist.Core
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
             DefaultSafeID = null; AllowedSafeIDs = "";
             CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
+            CanEditShippingCharge = true;
+            CurrentShiftID = null;
             _perms.Clear();
         }
 
+
         public static readonly string[] AllScreens = {
-            "Sales", "DriverHandover", "DriverSales", "ImportPreview", "Clients", "Products",
-            "Vehicles", "CashBox", "Expenses", "Reports", "Employees", "Returns",
-            "Suppliers", "Purchases", "Inventory", "Installments"
+            "Sales", "Returns", "Installments", "SalesList", "SalesAudit", "AccountantPortal",
+            "Clients", "InactiveClients", "Vehicles",
+            "Purchases", "PurchaseReturn", "PurchasesList",
+            "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
+            "Products", "Categories", "ImportProducts", "Warehouses", "Inventory", "Wastage",
+            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "BulkPrintBarcodes",
+            "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
+            "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
+            "Settings", "BotManager",
+            "POS", "ShiftClose"
         };
     }
 

@@ -34,6 +34,10 @@ namespace ChickenDist.Forms
         private TextBox txtLocalCloudPath;
         private ComboBox cboAppTheme;
 
+        // Loyalty & Shift controls
+        private CheckBox chkLoyaltyEnabled, chkShiftRequired;
+        private TextBox txtLoyaltyRate, txtRedemptionRate;
+
         // Scale & Barcode controls
         private CheckBox chkScaleEnabled;
         private ComboBox cboScalePort;
@@ -353,7 +357,7 @@ namespace ChickenDist.Forms
                 if (dtPreview.Rows.Count > 0)
                 {
                     int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
-                    new FrmPrintSale(previewSaleID, "Receipt", showPreview: true);
+                    new FrmPrintSale(previewSaleID, "Receipt", true);
                 }
                 else
                 {
@@ -648,6 +652,51 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkEnableCrates);
             y += 30;
 
+            // ===== إعدادات نقاط الولاء =====
+            chkLoyaltyEnabled = new CheckBox
+            {
+                Text = "تفعيل نظام نقاط الولاء للعملاء",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.LoyaltyEnabled
+            };
+            this.Controls.Add(chkLoyaltyEnabled);
+            y += 30;
+
+            AddLabel("كل كم جنيه = نقطة:", 20, ref y, 0);
+            txtLoyaltyRate = new TextBox
+            {
+                Location = new Point(180, y - 22),
+                Width = 80, BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f),
+                Text = AppConfig.LoyaltyPointsPerCurrency.ToString()
+            };
+            this.Controls.Add(txtLoyaltyRate);
+
+            AddLabel("قيمة النقطة عند الاسترداد:", 280, ref y, -22);
+            txtRedemptionRate = new TextBox
+            {
+                Location = new Point(470, y - 22),
+                Width = 80, BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f),
+                Text = AppConfig.LoyaltyRedemptionRate.ToString()
+            };
+            this.Controls.Add(txtRedemptionRate);
+            y += 8;
+
+            // ===== إعداد الوردية الإجبارية =====
+            chkShiftRequired = new CheckBox
+            {
+                Text = "الوردية إجبارية قبل البيع (POS)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.ShiftRequired
+            };
+            this.Controls.Add(chkShiftRequired);
+            y += 35;
+
             // مسار مجلد سحابي محلي
             AddLabel("مسار مجلد سحابي محلي (مثل Google Drive / Dropbox):", 20, ref y, 0);
             txtLocalCloudPath = new TextBox
@@ -848,6 +897,13 @@ namespace ChickenDist.Forms
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
+
+                // Loyalty & Shift settings
+                AppConfig.LoyaltyEnabled = chkLoyaltyEnabled.Checked;
+                if (decimal.TryParse(txtLoyaltyRate.Text, out decimal lr)) AppConfig.LoyaltyPointsPerCurrency = lr;
+                if (decimal.TryParse(txtRedemptionRate.Text, out decimal rr)) AppConfig.LoyaltyRedemptionRate = rr;
+                AppConfig.ShiftRequired = chkShiftRequired.Checked;
+
 
                 // Save Theme
                 AppConfig.AppTheme = cboAppTheme.SelectedIndex switch

@@ -317,6 +317,7 @@ namespace ChickenDist.Forms
                 }),
 
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
+                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
@@ -374,6 +375,7 @@ namespace ChickenDist.Forms
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 التقارير المالية", "Reports",   (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
