@@ -384,135 +384,41 @@ namespace ChickenDist.Forms
         {
             if (dgStock.SelectedRows.Count == 0) return;
             var r = dgStock.SelectedRows[0];
-
             _isSelecting = true;
             try
             {
-                _selectedProductID = Convert.ToInt32(r.Cells["ProductID"].Value);
+                _selectedProductID   = Convert.ToInt32(r.Cells["ProductID"].Value);
                 _selectedProductName = r.Cells["ProductName"].Value?.ToString();
                 _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
-                _selectedHasExpiry = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
+                _selectedHasExpiry   = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
                 _selectedDefaultExpiryDays = r.Cells["DefaultExpiryDays"].Value != DBNull.Value ? Convert.ToInt32(r.Cells["DefaultExpiryDays"].Value) : (int?)null;
-                if (btnExpiryBatches != null)
-                {
-                    btnExpiryBatches.Enabled = _selectedHasExpiry && _selectedProductID > 0;
-                }
                 _selectedBookQty = decimal.TryParse(r.Cells["BookQty"].Value?.ToString(),
                     System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out decimal bq) ? bq : 0;
-
-                lblSelectedProduct.Text = _selectedProductName;
-
-                // تعبئة كومبوبوكس الوحدات
-                var units = new System.Collections.Generic.List<UnitItem>();
-                string baseUnit = r.Cells["BaseUnit"].Value?.ToString() ?? "";
-                string u1Name = r.Cells["Unit1Name"].Value?.ToString() ?? "";
-                string u2Name = r.Cells["Unit2Name"].Value?.ToString() ?? "";
-
-                decimal.TryParse(r.Cells["Unit2Factor"].Value?.ToString(), out decimal u2f);
-                decimal.TryParse(r.Cells["Unit3Factor"].Value?.ToString(), out decimal u3f);
-
-                if (!string.IsNullOrEmpty(u1Name))
-                {
-                    // 1. الوحدة الصغرى (التجزئة)
-                    units.Add(new UnitItem { Name = u1Name, Factor = 1m });
-                    
-                    // 2. الوحدة الوسطى
-                    if (!string.IsNullOrEmpty(u2Name))
-                    {
-                        units.Add(new UnitItem { Name = u2Name, Factor = u2f > 0 ? u2f : 1m });
-                    }
-                    
-                    // 3. الوحدة الكبرى
-                    if (!string.IsNullOrEmpty(baseUnit))
-                    {
-                        decimal baseFactor = (u3f > 0 ? u3f : 1m) * (u2f > 0 ? u2f : 1m);
-                        units.Add(new UnitItem { Name = baseUnit, Factor = baseFactor });
-                    }
-                }
-                else
-                {
-                    // فقط الوحدة الكبرى/الأساسية
-                    if (!string.IsNullOrEmpty(baseUnit))
-                    {
-                        units.Add(new UnitItem { Name = baseUnit, Factor = 1m });
-                    }
-                    else
-                    {
-                        units.Add(new UnitItem { Name = "وحدة", Factor = 1m });
-                    }
-                }
-
-                cboAdjUnit.DataSource = units;
-                if (units.Count > 0)
-                {
-                    cboAdjUnit.SelectedIndex = 0;
-                    _lastSelectedFactor = units[0].Factor;
-                }
-                else
-                {
-                    _lastSelectedFactor = 1m;
-                }
-
-                // إذا المستخدم سبق وأدخل رصيداً فعلياً لهذا الصنف، نعرضه — وإلا نعرض الرصيد الدفتري كقيمة مقترحة
-                string cellVal = r.Cells["ActualQty"].Value?.ToString();
-                if (!string.IsNullOrWhiteSpace(cellVal) &&
-                    decimal.TryParse(cellVal, System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out decimal gridActual))
-                {
-                    decimal factor = 1m;
-                    if (cboAdjUnit.SelectedItem is UnitItem ui) factor = ui.Factor;
-                    nudActualQty.Value = gridActual / factor;
-                }
-                else
-                {
-                    decimal factor = 1m;
-                    if (cboAdjUnit.SelectedItem is UnitItem ui) factor = ui.Factor;
-                    nudActualQty.Value = _selectedBookQty / factor;
-                }
-                UpdateDifference();
+                _lastSelectedFactor = 1m;
+                // عناصر الشريط الجانبي (إن وُجدت)
+                if (lblSelectedProduct != null) lblSelectedProduct.Text = _selectedProductName;
+                if (btnExpiryBatches   != null) btnExpiryBatches.Enabled = _selectedHasExpiry && _selectedProductID > 0;
             }
-            finally
-            {
-                _isSelecting = false;
-            }
+            finally { _isSelecting = false; }
         }
 
         private void NudActualQty_ValueChanged(object sender, EventArgs e)
         {
-            // تجاهل الحدث أثناء تحديد الصف لمنع الكتابة التلقائية في الخلية
-            if (_isSelecting) return;
-
-            UpdateDifference();
-
+            if (_isSelecting || nudActualQty == null) return;
             if (dgStock.SelectedRows.Count > 0)
             {
                 var r = dgStock.SelectedRows[0];
-                
                 decimal factor = 1m;
-                if (cboAdjUnit.SelectedItem is UnitItem ui)
-                {
-                    factor = ui.Factor;
-                }
-
-                // تحديث الرصيد الفعلي في الجدول بالوحدة الصغرى دائماً لضمان تناسق الجدول والجرد الكلي
+                if (cboAdjUnit?.SelectedItem is UnitItem ui) factor = ui.Factor;
                 decimal actualInSmallest = nudActualQty.Value * factor;
                 r.Cells["ActualQty"].Value = actualInSmallest.ToString("N3");
-                
-                decimal diffInSmallest = actualInSmallest - _selectedBookQty;
-                r.Cells["DiffQty"].Value = (diffInSmallest > 0 ? "+" : "") + diffInSmallest.ToString("N3");
-
-                if (diffInSmallest > 0)
-                    r.Cells["DiffQty"].Style.ForeColor = Color.LightGreen;
-                else if (diffInSmallest < 0)
-                    r.Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
-                else
-                    r.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
-
-                // حفظ القيمة بالوحدة الصغرى في الـ Dictionary للاحتفاظ بها عبر إعادات التحميل
-                if (_selectedProductID > 0)
-                    _enteredActualQty[_selectedProductID] = actualInSmallest;
+                decimal diff = actualInSmallest - _selectedBookQty;
+                r.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                r.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
+                if (_selectedProductID > 0) _enteredActualQty[_selectedProductID] = actualInSmallest;
             }
+            UpdateDifference();
         }
 
         private void DgStock_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -521,7 +427,7 @@ namespace ChickenDist.Forms
             var row = dgStock.Rows[e.RowIndex];
             if (dgStock.Columns[e.ColumnIndex].Name == "ActualQty")
             {
-                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var inv       = System.Globalization.CultureInfo.InvariantCulture;
                 var numStyles = System.Globalization.NumberStyles.Any;
                 decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
                 string cellText = row.Cells["ActualQty"].Value?.ToString();
@@ -532,61 +438,25 @@ namespace ChickenDist.Forms
                 {
                     decimal diff = actualQty - bookQty;
                     row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
-
-                    if (diff > 0)
-                        row.Cells["DiffQty"].Style.ForeColor = Color.LightGreen;
-                    else if (diff < 0)
-                        row.Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
-                    else
-                        row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
-
-                    // حفظ القيمة في الـ Dictionary
-                    if (rowPid > 0)
-                        _enteredActualQty[rowPid] = actualQty;
-
-                    if (rowPid == _selectedProductID)
-                    {
-                        _isSelecting = true;
-                        decimal factor = 1m;
-                        if (cboAdjUnit.SelectedItem is UnitItem ui) factor = ui.Factor;
-                        nudActualQty.Value = actualQty / factor;
-                        _isSelecting = false;
-                        UpdateDifference();
-                    }
+                    row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
+                    if (rowPid > 0) _enteredActualQty[rowPid] = actualQty;
                 }
                 else
                 {
-                    // المستخدم حذف القيمة — نعيدها فارغة (لم يُجرد هذا الصنف)
                     row.Cells["ActualQty"].Value = "";
-                    row.Cells["DiffQty"].Value = "";
+                    row.Cells["DiffQty"].Value   = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
-
-                    // حذف القيمة من الـ Dictionary
-                    if (rowPid > 0)
-                        _enteredActualQty.Remove(rowPid);
-
-                    if (rowPid == _selectedProductID)
-                    {
-                        _isSelecting = true;
-                        decimal factor = 1m;
-                        if (cboAdjUnit.SelectedItem is UnitItem ui) factor = ui.Factor;
-                        nudActualQty.Value = bookQty / factor;
-                        _isSelecting = false;
-                        UpdateDifference();
-                    }
+                    if (rowPid > 0) _enteredActualQty.Remove(rowPid);
                 }
             }
         }
 
         private void CboAdjUnit_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_isSelecting) return;
-
+            if (_isSelecting || cboAdjUnit == null || nudActualQty == null) return;
             if (cboAdjUnit.SelectedItem is UnitItem ui)
             {
                 decimal newFactor = ui.Factor;
-                
-                // تحويل الرصيد الفعلي الحالي من الوحدة السابقة للجديدة
                 _isSelecting = true;
                 try
                 {
@@ -594,11 +464,7 @@ namespace ChickenDist.Forms
                     nudActualQty.Value = actualInSmallest / (newFactor > 0 ? newFactor : 1m);
                 }
                 catch { }
-                finally
-                {
-                    _isSelecting = false;
-                }
-
+                finally { _isSelecting = false; }
                 _lastSelectedFactor = newFactor;
                 UpdateDifference();
             }
@@ -607,34 +473,16 @@ namespace ChickenDist.Forms
         private void UpdateDifference()
         {
             if (_selectedProductID == 0) return;
-
-            decimal factor = 1m;
-            string unitName = _selectedProductUnit;
-
-            if (cboAdjUnit.SelectedItem is UnitItem ui)
+            decimal factor   = 1m;
+            string unitName  = _selectedProductUnit ?? "";
+            if (cboAdjUnit?.SelectedItem is UnitItem ui) { factor = ui.Factor; unitName = ui.Name; }
+            decimal bookInUnit = _selectedBookQty / (factor > 0 ? factor : 1m);
+            if (lblBookQtyVal != null) lblBookQtyVal.Text = bookInUnit.ToString("N3") + " " + unitName;
+            if (nudActualQty != null && lblDiffVal != null)
             {
-                factor = ui.Factor;
-                unitName = ui.Name;
-            }
-
-            // تحويل الرصيد الدفتري (الصغرى) إلى وحدة الجرد المحددة
-            decimal bookInUnit = _selectedBookQty / factor;
-            lblBookQtyVal.Text = bookInUnit.ToString("N3") + " " + unitName;
-
-            decimal diff = nudActualQty.Value - bookInUnit;
-            lblDiffVal.Text = (diff > 0 ? "+" : "") + diff.ToString("N3") + " " + unitName;
-
-            if (diff == 0)
-            {
-                lblDiffVal.ForeColor = Theme.TextMain;
-            }
-            else if (diff > 0)
-            {
-                lblDiffVal.ForeColor = Color.LightGreen;
-            }
-            else
-            {
-                lblDiffVal.ForeColor = Color.OrangeRed;
+                decimal diff = nudActualQty.Value - bookInUnit;
+                lblDiffVal.Text = (diff > 0 ? "+" : "") + diff.ToString("N3") + " " + unitName;
+                lblDiffVal.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
             }
         }
 
@@ -643,24 +491,25 @@ namespace ChickenDist.Forms
             _isSelecting = true;
             try
             {
-                _selectedProductID = 0;
-                _selectedBookQty = 0;
+                _selectedProductID   = 0;
+                _selectedBookQty     = 0;
                 _selectedProductName = "";
                 _selectedProductUnit = "";
-                lblSelectedProduct.Text = "اختر صنفاً...";
-                lblBookQtyVal.Text = "0.00";
-                nudActualQty.Value = 0;
-                lblDiffVal.Text = "0.00";
-                lblDiffVal.ForeColor = Theme.TextMain;
-                txtNotes.Clear();
-                cboAdjUnit.DataSource = null;
-                _lastSelectedFactor = 1m;
+                _lastSelectedFactor  = 1m;
+                // عناصر الشريط الجانبي أُزيلت — نتحقق من الـ null قبل الاستخدام
+                if (lblSelectedProduct != null) lblSelectedProduct.Text = "اختر صنفاً...";
+                if (lblBookQtyVal      != null) lblBookQtyVal.Text      = "0.00";
+                if (nudActualQty       != null) nudActualQty.Value      = 0;
+                if (lblDiffVal         != null) { lblDiffVal.Text = "0.00"; lblDiffVal.ForeColor = Theme.TextMain; }
+                if (txtNotes           != null) txtNotes.Clear();
+                if (cboAdjUnit         != null) cboAdjUnit.DataSource   = null;
             }
             finally
             {
                 _isSelecting = false;
             }
         }
+
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
