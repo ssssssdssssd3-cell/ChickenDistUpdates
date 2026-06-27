@@ -1,5 +1,5 @@
 version=1.9.52
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=153E9E5D92964793584B274E3ADBDA5B00707401950F7760423AA33D70B05523
-changelog=v1.9.52 - 2026-06-27: fix inventory crash + alternating grid colors + POS totals order fixed
+sha256=9439C2BA364F47F19146383092A57FE6A2483B9CA16FE5885A6817B6CEF7D3AD
+changelog=v1.9.52 - 2026-06-27: Bug fixes and UI improvements
