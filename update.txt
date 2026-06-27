@@ -1,7 +1,7 @@
 version=1.9.48
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=FDFDDC7561EA941070CF83C4233F0157655D852BFC1661B46815A70D338750F4
+sha256=697A836CB7C70D9CD78C20C72ED19AFE8B4824777F52D337FDFD3B3D18058317
 changelog=v1.9.48: إضافة منطق تاريخ الصلاحية في شاشات المبيعات (الباركود الدولي صامت FIFO والمحلي يعرض تحذيراً)، ودعم جرد واختيار الصلاحيات في شاشة البحث الجرد وسجلات تعديلات الدفعات والصلاحيات في تسوية الجرد، وتحسين وضوح جملة الدعاية في أسفل الفاتورة.
 v1.9.47: إضافة شاشة نقطة البيع السريعة (POS) وإدارة الوردية (ShiftClose) لقائمة الصلاحيات وإدارة الموظفين، ليتسنى للمدير تفعيلها أو حظرها للمستخدمين غير المدراء بنجاح.
 v1.9.46: تعديل مظهر ولون السطر الإعلاني (Pro System) في أسفل صورة فاتورة الواتساب المرسلة للعميل ليظهر بخط عريض ولون أزرق داكن (Navy Blue) واضح بدلاً من اللون الرمادي الباهت لتسهيل القراءة ولفت الانتباه.
