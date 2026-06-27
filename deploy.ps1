@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "1.9.51"
+$VERSION   = "1.9.52"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -102,13 +102,12 @@ Write-OK "Copied ChickenDist.bin - $([math]::Round($binSize/1024, 0)) KB"
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$updateContent = @"
-version=$VERSION
-url=$UPDATE_URL
-download=$UPDATE_URL
-sha256=$sha256
-changelog=$CHANGELOG
-"@
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Bug fixes and UI improvements"
+$updateContent  = "version=$VERSION`r`n"
+$updateContent += "url=$UPDATE_URL`r`n"
+$updateContent += "download=$UPDATE_URL`r`n"
+$updateContent += "sha256=$sha256`r`n"
+$updateContent += "changelog=$changelogText`r`n"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($UPDATE_TXT, $updateContent, $utf8NoBom)
 Write-OK "update.txt updated -> version=$VERSION"
