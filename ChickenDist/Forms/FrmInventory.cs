@@ -17,7 +17,7 @@ namespace ChickenDist.Forms
         private DataGridView dgStock;
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
-        private Button btnSearch, btnMovement, btnPrintStock;
+        private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
         private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
         private ComboBox cboCategory;
 
@@ -170,7 +170,14 @@ namespace ChickenDist.Forms
             btnPrintStock.Margin = new Padding(5, 2, 5, 0);
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnMovement, btnPrintStock });
+            btnAddExpiryRow = Theme.MakeButton("➕ إضافة صلاحية جديدة", Color.FromArgb(40, 120, 60));
+            btnAddExpiryRow.Size = new Size(150, 26);
+            btnAddExpiryRow.Margin = new Padding(5, 2, 5, 0);
+            btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
+            btnAddExpiryRow.Enabled = false;
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnMovement, btnPrintStock, btnAddExpiryRow });
+
 
             // ── شبكة الجرد ─────────────────────────────────
             dgStock = MakeGrid();
@@ -306,14 +313,12 @@ namespace ChickenDist.Forms
                     ? r["Unit1Name"].ToString()
                     : r["Unit"].ToString();
 
-                // تاريخ الصلاحية للدفعات
                 string expiryVal = "";
                 if (dt.Columns.Contains("ExpiryDate") && r["ExpiryDate"] != DBNull.Value)
                 {
                     DateTime expDt = Convert.ToDateTime(r["ExpiryDate"]);
-                    expiryVal = expDt.ToString("MM/yyyy");
+                    expiryVal = expDt.ToString("yyyy-MM-dd");
                 }
-
                 object batchIdVal = dt.Columns.Contains("BatchID") && r["BatchID"] != DBNull.Value
                     ? r["BatchID"]
                     : (object)DBNull.Value;
@@ -399,6 +404,7 @@ namespace ChickenDist.Forms
                 // عناصر الشريط الجانبي (إن وُجدت)
                 if (lblSelectedProduct != null) lblSelectedProduct.Text = _selectedProductName;
                 if (btnExpiryBatches   != null) btnExpiryBatches.Enabled = _selectedHasExpiry && _selectedProductID > 0;
+                if (btnAddExpiryRow    != null) btnAddExpiryRow.Enabled = _selectedHasExpiry && _selectedProductID > 0;
             }
             finally { _isSelecting = false; }
         }
@@ -447,6 +453,25 @@ namespace ChickenDist.Forms
                     row.Cells["DiffQty"].Value   = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
                     if (rowPid > 0) _enteredActualQty.Remove(rowPid);
+                }
+            }
+            else if (dgStock.Columns[e.ColumnIndex].Name == "ExpiryDate")
+            {
+                var cell = row.Cells["ExpiryDate"];
+                string val = cell.Value?.ToString();
+                var parsed = DbHelper.ParseExpiryInput(val);
+                if (parsed.HasValue)
+                {
+                    cell.Value = parsed.Value.ToString("yyyy-MM-dd");
+                }
+                else if (string.IsNullOrWhiteSpace(val))
+                {
+                    cell.Value = "";
+                }
+                else
+                {
+                    MessageBox.Show("تاريخ غير صالح. يرجى إدخال التاريخ بالصيغة الصحيحة (شهر وسنة مثل 0326 أو yyyy-MM-dd).", "تاريخ غير صالح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    cell.Value = "";
                 }
             }
         }
@@ -562,30 +587,99 @@ namespace ChickenDist.Forms
                 if (MessageBox.Show(msg, "تأكيد تسوية الكميات الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     int savedCount = 0;
-                    foreach (var row in modifiedRows)
+                    try
                     {
-                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                        decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
-                        decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
-                        string displayUnit = row.Cells["Unit"].Value?.ToString();
-                        string rowNotes    = row.Cells["Notes"].Value?.ToString() ?? "";
-                        int id = InventoryDAL.SaveAdjustment(pid, wid, book, actual, rowNotes, displayUnit, 1m);
-                        if (id > 0)
+                        DbHelper.RunInTransaction((con, trans) =>
                         {
-                            savedCount++;
-                            _enteredActualQty.Remove(pid);
+                            foreach (var row in modifiedRows)
+                            {
+                                int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                                decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
+                                decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
+                                string displayUnit = row.Cells["Unit"].Value?.ToString();
+                                string rowNotes    = row.Cells["Notes"].Value?.ToString() ?? "";
+                                bool hasExpiry     = row.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(row.Cells["HasExpiry"].Value);
+
+                                if (hasExpiry)
+                                {
+                                    object batchIdVal = row.Cells["BatchID"].Value;
+                                    string expStr = row.Cells["ExpiryDate"].Value?.ToString();
+                                    DateTime? exp = null;
+                                    if (!string.IsNullOrWhiteSpace(expStr) && DateTime.TryParse(expStr, out DateTime parsedExp))
+                                        exp = parsedExp;
+
+                                    if (batchIdVal != null && batchIdVal != DBNull.Value)
+                                    {
+                                        int bid = Convert.ToInt32(batchIdVal);
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
+                                            DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value),
+                                            DbHelper.P("@qty", actual),
+                                            DbHelper.P("@bid", bid));
+                                    }
+                                    else
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@wid", wid),
+                                            DbHelper.P("@qty", actual),
+                                            DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value));
+                                    }
+
+                                    // Sync ProductStock
+                                    DbHelper.ExecuteTrans(trans,
+                                        @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                            UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
+                                          ELSE
+                                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
+                                        DbHelper.P("@pid", pid),
+                                        DbHelper.P("@wid", wid));
+
+                                    // Log to StockAdjustments
+                                    string expText = exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "بدون";
+                                    string logNotes = $"[تسوية صلاحية: {expText}] " + rowNotes;
+                                    DbHelper.ExecuteTrans(trans,
+                                        @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                          VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
+                                        DbHelper.P("@pid", pid),
+                                        DbHelper.P("@wid", wid),
+                                        DbHelper.P("@bq", book),
+                                        DbHelper.P("@aq", actual),
+                                        DbHelper.P("@notes", logNotes),
+                                        DbHelper.P("@by", Session.EmpID),
+                                        DbHelper.P("@un", displayUnit));
+                                }
+                                else
+                                {
+                                    // Normal adjustment
+                                    DbHelper.ExecuteTrans(trans,
+                                        @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                          VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
+                                        DbHelper.P("@pid", pid),
+                                        DbHelper.P("@wid", wid),
+                                        DbHelper.P("@bq", book),
+                                        DbHelper.P("@aq", actual),
+                                        DbHelper.P("@notes", rowNotes),
+                                        DbHelper.P("@by", Session.EmpID),
+                                        DbHelper.P("@un", displayUnit));
+                                }
+
+                                _enteredActualQty.Remove(pid);
+                                savedCount++;
+                            }
+                        });
+
+                        if (savedCount > 0)
+                        {
+                            MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadStock();
+                            LoadLogs();
                         }
                     }
-
-                    if (savedCount > 0)
+                    catch (Exception ex)
                     {
-                        MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadStock();
-                        LoadLogs();
-                    }
-                    else
-                    {
-                        MessageBox.Show("❌ حدث خطأ أثناء محاولة حفظ تسوية الجرد.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"❌ فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -594,6 +688,7 @@ namespace ChickenDist.Forms
                 MessageBox.Show("لم يتم إدخال أي رصيد فعلي في الجدول بعد.\nاكتب الرصيد الفعلي في عمود «الرصيد الفعلي» لأي صنف ثم اضغط حفظ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
 
 
         private class UnitItem
@@ -847,7 +942,61 @@ namespace ChickenDist.Forms
                 }
             }
         }
+
+        private void BtnAddExpiryRow_Click(object sender, EventArgs e)
+        {
+            if (dgStock.SelectedRows.Count == 0) return;
+            var r = dgStock.SelectedRows[0];
+            
+            int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            string code = r.Cells["ProductCode"].Value?.ToString();
+            string name = r.Cells["ProductName"].Value?.ToString();
+            string unit = r.Cells["Unit"].Value?.ToString();
+            string baseUnit = r.Cells["BaseUnit"].Value?.ToString();
+            string unit1 = r.Cells["Unit1Name"].Value?.ToString();
+            string unit2 = r.Cells["Unit2Name"].Value?.ToString();
+            decimal u2f = r.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["Unit2Factor"].Value) : 0m;
+            decimal u3f = r.Cells["Unit3Factor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["Unit3Factor"].Value) : 0m;
+            bool hasExp = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
+            int? defDays = r.Cells["DefaultExpiryDays"].Value != DBNull.Value ? Convert.ToInt32(r.Cells["DefaultExpiryDays"].Value) : (int?)null;
+            string price = r.Cells["SalePrice"].Value?.ToString();
+
+            // Clean the name of "(صلاحية إضافية)" if we are adding from an already modified row
+            if (name.Contains(" (صلاحية إضافية)"))
+            {
+                name = name.Replace(" (صلاحية إضافية)", "");
+            }
+
+            int ri = dgStock.Rows.Add();
+            var newRow = dgStock.Rows[ri];
+
+            newRow.Cells["ProductID"].Value = pid;
+            newRow.Cells["BatchID"].Value = DBNull.Value;
+            newRow.Cells["ProductCode"].Value = code;
+            newRow.Cells["ProductName"].Value = name + " (صلاحية إضافية)";
+            newRow.Cells["ExpiryDate"].Value = "";
+            newRow.Cells["Unit"].Value = unit;
+            newRow.Cells["SalePrice"].Value = price;
+            newRow.Cells["BookQty"].Value = "0.000";
+            newRow.Cells["ActualQty"].Value = "";
+            newRow.Cells["DiffQty"].Value = "";
+            newRow.Cells["Notes"].Value = "";
+
+            newRow.Cells["BaseUnit"].Value = baseUnit;
+            newRow.Cells["Unit1Name"].Value = unit1;
+            newRow.Cells["Unit2Name"].Value = unit2;
+            newRow.Cells["Unit2Factor"].Value = u2f;
+            newRow.Cells["Unit3Factor"].Value = u3f;
+            newRow.Cells["HasExpiry"].Value = hasExp;
+            newRow.Cells["DefaultExpiryDays"].Value = defDays;
+
+            dgStock.ClearSelection();
+            newRow.Selected = true;
+            dgStock.CurrentCell = newRow.Cells["ExpiryDate"];
+            dgStock.BeginEdit(true);
+        }
     }
+
 
     public class FrmAdjustExpiryBatches : Form
     {
