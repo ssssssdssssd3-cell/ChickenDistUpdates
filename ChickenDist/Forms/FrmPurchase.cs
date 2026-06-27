@@ -370,6 +370,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
 
@@ -825,6 +826,8 @@ namespace ChickenDist.Forms
                 ci.Unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
                 ci.Unit1Barcode = r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
                 ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
+                ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
+                ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
 
                 cboProduct.Items.Add(ci);
             }
@@ -954,6 +957,16 @@ namespace ChickenDist.Forms
                 }
             }
 
+            DateTime? defaultExpiry = null;
+            if (product != null && product.HasExpiry)
+            {
+                int days = product.DefaultExpiryDays ?? 0;
+                if (days > 0)
+                {
+                    defaultExpiry = DateTime.Today.AddDays(days);
+                }
+            }
+
             _items.Add(new PurchaseItemDTO
             {
                 ProductID   = prodId,
@@ -964,7 +977,8 @@ namespace ChickenDist.Forms
                 DiscountPct = disc,
                 SuggestedSalePrice = defaultSalePrice,
                 UnitName = defaultUnit,
-                Factor = defaultFactor
+                Factor = defaultFactor,
+                ExpiryDate = defaultExpiry
             });
 
             RefreshGrid();
@@ -1278,7 +1292,8 @@ namespace ChickenDist.Forms
                     item.DiscountPct.ToString("F2"),
                     item.TotalPrice.ToString("F2"),
                     sell.ToString("F2"),
-                    margin.ToString("F1") + "%");
+                    margin.ToString("F1") + "%",
+                    item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "");
                 // عمود الكود للسطور المضافة = قراءة فقط
                 dgItems.Rows[rIdx].Cells["ProductCode"].ReadOnly = true;
 
@@ -1441,6 +1456,29 @@ namespace ChickenDist.Forms
                 }
                 else
                     dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = (item.SuggestedSalePrice ?? 0m).ToString("F2");
+            }
+            else if (colName == "ExpiryDate")
+            {
+                var parsedDate = DbHelper.ParseExpiryInput(cellVal);
+                if (parsedDate.HasValue)
+                {
+                    item.ExpiryDate = parsedDate.Value;
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+                        {
+                            dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = parsedDate.Value.ToString("yyyy-MM-dd");
+                        }
+                    });
+                }
+                else if (string.IsNullOrWhiteSpace(cellVal))
+                {
+                    item.ExpiryDate = null;
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "";
+                }
             }
 
             // تحديث عمود الإجمالي
@@ -1712,7 +1750,8 @@ namespace ChickenDist.Forms
                         DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
                         SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
                         UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
-                        Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m
+                        Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
+                        ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null
                     });
                 }
                 RefreshGrid();
@@ -1764,6 +1803,21 @@ namespace ChickenDist.Forms
                 MessageBox.Show("اختر المورد أولاً للفواتير الآجلة", "تنبيه",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
+            }
+
+            // تحقق من وجود تاريخ صلاحية للأصناف التي تتطلب ذلك
+            foreach (var item in _items)
+            {
+                var hasExpiryObj = DbHelper.Scalar("SELECT HasExpiry FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
+                bool prodHasExpiry = hasExpiryObj != null && Convert.ToBoolean(hasExpiryObj);
+                if (prodHasExpiry)
+                {
+                    if (!item.ExpiryDate.HasValue)
+                    {
+                        MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
             }
 
             decimal gross, discAmt, discPct, net, taxPct, taxAmt;

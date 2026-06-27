@@ -34,8 +34,8 @@ namespace ChickenDist.Forms
         private TextBox txtLocalCloudPath;
         private ComboBox cboAppTheme;
 
-        // Loyalty & Shift controls
-        private CheckBox chkLoyaltyEnabled, chkShiftRequired;
+        // Loyalty & Shifts Settings
+        private CheckBox chkLoyaltyEnabled, chkShiftRequired, chkAllowSellExpired;
         private TextBox txtLoyaltyRate, txtRedemptionRate;
 
         // Scale & Barcode controls
@@ -695,6 +695,18 @@ namespace ChickenDist.Forms
                 Checked = AppConfig.ShiftRequired
             };
             this.Controls.Add(chkShiftRequired);
+            y += 30;
+
+            // ===== إعداد بيع منتهي الصلاحية =====
+            chkAllowSellExpired = new CheckBox
+            {
+                Text = "السماح ببيع الأصناف منتهية الصلاحية",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.AllowSellExpired
+            };
+            this.Controls.Add(chkAllowSellExpired);
             y += 35;
 
             // مسار مجلد سحابي محلي
@@ -903,6 +915,7 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(txtLoyaltyRate.Text, out decimal lr)) AppConfig.LoyaltyPointsPerCurrency = lr;
                 if (decimal.TryParse(txtRedemptionRate.Text, out decimal rr)) AppConfig.LoyaltyRedemptionRate = rr;
                 AppConfig.ShiftRequired = chkShiftRequired.Checked;
+                AppConfig.AllowSellExpired = chkAllowSellExpired.Checked;
 
 
                 // Save Theme

@@ -593,7 +593,7 @@ namespace ChickenDist.Forms
                     string footerText = string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase) 
                         ? "نشكركم لزيارتكم الكريمة وثقتكم بنا" 
                         : "شكراً لتعاملكم معنا";
-                    g.DrawString(footerText, small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 16), center);
+                    g.DrawString(footerText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
                 }
                 else
                 {
@@ -1040,7 +1040,7 @@ namespace ChickenDist.Forms
                     string footerTextText = string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase) 
                         ? "نشكركم لزيارتكم وثقتكم بنا" 
                         : "شكراً لتعاملكم معنا";
-                    g.DrawString(footerTextText, small, Brushes.Gray, new RectangleF(0, y, pageW, 20), center);
+                    g.DrawString(footerTextText, small, Brushes.Black, new RectangleF(0, y, pageW, 20), center);
                 }
             };
 

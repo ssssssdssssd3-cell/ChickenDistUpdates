@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         public int SelectedProductID { get; private set; } = 0;
         public decimal SelectedPrice { get; private set; } = 0m;
         public string SelectedUnitName { get; private set; } = "";
+        public int? SelectedBatchID { get; private set; } = null;
+        public DateTime? SelectedExpiryDate { get; private set; } = null;
 
         public FrmProductSearch(int? warehouseID = null)
         {
@@ -496,6 +498,29 @@ namespace ChickenDist.Forms
             {
                 dgUnits.Rows.Add(unit1, unit1Price.ToString("F2"), stock.ToString("F2"), globalStock.ToString("F2"), 1m, unit1PP, unit1);
             }
+
+            // 4. Batches / Expiry Dates
+            bool hasExpiry = prodRow.Table.Columns.Contains("HasExpiry") && prodRow["HasExpiry"] != DBNull.Value && Convert.ToBoolean(prodRow["HasExpiry"]);
+            if (hasExpiry)
+            {
+                int whId = _warehouseID ?? 1;
+                DataTable dtBatches = DbHelper.Query(@"
+                    SELECT BatchID, ExpiryDate, Quantity 
+                    FROM ProductBatches 
+                    WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity > 0
+                    ORDER BY ExpiryDate ASC, BatchID ASC",
+                    DbHelper.P("@pid", productID), DbHelper.P("@wid", whId));
+                
+                foreach (DataRow bRow in dtBatches.Rows)
+                {
+                    int batchID = Convert.ToInt32(bRow["BatchID"]);
+                    DateTime? expDate = bRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(bRow["ExpiryDate"]) : (DateTime?)null;
+                    decimal batchQty = Convert.ToDecimal(bRow["Quantity"]);
+                    string expStr = expDate.HasValue ? expDate.Value.ToString("yyyy-MM-dd") : "بدون تاريخ";
+                    
+                    dgUnits.Rows.Add($"صلاحية: {expStr} (دفعة #{batchID})", basePrice.ToString("F2"), batchQty.ToString("F2"), batchQty.ToString("F2"), 1m, basePP, $"BATCH:{batchID}:{expStr}");
+                }
+            }
         }
 
         private void BtnSelect_Click(object sender, EventArgs e)
@@ -508,15 +533,48 @@ namespace ChickenDist.Forms
             if (dgProducts.SelectedRows.Count == 0) return;
             SelectedProductID = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
 
+            SelectedBatchID = null;
+            SelectedExpiryDate = null;
+
             if (dgUnits.SelectedRows.Count > 0)
             {
                 SelectedPrice = Convert.ToDecimal(dgUnits.SelectedRows[0].Cells["SalePrice"].Value);
-                SelectedUnitName = dgUnits.SelectedRows[0].Cells["UnitName"].Value?.ToString() ?? "";
+                string matchedUnit = dgUnits.SelectedRows[0].Cells["MatchedUnit"].Value?.ToString() ?? "";
+                if (matchedUnit.StartsWith("BATCH:"))
+                {
+                    var parts = matchedUnit.Split(':');
+                    if (parts.Length >= 3)
+                    {
+                        SelectedBatchID = Convert.ToInt32(parts[1]);
+                        if (DateTime.TryParse(parts[2], out DateTime exp))
+                            SelectedExpiryDate = exp;
+                    }
+                    SelectedUnitName = dgProducts.SelectedRows[0].Cells["Unit"].Value?.ToString() ?? "";
+                }
+                else
+                {
+                    SelectedUnitName = matchedUnit;
+                }
             }
             else if (dgUnits.Rows.Count > 0)
             {
                 SelectedPrice = Convert.ToDecimal(dgUnits.Rows[0].Cells["SalePrice"].Value);
-                SelectedUnitName = dgUnits.Rows[0].Cells["UnitName"].Value?.ToString() ?? "";
+                string matchedUnit = dgUnits.Rows[0].Cells["MatchedUnit"].Value?.ToString() ?? "";
+                if (matchedUnit.StartsWith("BATCH:"))
+                {
+                    var parts = matchedUnit.Split(':');
+                    if (parts.Length >= 3)
+                    {
+                        SelectedBatchID = Convert.ToInt32(parts[1]);
+                        if (DateTime.TryParse(parts[2], out DateTime exp))
+                            SelectedExpiryDate = exp;
+                    }
+                    SelectedUnitName = dgProducts.SelectedRows[0].Cells["Unit"].Value?.ToString() ?? "";
+                }
+                else
+                {
+                    SelectedUnitName = matchedUnit;
+                }
             }
             else
             {

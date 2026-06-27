@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -146,10 +146,10 @@ namespace ChickenDist.Forms
             {
                 var dt = DbHelper.Query(@"
                     SELECT
-                        ISNULL(SUM(NetAmount), 0) AS TotalSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN NetAmount ELSE 0 END), 0) AS CashSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN NetAmount ELSE 0 END), 0) AS CreditSales,
-                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN NetAmount ELSE 0 END), 0) AS OtherSales
+                        ISNULL(SUM(TotalAmount), 0) AS TotalSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END), 0) AS CashSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END), 0) AS CreditSales,
+                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                     FROM Sales WHERE ShiftID = @sid AND IsPosted = 1",
                     DbHelper.P("@sid", shiftID));
 

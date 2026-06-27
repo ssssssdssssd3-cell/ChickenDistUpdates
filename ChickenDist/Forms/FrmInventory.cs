@@ -18,7 +18,8 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock;
-        private CheckBox chkBelowMin;
+        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
+        private ComboBox cboCategory;
 
         // Adjustment Form Controls
         private Label lblSelectedProduct, lblBookQtyVal, lblDiffVal;
@@ -32,6 +33,9 @@ namespace ChickenDist.Forms
         private string _selectedProductUnit = "";
         private bool _isSelecting = false;
         private decimal _lastSelectedFactor = 1m;
+        private bool _selectedHasExpiry = false;
+        private int? _selectedDefaultExpiryDays = null;
+        private Button btnExpiryBatches;
         // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل
         private readonly System.Collections.Generic.Dictionary<int, decimal> _enteredActualQty
             = new System.Collections.Generic.Dictionary<int, decimal>();
@@ -86,39 +90,44 @@ namespace ChickenDist.Forms
             var pnlF = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 55,
+                Height = 85,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10),
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false
+                WrapContents = true
             };
 
             var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(5, 8, 5, 0) };
-            cboWarehouse = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
+            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
             cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
 
+            var lblCat = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
+            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
+            try
+            {
+                cboCategory.Items.Add(new ComboItem(0, "(كل التصنيفات)"));
+                var dtCat = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive = 1 ORDER BY CategoryName");
+                foreach (DataRow r in dtCat.Rows)
+                {
+                    cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+                }
+                cboCategory.SelectedIndex = 0;
+            }
+            catch { }
+            cboCategory.SelectedIndexChanged += (s, e) => LoadStock();
+
             var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
-            txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(5, 4, 5, 0) };
+            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(5, 4, 5, 0) };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadStock(); };
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
-            btnSearch.Size = new Size(80, 30);
-            btnSearch.Margin = new Padding(5, 0, 5, 0);
+            btnSearch.Size = new Size(70, 26);
+            btnSearch.Margin = new Padding(5, 2, 5, 0);
             btnSearch.Click += (s, e) => LoadStock();
-
-            btnMovement = Theme.MakeButton("📊 كشف حركة الصنف", Theme.Primary);
-            btnMovement.Size = new Size(150, 30);
-            btnMovement.Margin = new Padding(5, 0, 5, 0);
-            btnMovement.Click += BtnMovement_Click;
-
-            btnPrintStock = Theme.MakeButton("🖨 طباعة ورقة الجرد", Theme.Accent);
-            btnPrintStock.Size = new Size(130, 30);
-            btnPrintStock.Margin = new Padding(5, 0, 5, 0);
-            btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
             chkBelowMin = new CheckBox
             {
-                Text = "⚠️ حد الطلب فقط",
+                Text = "⚠️ حد الطلب",
                 ForeColor = Color.Yellow,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 AutoSize = true,
@@ -127,141 +136,87 @@ namespace ChickenDist.Forms
             };
             chkBelowMin.CheckedChanged += (s, e) => LoadStock();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblSch, txtSearch, btnSearch, chkBelowMin, btnMovement, btnPrintStock });
+            chkHideZeroStock = new CheckBox
+            {
+                Text = "🚫 بدون رصيد صفري",
+                ForeColor = Color.LightSkyBlue,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(15, 6, 5, 0),
+                RightToLeft = RightToLeft.Yes,
+                Checked = false
+            };
+            chkHideZeroStock.CheckedChanged += (s, e) => LoadStock();
 
+            chkExpiryOnly = new CheckBox
+            {
+                Text = "📅 صلاحية فقط",
+                ForeColor = Color.LightGreen,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(15, 6, 5, 0),
+                RightToLeft = RightToLeft.Yes,
+                Checked = false
+            };
+            chkExpiryOnly.CheckedChanged += (s, e) => LoadStock();
+
+            btnMovement = Theme.MakeButton("📊 كشف حركة الصنف", Theme.Primary);
+            btnMovement.Size = new Size(130, 26);
+            btnMovement.Margin = new Padding(5, 2, 5, 0);
+            btnMovement.Click += BtnMovement_Click;
+
+            btnPrintStock = Theme.MakeButton("🖨 طباعة الجرد", Theme.Accent);
+            btnPrintStock.Size = new Size(110, 26);
+            btnPrintStock.Margin = new Padding(5, 2, 5, 0);
+            btnPrintStock.Click += (s, e) => PrintStocktakeReport();
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnMovement, btnPrintStock });
+
+            // ── شبكة الجرد ─────────────────────────────────
             dgStock = MakeGrid();
             dgStock.ReadOnly = false;
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", ReadOnly = true, FillWeight = 40 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 90 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", ReadOnly = true, FillWeight = 40 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", ReadOnly = true, FillWeight = 40 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty", HeaderText = "الرصيد الدفتري الحالي", ReadOnly = true, FillWeight = 60 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty", HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 60 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty", HeaderText = "الفارق الجردي", ReadOnly = true, FillWeight = 60 });
-            
-            // أعمدة الوحدات المتعددة غير المرئية
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseUnit", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Name", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Name", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Factor", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor", Visible = false });
-            
-            dgStock.SelectionChanged += DgStock_SelectionChanged;
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",  Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", ReadOnly = true,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",  HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",        HeaderText = "الوحدة",    ReadOnly = true,  FillWeight = 38 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = true,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(255, 255, 225), ForeColor = Color.FromArgb(80, 50, 0) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",     HeaderText = "الفارق",       ReadOnly = true,  FillWeight = 48 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",       HeaderText = "ملاحظات",      ReadOnly = false, FillWeight = 70 });
+
+            // أعمدة مخفية للوحدات
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseUnit",         Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Name",        Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Name",        Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Factor",      Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor",      Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",        Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays", Visible = false });
+
             dgStock.CellEndEdit += DgStock_CellEndEdit;
-            dgStock.CellDoubleClick += (s, e) => {
-                if (e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name != "ActualQty")
-                    BtnMovement_Click(s, e);
-            };
+            dgStock.CellDoubleClick += (s, e) => { if (e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name != "ActualQty" && dgStock.Columns[e.ColumnIndex].Name != "Notes" && dgStock.Columns[e.ColumnIndex].Name != "ExpiryDate") BtnMovement_Click(s, e); };
+
+            // ── زر الحفظ الشامل ─────────────────────────────
+            btnSaveAdj = Theme.MakeButton("💾 حفظ كل التسويات", Theme.Accent);
+            btnSaveAdj.Size = new Size(145, 26);
+            btnSaveAdj.Margin = new Padding(5, 2, 5, 0);
+            btnSaveAdj.Click += BtnSaveAdj_Click;
+
+            btnClearAdj = Theme.MakeButton("❌ إلغاء التغييرات", Color.FromArgb(140, 40, 40));
+            btnClearAdj.Size = new Size(130, 26);
+            btnClearAdj.Margin = new Padding(5, 2, 5, 0);
+            btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
+
+            pnlF.Controls.Add(btnSaveAdj);
+            pnlF.Controls.Add(btnClearAdj);
 
             pnlLeft.Controls.Add(dgStock); // Fill
             pnlLeft.Controls.Add(pnlF);    // Top
 
-            // Panel Right: Adjustment Form (Dock Left, Width 340)
-            var pnlDetails = new Panel { Dock = DockStyle.Left, Width = 340, BackColor = Theme.BgCard, Padding = new Padding(15) };
-            
-            var lblSectionTitle = new Label 
-            { 
-                Text = "⚡ تسوية كميات الصنف", 
-                Font = Theme.FontHeader, 
-                ForeColor = Theme.Accent, 
-                AutoSize = true, 
-                Location = new Point(160, 15) 
-            };
-            pnlDetails.Controls.Add(lblSectionTitle);
-
-            var tblFields = new TableLayoutPanel
-            {
-                Location = new Point(10, 55),
-                Size = new Size(310, 280),
-                ColumnCount = 2,
-                RowCount = 6,
-                RightToLeft = RightToLeft.Yes
-            };
-            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f));
-            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60f));
-            for (int i = 0; i < 6; i++)
-                tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));
-
-            // Row 0: Selected Product
-            var lblProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            lblSelectedProduct = new Label { Text = "اختر صنفاً...", Font = Theme.FontBold, ForeColor = Theme.Accent, AutoSize = true, Margin = new Padding(0, 10, 0, 0) };
-            tblFields.Controls.Add(lblProd, 0, 0);
-            tblFields.Controls.Add(lblSelectedProduct, 1, 0);
-
-            // Row 1: Book Qty
-            var lblBook = new Label { Text = "الرصيد الدفتري:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            lblBookQtyVal = new Label { Text = "0.00", Font = Theme.FontBold, ForeColor = Theme.TextMain, AutoSize = true, Margin = new Padding(0, 10, 0, 0) };
-            tblFields.Controls.Add(lblBook, 0, 1);
-            tblFields.Controls.Add(lblBookQtyVal, 1, 1);
-
-            // Row 2: Unit Selector
-            var lblUnit = new Label { Text = "وحدة الجرد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            cboAdjUnit = new ComboBox
-            {
-                Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 5, 0, 5)
-            };
-            cboAdjUnit.SelectedIndexChanged += CboAdjUnit_SelectedIndexChanged;
-            tblFields.Controls.Add(lblUnit, 0, 2);
-            tblFields.Controls.Add(cboAdjUnit, 1, 2);
-
-            // Row 3: Actual Qty
-            var lblActual = new Label { Text = "الرصيد الفعلي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            nudActualQty = new NumericUpDown 
-            { 
-                Dock = DockStyle.Fill, 
-                Minimum = -999999, 
-                Maximum = 999999, 
-                DecimalPlaces = 3, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
-                Margin = new Padding(0, 5, 0, 5)
-            };
-            nudActualQty.ValueChanged += NudActualQty_ValueChanged;
-            tblFields.Controls.Add(lblActual, 0, 3);
-            tblFields.Controls.Add(nudActualQty, 1, 3);
-
-            // Row 4: Difference
-            var lblDiff = new Label { Text = "الفارق الجردي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            lblDiffVal = new Label { Text = "0.00", Font = Theme.FontBold, ForeColor = Theme.TextMain, AutoSize = true, Margin = new Padding(0, 10, 0, 0) };
-            tblFields.Controls.Add(lblDiff, 0, 4);
-            tblFields.Controls.Add(lblDiffVal, 1, 4);
-
-            // Row 5: Notes
-            var lblNotes = new Label { Text = "ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
-            txtNotes = new TextBox 
-            { 
-                Dock = DockStyle.Fill, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
-                Margin = new Padding(0, 5, 0, 5),
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            tblFields.Controls.Add(lblNotes, 0, 5);
-            tblFields.Controls.Add(txtNotes, 1, 5);
-
-            pnlDetails.Controls.Add(tblFields);
-
-            // Action Buttons
-            btnSaveAdj = Theme.MakeButton("💾 تسوية وحفظ الرصيد", Theme.Accent);
-            btnSaveAdj.Location = new Point(170, 350);
-            btnSaveAdj.Size = new Size(150, 35);
-            btnSaveAdj.Click += BtnSaveAdj_Click;
-
-            btnClearAdj = Theme.MakeButton("🆕 إلغاء", Color.FromArgb(140, 40, 40));
-            btnClearAdj.Location = new Point(20, 350);
-            btnClearAdj.Size = new Size(140, 35);
-            btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
-
-            pnlDetails.Controls.AddRange(new Control[] { btnSaveAdj, btnClearAdj });
-
             tabStock.Controls.Add(pnlLeft);
-            tabStock.Controls.Add(pnlDetails);
         }
 
         private void BuildLogsTab()
@@ -322,19 +277,24 @@ namespace ChickenDist.Forms
             dgStock.Rows.Clear();
             int? wid = null;
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
-            {
                 wid = ci.ID;
-            }
-            var dt = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked);
+
+            bool hideZero = chkHideZeroStock != null && chkHideZeroStock.Checked;
+            bool expOnly  = chkExpiryOnly  != null && chkExpiryOnly.Checked;
+            int? catId = null;
+            if (cboCategory != null && cboCategory.SelectedItem is ComboItem catCi && catCi.ID > 0)
+                catId = catCi.ID;
+
+            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId);
             var inv = System.Globalization.CultureInfo.InvariantCulture;
+
             foreach (DataRow r in dt.Rows)
             {
                 decimal bookQty = Convert.ToDecimal(r["BookQty"]);
                 int pid = Convert.ToInt32(r["ProductID"]);
 
-                // إعادة القيمة الفعلية التي أدخلها المستخدم مسبقاً (إن وُجدت)
                 string actualVal = "";
-                string diffVal = "";
+                string diffVal   = "";
                 if (_enteredActualQty.TryGetValue(pid, out decimal savedActual))
                 {
                     actualVal = savedActual.ToString("N3");
@@ -342,37 +302,48 @@ namespace ChickenDist.Forms
                     diffVal = (diff > 0 ? "+" : "") + diff.ToString("N3");
                 }
 
-                // الوحدة المعروضة في سطر الجدول هي الصغرى إذا وُجدت وإلا الكبرى
                 string displayUnit = r["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(r["Unit1Name"].ToString())
                     ? r["Unit1Name"].ToString()
                     : r["Unit"].ToString();
 
+                // تاريخ الصلاحية للدفعات
+                string expiryVal = "";
+                if (dt.Columns.Contains("ExpiryDate") && r["ExpiryDate"] != DBNull.Value)
+                {
+                    DateTime expDt = Convert.ToDateTime(r["ExpiryDate"]);
+                    expiryVal = expDt.ToString("MM/yyyy");
+                }
+
+                object batchIdVal = dt.Columns.Contains("BatchID") && r["BatchID"] != DBNull.Value
+                    ? r["BatchID"]
+                    : (object)DBNull.Value;
+
                 int ri = dgStock.Rows.Add(
                     r["ProductID"],
+                    batchIdVal,
                     r["ProductCode"],
                     r["ProductName"],
+                    expiryVal,
                     displayUnit,
                     Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
                     bookQty.ToString("N3"),
                     actualVal,
-                    diffVal
+                    diffVal,
+                    "" // Notes
                 );
 
-                // حفظ البيانات الأصلية والوحدات المتعددة في خلايا مخفية لاستخدامها عند تحديد الصف
-                dgStock.Rows[ri].Cells["BaseUnit"].Value = r["Unit"];
-                dgStock.Rows[ri].Cells["Unit1Name"].Value = r["Unit1Name"];
-                dgStock.Rows[ri].Cells["Unit2Name"].Value = r["Unit2Name"];
-                dgStock.Rows[ri].Cells["Unit2Factor"].Value = r["Unit2Factor"];
-                dgStock.Rows[ri].Cells["Unit3Factor"].Value = r["Unit3Factor"];
+                dgStock.Rows[ri].Cells["BaseUnit"].Value          = r["Unit"];
+                dgStock.Rows[ri].Cells["Unit1Name"].Value         = r["Unit1Name"];
+                dgStock.Rows[ri].Cells["Unit2Name"].Value         = r["Unit2Name"];
+                dgStock.Rows[ri].Cells["Unit2Factor"].Value       = r["Unit2Factor"];
+                dgStock.Rows[ri].Cells["Unit3Factor"].Value       = r["Unit3Factor"];
+                dgStock.Rows[ri].Cells["HasExpiry"].Value         = r["HasExpiry"];
+                dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value = r["DefaultExpiryDays"];
 
-                // تلوين خلية الفارق
                 if (!string.IsNullOrEmpty(diffVal))
                 {
                     decimal diff2 = savedActual - bookQty;
-                    if (diff2 > 0)
-                        dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.LightGreen;
-                    else if (diff2 < 0)
-                        dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
+                    dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = diff2 > 0 ? Color.DarkGreen : Color.OrangeRed;
                 }
             }
             ClearAdjustmentForm();
@@ -420,6 +391,12 @@ namespace ChickenDist.Forms
                 _selectedProductID = Convert.ToInt32(r.Cells["ProductID"].Value);
                 _selectedProductName = r.Cells["ProductName"].Value?.ToString();
                 _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
+                _selectedHasExpiry = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
+                _selectedDefaultExpiryDays = r.Cells["DefaultExpiryDays"].Value != DBNull.Value ? Convert.ToInt32(r.Cells["DefaultExpiryDays"].Value) : (int?)null;
+                if (btnExpiryBatches != null)
+                {
+                    btnExpiryBatches.Enabled = _selectedHasExpiry && _selectedProductID > 0;
+                }
                 _selectedBookQty = decimal.TryParse(r.Cells["BookQty"].Value?.ToString(),
                     System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out decimal bq) ? bq : 0;
@@ -718,7 +695,6 @@ namespace ChickenDist.Forms
 
             if (modifiedRows.Count > 0)
             {
-                // عرض قائمة الأصناف المعدلة للتأكيد
                 string msg = "هل أنت متأكد من حفظ تسوية كميات الأصناف التالية وتعديل أرصدتها في المخزن؟\n\n";
                 int count = 0;
                 foreach (var row in modifiedRows)
@@ -727,23 +703,12 @@ namespace ChickenDist.Forms
                     decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
                     decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                     decimal diff = actual - book;
-                    
                     if (count < 10)
-                    {
                         msg += $"• {name}: الدفتري ({book:N3}) ➔ الفعلي ({actual:N3}) [الفارق: {(diff > 0 ? "+" : "")}{diff:N3}]\n";
-                    }
                     count++;
                 }
-
                 if (count > 10)
-                {
                     msg += $"\n... وعدد {count - 10} أصناف أخرى.";
-                }
-
-                if (!string.IsNullOrEmpty(txtNotes.Text))
-                {
-                    msg += $"\n\nملاحظات التسوية: {txtNotes.Text}";
-                }
 
                 if (MessageBox.Show(msg, "تأكيد تسوية الكميات الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
@@ -753,20 +718,19 @@ namespace ChickenDist.Forms
                         int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
                         decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
                         decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
-                        
                         string displayUnit = row.Cells["Unit"].Value?.ToString();
-                        int id = InventoryDAL.SaveAdjustment(pid, wid, book, actual, txtNotes.Text, displayUnit, 1m);
+                        string rowNotes    = row.Cells["Notes"].Value?.ToString() ?? "";
+                        int id = InventoryDAL.SaveAdjustment(pid, wid, book, actual, rowNotes, displayUnit, 1m);
                         if (id > 0)
                         {
                             savedCount++;
-                            // حذف الصنف المحفوظ من الـ Dictionary
                             _enteredActualQty.Remove(pid);
                         }
                     }
 
                     if (savedCount > 0)
                     {
-                        MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف وتعديل كميات المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadStock();
                         LoadLogs();
                     }
@@ -778,43 +742,10 @@ namespace ChickenDist.Forms
             }
             else
             {
-                // في حال لم يتم تعديل أي صنف في الجدول، نتحقق من الصنف المحدد في القائمة الجانبية لحفظه (حتى لو كان الفارق صفراً كخط أساس)
-                if (_selectedProductID == 0)
-                {
-                    MessageBox.Show("لم يتم تعديل أي كمية فعلية في الجدول. من فضلك اختر صنفاً أولاً أو قم بتعديل رصيده الفعلي.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                decimal factor = 1m;
-                string unitName = _selectedProductUnit;
-                if (cboAdjUnit.SelectedItem is UnitItem ui)
-                {
-                    factor = ui.Factor;
-                    unitName = ui.Name;
-                }
-                decimal bookInUnit = _selectedBookQty / factor;
-
-                decimal diff = nudActualQty.Value - bookInUnit;
-                string msg = $"هل أنت متأكد من حفظ تسوية كمية هذا الصنف كخط أساس جردي؟\n\nالصنف: {_selectedProductName}\nالرصيد الدفتري الحالي: {bookInUnit:N3} {unitName}\nالرصيد الفعلي المُدخل: {nudActualQty.Value:N3} {unitName}\nالفارق الجردي: {(diff > 0 ? "+" : "")}{diff:N3} {unitName}";
-                
-                if (MessageBox.Show(msg, "تأكيد التسوية الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                {
-                    int id = InventoryDAL.SaveAdjustment(_selectedProductID, wid, bookInUnit, nudActualQty.Value, txtNotes.Text, unitName, factor);
-                    if (id > 0)
-                    {
-                        // حذف الصنف المحفوظ من الـ Dictionary
-                        _enteredActualQty.Remove(_selectedProductID);
-                        MessageBox.Show("✅ تم حفظ وتطبيق التسوية الجردية وتعديل كمية المخزن بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadStock();
-                        LoadLogs();
-                    }
-                    else
-                    {
-                        MessageBox.Show("❌ حدث خطأ أثناء محاولة حفظ تسوية الجرد.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
+                MessageBox.Show("لم يتم إدخال أي رصيد فعلي في الجدول بعد.\nاكتب الرصيد الفعلي في عمود «الرصيد الفعلي» لأي صنف ثم اضغط حفظ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
 
         private class UnitItem
         {
@@ -1031,7 +962,7 @@ namespace ChickenDist.Forms
             return new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -1039,12 +970,239 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
+                GridColor = Color.FromArgb(210, 210, 215),
+                CellBorderStyle = DataGridViewCellBorderStyle.Single,
+                EnableHeadersVisualStyles = false,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.White, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White, Font = Theme.FontMain },
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(240, 242, 245), ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White, Font = Theme.FontMain },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            };
+        }
+
+        private void BtnExpiryBatches_Click(object sender, EventArgs e)
+        {
+            int? selectedWid = null;
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                selectedWid = ci.ID;
+            }
+
+            if (!selectedWid.HasValue || _selectedProductID <= 0) return;
+
+            using (var frm = new FrmAdjustExpiryBatches(_selectedProductID, _selectedProductName, selectedWid.Value))
+            {
+                if (frm.ShowDialog() == DialogResult.OK)
+                {
+                    LoadStock();
+                }
+            }
+        }
+    }
+
+    public class FrmAdjustExpiryBatches : Form
+    {
+        private int _productID;
+        private int _warehouseID;
+        private DataGridView dgBatches;
+        private Button btnSave, btnCancel, btnAddBatch;
+        private DateTimePicker dtpNewExpiry;
+        private NumericUpDown nudNewQty;
+
+        public FrmAdjustExpiryBatches(int productID, string productName, int warehouseID)
+        {
+            _productID = productID;
+            _warehouseID = warehouseID;
+
+            this.Text = $"تعديل أرصدة صلاحية الصنف: {productName}";
+            this.Size = new Size(500, 450);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.RightToLeft = RightToLeft.Yes;
+            this.RightToLeftLayout = true;
+            this.BackColor = Theme.BgCard;
+
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(10) };
+            var lblInfo = new Label { Text = $"صلاحيات المخزن الحالي لمجموعة الدفعات الخاصة بالصنف", Dock = DockStyle.Fill, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            pnlTop.Controls.Add(lblInfo);
+
+            dgBatches = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 GridColor = Theme.BorderColor,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White, Font = Theme.FontMain },
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            dgBatches.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID", HeaderText = "رقم الدفعة", ReadOnly = true, FillWeight = 25 });
+            dgBatches.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "تاريخ الصلاحية (yyyy-MM-dd)", ReadOnly = false, FillWeight = 50 });
+            dgBatches.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 35 });
+
+            dgBatches.CellEndEdit += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && dgBatches.Columns[e.ColumnIndex].Name == "ExpiryDate")
+                {
+                    var cell = dgBatches.Rows[e.RowIndex].Cells["ExpiryDate"];
+                    string val = cell.Value?.ToString();
+                    var parsed = DbHelper.ParseExpiryInput(val);
+                    if (parsed.HasValue)
+                    {
+                        cell.Value = parsed.Value.ToString("yyyy-MM-dd");
+                    }
+                    else if (string.IsNullOrWhiteSpace(val))
+                    {
+                        cell.Value = "";
+                    }
+                    else
+                    {
+                        MessageBox.Show("تاريخ غير صالح. يرجى إدخال التاريخ بالصيغة الصحيحة (شهر وسنة مثل 0326 أو yyyy-MM-dd).", "تاريخ غير صالح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        cell.Value = "";
+                    }
+                }
+            };
+
+            var pnlAdd = new GroupBox
+            {
+                Text = "إضافة دفعة جديدة",
+                Dock = DockStyle.Bottom,
+                Height = 85,
+                ForeColor = Theme.Accent,
+                Padding = new Padding(10)
+            };
+            var lblDate = new Label { Text = "تاريخ الانتهاء:", Location = new Point(370, 25), Size = new Size(90, 20), ForeColor = Theme.TextMain };
+            dtpNewExpiry = new DateTimePicker { Location = new Point(230, 22), Width = 130, Format = DateTimePickerFormat.Short };
+            var lblQty = new Label { Text = "الكمية:", Location = new Point(160, 25), Size = new Size(50, 20), ForeColor = Theme.TextMain };
+            nudNewQty = new NumericUpDown { Location = new Point(80, 22), Width = 80, DecimalPlaces = 3, Maximum = 999999, Minimum = 0 };
+            btnAddBatch = Theme.MakeButton("➕ إضافة", Color.FromArgb(40, 120, 60));
+            btnAddBatch.Location = new Point(10, 20);
+            btnAddBatch.Size = new Size(60, 28);
+            btnAddBatch.Click += BtnAddBatch_Click;
+
+            pnlAdd.Controls.AddRange(new Control[] { lblDate, dtpNewExpiry, lblQty, nudNewQty, btnAddBatch });
+
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 50, Padding = new Padding(10) };
+            btnSave = Theme.MakeButton("💾 حفظ التعديلات", Theme.Accent);
+            btnSave.Location = new Point(10, 10);
+            btnSave.Size = new Size(130, 30);
+            btnSave.Click += BtnSave_Click;
+            btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(120, 40, 40));
+            btnCancel.Location = new Point(150, 10);
+            btnCancel.Size = new Size(90, 30);
+            btnCancel.Click += (s, e) => this.Close();
+            pnlActions.Controls.AddRange(new Control[] { btnSave, btnCancel });
+
+            this.Controls.Add(dgBatches);
+            this.Controls.Add(pnlAdd);
+            this.Controls.Add(pnlTop);
+            this.Controls.Add(pnlActions);
+
+            LoadBatches();
+        }
+
+        private void LoadBatches()
+        {
+            dgBatches.Rows.Clear();
+            var dt = DbHelper.Query(@"
+                SELECT BatchID, ExpiryDate, Quantity 
+                FROM ProductBatches 
+                WHERE ProductID = @pid AND WarehouseID = @wid 
+                ORDER BY ExpiryDate ASC",
+                DbHelper.P("@pid", _productID), DbHelper.P("@wid", _warehouseID));
+            foreach (DataRow r in dt.Rows)
+            {
+                DateTime? exp = r["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(r["ExpiryDate"]) : (DateTime?)null;
+                dgBatches.Rows.Add(
+                    r["BatchID"],
+                    exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "",
+                    Convert.ToDecimal(r["Quantity"]).ToString("N3")
+                );
+            }
+        }
+
+        private void BtnAddBatch_Click(object sender, EventArgs e)
+        {
+            if (nudNewQty.Value <= 0)
+            {
+                MessageBox.Show("من فضلك أدخل كمية أكبر من الصفر للدفعة الجديدة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            dgBatches.Rows.Add("", dtpNewExpiry.Value.ToString("yyyy-MM-dd"), nudNewQty.Value.ToString("N3"));
+            nudNewQty.Value = 0;
+        }
+
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            foreach (DataGridViewRow row in dgBatches.Rows)
+            {
+                string expStr = row.Cells["ExpiryDate"].Value?.ToString();
+                if (string.IsNullOrWhiteSpace(expStr) || !DateTime.TryParse(expStr, out _))
+                {
+                    MessageBox.Show("❌ خطأ: يجب تسجيل تاريخ صلاحية صحيح لكل الدفعات المعروضة قبل الحفظ!", "تاريخ صلاحية مفقود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+            try
+            {
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    foreach (DataGridViewRow row in dgBatches.Rows)
+                    {
+                        string batchIdStr = row.Cells["BatchID"].Value?.ToString();
+                        string expStr = row.Cells["ExpiryDate"].Value?.ToString();
+                        string qtyStr = row.Cells["Quantity"].Value?.ToString();
+
+                        DateTime? exp = null;
+                        if (!string.IsNullOrWhiteSpace(expStr) && DateTime.TryParse(expStr, out DateTime parsedExp))
+                            exp = parsedExp;
+
+                        decimal.TryParse(qtyStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal qty);
+
+                        if (!string.IsNullOrEmpty(batchIdStr))
+                        {
+                            int bid = Convert.ToInt32(batchIdStr);
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
+                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value),
+                                DbHelper.P("@qty", qty),
+                                DbHelper.P("@bid", bid));
+                        }
+                        else
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
+                                DbHelper.P("@pid", _productID),
+                                DbHelper.P("@wid", _warehouseID),
+                                DbHelper.P("@qty", qty),
+                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value));
+                        }
+                    }
+
+                    // Sync ProductStock
+                    DbHelper.ExecuteTrans(trans,
+                        @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                            UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
+                          ELSE
+                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
+                        DbHelper.P("@pid", _productID),
+                        DbHelper.P("@wid", _warehouseID));
+                });
+
+                MessageBox.Show("✅ تم حفظ تواريخ الصلاحية وتحديث أرصدة الدفعات بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

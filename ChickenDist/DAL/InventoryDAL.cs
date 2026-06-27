@@ -9,19 +9,24 @@ namespace ChickenDist.DAL
     public static class InventoryDAL
     {
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false)
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null)
         {
             string filter = "";
             List<SqlParameter> prms = new List<SqlParameter>();
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                filter = " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term) ";
+                filter = " AND (t.ProductName LIKE @term OR t.ProductCode LIKE @term OR t.PartNumber LIKE @term) ";
                 prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
             }
 
             if (warehouseID.HasValue)
             {
                 prms.Add(DbHelper.P("@wid", warehouseID.Value));
+            }
+
+            if (categoryID.HasValue)
+            {
+                prms.Add(DbHelper.P("@catid", categoryID.Value));
             }
 
             string sql = $@"
@@ -38,7 +43,7 @@ namespace ChickenDist.DAL
                     p.ShelfLocation,
                     p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                     p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                    p.Unit3Factor,
+                    p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.CategoryID,
                     ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0) + 
                     -- Incoming since adjustment: Sales Returns
                     ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
@@ -76,6 +81,9 @@ namespace ChickenDist.DAL
                 ) AS t
                 WHERE t.IsActive = 1 {filter}
                 {(belowMinOnly ? " AND t.MinStockLimit > 0 AND t.BookQty <= t.MinStockLimit" : "")}
+                {(hideZeroStock ? " AND t.BookQty <> 0" : "")}
+                {(expiryOnly ? " AND t.HasExpiry = 1" : "")}
+                {(categoryID.HasValue ? " AND t.CategoryID = @catid" : "")}
                 ORDER BY t.ProductName";
 
             return DbHelper.Query(sql, prms.ToArray());

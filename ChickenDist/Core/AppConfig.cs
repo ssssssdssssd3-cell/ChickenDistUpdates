@@ -342,6 +342,13 @@ namespace ChickenDist.Core
             set => Set("ShiftRequired", value ? "True" : "False");
         }
 
+        // ===== إعدادات الصلاحية =====
+        public static bool AllowSellExpired
+        {
+            get => Get("AllowSellExpired", "True") == "True";
+            set => Set("AllowSellExpired", value ? "True" : "False");
+        }
+
 
         // ===== دوال القراءة والكتابة =====
 

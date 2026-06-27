@@ -11,6 +11,29 @@ namespace ChickenDist.Core
     {
         private static string _connStr = GetInitialConnectionString();
 
+        public static DateTime? ParseExpiryInput(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            input = input.Trim().Replace("/", "").Replace("-", "").Replace(".", "");
+            if (input.Length == 3 || input.Length == 4)
+            {
+                if (int.TryParse(input, out int num))
+                {
+                    string padded = input.PadLeft(4, '0');
+                    int month = int.Parse(padded.Substring(0, 2));
+                    int yearShort = int.Parse(padded.Substring(2, 2));
+                    int year = 2000 + yearShort;
+                    if (month >= 1 && month <= 12)
+                    {
+                        return new DateTime(year, month, 1);
+                    }
+                }
+            }
+            if (DateTime.TryParse(input, out DateTime parsed))
+                return parsed;
+            return null;
+        }
+
         private static string GetInitialConnectionString()
         {
             return GetConnectionStringFromIni();
@@ -357,6 +380,12 @@ namespace ChickenDist.Core
                     BEGIN
                         ALTER TABLE PurchaseItems ADD DiscountAmt DECIMAL(10,2) NOT NULL DEFAULT 0;
                     END
+                END");
+
+                SafeMigrate("PurchaseItems.ExpiryDate", @"
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseItems', 'ExpiryDate') IS NULL
+                BEGIN
+                    ALTER TABLE PurchaseItems ADD ExpiryDate DATE NULL;
                 END");
 
                 // Add Purchases and Suppliers schema (tables only)
@@ -1567,6 +1596,19 @@ namespace ChickenDist.Core
                 IF OBJECT_ID('Products','U') IS NOT NULL AND COL_LENGTH('Products','DefaultExpiryDays') IS NULL
                 BEGIN
                     ALTER TABLE Products ADD DefaultExpiryDays INT NULL;
+                END");
+
+                SafeMigrate("Products.HasExpiry", @"
+                IF OBJECT_ID('Products','U') IS NOT NULL AND COL_LENGTH('Products','HasExpiry') IS NULL
+                BEGIN
+                    ALTER TABLE Products ADD HasExpiry BIT NOT NULL DEFAULT 0;
+                END");
+
+                SafeMigrate("SaleItems.ExpiryDateAndBatch", @"
+                IF OBJECT_ID('SaleItems','U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('SaleItems','ExpiryDate') IS NULL ALTER TABLE SaleItems ADD ExpiryDate DATE NULL;
+                    IF COL_LENGTH('SaleItems','BatchID') IS NULL ALTER TABLE SaleItems ADD BatchID INT NULL;
                 END");
 
                 // 3. نظام نقاط الولاء (Loyalty)

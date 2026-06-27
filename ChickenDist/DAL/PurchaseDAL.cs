@@ -21,6 +21,7 @@ namespace ChickenDist.DAL
         public decimal? SuggestedSalePrice { get; set; } = null;
         public string UnitName { get; set; } = null;
         public decimal Factor { get; set; } = 1.0m;
+        public DateTime? ExpiryDate { get; set; } = null;
 
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
@@ -88,7 +89,7 @@ namespace ChickenDist.DAL
                            COALESCE(pi.DiscountPct, 0) AS DiscountPct,
                            COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
                            pi.SuggestedSalePrice,
-                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor
+                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
                     WHERE pi.PurchaseID = @id",
@@ -181,8 +182,8 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac)",
+                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
+                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
@@ -192,7 +193,39 @@ namespace ChickenDist.DAL
                         DbHelper.P("@damt",   item.DiscountAmt),
                         DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
                         DbHelper.P("@un",     item.UnitName),
-                        DbHelper.P("@fac",    item.Factor));
+                        DbHelper.P("@fac",    item.Factor),
+                        DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value));
+
+                    if (!isDraft && item.ExpiryDate.HasValue)
+                    {
+                        decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
+                        decimal baseQty = item.Quantity * factor;
+                        int wid = warehouseID ?? 1;
+
+                        var existingBatchId = DbHelper.ScalarTrans(trans,
+                            "SELECT BatchID FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@wid", wid),
+                            DbHelper.P("@exp", item.ExpiryDate.Value.Date));
+
+                        if (existingBatchId != null && existingBatchId != DBNull.Value)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                                DbHelper.P("@qty", baseQty),
+                                DbHelper.P("@bid", Convert.ToInt32(existingBatchId)));
+                        }
+                        else
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ProductBatches(ProductID, WarehouseID, Quantity, ExpiryDate, PurchaseID) VALUES (@pid, @wid, @qty, @exp, @purid)",
+                                DbHelper.P("@pid", item.ProductID),
+                                DbHelper.P("@wid", wid),
+                                DbHelper.P("@qty", baseQty),
+                                DbHelper.P("@exp", item.ExpiryDate.Value.Date),
+                                DbHelper.P("@purid", purchaseID));
+                        }
+                    }
                 }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────

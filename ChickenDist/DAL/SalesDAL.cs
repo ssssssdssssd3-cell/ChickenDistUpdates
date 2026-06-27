@@ -122,12 +122,67 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
                         DbHelper.P("@damt", item.DiscountAmt), DbHelper.P("@pt", item.PriceTier ?? priceTier),
-                        DbHelper.P("@un", item.UnitName), DbHelper.P("@fac", item.Factor));
+                        DbHelper.P("@un", item.UnitName), DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
+                        DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value));
+
+                    // Deduct from ProductBatches table
+                    if (!isDraft)
+                    {
+                        if (item.BatchID.HasValue)
+                        {
+                            decimal baseQty = item.Quantity * item.Factor;
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                DbHelper.P("@q", baseQty), DbHelper.P("@bid", item.BatchID.Value));
+                        }
+                        else
+                        {
+                            var hasExpObj = DbHelper.ScalarTrans(trans, "SELECT HasExpiry FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                            if (hasExpObj != null && hasExpObj != DBNull.Value && Convert.ToBoolean(hasExpObj))
+                            {
+                                decimal remainingQty = item.Quantity * item.Factor;
+                                var batchesDt = DbHelper.QueryTrans(trans, 
+                                    "SELECT BatchID, Quantity FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse));
+                                foreach (DataRow bRow in batchesDt.Rows)
+                                {
+                                    int bId = Convert.ToInt32(bRow["BatchID"]);
+                                    decimal bQty = Convert.ToDecimal(bRow["Quantity"]);
+                                    decimal toDeduct = Math.Min(remainingQty, bQty);
+                                    if (toDeduct > 0)
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                            DbHelper.P("@q", toDeduct), DbHelper.P("@bid", bId));
+                                        remainingQty -= toDeduct;
+                                        if (remainingQty <= 0) break;
+                                    }
+                                }
+                                if (remainingQty > 0)
+                                {
+                                    var oldestBatchId = DbHelper.ScalarTrans(trans, "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse));
+                                    if (oldestBatchId != null && oldestBatchId != DBNull.Value)
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                            DbHelper.P("@q", remainingQty), DbHelper.P("@bid", oldestBatchId));
+                                    }
+                                    else
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, -@q, @exp)",
+                                            DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@q", remainingQty), DbHelper.P("@exp", DateTime.Today.AddDays(30)));
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // check if price is different from product base price to log it in PriceChangesLog
                     if (!isDraft)
@@ -838,6 +893,8 @@ namespace ChickenDist.DAL
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal PurchasePrice { get; set; } = 0m;
+        public DateTime? ExpiryDate { get; set; } = null;
+        public int? BatchID { get; set; } = null;
         public decimal StockQty { get; set; } = 0m;
         public decimal MinStockLimit { get; set; } = 0m;
         public string PartNumber { get; set; } = "";
