@@ -1,7 +1,7 @@
 version=1.9.52
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=04664B9839C84483A5CDE8E5F4874400CD97696A9B1E18F37C58290E9E6BAC86
+sha256=153E9E5D92964793584B274E3ADBDA5B00707401950F7760423AA33D70B05523
 changelog=v1.9.52 - 2026-06-27
 v1.9.52 - POS: fix totals order RTL + quick items overlap + alternating grid colors in all grids + inventory full-width with Notes/ExpiryDate columns + sidebar removed + save button in toolbar + client search dock fixed
 
