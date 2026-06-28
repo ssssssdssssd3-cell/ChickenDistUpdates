@@ -972,24 +972,37 @@ namespace ChickenDist.Forms
 
             try
             {
-                decimal cashBal = AccountDAL.GetCashBalance();
-                var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
-                decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
-                var openLoads = DriverDAL.GetOpenLoads();
-                int belowMinCount = InventoryDAL.GetBelowMinStockCount();
-
-                pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
-                pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
-                pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
-
-                var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
-                cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                foreach (Control child in cardBelowMin.Controls)
+                if (Session.CanAccess("CashBox"))
                 {
-                    child.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                    child.Cursor = Cursors.Hand;
+                    decimal cashBal = AccountDAL.GetCashBalance();
+                    pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
                 }
-                pnlCards.Controls.Add(cardBelowMin);
+
+                if (Session.CanAccess("Reports") || Session.CanAccess("Sales") || Session.CanAccess("SalesList"))
+                {
+                    var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
+                    decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
+                    pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
+                }
+
+                if (Session.CanAccess("DriverHandover") || Session.CanAccess("DriverPortal"))
+                {
+                    var openLoads = DriverDAL.GetOpenLoads();
+                    pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
+                }
+
+                if (Session.CanAccess("Inventory") || Session.CanAccess("Products"))
+                {
+                    int belowMinCount = InventoryDAL.GetBelowMinStockCount();
+                    var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
+                    cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                    foreach (Control child in cardBelowMin.Controls)
+                    {
+                        child.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                        child.Cursor = Cursors.Hand;
+                    }
+                    pnlCards.Controls.Add(cardBelowMin);
+                }
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
             mainTbl.Controls.Add(pnlCards, 0, 1);

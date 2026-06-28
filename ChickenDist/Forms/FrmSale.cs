@@ -836,7 +836,6 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleCenter
 			};
-			pnlQuickItems.Controls.Add(lblQuickTitle);
 
 			flowQuickItems = new FlowLayoutPanel
 			{
@@ -847,6 +846,7 @@ namespace ChickenDist.Forms
 				Padding = new Padding(2)
 			};
 			pnlQuickItems.Controls.Add(flowQuickItems);
+			pnlQuickItems.Controls.Add(lblQuickTitle);
 
 			dgItems = new DataGridView
 			{
@@ -946,7 +946,7 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 104,
+				Height = 120,
 				Width = 1024,
 				BackColor = Theme.BgCard
 			};
@@ -954,14 +954,14 @@ namespace ChickenDist.Forms
 			var tblSummary = new TableLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 48,
+				Height = 64,
 				RowCount = 2,
 				ColumnCount = 8,
 				BackColor = Color.Transparent,
 				Padding = new Padding(10, 1, 10, 1)
 			};
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
 
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val

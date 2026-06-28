@@ -11,10 +11,10 @@ namespace ChickenDist.Core
 {
     public static class UpdateManager
     {
-        // Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ù„Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬
-        public const string CurrentVersion = "1.9.54";
+        // Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â± Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â§Ã™â€žÃ™Å  Ã™â€žÃ™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬
+        public const string CurrentVersion = "1.9.55";
         
-        // Ø±Ø§Ø¨Ø· Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù†ØµÙŠ Ø¹Ù„Ù‰ GitHub
+        // Ã˜Â±Ã˜Â§Ã˜Â¨Ã˜Â· Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â§Ã™â€žÃ™â€ Ã˜ÂµÃ™Å  Ã˜Â¹Ã™â€žÃ™â€° GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
 
         public static void CheckForUpdates(bool showNoUpdateMsg = false)
@@ -23,19 +23,19 @@ namespace ChickenDist.Core
             {
                 using (var client = new WebClient())
                 {
-                    // ØªÙØ¹ÙŠÙ„ Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„ TLS 1.2 ÙˆØ§Ù„Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„Ø§Øª Ø§Ù„Ø£Ø®Ø±Ù‰ Ù„Ù„Ø§ØªØµØ§Ù„ Ø§Ù„Ø¢Ù…Ù† Ø¨Ù€ GitHub
+                    // Ã˜ÂªÃ™ÂÃ˜Â¹Ã™Å Ã™â€ž Ã˜Â¨Ã˜Â±Ã™Ë†Ã˜ÂªÃ™Ë†Ã™Æ’Ã™Ë†Ã™â€ž TLS 1.2 Ã™Ë†Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™Ë†Ã˜ÂªÃ™Ë†Ã™Æ’Ã™Ë†Ã™â€žÃ˜Â§Ã˜Âª Ã˜Â§Ã™â€žÃ˜Â£Ã˜Â®Ã˜Â±Ã™â€° Ã™â€žÃ™â€žÃ˜Â§Ã˜ÂªÃ˜ÂµÃ˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€¦Ã™â€  Ã˜Â¨Ã™â‚¬ GitHub
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
                     client.Encoding = System.Text.Encoding.UTF8;
                     client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
                     
-                    // ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ« Ù…Ø¹ ÙƒØ³Ø± Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª (Cache Busting)
+                    // Ã˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã™â€¦Ã˜Â¹ Ã™Æ’Ã˜Â³Ã˜Â± Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â®Ã˜Â²Ã™Å Ã™â€  Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¤Ã™â€šÃ˜Âª (Cache Busting)
                     string cacheBustedUrl = UpdateUrl + (UpdateUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
                     string rawData = client.DownloadString(cacheBustedUrl);
                     rawData = rawData.TrimStart('\uFEFF');
                     string remoteVersion = "";
                     string downloadUrl   = "";
                     string changelog     = "";
-                    string expectedSha256 = ""; // checksum Ù„Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø³Ù„Ø§Ù…Ø© Ø§Ù„Ù…Ù„Ù
+                    string expectedSha256 = ""; // checksum Ã™â€žÃ™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã˜Â³Ã™â€žÃ˜Â§Ã™â€¦Ã˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â
 
                     string[] lines = rawData.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (string line in lines)
@@ -48,30 +48,30 @@ namespace ChickenDist.Core
                             if      (key == "version")   remoteVersion  = val;
                             else if (key == "url" || key == "download")        downloadUrl    = val;
                             else if (key == "changelog")  changelog      = val;
-                            else if (key == "sha256")     expectedSha256 = val; // Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù€ checksum
+                            else if (key == "sha256")     expectedSha256 = val; // Ã™â€šÃ˜Â±Ã˜Â§Ã˜Â¡Ã˜Â© Ã˜Â§Ã™â€žÃ™â‚¬ checksum
                         }
                     }
 
                     if (string.IsNullOrEmpty(remoteVersion) || string.IsNullOrEmpty(downloadUrl))
                     {
                         if (showNoUpdateMsg)
-                            MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª ØªØ­Ø¯ÙŠØ« ØµØ§Ù„Ø­Ø©.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show("Ã™â€žÃ™â€¦ Ã™Å Ã˜ÂªÃ™â€¦ Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â«Ã™Ë†Ã˜Â± Ã˜Â¹Ã™â€žÃ™â€° Ã™â€¦Ã˜Â¹Ã™â€žÃ™Ë†Ã™â€¦Ã˜Â§Ã˜Âª Ã˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜ÂµÃ˜Â§Ã™â€žÃ˜Â­Ã˜Â©.", "Ã˜ÂªÃ™â€ Ã˜Â¨Ã™Å Ã™â€¡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
-                    // Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ø¨Ø§Ù„Ø¬Ø¯ÙŠØ¯
+                    // Ã™â€¦Ã™â€šÃ˜Â§Ã˜Â±Ã™â€ Ã˜Â© Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â± Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â§Ã™â€žÃ™Å  Ã˜Â¨Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯
                     Version local  = new Version(CurrentVersion);
                     Version remote = new Version(remoteVersion);
 
                     if (remote > local)
                     {
                         var result = MessageBox.Show(
-                            $"ðŸ”„ ÙŠÙˆØ¬Ø¯ ØªØ­Ø¯ÙŠØ« Ø¬Ø¯ÙŠØ¯ Ù…ØªØ§Ø­ Ù„Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬!\n\n" +
-                            $"Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ù„Ø¯ÙŠÙƒ:  {CurrentVersion}\n" +
-                            $"Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ø§Ù„Ù…ØªØ§Ø­: {remoteVersion}\n\n" +
-                            $"ðŸ“ Ù…Ø§ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„Ø¥ØµØ¯Ø§Ø±:\n{changelog}\n\n" +
-                            $"Ù‡Ù„ ØªØ±ØºØ¨ ÙÙŠ ØªÙ†Ø²ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ« ÙˆØªØ«Ø¨ÙŠØªÙ‡ Ø§Ù„Ø¢Ù†ØŸ",
-                            "ØªØ­Ø¯ÙŠØ« Ø¬Ø¯ÙŠØ¯ Ù…ØªØ§Ø­",
+                            $"Ã°Å¸â€â€ž Ã™Å Ã™Ë†Ã˜Â¬Ã˜Â¯ Ã˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã™â€¦Ã˜ÂªÃ˜Â§Ã˜Â­ Ã™â€žÃ™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬!\n\n" +
+                            $"Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â± Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â§Ã™â€žÃ™Å  Ã™â€žÃ˜Â¯Ã™Å Ã™Æ’:  {CurrentVersion}\n" +
+                            $"Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â± Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â€¦Ã˜ÂªÃ˜Â§Ã˜Â­: {remoteVersion}\n\n" +
+                            $"Ã°Å¸â€œÂ Ã™â€¦Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã™ÂÃ™Å  Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â±:\n{changelog}\n\n" +
+                            $"Ã™â€¡Ã™â€ž Ã˜ÂªÃ˜Â±Ã˜ÂºÃ˜Â¨ Ã™ÂÃ™Å  Ã˜ÂªÃ™â€ Ã˜Â²Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã™Ë†Ã˜ÂªÃ˜Â«Ã˜Â¨Ã™Å Ã˜ÂªÃ™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ Ã˜Å¸",
+                            "Ã˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã™â€¦Ã˜ÂªÃ˜Â§Ã˜Â­",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question,
                             MessageBoxDefaultButton.Button1,
@@ -86,10 +86,10 @@ namespace ChickenDist.Core
                         if (showNoUpdateMsg)
                         {
                             MessageBox.Show(
-                                $"âœ… Ø£Ù†Øª ØªØ³ØªØ®Ø¯Ù… Ø£Ø­Ø¯Ø« Ø¥ØµØ¯Ø§Ø± Ø¨Ø§Ù„ÙØ¹Ù„.\n\n" +
-                                $"Ø¥ØµØ¯Ø§Ø±Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ: {CurrentVersion}\n\n" +
-                                $"ðŸ“ Ø¢Ø®Ø± Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„Ø¥ØµØ¯Ø§Ø±:\n{changelog}",
-                                "ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬",
+                                $"Ã¢Å“â€¦ Ã˜Â£Ã™â€ Ã˜Âª Ã˜ÂªÃ˜Â³Ã˜ÂªÃ˜Â®Ã˜Â¯Ã™â€¦ Ã˜Â£Ã˜Â­Ã˜Â¯Ã˜Â« Ã˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â± Ã˜Â¨Ã˜Â§Ã™â€žÃ™ÂÃ˜Â¹Ã™â€ž.\n\n" +
+                                $"Ã˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â±Ã™Æ’ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â§Ã™â€žÃ™Å : {CurrentVersion}\n\n" +
+                                $"Ã°Å¸â€œÂ Ã˜Â¢Ã˜Â®Ã˜Â± Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«Ã˜Â§Ã˜Âª Ã™ÂÃ™Å  Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂµÃ˜Â¯Ã˜Â§Ã˜Â±:\n{changelog}",
+                                "Ã˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Information,
                                 MessageBoxDefaultButton.Button1,
@@ -102,11 +102,11 @@ namespace ChickenDist.Core
             {
                 AppLogger.Error("CheckForUpdates failed", ex, "UpdateManager");
                 if (showNoUpdateMsg)
-                    MessageBox.Show("ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø³ÙŠØ±ÙØ± Ø§Ù„ØªØ­Ø¯ÙŠØ«.\nÙŠØ±Ø¬Ù‰ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª.", "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Ã™ÂÃ˜Â´Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â§Ã˜ÂªÃ˜ÂµÃ˜Â§Ã™â€ž Ã˜Â¨Ã˜Â³Ã™Å Ã˜Â±Ã™ÂÃ˜Â± Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«.\nÃ™Å Ã˜Â±Ã˜Â¬Ã™â€° Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã˜Â§Ã™â€žÃ˜Â§Ã˜ÂªÃ˜ÂµÃ˜Â§Ã™â€ž Ã˜Â¨Ã˜Â§Ã™â€žÃ˜Â¥Ã™â€ Ã˜ÂªÃ˜Â±Ã™â€ Ã˜Âª.", "Ã˜Â®Ã˜Â·Ã˜Â£ Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // â”€â”€ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† SHA-256 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  SHA-256 Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         private static string ComputeSha256(string filePath)
         {
             using (var sha = SHA256.Create())
@@ -135,14 +135,14 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª Updates:\n" + ex.Message,
-                    "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ã™ÂÃ˜Â´Ã™â€ž Ã˜Â¥Ã™â€ Ã˜Â´Ã˜Â§Ã˜Â¡ Ã™â€¦Ã˜Â¬Ã™â€žÃ˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«Ã˜Â§Ã˜Âª Updates:\n" + ex.Message,
+                    "Ã˜Â®Ã˜Â·Ã˜Â£", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // FIX: Ø§Ø³ØªØ®Ø¯Ø§Ù… BackgroundWorker Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† DownloadFile Ø§Ù„Ù…ØªØ²Ø§Ù…Ù†
-            // Ø§Ù„ÙƒÙˆØ¯ Ø§Ù„Ù‚Ø¯ÙŠÙ… ÙƒØ§Ù† ÙŠØ¬Ù…Ø¯ Ø§Ù„Ù€ UI Thread Ø·ÙˆØ§Ù„ Ù…Ø¯Ø© Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ù…Ø¹ Thread.Sleep Ø¹Ù„Ù‰ UI
-            // Ø§Ù„Ø­Ù„: Ø§Ù„ØªØ­Ù…ÙŠÙ„ ÙÙŠ background thread Ù…Ø¹ ProgressBar Ø­Ù‚ÙŠÙ‚ÙŠ ÙŠØªØ­Ø¯Ø« Ø¹Ø¨Ø± ReportProgress
+            // FIX: Ã˜Â§Ã˜Â³Ã˜ÂªÃ˜Â®Ã˜Â¯Ã˜Â§Ã™â€¦ BackgroundWorker Ã˜Â¨Ã˜Â¯Ã™â€žÃ˜Â§Ã™â€¹ Ã™â€¦Ã™â€  DownloadFile Ã˜Â§Ã™â€žÃ™â€¦Ã˜ÂªÃ˜Â²Ã˜Â§Ã™â€¦Ã™â€ 
+            // Ã˜Â§Ã™â€žÃ™Æ’Ã™Ë†Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â€šÃ˜Â¯Ã™Å Ã™â€¦ Ã™Æ’Ã˜Â§Ã™â€  Ã™Å Ã˜Â¬Ã™â€¦Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â‚¬ UI Thread Ã˜Â·Ã™Ë†Ã˜Â§Ã™â€ž Ã™â€¦Ã˜Â¯Ã˜Â© Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã™â€¦Ã˜Â¹ Thread.Sleep Ã˜Â¹Ã™â€žÃ™â€° UI
+            // Ã˜Â§Ã™â€žÃ˜Â­Ã™â€ž: Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã™ÂÃ™Å  background thread Ã™â€¦Ã˜Â¹ ProgressBar Ã˜Â­Ã™â€šÃ™Å Ã™â€šÃ™Å  Ã™Å Ã˜ÂªÃ˜Â­Ã˜Â¯Ã˜Â« Ã˜Â¹Ã˜Â¨Ã˜Â± ReportProgress
 
             Exception downloadException = null;
             bool downloadSuccess = false;
@@ -150,7 +150,7 @@ namespace ChickenDist.Core
             using (var progressForm = new Form())
             using (var worker = new System.ComponentModel.BackgroundWorker())
             {
-                progressForm.Text = "Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ«...";
+                progressForm.Text = "Ã˜Â¬Ã˜Â§Ã˜Â±Ã™Å  Ã˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«...";
                 progressForm.Size = new System.Drawing.Size(420, 160);
                 progressForm.StartPosition = FormStartPosition.CenterScreen;
                 progressForm.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -158,11 +158,11 @@ namespace ChickenDist.Core
                 progressForm.MinimizeBox = false;
                 progressForm.RightToLeft = RightToLeft.Yes;
                 progressForm.RightToLeftLayout = true;
-                progressForm.ControlBox = false; // Ù…Ù†Ø¹ Ø§Ù„Ø¥ØºÙ„Ø§Ù‚ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØ­Ù…ÙŠÙ„
+                progressForm.ControlBox = false; // Ã™â€¦Ã™â€ Ã˜Â¹ Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š Ã˜Â£Ã˜Â«Ã™â€ Ã˜Â§Ã˜Â¡ Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž
 
                 var lbl = new Label
                 {
-                    Text = "Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ù„Ù Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±ØŒ ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±...",
+                    Text = "Ã˜Â¬Ã˜Â§Ã˜Â±Ã™Å  Ã˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â Ã™â€¦Ã™â€  Ã˜Â§Ã™â€žÃ˜Â³Ã™Å Ã˜Â±Ã™ÂÃ˜Â±Ã˜Å’ Ã™Å Ã˜Â±Ã˜Â¬Ã™â€° Ã˜Â§Ã™â€žÃ˜Â§Ã™â€ Ã˜ÂªÃ˜Â¸Ã˜Â§Ã˜Â±...",
                     AutoSize = false,
                     Width = 380, Height = 22,
                     Location = new System.Drawing.Point(20, 18),
@@ -194,7 +194,7 @@ namespace ChickenDist.Core
                     {
                         try
                         {
-                            worker.ReportProgress(0, $"Ù…Ø­Ø§ÙˆÙ„Ø© {attempt} Ù…Ù† {maxRetries}...");
+                            worker.ReportProgress(0, $"Ã™â€¦Ã˜Â­Ã˜Â§Ã™Ë†Ã™â€žÃ˜Â© {attempt} Ã™â€¦Ã™â€  {maxRetries}...");
 
                             if (File.Exists(newExePath))
                             {
@@ -228,7 +228,7 @@ namespace ChickenDist.Core
                                 client.DownloadProgressChanged += (cs, ce) =>
                                     worker.ReportProgress(ce.ProgressPercentage, null);
 
-                                // DownloadFileAsync + AutoResetEvent Ù„ØªØ­ÙˆÙŠÙ„ async -> sync ÙÙŠ background thread
+                                // DownloadFileAsync + AutoResetEvent Ã™â€žÃ˜ÂªÃ˜Â­Ã™Ë†Ã™Å Ã™â€ž async -> sync Ã™ÂÃ™Å  background thread
                                 var done = new System.Threading.AutoResetEvent(false);
                                 Exception innerEx = null;
                                 client.DownloadFileCompleted += (cs, ce) =>
@@ -238,7 +238,7 @@ namespace ChickenDist.Core
                                 };
                                 string cacheBustedDownloadUrl = downloadUrl + (downloadUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
                                 client.DownloadFileAsync(new Uri(cacheBustedDownloadUrl), newExePath);
-                                done.WaitOne(); // Ù†Ù†ØªØ¸Ø± ÙÙŠ Ø§Ù„Ù€ background thread â€” Ù„Ø§ ÙŠØ¬Ù…Ø¯ Ø§Ù„Ù€ UI
+                                done.WaitOne(); // Ã™â€ Ã™â€ Ã˜ÂªÃ˜Â¸Ã˜Â± Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ™â‚¬ background thread Ã¢â‚¬â€ Ã™â€žÃ˜Â§ Ã™Å Ã˜Â¬Ã™â€¦Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â‚¬ UI
 
                                 if (innerEx != null) throw innerEx;
                             }
@@ -251,7 +251,7 @@ namespace ChickenDist.Core
                             downloadException = ex;
                             AppLogger.Error($"Download attempt {attempt} failed", ex, "UpdateManager");
                             if (attempt < maxRetries)
-                                System.Threading.Thread.Sleep(1500); // Ø¢Ù…Ù† Ù‡Ù†Ø§ Ù„Ø£Ù†Ù†Ø§ ÙÙŠ background thread
+                                System.Threading.Thread.Sleep(1500); // Ã˜Â¢Ã™â€¦Ã™â€  Ã™â€¡Ã™â€ Ã˜Â§ Ã™â€žÃ˜Â£Ã™â€ Ã™â€ Ã˜Â§ Ã™ÂÃ™Å  background thread
                         }
                     }
                 };
@@ -270,20 +270,20 @@ namespace ChickenDist.Core
                 };
 
                 worker.RunWorkerAsync();
-                progressForm.ShowDialog(); // ÙŠØ¨Ù‚Ù‰ UI Ù…Ø³ØªØ¬ÙŠØ¨Ø§Ù‹ Ù„Ø£Ù† Ø§Ù„ØªØ­Ù…ÙŠÙ„ ÙÙŠ background
+                progressForm.ShowDialog(); // Ã™Å Ã˜Â¨Ã™â€šÃ™â€° UI Ã™â€¦Ã˜Â³Ã˜ÂªÃ˜Â¬Ã™Å Ã˜Â¨Ã˜Â§Ã™â€¹ Ã™â€žÃ˜Â£Ã™â€  Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã™ÂÃ™Å  background
             }
 
-            // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø³Ù„Ø§Ù…Ø© Ø§Ù„Ù…Ù„Ù Ø¨Ø¹Ø¯ Ø§Ù„ØªØ­Ù…ÙŠÙ„
+            // Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã˜Â³Ã™â€žÃ˜Â§Ã™â€¦Ã˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â Ã˜Â¨Ã˜Â¹Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž
             if (downloadSuccess)
             {
                 try
                 {
                     if (!File.Exists(newExePath))
-                        throw new Exception("ÙØ´Ù„ Ø­ÙØ¸ Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ«");
+                        throw new Exception("Ã™ÂÃ˜Â´Ã™â€ž Ã˜Â­Ã™ÂÃ˜Â¸ Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«");
 
                     FileInfo fi = new FileInfo(newExePath);
                     if (fi.Length < 100000)
-                        throw new Exception("Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ« ØªØ§Ù„Ù Ø£Ùˆ ØºÙŠØ± Ù…ÙƒØªÙ…Ù„ (Ø§Ù„Ø­Ø¬Ù… Ø£ØµØºØ± Ù…Ù† Ø§Ù„Ù…ØªÙˆÙ‚Ø¹)");
+                        throw new Exception("Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜ÂªÃ˜Â§Ã™â€žÃ™Â Ã˜Â£Ã™Ë† Ã˜ÂºÃ™Å Ã˜Â± Ã™â€¦Ã™Æ’Ã˜ÂªÃ™â€¦Ã™â€ž (Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¬Ã™â€¦ Ã˜Â£Ã˜ÂµÃ˜ÂºÃ˜Â± Ã™â€¦Ã™â€  Ã˜Â§Ã™â€žÃ™â€¦Ã˜ÂªÃ™Ë†Ã™â€šÃ˜Â¹)");
 
                     if (!string.IsNullOrEmpty(expectedSha256))
                     {
@@ -292,10 +292,10 @@ namespace ChickenDist.Core
                         {
                             File.Delete(newExePath);
                             throw new Exception(
-                                $"ÙØ´Ù„ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø³Ù„Ø§Ù…Ø© Ø§Ù„Ù…Ù„Ù (checksum ØºÙŠØ± Ù…Ø·Ø§Ø¨Ù‚).\n" +
-                                $"Ø§Ù„Ù…ØªÙˆÙ‚Ø¹: {expectedSha256}\n" +
-                                $"Ø§Ù„ÙØ¹Ù„ÙŠ:  {actualSha256}\n\n" +
-                                "ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ù„Ù Ù„Ø£Ø³Ø¨Ø§Ø¨ Ø£Ù…Ù†ÙŠØ©. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.");
+                                $"Ã™ÂÃ˜Â´Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã˜Â³Ã™â€žÃ˜Â§Ã™â€¦Ã˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â (checksum Ã˜ÂºÃ™Å Ã˜Â± Ã™â€¦Ã˜Â·Ã˜Â§Ã˜Â¨Ã™â€š).\n" +
+                                $"Ã˜Â§Ã™â€žÃ™â€¦Ã˜ÂªÃ™Ë†Ã™â€šÃ˜Â¹: {expectedSha256}\n" +
+                                $"Ã˜Â§Ã™â€žÃ™ÂÃ˜Â¹Ã™â€žÃ™Å :  {actualSha256}\n\n" +
+                                "Ã˜ÂªÃ™â€¦ Ã˜Â­Ã˜Â°Ã™Â Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â Ã™â€žÃ˜Â£Ã˜Â³Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â£Ã™â€¦Ã™â€ Ã™Å Ã˜Â©. Ã™Å Ã˜Â±Ã˜Â¬Ã™â€° Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â­Ã˜Â§Ã™Ë†Ã™â€žÃ˜Â© Ã™â€¦Ã˜Â±Ã˜Â© Ã˜Â£Ã˜Â®Ã˜Â±Ã™â€°.");
                         }
                     }
                 }
@@ -303,8 +303,8 @@ namespace ChickenDist.Core
                 {
                     downloadSuccess = false;
                     MessageBox.Show(
-                        $"ÙØ´Ù„ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ù…Ù„Ù Ø§Ù„ØªØ­Ø¯ÙŠØ«.\n\nØ§Ù„Ø³Ø¨Ø¨: {ex.Message}",
-                        "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«", MessageBoxButtons.OK, MessageBoxIcon.Error,
+                        $"Ã™ÂÃ˜Â´Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«.\n\nÃ˜Â§Ã™â€žÃ˜Â³Ã˜Â¨Ã˜Â¨: {ex.Message}",
+                        "Ã˜Â®Ã˜Â·Ã˜Â£ Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«", MessageBoxButtons.OK, MessageBoxIcon.Error,
                         MessageBoxDefaultButton.Button1,
                         MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                     return;
@@ -314,8 +314,8 @@ namespace ChickenDist.Core
             if (!downloadSuccess)
             {
                 MessageBox.Show(
-                    $"ÙØ´Ù„ ØªÙ†Ø²ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø¨Ø¹Ø¯ 3 Ù…Ø­Ø§ÙˆÙ„Ø§Øª.\n\nØ§Ù„Ø³Ø¨Ø¨: {downloadException?.Message}",
-                    "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«", MessageBoxButtons.OK, MessageBoxIcon.Error,
+                    $"Ã™ÂÃ˜Â´Ã™â€ž Ã˜ÂªÃ™â€ Ã˜Â²Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â¨Ã˜Â¹Ã˜Â¯ 3 Ã™â€¦Ã˜Â­Ã˜Â§Ã™Ë†Ã™â€žÃ˜Â§Ã˜Âª.\n\nÃ˜Â§Ã™â€žÃ˜Â³Ã˜Â¨Ã˜Â¨: {downloadException?.Message}",
+                    "Ã˜Â®Ã˜Â·Ã˜Â£ Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«", MessageBoxButtons.OK, MessageBoxIcon.Error,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                 return;
@@ -324,10 +324,10 @@ namespace ChickenDist.Core
             try
             {
                 MessageBox.Show(
-                    "âœ… ØªÙ… ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø¨Ù†Ø¬Ø§Ø­!\n\n" +
-                    $"ðŸ“ ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ø¨Ø§Ø³Ù… {versionedExeName} Ø¯Ø§Ø®Ù„ Ù…Ø¬Ù„Ø¯ (Updates).\n\n" +
-                    "Ø³ÙŠØªÙ… Ø§Ù„Ø¢Ù† ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø¬Ø¯ÙŠØ¯ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ ÙˆØ¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø§Ù„Ø­Ø§Ù„ÙŠ.",
-                    "Ø§ÙƒØªÙ…Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ«",
+                    "Ã¢Å“â€¦ Ã˜ÂªÃ™â€¦ Ã˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â« Ã˜Â¨Ã™â€ Ã˜Â¬Ã˜Â§Ã˜Â­!\n\n" +
+                    $"Ã°Å¸â€œÂ Ã˜ÂªÃ™â€¦ Ã˜Â­Ã™ÂÃ˜Â¸ Ã™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬ Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã˜Â¨Ã˜Â§Ã˜Â³Ã™â€¦ {versionedExeName} Ã˜Â¯Ã˜Â§Ã˜Â®Ã™â€ž Ã™â€¦Ã˜Â¬Ã™â€žÃ˜Â¯ (Updates).\n\n" +
+                    "Ã˜Â³Ã™Å Ã˜ÂªÃ™â€¦ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€  Ã˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Â Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã˜ÂªÃ™â€žÃ™â€šÃ˜Â§Ã˜Â¦Ã™Å Ã˜Â§Ã™â€¹ Ã™Ë†Ã˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â§Ã™â€žÃ™Å .",
+                    "Ã˜Â§Ã™Æ’Ã˜ÂªÃ™â€¦Ã™â€ž Ã˜ÂªÃ˜Â­Ã™â€¦Ã™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
@@ -337,8 +337,8 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ÙØ´Ù„ ÙØªØ­ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª:\n" + ex.Message,
-                    "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ã™ÂÃ˜Â´Ã™â€ž Ã™ÂÃ˜ÂªÃ˜Â­ Ã™â€¦Ã˜Â¬Ã™â€žÃ˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«Ã˜Â§Ã˜Âª:\n" + ex.Message,
+                    "Ã˜ÂªÃ™â€ Ã˜Â¨Ã™Å Ã™â€¡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
     }
