@@ -954,14 +954,14 @@ namespace ChickenDist.Forms
 			var tblSummary = new TableLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 64,
+				Height = 68,
 				RowCount = 2,
 				ColumnCount = 8,
 				BackColor = Color.Transparent,
-				Padding = new Padding(10, 1, 10, 1)
+				Padding = new Padding(10, 2, 10, 2)
 			};
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
 
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val
