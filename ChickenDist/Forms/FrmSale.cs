@@ -2569,6 +2569,47 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			if (product.HasExpiry)
+			{
+				SaleItemDTO existingRow = null;
+				foreach (var item in _items)
+				{
+					if (item.ProductID == productID && 
+						item.BatchID == batchID && 
+						(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
+					{
+						existingRow = item;
+						break;
+					}
+				}
+
+				decimal targetPrice = manualPrice ?? product.Price;
+				if (existingRow != null)
+				{
+					decimal newQty = existingRow.Quantity + qtyToAdd;
+					if (newQty <= 0)
+					{
+						_items.Remove(existingRow);
+					}
+					else
+					{
+						existingRow.Quantity = newQty;
+						if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
+					}
+				}
+				else
+				{
+					if (qtyToAdd > 0)
+					{
+						_items.Add(CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate));
+					}
+				}
+
+				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+				else RefreshGrid();
+				return;
+			}
+
 			if (manualPrice.HasValue)
 			{
 				decimal targetPrice = manualPrice.Value;

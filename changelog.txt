@@ -1,3 +1,13 @@
+v1.9.58 - 2026-06-29
+- Purchases list: add Edit, Delete, Copy buttons with full transaction reversal
+- Purchase Report integrated
+- POS/Sales: split different batch expiry dates
+- FIFO/oldest batch popups with Next Available Batch fallback
+- Main form navigation unsaved changes cancel fix
+
+v1.9.57 - 2026-06-29
+- General updates and package maintenance
+
 v1.9.52 - 2026-06-27
 v1.9.52 - POS: fix totals order RTL + quick items overlap + alternating grid colors in all grids + inventory full-width with Notes/ExpiryDate columns + sidebar removed + save button in toolbar + client search dock fixed
 

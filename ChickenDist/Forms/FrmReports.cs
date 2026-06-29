@@ -182,6 +182,7 @@ namespace ChickenDist.Forms
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
+				("🧾 سجل فواتير المشتريات", "DetailedPurchases"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
 				("🔄 سجل مرتجعات المشتريات", "DetailedPurchaseReturns"),
 				("🗓 مبيعات يومية تفصيلية", "SalesByDay"),
@@ -216,7 +217,7 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Purchases")
 					{
-						keep = (report.tag == "DetailedPurchaseReturns");
+						keep = (report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseReturns");
 					}
 					else if (_targetModule == "Stores")
 					{
@@ -737,6 +738,21 @@ namespace ChickenDist.Forms
 						("SaleID", "معرف الفاتورة")
 					}, dataGridView);
 					if (dataGridView.Columns["SaleID"] != null) dataGridView.Columns["SaleID"].Visible = false;
+					break;
+				case "DetailedPurchases":
+					_currentDt = PurchaseDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
+					SetupGrid(new(string, string)[8]
+					{
+						("PurchaseCode", "رقم الفاتورة"),
+						("PurchaseDate", "التاريخ والوقت"),
+						("PurchaseType", "النوع"),
+						("SupplierName", "المورد"),
+						("TotalAmount", "قيمة الفاتورة"),
+						("Notes", "الملاحظات"),
+						("WarehouseName", "المستودع"),
+						("PurchaseID", "معرف الفاتورة")
+					}, dataGridView);
+					if (dataGridView.Columns["PurchaseID"] != null) dataGridView.Columns["PurchaseID"].Visible = false;
 					break;
 				case "DetailedReturns":
 					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);

@@ -19,6 +19,9 @@ namespace ChickenDist.Forms
 		private TextBox txtProductSearch;
 		private Button btnLoad;
 		private Button btnNewPurchase;
+		private Button btnEdit;
+		private Button btnDelete;
+		private Button btnCopy;
 		private Label lblTotalSummary;
 		private Label lblReturnSummary;
 		private Label lblNetSummary;
@@ -105,6 +108,24 @@ namespace ChickenDist.Forms
 			btnNewPurchase.Margin = new Padding(10, 0, 0, 0);
 			btnNewPurchase.Click += delegate { new FrmPurchase().ShowDialog(); LoadPurchases(); };
 			filterPanel.Controls.Add(btnNewPurchase);
+
+			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+			btnEdit.Size = new Size(130, 28);
+			btnEdit.Margin = new Padding(6, 0, 0, 0);
+			btnEdit.Click += BtnEdit_Click;
+			filterPanel.Controls.Add(btnEdit);
+
+			btnDelete = Theme.MakeButton("🗑️ حذف الفاتورة", Theme.Danger);
+			btnDelete.Size = new Size(130, 28);
+			btnDelete.Margin = new Padding(6, 0, 0, 0);
+			btnDelete.Click += BtnDelete_Click;
+			filterPanel.Controls.Add(btnDelete);
+
+			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+			btnCopy.Size = new Size(130, 28);
+			btnCopy.Margin = new Padding(6, 0, 0, 0);
+			btnCopy.Click += BtnCopy_Click;
+			filterPanel.Controls.Add(btnCopy);
 
 			// ─── شريط الملخص (ثابت أسفل) ───
 			TableLayoutPanel summaryTbl = new TableLayoutPanel
@@ -374,6 +395,79 @@ namespace ChickenDist.Forms
 
 			if (sender is Control ctrl)
 				menu.Show(ctrl, new System.Drawing.Point(0, ctrl.Height));
+		}
+
+		private void BtnEdit_Click(object sender, EventArgs e)
+		{
+			if (dgPurchases.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد تعديلها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+			
+			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
+			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
+			
+			string reason;
+			if (!PurchaseDAL.CanDeletePurchase(purchaseID, out reason))
+			{
+				MessageBox.Show(reason, "لا يمكن التعديل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+			
+			var frm = new FrmPurchase(purchaseID, isCopyMode: false);
+			frm.ShowDialog();
+			LoadPurchases();
+		}
+
+		private void BtnDelete_Click(object sender, EventArgs e)
+		{
+			if (dgPurchases.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد حذفها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+			
+			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
+			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
+			string code = row["PurchaseCode"]?.ToString();
+			
+			string reason;
+			if (!PurchaseDAL.CanDeletePurchase(purchaseID, out reason))
+			{
+				MessageBox.Show(reason, "لا يمكن الحذف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+			
+			var res = MessageBox.Show($"هل أنت متأكد من رغبتك في حذف وإلغاء الفاتورة رقم [{code}] نهائياً؟\n\n⚠️ سيتم عكس جميع الحركات المخزنية والمالية المرتبطة بالفاتورة تلقائياً.", "تأكيد إلغاء الفاتورة", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+			if (res == DialogResult.Yes)
+			{
+				if (PurchaseDAL.DeletePurchase(purchaseID))
+				{
+					MessageBox.Show("✅ تم إلغاء وحذف الفاتورة وعكس جميع حركاتها المخزنية والمالية بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+					LoadPurchases();
+				}
+				else
+				{
+					MessageBox.Show("❌ فشل عملية الحذف، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+				}
+			}
+		}
+
+		private void BtnCopy_Click(object sender, EventArgs e)
+		{
+			if (dgPurchases.SelectedRows.Count == 0)
+			{
+				MessageBox.Show("من فضلك اختر الفاتورة المراد نسخها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				return;
+			}
+			
+			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
+			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
+			
+			var frm = new FrmPurchase(purchaseID, isCopyMode: true);
+			frm.ShowDialog();
+			LoadPurchases();
 		}
 	}
 }

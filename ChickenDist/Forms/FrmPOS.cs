@@ -295,7 +295,28 @@ namespace ChickenDist.Forms
                                     {
                                         bid2 = oldestId; exp2 = oldestExp;
                                     }
+                                    else
+                                    {
+                                        if (batches.Rows.Count > 1)
+                                        {
+                                            bid2 = Convert.ToInt32(batches.Rows[1]["BatchID"]);
+                                            exp2 = batches.Rows[1]["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(batches.Rows[1]["ExpiryDate"]) : (DateTime?)null;
+                                        }
+                                        else
+                                        {
+                                            bid2 = oldestId; exp2 = oldestExp;
+                                        }
+                                    }
                                 }
+                                else
+                                {
+                                    bid2 = oldestId; exp2 = oldestExp;
+                                }
+                            }
+                            else
+                            {
+                                MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
                             }
                         }
                         AddItemFromRow(row2, weight, null, 1m, 0, bid2, exp2);
@@ -345,7 +366,28 @@ namespace ChickenDist.Forms
                         {
                             batchID = oldestId; expiryDate = oldestExp;
                         }
+                        else
+                        {
+                            if (batches.Rows.Count > 1)
+                            {
+                                batchID = Convert.ToInt32(batches.Rows[1]["BatchID"]);
+                                expiryDate = batches.Rows[1]["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(batches.Rows[1]["ExpiryDate"]) : (DateTime?)null;
+                            }
+                            else
+                            {
+                                batchID = oldestId; expiryDate = oldestExp;
+                            }
+                        }
                     }
+                    else
+                    {
+                        batchID = oldestId; expiryDate = oldestExp;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
             }
 
@@ -366,8 +408,12 @@ namespace ChickenDist.Forms
             decimal price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
             decimal cost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
 
-            // Check if item already in list (same product + unit)
-            var existing = _items.Find(i => i.ProductID == productID && i.UnitName == unitName);
+            bool hasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]);
+
+            // Check if item already in list (same product + unit + same batch if hasExpiry)
+            var existing = _items.Find(i => i.ProductID == productID && 
+                                            i.UnitName == unitName && 
+                                            (!hasExpiry || (i.BatchID == batchID && i.ExpiryDate == expiryDate)));
             if (existing != null)
             {
                 existing.Qty += qty;

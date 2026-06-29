@@ -51,6 +51,20 @@ namespace ChickenDist.Forms
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
         private int _draftPurchaseID = 0; // 0 = فاتورة جديدة، >0 = مسودة محملة
+        private int _editPurchaseID = 0;
+        private bool _isCopyMode = false;
+        private DateTime? _loadedLastModified = null;
+
+        public FrmPurchase(int purchaseID, bool isCopyMode = false) : this()
+        {
+            _editPurchaseID = isCopyMode ? 0 : purchaseID;
+            _isCopyMode = isCopyMode;
+            if (purchaseID > 0)
+            {
+                LoadInvoiceForEdit(purchaseID);
+            }
+        }
+
         // ── Auto-barcode detection ─────────────────────────────────────────────
         private System.Windows.Forms.Timer _barcodeTimer;
         private DateTime _lastKeyTime = DateTime.MinValue;
@@ -1544,6 +1558,8 @@ namespace ChickenDist.Forms
             _purchaseType    = "Credit";
             _isDirty         = false;
             _draftPurchaseID = 0;
+            _editPurchaseID  = 0;
+            _isCopyMode      = false;
             dtpDate.Value    = DateTime.Today;
             ToggleType();
             this.Text = "فاتورة مشتريات";
@@ -1872,9 +1888,19 @@ namespace ChickenDist.Forms
                 int? warehouseID = null;
                 if (cboWarehouse.SelectedItem is ComboItem wci2) warehouseID = wci2.ID;
 
-                int id = PurchaseDAL.SavePurchase(
-                    _purchaseType, supplierID, net, txtNotes.Text, _items,
-                    discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
+                int id = 0;
+                if (_editPurchaseID > 0)
+                {
+                    bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
+                        discAmt, discPct, taxPct, taxAmt, warehouseID);
+                    if (ok) id = _editPurchaseID;
+                }
+                else
+                {
+                    id = PurchaseDAL.SavePurchase(
+                        _purchaseType, supplierID, net, txtNotes.Text, _items,
+                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
+                }
 
                 if (id > 0)
                 {
@@ -2234,6 +2260,103 @@ namespace ChickenDist.Forms
             public string HeaderText { get; }
             public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
             public override string ToString() => HeaderText;
+        }
+
+        private void LoadInvoiceForEdit(int purchaseID)
+        {
+            var dtPurchase = DbHelper.Query(
+                @"SELECT p.PurchaseType, p.PurchaseDate, p.SupplierID, p.Notes,
+                         COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
+                         COALESCE(p.DiscountPct, 0) AS DiscountPct,
+                         COALESCE(p.TaxPct, 0) AS TaxPct,
+                         p.WarehouseID
+                  FROM Purchases p WHERE p.PurchaseID=@id",
+                DbHelper.P("@id", purchaseID));
+
+            if (dtPurchase.Rows.Count == 0)
+            {
+                MessageBox.Show("لم يتم العثور على الفاتورة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var row = dtPurchase.Rows[0];
+            _loadedLastModified = Convert.ToDateTime(row["PurchaseDate"]);
+
+            // نوع الفاتورة
+            string typeStr = row["PurchaseType"].ToString();
+            _purchaseType = typeStr;
+            ToggleType();
+
+            // التاريخ
+            dtpDate.Value = _isCopyMode ? DateTime.Today : Convert.ToDateTime(row["PurchaseDate"]);
+
+            // المستودع
+            if (row["WarehouseID"] != DBNull.Value)
+            {
+                int wid = Convert.ToInt32(row["WarehouseID"]);
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    if (cboWarehouse.Items[i] is ComboItem wci && wci.ID == wid)
+                        { cboWarehouse.SelectedIndex = i; break; }
+            }
+
+            // المورد
+            if (row["SupplierID"] != DBNull.Value)
+            {
+                int sid = Convert.ToInt32(row["SupplierID"]);
+                for (int i = 0; i < cboSupplier.Items.Count; i++)
+                    if (cboSupplier.Items[i] is ComboItem ci && ci.ID == sid)
+                        { cboSupplier.SelectedIndex = i; break; }
+            }
+
+            // ملاحظات
+            txtNotes.Text = row["Notes"].ToString();
+
+            // الخصم
+            decimal dAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+            decimal dPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
+            if (dPct > 0)
+            {
+                cboInvoiceDiscountType.SelectedIndex = 1;
+                txtInvoiceDiscount.Text = dPct.ToString("G29");
+            }
+            else
+            {
+                cboInvoiceDiscountType.SelectedIndex = 0;
+                txtInvoiceDiscount.Text = dAmt.ToString("G29");
+            }
+
+            // الضريبة
+            decimal tPct = Convert.ToDecimal(row["TaxPct"]);
+            nudTaxPct.Value = tPct > 100 ? 100 : tPct;
+
+            // الأصناف
+            var itemsDt = PurchaseDAL.GetItems(purchaseID);
+            _items.Clear();
+            foreach (DataRow iRow in itemsDt.Rows)
+            {
+                _items.Add(new PurchaseItemDTO
+                {
+                    ProductID   = Convert.ToInt32(iRow["ProductID"]),
+                    ProductCode = iRow["ProductCode"].ToString(),
+                    ProductName = iRow["ProductName"].ToString(),
+                    Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+                    UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
+                    DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+                    DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
+                    SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
+                    UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
+                    Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
+                    ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null
+                });
+            }
+            RefreshGrid();
+
+            if (_isCopyMode)
+                this.Text = "نسخة من فاتورة مشتريات";
+            else
+                this.Text = $"تعديل فاتورة مشتريات رقم {purchaseID}";
+
+            _isDirty = false;
         }
     }
 

@@ -503,7 +503,14 @@ namespace ChickenDist.Forms
         public void NavigateTo(Form form)
         {
             if (_currentChild != null && !_currentChild.IsDisposed)
+            {
                 _currentChild.Close();
+                if (!_currentChild.IsDisposed)
+                {
+                    // The child form cancelled closing (e.g. user chose DialogResult.No on dirty invoice)
+                    return;
+                }
+            }
 
             _currentChild = form;
             form.TopLevel = false;
