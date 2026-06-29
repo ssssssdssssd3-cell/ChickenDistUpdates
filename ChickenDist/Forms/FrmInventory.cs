@@ -181,6 +181,7 @@ namespace ChickenDist.Forms
 
             // ── شبكة الجرد ─────────────────────────────────
             dgStock = MakeGrid();
+            Theme.EnableDoubleBuffer(dgStock);
             dgStock.ReadOnly = false;
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",  Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID",     Visible = false });
@@ -281,6 +282,11 @@ namespace ChickenDist.Forms
 
         private void LoadStock()
         {
+            if (dgStock == null) return;
+            dgStock.SuspendLayout();
+            var oldMode = dgStock.AutoSizeColumnsMode;
+            dgStock.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             dgStock.Rows.Clear();
             int? wid = null;
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -351,6 +357,8 @@ namespace ChickenDist.Forms
                     dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = diff2 > 0 ? Color.DarkGreen : Color.OrangeRed;
                 }
             }
+            dgStock.AutoSizeColumnsMode = oldMode;
+            dgStock.ResumeLayout();
             ClearAdjustmentForm();
         }
 
@@ -869,6 +877,14 @@ namespace ChickenDist.Forms
                 if (cboWarehouse.Items.Count > 0)
                 {
                     cboWarehouse.SelectedIndex = 0;
+                    for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    {
+                        if (cboWarehouse.Items[i] is ComboItem ci && (ci.Text.Contains("الرئيسي") || ci.Text.Contains("الرئيسى")))
+                        {
+                            cboWarehouse.SelectedIndex = i;
+                            break;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -893,6 +909,14 @@ namespace ChickenDist.Forms
                 if (cboLogWarehouse.Items.Count > 0)
                 {
                     cboLogWarehouse.SelectedIndex = 0;
+                    for (int i = 0; i < cboLogWarehouse.Items.Count; i++)
+                    {
+                        if (cboLogWarehouse.Items[i] is ComboItem ci && (ci.Text.Contains("الرئيسي") || ci.Text.Contains("الرئيسى")))
+                        {
+                            cboLogWarehouse.SelectedIndex = i;
+                            break;
+                        }
+                    }
                 }
             }
             catch (Exception ex)

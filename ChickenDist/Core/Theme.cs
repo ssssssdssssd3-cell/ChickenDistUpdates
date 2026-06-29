@@ -413,5 +413,18 @@ namespace ChickenDist.Core
 
             return panel;
         }
+
+        public static void EnableDoubleBuffer(Control control)
+        {
+            try
+            {
+                typeof(Control).InvokeMember("DoubleBuffered",
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.SetProperty,
+                    null, control, new object[] { true });
+            }
+            catch { }
+        }
     }
 }

@@ -19,7 +19,7 @@ namespace ChickenDist.Forms
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
         private Label _lPaid;
-        private Button _btnPrint;
+        private Button _btnPrint, _btnWhatsApp;
         private TextBox txtPaid;
         private Button btnPay, btnNew, btnCancel, btnSearchProduct;
         private ComboBox cboClient;
@@ -161,9 +161,14 @@ namespace ChickenDist.Forms
             btnCancel.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
             btnCancel.Click += (s, e) => { if (_items.Count > 0 && MessageBox.Show("إلغاء الفاتورة؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes) NewInvoice(); };
 
-            _btnPrint = Theme.MakeButton("🖨️ طباعة آخر (F6)", Theme.Primary, new Point(680, 130), new Size(170, 55));
-            _btnPrint.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            _btnPrint = Theme.MakeButton("🖨️ طباعة (F6)", Theme.Primary, new Point(680, 130), new Size(110, 55));
+            _btnPrint.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             _btnPrint.Click += (s, e) => { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); };
+
+            _btnWhatsApp = Theme.MakeButton("💬 واتساب", Color.FromArgb(37, 211, 102), new Point(795, 130), new Size(95, 55));
+            _btnWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            _btnWhatsApp.ForeColor = Color.White;
+            _btnWhatsApp.Click += (s, e) => { if (_lastSaleID > 0) SendWhatsAppReceipt(_lastSaleID); };
 
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);
@@ -174,6 +179,7 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnNew);
             pnlTotals.Controls.Add(btnCancel);
             pnlTotals.Controls.Add(_btnPrint);
+            pnlTotals.Controls.Add(_btnWhatsApp);
             this.Controls.Add(pnlTotals);
 
             this.Resize += (s, e) => LayoutPanels();
@@ -210,10 +216,11 @@ namespace ChickenDist.Forms
             lblChange.Location = new Point(20, 45);
             lblChange.Size     = new Size(Math.Max(100, midX - 130), 40);
             // الأزرار: توزيع من اليمين لليسار
-            if (_btnPrint != null) { _btnPrint.Location = new Point(totW - 195, 130); _btnPrint.Size = new Size(175, 55); }
-            if (btnCancel != null) { btnCancel.Location = new Point(totW - 380, 130); btnCancel.Size = new Size(175, 55); }
-            if (btnNew    != null) { btnNew.Location    = new Point(totW - 600, 130); btnNew.Size    = new Size(210, 55); }
-            if (btnPay    != null) { btnPay.Location    = new Point(20, 130);          btnPay.Size    = new Size(Math.Max(150, totW - 640), 55); }
+            if (_btnPrint != null) { _btnPrint.Location = new Point(totW - 145, 130); _btnPrint.Size = new Size(125, 55); }
+            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 275, 130); _btnWhatsApp.Size = new Size(120, 55); }
+            if (btnCancel != null) { btnCancel.Location = new Point(totW - 460, 130); btnCancel.Size = new Size(175, 55); }
+            if (btnNew    != null) { btnNew.Location    = new Point(totW - 680, 130); btnNew.Size    = new Size(210, 55); }
+            if (btnPay    != null) { btnPay.Location    = new Point(20, 130);          btnPay.Size    = new Size(Math.Max(150, totW - 710), 55); }
         }
 
         // ── اختصارات لوحة المفاتيح ───────────────────────────
@@ -514,8 +521,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductStock WHERE ProductID=@pid AND WarehouseID=1", DbHelper.P("@pid", productID));
-                available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
+                available = InventoryDAL.GetProductStock(productID, 1);
                 if (qtyInFactor > available)
                 {
                     errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في المخزن حالياً ({available:G29})!";
@@ -833,11 +839,70 @@ namespace ChickenDist.Forms
 
         private void LoadClients()
         {
+            cboClient.BeginUpdate();
             cboClient.Items.Clear();
-            cboClient.Items.Add(new ComboItem(0, "-- بدون عميل --"));
+            List<ComboItem> clientItems = new List<ComboItem>();
+            clientItems.Add(new ComboItem(0, "-- بدون عميل --"));
             var dt = DbHelper.Query("SELECT ClientID, ClientName FROM Clients WHERE IsActive=1 ORDER BY ClientName");
-            foreach (DataRow row in dt.Rows) cboClient.Items.Add(new ComboItem(Convert.ToInt32(row["ClientID"]), row["ClientName"].ToString()));
+            foreach (DataRow row in dt.Rows) clientItems.Add(new ComboItem(Convert.ToInt32(row["ClientID"]), row["ClientName"].ToString()));
+            cboClient.Items.AddRange(clientItems.ToArray());
             cboClient.SelectedIndex = 0;
+            cboClient.EndUpdate();
+            SetupSearchableCombo(cboClient);
+        }
+
+        private void SetupSearchableCombo(ComboBox cbo)
+        {
+            cbo.AutoCompleteMode = AutoCompleteMode.None;
+            cbo.TextUpdate += delegate
+            {
+                if (cbo.Tag == null)
+                {
+                    List<ComboItem> list = new List<ComboItem>();
+                    foreach (ComboItem item in cbo.Items)
+                    {
+                        list.Add(item);
+                    }
+                    cbo.Tag = list;
+                }
+                List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
+                string text = cbo.Text;
+                cbo.BeginUpdate();
+                cbo.Items.Clear();
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    cbo.Items.AddRange(list2.ToArray());
+                }
+                else
+                {
+                    List<ComboItem> filtered = new List<ComboItem>();
+                    if (list2.Count > 0 && list2[0].ID == 0)
+                    {
+                        filtered.Add(list2[0]);
+                    }
+                    int count = 0;
+                    foreach (ComboItem item2 in list2)
+                    {
+                        if (item2.ID == 0) continue;
+                        if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            filtered.Add(item2);
+                            count++;
+                            if (count >= 100)
+                                break;
+                        }
+                    }
+                    cbo.Items.AddRange(filtered.ToArray());
+                }
+                cbo.EndUpdate();
+                cbo.SelectionStart = text.Length;
+                cbo.SelectionLength = 0;
+                if (!cbo.DroppedDown)
+                {
+                    cbo.DroppedDown = true;
+                    Cursor.Current = Cursors.Default;
+                }
+            };
         }
 
         private void CboClient_Changed(object sender, EventArgs e)
@@ -874,9 +939,163 @@ namespace ChickenDist.Forms
 
         public class ComboItem
         {
-            public int ID; public string Text;
-            public ComboItem(int id, string text) { ID = id; Text = text; }
+            public int ID; public string Text; public string Phone;
+            public ComboItem(int id, string text, string phone = "") { ID = id; Text = text; Phone = phone; }
             public override string ToString() => Text;
+        }
+
+        private void SendWhatsAppReceipt(int saleID)
+        {
+            try
+            {
+                // 1. Query sale details and client phone
+                var dtSale = DbHelper.Query(@"
+                    SELECT s.SaleCode, s.TotalAmount, s.DiscountAmount, s.CashPaid, s.SaleDate,
+                           c.ClientName, c.Phone
+                    FROM Sales s
+                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
+
+                if (dtSale.Rows.Count == 0) return;
+
+                var row = dtSale.Rows[0];
+                string saleCode = row["SaleCode"].ToString();
+                decimal total = Convert.ToDecimal(row["TotalAmount"]);
+                decimal discount = Convert.ToDecimal(row["DiscountAmount"]);
+                decimal paid = Convert.ToDecimal(row["CashPaid"]);
+                decimal remaining = total - paid;
+                string clientName = row["ClientName"] != DBNull.Value ? row["ClientName"].ToString() : "عميل نقدي";
+                string phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString() : "";
+
+                // Query sale items
+                var dtItems = DbHelper.Query(@"
+                    SELECT p.ProductName, si.Quantity, si.UnitName, si.UnitPrice, si.TotalPrice
+                    FROM SaleItems si
+                    JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE si.SaleID = @id", DbHelper.P("@id", saleID));
+
+                // 2. If phone is empty, prompt the user to enter it
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    string inputVal = "";
+                    if (ShowPhoneInputDialog("إرسال عبر واتساب", "يرجى إدخال رقم هاتف العميل:", ref inputVal))
+                    {
+                        phone = inputVal;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(phone)) return;
+
+                // Normalize phone number (remove spaces, plus sign, ensure country code)
+                phone = phone.Replace(" ", "").Replace("+", "").Trim();
+                if (phone.StartsWith("0"))
+                {
+                    if (phone.Length == 11 && phone.StartsWith("01"))
+                    {
+                        phone = "2" + phone;
+                    }
+                    else if (phone.Length == 10 && phone.StartsWith("05"))
+                    {
+                        phone = "966" + phone.Substring(1);
+                    }
+                }
+
+                // 3. Format message
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"📄 *فاتورة مبيعات رقم: {saleCode}*");
+                sb.AppendLine($"📅 *التاريخ:* {Convert.ToDateTime(row["SaleDate"]):yyyy-MM-dd HH:mm}");
+                sb.AppendLine($"👤 *العميل:* {clientName}");
+                sb.AppendLine();
+                sb.AppendLine("📋 *الأصناف:*");
+                
+                foreach (DataRow item in dtItems.Rows)
+                {
+                    string prodName = item["ProductName"].ToString();
+                    decimal qty = Convert.ToDecimal(item["Quantity"]);
+                    string unit = item["UnitName"] != DBNull.Value ? item["UnitName"].ToString() : "";
+                    decimal price = Convert.ToDecimal(item["UnitPrice"]);
+                    decimal itemTotal = Convert.ToDecimal(item["TotalPrice"]);
+                    sb.AppendLine($"- {prodName} ({qty} {unit} × {price:N2}) = {itemTotal:N2} ج");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine($"💵 *الإجمالي:* {total:N2} ج");
+                if (discount > 0) sb.AppendLine($"🎁 *الخصم:* {discount:N2} ج");
+                sb.AppendLine($"💳 *المدفوع:* {paid:N2} ج");
+                if (remaining > 0) sb.AppendLine($"⚠️ *المتبقي:* {remaining:N2} ج");
+                
+                sb.AppendLine();
+                sb.AppendLine("شكراً لتعاملكم معنا! 🙏");
+
+                string message = sb.ToString();
+
+                // 4. Open WhatsApp URL
+                string url = $"https://api.whatsapp.com/send?phone={phone}&text={Uri.EscapeDataString(message)}";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmPOS.SendWhatsAppReceipt", ex);
+                MessageBox.Show("فشل فتح واتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static bool ShowPhoneInputDialog(string title, string promptText, ref string value)
+        {
+            Form form = new Form();
+            Label label = new Label();
+            TextBox textBox = new TextBox();
+            Button buttonOk = new Button();
+            Button buttonCancel = new Button();
+
+            form.Text = title;
+            label.Text = promptText;
+            textBox.Text = value;
+
+            buttonOk.Text = "موافق";
+            buttonCancel.Text = "إلغاء";
+            buttonOk.DialogResult = DialogResult.OK;
+            buttonCancel.DialogResult = DialogResult.Cancel;
+
+            label.SetBounds(9, 20, 372, 13);
+            textBox.SetBounds(12, 36, 372, 20);
+            buttonOk.SetBounds(228, 72, 75, 23);
+            buttonCancel.SetBounds(309, 72, 75, 23);
+
+            label.AutoSize = true;
+            textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
+            buttonOk.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+            form.ClientSize = new Size(396, 107);
+            form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
+            form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
+            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+            form.StartPosition = FormStartPosition.CenterParent;
+            form.MinimizeBox = false;
+            form.MaximizeBox = false;
+            form.AcceptButton = buttonOk;
+            form.CancelButton = buttonCancel;
+            
+            form.RightToLeft = RightToLeft.Yes;
+            form.RightToLeftLayout = true;
+            form.Font = Theme.FontMain;
+            form.BackColor = Theme.BgMain;
+            label.ForeColor = Theme.TextMain;
+            textBox.BackColor = Theme.BgInput;
+            textBox.ForeColor = Theme.TextMain;
+
+            var result = form.ShowDialog();
+            value = textBox.Text;
+            return result == DialogResult.OK;
         }
     }
 }

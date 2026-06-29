@@ -9,9 +9,10 @@ namespace ChickenDist.Forms
 {
     public class FrmProductCard : Form
     {
-        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtInternationalCode;
+        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtInternationalCode;
+        private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation;
         private ComboBox cboCategory, cboUnit;
-        private Button btnAddUnit;
+        private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry;
         private NumericUpDown nudDefaultExpiryDays;
@@ -36,6 +37,7 @@ namespace ChickenDist.Forms
             InitUI();
             LoadCategoriesCombo();
             LoadUnitsCombos();
+            LoadLookupCombos();
             if (_selectedID > 0)
             {
                 LoadProductDetails();
@@ -119,10 +121,12 @@ namespace ChickenDist.Forms
             grpBasic.Controls.AddRange(new Control[] { cboCategory, btnAddCat });
             ry += 35;
 
-            AddField(grpBasic, "الماركة:", 10, ry, out txtBrand);
+            AddLookupComboField(grpBasic, "الماركة:", 10, ry, out txtBrand, out btnAddBrand);
+            btnAddBrand.Click += (s, e) => { new FrmLookupManager("Brands", "BrandID", "BrandCode", "BrandName", "BRD", "الماركات").ShowDialog(); LoadLookupCombos(); };
             ry += 35;
 
-            AddField(grpBasic, "الشركة المنتجة:", 10, ry, out txtProducerCompany);
+            AddLookupComboField(grpBasic, "الشركة المنتجة:", 10, ry, out txtProducerCompany, out btnAddProducerCompany);
+            btnAddProducerCompany.Click += (s, e) => { new FrmLookupManager("ProducerCompanies", "ProducerID", "ProducerCode", "ProducerName", "PRD", "الشركات المنتجة").ShowDialog(); LoadLookupCombos(); };
             ry += 35;
 
             AddUnitComboField(grpBasic, "الوحدة الكبرى:", 10, ry, out cboUnit, out btnAddUnit);
@@ -170,8 +174,10 @@ namespace ChickenDist.Forms
                 btnMultiBarcode.Click += BtnMultiBarcode_Click;
                 grpUnit2.Controls.AddRange(new Control[] { txtInternationalCode, btnMultiBarcode });
 
-                AddField(grpUnit2, "موقع الرف:", 10, 95, out txtShelfLocation);
-                AddField(grpUnit2, "الموديل المتوافق:", 10, 130, out txtCarModel);
+                AddLookupComboField(grpUnit2, "موقع الرف:", 10, 95, out txtShelfLocation, out btnAddShelfLocation);
+                btnAddShelfLocation.Click += (s, e) => { new FrmLookupManager("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", "أماكن الرفوف").ShowDialog(); LoadLookupCombos(); };
+                AddLookupComboField(grpUnit2, "الموديل المتوافق:", 10, 130, out txtCarModel, out btnAddCarModel);
+                btnAddCarModel.Click += (s, e) => { new FrmLookupManager("CarModels", "CarModelID", "CarModelCode", "CarModelName", "MDL", "الموديلات").ShowDialog(); LoadLookupCombos(); };
 
                 lblUnit2Header = new Label { Text = "⚙️ خانات الوحدة الوسطى:", Location = new Point(10, 175), Width = 280, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
                 grpUnit2.Controls.Add(lblUnit2Header);
@@ -198,8 +204,10 @@ namespace ChickenDist.Forms
             {
                 // 2. Mobiles or Clothing Layout
                 AddField(grpPrice, "الرقم التسلسلي:", 10, 205, out txtPartNumber);
-                AddField(grpPrice, "المواصفات:", 10, 240, out txtCarModel);
-                AddField(grpPrice, "موقع الرف:", 10, 275, out txtShelfLocation);
+                AddLookupComboField(grpPrice, "المواصفات:", 10, 240, out txtCarModel, out btnAddCarModel);
+                btnAddCarModel.Click += (s, e) => { new FrmLookupManager("CarModels", "CarModelID", "CarModelCode", "CarModelName", "MDL", "المواصفات").ShowDialog(); LoadLookupCombos(); };
+                AddLookupComboField(grpPrice, "موقع الرف:", 10, 275, out txtShelfLocation, out btnAddShelfLocation);
+                btnAddShelfLocation.Click += (s, e) => { new FrmLookupManager("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", "أماكن الرفوف").ShowDialog(); LoadLookupCombos(); };
 
                 grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(10 + 195, 310 + 3), Width = 100, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
                 txtInternationalCode = new TextBox { Location = new Point(10 + 35, 310), Width = 155, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
@@ -232,7 +240,8 @@ namespace ChickenDist.Forms
             else
             {
                 // 3. Supermarket or General Retail layout
-                AddField(grpPrice, "موقع الرف:", 10, 275, out txtShelfLocation);
+                AddLookupComboField(grpPrice, "موقع الرف:", 10, 275, out txtShelfLocation, out btnAddShelfLocation);
+                btnAddShelfLocation.Click += (s, e) => { new FrmLookupManager("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", "أماكن الرفوف").ShowDialog(); LoadLookupCombos(); };
 
                 grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(10 + 195, 310 + 3), Width = 100, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
                 txtInternationalCode = new TextBox { Location = new Point(10 + 35, 310), Width = 155, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
@@ -243,7 +252,8 @@ namespace ChickenDist.Forms
                 // Hidden Fields (OEM, CarModel)
                 var pnlHidden = new Panel { Visible = false };
                 AddField(pnlHidden, "رقم OEM:", 0, 0, out txtPartNumber);
-                AddField(pnlHidden, "الموديل المتوافق:", 0, 0, out txtCarModel);
+                AddLookupComboField(pnlHidden, "الموديل المتوافق:", 0, 0, out txtCarModel, out btnAddCarModel);
+                btnAddCarModel.Click += (s, e) => { new FrmLookupManager("CarModels", "CarModelID", "CarModelCode", "CarModelName", "MDL", "الموديلات").ShowDialog(); LoadLookupCombos(); };
                 this.Controls.Add(pnlHidden);
 
                 // Reposition grpUnit2 controls to top
@@ -366,6 +376,64 @@ namespace ChickenDist.Forms
             cbo = new ComboBox { Location = new Point(x + 35, y), Width = 155, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
             btnAdd = new Button { Text = "➕", Location = new Point(x, y), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             parent.Controls.AddRange(new Control[] { cbo, btnAdd });
+        }
+
+        private void AddLookupComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
+        {
+            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 195, y + 3), Width = 100, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            cbo = new ComboBox { Location = new Point(x + 35, y), Width = 155, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            btnAdd = new Button { Text = "➕", Location = new Point(x, y), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.AddRange(new Control[] { cbo, btnAdd });
+        }
+
+        private void LoadLookupCombos()
+        {
+            try
+            {
+                // Brands
+                string brandVal = txtBrand != null ? txtBrand.Text : "";
+                if (txtBrand != null)
+                {
+                    txtBrand.Items.Clear();
+                    var dtBrands = LookupDAL.GetAll("Brands", "BrandName");
+                    foreach (DataRow r in dtBrands.Rows) txtBrand.Items.Add(r["BrandName"].ToString());
+                    txtBrand.Text = brandVal;
+                }
+
+                // CarModels
+                string modelVal = txtCarModel != null ? txtCarModel.Text : "";
+                if (txtCarModel != null)
+                {
+                    txtCarModel.Items.Clear();
+                    var dtModels = LookupDAL.GetAll("CarModels", "CarModelName");
+                    foreach (DataRow r in dtModels.Rows) txtCarModel.Items.Add(r["CarModelName"].ToString());
+                    txtCarModel.Text = modelVal;
+                }
+
+                // ShelfLocations
+                string shelfVal = txtShelfLocation != null ? txtShelfLocation.Text : "";
+                if (txtShelfLocation != null)
+                {
+                    txtShelfLocation.Items.Clear();
+                    var dtShelves = LookupDAL.GetAll("ShelfLocations", "ShelfName");
+                    foreach (DataRow r in dtShelves.Rows) txtShelfLocation.Items.Add(r["ShelfName"].ToString());
+                    txtShelfLocation.Text = shelfVal;
+                }
+
+                // ProducerCompanies
+                string producerVal = txtProducerCompany != null ? txtProducerCompany.Text : "";
+                if (txtProducerCompany != null)
+                {
+                    txtProducerCompany.Items.Clear();
+                    var dtProducers = LookupDAL.GetAll("ProducerCompanies", "ProducerName");
+                    foreach (DataRow r in dtProducers.Rows) txtProducerCompany.Items.Add(r["ProducerName"].ToString());
+                    txtProducerCompany.Text = producerVal;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadLookupCombos failed", ex);
+            }
         }
 
         private void LoadUnitsCombos()
@@ -494,10 +562,10 @@ namespace ChickenDist.Forms
             txtName.Clear();
             txtPartNumber.Clear();
             txtInternationalCode.Clear();
-            txtCarModel.Clear();
-            txtBrand.Clear();
-            txtProducerCompany.Clear();
-            txtShelfLocation.Clear();
+            txtCarModel.Text = "";
+            txtBrand.Text = "";
+            txtProducerCompany.Text = "";
+            txtShelfLocation.Text = "";
             if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
             cboUnit.Text = "كرتونة";
             nudPurchasePrice.Value = 0;
@@ -613,6 +681,19 @@ namespace ChickenDist.Forms
                 categoryID = ci.ID;
             }
 
+            // Auto-save lookup values if new
+            if (!string.IsNullOrWhiteSpace(txtBrand.Text.Trim()))
+                LookupDAL.Save("Brands", "BrandID", "BrandCode", "BrandName", "BRD", 0, txtBrand.Text.Trim());
+            if (!string.IsNullOrWhiteSpace(txtCarModel.Text.Trim()))
+                LookupDAL.Save("CarModels", "CarModelID", "CarModelCode", "CarModelName", "MDL", 0, txtCarModel.Text.Trim());
+            if (!string.IsNullOrWhiteSpace(txtShelfLocation.Text.Trim()))
+                LookupDAL.Save("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", 0, txtShelfLocation.Text.Trim());
+            if (!string.IsNullOrWhiteSpace(txtProducerCompany.Text.Trim()))
+                LookupDAL.Save("ProducerCompanies", "ProducerID", "ProducerCode", "ProducerName", "PRD", 0, txtProducerCompany.Text.Trim());
+
+            // Reload combos
+            LoadLookupCombos();
+
             // الحفظ في قاعدة البيانات
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
@@ -697,11 +778,11 @@ namespace ChickenDist.Forms
             return 0;
         }
 
-        private void SetFieldLabel(Control parent, TextBox txt, string newLabelText)
+        private void SetFieldLabel(Control parent, Control targetCtrl, string newLabelText)
         {
             foreach (Control ctrl in parent.Controls)
             {
-                if (ctrl is Label lbl && Math.Abs(lbl.Location.Y - (txt.Location.Y + 3)) < 5 && lbl.Location.X > txt.Location.X)
+                if (ctrl is Label lbl && Math.Abs(lbl.Location.Y - (targetCtrl.Location.Y + 3)) < 5 && lbl.Location.X > targetCtrl.Location.X)
                 {
                     lbl.Text = newLabelText;
                     break;

@@ -173,6 +173,13 @@ namespace ChickenDist.Core
             // كل SafeMigrate مستقلة: فشل أي خطوة لا يوقف الباقي
             try
             {
+                SafeMigrate("SafeAccounts.DefaultDrawer", @"
+                IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountName = N'درج تلقائي')
+                BEGIN
+                    INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                    VALUES (N'درج تلقائي', N'Safe', N'Auto-Drawer', 0.00, 1)
+                END");
+
                 SafeMigrate("StockAdjustments", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StockAdjustments')
                 BEGIN
@@ -1213,9 +1220,9 @@ namespace ChickenDist.Core
                 END");
 
                 // ===== عرض الكميات الفعلية الحالية لكل صنف في كل مخزن =====
-                SafeMigrate("vw_CurrentStockByWarehouse.Drop",
+                SafeMigrate("vw_CurrentStockByWarehouse.Drop_v3",
                     "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;");
-                SafeMigrate("vw_CurrentStockByWarehouse.Create_MultiUnits", @"
+                SafeMigrate("vw_CurrentStockByWarehouse.Create_MultiUnits_v3", @"
                 EXEC('CREATE VIEW vw_CurrentStockByWarehouse AS
                 SELECT
                     p.ProductID,
@@ -1227,23 +1234,23 @@ namespace ChickenDist.Core
                     p.MinStockLimit,
                     w.WarehouseID,
                     w.WarehouseName,
-                    ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0)), 0)
+                    ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)), 0)
                     + ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND sr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
-                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND sr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
+                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND sr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
                     + ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND dl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND dl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
+                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND dl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
                     + ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
-                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
                     + ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
-                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
+                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(ti2.Quantity * ISNULL(ti2.Factor, 0)) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(ti2.Quantity) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND ti2.Factor IS NULL AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti2.Quantity) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND ti2.Factor IS NULL AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND wl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND wl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)), 0)
                     AS CurrentQty,
                     adj.AdjDate AS LastAdjDate
                 FROM Products p
@@ -1543,6 +1550,15 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("Employees.CanSelectDriver", @"
+                IF OBJECT_ID('Employees', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Employees', 'CanSelectDriver') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSelectDriver BIT NOT NULL DEFAULT 1;
+                    END
+                END");
+
                 // ===== ميزات السوبر ماركت =====
 
                 // 1. إدارة الورديات (Shifts)
@@ -1634,6 +1650,90 @@ namespace ChickenDist.Core
                         Notes      NVARCHAR(200) NULL,
                         CreatedBy  INT NULL REFERENCES Employees(EmpID)
                     );
+                END");
+
+                SafeMigrate("Brands", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Brands')
+                BEGIN
+                    CREATE TABLE Brands (
+                        BrandID INT IDENTITY(1,1) PRIMARY KEY,
+                        BrandCode NVARCHAR(50) NOT NULL UNIQUE,
+                        BrandName NVARCHAR(100) NOT NULL UNIQUE
+                    );
+                END");
+
+                SafeMigrate("Brands.Migration", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Brands')
+                BEGIN
+                    INSERT INTO Brands (BrandCode, BrandName)
+                    SELECT 
+                        'BRD-' + RIGHT('0000' + CAST(ROW_NUMBER() OVER (ORDER BY p.Brand) + COALESCE((SELECT MAX(BrandID) FROM Brands), 0) AS NVARCHAR(50)), 4),
+                        p.Brand
+                    FROM (SELECT DISTINCT Brand FROM Products WHERE Brand IS NOT NULL AND Brand <> '') p
+                    WHERE p.Brand NOT IN (SELECT BrandName FROM Brands);
+                END");
+
+                SafeMigrate("CarModels", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'CarModels')
+                BEGIN
+                    CREATE TABLE CarModels (
+                        CarModelID INT IDENTITY(1,1) PRIMARY KEY,
+                        CarModelCode NVARCHAR(50) NOT NULL UNIQUE,
+                        CarModelName NVARCHAR(200) NOT NULL UNIQUE
+                    );
+                END");
+
+                SafeMigrate("CarModels.Migration", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'CarModels')
+                BEGIN
+                    INSERT INTO CarModels (CarModelCode, CarModelName)
+                    SELECT 
+                        'MDL-' + RIGHT('0000' + CAST(ROW_NUMBER() OVER (ORDER BY p.CarModel) + COALESCE((SELECT MAX(CarModelID) FROM CarModels), 0) AS NVARCHAR(50)), 4),
+                        p.CarModel
+                    FROM (SELECT DISTINCT CarModel FROM Products WHERE CarModel IS NOT NULL AND CarModel <> '') p
+                    WHERE p.CarModel NOT IN (SELECT CarModelName FROM CarModels);
+                END");
+
+                SafeMigrate("ShelfLocations", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ShelfLocations')
+                BEGIN
+                    CREATE TABLE ShelfLocations (
+                        ShelfID INT IDENTITY(1,1) PRIMARY KEY,
+                        ShelfCode NVARCHAR(50) NOT NULL UNIQUE,
+                        ShelfName NVARCHAR(100) NOT NULL UNIQUE
+                    );
+                END");
+
+                SafeMigrate("ShelfLocations.Migration", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'ShelfLocations')
+                BEGIN
+                    INSERT INTO ShelfLocations (ShelfCode, ShelfName)
+                    SELECT 
+                        'SHF-' + RIGHT('0000' + CAST(ROW_NUMBER() OVER (ORDER BY p.ShelfLocation) + COALESCE((SELECT MAX(ShelfID) FROM ShelfLocations), 0) AS NVARCHAR(50)), 4),
+                        p.ShelfLocation
+                    FROM (SELECT DISTINCT ShelfLocation FROM Products WHERE ShelfLocation IS NOT NULL AND ShelfLocation <> '') p
+                    WHERE p.ShelfLocation NOT IN (SELECT ShelfName FROM ShelfLocations);
+                END");
+
+                SafeMigrate("ProducerCompanies", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProducerCompanies')
+                BEGIN
+                    CREATE TABLE ProducerCompanies (
+                        ProducerID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProducerCode NVARCHAR(50) NOT NULL UNIQUE,
+                        ProducerName NVARCHAR(200) NOT NULL UNIQUE
+                    );
+                END");
+
+                SafeMigrate("ProducerCompanies.Migration", @"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'ProducerCompanies')
+                BEGIN
+                    INSERT INTO ProducerCompanies (ProducerCode, ProducerName)
+                    SELECT 
+                        'PRD-' + RIGHT('0000' + CAST(ROW_NUMBER() OVER (ORDER BY p.ProducerCompany) + COALESCE((SELECT MAX(ProducerID) FROM ProducerCompanies), 0) AS NVARCHAR(50)), 4),
+                        p.ProducerCompany
+                    FROM (SELECT DISTINCT ProducerCompany FROM Products WHERE ProducerCompany IS NOT NULL AND ProducerCompany <> '') p
+                    WHERE p.ProducerCompany NOT IN (SELECT ProducerName FROM ProducerCompanies);
                 END");
             }
             catch (Exception ex)

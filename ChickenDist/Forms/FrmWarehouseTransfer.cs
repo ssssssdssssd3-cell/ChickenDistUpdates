@@ -168,6 +168,7 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            Theme.EnableDoubleBuffer(dgItems);
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", FillWeight = 150 });

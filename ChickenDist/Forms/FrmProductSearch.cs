@@ -129,6 +129,7 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            Theme.EnableDoubleBuffer(dgProducts);
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 25 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 50 });
@@ -263,6 +264,11 @@ namespace ChickenDist.Forms
 
         private void RefreshGrid()
         {
+            if (dgProducts == null) return;
+            dgProducts.SuspendLayout();
+            var oldMode = dgProducts.AutoSizeColumnsMode;
+            dgProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             dgProducts.Rows.Clear();
             foreach (DataRowView drv in _dvProducts)
             {
@@ -324,6 +330,9 @@ namespace ChickenDist.Forms
                     }
                 }
             }
+
+            dgProducts.AutoSizeColumnsMode = oldMode;
+            dgProducts.ResumeLayout();
         }
 
         private void ColorStockCell(int rowIdx, decimal stock)

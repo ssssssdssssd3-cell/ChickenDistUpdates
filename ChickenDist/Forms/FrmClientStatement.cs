@@ -430,8 +430,40 @@ namespace ChickenDist.Forms
                         row["AccountName"].ToString()
                     ));
                 }
-                cboSafe.DisplayMember = "Text";
-                if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+                 cboSafe.DisplayMember = "Text";
+                 if (cboSafe.Items.Count > 0)
+                 {
+                     int defaultSafeID = Session.DefaultSafeID ?? 0;
+                     int selectedIdx = -1;
+                     if (defaultSafeID > 0)
+                     {
+                         for (int i = 0; i < cboSafe.Items.Count; i++)
+                         {
+                             if (cboSafe.Items[i] is ComboItem ci && ci.ID == defaultSafeID)
+                             {
+                                 selectedIdx = i;
+                                 break;
+                             }
+                         }
+                     }
+                     if (selectedIdx >= 0)
+                     {
+                         cboSafe.SelectedIndex = selectedIdx;
+                     }
+                     else
+                     {
+                         int fallbackIdx = 0;
+                         for (int i = 0; i < cboSafe.Items.Count; i++)
+                         {
+                             if (cboSafe.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+                             {
+                                 fallbackIdx = i;
+                                 break;
+                             }
+                         }
+                         cboSafe.SelectedIndex = fallbackIdx;
+                     }
+                 }
             }
             catch { }
             this.Controls.Add(cboSafe); y += 40;

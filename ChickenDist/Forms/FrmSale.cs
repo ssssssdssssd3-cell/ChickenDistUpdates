@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
 		private ComboBox cboProduct;
 		private TextBox txtProductCode;
-		private TextBox txtClientSearchCode;
+
 
 		private NumericUpDown nudQty;
 
@@ -186,8 +186,8 @@ namespace ChickenDist.Forms
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
 			};
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66f)); // Left: Invoice details
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f)); // Right: Invoice options (Type & Tier)
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75f)); // Left: Invoice details
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // Right: Invoice options (Type & Tier)
 			tblHeaderMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
 			var tblDetails = new TableLayoutPanel
@@ -199,9 +199,9 @@ namespace ChickenDist.Forms
 				Padding = new Padding(0)
 			};
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 0: Label
-			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 1: Control
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68f));   // Col 1: Control (pnlClient)
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Label
-			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 3: Control
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32f));   // Col 3: Control (Date/Warehouse)
 
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
@@ -234,10 +234,10 @@ namespace ChickenDist.Forms
 			lblClientBalance = new Label
 			{
 				Text = "رصيد: 0.00 ج",
-				Width = 85,
+				Width = 95,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
-				TextAlign = ContentAlignment.MiddleLeft,
+				TextAlign = ContentAlignment.MiddleRight,
 				Dock = DockStyle.Left,
 				Margin = new Padding(2)
 			};
@@ -245,7 +245,7 @@ namespace ChickenDist.Forms
 			Button btnClientStatement = new Button
 			{
 				Text = "📋 كشف",
-				Width = 55,
+				Width = 50,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = Theme.Primary,
@@ -263,94 +263,52 @@ namespace ChickenDist.Forms
 				}
 			};
 
-			txtClientSearchCode = new TextBox
+			Button btnClientSearch = new Button
 			{
-				Width = 75,
-				Font = Theme.FontMain,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				BorderStyle = BorderStyle.FixedSingle,
+				Text = "🔍",
+				Width = 40,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(70, 80, 95),
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
 				Dock = DockStyle.Left,
-				Margin = new Padding(2),
-				RightToLeft = RightToLeft.Yes
+				Margin = new Padding(2)
 			};
-			txtClientSearchCode.KeyDown += (s, e) =>
+			btnClientSearch.FlatAppearance.BorderSize = 0;
+			btnClientSearch.Click += (s, e) =>
 			{
-				if (e.KeyCode == Keys.Enter)
+				using (var frm = new FrmClientSearch())
 				{
-					string term = txtClientSearchCode.Text.Trim();
-					if (string.IsNullOrEmpty(term))
+					if (frm.ShowDialog() == DialogResult.OK)
 					{
-						cboClient.SelectedIndex = 0;
-						return;
-					}
-
-					ComboItem found = null;
-					var allClients = cboClient.Tag as List<ComboItem>;
-					if (allClients != null)
-					{
-						foreach (var ci in allClients)
+						int cid = frm.SelectedClientID;
+						if (cid > 0)
 						{
-							if (ci.ID > 0 &&
-								(ci.ID.ToString() == term ||
-								 string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
-								 string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
-								 (ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase))))
+							var allClients = cboClient.Tag as List<ComboItem>;
+							if (allClients != null)
 							{
-								found = ci;
-								break;
+								cboClient.BeginUpdate();
+								cboClient.Items.Clear();
+								cboClient.Items.AddRange(allClients.ToArray());
+								cboClient.EndUpdate();
 							}
-						}
-					}
-					else
-					{
-						foreach (var item in cboClient.Items)
-						{
-							if (item is ComboItem ci && ci.ID > 0)
+							for (int i = 0; i < cboClient.Items.Count; i++)
 							{
-								if (ci.ID.ToString() == term ||
-									string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
-									string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
-									(ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase)))
+								if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
 								{
-									found = ci;
+									cboClient.SelectedIndex = i;
 									break;
 								}
 							}
 						}
 					}
-
-					if (found != null)
-					{
-						if (allClients != null)
-						{
-							cboClient.BeginUpdate();
-							cboClient.Items.Clear();
-							cboClient.Items.AddRange(allClients.ToArray());
-							cboClient.EndUpdate();
-						}
-						for (int i = 0; i < cboClient.Items.Count; i++)
-						{
-							if (cboClient.Items[i] is ComboItem ci && ci.ID == found.ID)
-							{
-								cboClient.SelectedIndex = i;
-								break;
-							}
-						}
-						txtClientSearchCode.Clear();
-						e.Handled = true;
-						e.SuppressKeyPress = true;
-					}
-					else
-					{
-						MessageBox.Show("لم يتم العثور على العميل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-					}
 				}
 			};
 
 			pnlClient.Controls.Add(cboClient);
-			pnlClient.Controls.Add(txtClientSearchCode);
 			pnlClient.Controls.Add(lblClientBalance);
+			pnlClient.Controls.Add(btnClientSearch);
 			pnlClient.Controls.Add(btnClientStatement);
 			cboClient.SendToBack();
 
@@ -409,6 +367,8 @@ namespace ChickenDist.Forms
 
 			tblDetails.Controls.Add(lblDriver, 0, 1);
 			tblDetails.Controls.Add(cboDriver, 1, 1);
+			lblDriver.Visible = Session.CanSelectDriver;
+			cboDriver.Visible = Session.CanSelectDriver;
 			tblDetails.Controls.Add(lblWarehouse, 2, 1);
 			tblDetails.Controls.Add(cboWarehouse, 3, 1);
 
@@ -715,6 +675,7 @@ namespace ChickenDist.Forms
 							AddOrUpdateProduct(foundItem.ID, 1.00m, scannedBarcode: scanText);
 							
 							cboProduct.Text = "";
+							cboProduct.BeginUpdate();
 							cboProduct.Items.Clear();
 							cboProduct.Items.AddRange(allItems.ToArray());
 							for (int i = 0; i < cboProduct.Items.Count; i++)
@@ -725,6 +686,7 @@ namespace ChickenDist.Forms
 									break;
 								}
 							}
+							cboProduct.EndUpdate();
 
 							txtProductCode.Clear();
 							txtProductCode.Focus();
@@ -1385,9 +1347,11 @@ namespace ChickenDist.Forms
 				{
 					AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: text);
 					cboProduct.Text = "";
+					cboProduct.BeginUpdate();
 					cboProduct.Items.Clear();
 					cboProduct.Items.AddRange(allItems.ToArray());
 					cboProduct.SelectedIndex = 0;
+					cboProduct.EndUpdate();
 					cboProduct.Focus();
 				}
 				finally
@@ -1479,9 +1443,11 @@ namespace ChickenDist.Forms
 						AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: scanText);
 						
 						cboProduct.Text = "";
+						cboProduct.BeginUpdate();
 						cboProduct.Items.Clear();
 						cboProduct.Items.AddRange(allItems.ToArray());
 						cboProduct.SelectedIndex = 0;
+						cboProduct.EndUpdate();
 						cboProduct.Focus();
 					}
 					finally
@@ -1513,28 +1479,43 @@ namespace ChickenDist.Forms
 				cbo.Items.Clear();
 				if (string.IsNullOrWhiteSpace(text))
 				{
-					ComboBox.ObjectCollection items = cbo.Items;
-					object[] items2 = list2.ToArray();
-					items.AddRange(items2);
+					cbo.Items.AddRange(list2.ToArray());
 				}
 				else
 				{
+					List<ComboItem> filtered = new List<ComboItem>();
+					if (list2.Count > 0 && list2[0].ID == 0)
+					{
+						filtered.Add(list2[0]);
+					}
+					int count = 0;
 					foreach (ComboItem item2 in list2)
 					{
-						if (item2.ID == 0 || 
-							item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+						if (item2.ID == 0) continue;
+						if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
 							(item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
 							(item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
-							(item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
+							(item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.ClientCode != null && item2.ClientCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.Phone != null && item2.Phone.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.Phone2 != null && item2.Phone2.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
 						{
-							cbo.Items.Add(item2);
+							filtered.Add(item2);
+							count++;
+							if (count >= 100)
+								break;
 						}
 					}
+					cbo.Items.AddRange(filtered.ToArray());
 				}
 				cbo.EndUpdate();
 				cbo.SelectionStart = text.Length;
 				cbo.SelectionLength = 0;
-				cbo.DroppedDown = true;
+				if (!cbo.DroppedDown)
+				{
+					cbo.DroppedDown = true;
+					Cursor.Current = Cursors.Default;
+				}
 			};
 		}
 
@@ -1549,19 +1530,26 @@ namespace ChickenDist.Forms
 			var stockTable = InventoryDAL.GetStock();
 			foreach (DataRow sRow in stockTable.Rows)
 				_stockCache[(int)sRow["ProductID"]] = sRow["BookQty"] == DBNull.Value ? 0m : Convert.ToDecimal(sRow["BookQty"]);
+			
 			DataTable all = ClientDAL.GetAll(activeOnly: true);
+			cboClient.BeginUpdate();
 			cboClient.Items.Clear();
-			cboClient.Items.Add(new ComboItem(0, "-- اختر عميل --"));
+			List<ComboItem> clientItems = new List<ComboItem>();
+			clientItems.Add(new ComboItem(0, "-- اختر عميل --"));
 			foreach (DataRow row in all.Rows)
 			{
 				var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
 				item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString().Trim() : "";
 				item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString().Trim() : "";
 				item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString().Trim() : "";
-				cboClient.Items.Add(item);
+				clientItems.Add(item);
 			}
+			cboClient.Items.AddRange(clientItems.ToArray());
 			cboClient.DisplayMember = "Text";
+			cboClient.Tag = clientItems;
 			cboClient.SelectedIndex = 0;
+			cboClient.EndUpdate();
+			
 			cboClient.SelectedIndexChanged += delegate
 			{
 				if (cboClient.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
@@ -1609,18 +1597,27 @@ namespace ChickenDist.Forms
                     }
                 }
 			};
+			
 			DataTable drivers = EmployeeDAL.GetDrivers();
+			cboDriver.BeginUpdate();
 			cboDriver.Items.Clear();
-			cboDriver.Items.Add(new ComboItem(0, "-- اختر مندوب --"));
+			List<ComboItem> driverItems = new List<ComboItem>();
+			driverItems.Add(new ComboItem(0, "-- اختر مندوب --"));
 			foreach (DataRow row2 in drivers.Rows)
 			{
-				cboDriver.Items.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
+				driverItems.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
 			}
+			cboDriver.Items.AddRange(driverItems.ToArray());
 			cboDriver.DisplayMember = "Text";
+			cboDriver.Tag = driverItems;
 			cboDriver.SelectedIndex = 0;
+			cboDriver.EndUpdate();
+			
 			DataTable all2 = ProductDAL.GetAll(activeOnly: true);
+			cboProduct.BeginUpdate();
 			cboProduct.Items.Clear();
-			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
+			List<ComboItem> productItems = new List<ComboItem>();
+			productItems.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
 				string name = row3["ProductName"].ToString();
@@ -1667,7 +1664,7 @@ namespace ChickenDist.Forms
 					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
 					itemOld.Unit2Name = unit2Name; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
 					itemOld.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(itemOld);
+					productItems.Add(itemOld);
 
 					// إضافة السعر المعلق كخيار مستقل
 					var itemPending = new ComboItem(
@@ -1694,7 +1691,7 @@ namespace ChickenDist.Forms
 					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
 					itemPending.Unit2Name = unit2Name; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
 					itemPending.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(itemPending);
+					productItems.Add(itemPending);
 				}
 				else
 				{
@@ -1722,11 +1719,14 @@ namespace ChickenDist.Forms
 					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
 					comboItem.Unit2Name = unit2Name; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
 					comboItem.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(comboItem);
+					productItems.Add(comboItem);
 				}
 			}
+			cboProduct.Items.AddRange(productItems.ToArray());
 			cboProduct.DisplayMember = "Text";
+			cboProduct.Tag = productItems;
 			cboProduct.SelectedIndex = 0;
+			cboProduct.EndUpdate();
 			cboProduct.SelectedIndexChanged += delegate
 			{
 				if (_isScanningBarcode) return;
@@ -1777,6 +1777,14 @@ namespace ChickenDist.Forms
 				}
 				cboWarehouse.DisplayMember = "Text";
 				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+				cboWarehouse.SelectedIndexChanged += (s, e) =>
+				{
+					foreach (var item in _items)
+					{
+						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
+					}
+					RefreshGrid();
+				};
 			}
 			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
 
@@ -1823,7 +1831,23 @@ namespace ChickenDist.Forms
 				cboSafeAccount.DisplayMember = "Text";
 				if (cboSafeAccount.Items.Count > 0)
 				{
-					cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+					if (selectedIdx >= 0)
+					{
+						cboSafeAccount.SelectedIndex = selectedIdx;
+					}
+					else
+					{
+						int fallbackIdx = 0;
+						for (int i = 0; i < cboSafeAccount.Items.Count; i++)
+						{
+							if (cboSafeAccount.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+							{
+								fallbackIdx = i;
+								break;
+							}
+						}
+						cboSafeAccount.SelectedIndex = fallbackIdx;
+					}
 				}
 			}
 			catch { }
@@ -2503,7 +2527,7 @@ namespace ChickenDist.Forms
 			}
 			if (product == null) return;
 
-			decimal stock = _stockCache.TryGetValue(productID, out var cached) ? cached : 0m;
+			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
 			if (stock <= 0 && !product.IsService)
 			{
 				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -2611,124 +2635,83 @@ namespace ChickenDist.Forms
 						_items.Add(tempItem);
 					}
 				}
-
-				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-				else RefreshGrid();
-				return;
 			}
-
-			if (manualPrice.HasValue)
+			else
 			{
-				decimal targetPrice = manualPrice.Value;
 				SaleItemDTO existingRow = null;
 				foreach (var item in _items)
 				{
-					if (item.ProductID == productID && Math.Abs(item.UnitPrice - targetPrice) < 0.005m)
+					if (item.ProductID == productID && (unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
 					{
 						existingRow = item;
 						break;
 					}
 				}
 
-				decimal newQty = qtyToAdd;
-				if (existingRow != null)
-				{
-					newQty = existingRow.Quantity + qtyToAdd;
-				}
+				decimal targetPrice = manualPrice ?? product.Price;
+				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
-				decimal totalProductQtyInInvoice = qtyToAdd;
-				foreach (var item in _items)
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					if (item.ProductID == productID)
-					{
-						totalProductQtyInInvoice += item.Quantity;
-					}
-				}
-				if (existingRow != null)
-				{
-					totalProductQtyInInvoice -= existingRow.Quantity;
-				}
-
-				if (totalProductQtyInInvoice > stock && !product.IsService)
-				{
-					MessageBox.Show($"❌ خطأ: إجمالي الكمية المطلوبة ({totalProductQtyInInvoice:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 					else RefreshGrid();
-					return;
-				}
-
-				if (existingRow != null)
-				{
-					if (newQty <= 0)
-					{
-						_items.Remove(existingRow);
-					}
-					else
-					{
-						existingRow.Quantity = newQty;
-					}
-				}
-				else
-				{
-					if (newQty > 0)
-					{
-						_items.Add(CreateSaleItemDTO(product, newQty, targetPrice, stock, unitName, batchID, expiryDate));
-					}
-				}
-			}
-			else
-			{
-				decimal existingQty = 0m;
-				List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
-				foreach (var item in _items)
-				{
-					if (item.ProductID == productID)
-					{
-						existingQty += item.Quantity;
-						existingRows.Add(item);
-					}
-				}
-
-				decimal totalQty = existingQty + qtyToAdd;
-
-				if (totalQty > stock && !product.IsService)
-				{
-					MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					RefreshGrid();
 					return;
 				}
 
 				decimal oldPrice = product.Price;
 				decimal newPrice = product.PendingSalePrice;
 				decimal threshold = product.PendingQtyThreshold;
-
 				bool hasPendingPrice = newPrice > 0 && threshold > 0;
-
-				foreach (var row in existingRows)
-				{
-					_items.Remove(row);
-				}
 
 				if (hasPendingPrice)
 				{
+					List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
+					foreach (var item in _items)
+					{
+						if (item.ProductID == productID)
+							existingRows.Add(item);
+					}
+					foreach (var row in existingRows)
+					{
+						_items.Remove(row);
+					}
+
+					decimal totalQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 					decimal oldQtyAvailable = Math.Max(0m, Math.Min(stock, threshold));
 					decimal qtyOld = Math.Min(totalQty, oldQtyAvailable);
 					decimal qtyNew = Math.Max(0m, totalQty - oldQtyAvailable);
 
 					if (qtyOld > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock, null, batchID, expiryDate));
+						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock, unitName, batchID, expiryDate));
 					}
 					if (qtyNew > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock, null, batchID, expiryDate));
+						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock, unitName, batchID, expiryDate));
 					}
 				}
 				else
 				{
-					if (totalQty > 0)
+					if (existingRow != null)
 					{
-						_items.Add(CreateSaleItemDTO(product, totalQty, oldPrice, stock, null, batchID, expiryDate));
+						if (newQty <= 0)
+						{
+							_items.Remove(existingRow);
+						}
+						else
+						{
+							existingRow.Quantity = newQty;
+							if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
+						}
+					}
+					else
+					{
+						if (qtyToAdd > 0)
+						{
+							_items.Add(tempItem);
+						}
 					}
 				}
 			}
@@ -2774,9 +2757,7 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
-				var qtyVal = DbHelper.Scalar("SELECT Quantity FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid",
-					DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", warehouseID));
-				decimal dbQty = qtyVal != null && qtyVal != DBNull.Value ? Convert.ToDecimal(qtyVal) : 0m;
+				decimal dbQty = InventoryDAL.GetProductStock(item.ProductID, warehouseID);
 
 				// If editing an existing invoice, add the original quantity
 				if (_editSaleID > 0)
@@ -3113,9 +3094,12 @@ namespace ChickenDist.Forms
 					quantityToCheck = item.Quantity - oldQty;
 				}
 
-				if (quantityToCheck > 0 && quantityToCheck > productStock)
+				decimal quantityToCheckBase = quantityToCheck * item.Factor;
+
+				if (quantityToCheckBase > 0 && quantityToCheckBase > productStock)
 				{
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2}\nالكمية المتاحة بالمخزن: {productStock:N2}",
+					decimal availableInSelectedUnit = productStock / item.Factor;
+					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
 						"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
@@ -3724,7 +3708,39 @@ namespace ChickenDist.Forms
 					));
 				}
 				cboSafe.DisplayMember = "Text";
-				if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+				if (cboSafe.Items.Count > 0)
+				{
+					int defaultSafeID = Session.DefaultSafeID ?? 0;
+					int selectedIdx = -1;
+					if (defaultSafeID > 0)
+					{
+						for (int i = 0; i < cboSafe.Items.Count; i++)
+						{
+							if (cboSafe.Items[i] is ComboItem ci && ci.ID == defaultSafeID)
+							{
+								selectedIdx = i;
+								break;
+							}
+						}
+					}
+					if (selectedIdx >= 0)
+					{
+						cboSafe.SelectedIndex = selectedIdx;
+					}
+					else
+					{
+						int fallbackIdx = 0;
+						for (int i = 0; i < cboSafe.Items.Count; i++)
+						{
+							if (cboSafe.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+							{
+								fallbackIdx = i;
+								break;
+							}
+						}
+						cboSafe.SelectedIndex = fallbackIdx;
+					}
+				}
 			}
 			catch { }
 

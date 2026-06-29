@@ -1,3 +1,44 @@
+v1.9.72 - 2026-06-29
+- Repository: Updated deploy script to commit all source code modifications (git add -A) to GitHub instead of just the binary, ensuring full synchronization.
+
+v1.9.71 - 2026-06-29
+- Sales: Adjusted layout split to 75%/25% main and 68%/32% details to prevent date/warehouse fields from being squished.
+- Inventory: Default warehouse selection now automatically targets the "الرئيسي" warehouse.
+- Financials: Auto-created a default safe named "درج تلقائي" and set it as fallback for users with no default safe.
+
+v1.9.70 - 2026-06-29
+- Sales: Swapped cboClient and lblClientBalance alignment order, placing cboClient on the rightmost edge directly next to the 'Client :' label to align the start of the client name with the start of the container.
+
+v1.9.69 - 2026-06-29
+- Sales: Maximized horizontal layout ratios (82% for details, 78% for client/driver columns) to provide up to 315px width for cboClient, ensuring long client names are fully visible.
+
+v1.9.68 - 2026-06-29
+- Sales: Removed client search code text box (صندوق الكود) and added a dedicated search button next to cboClient that opens a client search form (FrmClientSearch).
+- Sales: Pre-populated cboClient, cboDriver, and cboProduct tags inside LoadCombos() to fix searchable combo text filtering from first load.
+
+v1.9.67 - 2026-06-29
+- Sales/POS: Swapped static ProductStock query with dynamic InventoryDAL.GetProductStock inside FrmPOS.cs to fully respect stock adjustments (جرد) in quick sale screen.
+- Sales: Redesigned details column split (75%/25% main, 70%/30% detail grid) and decreased balance label width to prevent client combobox from shrinking or disappearing on low resolutions.
+- Inventory: Fixed max conversion factor calculation query to support products having only 2 units (middle unit factor fallback).
+
+v1.9.66 - 2026-06-29
+- Sales: Swapped static ProductStock query with dynamic InventoryDAL.GetProductStock in validation to fully respect stock adjustments (جرد).
+- Sales: Restored client name combobox visibility by reverting mixed percent/absolute columns to pure percent layout (65% / 35%).
+- Employees/Sales: Added CanSelectDriver permission to control Driver field visibility in FrmSale.
+
+v1.9.65 - 2026-06-29
+- Sales: Fixed client balance display layout in FrmSale.
+- Sales: Corrected stock checking validation to properly support selected unit factor and warehouse stock.
+
+v1.9.64 - 2026-06-29
+- Product Card: Linked custom fields (Brand, CarModel, ShelfLocation, ProducerCompany) to lookup tables with default auto-generated sequential codes.
+- POS: Added WhatsApp invoice sharing option.
+
+v1.9.62 - 2026-06-29
+- Mobiles/Clothing: Added dynamic layout customization and custom field labels
+- Mobiles: Added full Maintenance module (tذاكر الصيانة) with DB-backed storage and receipt printing
+- Fixed FrmPurchasesList crash and FrmProducts category filter compile issue
+
 v1.9.61 - 2026-06-29
 - POS: Auto-select oldest batch and enforce stock check for expiry-enabled Quick Items
 

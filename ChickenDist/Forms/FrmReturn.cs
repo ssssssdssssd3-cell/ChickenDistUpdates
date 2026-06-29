@@ -34,18 +34,22 @@ namespace ChickenDist.Forms
         private void LoadClients()
         {
             cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
+            cboClient.BeginUpdate();
             cboClient.Items.Clear();
-            cboClient.Items.Add(new ComboItem(0, "-- الكل --"));
+            List<ComboItem> clientItems = new List<ComboItem>();
+            clientItems.Add(new ComboItem(0, "-- الكل --"));
             try
             {
                 var dtC = ClientDAL.GetAll(true);
                 foreach (DataRow r in dtC.Rows)
                 {
-                    cboClient.Items.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+                    clientItems.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
                 }
             }
             catch { }
+            cboClient.Items.AddRange(clientItems.ToArray());
             cboClient.DisplayMember = "Text";
+            cboClient.EndUpdate();
             cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             if (cboClient.Items.Count > 0)
                 cboClient.SelectedIndex = 0;
@@ -831,25 +835,37 @@ namespace ChickenDist.Forms
                     cbo.Items.Clear();
                     if (string.IsNullOrWhiteSpace(text))
                     {
-                        foreach (var item in list2)
-                        {
-                            cbo.Items.Add(item);
-                        }
+                        cbo.Items.AddRange(list2.ToArray());
                     }
                     else
                     {
+                        List<ComboItem> filtered = new List<ComboItem>();
+                        if (list2.Count > 0 && list2[0].ID == 0)
+                        {
+                            filtered.Add(list2[0]);
+                        }
+                        int count = 0;
                         foreach (ComboItem item2 in list2)
                         {
-                            if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (item2.ID == 0) continue;
+                            if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
                             {
-                                cbo.Items.Add(item2);
+                                filtered.Add(item2);
+                                count++;
+                                if (count >= 100)
+                                    break;
                             }
                         }
+                        cbo.Items.AddRange(filtered.ToArray());
                     }
                     cbo.EndUpdate();
                     cbo.SelectionStart = text.Length;
                     cbo.SelectionLength = 0;
-                    cbo.DroppedDown = true;
+                    if (!cbo.DroppedDown)
+                    {
+                        cbo.DroppedDown = true;
+                        Cursor.Current = Cursors.Default;
+                    }
                 }
                 finally
                 {

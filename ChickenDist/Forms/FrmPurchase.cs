@@ -803,18 +803,24 @@ namespace ChickenDist.Forms
         {
             // الموردون
             DataTable dtSup = SupplierDAL.GetAll(true);
+            cboSupplier.BeginUpdate();
             cboSupplier.Items.Clear();
-            cboSupplier.Items.Add(new ComboItem(0, "-- اختر المورد --"));
+            List<ComboItem> supplierItems = new List<ComboItem>();
+            supplierItems.Add(new ComboItem(0, "-- اختر المورد --"));
             foreach (DataRow r in dtSup.Rows)
-                cboSupplier.Items.Add(new ComboItem(
+                supplierItems.Add(new ComboItem(
                     Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+            cboSupplier.Items.AddRange(supplierItems.ToArray());
             cboSupplier.DisplayMember = "Text";
             cboSupplier.SelectedIndex = 0;
+            cboSupplier.EndUpdate();
 
             // الأصناف
             DataTable dtProd = ProductDAL.GetAll(true);
+            cboProduct.BeginUpdate();
             cboProduct.Items.Clear();
-            cboProduct.Items.Add(new ComboItem(0, "-- اختر الصنف --"));
+            List<ComboItem> productItems = new List<ComboItem>();
+            productItems.Add(new ComboItem(0, "-- اختر الصنف --"));
             foreach (DataRow r in dtProd.Rows)
             {
                 var ci = new ComboItem(
@@ -843,10 +849,12 @@ namespace ChickenDist.Forms
                 ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
                 ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
 
-                cboProduct.Items.Add(ci);
+                productItems.Add(ci);
             }
+            cboProduct.Items.AddRange(productItems.ToArray());
             cboProduct.DisplayMember = "Text";
             cboProduct.SelectedIndex = 0;
+            cboProduct.EndUpdate();
             SetupSearchableCombo(cboProduct);
             cboProduct.SelectedIndexChanged += (s, e) =>
             {
@@ -876,11 +884,15 @@ namespace ChickenDist.Forms
             try
             {
                 var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+                cboWarehouse.BeginUpdate();
                 cboWarehouse.Items.Clear();
-                cboWarehouse.DisplayMember = "Text";
+                List<ComboItem> warehouseItems = new List<ComboItem>();
                 foreach (DataRow whRow in whDt.Rows)
-                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
+                    warehouseItems.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
+                cboWarehouse.Items.AddRange(warehouseItems.ToArray());
+                cboWarehouse.DisplayMember = "Text";
                 if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+                cboWarehouse.EndUpdate();
             }
             catch { /* تجاهل لو مافيش مخازن */ }
         }
@@ -2026,24 +2038,40 @@ namespace ChickenDist.Forms
                 cbo.Items.Clear();
                 if (string.IsNullOrWhiteSpace(text))
                 {
-                    ComboBox.ObjectCollection items = cbo.Items;
-                    object[] items2 = list2.ToArray();
-                    items.AddRange(items2);
+                    cbo.Items.AddRange(list2.ToArray());
                 }
                 else
                 {
+                    List<ComboItem> filtered = new List<ComboItem>();
+                    if (list2.Count > 0 && list2[0].ID == 0)
+                    {
+                        filtered.Add(list2[0]);
+                    }
+                    int count = 0;
                     foreach (ComboItem item2 in list2)
                     {
-                        if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (item2.ID == 0) continue;
+                        if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            (item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
                         {
-                            cbo.Items.Add(item2);
+                            filtered.Add(item2);
+                            count++;
+                            if (count >= 100)
+                                break;
                         }
                     }
+                    cbo.Items.AddRange(filtered.ToArray());
                 }
                 cbo.EndUpdate();
                 cbo.SelectionStart = text.Length;
                 cbo.SelectionLength = 0;
-                cbo.DroppedDown = true;
+                if (!cbo.DroppedDown)
+                {
+                    cbo.DroppedDown = true;
+                    Cursor.Current = Cursors.Default;
+                }
             };
         }
 

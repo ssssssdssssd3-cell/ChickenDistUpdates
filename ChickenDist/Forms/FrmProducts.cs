@@ -166,6 +166,7 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            Theme.EnableDoubleBuffer(dgProducts);
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 40 });
             bool showPartNo = (AppConfig.BusinessType == "SpareParts" || AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "Clothing");
@@ -232,6 +233,11 @@ namespace ChickenDist.Forms
 
         private void FilterProducts()
         {
+            if (dgProducts == null) return;
+            dgProducts.SuspendLayout();
+            var oldMode = dgProducts.AutoSizeColumnsMode;
+            dgProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             dgProducts.Rows.Clear();
             string query = txtSearch.Text?.Trim().ToLower() ?? "";
             
@@ -284,6 +290,9 @@ namespace ChickenDist.Forms
                     if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
                 }
             }
+
+            dgProducts.AutoSizeColumnsMode = oldMode;
+            dgProducts.ResumeLayout();
         }
 
         private void DgProducts_SelectionChanged(object sender, EventArgs e)

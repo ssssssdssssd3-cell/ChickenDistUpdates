@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "1.9.61"
+$VERSION   = "1.9.72"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -48,7 +48,7 @@ $updateManagerPaths = @(
 )
 foreach ($path in $updateManagerPaths) {
     if (Test-Path $path) {
-        $content = Get-Content $path -Raw
+        $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
         $content = $content -replace 'public const string CurrentVersion = "[^"]+";', "public const string CurrentVersion = `"$VERSION`";"
         [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)
         Write-OK "Patched $path"
@@ -116,7 +116,7 @@ Write-OK "update.txt updated -> version=$VERSION"
 Write-Step "Git commit & push"
 Set-Location $REPO_ROOT
 
-git add ChickenDist.bin update.txt
+git add -A
 if ($LASTEXITCODE -ne 0) { Write-Fail "git add failed" }
 Write-OK "git add ok"
 
