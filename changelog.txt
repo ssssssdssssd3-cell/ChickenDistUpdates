@@ -1,3 +1,6 @@
+v1.9.74 - 2026-06-29
+- Maintenance: Added safe database migration to automatically create the MaintenanceTickets table on app startup, resolving table-not-found exceptions in maintenance ticketing.
+
 v1.9.73 - 2026-06-29
 - Logging: Implemented automatic log archives clean up (keeping only the 3 most recent app.*.log archived files) to prevent unlimited disk space usage.
 

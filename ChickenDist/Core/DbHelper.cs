@@ -1735,6 +1735,23 @@ namespace ChickenDist.Core
                     FROM (SELECT DISTINCT ProducerCompany FROM Products WHERE ProducerCompany IS NOT NULL AND ProducerCompany <> '') p
                     WHERE p.ProducerCompany NOT IN (SELECT ProducerName FROM ProducerCompanies);
                 END");
+
+                SafeMigrate("MaintenanceTickets", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'MaintenanceTickets')
+                BEGIN
+                    CREATE TABLE MaintenanceTickets (
+                        TicketID INT IDENTITY(1,1) PRIMARY KEY,
+                        CustomerName NVARCHAR(100) NOT NULL,
+                        CustomerPhone NVARCHAR(50) NULL,
+                        DeviceModel NVARCHAR(100) NOT NULL,
+                        DeviceSerial NVARCHAR(100) NULL,
+                        Problem NVARCHAR(500) NULL,
+                        Cost DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                        Status NVARCHAR(50) NOT NULL DEFAULT N'قيد الإصلاح',
+                        Notes NVARCHAR(500) NULL,
+                        CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                END");
             }
             catch (Exception ex)
             {
