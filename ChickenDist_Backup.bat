@@ -7,7 +7,7 @@ chcp 65001 > nul
 :: Configurations
 set DB_NAME=ChickenDist
 set BACKUP_DIR=D:\ChickenDist_Backups
-set KEEP_DAYS=7
+set KEEP_DAYS=2
 
 :: Generate timestamp: YYYY-MM-DD_HHMM
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
