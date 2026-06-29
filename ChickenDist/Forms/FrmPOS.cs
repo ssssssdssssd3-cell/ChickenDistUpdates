@@ -491,10 +491,10 @@ namespace ChickenDist.Forms
                     string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                     int warehouseID = 1;
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
-                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,NetAmount,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge)
-                          VALUES (@sc,GETDATE(),'Cash',@cid,NULL,@tot,@disc,0,@net,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0)",
+                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge)
+                          VALUES (@sc,GETDATE(),'Cash',@cid,NULL,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0)",
                         DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
-                        DbHelper.P("@tot", total + loyaltyDiscount), DbHelper.P("@disc", loyaltyDiscount), DbHelper.P("@net", total),
+                        DbHelper.P("@tot", total), DbHelper.P("@disc", loyaltyDiscount),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
                         DbHelper.P("@paid", decimal.TryParse(txtPaid.Text.Replace(",",""), out decimal pd) ? pd : total));

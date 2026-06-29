@@ -972,26 +972,26 @@ namespace ChickenDist.Forms
 
             try
             {
-                if (Session.CanAccess("CashBox"))
+                if (Session.CanAccess("DashTreasury"))
                 {
                     decimal cashBal = AccountDAL.GetCashBalance();
                     pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
                 }
 
-                if (Session.CanAccess("Reports") || Session.CanAccess("Sales") || Session.CanAccess("SalesList"))
+                if (Session.CanAccess("DashSales"))
                 {
                     var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
                     decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
                     pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
                 }
 
-                if (Session.CanAccess("DriverHandover") || Session.CanAccess("DriverPortal"))
+                if (Session.CanAccess("DashLoads"))
                 {
                     var openLoads = DriverDAL.GetOpenLoads();
                     pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
                 }
 
-                if (Session.CanAccess("Inventory") || Session.CanAccess("Products"))
+                if (Session.CanAccess("DashBelowMin"))
                 {
                     int belowMinCount = InventoryDAL.GetBelowMinStockCount();
                     var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);

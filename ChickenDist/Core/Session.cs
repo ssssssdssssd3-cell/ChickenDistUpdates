@@ -121,7 +121,8 @@ namespace ChickenDist.Core
             "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
             "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
             "Settings", "BotManager",
-            "POS", "ShiftClose"
+            "POS", "ShiftClose",
+            "DashTreasury", "DashSales", "DashLoads", "DashBelowMin"
         };
     }
 

@@ -382,7 +382,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("PriceChanges", "سجل تغير وحركات الأسعار", 2),
             new ScreenInfo("BulkPrintBarcodes", "طباعة الباركود (مجمع)", 2),
 
-            // Tab 3: Finance, Drivers & Settings (13)
+            // Tab 3: Finance, Drivers & Settings (17)
             new ScreenInfo("CashBox", "حركات الخزينة والصندوق", 3),
             new ScreenInfo("Reports", "التقارير والإحصائيات المالية", 3),
             new ScreenInfo("DailyClosing", "تقفيل يومية المبيعات", 3),
@@ -393,6 +393,10 @@ namespace ChickenDist.Forms
             new ScreenInfo("DriverPortal", "بوابة المندوب الميداني", 3),
             new ScreenInfo("ImportPreview", "استيراد مبيعات المناديب", 3),
             new ScreenInfo("DriversMonitor", "شاشة مراقبة السائقين", 3),
+            new ScreenInfo("DashTreasury", "🏠 لوحة التحكم: رصيد الخزنة الحالي", 3),
+            new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 3),
+            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 3),
+            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 3),
             new ScreenInfo("DriverCustody", "عهدة المناديب المالية", 3),
             new ScreenInfo("DriverLeaderboard", "أداء وتقييم المناديب", 3),
             new ScreenInfo("Settings", "إعدادات النظام العامة", 3),
@@ -542,7 +546,28 @@ namespace ChickenDist.Forms
 
                 if (targetGrid != null)
                 {
-                    targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                    int ri = targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                    
+                    bool isSalesScreen = string.Equals(screen.Key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(screen.Key, "SalesList", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (!isSalesScreen)
+                    {
+                        for (int colIdx = 3; colIdx <= 7; colIdx++)
+                        {
+                            targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
+                            targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                        }
+                    }
+                    else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        for (int colIdx = 4; colIdx <= 7; colIdx++)
+                        {
+                            targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
+                            targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                        }
+                    }
                 }
             }
         }
@@ -558,12 +583,12 @@ namespace ChickenDist.Forms
                     string screen = row.Cells["Screen"].Value?.ToString();
                     if (string.IsNullOrEmpty(screen)) continue;
 
-                    bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
-                    bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                    bool editI = Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
-                    bool deleteI = Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
-                    bool copyI = Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
-                    bool viewC = Convert.ToBoolean(row.Cells["CanViewCost"].Value);
+                    bool access = row.Cells["CanAccess"].Value != null && Convert.ToBoolean(row.Cells["CanAccess"].Value);
+                    bool editP = row.Cells["CanEditPrice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
+                    bool editI = row.Cells["CanEditSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
+                    bool deleteI = row.Cells["CanDeleteSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
+                    bool copyI = row.Cells["CanCopySalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
+                    bool viewC = row.Cells["CanViewCost"].Value is bool && Convert.ToBoolean(row.Cells["CanViewCost"].Value);
                     
                     EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
                 }
