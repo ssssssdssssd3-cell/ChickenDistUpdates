@@ -414,9 +414,22 @@ namespace ChickenDist.Forms
             var existing = _items.Find(i => i.ProductID == productID && 
                                             i.UnitName == unitName && 
                                             (!hasExpiry || (i.BatchID == batchID && i.ExpiryDate == expiryDate)));
+
+            decimal targetQty = qty;
             if (existing != null)
             {
-                existing.Qty += qty;
+                targetQty += existing.Qty;
+            }
+
+            if (!CheckAvailableStock(productID, batchID, targetQty * factor, out decimal available, out string err))
+            {
+                MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (existing != null)
+            {
+                existing.Qty = targetQty;
                 existing.Total = existing.Qty * existing.Price;
                 RefreshGrid();
                 return;
@@ -478,6 +491,40 @@ namespace ChickenDist.Forms
             lblChange.ForeColor = change >= 0 ? Theme.Accent : Theme.Danger;
         }
 
+        private bool CheckAvailableStock(int productID, int? batchID, decimal qtyInFactor, out decimal available, out string errorMessage)
+        {
+            available = 0;
+            errorMessage = "";
+
+            var isServiceObj = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", productID));
+            if (isServiceObj != null && isServiceObj != DBNull.Value && Convert.ToBoolean(isServiceObj))
+            {
+                return true;
+            }
+
+            if (batchID.HasValue)
+            {
+                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
+                available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
+                if (qtyInFactor > available)
+                {
+                    errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({available:G29})!";
+                    return false;
+                }
+            }
+            else
+            {
+                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductStock WHERE ProductID=@pid AND WarehouseID=1", DbHelper.P("@pid", productID));
+                available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
+                if (qtyInFactor > available)
+                {
+                    errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في المخزن حالياً ({available:G29})!";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // ── تعديل الكمية من الجدول ────────────────────────────
         private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
@@ -485,9 +532,21 @@ namespace ChickenDist.Forms
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString(), out decimal newQty) && newQty > 0)
                 {
-                    _items[e.RowIndex].Qty = newQty;
-                    _items[e.RowIndex].Total = newQty * _items[e.RowIndex].Price;
+                    var item = _items[e.RowIndex];
+                    if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
+                    {
+                        MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                        return;
+                    }
+
+                    item.Qty = newQty;
+                    item.Total = newQty * item.Price;
                     RefreshGrid();
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells[2].Value = _items[e.RowIndex].Qty.ToString("G");
                 }
             }
         }
@@ -621,7 +680,7 @@ namespace ChickenDist.Forms
 
                     // 3. CashBox entry
                     DbHelper.ExecuteInsertTrans(trans,
-                        "INSERT INTO CashBox (TransDate,TransType,Description,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,1)",
+                        "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,1)",
                         DbHelper.P("@desc", $"فاتورة POS #{saleCode}"), DbHelper.P("@amt", total),
                         DbHelper.P("@ref", saleID), DbHelper.P("@emp", Session.EmpID));
 
@@ -746,7 +805,27 @@ namespace ChickenDist.Forms
                 btn.Click += (s, e) =>
                 {
                     var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", (int)((Button)s).Tag));
-                    if (dtP.Rows.Count > 0) AddItemFromRow(dtP.Rows[0], 1, null, 1m);
+                    if (dtP.Rows.Count > 0)
+                    {
+                        var row = dtP.Rows[0];
+                        int? bid = null;
+                        DateTime? exp = null;
+                        if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
+                        {
+                            var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])));
+                            if (batches.Rows.Count > 0)
+                            {
+                                bid = Convert.ToInt32(batches.Rows[0]["BatchID"]);
+                                exp = batches.Rows[0]["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(batches.Rows[0]["ExpiryDate"]) : (DateTime?)null;
+                            }
+                            else
+                            {
+                                MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+                        }
+                        AddItemFromRow(row, 1, null, 1m, 0, bid, exp);
+                    }
                 };
                 flowQuickItems.Controls.Add(btn);
             }

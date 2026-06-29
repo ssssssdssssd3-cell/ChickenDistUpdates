@@ -1,3 +1,15 @@
+v1.9.61 - 2026-06-29
+- POS: Auto-select oldest batch and enforce stock check for expiry-enabled Quick Items
+
+v1.9.60 - 2026-06-29
+- POS/Sales: Prevent negative stock selling for both normal products and expiry batches by adding strict stock validation check in grid editing and product scans
+
+v1.9.59 - 2026-06-29
+- FrmEmployees: Show Edit, Delete, and Copy checkboxes for Purchases and PurchasesList screens
+- FrmPurchasesList: Enforce permission checks on action buttons (New, Edit, Delete, Copy)
+- FrmPOS: Fix SQL error 'Invalid column name Description' by switching back to Notes in CashBox insert query
+- FrmProductCard: Redesign layout to fit all fields and details in a single page screen with GroupBoxes instead of tabs
+
 v1.9.58 - 2026-06-29
 - Purchases list: add Edit, Delete, Copy buttons with full transaction reversal
 - Purchase Report integrated

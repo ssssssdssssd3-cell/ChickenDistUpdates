@@ -2253,12 +2253,9 @@ namespace ChickenDist.Forms
 			{
 				if (decimal.TryParse(dataGridViewRow.Cells["Quantity"].Value?.ToString(), out var result) && result > 0m)
 				{
-					// استخدام cache — يتم تحديثه عند فتح الشاشة
-					decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var cached3) ? cached3 : 0m;
-					// ─── الأصناف الخدمية تتجاوز فحص المخزون ───
-					if (!saleItemDTO.IsService && result > productStock)
+					if (!CheckSaleItemStock(saleItemDTO, result, out string err))
 					{
-						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({result:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
 						return;
 					}
@@ -2584,9 +2581,19 @@ namespace ChickenDist.Forms
 				}
 
 				decimal targetPrice = manualPrice ?? product.Price;
+				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
+
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
+				{
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+					else RefreshGrid();
+					return;
+				}
+
 				if (existingRow != null)
 				{
-					decimal newQty = existingRow.Quantity + qtyToAdd;
 					if (newQty <= 0)
 					{
 						_items.Remove(existingRow);
@@ -2601,7 +2608,7 @@ namespace ChickenDist.Forms
 				{
 					if (qtyToAdd > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate));
+						_items.Add(tempItem);
 					}
 				}
 
@@ -2728,6 +2735,67 @@ namespace ChickenDist.Forms
 
 			if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 			else RefreshGrid();
+		}
+
+		private bool CheckSaleItemStock(SaleItemDTO item, decimal newQty, out string err)
+		{
+			err = "";
+			if (item.IsService) return true;
+
+			decimal reqQtyInFactor = newQty * item.Factor;
+			
+			int warehouseID = 1;
+			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0)
+			{
+				warehouseID = wci.ID;
+			}
+
+			if (item.BatchID.HasValue)
+			{
+				var qtyVal = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", item.BatchID.Value));
+				decimal dbQty = qtyVal != null && qtyVal != DBNull.Value ? Convert.ToDecimal(qtyVal) : 0m;
+
+				// If editing an existing invoice, add the original quantity of this item
+				if (_editSaleID > 0)
+				{
+					var origQtyVal = DbHelper.Scalar("SELECT Quantity * Factor FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid AND BatchID=@bid",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID), DbHelper.P("@bid", item.BatchID.Value));
+					if (origQtyVal != null && origQtyVal != DBNull.Value)
+					{
+						dbQty += Convert.ToDecimal(origQtyVal);
+					}
+				}
+
+				if (reqQtyInFactor > dbQty)
+				{
+					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({dbQty:N2})!";
+					return false;
+				}
+			}
+			else
+			{
+				var qtyVal = DbHelper.Scalar("SELECT Quantity FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid",
+					DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", warehouseID));
+				decimal dbQty = qtyVal != null && qtyVal != DBNull.Value ? Convert.ToDecimal(qtyVal) : 0m;
+
+				// If editing an existing invoice, add the original quantity
+				if (_editSaleID > 0)
+				{
+					var origQtyVal = DbHelper.Scalar("SELECT Quantity * Factor FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid AND (BatchID IS NULL OR BatchID = 0)",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID));
+					if (origQtyVal != null && origQtyVal != DBNull.Value)
+					{
+						dbQty += Convert.ToDecimal(origQtyVal);
+					}
+				}
+
+				if (reqQtyInFactor > dbQty)
+				{
+					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({dbQty:N2})!";
+					return false;
+				}
+			}
+			return true;
 		}
 
 		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock, string unitName = null, int? batchID = null, DateTime? expiryDate = null)

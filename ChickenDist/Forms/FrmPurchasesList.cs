@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
 		private Button btnEdit;
 		private Button btnDelete;
 		private Button btnCopy;
+		private Button btnPrint;
 		private Label lblTotalSummary;
 		private Label lblReturnSummary;
 		private Label lblNetSummary;
@@ -50,10 +51,10 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Top,
 				Height = 50,
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 10, 10, 10),
-				WrapContents = false
+				WrapContents = true
 			};
 
 			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
@@ -97,35 +98,19 @@ namespace ChickenDist.Forms
 			btnLoad.Click += delegate { LoadPurchases(); };
 			filterPanel.Controls.Add(btnLoad);
 
-			var btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(40, 100, 180));
-			btnPrint.Size = new Size(130, 28);
-			btnPrint.Margin = new Padding(6, 0, 0, 0);
-			btnPrint.Click += BtnPrintPurchase_Click;
-			filterPanel.Controls.Add(btnPrint);
-
 			btnNewPurchase = Theme.MakeButton("➕ فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
 			btnNewPurchase.Size = new Size(150, 28);
 			btnNewPurchase.Margin = new Padding(10, 0, 0, 0);
-			btnNewPurchase.Click += delegate { new FrmPurchase().ShowDialog(); LoadPurchases(); };
+			btnNewPurchase.Click += delegate {
+				if (!Session.CanAccess("Purchases"))
+				{
+					MessageBox.Show("ليس لديك صلاحية لإضافة فاتورة شراء جديدة.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					return;
+				}
+				new FrmPurchase().ShowDialog();
+				LoadPurchases();
+			};
 			filterPanel.Controls.Add(btnNewPurchase);
-
-			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
-			btnEdit.Size = new Size(130, 28);
-			btnEdit.Margin = new Padding(6, 0, 0, 0);
-			btnEdit.Click += BtnEdit_Click;
-			filterPanel.Controls.Add(btnEdit);
-
-			btnDelete = Theme.MakeButton("🗑️ حذف الفاتورة", Theme.Danger);
-			btnDelete.Size = new Size(130, 28);
-			btnDelete.Margin = new Padding(6, 0, 0, 0);
-			btnDelete.Click += BtnDelete_Click;
-			filterPanel.Controls.Add(btnDelete);
-
-			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
-			btnCopy.Size = new Size(130, 28);
-			btnCopy.Margin = new Padding(6, 0, 0, 0);
-			btnCopy.Click += BtnCopy_Click;
-			filterPanel.Controls.Add(btnCopy);
 
 			// ─── شريط الملخص (ثابت أسفل) ───
 			TableLayoutPanel summaryTbl = new TableLayoutPanel
@@ -183,17 +168,50 @@ namespace ChickenDist.Forms
 			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 			tblDetail.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-			var pnlDetailLabel = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(10) };
+			FlowLayoutPanel flowLayoutPanel2 = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.TopDown,
+				BackColor = Theme.BgCard,
+				Padding = new Padding(15, 8, 15, 15),
+				WrapContents = false,
+				AutoScroll = true
+			};
+
+			btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(40, 100, 180));
+			btnPrint.Size = new Size(170, 36);
+			btnPrint.Margin = new Padding(0, 0, 0, 8);
+			btnPrint.Click += BtnPrintPurchase_Click;
+			flowLayoutPanel2.Controls.Add(btnPrint);
+
+			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+			btnEdit.Size = new Size(170, 36);
+			btnEdit.Margin = new Padding(0, 0, 0, 8);
+			btnEdit.Click += BtnEdit_Click;
+			flowLayoutPanel2.Controls.Add(btnEdit);
+
+			btnDelete = Theme.MakeButton("🗑️ حذف الفاتورة", Theme.Danger);
+			btnDelete.Size = new Size(170, 36);
+			btnDelete.Margin = new Padding(0, 0, 0, 8);
+			btnDelete.Click += BtnDelete_Click;
+			flowLayoutPanel2.Controls.Add(btnDelete);
+
+			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+			btnCopy.Size = new Size(170, 36);
+			btnCopy.Margin = new Padding(0, 0, 0, 15);
+			btnCopy.Click += BtnCopy_Click;
+			flowLayoutPanel2.Controls.Add(btnCopy);
+
 			Label lblDetailsTitle = new Label
 			{
 				Text = "تفاصيل الأصناف بالفاتورة المحددة",
-				Dock = DockStyle.Top,
-				Height = 60,
+				Size = new Size(170, 60),
 				ForeColor = Theme.TextSub,
 				Font = Theme.FontBold,
-				TextAlign = ContentAlignment.TopCenter
+				TextAlign = ContentAlignment.TopCenter,
+				Margin = new Padding(0)
 			};
-			pnlDetailLabel.Controls.Add(lblDetailsTitle);
+			flowLayoutPanel2.Controls.Add(lblDetailsTitle);
 
 			dgItems = MakeGrid();
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 130f });
@@ -202,7 +220,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount",    HeaderText = "الخصم",      FillWeight = 50f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 60f });
 
-			tblDetail.Controls.Add(pnlDetailLabel, 0, 0);
+			tblDetail.Controls.Add(flowLayoutPanel2, 0, 0);
 			tblDetail.Controls.Add(dgItems, 1, 0);
 
 			tblContent.Controls.Add(dgPurchases, 0, 0);
@@ -399,14 +417,19 @@ namespace ChickenDist.Forms
 
 		private void BtnEdit_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanEditSalesInvoice("PurchasesList"))
+			{
+				MessageBox.Show("ليس لديك صلاحية لتعديل فواتير الشراء.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
 			if (dgPurchases.SelectedRows.Count == 0)
 			{
 				MessageBox.Show("من فضلك اختر الفاتورة المراد تعديلها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			
-			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
-			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
+			int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
 			
 			string reason;
 			if (!PurchaseDAL.CanDeletePurchase(purchaseID, out reason))
@@ -422,15 +445,20 @@ namespace ChickenDist.Forms
 
 		private void BtnDelete_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanDeleteSalesInvoice("PurchasesList"))
+			{
+				MessageBox.Show("ليس لديك صلاحية لحذف فواتير الشراء.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
 			if (dgPurchases.SelectedRows.Count == 0)
 			{
 				MessageBox.Show("من فضلك اختر الفاتورة المراد حذفها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			
-			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
-			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
-			string code = row["PurchaseCode"]?.ToString();
+			int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+			string code = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value?.ToString();
 			
 			string reason;
 			if (!PurchaseDAL.CanDeletePurchase(purchaseID, out reason))
@@ -456,14 +484,19 @@ namespace ChickenDist.Forms
 
 		private void BtnCopy_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanCopySalesInvoice("PurchasesList"))
+			{
+				MessageBox.Show("ليس لديك صلاحية لنسخ فواتير الشراء.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
 			if (dgPurchases.SelectedRows.Count == 0)
 			{
 				MessageBox.Show("من فضلك اختر الفاتورة المراد نسخها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			
-			var row = (DataRowView)dgPurchases.SelectedRows[0].DataBoundItem;
-			int purchaseID = Convert.ToInt32(row["PurchaseID"]);
+			int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
 			
 			var frm = new FrmPurchase(purchaseID, isCopyMode: true);
 			frm.ShowDialog();

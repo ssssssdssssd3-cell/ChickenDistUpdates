@@ -552,13 +552,24 @@ namespace ChickenDist.Forms
                                          string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase) ||
                                          string.Equals(screen.Key, "SalesList", StringComparison.OrdinalIgnoreCase);
                     
-                    if (!isSalesScreen)
+                    bool isPurchasesScreen = string.Equals(screen.Key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                             string.Equals(screen.Key, "PurchasesList", StringComparison.OrdinalIgnoreCase);
+
+                    if (!isSalesScreen && !isPurchasesScreen)
                     {
                         for (int colIdx = 3; colIdx <= 7; colIdx++)
                         {
                             targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
                             targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
                         }
+                    }
+                    else if (isPurchasesScreen)
+                    {
+                        // For purchases, EditPrice (colIdx = 3) and ViewCost (colIdx = 7) are not used
+                        targetGrid.Rows[ri].Cells[3] = new DataGridViewTextBoxCell { Value = "" };
+                        targetGrid.Rows[ri].Cells[3].ReadOnly = true;
+                        targetGrid.Rows[ri].Cells[7] = new DataGridViewTextBoxCell { Value = "" };
+                        targetGrid.Rows[ri].Cells[7].ReadOnly = true;
                     }
                     else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase))
                     {

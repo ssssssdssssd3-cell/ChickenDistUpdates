@@ -310,7 +310,7 @@ namespace ChickenDist.Forms
         {
             pnlNavBar.Controls.Clear();
 
-            var groups = new (string icon, string label, Color color, (string text, string screen, Action action)[] items)[]
+            var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
                     ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
@@ -389,6 +389,13 @@ namespace ChickenDist.Forms
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
+
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
+                    ("🔧 تذاكر الصيانة", "", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                }));
+            }
 
             foreach (var group in groups)
             {

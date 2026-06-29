@@ -33,6 +33,7 @@ namespace ChickenDist.Forms
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
         private ComboBox cboAppTheme;
+        private ComboBox cboBusinessType;
 
         // Loyalty & Shifts Settings
         private CheckBox chkLoyaltyEnabled, chkShiftRequired, chkAllowSellExpired;
@@ -866,6 +867,36 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboAppTheme);
             y += 45;
 
+            // ── نوع نشاط البرنامج (Business Activity Type) ───────────────────────────
+            AddLabel("نوع النشاط التجاري (لتخصيص الحقول المناسبة):", 20, ref y, 15);
+            cboBusinessType = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBusinessType.Items.AddRange(new object[]
+            {
+                "سوبر ماركت (المواد الغذائية والصلاحية)",
+                "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
+                "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
+                "ملابس وأحذية (المقاس، اللون، الخامة)",
+                "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)"
+            });
+            cboBusinessType.SelectedItem = AppConfig.BusinessType switch
+            {
+                "SpareParts" => "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
+                "Mobiles"    => "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
+                "Clothing"   => "ملابس وأحذية (المقاس، اللون، الخامة)",
+                "General"    => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
+                _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
+            };
+            this.Controls.Add(cboBusinessType);
+            y += 45;
+
             // ── زر الحفظ الرئيسي ──────────────────────────────────
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, y, 180, 44, Theme.Accent);
             btnSave.Click += (s, e) =>
@@ -877,6 +908,14 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.BusinessType = cboBusinessType.SelectedIndex switch
+                {
+                    1 => "SpareParts",
+                    2 => "Mobiles",
+                    3 => "Clothing",
+                    4 => "General",
+                    _ => "Supermarket"
+                };
                 AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
                 AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
