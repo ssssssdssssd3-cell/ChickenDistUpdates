@@ -1,3 +1,6 @@
+v1.9.73 - 2026-06-29
+- Logging: Implemented automatic log archives clean up (keeping only the 3 most recent app.*.log archived files) to prevent unlimited disk space usage.
+
 v1.9.72 - 2026-06-29
 - Repository: Updated deploy script to commit all source code modifications (git add -A) to GitHub instead of just the binary, ensuring full synchronization.
 

@@ -71,9 +71,6 @@ namespace ChickenDist.Core
 
         private static void RotateIfNeeded()
         {
-            // FIX: كل منطق التحقق والنقل داخل lock واحد لمنع race condition
-            // الكود القديم كان يتحقق من fi.Exists و fi.Length خارج الـ lock
-            // مما يجعل الملف قد يُنقَّل من thread آخر بين التحقق والنقل
             try
             {
                 lock (_lock)
@@ -85,6 +82,21 @@ namespace ChickenDist.Core
                         string archive = Path.ChangeExtension(path,
                             $".{DateTime.Now:yyyyMMdd_HHmmss}.log");
                         File.Move(path, archive);
+
+                        // Clean up old archives, keep only the most recent 3
+                        string dir = Path.GetDirectoryName(path);
+                        if (!string.IsNullOrEmpty(dir))
+                        {
+                            var logFiles = new DirectoryInfo(dir).GetFiles("app.*.log");
+                            if (logFiles.Length > 3)
+                            {
+                                Array.Sort(logFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
+                                for (int i = 3; i < logFiles.Length; i++)
+                                {
+                                    try { logFiles[i].Delete(); } catch { }
+                                }
+                            }
+                        }
                     }
                 }
             }
