@@ -603,6 +603,12 @@ namespace ChickenDist.Forms
                     }
 
                     g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+                    if (AppConfig.BusinessType == "Clothing")
+                    {
+                        g.DrawString("سياسة الاستبدال والاسترجاع:\nالاستبدال خلال 14 يوماً والاسترجاع خلال 7 أيام من تاريخ الفاتورة بشرط وجود تكت الملابس والفاتورة.", small, Brushes.Black, new RectangleF(lMargin, y, printableW, 32), center);
+                        y += 34;
+                        g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+                    }
                     string footerText = string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase) 
                         ? "نشكركم لزيارتكم الكريمة وثقتكم بنا" 
                         : "شكراً لتعاملكم معنا";
@@ -1050,6 +1056,12 @@ namespace ChickenDist.Forms
                     }
 
                     g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
+                    if (AppConfig.BusinessType == "Clothing")
+                    {
+                        g.DrawString("سياسة الاستبدال والاسترجاع: الاستبدال خلال 14 يوماً والاسترجاع خلال 7 أيام من تاريخ الفاتورة بشرط وجود تكت الملابس والفاتورة.", small, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), center);
+                        y += 22;
+                        g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
+                    }
                     string footerTextText = string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase) 
                         ? "نشكركم لزيارتكم وثقتكم بنا" 
                         : "شكراً لتعاملكم معنا";

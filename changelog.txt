@@ -1,3 +1,7 @@
+v1.9.78 - 2026-06-30
+- Support: Added a built-in interactive Offline Technical Support Chatbot FrmSupportBot.cs explaining all application features (Discounts, Clothing Matrix, WhatsApp invoices, Maintenance barcodes, IMEI tracking, and general printing troubleshooting) in a friendly colloquial Egyptian Arabic.
+- Clothing Shop: Added FrmClothingMatrix size/color variant generation wizard and return policy footer integration.
+
 v1.9.76 - 2026-06-30
 - Maintenance: Implemented a visual statistics report panel at the bottom of the maintenance screen showing total tickets, tickets in repair, ready devices, and total maintenance cash revenue. Added premium date range pickers (From/To) to filter and report on maintenance operations over time.
 

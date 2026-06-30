@@ -137,7 +137,20 @@ namespace ChickenDist.Forms
             btnPricePoster.Width = 135;
             btnPricePoster.Click += (s, e) => new FrmPricePoster().ShowDialog();
 
-            pnlFooter.Controls.AddRange(new Control[] { 
+            Button btnMatrix = null;
+            if (AppConfig.BusinessType == "Clothing")
+            {
+                btnMatrix = Theme.MakeButton("📦 مصفوفة الملابس", Theme.Primary);
+                btnMatrix.Width = 145;
+                btnMatrix.Click += (s, e) => {
+                    if (new FrmClothingMatrix().ShowDialog() == DialogResult.OK)
+                    {
+                        LoadProducts();
+                    }
+                };
+            }
+
+            var footCtrls = new System.Collections.Generic.List<Control> { 
                 btnNew, 
                 btnEdit, 
                 btnDelete, 
@@ -145,7 +158,10 @@ namespace ChickenDist.Forms
                 btnImportExcel, 
                 btnPrintBarcode, 
                 btnPricePoster 
-            });
+            };
+            if (btnMatrix != null) footCtrls.Insert(1, btnMatrix);
+
+            pnlFooter.Controls.AddRange(footCtrls.ToArray());
             this.Controls.Add(pnlFooter);
 
             // Grid (Center)

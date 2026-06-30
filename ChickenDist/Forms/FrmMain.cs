@@ -1129,6 +1129,7 @@ namespace ChickenDist.Forms
             if (Session.CanAccess("Inventory")) AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
             if (Session.CanAccess("Clients")) AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
             if (Session.CanAccess("Reports")) AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
+            AddQuickButton(pnlActions, "🤖 مساعد الدعم الفني", ref btnY, () => new FrmSupportBot().ShowDialog(), Color.FromArgb(160, 80, 180));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 
