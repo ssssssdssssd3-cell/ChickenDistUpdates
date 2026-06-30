@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             var pnlProfile = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 300,
+                Width = 420,
                 Padding = new Padding(10, 16, 10, 16),
                 BackColor = Color.Transparent
             };
@@ -82,6 +82,21 @@ namespace ChickenDist.Forms
                 } 
             };
 
+            var btnHelpTop = new Button
+            {
+                Text = "🤖 الدعم الفني",
+                Width = 110,
+                Dock = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(160, 80, 180),
+                ForeColor = Color.White,
+                Font = Theme.FontBold,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5, 0, 0, 0)
+            };
+            btnHelpTop.FlatAppearance.BorderSize = 0;
+            btnHelpTop.Click += (s, e) => new FrmSupportBot().ShowDialog();
+
             this.lblUserInfo = new Label
             {
                 Text = $"👤 {Session.EmpName}  |  💼 {Session.Role}",
@@ -93,6 +108,7 @@ namespace ChickenDist.Forms
             };
 
             pnlProfile.Controls.Add(lblUserInfo);
+            pnlProfile.Controls.Add(btnHelpTop);
             pnlProfile.Controls.Add(btnLogoutTop);
 
             this.lblTitle = new Label
@@ -1116,7 +1132,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15),
-                Margin = new Padding(15, 0, 8, 15)
+                Margin = new Padding(15, 0, 8, 15),
+                AutoScroll = true
             };
             var lblActTitle = new Label { Text = "⚡ إجراءات سريعة", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
             pnlActions.Controls.Add(lblActTitle);

@@ -1,3 +1,7 @@
+v1.9.80 - 2026-06-30
+- Support: Added the "Technical Support" chatbot button globally to the top profile panel (visible across all screens next to the Logout button) to resolve visibility issues on smaller screens.
+- Support: Enabled AutoScroll on the Quick Actions dashboard panel.
+
 v1.9.79 - 2026-06-30
 - Maintenance: Redesigned FrmMaintenanceCard layout by placing fields side-by-side (saving 114px vertical space) to make the Save button fully visible.
 - Maintenance: Forced proper docked controls Z-ordering and set default filter fromDate to 365 days (1 year) to display all maintenance operation statistics/tickets correctly by default.
