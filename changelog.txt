@@ -1,3 +1,8 @@
+v1.9.79 - 2026-06-30
+- Maintenance: Redesigned FrmMaintenanceCard.cs layout to group fields side-by-side (Customer Name/Phone, Model/Serial, Warranty/Notes) and reduced form height from 710px to 540px to prevent control cut-off on lower resolution screens.
+- Maintenance: Relocated the purple "Support Bot" button directly to the main top navigation menu (pnlNavBar) so it is always visible on all pages.
+- Maintenance: Added "Enable Date Filter" checkbox in FrmMaintenance.cs, which is unchecked by default to show all tickets instantly instead of hiding older ones.
+
 v1.9.78 - 2026-06-30
 - Support: Added a built-in interactive Offline Technical Support Chatbot FrmSupportBot.cs explaining all application features (Discounts, Clothing Matrix, WhatsApp invoices, Maintenance barcodes, IMEI tracking, and general printing troubleshooting) in a friendly colloquial Egyptian Arabic.
 - Clothing Shop: Added FrmClothingMatrix size/color variant generation wizard and return policy footer integration.

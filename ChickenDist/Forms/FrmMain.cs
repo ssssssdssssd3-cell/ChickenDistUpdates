@@ -496,6 +496,25 @@ namespace ChickenDist.Forms
 
                 pnlNavBar.Controls.Add(btn);
             }
+
+            // Add Technical Support Bot button
+            var btnBot = new Button
+            {
+                Text = "🤖\nمساعد الدعم",
+                Size      = new Size(108, 54),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(147, 51, 234), // Purple
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin    = new Padding(3, 4, 3, 4),
+                Cursor    = Cursors.Hand
+            };
+            btnBot.FlatAppearance.BorderSize = 0;
+            btnBot.FlatAppearance.MouseOverBackColor = ControlPaint.Light(btnBot.BackColor, 0.3f);
+            btnBot.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(btnBot.BackColor, 0.1f);
+            btnBot.Click += (s, e) => new FrmSupportBot().ShowDialog();
+            pnlNavBar.Controls.Add(btnBot);
         }
 
         private class MenuColorTable : ProfessionalColorTable
