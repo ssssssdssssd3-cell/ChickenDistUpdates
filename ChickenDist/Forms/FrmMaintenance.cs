@@ -18,6 +18,13 @@ namespace ChickenDist.Forms
         private Button btnDelete;
         private Button btnPrint;
         private DataTable _allTicketsDt;
+        private DateTimePicker dtpFrom;
+        private DateTimePicker dtpTo;
+        private TableLayoutPanel pnlStats;
+        private Label lblValTotal;
+        private Label lblValRepair;
+        private Label lblValReady;
+        private Label lblValRevenue;
 
         public FrmMaintenance()
         {
@@ -28,7 +35,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "صيانة الأجهزة والهواتف";
-            this.Size = new Size(1000, 600);
+            this.Size = new Size(1100, 650);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -38,23 +45,35 @@ namespace ChickenDist.Forms
             FlowLayoutPanel filterPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
+                Height = 55,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10)
             };
 
             Label lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtSearch = new TextBox { Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             txtSearch.TextChanged += (s, e) => FilterData();
             filterPanel.Controls.AddRange(new Control[] { lblSearch, txtSearch });
 
             Label lblStatus = new Label { Text = "الحالة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            cboStatusFilter = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextDark };
+            cboStatusFilter = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextDark };
             cboStatusFilter.Items.AddRange(new object[] { "الكل", "قيد الإصلاح", "تم الإصلاح - جاهز", "تم التسليم", "ملغي" });
             cboStatusFilter.SelectedIndex = 0;
             cboStatusFilter.SelectedIndexChanged += (s, e) => FilterData();
             filterPanel.Controls.AddRange(new Control[] { lblStatus, cboStatusFilter });
+
+            Label lblFrom = new Label { Text = "من تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            dtpFrom.Value = DateTime.Today.AddDays(-30);
+            dtpFrom.ValueChanged += (s, e) => FilterData();
+            filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
+
+            Label lblTo = new Label { Text = "إلى تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            dtpTo.Value = DateTime.Today;
+            dtpTo.ValueChanged += (s, e) => FilterData();
+            filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 
             this.Controls.Add(filterPanel);
 
@@ -93,6 +112,29 @@ namespace ChickenDist.Forms
             actionPanel.Controls.Add(btnPrint);
 
             this.Controls.Add(actionPanel);
+
+            // ── لوحة الإحصائيات السفلية ──
+            pnlStats = new TableLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 70,
+                RowCount = 1,
+                ColumnCount = 4,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10, 5, 10, 5),
+                RightToLeft = RightToLeft.Yes
+            };
+            pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+
+            pnlStats.Controls.Add(MakeStatLabel("🔧 إجمالي التذاكر", "0", Theme.TextMain, out lblValTotal), 0, 0);
+            pnlStats.Controls.Add(MakeStatLabel("⏳ قيد الإصلاح", "0", Color.Orange, out lblValRepair), 1, 0);
+            pnlStats.Controls.Add(MakeStatLabel("✅ جاهز للتسليم", "0", Color.LimeGreen, out lblValReady), 2, 0);
+            pnlStats.Controls.Add(MakeStatLabel("💵 إجمالي إيرادات الصيانة (المسلمة)", "0.00 ج", Theme.Success, out lblValRevenue), 3, 0);
+
+            this.Controls.Add(pnlStats);
 
             // ── جدول عرض البيانات ──
             dgTickets = new DataGridView
@@ -156,10 +198,27 @@ namespace ChickenDist.Forms
         private void FilterData()
         {
             dgTickets.Rows.Clear();
-            if (_allTicketsDt == null || _allTicketsDt.Rows.Count == 0) return;
+            if (lblValTotal == null) return; // UI not fully initialized yet
+
+            if (_allTicketsDt == null || _allTicketsDt.Rows.Count == 0)
+            {
+                lblValTotal.Text = "0";
+                lblValRepair.Text = "0";
+                lblValReady.Text = "0";
+                lblValRevenue.Text = "0.00 ج";
+                return;
+            }
 
             string query = txtSearch.Text.Trim().ToLower();
             string statusFilter = cboStatusFilter.SelectedItem?.ToString() ?? "الكل";
+
+            int totalTickets = 0;
+            int repairTickets = 0;
+            int readyTickets = 0;
+            decimal totalRevenue = 0m;
+
+            DateTime fromDate = dtpFrom.Value.Date;
+            DateTime toDate = dtpTo.Value.Date.AddDays(1);
 
             foreach (DataRow r in _allTicketsDt.Rows)
             {
@@ -169,20 +228,66 @@ namespace ChickenDist.Forms
                 string model = r["DeviceModel"]?.ToString() ?? "";
                 string serial = r["DeviceSerial"]?.ToString() ?? "";
                 string problem = r["Problem"]?.ToString() ?? "";
-                string cost = Convert.ToDecimal(r["Cost"]).ToString("N2");
+                decimal costAmt = Convert.ToDecimal(r["Cost"]);
+                string cost = costAmt.ToString("N2");
                 string status = r["Status"]?.ToString() ?? "قيد الإصلاح";
                 string notes = r["Notes"]?.ToString() ?? "";
-                string date = Convert.ToDateTime(r["CreatedAt"]).ToString("dd/MM/yyyy HH:mm");
+                DateTime ticketDate = Convert.ToDateTime(r["CreatedAt"]);
+                string date = ticketDate.ToString("dd/MM/yyyy HH:mm");
 
+                // Filter by Date Range
+                if (ticketDate < fromDate || ticketDate >= toDate) continue;
+
+                // Filter by Status
                 if (statusFilter != "الكل" && status != statusFilter) continue;
+
+                // Filter by Query
                 if (!string.IsNullOrEmpty(query))
                 {
                     if (!name.ToLower().Contains(query) && !phone.Contains(query) && !serial.ToLower().Contains(query) && !model.ToLower().Contains(query))
                         continue;
                 }
 
+                // Add to Grid
                 dgTickets.Rows.Add(id, name, phone, model, serial, problem, cost, status, notes, date);
+
+                // Add to Stats
+                totalTickets++;
+                if (status == "قيد الإصلاح") repairTickets++;
+                else if (status == "تم الإصلاح - جاهز") readyTickets++;
+                else if (status == "تم التسليم") totalRevenue += costAmt;
             }
+
+            // Update Labels
+            lblValTotal.Text = totalTickets.ToString();
+            lblValRepair.Text = repairTickets.ToString();
+            lblValReady.Text = readyTickets.ToString();
+            lblValRevenue.Text = totalRevenue.ToString("N2") + " ج";
+        }
+
+        private Panel MakeStatLabel(string title, string value, Color valueColor, out Label valLabel)
+        {
+            var pnl = new Panel { Dock = DockStyle.Fill, Margin = new Padding(5), BackColor = Color.FromArgb(45, 55, 72) };
+            var lblTitle = new Label 
+            { 
+                Text = title, 
+                Dock = DockStyle.Top, 
+                Height = 22, 
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(200, 200, 200),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            valLabel = new Label 
+            { 
+                Text = value, 
+                Dock = DockStyle.Fill, 
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold), 
+                ForeColor = valueColor,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            pnl.Controls.Add(valLabel);
+            pnl.Controls.Add(lblTitle);
+            return pnl;
         }
 
         private void BtnEdit_Click(object sender, EventArgs e)

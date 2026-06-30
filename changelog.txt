@@ -1,3 +1,6 @@
+v1.9.76 - 2026-06-30
+- Maintenance: Implemented a visual statistics report panel at the bottom of the maintenance screen showing total tickets, tickets in repair, ready devices, and total maintenance cash revenue. Added premium date range pickers (From/To) to filter and report on maintenance operations over time.
+
 v1.9.75 - 2026-06-30
 - Backup: Added GUI controls in Settings to select periodic backup interval (Disabled, 2, 6, 12, 24 hours) and integrated automatic periodic background backup execution on startup and timer loops.
 
