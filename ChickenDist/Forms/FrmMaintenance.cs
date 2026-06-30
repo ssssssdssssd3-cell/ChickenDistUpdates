@@ -45,11 +45,33 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmMaintenance_KeyDown;
 
+            // ── الهيكل الرئيسي للشاشة ──
+            TableLayoutPanel mainLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                BackColor = Theme.BgMain
+            };
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));  // Row 0: filterPanel
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f)); // Row 1: contentLayout
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60f));  // Row 2: pnlStats
+
+            TableLayoutPanel contentLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes
+            };
+            contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Column 0: dgTickets
+            contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180f));  // Column 1: actionPanel
+            contentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             // ── شريط الفلتر العلوي ──
             FlowLayoutPanel filterPanel = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 55,
+                Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10)
@@ -79,13 +101,12 @@ namespace ChickenDist.Forms
             dtpTo.ValueChanged += (s, e) => FilterData();
             filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 
-            this.Controls.Add(filterPanel);
+            mainLayout.Controls.Add(filterPanel, 0, 0);
 
             // ── شريط العمليات الجانبي ──
             FlowLayoutPanel actionPanel = new FlowLayoutPanel
             {
-                Dock = DockStyle.Left,
-                Width = 180,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 15, 10, 15),
                 FlowDirection = FlowDirection.TopDown
@@ -115,13 +136,12 @@ namespace ChickenDist.Forms
             btnPrint.Click += BtnPrint_Click;
             actionPanel.Controls.Add(btnPrint);
 
-            this.Controls.Add(actionPanel);
+            contentLayout.Controls.Add(actionPanel, 1, 0);
 
             // ── لوحة الإحصائيات السفلية ──
             pnlStats = new TableLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 60,
+                Dock = DockStyle.Fill,
                 RowCount = 1,
                 ColumnCount = 4,
                 BackColor = Theme.BgCard,
@@ -138,7 +158,7 @@ namespace ChickenDist.Forms
             pnlStats.Controls.Add(MakeStatLabel("✅ جاهز للتسليم", "0", Color.LimeGreen, out lblValReady), 2, 0);
             pnlStats.Controls.Add(MakeStatLabel("💵 إجمالي إيرادات الصيانة (المسلمة)", "0.00 ج", Theme.Success, out lblValRevenue), 3, 0);
 
-            this.Controls.Add(pnlStats);
+            mainLayout.Controls.Add(pnlStats, 0, 2);
 
             // ── جدول عرض البيانات ──
             dgTickets = new DataGridView
@@ -186,11 +206,9 @@ namespace ChickenDist.Forms
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 110 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedAt", HeaderText = "التاريخ", FillWeight = 90 });
 
-            this.Controls.Add(dgTickets);
-            dgTickets.SendToBack();
-            pnlStats.BringToFront();
-            filterPanel.BringToFront();
-            actionPanel.BringToFront();
+            contentLayout.Controls.Add(dgTickets, 0, 0);
+            mainLayout.Controls.Add(contentLayout, 0, 1);
+            this.Controls.Add(mainLayout);
         }
 
         private void LoadTickets()

@@ -13,6 +13,9 @@ namespace ChickenDist.Forms
         private Panel pnlInputArea;
         private FlowLayoutPanel pnlChips;
 
+        [System.Runtime.InteropServices.DllImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
+
         public FrmSupportBot()
         {
             InitUI();
@@ -22,7 +25,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "🤖 مساعد الدعم الفني الذكي (أوفلاين)";
-            this.Size = new Size(550, 650);
+            this.Size = new Size(580, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -33,52 +36,28 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             var pnlTitle = Theme.MakeTitleBar("🤖 المساعد الذكي للدعم الفني", "اسأل أي سؤال وهرد عليك فوراً بالعامية لشرح طريقة استخدام البرنامج");
+            pnlTitle.Dock = DockStyle.Top;
             this.Controls.Add(pnlTitle);
-
-            // 1. Chat History Panel
-            pnlChat = new FlowLayoutPanel
-            {
-                Location = new Point(15, 75),
-                Size = new Size(505, 410),
-                AutoScroll = true,
-                BackColor = Color.FromArgb(26, 32, 44),
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(10)
-            };
-            this.Controls.Add(pnlChat);
-
-            // 2. Quick Action Chips
-            pnlChips = new FlowLayoutPanel
-            {
-                Location = new Point(15, 495),
-                Size = new Size(505, 75),
-                BackColor = Color.Transparent,
-                FlowDirection = FlowDirection.RightToLeft,
-                Padding = new Padding(2)
-            };
-            this.Controls.Add(pnlChips);
-
-            AddChip("💰 ازاي أعمل خصم؟", "ازاى اعمل خصم على الفاتورة");
-            AddChip("👕 مصفوفة مقاسات الملابس", "شرح مصفوفة الملابس والالوان");
-            AddChip("📱 تتبع IMEI الموبايلات", "شغل الـ imei والسيريال");
-            AddChip("🛠️ نظام تشغيل الصيانة", "ازاي اشغل شاشة الصيانة والباركود");
-            AddChip("💬 مشاركة الفاتورة واتساب", "ازاي ابعت فاتورة واتساب للعميل");
-            AddChip("🏷️ طباعة الباركود", "طريقة طباعة باركود صنف");
 
             // 3. Input Area
             pnlInputArea = new Panel
             {
-                Location = new Point(15, 575),
-                Size = new Size(505, 40),
-                BackColor = Color.Transparent
+                Dock = DockStyle.Bottom,
+                Height = 45,
+                BackColor = Color.Transparent,
+                Padding = new Padding(10, 5, 10, 5)
             };
             this.Controls.Add(pnlInputArea);
 
+            btnSend = Theme.MakeButton("🚀 إرسال", Theme.Accent);
+            btnSend.Width = 90;
+            btnSend.Dock = DockStyle.Left;
+            btnSend.Click += (s, e) => SendUserMessage();
+            pnlInputArea.Controls.Add(btnSend);
+
             txtInput = new TextBox
             {
-                Location = new Point(100, 5),
-                Size = new Size(400, 30),
+                Dock = DockStyle.Fill,
                 Font = Theme.FontNormal,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -87,9 +66,59 @@ namespace ChickenDist.Forms
             txtInput.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { SendUserMessage(); e.SuppressKeyPress = true; } };
             pnlInputArea.Controls.Add(txtInput);
 
-            btnSend = Theme.MakeButton("🚀 إرسال", 5, 3, 90, 32, Theme.Accent);
-            btnSend.Click += (s, e) => SendUserMessage();
-            pnlInputArea.Controls.Add(btnSend);
+            // 2. Quick Action Chips
+            pnlChips = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 100,
+                BackColor = Color.Transparent,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(10, 5, 10, 5),
+                AutoScroll = true
+            };
+            this.Controls.Add(pnlChips);
+
+            // 1. Chat History Panel
+            pnlChat = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                BackColor = Color.FromArgb(26, 32, 44),
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = new Padding(10)
+            };
+            this.Controls.Add(pnlChat);
+
+            pnlChat.SendToBack();
+            pnlTitle.BringToFront();
+            pnlInputArea.BringToFront();
+            pnlChips.BringToFront();
+
+            // إضافة الأسئلة السريعة (Chips) حسب نوع النشاط المختار
+            AddChip("💰 ازاي أعمل خصم؟", "ازاى اعمل خصم على الفاتورة");
+            AddChip("💬 مشاركة الفاتورة واتساب", "ازاي ابعت فاتورة واتساب للعميل");
+            AddChip("🏷️ طباعة الباركود", "طريقة طباعة باركود صنف");
+            AddChip("📈 حساب متوسط التكلفة", "ازاي بيتم حساب التكلفة ومتوسط التكلفة للأصناف");
+            AddChip("💵 تعديل سعر البيع", "ازاي اقدر اغير سعر البيع لصنف");
+
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                AddChip("🔧 شاشة الصيانة والباركود", "ازاي اشغل شاشة الصيانة والباركود");
+                AddChip("📱 تتبع IMEI وسيريال الموبايل", "شغل الـ imei والسيريال");
+                AddChip("📋 شرح شاشات الموبايل", "شرح شاشات الصيانة والأجهزة للموبايلات");
+            }
+            else if (AppConfig.BusinessType == "Clothing")
+            {
+                AddChip("👕 مصفوفة مقاسات وألوان الملابس", "شرح مصفوفة الملابس والالوان");
+                AddChip("📋 شرح شاشات الملابس", "شرح شاشات مصفوفة المقاسات والملابس");
+            }
+            else
+            {
+                AddChip("🚚 حركة الحمولات والسيارات", "ازاي اسجل حمولة مندوب وحركة السيارات");
+                AddChip("📦 جرد المخزن الفعلي", "ازاي اعمل جرد للمخزن والتسويات");
+                AddChip("📋 شرح شاشات التوزيع", "شرح شاشات الحمولات والسيارات وجرد المخازن");
+            }
         }
 
         private void AddChip(string text, string question)
@@ -119,55 +148,55 @@ namespace ChickenDist.Forms
             string userText = txtInput.Text.Trim();
             if (string.IsNullOrEmpty(userText)) return;
 
-            AddUserMessage(userText);
+            AddChatMessage(userText, FlowLayoutPanelRightToLeft.Yes);
             txtInput.Clear();
 
-            // Bot Response (instantly)
-            string botResponse = GetBotResponse(userText);
-            AddBotMessage(botResponse);
-        }
-
-        private void AddUserMessage(string text)
-        {
-            CreateBubble(text, Color.FromArgb(30, 120, 180), Color.White, FlowLayoutPanelRightToLeft.Yes);
+            string response = GetBotResponse(userText);
+            AddBotMessage(response);
         }
 
         private void AddBotMessage(string text)
         {
-            CreateBubble(text, Color.FromArgb(45, 55, 72), Color.White, FlowLayoutPanelRightToLeft.No);
+            AddChatMessage(text, FlowLayoutPanelRightToLeft.No);
         }
 
-        private void CreateBubble(string text, Color bg, Color fg, FlowLayoutPanelRightToLeft rtl)
+        private void AddChatMessage(string text, FlowLayoutPanelRightToLeft rtl)
         {
-            var pnl = new Panel
+            var pnl = new FlowLayoutPanel
             {
-                Width = pnlChat.Width - 40,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 5, 0, 5)
+                Width = 460,
+                AutoSize = true,
+                FlowDirection = FlowDirection.TopDown,
+                Margin = new Padding(5),
+                BackColor = Color.Transparent
             };
 
             var lbl = new Label
             {
                 Text = text,
-                BackColor = bg,
-                ForeColor = fg,
+                AutoSize = true,
+                MaximumSize = new Size(380, 0),
                 Font = Theme.FontNormal,
                 Padding = new Padding(10),
-                AutoSize = true,
-                MaximumSize = new Size(350, 1000)
+                BackColor = (rtl == FlowLayoutPanelRightToLeft.Yes) ? Color.FromArgb(13, 110, 253) : Color.FromArgb(45, 55, 72),
+                ForeColor = Color.White
             };
 
-            // Rounded/bubble emulation
-            pnl.Height = lbl.PreferredHeight + 10;
+            // Round corners style simulation
+            lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 10, 10));
+            lbl.SizeChanged += (s, e) => {
+                lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 10, 10));
+            };
+
             pnl.Controls.Add(lbl);
 
             if (rtl == FlowLayoutPanelRightToLeft.Yes)
             {
-                lbl.Location = new Point(pnl.Width - lbl.PreferredWidth - 10, 5);
+                pnl.FlowDirection = FlowDirection.RightToLeft;
             }
             else
             {
-                lbl.Location = new Point(10, 5);
+                pnl.FlowDirection = FlowDirection.LeftToRight;
             }
 
             pnlChat.Controls.Add(pnl);
@@ -213,7 +242,32 @@ namespace ChickenDist.Forms
                 return "تأكد أولاً إن الطابعة متعرفة على الكمبيوتر ومتوصلة وسليمة. بعد كده ادخل شاشة الإعدادات في البرنامج وتأكد إنك مختار الطابعة الصح في خانة 'طابعة الفواتير' أو 'طابعة A4'.";
             }
 
-            return "يا فندم للاسف مش فاهم السؤال ده كويس بالبلدي. 😅\nممكن تسألني عن (الخصم، الصيانة، مصفوفة الملابس، تتبع IMEI، الواتساب، الباركود) أو تضغط على الأسئلة السريعة تحت وهشرحلك بالتفصيل.";
+            if (query.Contains("تكلفة") || query.Contains("متوسط") || query.Contains("حساب التكلفة"))
+            {
+                return "يا فندم، البرنامج بيحسب تكلفة الأصناف بطريقة 'متوسط التكلفة المتحرك' (Moving Average Cost). يعني لما تشتري بضاعة بسعر جديد في شاشة المشتريات، البرنامج بيجمع (كمية المخزن الحالية × تكلفتها القديمة) + (الكمية الجديدة × سعر الشراء الجديد) ويقسمهم على إجمالي الكمية عشان يطلع متوسط تكلفة جديد للصنف تلقائياً بدون تدخل منك، وده بيضمنلك حساب أرباح دقيق جداً.";
+            }
+
+            if (query.Contains("سعر البيع") || query.Contains("تغير سعر") || query.Contains("اضبط السعر") || query.Contains("تعديل السعر"))
+            {
+                return "لتعديل سعر البيع لأي صنف: ادخل شاشة 'الأصناف'، واضغط مرتين على الصنف اللي عاوز تعدله عشان يفتحلك كارت الصنف. هتلاقي خانة 'سعر البيع'، اكتب السعر الجديد واضغط حفظ. كمان تقدر تعدل سعر البيع مباشرة أثناء تسجيل فاتورة مشتريات جديدة في عمود 'سعر البيع المقترح' وهيحدث سعر الصنف تلقائياً.";
+            }
+
+            if (query.Contains("شاشات الموبايل") || query.Contains("شرح الموبايل"))
+            {
+                return "شاشات الموبايل بتشمل:\n1. **ورشة الصيانة**: لتسجيل أجهزة العملاء وعيوبها وتكلفة تصليحها ومتابعة حالتها (قيد الإصلاح/جاهز/تم التسليم).\n2. **كارت الصنف**: بيسمحلك تدخل الـ IMEI لكل جهاز لتتبعه بدقة في البيع والشراء والضمان.";
+            }
+
+            if (query.Contains("شاشات الملابس") || query.Contains("شرح الملابس"))
+            {
+                return "شاشات الملابس بتشمل:\n1. **مصفوفة الملابس**: شاشة سحرية بتنشئلك كل المقاسات والألوان لموديل معين بضغطة واحدة وبتطبع باركودات مستقلة لكل قطعة.\n2. **الاستبدال والاسترجاع**: مطبوعة تلقائياً في أسفل إيصالات البيع لتنظيم العمل مع الزباين.";
+            }
+
+            if (query.Contains("شاشات التوزيع") || query.Contains("شرح التوزيع") || query.Contains("شرح الحمولات"))
+            {
+                return "شاشات التوزيع بتشمل:\n1. **حركة السيارات**: لتسجيل حمولات المناديب، وجرد السيارات عند عودتهم.\n2. **جرد المخزن**: لعمل تسويات وجرد دوري للكميات الفعلية وحساب الفوارق.\n3. **تحصيل الخزنة**: لإثبات مبالغ التسليم والتحصيل اليومي.";
+            }
+
+            return "يا فندم للاسف مش فاهم السؤال ده كويس بالبلدي. 😅\nممكن تسألني عن (الخصم، الصيانة، مصفوفة الملابس، تتبع IMEI، متوسط التكلفة، تعديل سعر البيع، أو شرح الشاشات) أو تضغط على الأسئلة السريعة تحت وهشرحلك بالتفصيل.";
         }
     }
 

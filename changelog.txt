@@ -1,3 +1,7 @@
+v1.9.83 - 2026-06-30
+- Layout: Refactored the maintenance screen (FrmMaintenance) layout to use a strict TableLayoutPanel container hierarchy, preventing the top filter bar or bottom financials panel from overlapping the tickets grid on any screen resolution.
+- Support Bot: Completely redesigned the chatbot (FrmSupportBot) layout to use proper docked panels (preventing bottom controls from being cut off). Added customized quick action chips and detailed responses for cost calculation, changing sales prices, and explaining screens depending on the active business type.
+
 v1.9.82 - 2026-06-30
 - Localization: Unified and customized all grid column headers and text terminology globally across the Sales (FrmSale), Purchases (FrmPurchase), POS (FrmPOS), Inventory (FrmInventory), Products list (FrmProducts), and Reports (FrmReports) screens dynamically according to the active business type (Mobiles, Clothing, SpareParts, general distribution).
 
