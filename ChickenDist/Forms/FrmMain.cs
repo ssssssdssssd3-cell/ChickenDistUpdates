@@ -14,11 +14,13 @@ namespace ChickenDist.Forms
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
+        private Timer tmrPeriodicBackup;
 
         public FrmMain()
         {
             InitializeComponent();
             NavigateTo(new FrmDashboard());
+            InitializePeriodicBackup();
         }
 
         private void InitializeComponent()
@@ -939,6 +941,80 @@ namespace ChickenDist.Forms
                 return true;
             }
             return false;
+        }
+
+        private void InitializePeriodicBackup()
+        {
+            try
+            {
+                int intervalHours = AppConfig.BackupIntervalHours;
+                if (intervalHours > 0)
+                {
+                    // Run immediate check in a separate task/thread to keep startup fast
+                    System.Threading.Tasks.Task.Run(() => CheckAndRunPeriodicBackup(true));
+
+                    tmrPeriodicBackup = new Timer();
+                    tmrPeriodicBackup.Interval = 5 * 60 * 1000; // Check every 5 minutes
+                    tmrPeriodicBackup.Tick += (s, e) => CheckAndRunPeriodicBackup(false);
+                    tmrPeriodicBackup.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Init periodic backup failed: " + ex.Message);
+            }
+        }
+
+        private void CheckAndRunPeriodicBackup(bool isStartup)
+        {
+            try
+            {
+                int intervalHours = AppConfig.BackupIntervalHours;
+                if (intervalHours <= 0) return;
+
+                string folder = BackupManager.BackupFolder;
+                if (string.IsNullOrWhiteSpace(folder) || !System.IO.Directory.Exists(folder))
+                {
+                    if (isStartup)
+                    {
+                        this.BeginInvoke((MethodInvoker)(() =>
+                        {
+                            MessageBox.Show(
+                                "⚠️ تنبيه: النسخ الاحتياطي الدوري مفعل ولكن مجلد النسخ الاحتياطي غير موجود أو غير صالح.\nيرجى تحديد مسار مجلد صحيح من شاشة الإعدادات.",
+                                "تنبيه النسخ الاحتياطي",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        }));
+                    }
+                    return;
+                }
+
+                var last = BackupManager.LastBackupTime;
+                if (last == null || (DateTime.Now - last.Value).TotalHours >= intervalHours)
+                {
+                    // Run backup
+                    bool success = BackupManager.DoBackup(silent: true);
+                    if (success && isStartup)
+                    {
+                        this.BeginInvoke((MethodInvoker)(() =>
+                        {
+                            MessageBox.Show(
+                                "✅ تم عمل نسخة احتياطية دورية تلقائية لقاعدة البيانات بنجاح عند تشغيل النظام.",
+                                "النسخ الاحتياطي التلقائي",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        }));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("CheckAndRunPeriodicBackup failed", ex, "PeriodicBackup");
+            }
         }
     }
 

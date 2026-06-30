@@ -1,3 +1,6 @@
+v1.9.75 - 2026-06-30
+- Backup: Added GUI controls in Settings to select periodic backup interval (Disabled, 2, 6, 12, 24 hours) and integrated automatic periodic background backup execution on startup and timer loops.
+
 v1.9.74 - 2026-06-29
 - Maintenance: Added safe database migration to automatically create the MaintenanceTickets table on app startup, resolving table-not-found exceptions in maintenance ticketing.
 

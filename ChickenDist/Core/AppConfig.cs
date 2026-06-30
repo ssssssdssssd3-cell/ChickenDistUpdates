@@ -314,6 +314,12 @@ namespace ChickenDist.Core
             set => Set("WhatsAppBackupPhone", value);
         }
 
+        public static int BackupIntervalHours
+        {
+            get => int.TryParse(Get("BackupIntervalHours", "0"), out int val) ? val : 0;
+            set => Set("BackupIntervalHours", value.ToString());
+        }
+
         public static bool EnableCratesTracking
         {
             get => Get("EnableCratesTracking", "True") == "True";

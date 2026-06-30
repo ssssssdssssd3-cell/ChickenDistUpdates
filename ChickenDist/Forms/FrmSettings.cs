@@ -29,6 +29,7 @@ namespace ChickenDist.Forms
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
+        private ComboBox cboBackupInterval;
         private TextBox txtWhatsAppPhone;
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
@@ -641,6 +642,40 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkBackupOnExit);
             y += 30;
 
+            // خيار النسخ الاحتياطي الدوري
+            AddLabel("النسخ الاحتياطي الدوري التلقائي (كل فترة محددة):", 20, ref y, 0);
+            cboBackupInterval = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboBackupInterval.Items.Add(new ComboItem(0, "🛑 إيقاف النسخ الاحتياطي الدوري"));
+            cboBackupInterval.Items.Add(new ComboItem(2, "⏱️ كل ساعتين (موصى به)"));
+            cboBackupInterval.Items.Add(new ComboItem(6, "⏱️ كل 6 ساعات"));
+            cboBackupInterval.Items.Add(new ComboItem(12, "⏱️ كل 12 ساعة"));
+            cboBackupInterval.Items.Add(new ComboItem(24, "⏱️ كل 24 ساعة (يومياً)"));
+
+            cboBackupInterval.DisplayMember = "Text";
+            cboBackupInterval.ValueMember = "ID";
+            cboBackupInterval.SelectedIndex = 0;
+
+            int currentInterval = AppConfig.BackupIntervalHours;
+            for (int i = 0; i < cboBackupInterval.Items.Count; i++)
+            {
+                if (cboBackupInterval.Items[i] is ComboItem ci && ci.ID == currentInterval)
+                {
+                    cboBackupInterval.SelectedIndex = i;
+                    break;
+                }
+            }
+            this.Controls.Add(cboBackupInterval);
+            y += 38;
+
             // خيار تفعيل تتبع الفوارغ والوزن الفارغ
             chkEnableCrates = new CheckBox
             {
@@ -947,6 +982,10 @@ namespace ChickenDist.Forms
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
+                if (cboBackupInterval.SelectedItem is ComboItem ciInterval)
+                {
+                    AppConfig.BackupIntervalHours = ciInterval.ID;
+                }
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 
                 // Loyalty & Shift settings
