@@ -8,18 +8,18 @@ namespace ChickenDist.Core
     /// <summary>ألوان وأنماط النظام</summary>
     public static class Theme
     {
-        // الألوان الرئيسية - هادئة ومريحة جداً للعين (Eye-Comfort Soft Palette)
-        public static Color Primary    = Color.FromArgb(45, 55, 72);    // Slate Blue / Navy هادئ
-        public static Color Accent     = Color.FromArgb(212, 163, 89);  // Sand Gold / ذهبي رملي ناعم غير متوهج
-        public static Color AccentDark = Color.FromArgb(180, 135, 20);
-        public static Color Success    = Color.FromArgb(46, 117, 89);   // Sage Green / أخضر هادئ
-        public static Color Danger     = Color.FromArgb(186, 73, 73);   // Terracotta Red / أحمر طوبي هادئ
-        public static Color BgLight    = Color.FromArgb(245, 247, 250); // رمادي-أزرق فاتح وناعم
+        // الألوان الرئيسية - زاهية وواضحة جداً وعالية التباين (Vibrant & High-Contrast Modern Palette)
+        public static Color Primary    = Color.FromArgb(13, 110, 253);   // Royal Blue زرقاء زاهية
+        public static Color Accent     = Color.FromArgb(253, 126, 20);   // Vibrant Orange برتقالي زاهي
+        public static Color AccentDark = Color.FromArgb(217, 83, 79);
+        public static Color Success    = Color.FromArgb(25, 135, 84);    // Green خضراء زاهية
+        public static Color Danger     = Color.FromArgb(220, 53, 69);    // Red حمراء زاهية
+        public static Color BgLight    = Color.FromArgb(245, 247, 250);
         public static Color BgWhite    = Color.White;
-        public static Color TextDark   = Color.FromArgb(45, 55, 72);
-        public static Color TextGray   = Color.FromArgb(115, 125, 140);
-        public static Color Sidebar    = Color.FromArgb(240, 244, 248);
-        public static Color SidebarBtn = Color.FromArgb(25, 45, 55, 72);
+        public static Color TextDark   = Color.FromArgb(33, 37, 41);
+        public static Color TextGray   = Color.FromArgb(108, 117, 125);
+        public static Color Sidebar    = Color.FromArgb(248, 249, 250);
+        public static Color SidebarBtn = Color.FromArgb(25, 13, 110, 253);
 
         // ألوان النمط المختار ديناميكياً
         public static Color BgMain => AppConfig.AppTheme switch

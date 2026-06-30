@@ -1,3 +1,7 @@
+v1.9.81 - 2026-06-30
+- Theme: Brightened all standard buttons and theme colors to be modern, highly visible, and vibrant (Royal Blue, Vibrant Orange, Success Green, Danger Red) across light and dark themes.
+- Dashboard: Customized Quick Action buttons dynamically based on the active business type (Mobiles, Clothing, or General Distribution/Spare Parts) so that every activity has its own dedicated workflow buttons.
+
 v1.9.80 - 2026-06-30
 - Support: Added the "Technical Support" chatbot button globally to the top profile panel (visible across all screens next to the Logout button) to resolve visibility issues on smaller screens.
 - Support: Enabled AutoScroll on the Quick Actions dashboard panel.

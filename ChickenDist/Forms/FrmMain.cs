@@ -1139,14 +1139,48 @@ namespace ChickenDist.Forms
             pnlActions.Controls.Add(lblActTitle);
 
             int btnY = 55;
-            if (Session.CanAccess("Sales")) AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
-            if (Session.CanAccess("Vehicles")) AddQuickButton(pnlActions, "🚗 المركبات والتحميل", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
-            if (Session.CanAccess("DriverHandover")) AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
-            if (Session.CanAccess("CashBox")) AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
-            if (Session.CanAccess("Inventory")) AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
-            if (Session.CanAccess("Clients")) AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
-            if (Session.CanAccess("Reports")) AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
-            AddQuickButton(pnlActions, "🤖 مساعد الدعم الفني", ref btnY, () => new FrmSupportBot().ShowDialog(), Color.FromArgb(160, 80, 180));
+
+            // --- 1. الأزرار العامة لجميع الأنشطة ---
+            if (Session.CanAccess("POS")) 
+                AddQuickButton(pnlActions, "💻 نقطة البيع السريع POS", ref btnY, () => { var f = new FrmPOS(); f.ShowDialog(); }, Theme.Accent);
+            
+            if (Session.CanAccess("Sales")) 
+                AddQuickButton(pnlActions, "🛒 فاتورة مبيعات تفصيلية", ref btnY, () => NavigateMain(new FrmSale()), Theme.Primary);
+
+            // --- 2. أزرار مخصصة حسب نوع النشاط ---
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                // نشاط الهواتف المحمولة والصيانة
+                AddQuickButton(pnlActions, "🔧 شاشة ورشة الصيانة", ref btnY, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69)); // Bright Green
+                AddQuickButton(pnlActions, "📱 كارت الأصناف والسيريال", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
+            }
+            else if (AppConfig.BusinessType == "Clothing")
+            {
+                // نشاط الملابس والأحذية
+                AddQuickButton(pnlActions, "👕 مصفوفة مقاسات وألوان الملابس", ref btnY, () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253)); // Purple/Pink
+                AddQuickButton(pnlActions, "🏷️ طباعة الباركود والملصقات", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
+            }
+            else
+            {
+                // الأنشطة العامة والتوزيع وقطع الغيار
+                if (Session.CanAccess("Vehicles")) 
+                    AddQuickButton(pnlActions, "🚗 المركبات وحركة السيارات", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(59, 130, 246)); // Vibrant Blue
+                if (Session.CanAccess("DriverHandover")) 
+                    AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Color.FromArgb(108, 117, 125)); // Gray
+                if (Session.CanAccess("CashBox")) 
+                    AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69)); // Bright Green
+                if (Session.CanAccess("Inventory")) 
+                    AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(253, 126, 20)); // Vibrant Orange
+            }
+
+            // --- 3. أزرار عامة للحسابات والتقارير ---
+            if (Session.CanAccess("Clients")) 
+                AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193)); // Purple
+            
+            if (Session.CanAccess("Reports")) 
+                AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(220, 53, 69)); // Bright Red
+
+            AddQuickButton(pnlActions, "🤖 مساعد الدعم الفني", ref btnY, () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 
