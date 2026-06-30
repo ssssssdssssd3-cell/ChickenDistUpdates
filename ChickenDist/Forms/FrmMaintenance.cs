@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         private Label lblValRepair;
         private Label lblValReady;
         private Label lblValRevenue;
+        private string _barcodeBuffer = "";
+        private DateTime _lastKeystroke = DateTime.MinValue;
 
         public FrmMaintenance()
         {
@@ -40,6 +42,8 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.KeyPreview = true;
+            this.KeyDown += FrmMaintenance_KeyDown;
 
             // ── شريط الفلتر العلوي ──
             FlowLayoutPanel filterPanel = new FlowLayoutPanel
@@ -174,8 +178,11 @@ namespace ChickenDist.Forms
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceModel", HeaderText = "الجهاز/الموديل", FillWeight = 100 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceSerial", HeaderText = "الرقم التسلسلي/IMEI", FillWeight = 90 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Problem", HeaderText = "المشكلة", FillWeight = 130 });
-            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cost", HeaderText = "التكلفة (ج)", FillWeight = 60 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartsCost", HeaderText = "قطع الغيار (ج)", FillWeight = 60 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "LaborCost", HeaderText = "أجرة اليد (ج)", FillWeight = 60 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cost", HeaderText = "الإجمالي (ج)", FillWeight = 60 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 70 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarrantyPeriod", HeaderText = "الضمان", FillWeight = 80 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 110 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedAt", HeaderText = "التاريخ", FillWeight = 90 });
 
@@ -230,7 +237,12 @@ namespace ChickenDist.Forms
                 string problem = r["Problem"]?.ToString() ?? "";
                 decimal costAmt = Convert.ToDecimal(r["Cost"]);
                 string cost = costAmt.ToString("N2");
+                decimal partsCostAmt = r.Table.Columns.Contains("PartsCost") && r["PartsCost"] != DBNull.Value ? Convert.ToDecimal(r["PartsCost"]) : 0m;
+                decimal laborCostAmt = r.Table.Columns.Contains("LaborCost") && r["LaborCost"] != DBNull.Value ? Convert.ToDecimal(r["LaborCost"]) : 0m;
+                string partsCost = partsCostAmt.ToString("N2");
+                string laborCost = laborCostAmt.ToString("N2");
                 string status = r["Status"]?.ToString() ?? "قيد الإصلاح";
+                string warranty = r.Table.Columns.Contains("WarrantyPeriod") && r["WarrantyPeriod"] != DBNull.Value ? r["WarrantyPeriod"].ToString() : "بدون ضمان";
                 string notes = r["Notes"]?.ToString() ?? "";
                 DateTime ticketDate = Convert.ToDateTime(r["CreatedAt"]);
                 string date = ticketDate.ToString("dd/MM/yyyy HH:mm");
@@ -244,12 +256,12 @@ namespace ChickenDist.Forms
                 // Filter by Query
                 if (!string.IsNullOrEmpty(query))
                 {
-                    if (!name.ToLower().Contains(query) && !phone.Contains(query) && !serial.ToLower().Contains(query) && !model.ToLower().Contains(query))
+                    if (!id.Contains(query) && !name.ToLower().Contains(query) && !phone.Contains(query) && !serial.ToLower().Contains(query) && !model.ToLower().Contains(query))
                         continue;
                 }
 
                 // Add to Grid
-                dgTickets.Rows.Add(id, name, phone, model, serial, problem, cost, status, notes, date);
+                dgTickets.Rows.Add(id, name, phone, model, serial, problem, partsCost, laborCost, cost, status, warranty, notes, date);
 
                 // Add to Stats
                 totalTickets++;
@@ -349,6 +361,9 @@ namespace ChickenDist.Forms
                 string serial = row.Cells["DeviceSerial"].Value.ToString();
                 string problem = row.Cells["Problem"].Value.ToString();
                 string cost = row.Cells["Cost"].Value.ToString();
+                string partsCost = row.Cells["PartsCost"].Value?.ToString() ?? "0.00";
+                string laborCost = row.Cells["LaborCost"].Value?.ToString() ?? "0.00";
+                string warranty = row.Cells["WarrantyPeriod"].Value?.ToString() ?? "بدون ضمان";
                 string notes = row.Cells["Notes"].Value.ToString();
                 string date = row.Cells["CreatedAt"].Value.ToString();
 
@@ -370,7 +385,14 @@ namespace ChickenDist.Forms
                 ev.Graphics.DrawString($"الجهاز: {model}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
                 if (!string.IsNullOrEmpty(serial)) { ev.Graphics.DrawString($"IMEI/Serial: {serial}", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
                 ev.Graphics.DrawString($"المشكلة: {problem}", fontVal, Brushes.Black, new PointF(20, y)); y += 25;
-                ev.Graphics.DrawString($"التكلفة المقدرة: {cost} ج", fontLabel, Brushes.Black, new PointF(20, y)); y += 25;
+                
+                decimal.TryParse(partsCost, out decimal pc);
+                decimal.TryParse(laborCost, out decimal lc);
+                if (pc > 0) { ev.Graphics.DrawString($"قطع الغيار: {partsCost} ج", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
+                if (lc > 0) { ev.Graphics.DrawString($"أجرة اليد: {laborCost} ج", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
+                
+                ev.Graphics.DrawString($"إجمالي التكلفة: {cost} ج", fontLabel, Brushes.Black, new PointF(20, y)); y += 25;
+                ev.Graphics.DrawString($"مدة الضمان: {warranty}", fontLabel, Brushes.Black, new PointF(20, y)); y += 25;
                 
                 if (!string.IsNullOrEmpty(notes))
                 {
@@ -378,7 +400,11 @@ namespace ChickenDist.Forms
                 }
                 
                 ev.Graphics.DrawLine(Pens.Black, 20, y, 280, y); y += 15;
-                ev.Graphics.DrawString("نشكركم لثقتكم بنا!", fontVal, Brushes.Black, new PointF(100, y));
+                ev.Graphics.DrawString("نشكركم لثقتكم بنا!", fontVal, Brushes.Black, new PointF(100, y)); y += 25;
+
+                // Draw Barcode for TicketID
+                FrmPrintProductBarcode.DrawCode39(ev.Graphics, ticketID, 30, y, 240, 30); y += 35;
+                ev.Graphics.DrawString($"*{ticketID}*", fontVal, Brushes.Black, new PointF(130, y));
             };
 
             try
@@ -389,6 +415,45 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ في تشغيل الطابعة: " + ex.Message);
+            }
+        }
+
+        private void FrmMaintenance_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Barcode scanners send keys very rapidly
+            TimeSpan elapsed = DateTime.Now - _lastKeystroke;
+            if (elapsed.TotalMilliseconds > 100)
+            {
+                _barcodeBuffer = ""; // Reset buffer if typing slow (manually)
+            }
+
+            _lastKeystroke = DateTime.Now;
+
+            if (e.KeyCode == Keys.Enter)
+            {
+                if (_barcodeBuffer.Length >= 2)
+                {
+                    string code = _barcodeBuffer.Trim();
+                    _barcodeBuffer = "";
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+
+                    txtSearch.Text = code;
+                    FilterData();
+
+                    if (dgTickets.Rows.Count == 1)
+                    {
+                        dgTickets.Rows[0].Selected = true;
+                    }
+                }
+            }
+            else
+            {
+                char c = (char)e.KeyValue;
+                if (char.IsLetterOrDigit(c) || c == '-')
+                {
+                    _barcodeBuffer += c;
+                }
             }
         }
     }

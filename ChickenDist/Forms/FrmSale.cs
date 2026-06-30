@@ -863,6 +863,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "الرقم التسلسلي/IMEI", ReadOnly = false, FillWeight = 50f, Visible = (AppConfig.BusinessType == "Mobiles") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			
@@ -2352,6 +2353,10 @@ namespace ChickenDist.Forms
 					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 				}
 			}
+			else if (dgItems.Columns[e.ColumnIndex].Name == "IMEI")
+			{
+				saleItemDTO.IMEI = dataGridViewRow.Cells["IMEI"].Value?.ToString() ?? "";
+			}
 
 			if (dataGridViewRow.DataGridView == null) return;
 
@@ -2434,6 +2439,7 @@ namespace ChickenDist.Forms
 					item.DiscountAmt.ToString("F2"),
 					item.TotalPrice.ToString("F2"),
 					item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "",
+					item.IMEI,
 					item.PurchasePrice.ToString("F2"),
 					costTotal.ToString("F2")
 				);
@@ -3032,7 +3038,8 @@ namespace ChickenDist.Forms
 					Brand       = iRow["Brand"]?.ToString() ?? "",
 					ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? "",
 					UnitName    = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
-					Factor      = iRow.Table.Columns.Contains("Factor")   && iRow["Factor"]   != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1m
+					Factor      = iRow.Table.Columns.Contains("Factor")   && iRow["Factor"]   != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1m,
+					IMEI        = iRow.Table.Columns.Contains("IMEI")     && iRow["IMEI"]     != DBNull.Value ? iRow["IMEI"].ToString() : ""
 				});
 			}
 			RefreshGrid();

@@ -17,6 +17,9 @@ namespace ChickenDist.Forms
         private NumericUpDown nudCost;
         private ComboBox cboStatus;
         private TextBox txtNotes;
+        private NumericUpDown nudPartsCost;
+        private NumericUpDown nudLaborCost;
+        private TextBox txtWarrantyPeriod;
         private Button btnSave;
         private Button btnCancel;
         private int _ticketID = 0;
@@ -34,7 +37,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _ticketID > 0 ? "تعديل تذكرة الصيانة" : "إضافة تذكرة صيانة جديدة";
-            this.Size = new Size(480, 580);
+            this.Size = new Size(480, 710);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -44,7 +47,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? "📝 تعديل تذكرة صيانة" : "➕ إضافة تذكرة صيانة", "إدخال بيانات الجهاز والعميل وتكلفة وحالة الإصلاح");
+            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? "📝 تعديل تذكرة صيانة" : "➕ إضافة تذكرة صيانة", "إدخل بيانات الجهاز والعميل وتفاصيل وتكلفة وحالة الإصلاح");
             this.Controls.Add(pnlTitle);
 
             int y = 80;
@@ -75,13 +78,13 @@ namespace ChickenDist.Forms
 
             // المشكلة / العطل
             AddLabel("العطل / المشكلة بالتفصيل *:", 20, ref y);
-            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 60, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 50, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.Add(txtProblem);
-            y += 75;
+            y += 65;
 
-            // تكلفة الإصلاح
-            AddLabel("تكلفة الإصلاح المقدرة (ج):", 20, ref y);
-            nudCost = new NumericUpDown 
+            // تكلفة قطع الغيار
+            AddLabel("تكلفة قطع الغيار (ج):", 20, ref y);
+            nudPartsCost = new NumericUpDown 
             { 
                 Location = new Point(20, y), 
                 Width = 190, 
@@ -91,10 +94,44 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontNormal
             };
+            nudPartsCost.ValueChanged += (s, e) => UpdateTotalCost();
+            this.Controls.Add(nudPartsCost);
+
+            // تكلفة أجرة اليد / المصنعية
+            var lblLabor = new Label { Text = "أجرة اليد / المصنعية (ج):", Location = new Point(230, y - 22), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.Add(lblLabor);
+
+            nudLaborCost = new NumericUpDown 
+            { 
+                Location = new Point(230, y), 
+                Width = 210, 
+                Maximum = 100000, 
+                DecimalPlaces = 2, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontNormal
+            };
+            nudLaborCost.ValueChanged += (s, e) => UpdateTotalCost();
+            this.Controls.Add(nudLaborCost);
+            y += 35;
+
+            // إجمالي التكلفة
+            AddLabel("إجمالي تكلفة الإصلاح (ج):", 20, ref y);
+            nudCost = new NumericUpDown 
+            { 
+                Location = new Point(20, y), 
+                Width = 190, 
+                Maximum = 100000, 
+                DecimalPlaces = 2, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontNormal,
+                Enabled = false
+            };
             this.Controls.Add(nudCost);
 
             // حالة التذكرة
-            var lblStatus = new Label { Text = "حالة الإصلاح:", Location = new Point(230, y - 22), Width = 150, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblStatus = new Label { Text = "حالة الإصلاح:", Location = new Point(230, y - 22), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
             this.Controls.Add(lblStatus);
 
             cboStatus = new ComboBox 
@@ -111,11 +148,26 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboStatus);
             y += 35;
 
+            // مدة الضمان
+            AddLabel("مدة الضمان بعد الإصلاح:", 20, ref y);
+            txtWarrantyPeriod = new TextBox 
+            { 
+                Location = new Point(20, y), 
+                Width = 420, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
+                BorderStyle = BorderStyle.FixedSingle, 
+                Font = Theme.FontNormal 
+            };
+            txtWarrantyPeriod.Text = "بدون ضمان";
+            this.Controls.Add(txtWarrantyPeriod);
+            y += 35;
+
             // ملاحظات إضافية
             AddLabel("ملاحظات إضافية:", 20, ref y);
-            txtNotes = new TextBox { Location = new Point(20, y), Width = 420, Height = 50, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtNotes = new TextBox { Location = new Point(20, y), Width = 420, Height = 40, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.Add(txtNotes);
-            y += 65;
+            y += 55;
 
             // أزرار الحفظ والإلغاء
             btnSave = Theme.MakeButton("💾 حفظ", 260, y, 180, 36, Theme.Accent);
@@ -125,6 +177,14 @@ namespace ChickenDist.Forms
             btnCancel = Theme.MakeButton("❌ إلغاء", 60, y, 180, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
+        }
+
+        private void UpdateTotalCost()
+        {
+            if (nudPartsCost != null && nudLaborCost != null && nudCost != null)
+            {
+                nudCost.Value = nudPartsCost.Value + nudLaborCost.Value;
+            }
         }
 
         private void AddLabel(string text, int x, ref int y)
@@ -156,8 +216,11 @@ namespace ChickenDist.Forms
                     txtDeviceModel.Text = r["DeviceModel"]?.ToString() ?? "";
                     txtDeviceSerial.Text = r["DeviceSerial"]?.ToString() ?? "";
                     txtProblem.Text = r["Problem"]?.ToString() ?? "";
+                    nudPartsCost.Value = r.Table.Columns.Contains("PartsCost") && r["PartsCost"] != DBNull.Value ? Convert.ToDecimal(r["PartsCost"]) : 0m;
+                    nudLaborCost.Value = r.Table.Columns.Contains("LaborCost") && r["LaborCost"] != DBNull.Value ? Convert.ToDecimal(r["LaborCost"]) : 0m;
                     nudCost.Value = Convert.ToDecimal(r["Cost"]);
                     cboStatus.SelectedItem = r["Status"]?.ToString() ?? "قيد الإصلاح";
+                    txtWarrantyPeriod.Text = r.Table.Columns.Contains("WarrantyPeriod") && r["WarrantyPeriod"] != DBNull.Value ? r["WarrantyPeriod"].ToString() : "بدون ضمان";
                     txtNotes.Text = r["Notes"]?.ToString() ?? "";
                 }
             }
@@ -179,8 +242,8 @@ namespace ChickenDist.Forms
                 {
                     // إدراج تذكرة جديدة
                     DbHelper.ExecuteInsert(@"
-                        INSERT INTO MaintenanceTickets (CustomerName, CustomerPhone, DeviceModel, DeviceSerial, Problem, Cost, Status, Notes)
-                        VALUES (@name, @phone, @model, @serial, @prob, @cost, @status, @notes)",
+                        INSERT INTO MaintenanceTickets (CustomerName, CustomerPhone, DeviceModel, DeviceSerial, Problem, Cost, Status, Notes, PartsCost, LaborCost, WarrantyPeriod)
+                        VALUES (@name, @phone, @model, @serial, @prob, @cost, @status, @notes, @parts, @labor, @warranty)",
                         DbHelper.P("@name", txtCustomerName.Text.Trim()),
                         DbHelper.P("@phone", txtCustomerPhone.Text.Trim()),
                         DbHelper.P("@model", txtDeviceModel.Text.Trim()),
@@ -188,7 +251,10 @@ namespace ChickenDist.Forms
                         DbHelper.P("@prob", txtProblem.Text.Trim()),
                         DbHelper.P("@cost", nudCost.Value),
                         DbHelper.P("@status", cboStatus.SelectedItem.ToString()),
-                        DbHelper.P("@notes", txtNotes.Text.Trim())
+                        DbHelper.P("@notes", txtNotes.Text.Trim()),
+                        DbHelper.P("@parts", nudPartsCost.Value),
+                        DbHelper.P("@labor", nudLaborCost.Value),
+                        DbHelper.P("@warranty", txtWarrantyPeriod.Text.Trim())
                     );
                 }
                 else
@@ -197,7 +263,8 @@ namespace ChickenDist.Forms
                     DbHelper.Execute(@"
                         UPDATE MaintenanceTickets 
                         SET CustomerName = @name, CustomerPhone = @phone, DeviceModel = @model, DeviceSerial = @serial, 
-                            Problem = @prob, Cost = @cost, Status = @status, Notes = @notes
+                            Problem = @prob, Cost = @cost, Status = @status, Notes = @notes,
+                            PartsCost = @parts, LaborCost = @labor, WarrantyPeriod = @warranty
                         WHERE TicketID = @tid",
                         DbHelper.P("@name", txtCustomerName.Text.Trim()),
                         DbHelper.P("@phone", txtCustomerPhone.Text.Trim()),
@@ -207,6 +274,9 @@ namespace ChickenDist.Forms
                         DbHelper.P("@cost", nudCost.Value),
                         DbHelper.P("@status", cboStatus.SelectedItem.ToString()),
                         DbHelper.P("@notes", txtNotes.Text.Trim()),
+                        DbHelper.P("@parts", nudPartsCost.Value),
+                        DbHelper.P("@labor", nudLaborCost.Value),
+                        DbHelper.P("@warranty", txtWarrantyPeriod.Text.Trim()),
                         DbHelper.P("@tid", _ticketID)
                     );
                 }

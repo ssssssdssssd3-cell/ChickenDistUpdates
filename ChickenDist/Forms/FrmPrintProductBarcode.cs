@@ -558,7 +558,7 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        private static void DrawCode39(Graphics g, string code, float x, float y, float width, float height)
+        public static void DrawCode39(Graphics g, string code, float x, float y, float width, float height)
         {
             try
             {

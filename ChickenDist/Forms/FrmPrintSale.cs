@@ -73,6 +73,19 @@ namespace ChickenDist.Forms
             {
                 _printItemIndex = 0;
                 _runningTotal = 0;
+
+                // Prepend/append IMEI to ProductName for mobile business type
+                if (AppConfig.BusinessType == "Mobiles" && _items != null && _items.Columns.Contains("IMEI"))
+                {
+                    foreach (DataRow r in _items.Rows)
+                    {
+                        string imei = r["IMEI"]?.ToString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(imei))
+                        {
+                            r["ProductName"] = r["ProductName"].ToString() + " (IMEI: " + imei + ")";
+                        }
+                    }
+                }
             };
 
             pd.PrintPage += (s, e) =>
