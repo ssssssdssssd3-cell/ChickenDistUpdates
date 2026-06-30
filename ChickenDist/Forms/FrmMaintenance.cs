@@ -20,7 +20,6 @@ namespace ChickenDist.Forms
         private DataTable _allTicketsDt;
         private DateTimePicker dtpFrom;
         private DateTimePicker dtpTo;
-        private CheckBox chkEnableDateFilter;
         private TableLayoutPanel pnlStats;
         private Label lblValTotal;
         private Label lblValRepair;
@@ -68,23 +67,18 @@ namespace ChickenDist.Forms
             cboStatusFilter.SelectedIndexChanged += (s, e) => FilterData();
             filterPanel.Controls.AddRange(new Control[] { lblStatus, cboStatusFilter });
 
-            chkEnableDateFilter = new CheckBox { Text = "تفعيل فلتر التاريخ", AutoSize = true, ForeColor = Theme.TextMain, Checked = false, Margin = new Padding(15, 5, 0, 0) };
-            Label lblFrom = new Label { Text = "من تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Enabled = false };
-            dtpFrom.Value = DateTime.Today.AddDays(-30);
+            Label lblFrom = new Label { Text = "من تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            dtpFrom.Value = DateTime.Today.AddDays(-365);
             dtpFrom.ValueChanged += (s, e) => FilterData();
+            filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
 
             Label lblTo = new Label { Text = "إلى تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Enabled = false };
+            dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             dtpTo.Value = DateTime.Today;
             dtpTo.ValueChanged += (s, e) => FilterData();
+            filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 
-            chkEnableDateFilter.CheckedChanged += (s, e) => {
-                dtpFrom.Enabled = dtpTo.Enabled = chkEnableDateFilter.Checked;
-                FilterData();
-            };
-
-            filterPanel.Controls.AddRange(new Control[] { chkEnableDateFilter, lblFrom, dtpFrom, lblTo, dtpTo });
             this.Controls.Add(filterPanel);
 
             // ── شريط العمليات الجانبي ──
@@ -127,7 +121,7 @@ namespace ChickenDist.Forms
             pnlStats = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 70,
+                Height = 60,
                 RowCount = 1,
                 ColumnCount = 4,
                 BackColor = Theme.BgCard,
@@ -193,6 +187,10 @@ namespace ChickenDist.Forms
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedAt", HeaderText = "التاريخ", FillWeight = 90 });
 
             this.Controls.Add(dgTickets);
+            dgTickets.SendToBack();
+            pnlStats.BringToFront();
+            filterPanel.BringToFront();
+            actionPanel.BringToFront();
         }
 
         private void LoadTickets()
@@ -254,10 +252,7 @@ namespace ChickenDist.Forms
                 string date = ticketDate.ToString("dd/MM/yyyy HH:mm");
 
                 // Filter by Date Range
-                if (chkEnableDateFilter != null && chkEnableDateFilter.Checked)
-                {
-                    if (ticketDate < fromDate || ticketDate >= toDate) continue;
-                }
+                if (ticketDate < fromDate || ticketDate >= toDate) continue;
 
                 // Filter by Status
                 if (statusFilter != "الكل" && status != statusFilter) continue;

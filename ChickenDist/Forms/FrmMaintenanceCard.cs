@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _ticketID > 0 ? "تعديل تذكرة الصيانة" : "إضافة تذكرة صيانة جديدة";
-            this.Size = new Size(480, 540);
+            this.Size = new Size(480, 550);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -52,52 +52,47 @@ namespace ChickenDist.Forms
 
             int y = 80;
 
-            // Customer Name & Customer Phone side-by-side
-            var lblCustName = new Label { Text = "اسم العميل *:", Location = new Point(240, y), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblCustName);
-            var lblCustPhone = new Label { Text = "رقم الهاتف:", Location = new Point(20, y), Width = 200, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblCustPhone);
+            // --- Customer Name & Customer Phone (Side by Side) ---
+            var lblCustName = new Label { Text = "اسم العميل *:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblCustPhone = new Label { Text = "رقم الهاتف:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblCustName, lblCustPhone });
             y += 22;
 
-            txtCustomerName = new TextBox { Location = new Point(240, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            this.Controls.Add(txtCustomerName);
-            txtCustomerPhone = new TextBox { Location = new Point(20, y), Width = 200, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            this.Controls.Add(txtCustomerPhone);
+            txtCustomerName = new TextBox { Location = new Point(20, y), Width = 190, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            this.Controls.AddRange(new Control[] { txtCustomerName, txtCustomerPhone });
             y += 35;
 
-            // Device Model & Device Serial side-by-side
-            var lblDevModel = new Label { Text = "نوع وموديل الجهاز *:", Location = new Point(240, y), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblDevModel);
-            var lblDevSerial = new Label { Text = "الرقم التسلسلي / IMEI:", Location = new Point(20, y), Width = 200, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblDevSerial);
+            // --- Device Model & Device Serial (Side by Side) ---
+            var lblDevModel = new Label { Text = "نوع وموديل الجهاز *:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblDevSerial = new Label { Text = "الرقم التسلسلي / IMEI:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblDevModel, lblDevSerial });
             y += 22;
 
-            txtDeviceModel = new TextBox { Location = new Point(240, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            this.Controls.Add(txtDeviceModel);
-            txtDeviceSerial = new TextBox { Location = new Point(20, y), Width = 200, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            this.Controls.Add(txtDeviceSerial);
+            txtDeviceModel = new TextBox { Location = new Point(20, y), Width = 190, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtDeviceSerial = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            this.Controls.AddRange(new Control[] { txtDeviceModel, txtDeviceSerial });
             y += 35;
 
-            // Problem description (full width)
-            var lblProblem = new Label { Text = "العطل / المشكلة بالتفصيل *:", Location = new Point(20, y), Width = 430, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            // --- Problem ---
+            var lblProblem = new Label { Text = "العطل / المشكلة بالتفصيل *:", Location = new Point(20, y), Width = 420, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
             this.Controls.Add(lblProblem);
             y += 22;
 
-            txtProblem = new TextBox { Location = new Point(20, y), Width = 430, Height = 40, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.Add(txtProblem);
             y += 50;
 
-            // Cost inputs side-by-side
-            var lblParts = new Label { Text = "تكلفة قطع الغيار (ج):", Location = new Point(20, y), Width = 200, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblParts);
-            var lblLabor = new Label { Text = "أجرة اليد / المصنعية (ج):", Location = new Point(240, y), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblLabor);
+            // --- Parts Cost & Labor Cost (Side by Side) ---
+            var lblParts = new Label { Text = "تكلفة قطع الغيار (ج):", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblLabor = new Label { Text = "أجرة اليد / المصنعية (ج):", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblParts, lblLabor });
             y += 22;
 
             nudPartsCost = new NumericUpDown 
             { 
                 Location = new Point(20, y), 
-                Width = 200, 
+                Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
                 BackColor = Theme.BgInput, 
@@ -109,7 +104,7 @@ namespace ChickenDist.Forms
 
             nudLaborCost = new NumericUpDown 
             { 
-                Location = new Point(240, y), 
+                Location = new Point(230, y), 
                 Width = 210, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
@@ -121,17 +116,16 @@ namespace ChickenDist.Forms
             this.Controls.Add(nudLaborCost);
             y += 35;
 
-            // Total Cost & Status side-by-side
-            var lblTotal = new Label { Text = "إجمالي تكلفة الإصلاح (ج):", Location = new Point(20, y), Width = 200, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblTotal);
-            var lblStatus = new Label { Text = "حالة الإصلاح:", Location = new Point(240, y), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblStatus);
+            // --- Total Cost & Status (Side by Side) ---
+            var lblCost = new Label { Text = "إجمالي تكلفة الإصلاح (ج):", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblStatus = new Label { Text = "حالة الإصلاح:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblCost, lblStatus });
             y += 22;
 
             nudCost = new NumericUpDown 
             { 
                 Location = new Point(20, y), 
-                Width = 200, 
+                Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
                 BackColor = Theme.BgInput, 
@@ -143,7 +137,7 @@ namespace ChickenDist.Forms
 
             cboStatus = new ComboBox 
             { 
-                Location = new Point(240, y), 
+                Location = new Point(230, y), 
                 Width = 210, 
                 DropDownStyle = ComboBoxStyle.DropDownList, 
                 BackColor = Theme.BgInput, 
@@ -155,17 +149,16 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboStatus);
             y += 35;
 
-            // Warranty & Notes side-by-side
-            var lblWarranty = new Label { Text = "مدة الضمان بعد الإصلاح:", Location = new Point(240, y), Width = 210, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblWarranty);
-            var lblNotes = new Label { Text = "ملاحظات إضافية:", Location = new Point(20, y), Width = 200, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.Add(lblNotes);
+            // --- Warranty Period & Notes (Side by Side) ---
+            var lblWarranty = new Label { Text = "مدة الضمان بعد الإصلاح:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblNotes = new Label { Text = "ملاحظات إضافية:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblWarranty, lblNotes });
             y += 22;
 
             txtWarrantyPeriod = new TextBox 
             { 
-                Location = new Point(240, y), 
-                Width = 210, 
+                Location = new Point(20, y), 
+                Width = 190, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
@@ -176,10 +169,8 @@ namespace ChickenDist.Forms
 
             txtNotes = new TextBox 
             { 
-                Location = new Point(20, y), 
-                Width = 200, 
-                Height = 30,
-                Multiline = false,
+                Location = new Point(230, y), 
+                Width = 210, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
@@ -189,11 +180,11 @@ namespace ChickenDist.Forms
             y += 45;
 
             // أزرار الحفظ والإلغاء
-            btnSave = Theme.MakeButton("💾 حفظ التذكرة", 240, y, 210, 36, Theme.Accent);
+            btnSave = Theme.MakeButton("💾 حفظ", 260, y, 180, 36, Theme.Accent);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, y, 200, 36, Color.FromArgb(100, 110, 120));
+            btnCancel = Theme.MakeButton("❌ إلغاء", 60, y, 180, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }
