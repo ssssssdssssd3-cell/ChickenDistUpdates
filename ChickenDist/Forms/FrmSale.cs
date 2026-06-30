@@ -876,6 +876,7 @@ namespace ChickenDist.Forms
 				FillWeight = 20f
 			};
 			dgItems.Columns.Add(delCol);
+			Theme.AdjustGridHeaders(dgItems);
 			
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;

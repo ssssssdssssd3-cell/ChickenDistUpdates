@@ -203,7 +203,7 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor",      Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",        Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays", Visible = false });
-
+            Theme.AdjustGridHeaders(dgStock);
             dgStock.CellEndEdit += DgStock_CellEndEdit;
             dgStock.CellDoubleClick += (s, e) => { if (e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name != "ActualQty" && dgStock.Columns[e.ColumnIndex].Name != "Notes" && dgStock.Columns[e.ColumnIndex].Name != "ExpiryDate") BtnMovement_Click(s, e); };
 
@@ -273,7 +273,7 @@ namespace ChickenDist.Forms
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty", HeaderText = "الفارق", FillWeight = 35 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات التسوية", FillWeight = 70 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", HeaderText = "بواسطة", FillWeight = 50 });
-
+            Theme.AdjustGridHeaders(dgLogs);
             tabLogs.Controls.Add(dgLogs);
             
             pnlTop.BringToFront();

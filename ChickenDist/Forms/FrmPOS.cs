@@ -99,8 +99,19 @@ namespace ChickenDist.Forms
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(240, 242, 245), ForeColor = Theme.TextMain, SelectionBackColor = Theme.Accent, SelectionForeColor = Color.White },
                 GridColor = Color.FromArgb(210, 210, 215), BorderStyle = BorderStyle.None, CellBorderStyle = DataGridViewCellBorderStyle.Single
             };
-            dgItems.Columns.Add("Code", "الكود");
-            dgItems.Columns.Add("Name", "الصنف");
+            dgItems.Columns.Add("Code", AppConfig.BusinessType switch
+            {
+                "Mobiles"   => "كود الموديل",
+                "Clothing"  => "كود الموديل",
+                "SpareParts" => "رقم القطعة",
+                _           => "الكود"
+            });
+            dgItems.Columns.Add("Name", AppConfig.BusinessType switch
+            {
+                "Mobiles"   => "الجهاز / الصنف",
+                "Clothing"  => "القطعة / الصنف",
+                _           => "الصنف"
+            });
             dgItems.Columns.Add("Qty", "الكمية");
             dgItems.Columns.Add("Price", "السعر");
             dgItems.Columns.Add("Total", "الإجمالي");

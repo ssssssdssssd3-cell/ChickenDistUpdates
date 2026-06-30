@@ -1,3 +1,6 @@
+v1.9.82 - 2026-06-30
+- Localization: Unified and customized all grid column headers and text terminology globally across the Sales (FrmSale), Purchases (FrmPurchase), POS (FrmPOS), Inventory (FrmInventory), Products list (FrmProducts), and Reports (FrmReports) screens dynamically according to the active business type (Mobiles, Clothing, SpareParts, general distribution).
+
 v1.9.81 - 2026-06-30
 - Theme: Brightened all standard buttons and theme colors to be modern, highly visible, and vibrant (Royal Blue, Vibrant Orange, Success Green, Danger Red) across light and dark themes.
 - Dashboard: Customized Quick Action buttons dynamically based on the active business type (Mobiles, Clothing, or General Distribution/Spare Parts) so that every activity has its own dedicated workflow buttons.

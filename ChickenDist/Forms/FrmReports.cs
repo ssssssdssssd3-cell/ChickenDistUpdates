@@ -1345,6 +1345,7 @@ namespace ChickenDist.Forms
 				}
 				dg.Columns.Add(col);
 			}
+			Theme.AdjustGridHeaders(dg);
 		}
 
 		private void FillGrid(DataGridView dg)

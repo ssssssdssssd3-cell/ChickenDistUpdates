@@ -195,6 +195,7 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
+            Theme.AdjustGridHeaders(dgProducts);
             
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             dgProducts.CellDoubleClick += (s, e) => {

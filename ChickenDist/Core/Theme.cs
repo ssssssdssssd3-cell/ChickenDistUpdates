@@ -426,5 +426,66 @@ namespace ChickenDist.Core
             }
             catch { }
         }
+
+        public static void AdjustGridHeaders(DataGridView grid)
+        {
+            foreach (DataGridViewColumn col in grid.Columns)
+            {
+                if (col.Name == "PartNumber")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "كود الموديل",
+                        "Clothing"  => "كود الموديل",
+                        "SpareParts" => "رقم القطعة",
+                        _           => "كود الصنف"
+                    };
+                }
+                else if (col.Name == "CarModel")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "التوافق",
+                        "Clothing"  => "المقاس",
+                        _           => "الموديل"
+                    };
+                }
+                else if (col.Name == "Brand")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الماركة",
+                        "Clothing"  => "اللون",
+                        _           => "الماركة"
+                    };
+                }
+                else if (col.Name == "ShelfLocation")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Clothing"  => "مكان العرض",
+                        _           => "الرف"
+                    };
+                }
+                else if (col.Name == "ProducerCompany" || col.Name == "ProducerName")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الشركة المصنعة",
+                        "Clothing"  => "الخامة",
+                        _           => "الشركة المنتجة"
+                    };
+                }
+                else if (col.Name == "ProductName")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الجهاز / الصنف",
+                        "Clothing"  => "القطعة / الصنف",
+                        _           => "اسم الصنف"
+                    };
+                }
+            }
+        }
     }
 }
