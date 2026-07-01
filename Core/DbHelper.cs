@@ -1773,6 +1773,176 @@ namespace ChickenDist.Core
                 BEGIN
                     IF COL_LENGTH('MaintenanceTickets','PrepaidAmount') IS NULL ALTER TABLE MaintenanceTickets ADD PrepaidAmount DECIMAL(18, 2) NOT NULL DEFAULT 0;
                 END");
+
+                // ===== 4. \u0646\u0638\u0627\u0645 \u0627\u0644\u0623\u0633\u062a\u0627\u0630 \u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u0645\u0632\u062f\u0648\u062c \u0627\u0644\u0645\u0648\u062d\u062f (General Ledger) =====
+                SafeMigrate("JournalEntries", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'JournalEntries')
+                BEGIN
+                    CREATE TABLE JournalEntries (
+                        EntryID     INT IDENTITY(1,1) PRIMARY KEY,
+                        EntryDate   DATETIME NOT NULL DEFAULT GETDATE(),
+                        Description NVARCHAR(500) NULL,
+                        SourceType  NVARCHAR(50) NOT NULL,
+                        SourceRefID INT NOT NULL,
+                        CreatedBy   INT NULL
+                    );
+                END");
+
+                SafeMigrate("JournalDetails", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'JournalDetails')
+                BEGIN
+                    CREATE TABLE JournalDetails (
+                        DetailID    INT IDENTITY(1,1) PRIMARY KEY,
+                        EntryID     INT NOT NULL FOREIGN KEY REFERENCES JournalEntries(EntryID) ON DELETE CASCADE,
+                        AccountName NVARCHAR(100) NOT NULL,
+                        Debit       DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        Credit      DECIMAL(18,2) NOT NULL DEFAULT 0
+                    );
+                END");
+
+                SafeMigrate("JournalEntries.Index", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_JournalEntries_Source' AND object_id = OBJECT_ID('JournalEntries'))
+                BEGIN
+                    CREATE INDEX IX_JournalEntries_Source ON JournalEntries(SourceType, SourceRefID);
+                END");
+
+                // \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0641\u0647\u0627\u0631\u0633 \u0627\u0644\u0645\u062d\u0633\u0646\u0629 \u0644\u062a\u0633\u0631\u064a\u0639 \u0627\u0644\u0627\u0633\u062a\u0639\u0644\u0627\u0645\u0627\u062a \u0648\u0625\u0644\u063a\u0627\u0621 \u0628\u0637\u0621 \u062c\u0631\u062f \u0627\u0644\u0645\u062e\u0627\u0632\u0646 \u0646\u0647\u0627\u0626\u064a\u0627\u064b
+                SafeMigrate("OptimizingIndexes", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_Opt' AND object_id = OBJECT_ID('Sales'))
+                    CREATE INDEX IX_Sales_Opt ON Sales(WarehouseID, IsPosted, SaleDate) INCLUDE (SaleID, SaleType, ClientID, DriverID, TotalAmount);
+                
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_Opt' AND object_id = OBJECT_ID('SaleItems'))
+                    CREATE INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Purchases_Opt' AND object_id = OBJECT_ID('Purchases'))
+                    CREATE INDEX IX_Purchases_Opt ON Purchases(WarehouseID, IsPosted, PurchaseDate) INCLUDE (PurchaseID);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
+                    CREATE INDEX IX_PurchaseItems_Opt ON PurchaseItems(ProductID, PurchaseID) INCLUDE (Quantity, Factor);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SalesReturns_Opt' AND object_id = OBJECT_ID('SalesReturns'))
+                    CREATE INDEX IX_SalesReturns_Opt ON SalesReturns(WarehouseID, ReturnDate) INCLUDE (ReturnID);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_Opt' AND object_id = OBJECT_ID('ReturnItems'))
+                    CREATE INDEX IX_ReturnItems_Opt ON ReturnItems(ProductID, ReturnID) INCLUDE (Quantity, Factor);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTransactions_Opt' AND object_id = OBJECT_ID('ClientTransactions'))
+                    CREATE INDEX IX_ClientTransactions_Opt ON ClientTransactions(ClientID, TransDate) INCLUDE (Debit, Credit);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CashBox_Opt' AND object_id = OBJECT_ID('CashBox'))
+                    CREATE INDEX IX_CashBox_Opt ON CashBox(AccountID, TransDate) INCLUDE (AmountIn, AmountOut);
+                ");
+
+                // \u0625\u062c\u0631\u0627\u0621 \u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u062a\u0648\u0644\u064a\u062f \u0627\u0644\u0642\u064a\u0648\u062f \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a\u0629 \u0627\u0644\u0645\u0632\u062f\u0648\u062c\u062e \u0627\u0644\u062a\u0627\u0631\u064a\u062e\u064a\u0629
+                SafeMigrate("SyncingGeneralLedger", @"
+                DELETE FROM JournalEntries;
+                
+                INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
+                SELECT SaleDate, N'\u0641\u0627\u062a\u0648\u0631\u0629 \u0645\u0628\u064a\u0639\u0627\u062a \u0631\u0642\u0645 ' + SaleCode, 'Sale', SaleID, CreatedBy FROM Sales WHERE IsPosted = 1;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, sa.AccountName, s.TotalAmount, 0 
+                FROM JournalEntries je 
+                JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
+                JOIN SafeAccounts sa ON sa.AccountID = 1
+                WHERE s.SaleType = 'Cash';
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a', 0, s.TotalAmount 
+                FROM JournalEntries je 
+                JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
+                WHERE s.SaleType = 'Cash';
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u0627\u0644\u0639\u0645\u064a\u0644: ' + c.ClientName, s.TotalAmount, 0 
+                FROM JournalEntries je 
+                JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
+                JOIN Clients c ON s.ClientID = c.ClientID
+                WHERE s.SaleType IN ('Credit', 'Installment');
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a', 0, s.TotalAmount 
+                FROM JournalEntries je 
+                JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
+                WHERE s.SaleType IN ('Credit', 'Installment');
+
+                INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
+                SELECT PurchaseDate, N'\u0641\u0627\u062a\u0648\u0631\u0629 \u0645\u0634\u062a\u0631\u064a\u0627\u062a \u0631\u0642\u0645 ' + PurchaseCode, 'Purchase', PurchaseID, CreatedBy FROM Purchases WHERE IsPosted = 1;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a', p.TotalAmount, 0 
+                FROM JournalEntries je 
+                JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
+                WHERE p.PurchaseType = 'Cash';
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, sa.AccountName, 0, p.TotalAmount 
+                FROM JournalEntries je 
+                JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
+                JOIN SafeAccounts sa ON sa.AccountID = 1
+                WHERE p.PurchaseType = 'Cash';
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a', p.TotalAmount, 0 
+                FROM JournalEntries je 
+                JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
+                WHERE p.PurchaseType = 'Credit';
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u0627\u0644\u0645\u0648\u0631\u062f: ' + sup.SupplierName, 0, p.TotalAmount 
+                FROM JournalEntries je 
+                JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
+                JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
+                WHERE p.PurchaseType = 'Credit';
+
+                INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
+                SELECT TransDate, Notes, 'CashBox', CashID, CreatedBy FROM CashBox 
+                WHERE TransType NOT IN ('SaleIncome', 'PurchaseExpense');
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, sa.AccountName, cb.AmountIn, 0 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                WHERE cb.TransType = 'ClientPayment' AND cb.AmountIn > 0;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, COALESCE(N'\u0627\u0644\u0639\u0645\u064a\u0644: ' + c.ClientName, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0639\u0645\u0644\u0627\u0621'), 0, cb.AmountIn 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                LEFT JOIN ClientTransactions ct ON cb.RefID = ct.RefID AND ct.TransType = 'Payment'
+                LEFT JOIN Clients c ON ct.ClientID = c.ClientID
+                WHERE cb.TransType = 'ClientPayment' AND cb.AmountIn > 0;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, COALESCE(N'\u0627\u0644\u0645\u0648\u0631\u062f: ' + s.SupplierName, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646'), cb.AmountOut, 0 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                LEFT JOIN SupplierTransactions st ON cb.RefID = st.RefID AND st.TransType = 'Payment'
+                LEFT JOIN Suppliers s ON st.SupplierID = s.SupplierID
+                WHERE cb.TransType = 'SupplierPayment' AND cb.AmountOut > 0;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, sa.AccountName, 0, cb.AmountOut 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                WHERE cb.TransType = 'SupplierPayment' AND cb.AmountOut > 0;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0635\u0631\u0648\u0641\u0627\u062a: ' + COALESCE(e.Notes, N'\u0639\u0627\u0645'), cb.AmountOut, 0 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                LEFT JOIN Expenses e ON cb.RefID = e.ExpenseID
+                WHERE cb.TransType = 'Expense' AND cb.AmountOut > 0;
+
+                INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
+                SELECT je.EntryID, sa.AccountName, 0, cb.AmountOut 
+                FROM JournalEntries je 
+                JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
+                JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                WHERE cb.TransType = 'Expense' AND cb.AmountOut > 0;
+                ");
             }
             catch (Exception ex)
             {
