@@ -59,7 +59,35 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { lblCustName, lblCustPhone });
             y += 22;
 
-            txtCustomerName = new TextBox { Location = new Point(20, y), Width = 190, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            var btnSearchClient = new Button
+            {
+                Text = "ðŸ”",
+                Location = new Point(20, y),
+                Size = new Size(35, 23),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnSearchClient.FlatAppearance.BorderSize = 0;
+            btnSearchClient.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        DataTable dt = DbHelper.Query("SELECT ClientName, Phone FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", frm.SelectedClientID));
+                        if (dt.Rows.Count > 0)
+                        {
+                            txtCustomerName.Text = dt.Rows[0]["ClientName"]?.ToString() ?? "";
+                            txtCustomerPhone.Text = dt.Rows[0]["Phone"]?.ToString() ?? "";
+                        }
+                    }
+                }
+            };
+            this.Controls.Add(btnSearchClient);
+
+            txtCustomerName = new TextBox { Location = new Point(60, y), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.AddRange(new Control[] { txtCustomerName, txtCustomerPhone });
             y += 35;

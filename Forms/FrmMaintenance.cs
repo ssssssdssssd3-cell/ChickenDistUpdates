@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
             };
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));  // Row 0: filterPanel
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f)); // Row 1: contentLayout
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 75f));  // Row 2: pnlStats (increased from 60f to raise totals)
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90f));  // Row 2: pnlStats (increased from 75f to raise totals)
 
             TableLayoutPanel contentLayout = new TableLayoutPanel
             {
@@ -145,7 +145,7 @@ namespace ChickenDist.Forms
                 RowCount = 1,
                 ColumnCount = 4,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10, 5, 10, 5),
+                Padding = new Padding(10, 2, 10, 2),
                 RightToLeft = RightToLeft.Yes
             };
             pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
@@ -301,26 +301,43 @@ namespace ChickenDist.Forms
 
         private Panel MakeStatLabel(string title, string value, Color valueColor, out Label valLabel)
         {
-            var pnl = new Panel { Dock = DockStyle.Fill, Margin = new Padding(5), BackColor = Color.FromArgb(45, 55, 72) };
+            var pnl = new Panel { Dock = DockStyle.Fill, Margin = new Padding(5, 2, 5, 2), BackColor = Color.FromArgb(45, 55, 72) };
+            
+            var tbl = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
+                BackColor = Color.Transparent
+            };
+            tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            
             var lblTitle = new Label 
             { 
                 Text = title, 
-                Dock = DockStyle.Top, 
-                Height = 22, 
+                Dock = DockStyle.Fill, 
+                Margin = new Padding(0),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), 
                 ForeColor = Color.FromArgb(200, 200, 200),
                 TextAlign = ContentAlignment.MiddleCenter
             };
+            
             valLabel = new Label 
             { 
                 Text = value, 
                 Dock = DockStyle.Fill, 
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold), 
+                Margin = new Padding(0),
+                Font = new Font("Segoe UI", 14f, FontStyle.Bold), 
                 ForeColor = valueColor,
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            pnl.Controls.Add(valLabel);
-            pnl.Controls.Add(lblTitle);
+            
+            tbl.Controls.Add(lblTitle, 0, 0);
+            tbl.Controls.Add(valLabel, 0, 1);
+            pnl.Controls.Add(tbl);
             return pnl;
         }
 
