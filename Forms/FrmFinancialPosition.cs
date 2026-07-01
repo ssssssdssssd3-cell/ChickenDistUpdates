@@ -51,6 +51,7 @@ namespace ChickenDist.Forms
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 180f)); // الصف العلوي: الكروت الإحصائية
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // الصف السفلي: تفاصيل الجداول
             this.Controls.Add(mainLayout);
+            mainLayout.BringToFront();
 
             // ── 1. لوحة كروت الموقف المالي ──
             TableLayoutPanel pnlCards = new TableLayoutPanel
@@ -114,7 +115,7 @@ namespace ChickenDist.Forms
             // إضافة تسمية فرعية لقيمة المخزون بالبيع
             lblExpectedAssets = new Label
             {
-                Text = "قيمة المخزون الحالية بسعر البيع المتوقع: 0.00 ج | أرباح بضاعة متوقعة: 0.00 ج",
+                Text = "إجمالي تكلفة المخزون (بالشراء): 0.00 ج   |   القيمة البيعية المتوقعة: 0.00 ج   |   أرباح المخزون المتوقعة: 0.00 ج",
                 Dock = DockStyle.Bottom,
                 Height = 35,
                 ForeColor = Theme.TextSub,
@@ -249,7 +250,7 @@ namespace ChickenDist.Forms
                 decimal invSale = saleObj != null ? Convert.ToDecimal(saleObj) : 0m;
 
                 decimal expectedProfit = invSale - invPurchase;
-                lblExpectedAssets.Text = $"قيمة المخزون بسعر البيع المتوقع: {invSale:N2} ج   |   أرباح البضاعة غير المباعة المتوقعة: {expectedProfit:N2} ج";
+                lblExpectedAssets.Text = $"إجمالي تكلفة المخزون (بالشراء): {invPurchase:N2} ج   |   القيمة البيعية المتوقعة: {invSale:N2} ج   |   أرباح المخزون المتوقعة: {expectedProfit:N2} ج";
 
                 // 3. حساب مستحقات العملاء (المدينين فقط)
                 object clientObj = DbHelper.Scalar(@"
