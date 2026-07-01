@@ -35,20 +35,20 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void InitUI()
+                private void InitUI()
         {
-            this.Text = _ticketID > 0 ? "تعديل تذكرة الصيانة" : "إضافة تذكرة صيانة جديدة";
-            this.Size = new Size(480, 600);
-            this.StartPosition = FormStartPosition.CenterScreen;
+            bool isCar = AppConfig.BusinessType == "CarService";
+            this.Text = _ticketID > 0 ? (isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f" : "\u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f\u0629");
+            this.Size = new Size(480, 580);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.StartPosition = FormStartPosition.CenterParent;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
+            this.BackColor = Theme.BgCard;
 
-            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? "📝 تعديل تذكرة صيانة" : "➕ إضافة تذكرة صيانة", "إدخل بيانات الجهاز والعميل وتفاصيل وتكلفة وحالة الإصلاح");
+            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? (isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u2795 \u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u2795 \u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629"), isCar ? "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0633\u064a\u0627\u0631\u0629" : "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632 \u0648\u0627\u0644\u0639\u0645\u064a\u0644 \u0648\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0635\u064a\u0627\u0646\u0629");
             this.Controls.Add(pnlTitle);
 
             int y = 80;
@@ -87,14 +87,14 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(btnSearchClient);
 
-            txtCustomerName = new TextBox { Location = new Point(60, y), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtCustomerName = new TextBox { Location = new Point(60, y), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.AddRange(new Control[] { txtCustomerName, txtCustomerPhone });
             y += 35;
 
-            // --- Device Model & Device Serial (Side by Side) ---
-            var lblDevModel = new Label { Text = "نوع وموديل الجهاز *:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            var lblDevSerial = new Label { Text = "الرقم التسلسلي / IMEI:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+                        // --- Device Model & Device Serial (Side by Side) ---
+            var lblDevModel = new Label { Text = isCar ? "\u0646\u0648\u0639 \u0648\u0645\u0648\u062f\u064a\u0644 \u0627\u0644\u0633\u064a\u0627\u0631\u0629 *:" : "\u0646\u0648\u0639 \u0648\u0645\u0648\u062f\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632 *:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblDevSerial = new Label { Text = isCar ? "\u0631\u0642\u0645 \u0627\u0644\u0644\u0648\u062d\u0629 / \u0627\u0644\u0634\u0627\u0633\u064a\u0647:" : "\u0627\u0644\u0631\u0642\u0645 \u0627\u0644\u062a\u0633\u0644\u0633\u064a / IMEI:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
             this.Controls.AddRange(new Control[] { lblDevModel, lblDevSerial });
             y += 22;
 
@@ -104,11 +104,11 @@ namespace ChickenDist.Forms
             y += 35;
 
             // --- Problem ---
-            var lblProblem = new Label { Text = "العطل / المشكلة بالتفصيل *:", Location = new Point(20, y), Width = 420, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblProblem = new Label { Text = isCar ? "\u0627\u0644\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644 *:" : "\u0627\u0644\u0639\u0637\u0644 / \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0628\u0627\u0644\u062a\u0641\u0635\u064a\u0644 *:", Location = new Point(20, y), Width = 420, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
             this.Controls.Add(lblProblem);
             y += 22;
 
-            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.Add(txtProblem);
             y += 50;
 
@@ -124,7 +124,8 @@ namespace ChickenDist.Forms
                 Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain,
                 Font = Theme.FontNormal
             };
             nudPartsCost.ValueChanged += (s, e) => UpdateTotalCost();
@@ -136,7 +137,8 @@ namespace ChickenDist.Forms
                 Width = 210, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain,
                 Font = Theme.FontNormal
             };
             nudLaborCost.ValueChanged += (s, e) => UpdateTotalCost();
@@ -155,7 +157,8 @@ namespace ChickenDist.Forms
                 Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain,
                 Font = Theme.FontNormal,
                 Enabled = false
             };
@@ -187,7 +190,8 @@ namespace ChickenDist.Forms
                 Width = 190,
                 Maximum = 100000,
                 DecimalPlaces = 2,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
                 Font = Theme.FontNormal
             };
             this.Controls.Add(nudPrepaidAmount);
@@ -196,7 +200,8 @@ namespace ChickenDist.Forms
             { 
                 Location = new Point(230, y), 
                 Width = 210, 
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = Theme.FontNormal 
             };
@@ -213,7 +218,8 @@ namespace ChickenDist.Forms
             { 
                 Location = new Point(20, y), 
                 Width = 420, 
-                BackColor = Theme.BgInput, ForeColor = Theme.TextDark, 
+                BackColor = Theme.BgInput, 
+                ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = Theme.FontNormal 
             };
@@ -289,8 +295,9 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtCustomerName.Text)) { MessageBox.Show("يرجى إدخال اسم العميل"); return; }
-            if (string.IsNullOrWhiteSpace(txtDeviceModel.Text)) { MessageBox.Show("يرجى إدخال نوع وموديل الجهاز"); return; }
-            if (string.IsNullOrWhiteSpace(txtProblem.Text)) { MessageBox.Show("يرجى وصف المشكلة أو العطل"); return; }
+                        bool isCar = AppConfig.BusinessType == "CarService";
+            if (string.IsNullOrWhiteSpace(txtDeviceModel.Text)) { MessageBox.Show(isCar ? "\u064a\u0631\u062c\u0649 \u0625\u062f\u062e\u0627\u0644 \u0646\u0648\u0639 \u0648\u0645\u0648\u062f\u064a\u0644 \u0627\u0644\u0633\u064a\u0627\u0631\u0629" : "\u064a\u0631\u062c\u0649 \u0625\u062f\u062e\u0627\u0644 \u0646\u0648\u0639 \u0648\u0645\u0648\u062f\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632"); return; }
+            if (string.IsNullOrWhiteSpace(txtProblem.Text)) { MessageBox.Show(isCar ? "\u064a\u0631\u062c\u0649 \u0648\u0635\u0641 \u0627\u0644\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629" : "\u064a\u0631\u062c\u0649 \u0648\u0635\u0641 \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0623\u0648 \u0627\u0644\u0639\u0637\u0644"); return; }
 
             try
             {

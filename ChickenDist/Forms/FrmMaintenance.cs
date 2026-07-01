@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -10,6 +10,7 @@ namespace ChickenDist.Forms
 {
     public class FrmMaintenance : Form
     {
+        private bool isCar => AppConfig.BusinessType == "CarService";
         private DataGridView dgTickets;
         private TextBox txtSearch;
         private ComboBox cboStatusFilter;
@@ -36,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "صيانة الأجهزة والهواتف";
+            this.Text = isCar ? "\u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a \u0648\u063a\u064a\u0627\u0631 \u0632\u064a\u062a" : "\u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0623\u062c\u0647\u0632\u0629 \u0648\u0627\u0644\u0647\u0648\u0627\u062a\u0641";
             this.Size = new Size(1100, 680);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -112,25 +113,25 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.TopDown
             };
 
-            btnAdd = Theme.MakeButton("➕ إضافة تذكرة صيانة", Color.FromArgb(40, 150, 80));
+            btnAdd = Theme.MakeButton(isCar ? "\u2795 \u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u2795 \u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(40, 150, 80));
             btnAdd.Size = new Size(160, 36);
             btnAdd.Margin = new Padding(0, 0, 0, 10);
             btnAdd.Click += (s, e) => { if (new FrmMaintenanceCard().ShowDialog() == DialogResult.OK) LoadTickets(); };
             actionPanel.Controls.Add(btnAdd);
 
-            btnEdit = Theme.MakeButton("📝 تعديل التذكرة", Theme.Accent);
+            btnEdit = Theme.MakeButton(isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Accent);
             btnEdit.Size = new Size(160, 36);
             btnEdit.Margin = new Padding(0, 0, 0, 10);
             btnEdit.Click += BtnEdit_Click;
             actionPanel.Controls.Add(btnEdit);
 
-            btnDelete = Theme.MakeButton("🗑️ حذف التذكرة", Theme.Danger);
+            btnDelete = Theme.MakeButton(isCar ? "\ud83d\uddd1\ufe0f \u062d\u0630\u0641 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\uddd1\ufe0f \u062d\u0630\u0641 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Danger);
             btnDelete.Size = new Size(160, 36);
             btnDelete.Margin = new Padding(0, 0, 0, 10);
             btnDelete.Click += BtnDelete_Click;
             actionPanel.Controls.Add(btnDelete);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة إيصال صيانة", Color.FromArgb(30, 80, 180));
+            btnPrint = Theme.MakeButton(isCar ? "\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629 \u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(30, 80, 180));
             btnPrint.Size = new Size(160, 36);
             btnPrint.Margin = new Padding(0, 0, 0, 10);
             btnPrint.Click += BtnPrint_Click;
@@ -153,10 +154,10 @@ namespace ChickenDist.Forms
             pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            pnlStats.Controls.Add(MakeStatLabel("🔧 إجمالي التذاكر", "0", Theme.TextMain, out lblValTotal), 0, 0);
-            pnlStats.Controls.Add(MakeStatLabel("⏳ قيد الإصلاح", "0", Color.Orange, out lblValRepair), 1, 0);
-            pnlStats.Controls.Add(MakeStatLabel("✅ جاهز للتسليم", "0", Color.LimeGreen, out lblValReady), 2, 0);
-            pnlStats.Controls.Add(MakeStatLabel("💵 إجمالي إيرادات الصيانة (المسلمة)", "0.00 ج", Theme.Success, out lblValRevenue), 3, 0);
+            pnlStats.Controls.Add(MakeStatLabel(isCar ? "\ud83d\udd27 \u0625\u062c\u0645\u0627\u0644\u064a \u0643\u0631\u0648\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udd27 \u0625\u062c\u0645\u0627\u0644\u064a \u062a\u0630\u0627\u0643\u0631 \u0627\u0644\u0635\u064a\u0627\u0646\u0629", "0", Theme.TextMain, out lblValTotal), 0, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\u23f3 \u0642\u064a\u062f \u0627\u0644\u0625\u0635\u0644\u0627\u062d", "0", Color.Orange, out lblValRepair), 1, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\u2705 \u062c\u0627\u0647\u0632 \u0644\u0644\u062a\u0633\u0644\u064a\u0645", "0", Color.LimeGreen, out lblValReady), 2, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\ud83d\udcb5 \u0625\u062c\u0645\u0627\u0644\u064a \u0625\u064a\u0631\u0627\u062f\u0627\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629 (\u0627\u0644\u0645\u0633\u0644\u0645\u0629)", "0.00 \u062c", Theme.Success, out lblValRevenue), 3, 0);
 
             mainLayout.Controls.Add(pnlStats, 0, 2);
 
@@ -195,9 +196,9 @@ namespace ChickenDist.Forms
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "TicketID", HeaderText = "رقم التذكرة", FillWeight = 40 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "CustomerName", HeaderText = "اسم العميل", FillWeight = 110 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "CustomerPhone", HeaderText = "رقم الهاتف", FillWeight = 80 });
-            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceModel", HeaderText = "الجهاز/الموديل", FillWeight = 100 });
-            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceSerial", HeaderText = "الرقم التسلسلي/IMEI", FillWeight = 90 });
-            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Problem", HeaderText = "المشكلة", FillWeight = 130 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceModel", HeaderText = isCar ? "\u0627\u0644\u0633\u064a\u0627\u0631\u0629/\u0627\u0644\u0645\u0648\u062f\u064a\u0644" : "\u0627\u0644\u062c\u0647\u0627\u0632/\u0627\u0644\u0645\u0648\u062f\u064a\u0644", FillWeight = 100 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeviceSerial", HeaderText = isCar ? "\u0631\u0642\u0645 \u0627\u0644\u0644\u0648\u062d\u0629/\u0627\u0644\u0634\u0627\u0633\u064a\u0647" : "\u0627\u0644\u0631\u0642\u0645 \u0627\u0644\u062a\u0633\u0644\u0633\u064a/IMEI", FillWeight = 90 });
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Problem", HeaderText = isCar ? "\u0627\u0644\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629" : "\u0627\u0644\u0645\u0634\u0643\u0644\u0629", FillWeight = 130 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartsCost", HeaderText = "قطع الغيار (ج)", FillWeight = 60 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "LaborCost", HeaderText = "أجرة اليد (ج)", FillWeight = 60 });
             dgTickets.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cost", HeaderText = "الإجمالي (ج)", FillWeight = 60 });
@@ -412,18 +413,18 @@ namespace ChickenDist.Forms
                 Font fontVal = new Font("Segoe UI", 10f);
 
                 ev.Graphics.DrawString(company, fontTitle, Brushes.Black, new PointF(100, y)); y += 40;
-                ev.Graphics.DrawString("🧾 إيصال استلام صيانة جهاز", fontLabel, Brushes.Black, new PointF(80, y)); y += 30;
+                                ev.Graphics.DrawString(isCar ? "\u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629 \u0633\u064a\u0627\u0631\u0629 \u0648\u063a\u064a\u0627\u0631 \u0632\u064a\u062a" : "\ud83e\uddfe \u0625\u064a\u0635\u0627\u0644 \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u062c\u0647\u0627\u0632", fontLabel, Brushes.Black, new PointF(80, y)); y += 30;
                 ev.Graphics.DrawLine(Pens.Black, 20, y, 280, y); y += 15;
 
-                ev.Graphics.DrawString($"رقم التذكرة: {ticketID}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
-                ev.Graphics.DrawString($"التاريخ: {date}", fontVal, Brushes.Black, new PointF(20, y)); y += 22;
-                ev.Graphics.DrawString($"العميل: {name}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
-                if (!string.IsNullOrEmpty(phone)) { ev.Graphics.DrawString($"الهاتف: {phone}", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
+                ev.Graphics.DrawString(isCar ? $"\u0631\u0642\u0645 \u0627\u0644\u0643\u0631\u062a: {ticketID}" : $"\u0631\u0642\u0645 \u0627\u0644\u062a\u0630\u0643\u0631\u0629: {ticketID}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
+                ev.Graphics.DrawString($"\u0627\u0644\u062a\u0627\u0631\u064a\u062e: {date}", fontVal, Brushes.Black, new PointF(20, y)); y += 22;
+                ev.Graphics.DrawString($"\u0627\u0644\u0639\u0645\u064a\u0644: {name}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
+                if (!string.IsNullOrEmpty(phone)) { ev.Graphics.DrawString($"\u0627\u0644\u0647\u0627\u062a\u0641: {phone}", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
                 ev.Graphics.DrawLine(Pens.LightGray, 20, y, 280, y); y += 15;
 
-                ev.Graphics.DrawString($"الجهاز: {model}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
-                if (!string.IsNullOrEmpty(serial)) { ev.Graphics.DrawString($"IMEI/Serial: {serial}", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
-                ev.Graphics.DrawString($"المشكلة: {problem}", fontVal, Brushes.Black, new PointF(20, y)); y += 25;
+                ev.Graphics.DrawString(isCar ? $"\u0627\u0644\u0633\u064a\u0627\u0631\u0629: {model}" : $"\u0627\u0644\u062c\u0647\u0627\u0632: {model}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;
+                if (!string.IsNullOrEmpty(serial)) { ev.Graphics.DrawString(isCar ? $"\u0631\u0642\u0645 \u0627\u0644\u0644\u0648\u062d\u0629/\u0627\u0644\u0634\u0627\u0633\u064a\u0647: {serial}" : $"IMEI/Serial: {serial}", fontVal, Brushes.Black, new PointF(20, y)); y += 22; }
+                ev.Graphics.DrawString(isCar ? $"\u0627\u0644\u062e\u062f\u0645\u0629 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629: {problem}" : $"\u0627\u0644\u0645\u0634\u0643\u0644\u0629: {problem}", fontVal, Brushes.Black, new PointF(20, y)); y += 25;
                 
                 decimal.TryParse(partsCost, out decimal pc);
                 decimal.TryParse(laborCost, out decimal lc);

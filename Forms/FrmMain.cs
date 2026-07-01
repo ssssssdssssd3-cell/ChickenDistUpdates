@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -1149,11 +1149,11 @@ namespace ChickenDist.Forms
                 AddQuickButton(pnlActions, "🛒 فاتورة مبيعات تفصيلية", ref btnY, () => NavigateMain(new FrmSale()), Theme.Primary);
 
             // --- 2. أزرار مخصصة حسب نوع النشاط ---
-            if (AppConfig.BusinessType == "Mobiles")
+                        if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "CarService")
             {
-                // نشاط الهواتف المحمولة والصيانة
-                AddQuickButton(pnlActions, "🔧 شاشة ورشة الصيانة", ref btnY, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69)); // Bright Green
-                AddQuickButton(pnlActions, "📱 كارت الأصناف والسيريال", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
+                string mTitle = AppConfig.BusinessType == "CarService" ? "\ud83d\uddd2\ufe0f \u0635\u064a\u0627\u0646\u0629 \u0633\u064a\u0627\u0631\u0627\u062a \u0648\u063a\u064a\u0627\u0631 \u0632\u064a\u062a" : "\ud83d\uddd2\ufe0f \u0643\u0631\u0648\u062a \u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0623\u062c\u0647\u0632\u0629";
+                AddQuickButton(pnlActions, mTitle, ref btnY, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69)); // Bright Green
+                AddQuickButton(pnlActions, "\ud83d\udce6 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
             }
             else if (AppConfig.BusinessType == "Clothing")
             {
