@@ -505,7 +505,7 @@ namespace ChickenDist.Forms
 
             // Loyalty redemption
             decimal loyaltyDiscount = 0;
-            if (chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
             {
                 var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
                 decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
