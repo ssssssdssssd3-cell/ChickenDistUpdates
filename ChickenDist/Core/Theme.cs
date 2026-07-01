@@ -8,6 +8,25 @@ namespace ChickenDist.Core
     /// <summary>ألوان وأنماط النظام</summary>
     public static class Theme
     {
+        public static Image GetCompanyLogo()
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                using (var stream = assembly.GetManifestResourceStream("ChickenDist.pro_soft_logo.png"))
+                {
+                    if (stream != null)
+                    {
+                        using (var tempImg = Image.FromStream(stream))
+                        {
+                            return new Bitmap(tempImg);
+                        }
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
         // الألوان الرئيسية - زاهية وواضحة جداً وعالية التباين (Vibrant & High-Contrast Modern Palette)
         public static Color Primary    = Color.FromArgb(13, 110, 253);   // Royal Blue زرقاء زاهية
         public static Color Accent     = Color.FromArgb(253, 126, 20);   // Vibrant Orange برتقالي زاهي

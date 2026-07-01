@@ -8,18 +8,37 @@ namespace ChickenDist.Core
     /// <summary>ألوان وأنماط النظام</summary>
     public static class Theme
     {
-        // الألوان الرئيسية - هادئة ومريحة جداً للعين (Eye-Comfort Soft Palette)
-        public static Color Primary    = Color.FromArgb(45, 55, 72);    // Slate Blue / Navy هادئ
-        public static Color Accent     = Color.FromArgb(212, 163, 89);  // Sand Gold / ذهبي رملي ناعم غير متوهج
-        public static Color AccentDark = Color.FromArgb(180, 135, 20);
-        public static Color Success    = Color.FromArgb(46, 117, 89);   // Sage Green / أخضر هادئ
-        public static Color Danger     = Color.FromArgb(186, 73, 73);   // Terracotta Red / أحمر طوبي هادئ
-        public static Color BgLight    = Color.FromArgb(245, 247, 250); // رمادي-أزرق فاتح وناعم
+        public static Image GetCompanyLogo()
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                using (var stream = assembly.GetManifestResourceStream("ChickenDist.pro_soft_logo.png"))
+                {
+                    if (stream != null)
+                    {
+                        using (var tempImg = Image.FromStream(stream))
+                        {
+                            return new Bitmap(tempImg);
+                        }
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+        // الألوان الرئيسية - زاهية وواضحة جداً وعالية التباين (Vibrant & High-Contrast Modern Palette)
+        public static Color Primary    = Color.FromArgb(13, 110, 253);   // Royal Blue زرقاء زاهية
+        public static Color Accent     = Color.FromArgb(253, 126, 20);   // Vibrant Orange برتقالي زاهي
+        public static Color AccentDark = Color.FromArgb(217, 83, 79);
+        public static Color Success    = Color.FromArgb(25, 135, 84);    // Green خضراء زاهية
+        public static Color Danger     = Color.FromArgb(220, 53, 69);    // Red حمراء زاهية
+        public static Color BgLight    = Color.FromArgb(245, 247, 250);
         public static Color BgWhite    = Color.White;
-        public static Color TextDark   = Color.FromArgb(45, 55, 72);
-        public static Color TextGray   = Color.FromArgb(115, 125, 140);
-        public static Color Sidebar    = Color.FromArgb(240, 244, 248);
-        public static Color SidebarBtn = Color.FromArgb(25, 45, 55, 72);
+        public static Color TextDark   = Color.FromArgb(33, 37, 41);
+        public static Color TextGray   = Color.FromArgb(108, 117, 125);
+        public static Color Sidebar    = Color.FromArgb(248, 249, 250);
+        public static Color SidebarBtn = Color.FromArgb(25, 13, 110, 253);
 
         // ألوان النمط المختار ديناميكياً
         public static Color BgMain => AppConfig.AppTheme switch
@@ -412,6 +431,80 @@ namespace ChickenDist.Core
             };
 
             return panel;
+        }
+
+        public static void EnableDoubleBuffer(Control control)
+        {
+            try
+            {
+                typeof(Control).InvokeMember("DoubleBuffered",
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.SetProperty,
+                    null, control, new object[] { true });
+            }
+            catch { }
+        }
+
+        public static void AdjustGridHeaders(DataGridView grid)
+        {
+            foreach (DataGridViewColumn col in grid.Columns)
+            {
+                if (col.Name == "PartNumber")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "كود الموديل",
+                        "Clothing"  => "كود الموديل",
+                        "SpareParts" => "رقم القطعة",
+                        _           => "كود الصنف"
+                    };
+                }
+                else if (col.Name == "CarModel")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "التوافق",
+                        "Clothing"  => "المقاس",
+                        _           => "الموديل"
+                    };
+                }
+                else if (col.Name == "Brand")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الماركة",
+                        "Clothing"  => "اللون",
+                        _           => "الماركة"
+                    };
+                }
+                else if (col.Name == "ShelfLocation")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Clothing"  => "مكان العرض",
+                        _           => "الرف"
+                    };
+                }
+                else if (col.Name == "ProducerCompany" || col.Name == "ProducerName")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الشركة المصنعة",
+                        "Clothing"  => "الخامة",
+                        _           => "الشركة المنتجة"
+                    };
+                }
+                else if (col.Name == "ProductName")
+                {
+                    col.HeaderText = AppConfig.BusinessType switch
+                    {
+                        "Mobiles"   => "الجهاز / الصنف",
+                        "Clothing"  => "القطعة / الصنف",
+                        _           => "اسم الصنف"
+                    };
+                }
+            }
         }
     }
 }
