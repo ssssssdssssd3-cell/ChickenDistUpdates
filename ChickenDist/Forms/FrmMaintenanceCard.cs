@@ -230,6 +230,10 @@ namespace ChickenDist.Forms
                     nudLaborCost.Value = r.Table.Columns.Contains("LaborCost") && r["LaborCost"] != DBNull.Value ? Convert.ToDecimal(r["LaborCost"]) : 0m;
                     nudCost.Value = Convert.ToDecimal(r["Cost"]);
                     cboStatus.SelectedItem = r["Status"]?.ToString() ?? "قيد الإصلاح";
+                    if (cboStatus.SelectedItem?.ToString() == "تم التسليم")
+                    {
+                        cboStatus.Enabled = false;
+                    }
                     txtWarrantyPeriod.Text = r.Table.Columns.Contains("WarrantyPeriod") && r["WarrantyPeriod"] != DBNull.Value ? r["WarrantyPeriod"].ToString() : "بدون ضمان";
                     txtNotes.Text = r["Notes"]?.ToString() ?? "";
                 }
