@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
@@ -919,13 +919,15 @@ namespace ChickenDist.Forms
                 "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
                 "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
                 "ملابس وأحذية (المقاس، اللون، الخامة)",
-                "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)"
+                "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
+                "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)"
             });
             cboBusinessType.SelectedItem = AppConfig.BusinessType switch
             {
                 "SpareParts" => "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
                 "Mobiles"    => "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
                 "Clothing"   => "ملابس وأحذية (المقاس، اللون، الخامة)",
+                "CarService" => "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)",
                 "General"    => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
                 _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
@@ -948,6 +950,7 @@ namespace ChickenDist.Forms
                     1 => "SpareParts",
                     2 => "Mobiles",
                     3 => "Clothing",
+                    5 => "CarService",
                     4 => "General",
                     _ => "Supermarket"
                 };
