@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -87,8 +87,8 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(btnSearchClient);
 
-            txtCustomerName = new TextBox { Location = new Point(60, y), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtCustomerName = new TextBox { Location = new Point(60, y), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtCustomerPhone = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.AddRange(new Control[] { txtCustomerName, txtCustomerPhone });
             y += 35;
 
@@ -98,8 +98,8 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { lblDevModel, lblDevSerial });
             y += 22;
 
-            txtDeviceModel = new TextBox { Location = new Point(20, y), Width = 190, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
-            txtDeviceSerial = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtDeviceModel = new TextBox { Location = new Point(20, y), Width = 190, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtDeviceSerial = new TextBox { Location = new Point(230, y), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.AddRange(new Control[] { txtDeviceModel, txtDeviceSerial });
             y += 35;
 
@@ -108,7 +108,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblProblem);
             y += 22;
 
-            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
+            txtProblem = new TextBox { Location = new Point(20, y), Width = 420, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextDark, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontNormal };
             this.Controls.Add(txtProblem);
             y += 50;
 
@@ -124,8 +124,7 @@ namespace ChickenDist.Forms
                 Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
                 Font = Theme.FontNormal
             };
             nudPartsCost.ValueChanged += (s, e) => UpdateTotalCost();
@@ -137,8 +136,7 @@ namespace ChickenDist.Forms
                 Width = 210, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
                 Font = Theme.FontNormal
             };
             nudLaborCost.ValueChanged += (s, e) => UpdateTotalCost();
@@ -157,8 +155,7 @@ namespace ChickenDist.Forms
                 Width = 190, 
                 Maximum = 100000, 
                 DecimalPlaces = 2, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
                 Font = Theme.FontNormal,
                 Enabled = false
             };
@@ -190,8 +187,7 @@ namespace ChickenDist.Forms
                 Width = 190,
                 Maximum = 100000,
                 DecimalPlaces = 2,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark,
                 Font = Theme.FontNormal
             };
             this.Controls.Add(nudPrepaidAmount);
@@ -200,8 +196,7 @@ namespace ChickenDist.Forms
             { 
                 Location = new Point(230, y), 
                 Width = 210, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = Theme.FontNormal 
             };
@@ -218,8 +213,7 @@ namespace ChickenDist.Forms
             { 
                 Location = new Point(20, y), 
                 Width = 420, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
+                BackColor = Theme.BgInput, ForeColor = Theme.TextDark, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = Theme.FontNormal 
             };
