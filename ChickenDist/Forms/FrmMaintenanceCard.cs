@@ -20,6 +20,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudPartsCost;
         private NumericUpDown nudLaborCost;
         private TextBox txtWarrantyPeriod;
+        private NumericUpDown nudPrepaidAmount;
         private Button btnSave;
         private Button btnCancel;
         private int _ticketID = 0;
@@ -37,7 +38,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _ticketID > 0 ? "تعديل تذكرة الصيانة" : "إضافة تذكرة صيانة جديدة";
-            this.Size = new Size(480, 550);
+            this.Size = new Size(480, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -149,16 +150,28 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboStatus);
             y += 35;
 
-            // --- Warranty Period & Notes (Side by Side) ---
-            var lblWarranty = new Label { Text = "مدة الضمان بعد الإصلاح:", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            var lblNotes = new Label { Text = "ملاحظات إضافية:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
-            this.Controls.AddRange(new Control[] { lblWarranty, lblNotes });
+            // --- Prepaid Amount & Warranty Period (Side by Side) ---
+            var lblPrepaid = new Label { Text = "المدفوع مقدماً / العربون (ج):", Location = new Point(20, y), Width = 190, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            var lblWarranty = new Label { Text = "مدة الضمان بعد الإصلاح:", Location = new Point(230, y), Width = 210, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.AddRange(new Control[] { lblPrepaid, lblWarranty });
             y += 22;
+
+            nudPrepaidAmount = new NumericUpDown
+            {
+                Location = new Point(20, y),
+                Width = 190,
+                Maximum = 100000,
+                DecimalPlaces = 2,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontNormal
+            };
+            this.Controls.Add(nudPrepaidAmount);
 
             txtWarrantyPeriod = new TextBox 
             { 
-                Location = new Point(20, y), 
-                Width = 190, 
+                Location = new Point(230, y), 
+                Width = 210, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
@@ -166,11 +179,17 @@ namespace ChickenDist.Forms
             };
             txtWarrantyPeriod.Text = "بدون ضمان";
             this.Controls.Add(txtWarrantyPeriod);
+            y += 35;
+
+            // --- Notes (Wide) ---
+            var lblNotes = new Label { Text = "ملاحظات إضافية:", Location = new Point(20, y), Width = 420, Height = 18, ForeColor = Theme.TextMain, Font = Theme.FontBold, TextAlign = ContentAlignment.TopRight };
+            this.Controls.Add(lblNotes);
+            y += 22;
 
             txtNotes = new TextBox 
             { 
-                Location = new Point(230, y), 
-                Width = 210, 
+                Location = new Point(20, y), 
+                Width = 420, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
@@ -234,6 +253,7 @@ namespace ChickenDist.Forms
                     {
                         cboStatus.Enabled = false;
                     }
+                    nudPrepaidAmount.Value = r.Table.Columns.Contains("PrepaidAmount") && r["PrepaidAmount"] != DBNull.Value ? Convert.ToDecimal(r["PrepaidAmount"]) : 0m;
                     txtWarrantyPeriod.Text = r.Table.Columns.Contains("WarrantyPeriod") && r["WarrantyPeriod"] != DBNull.Value ? r["WarrantyPeriod"].ToString() : "بدون ضمان";
                     txtNotes.Text = r["Notes"]?.ToString() ?? "";
                 }
@@ -256,6 +276,7 @@ namespace ChickenDist.Forms
                 {
                     bool shouldLogIncome = false;
                     decimal cost = nudCost.Value;
+                    decimal newPrepaid = nudPrepaidAmount.Value;
 
                     if (_ticketID == 0)
                     {
@@ -265,8 +286,8 @@ namespace ChickenDist.Forms
                         }
 
                         int ticketID = DbHelper.ExecuteInsertTrans(trans, @"
-                            INSERT INTO MaintenanceTickets (CustomerName, CustomerPhone, DeviceModel, DeviceSerial, Problem, Cost, Status, Notes, PartsCost, LaborCost, WarrantyPeriod)
-                            VALUES (@name, @phone, @model, @serial, @prob, @cost, @status, @notes, @parts, @labor, @warranty)",
+                            INSERT INTO MaintenanceTickets (CustomerName, CustomerPhone, DeviceModel, DeviceSerial, Problem, Cost, Status, Notes, PartsCost, LaborCost, WarrantyPeriod, PrepaidAmount)
+                            VALUES (@name, @phone, @model, @serial, @prob, @cost, @status, @notes, @parts, @labor, @warranty, @prepaid)",
                             DbHelper.P("@name", txtCustomerName.Text.Trim()),
                             DbHelper.P("@phone", txtCustomerPhone.Text.Trim()),
                             DbHelper.P("@model", txtDeviceModel.Text.Trim()),
@@ -277,23 +298,47 @@ namespace ChickenDist.Forms
                             DbHelper.P("@notes", txtNotes.Text.Trim()),
                             DbHelper.P("@parts", nudPartsCost.Value),
                             DbHelper.P("@labor", nudLaborCost.Value),
-                            DbHelper.P("@warranty", txtWarrantyPeriod.Text.Trim()));
+                            DbHelper.P("@warranty", txtWarrantyPeriod.Text.Trim()),
+                            DbHelper.P("@prepaid", newPrepaid));
 
-                        if (shouldLogIncome && ticketID > 0)
+                        if (ticketID > 0)
                         {
-                            DbHelper.ExecuteTrans(trans, @"
-                                INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
-                                VALUES (GETDATE(), 'Maintenance', @notes, @amt, 0, @ref, @emp, 1)",
-                                DbHelper.P("@notes", $"تحصيل صيانة تذكرة #{ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
-                                DbHelper.P("@amt", cost),
-                                DbHelper.P("@ref", ticketID),
-                                DbHelper.P("@emp", Session.EmpID));
+                            // Log the initial prepaid deposit
+                            if (newPrepaid > 0)
+                            {
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
+                                    VALUES (GETDATE(), 'MaintenanceDeposit', @notes, @amt, 0, @ref, @emp, 1)",
+                                    DbHelper.P("@notes", $"عربون صيانة تذكرة #{ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
+                                    DbHelper.P("@amt", newPrepaid),
+                                    DbHelper.P("@ref", ticketID),
+                                    DbHelper.P("@emp", Session.EmpID));
+                            }
+
+                            // Log final collection if delivered
+                            if (shouldLogIncome)
+                            {
+                                decimal remainingAmt = cost - newPrepaid;
+                                if (remainingAmt > 0)
+                                {
+                                    DbHelper.ExecuteTrans(trans, @"
+                                        INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
+                                        VALUES (GETDATE(), 'Maintenance', @notes, @amt, 0, @ref, @emp, 1)",
+                                        DbHelper.P("@notes", $"تحصيل نهائي صيانة تذكرة #{ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
+                                        DbHelper.P("@amt", remainingAmt),
+                                        DbHelper.P("@ref", ticketID),
+                                        DbHelper.P("@emp", Session.EmpID));
+                                }
+                            }
                         }
                     }
                     else
                     {
                         object oldStatusObj = DbHelper.ScalarTrans(trans, "SELECT Status FROM MaintenanceTickets WHERE TicketID = @tid", DbHelper.P("@tid", _ticketID));
                         string oldStatus = oldStatusObj != null ? oldStatusObj.ToString() : "";
+
+                        object opObj = DbHelper.ScalarTrans(trans, "SELECT PrepaidAmount FROM MaintenanceTickets WHERE TicketID = @tid", DbHelper.P("@tid", _ticketID));
+                        decimal oldPrepaid = opObj != null ? Convert.ToDecimal(opObj) : 0m;
 
                         if (oldStatus != "تم التسليم" && cboStatus.SelectedItem.ToString() == "تم التسليم" && cost > 0)
                         {
@@ -304,7 +349,7 @@ namespace ChickenDist.Forms
                             UPDATE MaintenanceTickets 
                             SET CustomerName = @name, CustomerPhone = @phone, DeviceModel = @model, DeviceSerial = @serial, 
                                 Problem = @prob, Cost = @cost, Status = @status, Notes = @notes,
-                                PartsCost = @parts, LaborCost = @labor, WarrantyPeriod = @warranty
+                                PartsCost = @parts, LaborCost = @labor, WarrantyPeriod = @warranty, PrepaidAmount = @prepaid
                             WHERE TicketID = @tid",
                             DbHelper.P("@name", txtCustomerName.Text.Trim()),
                             DbHelper.P("@phone", txtCustomerPhone.Text.Trim()),
@@ -317,17 +362,49 @@ namespace ChickenDist.Forms
                             DbHelper.P("@parts", nudPartsCost.Value),
                             DbHelper.P("@labor", nudLaborCost.Value),
                             DbHelper.P("@warranty", txtWarrantyPeriod.Text.Trim()),
+                            DbHelper.P("@prepaid", newPrepaid),
                             DbHelper.P("@tid", _ticketID));
 
+                        // Log deposit updates
+                        decimal prepaidDiff = newPrepaid - oldPrepaid;
+                        if (prepaidDiff != 0)
+                        {
+                            if (prepaidDiff > 0)
+                            {
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
+                                    VALUES (GETDATE(), 'MaintenanceDeposit', @notes, @amt, 0, @ref, @emp, 1)",
+                                    DbHelper.P("@notes", $"تعديل عربون (زيادة) تذكرة #{_ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
+                                    DbHelper.P("@amt", prepaidDiff),
+                                    DbHelper.P("@ref", _ticketID),
+                                    DbHelper.P("@emp", Session.EmpID));
+                            }
+                            else
+                            {
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
+                                    VALUES (GETDATE(), 'MaintenanceDepositRefund', @notes, 0, @amt, @ref, @emp, 1)",
+                                    DbHelper.P("@notes", $"تعديل عربون (استرداد) تذكرة #{_ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
+                                    DbHelper.P("@amt", -prepaidDiff),
+                                    DbHelper.P("@ref", _ticketID),
+                                    DbHelper.P("@emp", Session.EmpID));
+                            }
+                        }
+
+                        // Log final collection if newly delivered
                         if (shouldLogIncome)
                         {
-                            DbHelper.ExecuteTrans(trans, @"
-                                INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
-                                VALUES (GETDATE(), 'Maintenance', @notes, @amt, 0, @ref, @emp, 1)",
-                                DbHelper.P("@notes", $"تحصيل صيانة تذكرة #{_ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
-                                DbHelper.P("@amt", cost),
-                                DbHelper.P("@ref", _ticketID),
-                                DbHelper.P("@emp", Session.EmpID));
+                            decimal remainingAmt = cost - newPrepaid;
+                            if (remainingAmt > 0)
+                            {
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO CashBox (TransDate, TransType, Notes, AmountIn, AmountOut, RefID, CreatedBy, AccountID)
+                                    VALUES (GETDATE(), 'Maintenance', @notes, @amt, 0, @ref, @emp, 1)",
+                                    DbHelper.P("@notes", $"تحصيل نهائي صيانة تذكرة #{_ticketID} - جهاز {txtDeviceModel.Text.Trim()}"),
+                                    DbHelper.P("@amt", remainingAmt),
+                                    DbHelper.P("@ref", _ticketID),
+                                    DbHelper.P("@emp", Session.EmpID));
+                            }
                         }
                     }
                 });

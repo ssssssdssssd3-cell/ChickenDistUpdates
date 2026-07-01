@@ -1766,6 +1766,12 @@ namespace ChickenDist.Core
                     IF COL_LENGTH('MaintenanceTickets','LaborCost') IS NULL ALTER TABLE MaintenanceTickets ADD LaborCost DECIMAL(18, 2) NOT NULL DEFAULT 0;
                     IF COL_LENGTH('MaintenanceTickets','WarrantyPeriod') IS NULL ALTER TABLE MaintenanceTickets ADD WarrantyPeriod NVARCHAR(100) NULL;
                 END");
+
+                SafeMigrate("MaintenanceTickets.PrepaidAmount", @"
+                IF OBJECT_ID('MaintenanceTickets','U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('MaintenanceTickets','PrepaidAmount') IS NULL ALTER TABLE MaintenanceTickets ADD PrepaidAmount DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                END");
             }
             catch (Exception ex)
             {

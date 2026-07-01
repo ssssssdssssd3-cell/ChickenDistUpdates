@@ -14,11 +14,13 @@ namespace ChickenDist.Forms
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
+        private Timer tmrPeriodicBackup;
 
         public FrmMain()
         {
             InitializeComponent();
             NavigateTo(new FrmDashboard());
+            InitializePeriodicBackup();
         }
 
         private void InitializeComponent()
@@ -54,7 +56,7 @@ namespace ChickenDist.Forms
             var pnlProfile = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 300,
+                Width = 420,
                 Padding = new Padding(10, 16, 10, 16),
                 BackColor = Color.Transparent
             };
@@ -80,6 +82,21 @@ namespace ChickenDist.Forms
                 } 
             };
 
+            var btnHelpTop = new Button
+            {
+                Text = "🤖 الدعم الفني",
+                Width = 110,
+                Dock = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(160, 80, 180),
+                ForeColor = Color.White,
+                Font = Theme.FontBold,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5, 0, 0, 0)
+            };
+            btnHelpTop.FlatAppearance.BorderSize = 0;
+            btnHelpTop.Click += (s, e) => new FrmSupportBot().ShowDialog();
+
             this.lblUserInfo = new Label
             {
                 Text = $"👤 {Session.EmpName}  |  💼 {Session.Role}",
@@ -91,6 +108,7 @@ namespace ChickenDist.Forms
             };
 
             pnlProfile.Controls.Add(lblUserInfo);
+            pnlProfile.Controls.Add(btnHelpTop);
             pnlProfile.Controls.Add(btnLogoutTop);
 
             this.lblTitle = new Label
@@ -310,7 +328,7 @@ namespace ChickenDist.Forms
         {
             pnlNavBar.Controls.Clear();
 
-            var groups = new (string icon, string label, Color color, (string text, string screen, Action action)[] items)[]
+            var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
                     ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
@@ -340,7 +358,7 @@ namespace ChickenDist.Forms
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
-                    ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
                     ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
                     ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
                     ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
@@ -377,6 +395,7 @@ namespace ChickenDist.Forms
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 التقارير المالية", "Reports",   (Action)(() => NavigateTo(new FrmReports("Financials")))),
+                    ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -389,6 +408,13 @@ namespace ChickenDist.Forms
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
+
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
+                    ("🔧 تذاكر الصيانة", "", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                }));
+            }
 
             foreach (var group in groups)
             {
@@ -503,7 +529,14 @@ namespace ChickenDist.Forms
         public void NavigateTo(Form form)
         {
             if (_currentChild != null && !_currentChild.IsDisposed)
+            {
                 _currentChild.Close();
+                if (!_currentChild.IsDisposed)
+                {
+                    // The child form cancelled closing (e.g. user chose DialogResult.No on dirty invoice)
+                    return;
+                }
+            }
 
             _currentChild = form;
             form.TopLevel = false;
@@ -926,6 +959,80 @@ namespace ChickenDist.Forms
             }
             return false;
         }
+
+        private void InitializePeriodicBackup()
+        {
+            try
+            {
+                int intervalHours = AppConfig.BackupIntervalHours;
+                if (intervalHours > 0)
+                {
+                    // Run immediate check in a separate task/thread to keep startup fast
+                    System.Threading.Tasks.Task.Run(() => CheckAndRunPeriodicBackup(true));
+
+                    tmrPeriodicBackup = new Timer();
+                    tmrPeriodicBackup.Interval = 5 * 60 * 1000; // Check every 5 minutes
+                    tmrPeriodicBackup.Tick += (s, e) => CheckAndRunPeriodicBackup(false);
+                    tmrPeriodicBackup.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Init periodic backup failed: " + ex.Message);
+            }
+        }
+
+        private void CheckAndRunPeriodicBackup(bool isStartup)
+        {
+            try
+            {
+                int intervalHours = AppConfig.BackupIntervalHours;
+                if (intervalHours <= 0) return;
+
+                string folder = BackupManager.BackupFolder;
+                if (string.IsNullOrWhiteSpace(folder) || !System.IO.Directory.Exists(folder))
+                {
+                    if (isStartup)
+                    {
+                        this.BeginInvoke((MethodInvoker)(() =>
+                        {
+                            MessageBox.Show(
+                                "⚠️ تنبيه: النسخ الاحتياطي الدوري مفعل ولكن مجلد النسخ الاحتياطي غير موجود أو غير صالح.\nيرجى تحديد مسار مجلد صحيح من شاشة الإعدادات.",
+                                "تنبيه النسخ الاحتياطي",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        }));
+                    }
+                    return;
+                }
+
+                var last = BackupManager.LastBackupTime;
+                if (last == null || (DateTime.Now - last.Value).TotalHours >= intervalHours)
+                {
+                    // Run backup
+                    bool success = BackupManager.DoBackup(silent: true);
+                    if (success && isStartup)
+                    {
+                        this.BeginInvoke((MethodInvoker)(() =>
+                        {
+                            MessageBox.Show(
+                                "✅ تم عمل نسخة احتياطية دورية تلقائية لقاعدة البيانات بنجاح عند تشغيل النظام.",
+                                "النسخ الاحتياطي التلقائي",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        }));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("CheckAndRunPeriodicBackup failed", ex, "PeriodicBackup");
+            }
+        }
     }
 
     // ===== Dashboard =====
@@ -972,24 +1079,37 @@ namespace ChickenDist.Forms
 
             try
             {
-                decimal cashBal = AccountDAL.GetCashBalance();
-                var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
-                decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
-                var openLoads = DriverDAL.GetOpenLoads();
-                int belowMinCount = InventoryDAL.GetBelowMinStockCount();
-
-                pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
-                pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
-                pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
-
-                var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
-                cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                foreach (Control child in cardBelowMin.Controls)
+                if (Session.CanAccess("DashTreasury"))
                 {
-                    child.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                    child.Cursor = Cursors.Hand;
+                    decimal cashBal = AccountDAL.GetCashBalance();
+                    pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
                 }
-                pnlCards.Controls.Add(cardBelowMin);
+
+                if (Session.CanAccess("DashSales"))
+                {
+                    var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
+                    decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
+                    pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
+                }
+
+                if (Session.CanAccess("DashLoads"))
+                {
+                    var openLoads = DriverDAL.GetOpenLoads();
+                    pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
+                }
+
+                if (Session.CanAccess("DashBelowMin"))
+                {
+                    int belowMinCount = InventoryDAL.GetBelowMinStockCount();
+                    var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
+                    cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                    foreach (Control child in cardBelowMin.Controls)
+                    {
+                        child.Click += (s, e) => NavigateMain(new FrmInventory(true));
+                        child.Cursor = Cursors.Hand;
+                    }
+                    pnlCards.Controls.Add(cardBelowMin);
+                }
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
             mainTbl.Controls.Add(pnlCards, 0, 1);
@@ -1013,19 +1133,58 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15),
-                Margin = new Padding(15, 0, 8, 15)
+                Margin = new Padding(15, 0, 8, 15),
+                AutoScroll = true
             };
             var lblActTitle = new Label { Text = "⚡ إجراءات سريعة", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
             pnlActions.Controls.Add(lblActTitle);
 
             int btnY = 55;
-            if (Session.CanAccess("Sales")) AddQuickButton(pnlActions, "🛒 فاتورة مبيعات جديدة", ref btnY, () => NavigateMain(new FrmSale()), Theme.Accent);
-            if (Session.CanAccess("Vehicles")) AddQuickButton(pnlActions, "🚗 المركبات والتحميل", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(55, 135, 195));
-            if (Session.CanAccess("DriverHandover")) AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Theme.Primary);
-            if (Session.CanAccess("CashBox")) AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Theme.Success);
-            if (Session.CanAccess("Inventory")) AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(120, 120, 80));
-            if (Session.CanAccess("Clients")) AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(100, 100, 150));
-            if (Session.CanAccess("Reports")) AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(150, 100, 100));
+
+            // --- 1. الأزرار العامة لجميع الأنشطة ---
+            if (Session.CanAccess("POS")) 
+                AddQuickButton(pnlActions, "💻 نقطة البيع السريع POS", ref btnY, () => { var f = new FrmPOS(); f.ShowDialog(); }, Theme.Accent);
+            
+            if (Session.CanAccess("Sales")) 
+                AddQuickButton(pnlActions, "🛒 فاتورة مبيعات تفصيلية", ref btnY, () => NavigateMain(new FrmSale()), Theme.Primary);
+
+            // --- 2. أزرار مخصصة حسب نوع النشاط ---
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                // نشاط الهواتف المحمولة والصيانة
+                AddQuickButton(pnlActions, "🔧 شاشة ورشة الصيانة", ref btnY, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69)); // Bright Green
+                AddQuickButton(pnlActions, "📱 كارت الأصناف والسيريال", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
+            }
+            else if (AppConfig.BusinessType == "Clothing")
+            {
+                // نشاط الملابس والأحذية
+                AddQuickButton(pnlActions, "👕 مصفوفة مقاسات وألوان الملابس", ref btnY, () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253)); // Purple/Pink
+                AddQuickButton(pnlActions, "🏷️ طباعة الباركود والملصقات", ref btnY, () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184)); // Bright Cyan
+            }
+            else
+            {
+                // الأنشطة العامة والتوزيع وقطع الغيار
+                if (Session.CanAccess("Vehicles")) 
+                    AddQuickButton(pnlActions, "🚗 المركبات وحركة السيارات", ref btnY, () => NavigateMain(new FrmVehicles()), Color.FromArgb(59, 130, 246)); // Vibrant Blue
+                if (Session.CanAccess("DriverHandover")) 
+                    AddQuickButton(pnlActions, "🚚 تسليم حمولة مندوب", ref btnY, () => NavigateMain(new FrmDriverHandover()), Color.FromArgb(108, 117, 125)); // Gray
+                if (Session.CanAccess("CashBox")) 
+                    AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69)); // Bright Green
+                if (Session.CanAccess("Inventory")) 
+                    AddQuickButton(pnlActions, "📦 جرد وتعديل الأسعار", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(253, 126, 20)); // Vibrant Orange
+            }
+
+            // --- 3. أزرار عامة للحسابات والتقارير ---
+            if (Session.CanAccess("Clients")) 
+                AddQuickButton(pnlActions, "👥 كشف حساب العملاء", ref btnY, () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193)); // Purple
+            
+            if (Session.CanAccess("Reports")) 
+                AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(220, 53, 69)); // Bright Red
+
+            if (Session.CanAccess("Reports")) 
+                AddQuickButton(pnlActions, "📊 الموقف المالي للمكان", ref btnY, () => NavigateMain(new FrmFinancialPosition()), Color.FromArgb(23, 162, 184)); // Info Blue
+
+            AddQuickButton(pnlActions, "🤖 مساعد الدعم الفني", ref btnY, () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
 

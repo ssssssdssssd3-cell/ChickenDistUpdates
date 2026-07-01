@@ -29,13 +29,15 @@ namespace ChickenDist.Forms
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
+        private ComboBox cboBackupInterval;
         private TextBox txtWhatsAppPhone;
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
         private ComboBox cboAppTheme;
+        private ComboBox cboBusinessType;
 
-        // Loyalty & Shift controls
-        private CheckBox chkLoyaltyEnabled, chkShiftRequired;
+        // Loyalty & Shifts Settings
+        private CheckBox chkLoyaltyEnabled, chkShiftRequired, chkAllowSellExpired;
         private TextBox txtLoyaltyRate, txtRedemptionRate;
 
         // Scale & Barcode controls
@@ -640,6 +642,40 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkBackupOnExit);
             y += 30;
 
+            // خيار النسخ الاحتياطي الدوري
+            AddLabel("النسخ الاحتياطي الدوري التلقائي (كل فترة محددة):", 20, ref y, 0);
+            cboBackupInterval = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 380,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboBackupInterval.Items.Add(new ComboItem(0, "🛑 إيقاف النسخ الاحتياطي الدوري"));
+            cboBackupInterval.Items.Add(new ComboItem(2, "⏱️ كل ساعتين (موصى به)"));
+            cboBackupInterval.Items.Add(new ComboItem(6, "⏱️ كل 6 ساعات"));
+            cboBackupInterval.Items.Add(new ComboItem(12, "⏱️ كل 12 ساعة"));
+            cboBackupInterval.Items.Add(new ComboItem(24, "⏱️ كل 24 ساعة (يومياً)"));
+
+            cboBackupInterval.DisplayMember = "Text";
+            cboBackupInterval.ValueMember = "ID";
+            cboBackupInterval.SelectedIndex = 0;
+
+            int currentInterval = AppConfig.BackupIntervalHours;
+            for (int i = 0; i < cboBackupInterval.Items.Count; i++)
+            {
+                if (cboBackupInterval.Items[i] is ComboItem ci && ci.ID == currentInterval)
+                {
+                    cboBackupInterval.SelectedIndex = i;
+                    break;
+                }
+            }
+            this.Controls.Add(cboBackupInterval);
+            y += 38;
+
             // خيار تفعيل تتبع الفوارغ والوزن الفارغ
             chkEnableCrates = new CheckBox
             {
@@ -695,6 +731,18 @@ namespace ChickenDist.Forms
                 Checked = AppConfig.ShiftRequired
             };
             this.Controls.Add(chkShiftRequired);
+            y += 30;
+
+            // ===== إعداد بيع منتهي الصلاحية =====
+            chkAllowSellExpired = new CheckBox
+            {
+                Text = "السماح ببيع الأصناف منتهية الصلاحية",
+                Location = new Point(20, y),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.AllowSellExpired
+            };
+            this.Controls.Add(chkAllowSellExpired);
             y += 35;
 
             // مسار مجلد سحابي محلي
@@ -854,6 +902,36 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboAppTheme);
             y += 45;
 
+            // ── نوع نشاط البرنامج (Business Activity Type) ───────────────────────────
+            AddLabel("نوع النشاط التجاري (لتخصيص الحقول المناسبة):", 20, ref y, 15);
+            cboBusinessType = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboBusinessType.Items.AddRange(new object[]
+            {
+                "سوبر ماركت (المواد الغذائية والصلاحية)",
+                "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
+                "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
+                "ملابس وأحذية (المقاس، اللون، الخامة)",
+                "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)"
+            });
+            cboBusinessType.SelectedItem = AppConfig.BusinessType switch
+            {
+                "SpareParts" => "قطع غيار سيارات (أرقام قطع OEM والموديلات)",
+                "Mobiles"    => "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
+                "Clothing"   => "ملابس وأحذية (المقاس، اللون، الخامة)",
+                "General"    => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
+                _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
+            };
+            this.Controls.Add(cboBusinessType);
+            y += 45;
+
             // ── زر الحفظ الرئيسي ──────────────────────────────────
             var btnSave = Theme.MakeButton("💾 حفظ الإعدادات", 20, y, 180, 44, Theme.Accent);
             btnSave.Click += (s, e) =>
@@ -865,6 +943,14 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.BusinessType = cboBusinessType.SelectedIndex switch
+                {
+                    1 => "SpareParts",
+                    2 => "Mobiles",
+                    3 => "Clothing",
+                    4 => "General",
+                    _ => "Supermarket"
+                };
                 AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
                 AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
@@ -896,6 +982,10 @@ namespace ChickenDist.Forms
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
+                if (cboBackupInterval.SelectedItem is ComboItem ciInterval)
+                {
+                    AppConfig.BackupIntervalHours = ciInterval.ID;
+                }
                 AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
 
                 // Loyalty & Shift settings
@@ -903,6 +993,7 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(txtLoyaltyRate.Text, out decimal lr)) AppConfig.LoyaltyPointsPerCurrency = lr;
                 if (decimal.TryParse(txtRedemptionRate.Text, out decimal rr)) AppConfig.LoyaltyRedemptionRate = rr;
                 AppConfig.ShiftRequired = chkShiftRequired.Checked;
+                AppConfig.AllowSellExpired = chkAllowSellExpired.Checked;
 
 
                 // Save Theme
