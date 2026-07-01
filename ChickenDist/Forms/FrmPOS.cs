@@ -130,6 +130,7 @@ namespace ChickenDist.Forms
             cboClient.SelectedIndexChanged += CboClient_Changed;
             lblClientPoints = new Label { Text = "", Location = new Point(280, 5), Size = new Size(130, 25), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             chkRedeemPoints = new CheckBox { Text = "استرداد نقاط", Location = new Point(280, 28), Size = new Size(120, 22), ForeColor = Theme.TextMain, Font = Theme.FontMain, Checked = false };
+            chkRedeemPoints.CheckedChanged += (s, e) => RefreshGrid();
             pnlClient.Controls.Add(lClient);
             pnlClient.Controls.Add(cboClient);
             pnlClient.Controls.Add(lblClientPoints);
@@ -482,9 +483,18 @@ namespace ChickenDist.Forms
                 dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.Total.ToString("N2"));
                 total += item.Total;
             }
-            lblTotal.Text = $"الإجمالي: {total:N2} ج";
+
+            decimal loyaltyDiscount = 0;
+            if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
+                decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
+                loyaltyDiscount = Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
+            }
+
+            lblTotal.Text = $"الإجمالي: {(total - loyaltyDiscount):N2} ج";
             lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {_items.ConvertAll(i => i.Qty).FindAll(q => q > 0).Count}";
-            txtPaid.Text = total.ToString("N2");
+            txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
         }
 
@@ -696,10 +706,34 @@ namespace ChickenDist.Forms
                     }
 
                     // 3. CashBox entry
+                    decimal cashPaidVal = decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal pdVal) ? pdVal : total;
                     DbHelper.ExecuteInsertTrans(trans,
                         "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,1)",
-                        DbHelper.P("@desc", $"فاتورة POS #{saleCode}"), DbHelper.P("@amt", total),
+                        DbHelper.P("@desc", $"فاتورة POS #{saleCode}"), DbHelper.P("@amt", cashPaidVal),
                         DbHelper.P("@ref", saleID), DbHelper.P("@emp", Session.EmpID));
+
+                    // Client ledger statement entries
+                    if (clientID > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions (ClientID, TransDate, TransType, Debit, RefID, Notes, CreatedBy) VALUES (@cid, GETDATE(), 'Sale', @amt, @ref, @notes, @by)",
+                            DbHelper.P("@cid", clientID),
+                            DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", saleID),
+                            DbHelper.P("@notes", $"فاتورة POS #{saleCode}"),
+                            DbHelper.P("@by", Session.EmpID));
+
+                        if (cashPaidVal > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions (ClientID, TransDate, TransType, Credit, RefID, Notes, CreatedBy) VALUES (@cid, GETDATE(), 'Payment', @amt, @ref, @notes, @by)",
+                                DbHelper.P("@cid", clientID),
+                                DbHelper.P("@amt", cashPaidVal),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"سداد نقدي فاتورة POS #{saleCode}"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
 
                     // 4. Loyalty points
                     if (AppConfig.LoyaltyEnabled && clientID > 0)
@@ -925,6 +959,7 @@ namespace ChickenDist.Forms
                 lblClientPoints.Text = $"🎁 {points:N0} نقطة";
             }
             else { lblClientPoints.Text = ""; }
+            RefreshGrid();
         }
 
         private void LoadStockCache()

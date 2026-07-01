@@ -94,7 +94,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain
             };
-            cboSource.Items.AddRange(new object[] { "الكل", "كارت الصنف", "فاتورة شراء", "فاتورة بيع" });
+            cboSource.Items.AddRange(new object[] { "الكل", "كارت الصنف", "فاتورة شراء", "فاتورة بيع", "جرد وتعديل الأسعار" });
             cboSource.SelectedIndex = 0;
             pnlTop.Controls.Add(cboSource);
 
@@ -189,6 +189,7 @@ namespace ChickenDist.Forms
             if (cboSource.SelectedIndex == 1) sourceFilter = "ProductCard";
             else if (cboSource.SelectedIndex == 2) sourceFilter = "PurchaseInvoice";
             else if (cboSource.SelectedIndex == 3) sourceFilter = "SalesInvoice";
+            else if (cboSource.SelectedIndex == 4) sourceFilter = "InventoryAdjust";
 
             string searchPattern = txtSearch.Text.Trim();
 
@@ -231,6 +232,7 @@ namespace ChickenDist.Forms
                 if (src == "ProductCard") srcArabic = "كارت الصنف";
                 else if (src == "PurchaseInvoice") srcArabic = "فاتورة شراء";
                 else if (src == "SalesInvoice") srcArabic = "فاتورة بيع";
+                else if (src == "InventoryAdjust") srcArabic = "جرد وتعديل الأسعار";
                 else srcArabic = src;
 
                 string refCode = "";

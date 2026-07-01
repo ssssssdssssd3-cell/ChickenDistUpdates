@@ -62,7 +62,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "جرد ومراقبة المخزن";
+            this.Text = "جرد وتعديل الأسعار";
             this.Size = new Size(1050, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -71,7 +71,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             tabMain = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontMain };
-            tabStock = new TabPage("📦 الجرد الفعلي وتسوية الكميات") { BackColor = Theme.BgMain };
+            tabStock = new TabPage("📦 جرد وتعديل أسعار الأصناف") { BackColor = Theme.BgMain };
             tabLogs = new TabPage("📜 سجل تسويات الجرد") { BackColor = Theme.BgMain };
             tabMain.TabPages.AddRange(new[] { tabStock, tabLogs });
             this.Controls.Add(tabMain);
@@ -189,7 +189,8 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",  HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",        HeaderText = "الوحدة",    ReadOnly = true,  FillWeight = 38 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = true,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", ReadOnly = false, FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = false,  FillWeight = 40 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(255, 255, 225), ForeColor = Color.FromArgb(80, 50, 0) } });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",     HeaderText = "الفارق",       ReadOnly = true,  FillWeight = 48 });
@@ -336,12 +337,16 @@ namespace ChickenDist.Forms
                     r["ProductName"],
                     expiryVal,
                     displayUnit,
+                    Convert.ToDecimal(r["PurchasePrice"]).ToString("N2"),
                     Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
                     bookQty.ToString("N3"),
                     actualVal,
                     diffVal,
                     "" // Notes
                 );
+
+                dgStock.Rows[ri].Cells["PurchasePrice"].Tag = Convert.ToDecimal(r["PurchasePrice"]);
+                dgStock.Rows[ri].Cells["SalePrice"].Tag = Convert.ToDecimal(r["SalePrice"]);
 
                 dgStock.Rows[ri].Cells["BaseUnit"].Value          = r["Unit"];
                 dgStock.Rows[ri].Cells["Unit1Name"].Value         = r["Unit1Name"];
@@ -559,17 +564,47 @@ namespace ChickenDist.Forms
             }
             int wid = selectedWid.Value;
 
-            // 1. تجميع كافة الأصناف التي أدخل المستخدم رصيدها الفعلي (غير فارغة)
+            // 1. تجميع كافة الأصناف التي تم تعديل كميتها أو أسعارها
             var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var numStyles = System.Globalization.NumberStyles.Any;
+
             foreach (DataGridViewRow row in dgStock.Rows)
             {
                 if (row.Cells["ProductID"].Value == null) continue;
+
+                bool isQtyModified = false;
+                bool isPriceModified = false;
+
                 string cellVal = row.Cells["ActualQty"].Value?.ToString();
-                // فقط الأصناف التي أدخل المستخدم لها رصيداً فعلياً
-                if (!string.IsNullOrWhiteSpace(cellVal) &&
-                    decimal.TryParse(cellVal, numStyles, inv, out decimal actualQty))
+                if (!string.IsNullOrWhiteSpace(cellVal) && decimal.TryParse(cellVal, numStyles, inv, out _))
+                {
+                    isQtyModified = true;
+                }
+
+                // Check PurchasePrice
+                string purVal = row.Cells["PurchasePrice"].Value?.ToString();
+                if (decimal.TryParse(purVal, numStyles, inv, out decimal curPurPrice))
+                {
+                    decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                    if (Math.Round(curPurPrice, 2) != Math.Round(originalPur, 2))
+                    {
+                        isPriceModified = true;
+                    }
+                }
+
+                // Check SalePrice
+                string saleVal = row.Cells["SalePrice"].Value?.ToString();
+                if (decimal.TryParse(saleVal, numStyles, inv, out decimal curSalePrice))
+                {
+                    decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                    if (Math.Round(curSalePrice, 2) != Math.Round(originalSale, 2))
+                    {
+                        isPriceModified = true;
+                    }
+                }
+
+                if (isQtyModified || isPriceModified)
                 {
                     modifiedRows.Add(row);
                 }
@@ -577,22 +612,57 @@ namespace ChickenDist.Forms
 
             if (modifiedRows.Count > 0)
             {
-                string msg = "هل أنت متأكد من حفظ تسوية كميات الأصناف التالية وتعديل أرصدتها في المخزن؟\n\n";
+                string msg = "هل أنت متأكد من حفظ التعديلات التالية على الكميات أو الأسعار؟\n\n";
                 int count = 0;
                 foreach (var row in modifiedRows)
                 {
                     string name = row.Cells["ProductName"].Value?.ToString();
-                    decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
-                    decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
-                    decimal diff = actual - book;
-                    if (count < 10)
-                        msg += $"• {name}: الدفتري ({book:N3}) ➔ الفعلي ({actual:N3}) [الفارق: {(diff > 0 ? "+" : "")}{diff:N3}]\n";
-                    count++;
-                }
-                if (count > 10)
-                    msg += $"\n... وعدد {count - 10} أصناف أخرى.";
+                    msg += $"• {name}: ";
 
-                if (MessageBox.Show(msg, "تأكيد تسوية الكميات الجردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    // Check Qty change
+                    string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actual))
+                    {
+                        decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
+                        decimal diff = actual - book;
+                        msg += $"الكمية ({book:N3} ➔ {actual:N3}) ";
+                    }
+
+                    // Check PurchasePrice change
+                    string purPriceStr = row.Cells["PurchasePrice"].Value?.ToString();
+                    if (decimal.TryParse(purPriceStr, numStyles, inv, out decimal purPrice))
+                    {
+                        decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                        if (Math.Round(purPrice, 2) != Math.Round(originalPur, 2))
+                        {
+                            msg += $"شراء ({originalPur:N2} ➔ {purPrice:N2}) ";
+                        }
+                    }
+
+                    // Check SalePrice change
+                    string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
+                    if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal salePrice))
+                    {
+                        decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                        if (Math.Round(salePrice, 2) != Math.Round(originalSale, 2))
+                        {
+                            msg += $"بيع ({originalSale:N2} ➔ {salePrice:N2}) ";
+                        }
+                    }
+
+                    msg += "\n";
+                    count++;
+                    if (count >= 10)
+                    {
+                        if (modifiedRows.Count > 10)
+                        {
+                            msg += $"\n... وعدد {modifiedRows.Count - 10} أصناف أخرى.";
+                        }
+                        break;
+                    }
+                }
+
+                if (MessageBox.Show(msg, "تأكيد حفظ التسويات والأسعار", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     int savedCount = 0;
                     try
@@ -603,77 +673,116 @@ namespace ChickenDist.Forms
                             {
                                 int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
                                 decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
-                                decimal.TryParse(row.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal actual);
                                 string displayUnit = row.Cells["Unit"].Value?.ToString();
                                 string rowNotes    = row.Cells["Notes"].Value?.ToString() ?? "";
                                 bool hasExpiry     = row.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(row.Cells["HasExpiry"].Value);
 
-                                if (hasExpiry)
-                                {
-                                    object batchIdVal = row.Cells["BatchID"].Value;
-                                    string expStr = row.Cells["ExpiryDate"].Value?.ToString();
-                                    DateTime? exp = null;
-                                    if (!string.IsNullOrWhiteSpace(expStr) && DateTime.TryParse(expStr, out DateTime parsedExp))
-                                        exp = parsedExp;
+                                // ── 1. حفظ تعديلات الأسعار ──
+                                string purPriceStr = row.Cells["PurchasePrice"].Value?.ToString();
+                                string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
 
-                                    if (batchIdVal != null && batchIdVal != DBNull.Value)
+                                if (decimal.TryParse(purPriceStr, numStyles, inv, out decimal purPrice))
+                                {
+                                    decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                                    if (Math.Round(purPrice, 2) != Math.Round(originalPur, 2))
                                     {
-                                        int bid = Convert.ToInt32(batchIdVal);
+                                        DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid",
+                                            DbHelper.P("@pur", purPrice),
+                                            DbHelper.P("@pid", pid));
+                                    }
+                                }
+
+                                if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal salePrice))
+                                {
+                                    decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                                    if (Math.Round(salePrice, 2) != Math.Round(originalSale, 2))
+                                    {
+                                        DbHelper.ExecuteTrans(trans, "UPDATE Products SET SalePrice = @sale WHERE ProductID = @pid",
+                                            DbHelper.P("@sale", salePrice),
+                                            DbHelper.P("@pid", pid));
+
                                         DbHelper.ExecuteTrans(trans,
-                                            "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
-                                            DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value),
-                                            DbHelper.P("@qty", actual),
-                                            DbHelper.P("@bid", bid));
+                                            @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                              VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, N'تعديل السعر من شاشة جرد وتعديل الأسعار')",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@old", originalSale),
+                                            DbHelper.P("@new", salePrice),
+                                            DbHelper.P("@uid", Session.EmpID));
+                                    }
+                                }
+
+                                // ── 2. حفظ تسويات كميات الجرد ──
+                                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                                if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actual))
+                                {
+                                    if (hasExpiry)
+                                    {
+                                        object batchIdVal = row.Cells["BatchID"].Value;
+                                        string expStr = row.Cells["ExpiryDate"].Value?.ToString();
+                                        DateTime? exp = null;
+                                        if (!string.IsNullOrWhiteSpace(expStr) && DateTime.TryParse(expStr, out DateTime parsedExp))
+                                            exp = parsedExp;
+
+                                        if (batchIdVal != null && batchIdVal != DBNull.Value)
+                                        {
+                                            int bid = Convert.ToInt32(batchIdVal);
+                                            DbHelper.ExecuteTrans(trans,
+                                                "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
+                                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value),
+                                                DbHelper.P("@qty", actual),
+                                                DbHelper.P("@bid", bid));
+                                        }
+                                        else
+                                        {
+                                            DbHelper.ExecuteTrans(trans,
+                                                "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
+                                                DbHelper.P("@pid", pid),
+                                                DbHelper.P("@wid", wid),
+                                                DbHelper.P("@qty", actual),
+                                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value));
+                                        }
+
+                                        // Sync ProductStock
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                                UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
+                                              ELSE
+                                                INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@wid", wid));
+
+                                        // Log to StockAdjustments
+                                        string expText = exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "بدون";
+                                        string logNotes = $"[تسوية صلاحية: {expText}] " + rowNotes;
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@wid", wid),
+                                            DbHelper.P("@bq", book),
+                                            DbHelper.P("@aq", actual),
+                                            DbHelper.P("@notes", logNotes),
+                                            DbHelper.P("@by", Session.EmpID),
+                                            DbHelper.P("@un", displayUnit));
                                     }
                                     else
                                     {
+                                        // Normal adjustment
                                         DbHelper.ExecuteTrans(trans,
-                                            "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
+                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
                                             DbHelper.P("@pid", pid),
                                             DbHelper.P("@wid", wid),
-                                            DbHelper.P("@qty", actual),
-                                            DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value));
+                                            DbHelper.P("@bq", book),
+                                            DbHelper.P("@aq", actual),
+                                            DbHelper.P("@notes", rowNotes),
+                                            DbHelper.P("@by", Session.EmpID),
+                                            DbHelper.P("@un", displayUnit));
                                     }
 
-                                    // Sync ProductStock
-                                    DbHelper.ExecuteTrans(trans,
-                                        @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
-                                            UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
-                                          ELSE
-                                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
-                                        DbHelper.P("@pid", pid),
-                                        DbHelper.P("@wid", wid));
-
-                                    // Log to StockAdjustments
-                                    string expText = exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "بدون";
-                                    string logNotes = $"[تسوية صلاحية: {expText}] " + rowNotes;
-                                    DbHelper.ExecuteTrans(trans,
-                                        @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                                          VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
-                                        DbHelper.P("@pid", pid),
-                                        DbHelper.P("@wid", wid),
-                                        DbHelper.P("@bq", book),
-                                        DbHelper.P("@aq", actual),
-                                        DbHelper.P("@notes", logNotes),
-                                        DbHelper.P("@by", Session.EmpID),
-                                        DbHelper.P("@un", displayUnit));
-                                }
-                                else
-                                {
-                                    // Normal adjustment
-                                    DbHelper.ExecuteTrans(trans,
-                                        @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                                          VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0)",
-                                        DbHelper.P("@pid", pid),
-                                        DbHelper.P("@wid", wid),
-                                        DbHelper.P("@bq", book),
-                                        DbHelper.P("@aq", actual),
-                                        DbHelper.P("@notes", rowNotes),
-                                        DbHelper.P("@by", Session.EmpID),
-                                        DbHelper.P("@un", displayUnit));
+                                    _enteredActualQty.Remove(pid);
                                 }
 
-                                _enteredActualQty.Remove(pid);
                                 savedCount++;
                             }
                         });

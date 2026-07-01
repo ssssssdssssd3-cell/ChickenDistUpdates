@@ -358,7 +358,7 @@ namespace ChickenDist.Forms
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => NavigateTo(new FrmImportProducts()))),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
-                    ("⚖️ جرد المخزن",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
                     ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
                     ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
                     ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
@@ -395,6 +395,7 @@ namespace ChickenDist.Forms
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 التقارير المالية", "Reports",   (Action)(() => NavigateTo(new FrmReports("Financials")))),
+                    ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -1170,7 +1171,7 @@ namespace ChickenDist.Forms
                 if (Session.CanAccess("CashBox")) 
                     AddQuickButton(pnlActions, "💰 تحصيل نقدي للخزنة", ref btnY, () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69)); // Bright Green
                 if (Session.CanAccess("Inventory")) 
-                    AddQuickButton(pnlActions, "📦 جرد المخزن والأصناف", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(253, 126, 20)); // Vibrant Orange
+                    AddQuickButton(pnlActions, "📦 جرد وتعديل الأسعار", ref btnY, () => NavigateMain(new FrmInventory()), Color.FromArgb(253, 126, 20)); // Vibrant Orange
             }
 
             // --- 3. أزرار عامة للحسابات والتقارير ---
@@ -1179,6 +1180,9 @@ namespace ChickenDist.Forms
             
             if (Session.CanAccess("Reports")) 
                 AddQuickButton(pnlActions, "📊 التقارير والإحصائيات", ref btnY, () => NavigateMain(new FrmReports()), Color.FromArgb(220, 53, 69)); // Bright Red
+
+            if (Session.CanAccess("Reports")) 
+                AddQuickButton(pnlActions, "📊 الموقف المالي للمكان", ref btnY, () => NavigateMain(new FrmFinancialPosition()), Color.FromArgb(23, 162, 184)); // Info Blue
 
             AddQuickButton(pnlActions, "🤖 مساعد الدعم الفني", ref btnY, () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
 
