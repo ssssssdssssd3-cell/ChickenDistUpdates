@@ -139,7 +139,6 @@ namespace ChickenDist.Forms
                 Height = 26
             };
             btn.FlatAppearance.BorderSize = 0;
-            btn.FlatAppearance.BorderColor = Color.Transparent;
 
             // Rounded corners on chips
             btn.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, btn.Width, btn.Height, 8, 8));
