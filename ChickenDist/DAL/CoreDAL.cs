@@ -75,10 +75,9 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,PlainPassword,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver) " +
-                    "VALUES(@n,@u,@p,@pp,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
-                    DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
                     DbHelper.P("@asids", string.IsNullOrEmpty(allowedSafeIDs) ? (object)DBNull.Value : (object)allowedSafeIDs),
@@ -111,9 +110,8 @@ namespace ChickenDist.DAL
 
                 if (hashedPassword != null)
                 {
-                    updateSql += ",Password=@p,PlainPassword=@pp";
+                    updateSql += ",Password=@p";
                     prmsList.Add(DbHelper.P("@p", hashedPassword));
-                    prmsList.Add(DbHelper.P("@pp", string.IsNullOrWhiteSpace(password) ? (object)DBNull.Value : (object)password));
                 }
 
                 updateSql += " WHERE EmpID=@id";

@@ -182,12 +182,8 @@ namespace ChickenDist.Forms
             if (dr == null) return;
             txtName.Text = dr["EmpName"].ToString();
             txtUsername.Text = dr["UserName"].ToString();
-            // إظهار كلمة المرور الأصلية مباشرة
-            var pwRow = DbHelper.Query("SELECT ISNULL(PlainPassword, '') AS PlainPassword FROM Employees WHERE EmpID=@id", DbHelper.P("@id", _selectedID));
-            if (pwRow.Rows.Count > 0)
-                txtPassword.Text = pwRow.Rows[0]["PlainPassword"].ToString();
-            else
-                txtPassword.Clear();
+            // تفريغ حقل كلمة المرور للأمان؛ يمكن كتابة كلمة مرور جديدة أو تركها فارغة للحفاظ على الحالية
+            txtPassword.Clear();
             txtPhone.Text = dr["Phone"].ToString();
             cboRole.Text = dr["Role"].ToString();
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);

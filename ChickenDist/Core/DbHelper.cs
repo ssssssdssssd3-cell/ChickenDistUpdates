@@ -1269,6 +1269,7 @@ namespace ChickenDist.Core
                 BEGIN
                     ALTER TABLE Employees ADD PlainPassword NVARCHAR(200) NULL;
                 END");
+                Execute(@"UPDATE Employees SET PlainPassword = NULL WHERE PlainPassword IS NOT NULL");
 
                 // ===== Installment Module Migration =====
                 string sqlInstallments = @"

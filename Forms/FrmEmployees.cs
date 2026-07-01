@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
 
         private ComboBox cboDefaultSafe;
         private CheckedListBox clbAllowedSafes;
-        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge;
+        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver;
 
         public FrmEmployees()
         {
@@ -129,8 +129,9 @@ namespace ChickenDist.Forms
             chkCanSellDriverLoad = new CheckBox { Text = "تحميل مندوب", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
             chkCanSellInstallment = new CheckBox { Text = "تقسيط شرعي", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
             y += 28;
-            chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(100, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge });
+            chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(180, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSelectDriver = new CheckBox { Text = "اختيار/ظهور المندوب", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
+            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver });
             y += 35;
 
             btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
@@ -181,12 +182,8 @@ namespace ChickenDist.Forms
             if (dr == null) return;
             txtName.Text = dr["EmpName"].ToString();
             txtUsername.Text = dr["UserName"].ToString();
-            // إظهار كلمة المرور الأصلية مباشرة
-            var pwRow = DbHelper.Query("SELECT ISNULL(PlainPassword, '') AS PlainPassword FROM Employees WHERE EmpID=@id", DbHelper.P("@id", _selectedID));
-            if (pwRow.Rows.Count > 0)
-                txtPassword.Text = pwRow.Rows[0]["PlainPassword"].ToString();
-            else
-                txtPassword.Clear();
+            // تفريغ حقل كلمة المرور للأمان؛ يمكن كتابة كلمة مرور جديدة أو تركها فارغة للحفاظ على الحالية
+            txtPassword.Clear();
             txtPhone.Text = dr["Phone"].ToString();
             cboRole.Text = dr["Role"].ToString();
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);
@@ -222,6 +219,7 @@ namespace ChickenDist.Forms
             chkCanSellDriverLoad.Checked = dr["CanSellDriverLoad"] == DBNull.Value || Convert.ToBoolean(dr["CanSellDriverLoad"]);
             chkCanSellInstallment.Checked = dr["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(dr["CanSellInstallment"]);
             chkCanEditShippingCharge.Checked = dr.Table.Columns.Contains("CanEditShippingCharge") && (dr["CanEditShippingCharge"] == DBNull.Value || Convert.ToBoolean(dr["CanEditShippingCharge"]));
+            chkCanSelectDriver.Checked = !dr.Table.Columns.Contains("CanSelectDriver") || dr["CanSelectDriver"] == DBNull.Value || Convert.ToBoolean(dr["CanSelectDriver"]);
         }
 
         private void ClearDetail()
@@ -241,6 +239,7 @@ namespace ChickenDist.Forms
             chkCanSellDriverLoad.Checked = true;
             chkCanSellInstallment.Checked = true;
             chkCanEditShippingCharge.Checked = true;
+            chkCanSelectDriver.Checked = true;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -270,7 +269,8 @@ namespace ChickenDist.Forms
                 int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
                     txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
                     defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
-                    chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked);
+                    chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked,
+                    chkCanSelectDriver.Checked);
                 if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
                 else MessageBox.Show("❌ فشل الحفظ");
             }
@@ -382,7 +382,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("PriceChanges", "سجل تغير وحركات الأسعار", 2),
             new ScreenInfo("BulkPrintBarcodes", "طباعة الباركود (مجمع)", 2),
 
-            // Tab 3: Finance, Drivers & Settings (13)
+            // Tab 3: Finance, Drivers & Settings (17)
             new ScreenInfo("CashBox", "حركات الخزينة والصندوق", 3),
             new ScreenInfo("Reports", "التقارير والإحصائيات المالية", 3),
             new ScreenInfo("DailyClosing", "تقفيل يومية المبيعات", 3),
@@ -393,6 +393,10 @@ namespace ChickenDist.Forms
             new ScreenInfo("DriverPortal", "بوابة المندوب الميداني", 3),
             new ScreenInfo("ImportPreview", "استيراد مبيعات المناديب", 3),
             new ScreenInfo("DriversMonitor", "شاشة مراقبة السائقين", 3),
+            new ScreenInfo("DashTreasury", "🏠 لوحة التحكم: رصيد الخزنة الحالي", 3),
+            new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 3),
+            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 3),
+            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 3),
             new ScreenInfo("DriverCustody", "عهدة المناديب المالية", 3),
             new ScreenInfo("DriverLeaderboard", "أداء وتقييم المناديب", 3),
             new ScreenInfo("Settings", "إعدادات النظام العامة", 3),
@@ -542,7 +546,39 @@ namespace ChickenDist.Forms
 
                 if (targetGrid != null)
                 {
-                    targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                    int ri = targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                    
+                    bool isSalesScreen = string.Equals(screen.Key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                         string.Equals(screen.Key, "SalesList", StringComparison.OrdinalIgnoreCase);
+                    
+                    bool isPurchasesScreen = string.Equals(screen.Key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                             string.Equals(screen.Key, "PurchasesList", StringComparison.OrdinalIgnoreCase);
+
+                    if (!isSalesScreen && !isPurchasesScreen)
+                    {
+                        for (int colIdx = 3; colIdx <= 7; colIdx++)
+                        {
+                            targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
+                            targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                        }
+                    }
+                    else if (isPurchasesScreen)
+                    {
+                        // For purchases, EditPrice (colIdx = 3) and ViewCost (colIdx = 7) are not used
+                        targetGrid.Rows[ri].Cells[3] = new DataGridViewTextBoxCell { Value = "" };
+                        targetGrid.Rows[ri].Cells[3].ReadOnly = true;
+                        targetGrid.Rows[ri].Cells[7] = new DataGridViewTextBoxCell { Value = "" };
+                        targetGrid.Rows[ri].Cells[7].ReadOnly = true;
+                    }
+                    else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        for (int colIdx = 4; colIdx <= 7; colIdx++)
+                        {
+                            targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
+                            targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                        }
+                    }
                 }
             }
         }
@@ -558,12 +594,12 @@ namespace ChickenDist.Forms
                     string screen = row.Cells["Screen"].Value?.ToString();
                     if (string.IsNullOrEmpty(screen)) continue;
 
-                    bool access = Convert.ToBoolean(row.Cells["CanAccess"].Value);
-                    bool editP = Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                    bool editI = Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
-                    bool deleteI = Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
-                    bool copyI = Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
-                    bool viewC = Convert.ToBoolean(row.Cells["CanViewCost"].Value);
+                    bool access = row.Cells["CanAccess"].Value != null && Convert.ToBoolean(row.Cells["CanAccess"].Value);
+                    bool editP = row.Cells["CanEditPrice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
+                    bool editI = row.Cells["CanEditSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
+                    bool deleteI = row.Cells["CanDeleteSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
+                    bool copyI = row.Cells["CanCopySalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
+                    bool viewC = row.Cells["CanViewCost"].Value is bool && Convert.ToBoolean(row.Cells["CanViewCost"].Value);
                     
                     EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
                 }
