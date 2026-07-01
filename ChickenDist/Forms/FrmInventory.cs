@@ -21,21 +21,13 @@ namespace ChickenDist.Forms
         private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
         private ComboBox cboCategory;
 
-        // Adjustment Form Controls
-        private Label lblSelectedProduct, lblBookQtyVal, lblDiffVal;
-        private NumericUpDown nudActualQty;
-        private ComboBox cboAdjUnit;
-        private TextBox txtNotes;
         private Button btnSaveAdj, btnClearAdj;
         private int _selectedProductID = 0;
         private decimal _selectedBookQty = 0;
         private string _selectedProductName = "";
         private string _selectedProductUnit = "";
-        private bool _isSelecting = false;
-        private decimal _lastSelectedFactor = 1m;
         private bool _selectedHasExpiry = false;
         private int? _selectedDefaultExpiryDays = null;
-        private Button btnExpiryBatches;
         // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل
         private readonly System.Collections.Generic.Dictionary<int, decimal> _enteredActualQty
             = new System.Collections.Generic.Dictionary<int, decimal>();
@@ -206,6 +198,7 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays", Visible = false });
             Theme.AdjustGridHeaders(dgStock);
             dgStock.CellEndEdit += DgStock_CellEndEdit;
+            dgStock.SelectionChanged += DgStock_SelectionChanged;
             dgStock.CellDoubleClick += (s, e) => { if (e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name != "ActualQty" && dgStock.Columns[e.ColumnIndex].Name != "Notes" && dgStock.Columns[e.ColumnIndex].Name != "ExpiryDate") BtnMovement_Click(s, e); };
 
             // ── زر الحفظ الشامل ─────────────────────────────
@@ -402,42 +395,16 @@ namespace ChickenDist.Forms
         {
             if (dgStock.SelectedRows.Count == 0) return;
             var r = dgStock.SelectedRows[0];
-            _isSelecting = true;
-            try
-            {
-                _selectedProductID   = Convert.ToInt32(r.Cells["ProductID"].Value);
-                _selectedProductName = r.Cells["ProductName"].Value?.ToString();
-                _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
-                _selectedHasExpiry   = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
-                _selectedDefaultExpiryDays = r.Cells["DefaultExpiryDays"].Value != DBNull.Value ? Convert.ToInt32(r.Cells["DefaultExpiryDays"].Value) : (int?)null;
-                _selectedBookQty = decimal.TryParse(r.Cells["BookQty"].Value?.ToString(),
-                    System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out decimal bq) ? bq : 0;
-                _lastSelectedFactor = 1m;
-                // عناصر الشريط الجانبي (إن وُجدت)
-                if (lblSelectedProduct != null) lblSelectedProduct.Text = _selectedProductName;
-                if (btnExpiryBatches   != null) btnExpiryBatches.Enabled = _selectedHasExpiry && _selectedProductID > 0;
-                if (btnAddExpiryRow    != null) btnAddExpiryRow.Enabled = _selectedHasExpiry && _selectedProductID > 0;
-            }
-            finally { _isSelecting = false; }
-        }
-
-        private void NudActualQty_ValueChanged(object sender, EventArgs e)
-        {
-            if (_isSelecting || nudActualQty == null) return;
-            if (dgStock.SelectedRows.Count > 0)
-            {
-                var r = dgStock.SelectedRows[0];
-                decimal factor = 1m;
-                if (cboAdjUnit?.SelectedItem is UnitItem ui) factor = ui.Factor;
-                decimal actualInSmallest = nudActualQty.Value * factor;
-                r.Cells["ActualQty"].Value = actualInSmallest.ToString("N3");
-                decimal diff = actualInSmallest - _selectedBookQty;
-                r.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
-                r.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
-                if (_selectedProductID > 0) _enteredActualQty[_selectedProductID] = actualInSmallest;
-            }
-            UpdateDifference();
+            _selectedProductID   = Convert.ToInt32(r.Cells["ProductID"].Value);
+            _selectedProductName = r.Cells["ProductName"].Value?.ToString();
+            _selectedProductUnit = r.Cells["Unit"].Value?.ToString();
+            _selectedHasExpiry   = r.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(r.Cells["HasExpiry"].Value);
+            _selectedDefaultExpiryDays = r.Cells["DefaultExpiryDays"].Value != DBNull.Value ? Convert.ToInt32(r.Cells["DefaultExpiryDays"].Value) : (int?)null;
+            _selectedBookQty = decimal.TryParse(r.Cells["BookQty"].Value?.ToString(),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal bq) ? bq : 0;
+            if (btnAddExpiryRow != null)
+                btnAddExpiryRow.Enabled = _selectedHasExpiry && _selectedProductID > 0;
         }
 
         private void DgStock_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -489,63 +456,13 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void CboAdjUnit_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (_isSelecting || cboAdjUnit == null || nudActualQty == null) return;
-            if (cboAdjUnit.SelectedItem is UnitItem ui)
-            {
-                decimal newFactor = ui.Factor;
-                _isSelecting = true;
-                try
-                {
-                    decimal actualInSmallest = nudActualQty.Value * _lastSelectedFactor;
-                    nudActualQty.Value = actualInSmallest / (newFactor > 0 ? newFactor : 1m);
-                }
-                catch { }
-                finally { _isSelecting = false; }
-                _lastSelectedFactor = newFactor;
-                UpdateDifference();
-            }
-        }
-
-        private void UpdateDifference()
-        {
-            if (_selectedProductID == 0) return;
-            decimal factor   = 1m;
-            string unitName  = _selectedProductUnit ?? "";
-            if (cboAdjUnit?.SelectedItem is UnitItem ui) { factor = ui.Factor; unitName = ui.Name; }
-            decimal bookInUnit = _selectedBookQty / (factor > 0 ? factor : 1m);
-            if (lblBookQtyVal != null) lblBookQtyVal.Text = bookInUnit.ToString("N3") + " " + unitName;
-            if (nudActualQty != null && lblDiffVal != null)
-            {
-                decimal diff = nudActualQty.Value - bookInUnit;
-                lblDiffVal.Text = (diff > 0 ? "+" : "") + diff.ToString("N3") + " " + unitName;
-                lblDiffVal.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
-            }
-        }
-
         private void ClearAdjustmentForm()
         {
-            _isSelecting = true;
-            try
-            {
-                _selectedProductID   = 0;
-                _selectedBookQty     = 0;
-                _selectedProductName = "";
-                _selectedProductUnit = "";
-                _lastSelectedFactor  = 1m;
-                // عناصر الشريط الجانبي أُزيلت — نتحقق من الـ null قبل الاستخدام
-                if (lblSelectedProduct != null) lblSelectedProduct.Text = "اختر صنفاً...";
-                if (lblBookQtyVal      != null) lblBookQtyVal.Text      = "0.00";
-                if (nudActualQty       != null) nudActualQty.Value      = 0;
-                if (lblDiffVal         != null) { lblDiffVal.Text = "0.00"; lblDiffVal.ForeColor = Theme.TextMain; }
-                if (txtNotes           != null) txtNotes.Clear();
-                if (cboAdjUnit         != null) cboAdjUnit.DataSource   = null;
-            }
-            finally
-            {
-                _isSelecting = false;
-            }
+            _selectedProductID   = 0;
+            _selectedBookQty     = 0;
+            _selectedProductName = "";
+            _selectedProductUnit = "";
+            if (btnAddExpiryRow != null) btnAddExpiryRow.Enabled = false;
         }
 
 
@@ -808,13 +725,6 @@ namespace ChickenDist.Forms
 
 
 
-        private class UnitItem
-        {
-            public string Name { get; set; }
-            public decimal Factor { get; set; }
-            public override string ToString() => $"{Name} (×{Factor:N0})";
-        }
-
         private void BtnMovement_Click(object sender, EventArgs e)
         {
             if (dgStock.SelectedRows.Count == 0)
@@ -1055,25 +965,6 @@ namespace ChickenDist.Forms
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
-        }
-
-        private void BtnExpiryBatches_Click(object sender, EventArgs e)
-        {
-            int? selectedWid = null;
-            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
-            {
-                selectedWid = ci.ID;
-            }
-
-            if (!selectedWid.HasValue || _selectedProductID <= 0) return;
-
-            using (var frm = new FrmAdjustExpiryBatches(_selectedProductID, _selectedProductName, selectedWid.Value))
-            {
-                if (frm.ShowDialog() == DialogResult.OK)
-                {
-                    LoadStock();
-                }
-            }
         }
 
         private void BtnAddExpiryRow_Click(object sender, EventArgs e)

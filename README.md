@@ -35,10 +35,10 @@ git push origin v1.0.0
 
 **من Visual Studio:**
 ```
-1. افتح ChickenDist.csproj
+1. افتح ChickenDist/ChickenDist.csproj
 2. اختر Configuration: Release
 3. Build → Build Solution (Ctrl+Shift+B)
-4. الناتج في: bin\Release\net48\
+4. الناتج في: ChickenDist/bin/Release/net48/
 ```
 
 **من Command Line:**
