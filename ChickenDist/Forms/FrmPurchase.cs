@@ -209,7 +209,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 Format = DateTimePickerFormat.Short,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 3, 2, 3)
+                Margin = new Padding(2, 3, 2, 3),
+                Enabled = Session.CanAccess("EditInvoiceDate")
             };
 
             // رصيد الخزنة
@@ -354,6 +355,7 @@ namespace ChickenDist.Forms
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
+                ScrollBars = ScrollBars.Both,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.BgCard,
@@ -388,6 +390,15 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
             Theme.AdjustGridHeaders(dgItems);
+
+            foreach (DataGridViewColumn col in dgItems.Columns)
+            {
+                col.MinimumWidth = 95;
+            }
+            if (dgItems.Columns.Contains("ProductName"))
+            {
+                dgItems.Columns["ProductName"].MinimumWidth = 160;
+            }
 
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
@@ -693,6 +704,23 @@ namespace ChickenDist.Forms
 
             ToggleType();
             Theme.ApplyFormRTL(this);
+            ApplyInputStyles(this);
+        }
+
+        private void ApplyInputStyles(Control parent)
+        {
+            foreach (Control c in parent.Controls)
+            {
+                if (c is TextBox || c is ComboBox || c is DateTimePicker || c is NumericUpDown)
+                {
+                    c.BackColor = Theme.BgInput;
+                    c.ForeColor = Theme.TextInput;
+                }
+                else if (c.HasChildren)
+                {
+                    ApplyInputStyles(c);
+                }
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════

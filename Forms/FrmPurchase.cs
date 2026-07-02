@@ -31,6 +31,7 @@ namespace ChickenDist.Forms
 
         // ── الذيل — خصم الفاتورة ───────────────────────────────────────────────
         private Label lblTotalVal, lblNetVal, lblDiscType, lblDiscVal;
+        private Label lblItemCount;
         private TextBox txtInvoiceDiscount;
         private ComboBox cboInvoiceDiscountType;
 
@@ -50,12 +51,27 @@ namespace ChickenDist.Forms
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
         private int _draftPurchaseID = 0; // 0 = فاتورة جديدة، >0 = مسودة محملة
+        private int _editPurchaseID = 0;
+        private bool _isCopyMode = false;
+        private DateTime? _loadedLastModified = null;
+
+        public FrmPurchase(int purchaseID, bool isCopyMode = false) : this()
+        {
+            _editPurchaseID = isCopyMode ? 0 : purchaseID;
+            _isCopyMode = isCopyMode;
+            if (purchaseID > 0)
+            {
+                LoadInvoiceForEdit(purchaseID);
+            }
+        }
+
         // ── Auto-barcode detection ─────────────────────────────────────────────
         private System.Windows.Forms.Timer _barcodeTimer;
         private DateTime _lastKeyTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
         private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
+        private int? _pendingMatchedUnit = null;
 
         // ══════════════════════════════════════════════════════════════════════
         public FrmPurchase()
@@ -68,6 +84,7 @@ namespace ChickenDist.Forms
             {
                 ScaleService.Instance.WeightChanged += ScaleService_WeightChanged;
             }
+            this.Load += (s, e) => { this.ActiveControl = cboProduct; cboProduct.Focus(); };
         }
 
         private void ScaleService_WeightChanged(decimal weight, bool isStable)
@@ -192,7 +209,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 Format = DateTimePickerFormat.Short,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 3, 2, 3)
+                Margin = new Padding(2, 3, 2, 3),
+                Enabled = Session.CanAccess("EditInvoiceDate")
             };
 
             // رصيد الخزنة
@@ -337,6 +355,7 @@ namespace ChickenDist.Forms
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
+                ScrollBars = ScrollBars.Both,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.BgCard,
@@ -360,14 +379,26 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
+            dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
+            Theme.AdjustGridHeaders(dgItems);
+
+            foreach (DataGridViewColumn col in dgItems.Columns)
+            {
+                col.MinimumWidth = 95;
+            }
+            if (dgItems.Columns.Contains("ProductName"))
+            {
+                dgItems.Columns["ProductName"].MinimumWidth = 160;
+            }
 
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
@@ -563,13 +594,23 @@ namespace ChickenDist.Forms
             tblTotals.Controls.Add(cboInvoiceDiscountType,   3, 0);
             tblTotals.Controls.Add(lblDiscVal,               4, 0);
             tblTotals.Controls.Add(txtInvoiceDiscount,       5, 0);
-            // صف 1: [ضريبة% lbl][nudTax][قيمة الضريبة][صافي lbl][صافي val span2]
+            lblItemCount = new Label
+            {
+                Text = "📦 عدد الأصناف: 0",
+                ForeColor = Theme.TextSub,
+                Font = Theme.FontMain,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(2)
+            };
+
+            // صف 1: [ضريبة% lbl][nudTax][قيمة الضريبة][صافي lbl][صافي val][عدد الأصناف]
             tblTotals.Controls.Add(lblTaxLbl,   0, 1);
             tblTotals.Controls.Add(nudTaxPct,   1, 1);
             tblTotals.Controls.Add(lblTaxAmt,   2, 1);
             tblTotals.Controls.Add(lblNetTitle, 3, 1);
             tblTotals.Controls.Add(lblNetVal,   4, 1);
-            tblTotals.SetColumnSpan(lblNetVal, 2);
+            tblTotals.Controls.Add(lblItemCount, 5, 1);
 
             pnlTotals.Controls.Add(tblTotals);
 
@@ -663,6 +704,23 @@ namespace ChickenDist.Forms
 
             ToggleType();
             Theme.ApplyFormRTL(this);
+            ApplyInputStyles(this);
+        }
+
+        private void ApplyInputStyles(Control parent)
+        {
+            foreach (Control c in parent.Controls)
+            {
+                if (c is TextBox || c is ComboBox || c is DateTimePicker || c is NumericUpDown)
+                {
+                    c.BackColor = Theme.BgInput;
+                    c.ForeColor = Theme.TextInput;
+                }
+                else if (c.HasChildren)
+                {
+                    ApplyInputStyles(c);
+                }
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -774,18 +832,24 @@ namespace ChickenDist.Forms
         {
             // الموردون
             DataTable dtSup = SupplierDAL.GetAll(true);
+            cboSupplier.BeginUpdate();
             cboSupplier.Items.Clear();
-            cboSupplier.Items.Add(new ComboItem(0, "-- اختر المورد --"));
+            List<ComboItem> supplierItems = new List<ComboItem>();
+            supplierItems.Add(new ComboItem(0, "-- اختر المورد --"));
             foreach (DataRow r in dtSup.Rows)
-                cboSupplier.Items.Add(new ComboItem(
+                supplierItems.Add(new ComboItem(
                     Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+            cboSupplier.Items.AddRange(supplierItems.ToArray());
             cboSupplier.DisplayMember = "Text";
             cboSupplier.SelectedIndex = 0;
+            cboSupplier.EndUpdate();
 
             // الأصناف
             DataTable dtProd = ProductDAL.GetAll(true);
+            cboProduct.BeginUpdate();
             cboProduct.Items.Clear();
-            cboProduct.Items.Add(new ComboItem(0, "-- اختر الصنف --"));
+            List<ComboItem> productItems = new List<ComboItem>();
+            productItems.Add(new ComboItem(0, "-- اختر الصنف --"));
             foreach (DataRow r in dtProd.Rows)
             {
                 var ci = new ComboItem(
@@ -797,10 +861,29 @@ namespace ChickenDist.Forms
                 ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
                 ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
                 ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
-                cboProduct.Items.Add(ci);
+
+                // وحدات متعددة
+                ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
+                ci.Unit1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
+                ci.Unit1SalePrice = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                ci.Unit1PurchasePrice = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                ci.Unit1Factor = 1m;
+                ci.Unit2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
+                ci.Unit2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                ci.Unit2SalePrice = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+                ci.Unit2PurchasePrice = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+                ci.Unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                ci.Unit1Barcode = r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
+                ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
+                ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
+
+                productItems.Add(ci);
             }
+            cboProduct.Items.AddRange(productItems.ToArray());
             cboProduct.DisplayMember = "Text";
             cboProduct.SelectedIndex = 0;
+            cboProduct.EndUpdate();
             SetupSearchableCombo(cboProduct);
             cboProduct.SelectedIndexChanged += (s, e) =>
             {
@@ -830,13 +913,35 @@ namespace ChickenDist.Forms
             try
             {
                 var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+                cboWarehouse.BeginUpdate();
                 cboWarehouse.Items.Clear();
-                cboWarehouse.DisplayMember = "Text";
+                List<ComboItem> warehouseItems = new List<ComboItem>();
                 foreach (DataRow whRow in whDt.Rows)
-                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
+                    warehouseItems.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
+                cboWarehouse.Items.AddRange(warehouseItems.ToArray());
+                cboWarehouse.DisplayMember = "Text";
                 if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+                cboWarehouse.EndUpdate();
             }
             catch { /* تجاهل لو مافيش مخازن */ }
+        }
+
+        private ComboItem GetProductComboItem(int productID)
+        {
+            foreach (var item in cboProduct.Items)
+            {
+                if (item is ComboItem ci && ci.ID == productID)
+                    return ci;
+            }
+            if (cboProduct.Tag is List<ComboItem> allItems)
+            {
+                foreach (var ci in allItems)
+                {
+                    if (ci.ID == productID)
+                        return ci;
+                }
+            }
+            return null;
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -845,15 +950,75 @@ namespace ChickenDist.Forms
         {
             if (prodId <= 0) return;
 
-            // دمج إذا كان الصنف موجوداً مسبقاً
+            ComboItem product = GetProductComboItem(prodId);
+
+            string defaultUnit = null;
+            decimal defaultFactor = 1m;
+            decimal defaultPrice = price;
+            decimal defaultSalePrice = salePrice;
+
+            int matchedUnit = _pendingMatchedUnit ?? 3;
+            _pendingMatchedUnit = null; // إعادة تعيين
+
+            if (product != null)
+            {
+                defaultUnit = !string.IsNullOrEmpty(product.Unit1Name) ? product.Unit1Name
+                            : !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName
+                            : null;
+
+                if (matchedUnit == 1 && !string.IsNullOrEmpty(product.Unit1Name))
+                {
+                    defaultUnit = product.Unit1Name;
+                    defaultFactor = 1m;
+                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
+                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                }
+                else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
+                {
+                    defaultUnit = product.Unit2Name;
+                    defaultFactor = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
+                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : price;
+                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice : salePrice;
+                }
+                else if (matchedUnit == 3)
+                {
+                    if (!string.IsNullOrEmpty(product.BaseUnitName))
+                    {
+                        defaultUnit = product.BaseUnitName;
+                        defaultFactor = (product.Unit3Factor > 0 ? product.Unit3Factor : 1m) * (product.Unit2Factor > 0 ? product.Unit2Factor : 1m);
+                        defaultPrice = product.PurchasePrice > 0 ? product.PurchasePrice : price;
+                        defaultSalePrice = product.Price > 0 ? product.Price : salePrice;
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(product.Unit1Name))
+                    {
+                        defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
+                        defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                    }
+                }
+            }
+
+            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة
             foreach (var item in _items)
             {
-                if (item.ProductID == prodId)
+                if (item.ProductID == prodId && item.UnitName == defaultUnit)
                 {
                     item.Quantity += qty;
                     RefreshGrid();
                     SelectQuantityCell(prodId);
                     return;
+                }
+            }
+
+            DateTime? defaultExpiry = null;
+            if (product != null && product.HasExpiry)
+            {
+                int days = product.DefaultExpiryDays ?? 0;
+                if (days > 0)
+                {
+                    defaultExpiry = DateTime.Today.AddDays(days);
                 }
             }
 
@@ -863,9 +1028,12 @@ namespace ChickenDist.Forms
                 ProductCode = prodCode,
                 ProductName = prodName,
                 Quantity    = qty,
-                UnitPrice   = price,
+                UnitPrice   = defaultPrice,
                 DiscountPct = disc,
-                SuggestedSalePrice = salePrice
+                SuggestedSalePrice = defaultSalePrice,
+                UnitName = defaultUnit,
+                Factor = defaultFactor,
+                ExpiryDate = defaultExpiry
             });
 
             RefreshGrid();
@@ -937,6 +1105,15 @@ namespace ChickenDist.Forms
                         string pName= row["ProductName"].ToString();
                         decimal pp  = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
                         decimal sp  = row["SalePrice"]     != DBNull.Value ? Convert.ToDecimal(row["SalePrice"])     : 0m;
+
+                        if (dt.Columns.Contains("MatchedUnit") && row["MatchedUnit"] != DBNull.Value)
+                        {
+                            _pendingMatchedUnit = Convert.ToInt32(row["MatchedUnit"]);
+                        }
+                        else
+                        {
+                            _pendingMatchedUnit = 3; // Default to main/base unit
+                        }
 
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             dgItems.Rows.RemoveAt(rowIdx);
@@ -1164,16 +1341,114 @@ namespace ChickenDist.Forms
                     item.ProductID,
                     item.ProductCode,
                     item.ProductName,
+                    null, // UnitName
                     item.Quantity.ToString("F3"),
                     item.UnitPrice.ToString("F2"),
                     item.DiscountPct.ToString("F2"),
                     item.TotalPrice.ToString("F2"),
                     sell.ToString("F2"),
-                    margin.ToString("F1") + "%");
+                    margin.ToString("F1") + "%",
+                    item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "");
                 // عمود الكود للسطور المضافة = قراءة فقط
                 dgItems.Rows[rIdx].Cells["ProductCode"].ReadOnly = true;
+
+                // ─── تهيئة ComboBox الوحدة ──────────────────────────────────────────
+                if (dgItems.Columns.Contains("UnitName") && dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
+                {
+                    var unitCell = (DataGridViewComboBoxCell)dgItems.Rows[rIdx].Cells["UnitName"];
+                    var unitList = new System.Collections.ArrayList();
+
+                    ComboItem prod = GetProductComboItem(item.ProductID);
+                    if (prod != null)
+                    {
+                        // 1. الوحدة الكبرى (الأساسية)
+                        if (!string.IsNullOrEmpty(prod.BaseUnitName))
+                        {
+                            unitList.Add(prod.BaseUnitName);
+                        }
+                        else
+                        {
+                            unitList.Add("وحدة");
+                        }
+
+                        // 2. الوحدة الوسطى (إن وُجدت)
+                        if (!string.IsNullOrEmpty(prod.Unit2Name))
+                        {
+                            unitList.Add(prod.Unit2Name);
+                        }
+
+                        // 3. الوحدة الصغرى (إن وُجدت وليست مكررة مع الكبرى)
+                        if (!string.IsNullOrEmpty(prod.Unit1Name) && prod.Unit1Name != prod.BaseUnitName)
+                        {
+                            unitList.Add(prod.Unit1Name);
+                        }
+                    }
+                    else
+                    {
+                        unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة");
+                    }
+
+                    unitCell.DataSource = unitList;
+                    string savedUnit = item.UnitName;
+                    if (!string.IsNullOrEmpty(savedUnit) && unitList.Contains(savedUnit))
+                        unitCell.Value = savedUnit;
+                    else if (unitList.Count > 0)
+                        unitCell.Value = unitList[0];
+                }
             }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
+            RecalcTotals();
+        }
+
+        private void HandleUnitChange(DataGridViewRow row, PurchaseItemDTO dto, string newUnit)
+        {
+            if (string.IsNullOrEmpty(newUnit)) return;
+            ComboItem prod = GetProductComboItem(dto.ProductID);
+            if (prod == null) return;
+
+            dto.UnitName = newUnit;
+
+            if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
+            {
+                // 1. الوحدة الوسطى
+                dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
+                if (prod.Unit2PurchasePrice > 0) dto.UnitPrice = prod.Unit2PurchasePrice;
+                if (prod.Unit2SalePrice > 0) dto.SuggestedSalePrice = prod.Unit2SalePrice;
+            }
+            else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
+            {
+                // 2. الوحدة الصغرى (التجزئة)
+                dto.Factor = 1m;
+                if (prod.Unit1PurchasePrice > 0) dto.UnitPrice = prod.Unit1PurchasePrice;
+                else dto.UnitPrice = prod.PurchasePrice;
+                if (prod.Unit1SalePrice > 0) dto.SuggestedSalePrice = prod.Unit1SalePrice;
+                else dto.SuggestedSalePrice = prod.Price;
+            }
+            else if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
+            {
+                // 3. الوحدة الكبرى (الأساسية)
+                dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
+                dto.UnitPrice = prod.PurchasePrice;
+                dto.SuggestedSalePrice = prod.Price;
+            }
+            else
+            {
+                // احتياطي
+                dto.Factor = 1m;
+                dto.UnitPrice = prod.PurchasePrice;
+                dto.SuggestedSalePrice = prod.Price;
+            }
+
+            // تحديث الجدول
+            row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
+            row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
+            row.Cells["SuggestedSalePrice"].Value = (dto.SuggestedSalePrice ?? 0m).ToString("F2");
+
+            decimal buy = dto.UnitPrice;
+            decimal sell = dto.SuggestedSalePrice ?? 0m;
+            decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
+            row.Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+
             RecalcTotals();
         }
 
@@ -1185,6 +1460,16 @@ namespace ChickenDist.Forms
             var item    = _items[e.RowIndex];
             var colName = dgItems.Columns[e.ColumnIndex].Name;
             var cellVal = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+
+            if (colName == "UnitName")
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
+                        HandleUnitChange(dgItems.Rows[e.RowIndex], _items[e.RowIndex], cellVal);
+                });
+                return;
+            }
 
             if (colName == "Quantity")
             {
@@ -1226,6 +1511,29 @@ namespace ChickenDist.Forms
                 }
                 else
                     dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = (item.SuggestedSalePrice ?? 0m).ToString("F2");
+            }
+            else if (colName == "ExpiryDate")
+            {
+                var parsedDate = DbHelper.ParseExpiryInput(cellVal);
+                if (parsedDate.HasValue)
+                {
+                    item.ExpiryDate = parsedDate.Value;
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+                        {
+                            dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = parsedDate.Value.ToString("yyyy-MM-dd");
+                        }
+                    });
+                }
+                else if (string.IsNullOrWhiteSpace(cellVal))
+                {
+                    item.ExpiryDate = null;
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "";
+                }
             }
 
             // تحديث عمود الإجمالي
@@ -1269,6 +1577,11 @@ namespace ChickenDist.Forms
             // الصافي النهائي
             decimal net = afterDisc + taxAmt;
             lblNetVal.Text = net.ToString("N2") + " ج";
+
+            if (lblItemCount != null)
+            {
+                lblItemCount.Text = "📦 عدد الأصناف: " + _items.Count;
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -1286,6 +1599,8 @@ namespace ChickenDist.Forms
             _purchaseType    = "Credit";
             _isDirty         = false;
             _draftPurchaseID = 0;
+            _editPurchaseID  = 0;
+            _isCopyMode      = false;
             dtpDate.Value    = DateTime.Today;
             ToggleType();
             this.Text = "فاتورة مشتريات";
@@ -1490,7 +1805,10 @@ namespace ChickenDist.Forms
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
                         DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
                         DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
-                        SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null
+                        SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
+                        UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
+                        Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
+                        ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null
                     });
                 }
                 RefreshGrid();
@@ -1542,6 +1860,21 @@ namespace ChickenDist.Forms
                 MessageBox.Show("اختر المورد أولاً للفواتير الآجلة", "تنبيه",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
+            }
+
+            // تحقق من وجود تاريخ صلاحية للأصناف التي تتطلب ذلك
+            foreach (var item in _items)
+            {
+                var hasExpiryObj = DbHelper.Scalar("SELECT HasExpiry FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
+                bool prodHasExpiry = hasExpiryObj != null && Convert.ToBoolean(hasExpiryObj);
+                if (prodHasExpiry)
+                {
+                    if (!item.ExpiryDate.HasValue)
+                    {
+                        MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
             }
 
             decimal gross, discAmt, discPct, net, taxPct, taxAmt;
@@ -1596,9 +1929,19 @@ namespace ChickenDist.Forms
                 int? warehouseID = null;
                 if (cboWarehouse.SelectedItem is ComboItem wci2) warehouseID = wci2.ID;
 
-                int id = PurchaseDAL.SavePurchase(
-                    _purchaseType, supplierID, net, txtNotes.Text, _items,
-                    discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
+                int id = 0;
+                if (_editPurchaseID > 0)
+                {
+                    bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
+                        discAmt, discPct, taxPct, taxAmt, warehouseID);
+                    if (ok) id = _editPurchaseID;
+                }
+                else
+                {
+                    id = PurchaseDAL.SavePurchase(
+                        _purchaseType, supplierID, net, txtNotes.Text, _items,
+                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
+                }
 
                 if (id > 0)
                 {
@@ -1724,24 +2067,40 @@ namespace ChickenDist.Forms
                 cbo.Items.Clear();
                 if (string.IsNullOrWhiteSpace(text))
                 {
-                    ComboBox.ObjectCollection items = cbo.Items;
-                    object[] items2 = list2.ToArray();
-                    items.AddRange(items2);
+                    cbo.Items.AddRange(list2.ToArray());
                 }
                 else
                 {
+                    List<ComboItem> filtered = new List<ComboItem>();
+                    if (list2.Count > 0 && list2[0].ID == 0)
+                    {
+                        filtered.Add(list2[0]);
+                    }
+                    int count = 0;
                     foreach (ComboItem item2 in list2)
                     {
-                        if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (item2.ID == 0) continue;
+                        if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            (item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
                         {
-                            cbo.Items.Add(item2);
+                            filtered.Add(item2);
+                            count++;
+                            if (count >= 100)
+                                break;
                         }
                     }
+                    cbo.Items.AddRange(filtered.ToArray());
                 }
                 cbo.EndUpdate();
                 cbo.SelectionStart = text.Length;
                 cbo.SelectionLength = 0;
-                cbo.DroppedDown = true;
+                if (!cbo.DroppedDown)
+                {
+                    cbo.DroppedDown = true;
+                    Cursor.Current = Cursors.Default;
+                }
             };
         }
 
@@ -1958,6 +2317,103 @@ namespace ChickenDist.Forms
             public string HeaderText { get; }
             public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
             public override string ToString() => HeaderText;
+        }
+
+        private void LoadInvoiceForEdit(int purchaseID)
+        {
+            var dtPurchase = DbHelper.Query(
+                @"SELECT p.PurchaseType, p.PurchaseDate, p.SupplierID, p.Notes,
+                         COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
+                         COALESCE(p.DiscountPct, 0) AS DiscountPct,
+                         COALESCE(p.TaxPct, 0) AS TaxPct,
+                         p.WarehouseID
+                  FROM Purchases p WHERE p.PurchaseID=@id",
+                DbHelper.P("@id", purchaseID));
+
+            if (dtPurchase.Rows.Count == 0)
+            {
+                MessageBox.Show("لم يتم العثور على الفاتورة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var row = dtPurchase.Rows[0];
+            _loadedLastModified = Convert.ToDateTime(row["PurchaseDate"]);
+
+            // نوع الفاتورة
+            string typeStr = row["PurchaseType"].ToString();
+            _purchaseType = typeStr;
+            ToggleType();
+
+            // التاريخ
+            dtpDate.Value = _isCopyMode ? DateTime.Today : Convert.ToDateTime(row["PurchaseDate"]);
+
+            // المستودع
+            if (row["WarehouseID"] != DBNull.Value)
+            {
+                int wid = Convert.ToInt32(row["WarehouseID"]);
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    if (cboWarehouse.Items[i] is ComboItem wci && wci.ID == wid)
+                        { cboWarehouse.SelectedIndex = i; break; }
+            }
+
+            // المورد
+            if (row["SupplierID"] != DBNull.Value)
+            {
+                int sid = Convert.ToInt32(row["SupplierID"]);
+                for (int i = 0; i < cboSupplier.Items.Count; i++)
+                    if (cboSupplier.Items[i] is ComboItem ci && ci.ID == sid)
+                        { cboSupplier.SelectedIndex = i; break; }
+            }
+
+            // ملاحظات
+            txtNotes.Text = row["Notes"].ToString();
+
+            // الخصم
+            decimal dAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+            decimal dPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
+            if (dPct > 0)
+            {
+                cboInvoiceDiscountType.SelectedIndex = 1;
+                txtInvoiceDiscount.Text = dPct.ToString("G29");
+            }
+            else
+            {
+                cboInvoiceDiscountType.SelectedIndex = 0;
+                txtInvoiceDiscount.Text = dAmt.ToString("G29");
+            }
+
+            // الضريبة
+            decimal tPct = Convert.ToDecimal(row["TaxPct"]);
+            nudTaxPct.Value = tPct > 100 ? 100 : tPct;
+
+            // الأصناف
+            var itemsDt = PurchaseDAL.GetItems(purchaseID);
+            _items.Clear();
+            foreach (DataRow iRow in itemsDt.Rows)
+            {
+                _items.Add(new PurchaseItemDTO
+                {
+                    ProductID   = Convert.ToInt32(iRow["ProductID"]),
+                    ProductCode = iRow["ProductCode"].ToString(),
+                    ProductName = iRow["ProductName"].ToString(),
+                    Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+                    UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
+                    DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+                    DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
+                    SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
+                    UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
+                    Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
+                    ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null
+                });
+            }
+            RefreshGrid();
+
+            if (_isCopyMode)
+                this.Text = "نسخة من فاتورة مشتريات";
+            else
+                this.Text = $"تعديل فاتورة مشتريات رقم {purchaseID}";
+
+            _isDirty = false;
         }
     }
 

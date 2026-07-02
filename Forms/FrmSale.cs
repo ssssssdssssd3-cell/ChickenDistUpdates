@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
 		private ComboBox cboProduct;
 		private TextBox txtProductCode;
-		private TextBox txtClientSearchCode;
+
 
 		private NumericUpDown nudQty;
 
@@ -186,8 +186,8 @@ namespace ChickenDist.Forms
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
 			};
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66f)); // Left: Invoice details
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f)); // Right: Invoice options (Type & Tier)
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75f)); // Left: Invoice details
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // Right: Invoice options (Type & Tier)
 			tblHeaderMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
 			var tblDetails = new TableLayoutPanel
@@ -199,9 +199,9 @@ namespace ChickenDist.Forms
 				Padding = new Padding(0)
 			};
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 0: Label
-			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 1: Control
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68f));   // Col 1: Control (pnlClient)
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Label
-			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));   // Col 3: Control
+			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32f));   // Col 3: Control (Date/Warehouse)
 
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
@@ -234,10 +234,10 @@ namespace ChickenDist.Forms
 			lblClientBalance = new Label
 			{
 				Text = "رصيد: 0.00 ج",
-				Width = 85,
+				Width = 95,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
-				TextAlign = ContentAlignment.MiddleLeft,
+				TextAlign = ContentAlignment.MiddleRight,
 				Dock = DockStyle.Left,
 				Margin = new Padding(2)
 			};
@@ -245,7 +245,7 @@ namespace ChickenDist.Forms
 			Button btnClientStatement = new Button
 			{
 				Text = "📋 كشف",
-				Width = 55,
+				Width = 50,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
 				BackColor = Theme.Primary,
@@ -263,98 +263,54 @@ namespace ChickenDist.Forms
 				}
 			};
 
-			txtClientSearchCode = new TextBox
+			Button btnClientSearch = new Button
 			{
-				Width = 75,
-				Font = Theme.FontMain,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				BorderStyle = BorderStyle.FixedSingle,
-				Dock = DockStyle.Right,
-				Margin = new Padding(2),
-				RightToLeft = RightToLeft.Yes
+				Text = "🔍",
+				Width = 40,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(70, 80, 95),
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2)
 			};
-			txtClientSearchCode.KeyDown += (s, e) =>
+			btnClientSearch.FlatAppearance.BorderSize = 0;
+			btnClientSearch.Click += (s, e) =>
 			{
-				if (e.KeyCode == Keys.Enter)
+				using (var frm = new FrmClientSearch())
 				{
-					string term = txtClientSearchCode.Text.Trim();
-					if (string.IsNullOrEmpty(term))
+					if (frm.ShowDialog() == DialogResult.OK)
 					{
-						cboClient.SelectedIndex = 0;
-						return;
-					}
-
-					ComboItem found = null;
-					var allClients = cboClient.Tag as List<ComboItem>;
-					if (allClients != null)
-					{
-						foreach (var ci in allClients)
+						int cid = frm.SelectedClientID;
+						if (cid > 0)
 						{
-							if (ci.ID > 0 &&
-								(ci.ID.ToString() == term ||
-								 string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
-								 string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
-								 (ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase))))
+							var allClients = cboClient.Tag as List<ComboItem>;
+							if (allClients != null)
 							{
-								found = ci;
-								break;
+								cboClient.BeginUpdate();
+								cboClient.Items.Clear();
+								cboClient.Items.AddRange(allClients.ToArray());
+								cboClient.EndUpdate();
 							}
-						}
-					}
-					else
-					{
-						foreach (var item in cboClient.Items)
-						{
-							if (item is ComboItem ci && ci.ID > 0)
+							for (int i = 0; i < cboClient.Items.Count; i++)
 							{
-								if (ci.ID.ToString() == term ||
-									string.Equals(ci.ClientCode, term, StringComparison.OrdinalIgnoreCase) || 
-									string.Equals(ci.Phone, term, StringComparison.OrdinalIgnoreCase) ||
-									(ci.Phone2 != null && string.Equals(ci.Phone2, term, StringComparison.OrdinalIgnoreCase)))
+								if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
 								{
-									found = ci;
+									cboClient.SelectedIndex = i;
 									break;
 								}
 							}
 						}
 					}
-
-					if (found != null)
-					{
-						if (allClients != null)
-						{
-							cboClient.BeginUpdate();
-							cboClient.Items.Clear();
-							cboClient.Items.AddRange(allClients.ToArray());
-							cboClient.EndUpdate();
-						}
-						for (int i = 0; i < cboClient.Items.Count; i++)
-						{
-							if (cboClient.Items[i] is ComboItem ci && ci.ID == found.ID)
-							{
-								cboClient.SelectedIndex = i;
-								break;
-							}
-						}
-						txtClientSearchCode.Clear();
-						e.Handled = true;
-						e.SuppressKeyPress = true;
-					}
-					else
-					{
-						MessageBox.Show("لم يتم العثور على العميل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-					}
 				}
 			};
 
 			pnlClient.Controls.Add(cboClient);
-			pnlClient.Controls.Add(txtClientSearchCode);
 			pnlClient.Controls.Add(lblClientBalance);
+			pnlClient.Controls.Add(btnClientSearch);
 			pnlClient.Controls.Add(btnClientStatement);
-			txtClientSearchCode.SendToBack();
-			btnClientStatement.SendToBack();
-			lblClientBalance.SendToBack();
+			cboClient.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
 			lblDate.Dock = DockStyle.Fill;
@@ -367,7 +323,8 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Short,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
-				Margin = new Padding(2)
+				Margin = new Padding(2),
+				Enabled = Session.CanAccess("EditInvoiceDate")
 			};
 
 			tblDetails.Controls.Add(lblClient, 0, 0);
@@ -411,6 +368,8 @@ namespace ChickenDist.Forms
 
 			tblDetails.Controls.Add(lblDriver, 0, 1);
 			tblDetails.Controls.Add(cboDriver, 1, 1);
+			lblDriver.Visible = Session.CanSelectDriver;
+			cboDriver.Visible = Session.CanSelectDriver;
 			tblDetails.Controls.Add(lblWarehouse, 2, 1);
 			tblDetails.Controls.Add(cboWarehouse, 3, 1);
 
@@ -714,9 +673,10 @@ namespace ChickenDist.Forms
 						_isScanningBarcode = true;
 						try
 						{
-							AddOrUpdateProduct(foundItem.ID, 1.00m);
+							AddOrUpdateProduct(foundItem.ID, 1.00m, scannedBarcode: scanText);
 							
 							cboProduct.Text = "";
+							cboProduct.BeginUpdate();
 							cboProduct.Items.Clear();
 							cboProduct.Items.AddRange(allItems.ToArray());
 							for (int i = 0; i < cboProduct.Items.Count; i++)
@@ -727,6 +687,7 @@ namespace ChickenDist.Forms
 									break;
 								}
 							}
+							cboProduct.EndUpdate();
 
 							txtProductCode.Clear();
 							txtProductCode.Focus();
@@ -838,7 +799,6 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleCenter
 			};
-			pnlQuickItems.Controls.Add(lblQuickTitle);
 
 			flowQuickItems = new FlowLayoutPanel
 			{
@@ -849,11 +809,12 @@ namespace ChickenDist.Forms
 				Padding = new Padding(2)
 			};
 			pnlQuickItems.Controls.Add(flowQuickItems);
+			pnlQuickItems.Controls.Add(lblQuickTitle);
 
 			dgItems = new DataGridView
 			{
 				Dock = DockStyle.Fill,
-				BackgroundColor = Theme.BgCard,
+				BackgroundColor = Color.White,
 				BorderStyle = BorderStyle.None,
 				RowHeadersVisible = false,
 				AllowUserToAddRows = false,
@@ -861,10 +822,21 @@ namespace ChickenDist.Forms
 				ReadOnly = false,
 				SelectionMode = DataGridViewSelectionMode.FullRowSelect,
 				RightToLeft = RightToLeft.Yes,
-				GridColor = Theme.BorderColor,
+				GridColor = Color.FromArgb(210, 210, 215),
+				CellBorderStyle = DataGridViewCellBorderStyle.Single,
+				ScrollBars = ScrollBars.Both,
+				EnableHeadersVisualStyles = false,
 				DefaultCellStyle = new DataGridViewCellStyle
 				{
-					BackColor = Theme.BgCard,
+					BackColor = Color.White,
+					ForeColor = Theme.TextMain,
+					SelectionBackColor = Theme.Primary,
+					SelectionForeColor = Color.White,
+					Font = Theme.FontMain
+				},
+				AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+				{
+					BackColor = Color.FromArgb(240, 242, 245),
 					ForeColor = Theme.TextMain,
 					SelectionBackColor = Theme.Primary,
 					SelectionForeColor = Color.White,
@@ -876,7 +848,6 @@ namespace ChickenDist.Forms
 					ForeColor = Color.White,
 					Font = new Font("Segoe UI", 10f, FontStyle.Bold)
 				},
-				EnableHeadersVisualStyles = false,
 				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 			};
 			
@@ -893,6 +864,8 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "خصم %", ReadOnly = false, FillWeight = 30f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "الرقم التسلسلي/IMEI", ReadOnly = false, FillWeight = 50f, Visible = (AppConfig.BusinessType == "Mobiles") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			
@@ -905,6 +878,16 @@ namespace ChickenDist.Forms
 				FillWeight = 20f
 			};
 			dgItems.Columns.Add(delCol);
+			Theme.AdjustGridHeaders(dgItems);
+
+			foreach (DataGridViewColumn col in dgItems.Columns)
+			{
+				col.MinimumWidth = 95;
+			}
+			if (dgItems.Columns.Contains("ProductName"))
+			{
+				dgItems.Columns["ProductName"].MinimumWidth = 160;
+			}
 			
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
@@ -938,7 +921,7 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 104,
+				Height = 120,
 				Width = 1024,
 				BackColor = Theme.BgCard
 			};
@@ -946,14 +929,14 @@ namespace ChickenDist.Forms
 			var tblSummary = new TableLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 48,
+				Height = 68,
 				RowCount = 2,
 				ColumnCount = 8,
 				BackColor = Color.Transparent,
-				Padding = new Padding(10, 1, 10, 1)
+				Padding = new Padding(10, 2, 10, 2)
 			};
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
 
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
 			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val
@@ -1191,6 +1174,23 @@ namespace ChickenDist.Forms
 			pnlItems.BringToFront();
 			ToggleType();
 			Theme.ApplyFormRTL(this);
+			ApplyInputStyles(this);
+		}
+
+		private void ApplyInputStyles(Control parent)
+		{
+			foreach (Control c in parent.Controls)
+			{
+				if (c is TextBox || c is ComboBox || c is DateTimePicker || c is NumericUpDown)
+				{
+					c.BackColor = Theme.BgInput;
+					c.ForeColor = Theme.TextInput;
+				}
+				else if (c.HasChildren)
+				{
+					ApplyInputStyles(c);
+				}
+			}
 		}
 
 
@@ -1375,11 +1375,13 @@ namespace ChickenDist.Forms
 				_isScanningBarcode = true;
 				try
 				{
-					AddOrUpdateProduct(foundItem.ID, qtyToAdd);
+					AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: text);
 					cboProduct.Text = "";
+					cboProduct.BeginUpdate();
 					cboProduct.Items.Clear();
 					cboProduct.Items.AddRange(allItems.ToArray());
 					cboProduct.SelectedIndex = 0;
+					cboProduct.EndUpdate();
 					cboProduct.Focus();
 				}
 				finally
@@ -1418,6 +1420,7 @@ namespace ChickenDist.Forms
 					}
 				}
 
+				string scanText = cboProduct.Text.Trim();
 				ComboItem foundItem = null;
 
 				if (res.IsScaleBarcode)
@@ -1442,7 +1445,6 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					string scanText = cboProduct.Text.Trim();
 					foreach (var ci in allItems)
 					{
 						if (ci.ID > 0 && 
@@ -1468,12 +1470,14 @@ namespace ChickenDist.Forms
 					_isScanningBarcode = true;
 					try
 					{
-						AddOrUpdateProduct(foundItem.ID, qtyToAdd);
+						AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: scanText);
 						
 						cboProduct.Text = "";
+						cboProduct.BeginUpdate();
 						cboProduct.Items.Clear();
 						cboProduct.Items.AddRange(allItems.ToArray());
 						cboProduct.SelectedIndex = 0;
+						cboProduct.EndUpdate();
 						cboProduct.Focus();
 					}
 					finally
@@ -1505,28 +1509,43 @@ namespace ChickenDist.Forms
 				cbo.Items.Clear();
 				if (string.IsNullOrWhiteSpace(text))
 				{
-					ComboBox.ObjectCollection items = cbo.Items;
-					object[] items2 = list2.ToArray();
-					items.AddRange(items2);
+					cbo.Items.AddRange(list2.ToArray());
 				}
 				else
 				{
+					List<ComboItem> filtered = new List<ComboItem>();
+					if (list2.Count > 0 && list2[0].ID == 0)
+					{
+						filtered.Add(list2[0]);
+					}
+					int count = 0;
 					foreach (ComboItem item2 in list2)
 					{
-						if (item2.ID == 0 || 
-							item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+						if (item2.ID == 0) continue;
+						if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
 							(item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
 							(item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
-							(item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
+							(item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.ClientCode != null && item2.ClientCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.Phone != null && item2.Phone.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+							(item2.Phone2 != null && item2.Phone2.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
 						{
-							cbo.Items.Add(item2);
+							filtered.Add(item2);
+							count++;
+							if (count >= 100)
+								break;
 						}
 					}
+					cbo.Items.AddRange(filtered.ToArray());
 				}
 				cbo.EndUpdate();
 				cbo.SelectionStart = text.Length;
 				cbo.SelectionLength = 0;
-				cbo.DroppedDown = true;
+				if (!cbo.DroppedDown)
+				{
+					cbo.DroppedDown = true;
+					Cursor.Current = Cursors.Default;
+				}
 			};
 		}
 
@@ -1541,19 +1560,26 @@ namespace ChickenDist.Forms
 			var stockTable = InventoryDAL.GetStock();
 			foreach (DataRow sRow in stockTable.Rows)
 				_stockCache[(int)sRow["ProductID"]] = sRow["BookQty"] == DBNull.Value ? 0m : Convert.ToDecimal(sRow["BookQty"]);
+			
 			DataTable all = ClientDAL.GetAll(activeOnly: true);
+			cboClient.BeginUpdate();
 			cboClient.Items.Clear();
-			cboClient.Items.Add(new ComboItem(0, "-- اختر عميل --"));
+			List<ComboItem> clientItems = new List<ComboItem>();
+			clientItems.Add(new ComboItem(0, "-- اختر عميل --"));
 			foreach (DataRow row in all.Rows)
 			{
 				var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
 				item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString().Trim() : "";
 				item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString().Trim() : "";
 				item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString().Trim() : "";
-				cboClient.Items.Add(item);
+				clientItems.Add(item);
 			}
+			cboClient.Items.AddRange(clientItems.ToArray());
 			cboClient.DisplayMember = "Text";
+			cboClient.Tag = clientItems;
 			cboClient.SelectedIndex = 0;
+			cboClient.EndUpdate();
+			
 			cboClient.SelectedIndexChanged += delegate
 			{
 				if (cboClient.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
@@ -1601,18 +1627,27 @@ namespace ChickenDist.Forms
                     }
                 }
 			};
+			
 			DataTable drivers = EmployeeDAL.GetDrivers();
+			cboDriver.BeginUpdate();
 			cboDriver.Items.Clear();
-			cboDriver.Items.Add(new ComboItem(0, "-- اختر مندوب --"));
+			List<ComboItem> driverItems = new List<ComboItem>();
+			driverItems.Add(new ComboItem(0, "-- اختر مندوب --"));
 			foreach (DataRow row2 in drivers.Rows)
 			{
-				cboDriver.Items.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
+				driverItems.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
 			}
+			cboDriver.Items.AddRange(driverItems.ToArray());
 			cboDriver.DisplayMember = "Text";
+			cboDriver.Tag = driverItems;
 			cboDriver.SelectedIndex = 0;
+			cboDriver.EndUpdate();
+			
 			DataTable all2 = ProductDAL.GetAll(activeOnly: true);
+			cboProduct.BeginUpdate();
 			cboProduct.Items.Clear();
-			cboProduct.Items.Add(new ComboItem(0, "-- اختر صنف --"));
+			List<ComboItem> productItems = new List<ComboItem>();
+			productItems.Add(new ComboItem(0, "-- اختر صنف --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
 				string name = row3["ProductName"].ToString();
@@ -1652,12 +1687,14 @@ namespace ChickenDist.Forms
 					itemOld.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
 					itemOld.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
 					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+					itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					// وحدات متعددة
 					itemOld.BaseUnitName = baseUnit;
 					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
 					itemOld.Unit2Name = unit2Name; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
 					itemOld.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(itemOld);
+					productItems.Add(itemOld);
 
 					// إضافة السعر المعلق كخيار مستقل
 					var itemPending = new ComboItem(
@@ -1677,12 +1714,14 @@ namespace ChickenDist.Forms
 					itemPending.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
 					itemPending.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
 					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+					itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					// وحدات متعددة
 					itemPending.BaseUnitName = baseUnit;
 					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
 					itemPending.Unit2Name = unit2Name; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
 					itemPending.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(itemPending);
+					productItems.Add(itemPending);
 				}
 				else
 				{
@@ -1703,16 +1742,21 @@ namespace ChickenDist.Forms
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
 					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+					comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+					comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					// وحدات متعددة
 					comboItem.BaseUnitName = baseUnit;
 					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
 					comboItem.Unit2Name = unit2Name; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
 					comboItem.Unit3Factor = unit3Factor;
-					cboProduct.Items.Add(comboItem);
+					productItems.Add(comboItem);
 				}
 			}
+			cboProduct.Items.AddRange(productItems.ToArray());
 			cboProduct.DisplayMember = "Text";
+			cboProduct.Tag = productItems;
 			cboProduct.SelectedIndex = 0;
+			cboProduct.EndUpdate();
 			cboProduct.SelectedIndexChanged += delegate
 			{
 				if (_isScanningBarcode) return;
@@ -1763,6 +1807,14 @@ namespace ChickenDist.Forms
 				}
 				cboWarehouse.DisplayMember = "Text";
 				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+				cboWarehouse.SelectedIndexChanged += (s, e) =>
+				{
+					foreach (var item in _items)
+					{
+						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
+					}
+					RefreshGrid();
+				};
 			}
 			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
 
@@ -1809,7 +1861,23 @@ namespace ChickenDist.Forms
 				cboSafeAccount.DisplayMember = "Text";
 				if (cboSafeAccount.Items.Count > 0)
 				{
-					cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+					if (selectedIdx >= 0)
+					{
+						cboSafeAccount.SelectedIndex = selectedIdx;
+					}
+					else
+					{
+						int fallbackIdx = 0;
+						for (int i = 0; i < cboSafeAccount.Items.Count; i++)
+						{
+							if (cboSafeAccount.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+							{
+								fallbackIdx = i;
+								break;
+							}
+						}
+						cboSafeAccount.SelectedIndex = fallbackIdx;
+					}
 				}
 			}
 			catch { }
@@ -2046,6 +2114,27 @@ namespace ChickenDist.Forms
 			if (frmProductSearch.ShowDialog() == DialogResult.OK)
 			{
 				AddOrUpdateProduct(frmProductSearch.SelectedProductID, 1.00m, frmProductSearch.SelectedPrice, false, frmProductSearch.SelectedUnitName);
+				if (frmProductSearch.SelectedBatchID.HasValue)
+				{
+					if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+					{
+						MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+						if (lastItem != null)
+						{
+							_items.Remove(lastItem);
+							RefreshGrid();
+						}
+						return;
+					}
+					var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+					if (lastItem2 != null)
+					{
+						lastItem2.BatchID = frmProductSearch.SelectedBatchID;
+						lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
+						RefreshGrid();
+					}
+				}
 			}
 		}
 
@@ -2218,12 +2307,9 @@ namespace ChickenDist.Forms
 			{
 				if (decimal.TryParse(dataGridViewRow.Cells["Quantity"].Value?.ToString(), out var result) && result > 0m)
 				{
-					// استخدام cache — يتم تحديثه عند فتح الشاشة
-					decimal productStock = _stockCache.TryGetValue(saleItemDTO.ProductID, out var cached3) ? cached3 : 0m;
-					// ─── الأصناف الخدمية تتجاوز فحص المخزون ───
-					if (!saleItemDTO.IsService && result > productStock)
+					if (!CheckSaleItemStock(saleItemDTO, result, out string err))
 					{
-						MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({result:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({productStock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
 						return;
 					}
@@ -2295,6 +2381,10 @@ namespace ChickenDist.Forms
 					MessageBox.Show("من فضلك أدخل قيمة خصم صحيحة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 				}
+			}
+			else if (dgItems.Columns[e.ColumnIndex].Name == "IMEI")
+			{
+				saleItemDTO.IMEI = dataGridViewRow.Cells["IMEI"].Value?.ToString() ?? "";
 			}
 
 			if (dataGridViewRow.DataGridView == null) return;
@@ -2377,6 +2467,8 @@ namespace ChickenDist.Forms
 					item.DiscountPct.ToString("F2"),
 					item.DiscountAmt.ToString("F2"),
 					item.TotalPrice.ToString("F2"),
+					item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "",
+					item.IMEI,
 					item.PurchasePrice.ToString("F2"),
 					costTotal.ToString("F2")
 				);
@@ -2446,7 +2538,7 @@ namespace ChickenDist.Forms
 			CalculateNet();
 		}
 
-		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null)
+		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null)
 		{
 			ComboItem product = null;
 			foreach (var item in cboProduct.Items)
@@ -2470,7 +2562,7 @@ namespace ChickenDist.Forms
 			}
 			if (product == null) return;
 
-			decimal stock = _stockCache.TryGetValue(productID, out var cached) ? cached : 0m;
+			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
 			if (stock <= 0 && !product.IsService)
 			{
 				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -2479,41 +2571,81 @@ namespace ChickenDist.Forms
 				return;
 			}
 
-			if (manualPrice.HasValue)
+			int? batchID = null;
+			DateTime? expiryDate = null;
+			if (product.HasExpiry)
 			{
-				decimal targetPrice = manualPrice.Value;
+				int whId = 1;
+				if (cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0) whId = wci.ID;
+
+				var batches = DbHelper.Query(@"
+					SELECT BatchID, ExpiryDate, Quantity 
+					FROM ProductBatches 
+					WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity > 0 
+					ORDER BY ExpiryDate ASC, BatchID ASC",
+					DbHelper.P("@pid", product.ID), DbHelper.P("@wid", whId));
+				
+				if (batches.Rows.Count > 0)
+				{
+					var oldestBatch = batches.Rows[0];
+					int oldestBatchID = Convert.ToInt32(oldestBatch["BatchID"]);
+					DateTime? oldestExpiry = oldestBatch["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(oldestBatch["ExpiryDate"]) : (DateTime?)null;
+
+					bool isInternational = false;
+					if (!string.IsNullOrEmpty(scannedBarcode) && product.InternationalCode != null)
+					{
+						isInternational = MatchBarcode(product.InternationalCode, scannedBarcode);
+					}
+
+					if (isInternational)
+					{
+						batchID = oldestBatchID;
+						expiryDate = oldestExpiry;
+					}
+					else
+					{
+						if (oldestExpiry.HasValue)
+						{
+							var res = MessageBox.Show("يوجد تاريخ أقرب سينتهي، هل تريد بيعه أولاً؟", "تنبيه تاريخ الصلاحية", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+							if (res == DialogResult.Yes)
+							{
+								batchID = oldestBatchID;
+								expiryDate = oldestExpiry;
+							}
+						}
+					}
+				}
+			}
+
+			if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+			{
+				MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+				else RefreshGrid();
+				return;
+			}
+
+			if (product.HasExpiry)
+			{
 				SaleItemDTO existingRow = null;
 				foreach (var item in _items)
 				{
-					if (item.ProductID == productID && Math.Abs(item.UnitPrice - targetPrice) < 0.005m)
+					if (item.ProductID == productID && 
+						item.BatchID == batchID && 
+						(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
 					{
 						existingRow = item;
 						break;
 					}
 				}
 
-				decimal newQty = qtyToAdd;
-				if (existingRow != null)
-				{
-					newQty = existingRow.Quantity + qtyToAdd;
-				}
+				decimal targetPrice = manualPrice ?? product.Price;
+				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
-				decimal totalProductQtyInInvoice = qtyToAdd;
-				foreach (var item in _items)
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					if (item.ProductID == productID)
-					{
-						totalProductQtyInInvoice += item.Quantity;
-					}
-				}
-				if (existingRow != null)
-				{
-					totalProductQtyInInvoice -= existingRow.Quantity;
-				}
-
-				if (totalProductQtyInInvoice > stock && !product.IsService)
-				{
-					MessageBox.Show($"❌ خطأ: إجمالي الكمية المطلوبة ({totalProductQtyInInvoice:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 					else RefreshGrid();
 					return;
@@ -2528,69 +2660,93 @@ namespace ChickenDist.Forms
 					else
 					{
 						existingRow.Quantity = newQty;
+						if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
 					}
 				}
 				else
 				{
-					if (newQty > 0)
+					if (qtyToAdd > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, newQty, targetPrice, stock, unitName));
+						_items.Add(tempItem);
 					}
 				}
 			}
 			else
 			{
-				decimal existingQty = 0m;
-				List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
+				SaleItemDTO existingRow = null;
 				foreach (var item in _items)
 				{
-					if (item.ProductID == productID)
+					if (item.ProductID == productID && (unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
 					{
-						existingQty += item.Quantity;
-						existingRows.Add(item);
+						existingRow = item;
+						break;
 					}
 				}
 
-				decimal totalQty = existingQty + qtyToAdd;
+				decimal targetPrice = manualPrice ?? product.Price;
+				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
-				if (totalQty > stock && !product.IsService)
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					MessageBox.Show($"❌ خطأ: الكمية المطلوبة ({totalQty:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({stock:N2})!", "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					RefreshGrid();
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+					else RefreshGrid();
 					return;
 				}
 
 				decimal oldPrice = product.Price;
 				decimal newPrice = product.PendingSalePrice;
 				decimal threshold = product.PendingQtyThreshold;
-
 				bool hasPendingPrice = newPrice > 0 && threshold > 0;
-
-				foreach (var row in existingRows)
-				{
-					_items.Remove(row);
-				}
 
 				if (hasPendingPrice)
 				{
+					List<SaleItemDTO> existingRows = new List<SaleItemDTO>();
+					foreach (var item in _items)
+					{
+						if (item.ProductID == productID)
+							existingRows.Add(item);
+					}
+					foreach (var row in existingRows)
+					{
+						_items.Remove(row);
+					}
+
+					decimal totalQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 					decimal oldQtyAvailable = Math.Max(0m, Math.Min(stock, threshold));
 					decimal qtyOld = Math.Min(totalQty, oldQtyAvailable);
 					decimal qtyNew = Math.Max(0m, totalQty - oldQtyAvailable);
 
 					if (qtyOld > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock));
+						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock, unitName, batchID, expiryDate));
 					}
 					if (qtyNew > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock));
+						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock, unitName, batchID, expiryDate));
 					}
 				}
 				else
 				{
-					if (totalQty > 0)
+					if (existingRow != null)
 					{
-						_items.Add(CreateSaleItemDTO(product, totalQty, oldPrice, stock));
+						if (newQty <= 0)
+						{
+							_items.Remove(existingRow);
+						}
+						else
+						{
+							existingRow.Quantity = newQty;
+							if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
+						}
+					}
+					else
+					{
+						if (qtyToAdd > 0)
+						{
+							_items.Add(tempItem);
+						}
 					}
 				}
 			}
@@ -2599,7 +2755,66 @@ namespace ChickenDist.Forms
 			else RefreshGrid();
 		}
 
-		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock, string unitName = null)
+		private bool CheckSaleItemStock(SaleItemDTO item, decimal newQty, out string err)
+		{
+			err = "";
+			if (item.IsService) return true;
+
+			decimal reqQtyInFactor = newQty * item.Factor;
+			
+			int warehouseID = 1;
+			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0)
+			{
+				warehouseID = wci.ID;
+			}
+
+			if (item.BatchID.HasValue)
+			{
+				var qtyVal = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", item.BatchID.Value));
+				decimal dbQty = qtyVal != null && qtyVal != DBNull.Value ? Convert.ToDecimal(qtyVal) : 0m;
+
+				// If editing an existing invoice, add the original quantity of this item
+				if (_editSaleID > 0)
+				{
+					var origQtyVal = DbHelper.Scalar("SELECT Quantity * Factor FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid AND BatchID=@bid",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID), DbHelper.P("@bid", item.BatchID.Value));
+					if (origQtyVal != null && origQtyVal != DBNull.Value)
+					{
+						dbQty += Convert.ToDecimal(origQtyVal);
+					}
+				}
+
+				if (reqQtyInFactor > dbQty)
+				{
+					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({dbQty:N2})!";
+					return false;
+				}
+			}
+			else
+			{
+				decimal dbQty = InventoryDAL.GetProductStock(item.ProductID, warehouseID);
+
+				// If editing an existing invoice, add the original quantity
+				if (_editSaleID > 0)
+				{
+					var origQtyVal = DbHelper.Scalar("SELECT Quantity * Factor FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid AND (BatchID IS NULL OR BatchID = 0)",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID));
+					if (origQtyVal != null && origQtyVal != DBNull.Value)
+					{
+						dbQty += Convert.ToDecimal(origQtyVal);
+					}
+				}
+
+				if (reqQtyInFactor > dbQty)
+				{
+					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({dbQty:N2})!";
+					return false;
+				}
+			}
+			return true;
+		}
+
+		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock, string unitName = null, int? batchID = null, DateTime? expiryDate = null)
 		{
 			string selectedUnit = unitName;
 			decimal factor = 1m;
@@ -2647,7 +2862,9 @@ namespace ChickenDist.Forms
 				ProductCode = product.ProductCode,
 				IsService = product.IsService,
 				UnitName = selectedUnit,
-				Factor = factor
+				Factor = factor,
+				BatchID = batchID,
+				ExpiryDate = expiryDate
 			};
 		}
 
@@ -2850,7 +3067,8 @@ namespace ChickenDist.Forms
 					Brand       = iRow["Brand"]?.ToString() ?? "",
 					ShelfLocation = iRow["ShelfLocation"]?.ToString() ?? "",
 					UnitName    = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
-					Factor      = iRow.Table.Columns.Contains("Factor")   && iRow["Factor"]   != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1m
+					Factor      = iRow.Table.Columns.Contains("Factor")   && iRow["Factor"]   != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1m,
+					IMEI        = iRow.Table.Columns.Contains("IMEI")     && iRow["IMEI"]     != DBNull.Value ? iRow["IMEI"].ToString() : ""
 				});
 			}
 			RefreshGrid();
@@ -2912,9 +3130,12 @@ namespace ChickenDist.Forms
 					quantityToCheck = item.Quantity - oldQty;
 				}
 
-				if (quantityToCheck > 0 && quantityToCheck > productStock)
+				decimal quantityToCheckBase = quantityToCheck * item.Factor;
+
+				if (quantityToCheckBase > 0 && quantityToCheckBase > productStock)
 				{
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2}\nالكمية المتاحة بالمخزن: {productStock:N2}",
+					decimal availableInSelectedUnit = productStock / item.Factor;
+					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
 						"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
@@ -3523,7 +3744,39 @@ namespace ChickenDist.Forms
 					));
 				}
 				cboSafe.DisplayMember = "Text";
-				if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+				if (cboSafe.Items.Count > 0)
+				{
+					int defaultSafeID = Session.DefaultSafeID ?? 0;
+					int selectedIdx = -1;
+					if (defaultSafeID > 0)
+					{
+						for (int i = 0; i < cboSafe.Items.Count; i++)
+						{
+							if (cboSafe.Items[i] is ComboItem ci && ci.ID == defaultSafeID)
+							{
+								selectedIdx = i;
+								break;
+							}
+						}
+					}
+					if (selectedIdx >= 0)
+					{
+						cboSafe.SelectedIndex = selectedIdx;
+					}
+					else
+					{
+						int fallbackIdx = 0;
+						for (int i = 0; i < cboSafe.Items.Count; i++)
+						{
+							if (cboSafe.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+							{
+								fallbackIdx = i;
+								break;
+							}
+						}
+						cboSafe.SelectedIndex = fallbackIdx;
+					}
+				}
 			}
 			catch { }
 
@@ -4227,8 +4480,8 @@ namespace ChickenDist.Forms
 					DrawChickenSilhouette(g, w - 125, y + 10, 25);
 
 					// الدعاية للبرنامج
-					var fPromo = new Font("Arial", 8.5f, FontStyle.Bold);
-					using (var bPromo = new SolidBrush(Color.FromArgb(0, 51, 153)))
+					var fPromo = new Font("Arial", 10f, FontStyle.Bold);
+					using (var bPromo = new SolidBrush(Color.FromArgb(0, 80, 220)))
 					{
 						g.DrawString("✨ تم إصدار هذه الفاتورة بواسطة Pro System لإدارة المبيعات والتوزيع. للاشتراك: 01016517586", fPromo, bPromo, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
 					}
@@ -4544,6 +4797,8 @@ namespace ChickenDist.Forms
 		public string InternationalCode { get; set; } = "";
 		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
 		public bool IsService { get; set; } = false;
+		public bool HasExpiry { get; set; } = false;
+		public int? DefaultExpiryDays { get; set; } = null;
 
 		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
 		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>

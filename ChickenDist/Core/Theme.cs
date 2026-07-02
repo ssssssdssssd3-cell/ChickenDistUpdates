@@ -56,6 +56,7 @@ namespace ChickenDist.Core
         };
 
         public static Color BgInput => Color.White; // خانات الإدخال باللون الأبيض دائماً بطلب العميل
+        public static Color TextInput => Color.FromArgb(33, 37, 41); // لون خط خانات الإدخال - غامق دائماً للقراءة على الخلفية البيضاء
 
         public static Color TextMain => AppConfig.AppTheme switch
         {

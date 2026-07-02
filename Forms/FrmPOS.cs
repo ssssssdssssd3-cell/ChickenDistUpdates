@@ -138,9 +138,9 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlClient);
 
             // ── لوحة الأصناف السريعة (يمين) ──────────────────
-            pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Theme.BgCard, Padding = new Padding(4) };
+            pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Color.FromArgb(240, 242, 245), Padding = new Padding(4) };
             pnlQuick.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlQuick);
-            var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Top, Height = 28, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter };
+            var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Top, Height = 28, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
             flowQuickItems = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Transparent, FlowDirection = FlowDirection.RightToLeft, RightToLeft = RightToLeft.Yes };
             pnlQuick.Controls.Add(flowQuickItems);
             pnlQuick.Controls.Add(lQuick);
@@ -861,18 +861,31 @@ namespace ChickenDist.Forms
         {
             flowQuickItems.Controls.Clear();
             var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND IsQuickItem=1 ORDER BY ProductName");
+            
+            var colors = new Color[] {
+                Color.FromArgb(13, 110, 253),  // Royal Blue
+                Color.FromArgb(253, 126, 20),  // Vibrant Orange
+                Color.FromArgb(25, 135, 84),   // Green
+                Color.FromArgb(111, 66, 193),  // Purple
+                Color.FromArgb(23, 162, 184),  // Teal
+                Color.FromArgb(220, 53, 69)    // Red
+            };
+            int colorIndex = 0;
+
             foreach (DataRow row in dt.Rows)
             {
                 int pid = Convert.ToInt32(row["ProductID"]);
                 string name = row["ProductName"].ToString();
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
+                
+                Color btnColor = colors[colorIndex++ % colors.Length];
                 var btn = new Button
                 {
-                    Text = $"{name}\n{price:N2}",
-                    Size = new Size(125, 55), FlatStyle = FlatStyle.Flat,
-                    BackColor = Theme.Primary, ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                    Cursor = Cursors.Hand, Margin = new Padding(3),
+                    Text = $"{name}\n\n{price:N2} ج",
+                    Size = new Size(90, 85), FlatStyle = FlatStyle.Flat,
+                    BackColor = btnColor, ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
+                    Cursor = Cursors.Hand, Margin = new Padding(4),
                     Tag = pid
                 };
                 btn.FlatAppearance.BorderSize = 0;

@@ -323,7 +323,8 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Short,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
-				Margin = new Padding(2)
+				Margin = new Padding(2),
+				Enabled = Session.CanAccess("EditInvoiceDate")
 			};
 
 			tblDetails.Controls.Add(lblClient, 0, 0);
@@ -823,6 +824,7 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				GridColor = Color.FromArgb(210, 210, 215),
 				CellBorderStyle = DataGridViewCellBorderStyle.Single,
+				ScrollBars = ScrollBars.Both,
 				EnableHeadersVisualStyles = false,
 				DefaultCellStyle = new DataGridViewCellStyle
 				{
@@ -877,6 +879,15 @@ namespace ChickenDist.Forms
 			};
 			dgItems.Columns.Add(delCol);
 			Theme.AdjustGridHeaders(dgItems);
+
+			foreach (DataGridViewColumn col in dgItems.Columns)
+			{
+				col.MinimumWidth = 95;
+			}
+			if (dgItems.Columns.Contains("ProductName"))
+			{
+				dgItems.Columns["ProductName"].MinimumWidth = 160;
+			}
 			
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
@@ -1163,6 +1174,23 @@ namespace ChickenDist.Forms
 			pnlItems.BringToFront();
 			ToggleType();
 			Theme.ApplyFormRTL(this);
+			ApplyInputStyles(this);
+		}
+
+		private void ApplyInputStyles(Control parent)
+		{
+			foreach (Control c in parent.Controls)
+			{
+				if (c is TextBox || c is ComboBox || c is DateTimePicker || c is NumericUpDown)
+				{
+					c.BackColor = Theme.BgInput;
+					c.ForeColor = Theme.TextInput;
+				}
+				else if (c.HasChildren)
+				{
+					ApplyInputStyles(c);
+				}
+			}
 		}
 
 
