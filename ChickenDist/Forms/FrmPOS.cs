@@ -242,6 +242,7 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
             else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
         }
 
         // ── مسح الباركود ──────────────────────────────────────
@@ -255,6 +256,19 @@ namespace ChickenDist.Forms
                 {
                     AddProductByCode(code);
                     txtBarcode.Clear();
+                }
+                txtBarcode.Focus();
+            }
+            else if (e.KeyCode == Keys.Down)
+            {
+                if (dgItems.Rows.Count > 0)
+                {
+                    dgItems.Focus();
+                    if (dgItems.CurrentCell == null)
+                    {
+                        dgItems.CurrentCell = dgItems.Rows[0].Cells[0];
+                    }
+                    e.Handled = true;
                 }
             }
         }
@@ -589,6 +603,15 @@ namespace ChickenDist.Forms
                     RefreshGrid();
                 }
                 e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Down)
+            {
+                if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == dgItems.Rows.Count - 1)
+                {
+                    txtBarcode.Focus();
+                    txtBarcode.SelectAll();
+                    e.Handled = true;
+                }
             }
         }
 
