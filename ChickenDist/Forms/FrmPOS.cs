@@ -61,6 +61,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.KeyPreview = true;
             this.KeyDown += FrmPOS_KeyDown;
+            this.WindowState = FormWindowState.Maximized;
 
             // ── الشريط العلوي ─────────────────────────────────
             pnlTop = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Theme.BgHeader };
@@ -114,10 +115,20 @@ namespace ChickenDist.Forms
             });
             dgItems.Columns.Add("Qty", "الكمية");
             dgItems.Columns.Add("Price", "السعر");
+            dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
+            
+            dgItems.Columns["Code"].ReadOnly = true;
+            dgItems.Columns["Name"].ReadOnly = true;
+            dgItems.Columns["Qty"].ReadOnly = false;
+            dgItems.Columns["Price"].ReadOnly = false;
+            dgItems.Columns["Discount"].ReadOnly = false;
+            dgItems.Columns["Total"].ReadOnly = true;
+
             dgItems.Columns["Code"].Width = 80;
             dgItems.Columns["Qty"].Width = 60;
             dgItems.Columns["Price"].Width = 80;
+            dgItems.Columns["Discount"].Width = 60;
             dgItems.Columns["Total"].Width = 90;
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
@@ -463,7 +474,7 @@ namespace ChickenDist.Forms
             if (existing != null)
             {
                 existing.Qty = targetQty;
-                existing.Total = existing.Qty * existing.Price;
+                existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
                 return;
             }
@@ -479,7 +490,8 @@ namespace ChickenDist.Forms
                 Qty = qty,
                 Price = price,
                 Cost = cost,
-                Total = qty * price,
+                Total = (qty * price),
+                DiscountAmt = 0,
                 HasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]),
                 DefaultExpiryDays = row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
                 BatchID = batchID,
@@ -494,7 +506,8 @@ namespace ChickenDist.Forms
             decimal total = 0;
             foreach (var item in _items)
             {
-                dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.Total.ToString("N2"));
+                item.Total = (item.Qty * item.Price) - item.DiscountAmt;
+                dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
                 total += item.Total;
             }
 
@@ -515,7 +528,11 @@ namespace ChickenDist.Forms
         private void RecalcChange()
         {
             decimal total = 0;
-            foreach (var item in _items) total += item.Total;
+            foreach (var item in _items)
+            {
+                item.Total = (item.Qty * item.Price) - item.DiscountAmt;
+                total += item.Total;
+            }
 
             // Loyalty redemption
             decimal loyaltyDiscount = 0;
@@ -645,11 +662,16 @@ namespace ChickenDist.Forms
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                     string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                     int warehouseID = 1;
+
+                    decimal sumItemDiscounts = 0;
+                    foreach (var item in _items) sumItemDiscounts += item.DiscountAmt;
+                    decimal totalDisc = loyaltyDiscount + sumItemDiscounts;
+
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
                         @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge)
                           VALUES (@sc,GETDATE(),'Cash',@cid,NULL,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0)",
                         DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
-                        DbHelper.P("@tot", total), DbHelper.P("@disc", loyaltyDiscount),
+                        DbHelper.P("@tot", total), DbHelper.P("@disc", totalDisc),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
                         DbHelper.P("@paid", decimal.TryParse(txtPaid.Text.Replace(",",""), out decimal pd) ? pd : total));
@@ -661,9 +683,10 @@ namespace ChickenDist.Forms
                     {
                         DbHelper.ExecuteInsertTrans(trans,
                             @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,0,N'قطاعي',@un,@f,@exp,@bid)",
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
+                            DbHelper.P("@discAmt", item.DiscountAmt),
                             DbHelper.P("@un", (object)item.UnitName ?? DBNull.Value),
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
@@ -1013,6 +1036,7 @@ namespace ChickenDist.Forms
         {
             public int ProductID; public string Code, Name, Unit, UnitName;
             public decimal Qty, Price, Cost, Total, Factor;
+            public decimal DiscountAmt;
             public bool HasExpiry;
             public int? DefaultExpiryDays;
             public DateTime? ExpiryDate;

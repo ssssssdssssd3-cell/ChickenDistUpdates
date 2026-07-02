@@ -400,7 +400,8 @@ namespace ChickenDist.Forms
             new ScreenInfo("DriverCustody", "عهدة المناديب المالية", 3),
             new ScreenInfo("DriverLeaderboard", "أداء وتقييم المناديب", 3),
             new ScreenInfo("Settings", "إعدادات النظام العامة", 3),
-            new ScreenInfo("BotManager", "إدارة بوت الواتساب التلقائي", 3)
+            new ScreenInfo("BotManager", "إدارة بوت الواتساب التلقائي", 3),
+            new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 3)
         };
 
         public FrmPermissions(int empID, string empName)
@@ -561,6 +562,7 @@ namespace ChickenDist.Forms
                         {
                             targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
                             targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                            targetGrid.Rows[ri].Cells[colIdx].Style.BackColor = Color.FromArgb(240, 240, 240);
                         }
                     }
                     else if (isPurchasesScreen)
@@ -568,8 +570,10 @@ namespace ChickenDist.Forms
                         // For purchases, EditPrice (colIdx = 3) and ViewCost (colIdx = 7) are not used
                         targetGrid.Rows[ri].Cells[3] = new DataGridViewTextBoxCell { Value = "" };
                         targetGrid.Rows[ri].Cells[3].ReadOnly = true;
+                        targetGrid.Rows[ri].Cells[3].Style.BackColor = Color.FromArgb(240, 240, 240);
                         targetGrid.Rows[ri].Cells[7] = new DataGridViewTextBoxCell { Value = "" };
                         targetGrid.Rows[ri].Cells[7].ReadOnly = true;
+                        targetGrid.Rows[ri].Cells[7].Style.BackColor = Color.FromArgb(240, 240, 240);
                     }
                     else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase))
                     {
@@ -577,6 +581,7 @@ namespace ChickenDist.Forms
                         {
                             targetGrid.Rows[ri].Cells[colIdx] = new DataGridViewTextBoxCell { Value = "" };
                             targetGrid.Rows[ri].Cells[colIdx].ReadOnly = true;
+                            targetGrid.Rows[ri].Cells[colIdx].Style.BackColor = Color.FromArgb(240, 240, 240);
                         }
                     }
                 }
@@ -595,11 +600,11 @@ namespace ChickenDist.Forms
                     if (string.IsNullOrEmpty(screen)) continue;
 
                     bool access = row.Cells["CanAccess"].Value != null && Convert.ToBoolean(row.Cells["CanAccess"].Value);
-                    bool editP = row.Cells["CanEditPrice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                    bool editI = row.Cells["CanEditSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
-                    bool deleteI = row.Cells["CanDeleteSalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
-                    bool copyI = row.Cells["CanCopySalesInvoice"].Value is bool && Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
-                    bool viewC = row.Cells["CanViewCost"].Value is bool && Convert.ToBoolean(row.Cells["CanViewCost"].Value);
+                    bool editP = row.Cells["CanEditPrice"].Value != null && Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
+                    bool editI = row.Cells["CanEditSalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
+                    bool deleteI = row.Cells["CanDeleteSalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
+                    bool copyI = row.Cells["CanCopySalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
+                    bool viewC = row.Cells["CanViewCost"].Value != null && Convert.ToBoolean(row.Cells["CanViewCost"].Value);
                     
                     EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
                 }
