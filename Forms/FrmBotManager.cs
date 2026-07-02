@@ -34,36 +34,59 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(700, 570);
+            this.Size = new Size(720, 600);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Font = new Font("Segoe UI", 10F);
             this.BackColor = Color.FromArgb(245, 246, 250);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
 
             // Layout setup
             TableLayoutPanel mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 5, Padding = new Padding(15) };
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F)); // Status
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Status
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
 
-            // Header/Status Label
+            // Header/Status Layout container to support refresh button
+            TableLayoutPanel statusContainer = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = Color.Transparent
+            };
+            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70f));
+            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
+
             lblStatus = new Label 
             { 
                 Text = "الحالة: جاري فحص الاتصال بالخادم...", 
-                Font = new Font("Segoe UI", 13F, FontStyle.Bold), 
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold), 
                 ForeColor = Color.DarkGray, 
-                AutoSize = true, 
-                Anchor = AnchorStyles.Left | AnchorStyles.Right 
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            mainLayout.Controls.Add(lblStatus, 0, 0);
-            mainLayout.SetColumnSpan(lblStatus, 2);
+            statusContainer.Controls.Add(lblStatus, 0, 0);
+
+            var btnCheckStatus = Theme.MakeButton("🔄 تحديث الحالة", Theme.Primary);
+            btnCheckStatus.Size = new Size(140, 36);
+            btnCheckStatus.Click += async (s, e) => {
+                btnCheckStatus.Enabled = false;
+                btnCheckStatus.Text = "⏳ جاري الفحص...";
+                await CheckBotStatusAsync();
+                btnCheckStatus.Text = "🔄 تحديث الحالة";
+                btnCheckStatus.Enabled = true;
+            };
+            statusContainer.Controls.Add(btnCheckStatus, 1, 0);
+
+            mainLayout.Controls.Add(statusContainer, 0, 0);
+            mainLayout.SetColumnSpan(statusContainer, 2);
 
             // PictureBox for QR Code
             pbQrCode = new PictureBox 
@@ -217,13 +240,12 @@ namespace ChickenDist.Forms
             btnToggle.Click += BtnToggle_Click;
             btnPushPrices.Click += BtnPushPrices_Click;
 
-            // Timer setup to poll cloud status (every 10 seconds to avoid 429 Too Many Requests)
+            // Timer setup to poll cloud status (every 10 seconds)
             tmrStatus = new Timer { Interval = 10000 };
             tmrStatus.Tick += TmrStatus_Tick;
             tmrStatus.Start();
 
             LogMessage("تم فتح شاشة إدارة البوت الميدانية.");
-            LogMessage("تم فتح شاشة إدارة البوت الميدانية (سحابي).");
             LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر ☁️");
         }
 
@@ -233,6 +255,11 @@ namespace ChickenDist.Forms
         }
 
         private async void TmrStatus_Tick(object sender, EventArgs e)
+        {
+            await CheckBotStatusAsync();
+        }
+
+        private async Task CheckBotStatusAsync()
         {
             try
             {
@@ -279,7 +306,7 @@ namespace ChickenDist.Forms
                     }
                     else if (statusVal == "QR_Ready")
                     {
-                        lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف 📲";
+                        lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف 📲\n(السبب: لم يتم ربط الحساب بالهاتف)";
                         lblStatus.ForeColor = Color.FromArgb(230, 126, 34);
                         btnToggle.Text = "إعادة تشغيل الجلسة";
                         btnToggle.BackColor = Color.FromArgb(230, 126, 34);
@@ -289,7 +316,7 @@ namespace ChickenDist.Forms
                     }
                     else if (statusVal == "Connecting")
                     {
-                        lblStatus.Text = "الحالة: جاري تحضير المتصفح الخلفي... ⏳";
+                        lblStatus.Text = "الحالة: جاري تحضير المتصفح الخلفي... ⏳\n(السبب: جاري مزامنة وربط الجلسة)";
                         lblStatus.ForeColor = Color.FromArgb(52, 152, 219);
                         btnToggle.Text = "جاري التحضير...";
                         btnToggle.BackColor = Color.FromArgb(52, 152, 219);
@@ -299,7 +326,7 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        lblStatus.Text = "الحالة: البوت متوقف حالياً ❌";
+                        lblStatus.Text = "الحالة: البوت متوقف حالياً ❌\n(السبب: البوت مغلق من السحابة - اضغط ربط)";
                         lblStatus.ForeColor = Color.FromArgb(120, 120, 120);
                         btnToggle.Text = "ربط وتفعيل البوت";
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
@@ -310,7 +337,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️";
+                    lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️\n(السبب: خطأ خادم سحابي HTTP)";
                     lblStatus.ForeColor = Color.Red;
                     pbQrCode.Image = null;
                     tmrStatus.Interval = 15000; // Cool down on error
