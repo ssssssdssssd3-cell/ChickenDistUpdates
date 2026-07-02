@@ -1943,6 +1943,17 @@ namespace ChickenDist.Core
                 JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
                 WHERE cb.TransType = 'Expense' AND cb.AmountOut > 0;
                 ");
+
+                // ===== ميزة زيادة حجم الباركود للوحدات المتعددة لتكفي 10 أكواد دولية =====
+                SafeMigrate("Products.ExpandBarcodes", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    -- تعديل عمود Unit1Barcode و Unit2Barcode ليكون 500 حرف لتسهيل إدخال وتخزين 10 أكواد دولية
+                    ALTER TABLE Products ALTER COLUMN Unit1Barcode NVARCHAR(500) NULL;
+                    ALTER TABLE Products ALTER COLUMN Unit2Barcode NVARCHAR(500) NULL;
+                    -- زيادة حجم الباركود الأساسي أيضاً للاحتياط
+                    ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(500) NULL;
+                END");
             }
             catch (Exception ex)
             {
