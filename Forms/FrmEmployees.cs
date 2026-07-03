@@ -24,7 +24,15 @@ namespace ChickenDist.Forms
 
         public FrmEmployees()
         {
-            if (Session.Role != "Admin") { MessageBox.Show("غير مصرح لك بالوصول"); this.Close(); return; }
+            if (!Session.CanAccess("Employees"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("غير مصرح لك بالوصول");
+                    this.Close();
+                };
+                return;
+            }
             InitUI();
             LoadEmployees();
         }

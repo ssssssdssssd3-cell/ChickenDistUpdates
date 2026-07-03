@@ -1833,81 +1833,88 @@ namespace ChickenDist.Core
                     CREATE INDEX IX_CashBox_Opt ON CashBox(AccountID, TransDate) INCLUDE (AmountIn, AmountOut);
                 ");
 
-                // \u0625\u062c\u0631\u0627\u0621 \u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u062a\u0648\u0644\u064a\u062f \u0627\u0644\u0642\u064a\u0648\u062f \u0627\u0644\u0645\u062d\u0627\u0633\u0628\u064a\u0629 \u0627\u0644\u0645\u0632\u062f\u0648\u062c\u062e \u0627\u0644\u062a\u0627\u0631\u064a\u062e\u064a\u0629
+                SafeMigrate("JournalDetails.ExpandAccountName", @"
+                IF OBJECT_ID('JournalDetails', 'U') IS NOT NULL
+                BEGIN
+                    -- زيادة حجم العمود لتفادي مشاكل اقتطاع أسماء الحسابات أو الملاحظات الطويلة
+                    ALTER TABLE JournalDetails ALTER COLUMN AccountName NVARCHAR(500) NOT NULL;
+                END");
+
+                // الإجراء مزامنة وتوليد القيود المحاسبية المزدوجة التاريخية
                 SafeMigrate("SyncingGeneralLedger", @"
                 DELETE FROM JournalEntries;
                 
                 INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
-                SELECT SaleDate, N'\u0641\u0627\u062a\u0648\u0631\u0629 \u0645\u0628\u064a\u0639\u0627\u062a \u0631\u0642\u0645 ' + SaleCode, 'Sale', SaleID, CreatedBy FROM Sales WHERE IsPosted = 1;
+                SELECT SaleDate, LEFT(N'فاتورة مبيعات رقم ' + SaleCode, 490), 'Sale', SaleID, CreatedBy FROM Sales WHERE IsPosted = 1;
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, sa.AccountName, s.TotalAmount, 0 
+                SELECT je.EntryID, LEFT(sa.AccountName, 490), s.TotalAmount, 0 
                 FROM JournalEntries je 
                 JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
                 JOIN SafeAccounts sa ON sa.AccountID = 1
                 WHERE s.SaleType = 'Cash';
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a', 0, s.TotalAmount 
+                SELECT je.EntryID, N'حساب المبيعات', 0, s.TotalAmount 
                 FROM JournalEntries je 
                 JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
                 WHERE s.SaleType = 'Cash';
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u0627\u0644\u0639\u0645\u064a\u0644: ' + c.ClientName, s.TotalAmount, 0 
+                SELECT je.EntryID, LEFT(N'العميل: ' + c.ClientName, 490), s.TotalAmount, 0 
                 FROM JournalEntries je 
                 JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
                 JOIN Clients c ON s.ClientID = c.ClientID
                 WHERE s.SaleType IN ('Credit', 'Installment');
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a', 0, s.TotalAmount 
+                SELECT je.EntryID, N'حساب المبيعات', 0, s.TotalAmount 
                 FROM JournalEntries je 
                 JOIN Sales s ON je.SourceRefID = s.SaleID AND je.SourceType = 'Sale'
                 WHERE s.SaleType IN ('Credit', 'Installment');
 
                 INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
-                SELECT PurchaseDate, N'\u0641\u0627\u062a\u0648\u0631\u0629 \u0645\u0634\u062a\u0631\u064a\u0627\u062a \u0631\u0642\u0645 ' + PurchaseCode, 'Purchase', PurchaseID, CreatedBy FROM Purchases WHERE IsPosted = 1;
+                SELECT PurchaseDate, LEFT(N'فاتورة مشتريات رقم ' + PurchaseCode, 490), 'Purchase', PurchaseID, CreatedBy FROM Purchases WHERE IsPosted = 1;
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a', p.TotalAmount, 0 
+                SELECT je.EntryID, N'حساب المشتريات', p.TotalAmount, 0 
                 FROM JournalEntries je 
                 JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
                 WHERE p.PurchaseType = 'Cash';
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, sa.AccountName, 0, p.TotalAmount 
+                SELECT je.EntryID, LEFT(sa.AccountName, 490), 0, p.TotalAmount 
                 FROM JournalEntries je 
                 JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
                 JOIN SafeAccounts sa ON sa.AccountID = 1
                 WHERE p.PurchaseType = 'Cash';
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0634\u062a\u0631\u064a\u0627\u062a', p.TotalAmount, 0 
+                SELECT je.EntryID, N'حساب المشتريات', p.TotalAmount, 0 
                 FROM JournalEntries je 
                 JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
                 WHERE p.PurchaseType = 'Credit';
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, N'\u0627\u0644\u0645\u0648\u0631\u062f: ' + sup.SupplierName, 0, p.TotalAmount 
+                SELECT je.EntryID, LEFT(N'المورد: ' + sup.SupplierName, 490), 0, p.TotalAmount 
                 FROM JournalEntries je 
                 JOIN Purchases p ON je.SourceRefID = p.PurchaseID AND je.SourceType = 'Purchase'
                 JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
                 WHERE p.PurchaseType = 'Credit';
 
                 INSERT INTO JournalEntries (EntryDate, Description, SourceType, SourceRefID, CreatedBy)
-                SELECT TransDate, Notes, 'CashBox', CashID, CreatedBy FROM CashBox 
+                SELECT TransDate, LEFT(Notes, 490), 'CashBox', CashID, CreatedBy FROM CashBox 
                 WHERE TransType NOT IN ('SaleIncome', 'PurchaseExpense');
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, sa.AccountName, cb.AmountIn, 0 
+                SELECT je.EntryID, LEFT(sa.AccountName, 490), cb.AmountIn, 0 
                 FROM JournalEntries je 
                 JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
                 JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
                 WHERE cb.TransType = 'ClientPayment' AND cb.AmountIn > 0;
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, COALESCE(N'\u0627\u0644\u0639\u0645\u064a\u0644: ' + c.ClientName, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0639\u0645\u0644\u0627\u0621'), 0, cb.AmountIn 
+                SELECT je.EntryID, LEFT(COALESCE(N'العميل: ' + c.ClientName, N'حساب العملاء'), 490), 0, cb.AmountIn 
                 FROM JournalEntries je 
                 JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
                 LEFT JOIN ClientTransactions ct ON cb.RefID = ct.RefID AND ct.TransType = 'Payment'
@@ -1915,7 +1922,7 @@ namespace ChickenDist.Core
                 WHERE cb.TransType = 'ClientPayment' AND cb.AmountIn > 0;
 
                 INSERT INTO JournalDetails (EntryID, AccountName, Debit, Credit)
-                SELECT je.EntryID, COALESCE(N'\u0627\u0644\u0645\u0648\u0631\u062f: ' + s.SupplierName, N'\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646'), cb.AmountOut, 0 
+                SELECT je.EntryID, LEFT(COALESCE(N'المورد: ' + s.SupplierName, N'حساب الموردين'), 490), cb.AmountOut, 0 
                 FROM JournalEntries je 
                 JOIN CashBox cb ON je.SourceRefID = cb.CashID AND je.SourceType = 'CashBox'
                 LEFT JOIN SupplierTransactions st ON cb.RefID = st.RefID AND st.TransType = 'Payment'
