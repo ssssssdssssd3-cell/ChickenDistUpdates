@@ -626,6 +626,28 @@ function listenForCommands() {
                         stopBot();
                         await change.doc.ref.update({ status: 'completed' });
                     }
+                    else if (cmd.type === 'clear_session') {
+                        console.log('[Command]: Received clear_session command — clearing WhatsApp session and restarting...');
+                        // Stop existing bot
+                        if (client) {
+                            try { await client.destroy(); } catch(e) {}
+                            client = null;
+                        }
+                        botStatus = 'Offline';
+                        // Delete session folder
+                        const sessionDir = path.join(__dirname, '.wwebjs_auth');
+                        if (fs.existsSync(sessionDir)) {
+                            fs.rmSync(sessionDir, { recursive: true, force: true });
+                            console.log('[ClearSession]: Session folder deleted.');
+                        }
+                        await updateFirebaseStatus('Connecting');
+                        await change.doc.ref.update({ status: 'completed' });
+                        // Restart after short delay
+                        setTimeout(() => {
+                            console.log('[ClearSession]: Restarting bot with fresh session...');
+                            startBot();
+                        }, 2000);
+                    }
                     else if (cmd.type === 'send_backup') {
                         console.log(`[Command]: Received send_backup to ${cmd.phone} for file ${cmd.filePath}`);
                         if (!client || botStatus !== 'Online') {

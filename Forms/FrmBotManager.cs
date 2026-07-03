@@ -15,11 +15,15 @@ namespace ChickenDist.Forms
     {
         private Button btnToggle;
         private Button btnPushPrices;
+        private Button btnClearSession;
         private PictureBox pbQrCode;
         private Label lblStatus;
         private Label lblLastSync;
+        private Label lblQrCountdown;
         private ListBox lbLogs;
         private Timer tmrStatus;
+        private Timer tmrCountdown;
+        private int _qrSecondsLeft = 0;
         private HttpClient _httpClient;
         private Process _nodeProcess;
         private TextBox txtAccUrl;
@@ -92,13 +96,26 @@ namespace ChickenDist.Forms
             // PictureBox for QR Code
             pbQrCode = new PictureBox 
             { 
-                Size = new Size(240, 240), 
+                Size = new Size(280, 280), 
                 SizeMode = PictureBoxSizeMode.Zoom, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 BackColor = Color.White,
                 Anchor = AnchorStyles.None 
             };
             mainLayout.Controls.Add(pbQrCode, 0, 1);
+
+            // QR countdown label
+            lblQrCountdown = new Label
+            {
+                Text = "",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(230, 126, 34),
+                Dock = DockStyle.Bottom,
+                Height = 22,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
+            mainLayout.Controls.Add(lblQrCountdown, 0, 1);
 
             // ListBox for Logs
             lbLogs = new ListBox 
@@ -124,6 +141,20 @@ namespace ChickenDist.Forms
             };
             btnToggle.FlatAppearance.BorderSize = 0;
             btnPanelLeft.Controls.Add(btnToggle);
+
+            // Clear Session button
+            btnClearSession = new Button
+            {
+                Text = "🗑️ مسح الجلسة",
+                BackColor = Color.FromArgb(180, 60, 60),
+                ForeColor = Color.White,
+                Size = new Size(130, 42),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnClearSession.FlatAppearance.BorderSize = 0;
+            btnClearSession.Click += BtnClearSession_Click;
+            btnPanelLeft.Controls.Add(btnClearSession);
             mainLayout.Controls.Add(btnPanelLeft, 0, 2);
 
             FlowLayoutPanel btnPanelRight = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
@@ -246,6 +277,25 @@ namespace ChickenDist.Forms
             tmrStatus.Tick += TmrStatus_Tick;
             tmrStatus.Start();
 
+            // Countdown timer for QR code validity
+            tmrCountdown = new Timer { Interval = 1000 };
+            tmrCountdown.Tick += (s, e) =>
+            {
+                if (_qrSecondsLeft > 0)
+                {
+                    _qrSecondsLeft--;
+                    lblQrCountdown.Text = $"⏱ صالحية الكود: {_qrSecondsLeft} ثانية";
+                    lblQrCountdown.ForeColor = _qrSecondsLeft < 15
+                        ? Color.FromArgb(220, 50, 50)
+                        : Color.FromArgb(230, 126, 34);
+                }
+                else
+                {
+                    lblQrCountdown.Text = "⚠️ انتهت صلاحية QR — جاري تحديثه...";
+                    tmrCountdown.Stop();
+                }
+            };
+
             LogMessage("تم فتح شاشة إدارة البوت الميدانية.");
             LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر ☁️");
         }
@@ -303,6 +353,9 @@ namespace ChickenDist.Forms
                         btnToggle.Enabled = false;
                         pbQrCode.Image = null;
                         pbQrCode.BackColor = Color.FromArgb(240, 240, 240);
+                        lblQrCountdown.Visible = false;
+                        tmrCountdown.Stop();
+                        _qrSecondsLeft = 0;
                         tmrStatus.Interval = 20000; // Poll less frequently when online
                     }
                     else if (statusVal == "QR_Ready")
@@ -313,7 +366,16 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(230, 126, 34);
                         btnToggle.Enabled = true;
                         LoadQrCodeFromStatusJson(json);
-                        tmrStatus.Interval = 5000; // Poll faster when QR is ready
+                        // Poll every 3 seconds while waiting for QR scan
+                        tmrStatus.Interval = 3000;
+                        // Reset countdown to 55 seconds (QR valid ~60s, we start from 55 to be safe)
+                        if (!tmrCountdown.Enabled || _qrSecondsLeft <= 0)
+                        {
+                            _qrSecondsLeft = 55;
+                            lblQrCountdown.Text = $"⏱ صالحية الكود: 55 ثانية";
+                            lblQrCountdown.Visible = true;
+                            tmrCountdown.Start();
+                        }
                     }
                     else if (statusVal == "Connecting")
                     {
@@ -396,6 +458,48 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 LogMessage($"⚠️ خطأ تحميل QR: {ex.Message}");
+            }
+        }
+
+        private async void BtnClearSession_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(
+                "هل تريد مسح جلسة الواتساب وإعادة تشغيل البوت؟\nسيحتاج لمسح QR جديد.",
+                "تأكيد",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes) return;
+
+            try
+            {
+                btnClearSession.Enabled = false;
+                btnClearSession.Text = "⏳ جاري...";
+                LogMessage("جاري إرسال أمر مسح الجلسة وإعادة التشغيل للسحابة...");
+
+                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string json = "{\"fields\": {" +
+                    "\"type\": {\"stringValue\": \"clear_session\"}," +
+                    "\"status\": {\"stringValue\": \"pending\"}," +
+                    "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
+                    "}}";
+
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync(
+                    "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands",
+                    content);
+
+                if (response.IsSuccessStatusCode)
+                    LogMessage("✅ تم إرسال أمر مسح الجلسة — انتظر ظهور QR جديد خلال 30 ثانية...");
+                else
+                    LogMessage($"❌ فشل إرسال الأمر: {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"خطأ: {ex.Message}");
+            }
+            finally
+            {
+                btnClearSession.Text = "🗑️ مسح الجلسة";
+                btnClearSession.Enabled = true;
             }
         }
 
