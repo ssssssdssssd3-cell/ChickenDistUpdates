@@ -161,7 +161,14 @@ function listenForOrderActions() {
                                 : `🔴 *تم رفض طلبك!* \n\nالسبب: ${order.message || 'غير متوفر حالياً.'}`;
                             
                             try {
+                                const chat = await client.getChatById(clientJid);
+                                await chat.sendStateTyping();
+                                const delayMs = Math.floor(Math.random() * 2000) + 1500;
+                                await new Promise(resolve => setTimeout(resolve, delayMs));
+                                
                                 await client.sendMessage(clientJid, msgText);
+                                await chat.clearState();
+                                
                                 console.log(`[WhatsApp]: Sent confirmation for order ${order.id} (${order.status}) to ${clientJid}`);
                                 // Update document to mark it sent
                                 await change.doc.ref.update({ whatsappStatus: 'sent' });
@@ -265,6 +272,27 @@ function startBot() {
         return false;
     }
 
+    // Helper function for anti-ban safe replies with simulated typing delay
+    async function safeReply(msg, replyText) {
+        try {
+            const chat = await msg.getChat();
+            // Start typing indicator
+            await chat.sendStateTyping();
+            
+            // Random delay between 1.5 and 3.5 seconds
+            const delayMs = Math.floor(Math.random() * 2000) + 1500;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            
+            // Send reply and clear typing state
+            await msg.reply(replyText);
+            await chat.clearState();
+        } catch (err) {
+            console.error('safeReply encountered error:', err);
+            // Fallback to direct reply if state fails
+            try { await msg.reply(replyText); } catch(e) {}
+        }
+    }
+
     // Handle incoming customer chats
     client.on('message', async msg => {
         const text = msg.body.trim();
@@ -312,10 +340,10 @@ function startBot() {
                         updatedTime: new Date().toISOString()
                     });
                     console.log(`[Mappings]: Mapped LID ${phone} to registered phone ${foundInDb.Phone} (${foundInDb.ClientName})`);
-                    await msg.reply(`✅ تم ربط حساب الواتساب الخاص بك بالعميل المسجل لدينا: *${foundInDb.ClientName}* بنجاح!\nيمكنك الآن كتابة طلبك مباشرة في رسالة (مثال: *5 فراخ و 2 بط*).`);
+                    await safeReply(msg, `✅ تم ربط حساب الواتساب الخاص بك بالعميل المسجل لدينا: *${foundInDb.ClientName}* بنجاح!\nيمكنك الآن كتابة طلبك مباشرة في رسالة (مثال: *5 فراخ و 2 بط*).`);
                 } catch (err) {
                     console.error('Failed to save mapping to Firestore:', err);
-                    await msg.reply('حدث خطأ أثناء ربط الحساب، يرجى المحاولة مرة أخرى لاحقاً.');
+                    await safeReply(msg, 'حدث خطأ أثناء ربط الحساب، يرجى المحاولة مرة أخرى لاحقاً.');
                 }
                 return;
             } else {
@@ -329,10 +357,10 @@ function startBot() {
                         updatedTime: new Date().toISOString()
                     });
                     console.log(`[Mappings]: Registered new client LID ${phone} with phone ${cleanText}`);
-                    await msg.reply(`✅ تم تسجيل رقم هاتفك: *${text}* بنجاح كعميل جديد لدينا!\nيمكنك الآن إرسال طلبك مباشرة وسيقوم المحاسب بالتواصل معك على هذا الرقم لتأكيد تفاصيل الطلب.`);
+                    await safeReply(msg, `✅ تم تسجيل رقم هاتفك: *${text}* بنجاح كعميل جديد لدينا!\nيمكنك الآن إرسال طلبك مباشرة وسيقوم المحاسب بالتواصل معك على هذا الرقم لتأكيد تفاصيل الطلب.`);
                 } catch (err) {
                     console.error('Failed to save new client mapping to Firestore:', err);
-                    await msg.reply('حدث خطأ أثناء تسجيل حسابك، يرجى المحاولة مرة أخرى لاحقاً.');
+                    await safeReply(msg, 'حدث خطأ أثناء تسجيل حسابك، يرجى المحاولة مرة أخرى لاحقاً.');
                 }
                 return;
             }
@@ -373,7 +401,7 @@ function startBot() {
         // 1️⃣ استعلام الأسعار
         if (isPriceQuery) {
             if (prices.length === 0) {
-                await msg.reply('عذراً، قائمة الأسعار غير متوفرة حالياً.');
+                await safeReply(msg, 'عذراً، قائمة الأسعار غير متوفرة حالياً.');
                 return;
             }
             let replyText = '📋 *قائمة أسعار اليوم:*\n\n';
@@ -381,7 +409,7 @@ function startBot() {
                 replyText += `▪️ *${p.ProductName}*: ${p.Price} ج.م\n`;
             });
             replyText += '\n*لطلب أوردر، اكتب الصنف والكمية مباشرة في رسالة.*\n*مثال:* 5 فراخ و 2 بط';
-            await msg.reply(replyText);
+            await safeReply(msg, replyText);
         }
         // 2️⃣ استعلام المساعدة
         else if (isHelpQuery) {
@@ -391,7 +419,7 @@ function startBot() {
 - *لطلب أوردر جديد*: اكتب طلبك مباشرة بالكمية والصنف دون الحاجة لكلمات إضافية.
   *(مثال: 5 كيلو فراخ و 2 بط)*
 - *لطلب شراء البوت وتفعيل الخدمة*: اكتب كلمة *تواصل* أو رقم *4*.`;
-            await msg.reply(helpText);
+            await safeReply(msg, helpText);
         }
         // 3️⃣ استعلام أرقام التواصل وشراء البوت
         else if (isContactQuery) {
@@ -402,7 +430,7 @@ function startBot() {
 
 💬 *للاستفسارات العامة:*
 - الإدارة: يسعدنا دائماً تواصلك معنا مباشرة!`;
-            await msg.reply(contactText);
+            await safeReply(msg, contactText);
         }
         // 4️⃣ تقديم طلب تلقائي (لو الرسالة تحتوي على اسم صنف)
         else if (hasProduct) {
@@ -432,7 +460,7 @@ function startBot() {
                 console.error('Failed to save auto-detected order in Firestore:', err);
             }
             
-            await msg.reply(`✅ أهلاً يا *${displayName}*، تم استلام طلبك بنجاح وجاري مراجعته من قبل الإدارة. ستصلك رسالة هنا فور قبول الطلب وتجهيزه!`);
+            await safeReply(msg, `✅ أهلاً يا *${displayName}*، تم استلام طلبك بنجاح وجاري مراجعته من قبل الإدارة. ستصلك رسالة هنا فور قبول الطلب وتجهيزه!`);
         }
         // 5️⃣ تحية أو أي رسالة أخرى غير مفهومة -> إرسال القائمة الرئيسية الترحيبية
         else {
@@ -449,7 +477,7 @@ function startBot() {
                 welcomeText += `\n\n💡 *هل أنت عميل مسجل لدينا؟*\nاكتب *رقم تليفونك المسجل* في رسالة الآن لربط حسابك باسمك الحقيقي وتسهيل تأكيد طلباتك!`;
             }
 
-            await msg.reply(welcomeText);
+            await safeReply(msg, welcomeText);
         }
     });
 

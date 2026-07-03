@@ -168,8 +168,22 @@ namespace ChickenDist.Core
             }
         }
 
+        private const string SchemaVersionKey = "SchemaVersion";
+        private const int CurrentSchemaVersion = 21;
+
         public static void EnsureDatabaseSchema()
         {
+            try
+            {
+                // Bypass heavy schema inspection if already initialized to the latest version
+                string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
+                if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
+                {
+                    return;
+                }
+            }
+            catch { }
+
             // كل SafeMigrate مستقلة: فشل أي خطوة لا يوقف الباقي
             try
             {
@@ -1961,6 +1975,12 @@ namespace ChickenDist.Core
                     -- زيادة حجم الباركود الأساسي أيضاً للاحتياط
                     ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(500) NULL;
                 END");
+                // Save version number so we don't repeat inspection on next startup
+                try
+                {
+                    AppConfig.Set(SchemaVersionKey, CurrentSchemaVersion.ToString());
+                }
+                catch { }
             }
             catch (Exception ex)
             {
