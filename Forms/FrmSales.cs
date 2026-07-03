@@ -35,6 +35,8 @@ namespace ChickenDist.Forms
 		private Label lblCashSummary;
 		private Label lblCreditSummary;
 		private Label lblDriverSummary;
+		private Label lblShippingSummary;
+		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
 		private TextBox txtProductSearch;
 		private DataTable _allSalesDt;
@@ -168,6 +170,17 @@ namespace ChickenDist.Forms
 			txtSearch.TextChanged += delegate { FilterData(); };
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("🔍 بحث سريع:", txtSearch, 120));
 
+			chkOnlyShipping = new CheckBox
+			{
+				Text = "بها شحن فقط",
+				ForeColor = Theme.TextMain,
+				AutoSize = true,
+				Margin = new Padding(4, 8, 4, 0),
+				Font = Theme.FontMain
+			};
+			chkOnlyShipping.CheckedChanged += delegate { FilterData(); };
+			flowLayoutPanel.Controls.Add(chkOnlyShipping);
+
 			// زر عرض
 			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
 			btnLoad.Size = new Size(80, 34);
@@ -195,8 +208,8 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 			tblContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 58f));  // جريد الفواتير (dgSales)
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 42f));  // تفاصيل الأصناف والتحكم (tblDetail)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 65f));  // جريد الفواتير (dgSales)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 35f));  // تفاصيل الأصناف والتحكم (tblDetail)
 
 			dgSales = MakeGrid();
 			dgSales.Margin = new Padding(10, 6, 10, 4);
@@ -234,6 +247,12 @@ namespace ChickenDist.Forms
 				Name = "TotalAmount",
 				HeaderText = "قيمة الفاتورة",
 				FillWeight = 55f
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "ShippingCharge",
+				HeaderText = "خدمة شحن",
+				FillWeight = 50f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -363,18 +382,19 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Bottom,
 				Height = 70,
-				ColumnCount = 6,
+				ColumnCount = 7,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 5, 10, 5)
 			};
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			lblTotalSummary  = AddDashboardCard(tableLayoutPanel, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                  0);
 			lblReturnSummary = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات: ↩",   "0.00 ج", Color.FromArgb(231, 76, 60),   1);
@@ -382,6 +402,7 @@ namespace ChickenDist.Forms
 			lblCashSummary   = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:",       "0.00 ج", Theme.Success,                 3);
 			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:",       "0.00 ج", Color.FromArgb(52, 152, 219),  4);
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
+			lblShippingSummary = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:",         "0.00 ج", Color.FromArgb(243, 156, 18), 6);
 
 			// ترتيب صحيح للرسو والـ Z-Order
 			base.Controls.Add(tblContent);
@@ -478,7 +499,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (_allSalesDt == null || _allSalesDt.Rows.Count == 0)
 			{
-				UpdateSummary(0m, 0m, 0m, 0m, 0m);
+				UpdateSummary(0m, 0m, 0m, 0m, 0m, 0m);
 				return;
 			}
 			string value = txtSearch.Text.Trim().ToLower();
@@ -488,6 +509,7 @@ namespace ChickenDist.Forms
 			decimal cash   = 0m;
 			decimal credit = 0m;
 			decimal driver = 0m;
+			decimal shipping = 0m;
 			foreach (DataRow row in _allSalesDt.Rows)
 			{
 				string text2 = row["SaleCode"].ToString().ToLower();
@@ -499,6 +521,12 @@ namespace ChickenDist.Forms
 				if (text5 == "DriverLoad" && text4 != "---")
 					text7 = text4;
 
+				decimal shippingAmt = row.Table.Columns.Contains("ShippingCharge") && row["ShippingCharge"] != DBNull.Value
+				                    ? Convert.ToDecimal(row["ShippingCharge"]) : 0m;
+
+				if (chkOnlyShipping != null && chkOnlyShipping.Checked && shippingAmt <= 0)
+					continue;
+
 				if ((!(text != "الكل") || ((!text.Contains("نقدي") || !(text5 != "Cash")) && (!text.Contains("آجل") || !(text5 != "Credit")) && (!text.Contains("تقسيط") || !(text5 != "Installment")) && (!text.Contains("تحميل") || !(text5 != "DriverLoad")))) && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
 					decimal num = Convert.ToDecimal(row["TotalAmount"]);
@@ -508,6 +536,7 @@ namespace ChickenDist.Forms
 
 					tot += num;
 					ret += returnAmt;
+					shipping += shippingAmt;
 					switch (text5)
 					{
 						case "Cash":        cash   += num; break;
@@ -522,16 +551,17 @@ namespace ChickenDist.Forms
 						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
 						text8, text7,
 						num.ToString("N2") + " ج",
+						shippingAmt > 0 ? shippingAmt.ToString("N2") + " ج" : "-",
 						retStr,
 						netAmt.ToString("N2") + " ج",
 						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
 				}
 			}
-			UpdateSummary(tot, ret, cash, credit, driver);
+			UpdateSummary(tot, ret, cash, credit, driver, shipping);
 		}
 
-		private void UpdateSummary(decimal tot, decimal ret, decimal cash, decimal credit, decimal driver)
+		private void UpdateSummary(decimal tot, decimal ret, decimal cash, decimal credit, decimal driver, decimal shipping)
 		{
 			lblTotalSummary.Text  = tot.ToString("N2")         + " ج";
 			lblReturnSummary.Text = ret.ToString("N2")         + " ج";
@@ -539,6 +569,10 @@ namespace ChickenDist.Forms
 			lblCashSummary.Text   = cash.ToString("N2")        + " ج";
 			lblCreditSummary.Text = credit.ToString("N2")      + " ج";
 			lblDriverSummary.Text = driver.ToString("N2")      + " ج";
+			if (lblShippingSummary != null)
+			{
+				lblShippingSummary.Text = shipping.ToString("N2") + " ج";
+			}
 		}
 
 		private void DgSales_SelectionChanged(object sender, EventArgs e)
@@ -586,20 +620,30 @@ namespace ChickenDist.Forms
 		{
 			if (dgSales.SelectedRows.Count == 0)
 			{
-				MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولا\u064b من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
-			itemReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt");
-            
-			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
-			itemA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4");
+			
+			var itemPrintReceipt = new ToolStripMenuItem("🖨️ طباعة ريسيت حراري (Receipt) - مباشر");
+			itemPrintReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: false);
 
-			menu.Items.Add(itemReceipt);
-			menu.Items.Add(itemA4);
+			var itemPreviewReceipt = new ToolStripMenuItem("🔍 معاينة ريسيت حراري (Receipt)");
+			itemPreviewReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: true);
+
+			var itemPrintA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5) - مباشر");
+			itemPrintA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: false);
+
+			var itemPreviewA4 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A4/A5)");
+			itemPreviewA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: true);
+
+			menu.Items.Add(itemPrintReceipt);
+			menu.Items.Add(itemPreviewReceipt);
+			menu.Items.Add(new ToolStripSeparator());
+			menu.Items.Add(itemPrintA4);
+			menu.Items.Add(itemPreviewA4);
 
 			if (sender is Control ctrl)
 			{
