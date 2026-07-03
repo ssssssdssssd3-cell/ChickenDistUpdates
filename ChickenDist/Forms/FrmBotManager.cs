@@ -705,12 +705,20 @@ namespace ChickenDist.Forms
             try
             {
                 string botDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot");
-                if (!Directory.Exists(botDir))
+                if (!Directory.Exists(botDir) || !File.Exists(Path.Combine(botDir, "index.js")))
                 {
-                    string parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)?.Parent?.FullName;
-                    if (parent != null)
+                    string current = AppDomain.CurrentDomain.BaseDirectory;
+                    for (int i = 0; i < 5; i++)
                     {
-                        botDir = Path.Combine(parent, "bot");
+                        var parentInfo = Directory.GetParent(current);
+                        if (parentInfo == null) break;
+                        current = parentInfo.FullName;
+                        string tempBotDir = Path.Combine(current, "bot");
+                        if (Directory.Exists(tempBotDir) && File.Exists(Path.Combine(tempBotDir, "index.js")))
+                        {
+                            botDir = tempBotDir;
+                            break;
+                        }
                     }
                 }
                 
