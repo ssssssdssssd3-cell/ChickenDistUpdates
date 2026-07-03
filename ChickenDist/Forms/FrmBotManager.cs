@@ -29,6 +29,7 @@ namespace ChickenDist.Forms
             InitializeComponent();
             _httpClient = new HttpClient();
             _httpClient.Timeout = TimeSpan.FromSeconds(5);
+            StartLocalNodeServer();
         }
 
         private void InitializeComponent()
@@ -564,6 +565,90 @@ namespace ChickenDist.Forms
             return sb.ToString();
         }
 
+
+        private void StartLocalNodeServer()
+        {
+            try
+            {
+                var checkTask = _httpClient.GetAsync("http://localhost:5000/api/status");
+                checkTask.Wait(1000);
+                if (checkTask.IsCompleted && checkTask.Result.IsSuccessStatusCode)
+                {
+                    LogMessage("خادم البوت المحلي نشط ويعمل بالفعل.");
+                    return;
+                }
+            }
+            catch
+            {
+                // Port 5000 is not responding
+            }
+
+            try
+            {
+                string botDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot");
+                if (!Directory.Exists(botDir))
+                {
+                    string parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)?.Parent?.FullName;
+                    if (parent != null)
+                    {
+                        botDir = Path.Combine(parent, "bot");
+                    }
+                }
+                
+                string indexPath = Path.Combine(botDir, "index.js");
+                if (File.Exists(indexPath))
+                {
+                    LogMessage("جاري تشغيل خادم البوت المحلي...");
+                    _nodeProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "node.exe",
+                            Arguments = $"\"{indexPath}\"",
+                            WorkingDirectory = botDir,
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        }
+                    };
+                    
+                    _nodeProcess.OutputDataReceived += (s, ev) => {
+                        if (!string.IsNullOrEmpty(ev.Data))
+                        {
+                            try
+                            {
+                                this.BeginInvoke((Action)(() => LogMessage("[Server] " + ev.Data)));
+                            }
+                            catch {}
+                        }
+                    };
+                    
+                    _nodeProcess.ErrorDataReceived += (s, ev) => {
+                        if (!string.IsNullOrEmpty(ev.Data))
+                        {
+                            try
+                            {
+                                this.BeginInvoke((Action)(() => LogMessage("[Error] " + ev.Data)));
+                            }
+                            catch {}
+                        }
+                    };
+
+                    _nodeProcess.Start();
+                    _nodeProcess.BeginOutputReadLine();
+                    _nodeProcess.BeginErrorReadLine();
+                }
+                else
+                {
+                    LogMessage("⚠️ لم يتم العثور على ملفات خادم البوت المحلي!");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"⚠️ فشل تشغيل خادم البوت تلقائياً: {ex.Message}");
+            }
+        }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
