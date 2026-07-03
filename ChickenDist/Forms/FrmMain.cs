@@ -1220,13 +1220,17 @@ namespace ChickenDist.Forms
             if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "CarService")
             {
                 string mTitle = AppConfig.BusinessType == "CarService" ? "صيانة سيارات" : "صيانة أجهزة";
-                AddActionTile(pnlActionsFlow, "🔧", mTitle, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69));
-                AddActionTile(pnlActionsFlow, "📦", "إدارة المنتجات", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
+                if (Session.CanAccess("Maintenance"))
+                    AddActionTile(pnlActionsFlow, "🔧", mTitle, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69));
+                if (Session.CanAccess("Products"))
+                    AddActionTile(pnlActionsFlow, "📦", "إدارة المنتجات", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
             }
             else if (AppConfig.BusinessType == "Clothing")
             {
-                AddActionTile(pnlActionsFlow, "👕", "مصفوفة ملابس", () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253));
-                AddActionTile(pnlActionsFlow, "🏷️", "طباعة باركود", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
+                if (Session.CanAccess("Sales"))
+                    AddActionTile(pnlActionsFlow, "👕", "مصفوفة ملابس", () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253));
+                if (Session.CanAccess("Products"))
+                    AddActionTile(pnlActionsFlow, "🏷️", "طباعة باركود", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
             }
             else
             {

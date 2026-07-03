@@ -101,9 +101,11 @@ namespace ChickenDist.Forms
                 int rMargin = isReceipt ? 28 : 20;
                 int printableW = pageW - lMargin - rMargin;
                 int margin = lMargin;
-                int y = isReceipt ? 50 : 15;
+                int y = isReceipt ? 5 : 15;
 
                 DrawShopLogo(g, pageW, ref y, isReceipt);
+
+                if (isReceipt && y < 50) y = 50; // ensure minimum top margin after logo
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var right = new StringFormat { Alignment = StringAlignment.Far };
