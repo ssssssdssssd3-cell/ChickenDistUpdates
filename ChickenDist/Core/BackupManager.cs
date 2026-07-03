@@ -280,7 +280,7 @@ namespace ChickenDist.Core
                                   "}";
                     var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                    var response = httpClient.PostAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands", content).Result;
+                    var response = httpClient.PostAsync($"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/commands", content).Result;
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -367,7 +367,7 @@ namespace ChickenDist.Core
                     httpClient.Timeout = TimeSpan.FromMinutes(5); // 5 دقائق للباكب الكبير
 
                     // 1. Get anonymous authentication token from Firebase Auth
-                    string authUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk";
+                    string authUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={AppConfig.FirebaseApiKey}";
                     string authJson = "{\"returnSecureToken\":true}";
                     var authContent = new System.Net.Http.StringContent(authJson, System.Text.Encoding.UTF8, "application/json");
                     var authResponse = httpClient.PostAsync(authUrl, authContent).Result;
@@ -394,7 +394,7 @@ namespace ChickenDist.Core
                     }
 
                     // 2. Upload file stream to Firebase Storage (separated by sanitized Company Name)
-                    string bucket = "checkin-192ab.firebasestorage.app";
+                    string bucket = AppConfig.FirebaseStorageBucket;
                     string fileName = Path.GetFileName(filePath);
                     
                     // Sanitize company name for clean folder naming in URLs

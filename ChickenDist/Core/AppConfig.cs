@@ -135,6 +135,32 @@ namespace ChickenDist.Core
             set => Set("ReceiptShowClientInfo", value ? "true" : "false");
         }
 
+        // ===== إعدادات Firebase السحابية الديناميكية لكل عميل =====
+
+        public static string FirebaseApiKey
+        {
+            get => Get("FirebaseApiKey", "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk");
+            set => Set("FirebaseApiKey", value);
+        }
+
+        public static string FirebaseProjectId
+        {
+            get => Get("FirebaseProjectId", "checkin-192ab");
+            set => Set("FirebaseProjectId", value);
+        }
+
+        public static string FirebaseStorageBucket
+        {
+            get => Get("FirebaseStorageBucket", "checkin-192ab.firebasestorage.app");
+            set => Set("FirebaseStorageBucket", value);
+        }
+
+        public static string FirebaseWebUrl
+        {
+            get => Get("FirebaseWebUrl", "https://checkin-192ab.web.app");
+            set => Set("FirebaseWebUrl", value);
+        }
+
 
 
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)

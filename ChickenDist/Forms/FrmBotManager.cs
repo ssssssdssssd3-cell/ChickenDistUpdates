@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         private HttpClient _httpClient;
         private Process _nodeProcess;
         private TextBox txtAccUrl;
+        private Label lblPairingCodeResult;
 
         public FrmBotManager()
         {
@@ -39,7 +40,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(720, 600);
+            this.Size = new Size(720, 670);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -49,14 +50,15 @@ namespace ChickenDist.Forms
             this.MaximizeBox = true;
 
             // Layout setup
-            TableLayoutPanel mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 5, Padding = new Padding(15) };
+            TableLayoutPanel mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 6, Padding = new Padding(15) };
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Status
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F)); // Sync text
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F)); // Pairing Code Control
 
             // Header/Status Layout container to support refresh button
             TableLayoutPanel statusContainer = new TableLayoutPanel
@@ -266,6 +268,83 @@ namespace ChickenDist.Forms
             mainLayout.Controls.Add(pnlAccountant, 0, 4);
             mainLayout.SetColumnSpan(pnlAccountant, 2);
 
+            // WhatsApp Pairing Code Panel (Row 5)
+            Panel pnlPairing = new Panel 
+            { 
+                Dock = DockStyle.Fill, 
+                BackColor = Color.FromArgb(240, 248, 240), // Light green tint
+                Padding = new Padding(8),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            
+            Label lblPairingTitle = new Label
+            {
+                Text = "🔗 ربط البوت بكود هاتف (بدون QR كود):",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(39, 174, 96),
+                AutoSize = true,
+                Location = new Point(10, 8)
+            };
+            pnlPairing.Controls.Add(lblPairingTitle);
+
+            TextBox txtPairPhone = new TextBox
+            {
+                Text = AppConfig.CompanyPhone1.Replace("+", "").Replace(" ", ""),
+                Font = new Font("Segoe UI", 10.5F),
+                Location = new Point(480, 32),
+                Width = 160,
+                RightToLeft = RightToLeft.No
+            };
+            pnlPairing.Controls.Add(txtPairPhone);
+
+            Label lblPhoneHint = new Label
+            {
+                Text = "رقم الهاتف (بكود الدولة بدون +):",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.Gray,
+                Location = new Point(480, 10),
+                Width = 160
+            };
+            pnlPairing.Controls.Add(lblPhoneHint);
+
+            Button btnRequestPairCode = new Button
+            {
+                Text = "طلب كود الربط",
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(130, 28),
+                Location = new Point(340, 31),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnRequestPairCode.FlatAppearance.BorderSize = 0;
+            btnRequestPairCode.Click += async (s, e) => {
+                string phone = txtPairPhone.Text.Trim();
+                if (string.IsNullOrEmpty(phone) || !System.Text.RegularExpressions.Regex.IsMatch(phone, "^[0-9]+$"))
+                {
+                    MessageBox.Show("❌ يرجى إدخال رقم هاتف صحيح يحتوي على أرقام فقط وكود الدولة (مثال لمصر: 201012345678)", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                btnRequestPairCode.Enabled = false;
+                await SendStartBotWithPairingPhoneAsync(phone);
+                btnRequestPairCode.Enabled = true;
+            };
+            pnlPairing.Controls.Add(btnRequestPairCode);
+
+            lblPairingCodeResult = new Label
+            {
+                Text = "كود الربط: سيظهر هنا بعد طلب الكود من الهاتف...",
+                Font = new Font("Consolas", 12F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(10, 34)
+            };
+            pnlPairing.Controls.Add(lblPairingCodeResult);
+
+            mainLayout.Controls.Add(pnlPairing, 0, 5);
+            mainLayout.SetColumnSpan(pnlPairing, 2);
+
             this.Controls.Add(mainLayout);
 
             // Hook Events
@@ -314,12 +393,13 @@ namespace ChickenDist.Forms
         {
             try
             {
-                var response = await _httpClient.GetAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/status");
+                var response = await _httpClient.GetAsync($"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/metadata/status");
                 if (response.IsSuccessStatusCode)
                 {
-                    if (txtAccUrl != null && txtAccUrl.Text != "https://checkin-192ab.web.app")
+                    string expectedAccUrl = $"{AppConfig.FirebaseWebUrl}/admin.html";
+                    if (txtAccUrl != null && txtAccUrl.Text != expectedAccUrl)
                     {
-                        txtAccUrl.Text = "https://checkin-192ab.web.app";
+                        txtAccUrl.Text = expectedAccUrl;
                     }
 
                     string json = await response.Content.ReadAsStringAsync();
@@ -357,6 +437,57 @@ namespace ChickenDist.Forms
                         tmrCountdown.Stop();
                         _qrSecondsLeft = 0;
                         tmrStatus.Interval = 20000; // Poll less frequently when online
+
+                        if (lblPairingCodeResult != null)
+                        {
+                            lblPairingCodeResult.Text = "✅ تم ربط الحساب بالهاتف بنجاح!";
+                            lblPairingCodeResult.ForeColor = Color.FromArgb(39, 174, 96);
+                        }
+                    }
+                    else if (statusVal == "PairingCode_Ready")
+                    {
+                        lblStatus.Text = "الحالة: تم توليد كود الربط بنجاح! 🔑";
+                        lblStatus.ForeColor = Color.FromArgb(46, 204, 113);
+                        btnToggle.Text = "في انتظار الربط بالهاتف...";
+                        btnToggle.BackColor = Color.FromArgb(52, 152, 219);
+                        btnToggle.Enabled = false;
+                        pbQrCode.Image = null;
+                        tmrStatus.Interval = 3000; // Poll fast while waiting for linking
+
+                        // Parse pairingCode field
+                        string pairCode = "";
+                        int pairCodeKeyIdx = json.IndexOf("\"pairingCode\"");
+                        if (pairCodeKeyIdx != -1)
+                        {
+                            int valStart = json.IndexOf("\"stringValue\":", pairCodeKeyIdx);
+                            if (valStart != -1)
+                            {
+                                int quoteStart = json.IndexOf("\"", valStart + 14);
+                                if (quoteStart != -1)
+                                {
+                                    int quoteEnd = json.IndexOf("\"", quoteStart + 1);
+                                    if (quoteEnd != -1)
+                                    {
+                                        pairCode = json.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (lblPairingCodeResult != null)
+                        {
+                            if (!string.IsNullOrEmpty(pairCode))
+                            {
+                                lblPairingCodeResult.Text = $"كود الربط الخاص بك: {pairCode}";
+                                lblPairingCodeResult.ForeColor = Color.FromArgb(39, 174, 96);
+                                lblPairingCodeResult.Font = new Font("Consolas", 14F, FontStyle.Bold);
+                            }
+                            else
+                            {
+                                lblPairingCodeResult.Text = "كود الربط: جاري توليد الكود...";
+                                lblPairingCodeResult.ForeColor = Color.Orange;
+                            }
+                        }
                     }
                     else if (statusVal == "QR_Ready")
                     {
@@ -366,15 +497,21 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(230, 126, 34);
                         btnToggle.Enabled = true;
                         LoadQrCodeFromStatusJson(json);
-                        // Poll every 3 seconds while waiting for QR scan
                         tmrStatus.Interval = 3000;
-                        // Reset countdown to 55 seconds (QR valid ~60s, we start from 55 to be safe)
+
                         if (!tmrCountdown.Enabled || _qrSecondsLeft <= 0)
                         {
                             _qrSecondsLeft = 55;
                             lblQrCountdown.Text = $"⏱ صالحية الكود: 55 ثانية";
                             lblQrCountdown.Visible = true;
                             tmrCountdown.Start();
+                        }
+
+                        if (lblPairingCodeResult != null)
+                        {
+                            lblPairingCodeResult.Text = "كود الربط: سيظهر هنا بعد طلب الكود من الهاتف...";
+                            lblPairingCodeResult.ForeColor = Color.FromArgb(44, 62, 80);
+                            lblPairingCodeResult.Font = new Font("Consolas", 12F, FontStyle.Bold);
                         }
                     }
                     else if (statusVal == "Connecting")
@@ -385,7 +522,7 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(52, 152, 219);
                         btnToggle.Enabled = false;
                         pbQrCode.Image = null;
-                        tmrStatus.Interval = 5000; // Poll faster when connecting
+                        tmrStatus.Interval = 5000;
                     }
                     else
                     {
@@ -395,7 +532,14 @@ namespace ChickenDist.Forms
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
                         btnToggle.Enabled = true;
                         pbQrCode.Image = null;
-                        tmrStatus.Interval = 10000; // Default offline polling
+                        tmrStatus.Interval = 10000;
+
+                        if (lblPairingCodeResult != null)
+                        {
+                            lblPairingCodeResult.Text = "كود الربط: سيظهر هنا بعد طلب الكود من الهاتف...";
+                            lblPairingCodeResult.ForeColor = Color.FromArgb(44, 62, 80);
+                            lblPairingCodeResult.Font = new Font("Consolas", 12F, FontStyle.Bold);
+                        }
                     }
                 }
                 else
@@ -403,7 +547,7 @@ namespace ChickenDist.Forms
                     lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️\n(السبب: خطأ خادم سحابي HTTP)";
                     lblStatus.ForeColor = Color.Red;
                     pbQrCode.Image = null;
-                    tmrStatus.Interval = 15000; // Cool down on error
+                    tmrStatus.Interval = 15000;
                 }
             }
             catch
@@ -411,7 +555,48 @@ namespace ChickenDist.Forms
                 lblStatus.Text = "الحالة: فشل الاتصال بالسحابة ⚠️";
                 lblStatus.ForeColor = Color.Red;
                 pbQrCode.Image = null;
-                tmrStatus.Interval = 15000; // Cool down on connection error
+                tmrStatus.Interval = 15000;
+            }
+        }
+
+        private async Task SendStartBotWithPairingPhoneAsync(string phone)
+        {
+            try
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.Timeout = TimeSpan.FromSeconds(5);
+                    string json = "{" +
+                                  "\"fields\": {" +
+                                  "\"type\": {\"stringValue\": \"start_bot\"}," +
+                                  "\"pairingPhone\": {\"stringValue\": \"" + phone + "\"}," +
+                                  "\"status\": {\"stringValue\": \"pending\"}," +
+                                  "\"time\": {\"stringValue\": \"" + DateTime.UtcNow.ToString("o") + "\"}" +
+                                  "}" +
+                                  "}";
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await httpClient.PostAsync($"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/commands", content);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        LogMessage($"📬 تم إرسال طلب توليد كود الربط للرقم {phone} بنجاح!");
+                        lblStatus.Text = "الحالة: جاري إرسال الطلب للسحابة... ⏳";
+                        lblStatus.ForeColor = Color.FromArgb(52, 152, 219);
+                        if (lblPairingCodeResult != null)
+                        {
+                            lblPairingCodeResult.Text = "كود الربط: جاري الاتصال بالسيرفر وتوليد الكود...";
+                            lblPairingCodeResult.ForeColor = Color.Orange;
+                        }
+                    }
+                    else
+                    {
+                        string res = await response.Content.ReadAsStringAsync();
+                        LogMessage($"❌ فشل إرسال الطلب: {res}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ خطأ أثناء إرسال طلب الربط: {ex.Message}");
             }
         }
 
@@ -725,6 +910,25 @@ namespace ChickenDist.Forms
                 string indexPath = Path.Combine(botDir, "index.js");
                 if (File.Exists(indexPath))
                 {
+                    // Generate firebase_config.json dynamically based on current AppConfig values
+                    string configJson = "{\n" +
+                                        "  \"apiKey\": \"" + AppConfig.FirebaseApiKey + "\",\n" +
+                                        "  \"authDomain\": \"" + AppConfig.FirebaseProjectId + ".firebaseapp.com\",\n" +
+                                        "  \"projectId\": \"" + AppConfig.FirebaseProjectId + "\",\n" +
+                                        "  \"storageBucket\": \"" + AppConfig.FirebaseStorageBucket + "\",\n" +
+                                        "  \"messagingSenderId\": \"818712709979\",\n" +
+                                        "  \"appId\": \"1:818712709979:web:ce0c913f02a43cec6a687e\",\n" +
+                                        "  \"measurementId\": \"G-6YV1QPB7M6\"\n" +
+                                        "}";
+                    try
+                    {
+                        File.WriteAllText(Path.Combine(botDir, "firebase_config.json"), configJson, Encoding.UTF8);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"⚠️ فشل كتابة ملف إعدادات البوت السحابية: {ex.Message}");
+                    }
+
                     LogMessage("جاري تشغيل خادم البوت المحلي...");
                     _nodeProcess = new Process
                     {

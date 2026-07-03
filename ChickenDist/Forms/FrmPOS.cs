@@ -583,14 +583,16 @@ namespace ChickenDist.Forms
             return true;
         }
 
-        // ── تعديل الكمية من الجدول ────────────────────────────
+        // ── تعديل الكمية والسعر والخصم من الجدول ────────────────────────────
         private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == 2 && e.RowIndex >= 0 && e.RowIndex < _items.Count) // Qty column
+            if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
+            var item = _items[e.RowIndex];
+
+            if (e.ColumnIndex == 2) // Qty column
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString(), out decimal newQty) && newQty > 0)
                 {
-                    var item = _items[e.RowIndex];
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
                         MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -599,12 +601,38 @@ namespace ChickenDist.Forms
                     }
 
                     item.Qty = newQty;
-                    item.Total = newQty * item.Price;
+                    item.Total = (newQty * item.Price) - item.DiscountAmt;
                     RefreshGrid();
                 }
                 else
                 {
-                    dgItems.Rows[e.RowIndex].Cells[2].Value = _items[e.RowIndex].Qty.ToString("G");
+                    dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                }
+            }
+            else if (e.ColumnIndex == 3) // Price column
+            {
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[3].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
+                {
+                    item.Price = newPrice;
+                    item.Total = (item.Qty * newPrice) - item.DiscountAmt;
+                    RefreshGrid();
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells[3].Value = item.Price.ToString("N2");
+                }
+            }
+            else if (e.ColumnIndex == 4) // Discount column
+            {
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[4].Value?.ToString(), out decimal newDiscount) && newDiscount >= 0)
+                {
+                    item.DiscountAmt = newDiscount;
+                    item.Total = (item.Qty * item.Price) - newDiscount;
+                    RefreshGrid();
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells[4].Value = item.DiscountAmt.ToString("N2");
                 }
             }
         }

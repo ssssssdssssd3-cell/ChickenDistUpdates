@@ -30,12 +30,41 @@ namespace CloudBackupManager
         private ProgressBar progressBar;
         private Label lblStatus;
         private List<BackupItem> allItems = new List<BackupItem>();
-        private const string Bucket = "checkin-192ab.appspot.com";
+        private string Bucket = "checkin-192ab.firebasestorage.app";
 
         public FrmMain()
         {
+            LoadSettings();
             InitializeComponent();
             LoadData();
+        }
+
+        private void LoadSettings()
+        {
+            string iniPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app_settings.ini");
+            if (File.Exists(iniPath))
+            {
+                try
+                {
+                    foreach (string line in File.ReadAllLines(iniPath, Encoding.UTF8))
+                    {
+                        string trimmed = line.Trim();
+                        if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith(";") || trimmed.StartsWith("#"))
+                            continue;
+                        int idx = trimmed.IndexOf('=');
+                        if (idx > 0)
+                        {
+                            string k = trimmed.Substring(0, idx).Trim();
+                            string v = trimmed.Substring(idx + 1).Trim();
+                            if (string.Equals(k, "FirebaseStorageBucket", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(v))
+                            {
+                                Bucket = v;
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
         }
 
         private void InitializeComponent()

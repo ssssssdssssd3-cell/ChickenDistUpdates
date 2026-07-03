@@ -18,8 +18,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Firebase Web Config
-const firebaseConfig = {
+// Firebase Web Config (Loads dynamically from firebase_config.json if available)
+let firebaseConfig = {
     apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
     authDomain: "checkin-192ab.firebaseapp.com",
     projectId: "checkin-192ab",
@@ -28,6 +28,16 @@ const firebaseConfig = {
     appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
     measurementId: "G-6YV1QPB7M6"
 };
+
+const configPath = path.join(__dirname, 'firebase_config.json');
+if (fs.existsSync(configPath)) {
+    try {
+        firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        console.log('[Firebase]: Loaded dynamic configurations successfully.');
+    } catch (err) {
+        console.error('[Firebase]: Failed to parse firebase_config.json, using default keys.', err);
+    }
+}
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
@@ -63,14 +73,16 @@ function listenToClientMappings() {
 }
 
 // Helper to write bot status to Firestore
-async function updateFirebaseStatus(status, qr = '') {
+async function updateFirebaseStatus(status, qr = '', pairingCode = '', error = '') {
     try {
         await db.collection('metadata').doc('status').set({
             status: status,
             qr: qr,
+            pairingCode: pairingCode,
+            error: error,
             updatedTime: new Date().toISOString()
         });
-        console.log(`[FirebaseStatus]: Synced status: ${status}`);
+        console.log(`[FirebaseStatus]: Synced status: ${status}${pairingCode ? ' (Code: ' + pairingCode + ')' : ''}`);
     } catch (err) {
         console.error('Failed to sync status to Firebase:', err);
     }
@@ -78,7 +90,7 @@ async function updateFirebaseStatus(status, qr = '') {
 
 // Write permanent Firebase Hosting URL to tunnel_url.txt so C# app reads it
 try {
-    const permUrl = "https://checkin-192ab.web.app";
+    const permUrl = firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.web.app` : "https://checkin-192ab.web.app";
     fs.writeFileSync(path.join(__dirname, 'tunnel_url.txt'), permUrl, 'utf8');
     console.log(`Configured permanent accountant URL: ${permUrl}`);
 } catch (e) {
@@ -193,7 +205,7 @@ function listenForOrderActions() {
 // -------------------------------------------------------------
 // 1. WhatsApp Bot Initializer
 // -------------------------------------------------------------
-function startBot() {
+function startBot(pairingPhone = null) {
     if (client) return;
     
     botStatus = 'Connecting';
@@ -211,7 +223,26 @@ function startBot() {
         }
     });
 
-    client.on('qr', (qr) => {
+    client.on('qr', async (qr) => {
+        if (pairingPhone) {
+            try {
+                console.log(`[WhatsApp]: Requesting pairing code for phone ${pairingPhone}...`);
+                const code = await client.requestPairingCode(pairingPhone);
+                console.log(`[WhatsApp]: Pairing code generated: ${code}`);
+                botStatus = 'PairingCode_Ready';
+                updateFirebaseStatus('PairingCode_Ready', '', code);
+            } catch (err) {
+                console.error('[WhatsApp]: Failed to request pairing code:', err);
+                botStatus = 'Offline';
+                updateFirebaseStatus('Offline', '', '', err.message);
+                if (client) {
+                    try { await client.destroy(); } catch (e) {}
+                    client = null;
+                }
+            }
+            return;
+        }
+
         botStatus = 'QR_Ready';
         qrcode.toDataURL(qr, (err, url) => {
             if (err) {
@@ -662,7 +693,8 @@ function listenForCommands() {
 
                     if (cmd.type === 'start_bot') {
                         console.log('[Command]: Received start_bot command');
-                        startBot();
+                        const pPhone = cmd.pairingPhone || null;
+                        startBot(pPhone);
                         await change.doc.ref.update({ status: 'completed' });
                     }
                     else if (cmd.type === 'stop_bot') {
