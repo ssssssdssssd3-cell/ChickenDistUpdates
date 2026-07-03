@@ -203,7 +203,7 @@ namespace ChickenDist.Forms
             pnlAccountant.Controls.Add(lblAccTitle);
 
             // Use permanent cloud URL instead of local IP address
-            string accUrl = "https://checkin-192ab.web.app";
+            string accUrl = "https://checkin-192ab.web.app/admin.html";
 
             txtAccUrl = new TextBox
             {

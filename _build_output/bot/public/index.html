@@ -3,629 +3,638 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المحاسب - إدارة الطلبات</title>
+    <title>منيو المتجر - الطلب المباشر</title>
     <!-- Bootstrap 5 CSS (Arabic RTL version) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <!-- Google Fonts: Cairo (Arabic) & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        :root {
+            --primary-color: #e67e22; /* Warm orange accent for ordering/food */
+            --primary-dark: #d35400;
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+        }
+
         body {
-            background-color: #f4f6fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
+            background-color: var(--bg-color);
+            font-family: 'Cairo', 'Segoe UI', sans-serif;
+            color: var(--text-color);
+            padding-bottom: 90px; /* Space for floating cart bar */
         }
+
+        /* App Header */
         .app-header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
             color: white;
-            padding: 18px 15px;
-            border-radius: 0 0 20px 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px 15px;
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
         }
-        .order-card {
-            background-color: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
-            margin-bottom: 16px;
+        
+        .store-logo-icon {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+        }
+
+        /* Product Card */
+        .product-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
             border: 1px solid #eef2f5;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .order-card:active {
-            transform: scale(0.98);
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
-        .status-Pending { border-right: 6px solid #ffc107; }
-        .status-Accepted { border-right: 6px solid #198754; }
-        .status-Rejected { border-right: 6px solid #dc3545; }
-        .search-container {
-            margin-top: -15px;
-            padding: 0 10px;
+
+        .product-body {
+            padding: 16px;
+            flex-grow: 1;
         }
-        .search-box {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+        .product-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
-        .btn-filter {
-            font-weight: 500;
-            border-radius: 20px;
-            padding: 5px 15px;
-            white-space: nowrap;
+
+        .product-price-tag {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary-color);
         }
-        .badge-status {
-            font-size: 0.8rem;
-            padding: 6px 10px;
-            border-radius: 8px;
+
+        .price-currency {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 4px;
         }
-        .order-details-box {
+
+        /* Counter Controls */
+        .quantity-controller {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             background-color: #f8f9fa;
-            border: 1px solid #eef2f5;
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .btn-qty {
+            width: 34px;
+            height: 34px;
             border-radius: 10px;
-            padding: 12px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
+            border: none;
+            background-color: white;
+            color: var(--text-color);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .btn-qty:active {
+            transform: scale(0.9);
+        }
+
+        .btn-qty-add {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .qty-display {
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 40px;
+            text-align: center;
+        }
+
+        /* Floating Cart Bar */
+        .floating-cart-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 14px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            transform: translateY(150px); /* Hidden initially */
+        }
+
+        .floating-cart-bar.show {
+            transform: translateY(0);
+        }
+
+        .cart-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .cart-badge {
+            background-color: var(--primary-color);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+        .btn-view-cart {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .btn-view-cart:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Cart Offcanvas */
+        .offcanvas-cart {
+            border-radius: 20px 20px 0 0 !important;
+            max-height: 85vh;
+        }
+
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2f5;
+        }
+
+        .checkout-footer-btn {
+            background-color: var(--primary-color);
+            border: none;
+            font-weight: 700;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            width: 100%;
+        }
+
+        .checkout-footer-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Glassmorphism Search Box */
+        .search-box {
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+            padding: 12px 20px;
+            font-size: 1.05rem;
+            background-color: white;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.2);
         }
     </style>
 </head>
 <body>
+
     <!-- App Header -->
     <div class="app-header mb-4">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1 fw-bold">📦 طلبات الواتساب</h4>
-                <p class="mb-0 small opacity-75">لوحة تحكم المحاسب الميدانية (سحابية)</p>
+        <div class="container d-flex align-items-center gap-3">
+            <div class="store-logo-icon">
+                <i class="fa-solid var(--logo-icon, fa-store)"></i>
             </div>
-            <span class="badge bg-warning py-2 px-3 rounded-pill" id="liveIndicator">📡 جاري الاتصال بالسحاب...</span>
-        </div>
-    </div>
-
-    <div class="container mb-3" id="botStatusContainer" style="display: none;">
-        <div class="card p-3 border-0 shadow-sm rounded-4 text-center">
-            <h6 class="fw-bold mb-0">🤖 حالة البوت سحابياً: <span id="webBotStatus">جاري الفحص...</span></h6>
-            <div id="webBotQrWrapper" style="display: none;" class="mt-2 text-center">
-                <p class="text-muted small">يرجى مسح رمز الاستجابة السريع لتفعيل الواتساب:</p>
-                <img id="webBotQrImg" src="" alt="QR Code" style="width: 200px; height: 200px; border: 1px solid #ddd; border-radius: 10px;" />
+            <div>
+                <h4 class="mb-1 fw-bold" id="lblCompanyName">متجر الهدى</h4>
+                <p class="mb-0 small opacity-75">اطلب مباشرة من المنيو الرقمي الآن 📱🛒</p>
             </div>
         </div>
     </div>
 
     <div class="container">
-        <!-- Search, Product and Date Filter Bar -->
-        <div class="row g-2 mb-3 px-1">
-            <div class="col-12 col-md-6">
-                <input type="text" id="searchInput" class="form-control search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" placeholder="🔍 ابحث باسم العميل أو رقم الهاتف...">
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <select id="productFilter" class="form-select search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" onchange="filterProduct(this.value)">
-                    <option value="all">🔍 تصفية بالصنف (الكل)...</option>
-                </select>
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <input type="date" id="dateFilter" class="form-control search-box py-2" style="border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);" onchange="filterDate(this.value)">
-            </div>
+        <!-- Search Bar -->
+        <div class="mb-4">
+            <input type="text" id="txtSearch" class="form-control search-box" placeholder="🔍 ابحث عن صنف معين...">
         </div>
 
-        <!-- Filters Bar (Status & Client Type & Date) -->
-        <div class="d-flex gap-2 overflow-auto pb-2 mb-3 px-1 align-items-center" style="-webkit-overflow-scrolling: touch;">
-            <button class="btn btn-sm btn-outline-primary btn-filter active" onclick="filterStatus('all')">الكل</button>
-            <button class="btn btn-sm btn-outline-warning btn-filter" onclick="filterStatus('Pending')">المعلقة ⏳</button>
-            <button class="btn btn-sm btn-outline-success btn-filter" onclick="filterStatus('Accepted')">المقبولة ✅</button>
-            <button class="btn btn-sm btn-outline-danger btn-filter" onclick="filterStatus('Rejected')">المرفوضة ❌</button>
-            
-            <span class="text-muted mx-1">|</span>
-            
-            <button class="btn btn-sm btn-outline-secondary btn-filter-client" id="btnFilterNewClients" onclick="toggleNewClientsFilter()">عملاء جدد فقط ⚪</button>
-            
-            <span class="text-muted mx-1">|</span>
-
-            <button class="btn btn-sm btn-outline-secondary btn-filter-today" id="btnFilterToday" onclick="filterTodayOnly()">حجوزات اليوم فقط 📅</button>
+        <!-- Products Grid -->
+        <h5 class="fw-bold mb-3"><i class="fa-solid fa-utensils text-orange me-2"></i> قائمة الأصناف المتاحة:</h5>
+        
+        <div id="productsLoading" class="text-center py-5 text-muted">
+            <div class="spinner-border text-orange mb-3" style="color: var(--primary-color);" role="status"></div>
+            <div>جاري تحميل قائمة الأسعار والمنيو...</div>
         </div>
 
-        <!-- Totals Summary Card -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
-            <div class="card-body p-3">
-                <h6 class="fw-bold mb-2">📊 إجمالي مطلوب الأصناف (للطلبات المعروضة):</h6>
-                <div class="row g-2" id="totalsContainer">
-                    <div class="col-12 text-center small opacity-75">لا توجد أصناف مطلوب تجميعها حالياً.</div>
-                </div>
-            </div>
+        <div id="productsGrid" class="row g-3" style="display: none;">
+            <!-- Dynamic Product Cards will be loaded here -->
         </div>
 
-        <!-- Orders Feed -->
-        <div id="ordersContainer" class="px-1">
-            <div class="text-center py-5 text-muted">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <div>جاري الاتصال بقاعدة البيانات السحابية...</div>
-            </div>
+        <div id="noProductsFound" class="text-center py-5 text-muted" style="display: none;">
+            <i class="fa-regular fa-face-frown mb-3" style="font-size: 3rem;"></i>
+            <div>عذراً، لم نجد أي أصناف تطابق بحثك.</div>
         </div>
     </div>
 
-    <!-- Action Modal -->
-    <div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-            <div class="modal-content" style="border-radius: 20px 20px 20px 20px;">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="actionModalLabel">تفاصيل طلب العميل</h5>
+    <!-- Floating Cart Bar -->
+    <div class="floating-cart-bar" id="floatingCartBar">
+        <div class="cart-details">
+            <div class="cart-badge" id="cartCountBadge">0</div>
+            <div>
+                <div class="small opacity-75">إجمالي الطلب:</div>
+                <div class="fw-bold" style="font-size: 1.15rem;"><span id="cartTotalPrice">0</span> ج.م</div>
+            </div>
+        </div>
+        <button class="btn-view-cart" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+            📥 عرض السلة <i class="fa-solid fa-chevron-left ms-1" style="font-size: 0.8rem;"></i>
+        </button>
+    </div>
+
+    <!-- Cart Offcanvas -->
+    <div class="offcanvas offcanvas-bottom offcanvas-cart" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold" id="cartOffcanvasLabel"><i class="fa-solid fa-shopping-basket text-orange me-2"></i> سلة المشتريات الخاصة بك</h5>
+            <button type="button" class="btn-close text-reset ms-0 me-auto" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <!-- Cart Items List -->
+            <div id="cartItemsList" class="mb-4">
+                <!-- Dynamic Items -->
+            </div>
+
+            <!-- Total Container -->
+            <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-3">
+                <span class="fw-bold text-muted">إجمالي الحساب:</span>
+                <span class="fw-extrabold text-orange" style="font-size: 1.4rem; color: var(--primary-color);" id="offcanvasTotalPrice">0 ج.م</span>
+            </div>
+
+            <!-- Checkout Button -->
+            <button class="btn btn-primary checkout-footer-btn" onclick="openCheckoutModal()">
+                🚀 إرسال الطلب للمحاسب
+            </button>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px;">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="checkoutModalLabel">✍️ أكمل بيانات الطلب لتأكيده</h5>
                     <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="text-muted small mb-1 d-block">اسم العميل</label>
-                        <h5 class="fw-bold" id="modalClient"></h5>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted small mb-1 d-block">رقم الهاتف</label>
-                        <h6 class="fw-bold text-primary" id="modalPhone"></h6>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted small mb-1 d-block">محتوى الطلب (يمكن تعديله)</label>
-                        <textarea id="modalDetails" class="form-control" rows="4" style="border-radius: 10px;"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted small mb-1 d-block">رسالة تأكيد للعميل (واتساب)</label>
-                        <input type="text" id="modalMessage" class="form-control" placeholder="سيتم تجهيز طلبك وتوصيله فوراً" style="border-radius: 10px;">
-                    </div>
-                </div>
-                <div class="modal-footer d-flex gap-2 justify-content-start border-0 pt-0">
-                    <button type="button" class="btn btn-success py-2 px-3 flex-grow-1" onclick="processOrder('Accepted')" style="border-radius: 10px;">قبول وتأكيد ✅</button>
-                    <button type="button" class="btn btn-danger py-2 px-3" onclick="processOrder('Rejected')" style="border-radius: 10px;">رفض ❌</button>
-                    <button type="button" class="btn btn-secondary py-2 px-3" data-bs-dismiss="modal" style="border-radius: 10px;">إغلاق</button>
+                <div class="modal-body pt-3">
+                    <form id="checkoutForm">
+                        <div class="mb-3">
+                            <label for="txtClientName" class="form-label fw-bold">الاسم بالكامل:</label>
+                            <input type="text" class="form-control py-2.5 rounded-3" id="txtClientName" required placeholder="مثال: أحمد محمد علي">
+                        </div>
+                        <div class="mb-3">
+                            <label for="txtClientPhone" class="form-label fw-bold">رقم الهاتف (الواتساب):</label>
+                            <input type="tel" class="form-control py-2.5 rounded-3" id="txtClientPhone" required placeholder="مثال: 01012345678">
+                            <div class="form-text small">سيقوم المحاسب بإرسال رسائل تأكيد وتحديثات الطلب عبر هذا الرقم.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="txtNotes" class="form-label fw-bold">تفاصيل التوصيل أو ملاحظات إضافية (اختياري):</label>
+                            <textarea class="form-control rounded-3" id="txtNotes" rows="3" placeholder="مثال: العنوان بالتفصيل، أو طلب تقطيع معين..."></textarea>
+                        </div>
+                        
+                        <button type="button" id="btnSubmitOrder" class="btn btn-primary w-100 py-3 mt-2 fw-bold" style="border-radius: 12px; background-color: var(--primary-color); border: none;" onclick="submitOrder()">
+                            ✅ تأكيد وإرسال الطلب فوراً
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 Bundle JS -->
+    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Firebase SDK (Compat version for simplicity) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
+    
     <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
-            authDomain: "checkin-192ab.firebaseapp.com",
-            projectId: "checkin-192ab",
-            storageBucket: "checkin-192ab.firebasestorage.app",
-            messagingSenderId: "818712709979",
-            appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
-            measurementId: "G-6YV1QPB7M6"
-        };
+        const projectID = "checkin-192ab";
+        let products = [];
+        let cart = {};
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // Fetch products list from Firestore document metadata/prices on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPricesFromCloud();
+        });
 
-        let allOrders = [];
-        let allClients = [];
-        let allPrices = []; // Synced prices/products list
-        let activeFilter = 'all';
-        let activeProductFilter = 'all';
-        let activeDateFilter = ''; // YYYY-MM-DD
-        let showOnlyNewClients = false;
-        let selectedOrderId = null;
-        const myModal = new bootstrap.Modal(document.getElementById('actionModal'));
+        async function fetchPricesFromCloud() {
+            try {
+                const url = `https://firestore.googleapis.com/v1/projects/${projectID}/databases/(default)/documents/metadata/prices`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Failed to fetch prices.");
+                
+                const data = await response.json();
+                
+                // Parse company name from configuration if available or set default
+                // In a production system, metadata could also store the merchant name.
+                document.getElementById('lblCompanyName').innerText = "منيو المبيعات المباشر";
 
-        // Normalizes phone numbers to match them regardless of country code or leading zero
-        function normalizePhone(phone) {
-            if (!phone) return '';
-            let cleaned = phone.toString().replace(/\D/g, ''); // keep only digits
-            if (cleaned.startsWith('20') && cleaned.length > 10) {
-                cleaned = cleaned.substring(2); // remove Egypt country code '20'
+                if (data.fields && data.fields.list && data.fields.list.arrayValue && data.fields.list.arrayValue.values) {
+                    const values = data.fields.list.arrayValue.values;
+                    products = values.map(item => {
+                        const fields = item.mapValue.fields;
+                        return {
+                            id: fields.ProductID ? fields.ProductID.integerValue : Date.now().toString(),
+                            name: fields.ProductName ? fields.ProductName.stringValue : "صنف بدون اسم",
+                            price: fields.Price ? parseFloat(fields.Price.doubleValue) : 0
+                        };
+                    });
+                }
+                
+                renderProducts();
+            } catch (err) {
+                console.error("Error fetching prices:", err);
+                document.getElementById('productsLoading').innerHTML = `
+                    <div class="text-danger mb-3"><i class="fa-solid fa-circle-exclamation" style="font-size: 2.5rem;"></i></div>
+                    <div class="text-danger fw-bold">فشل تحميل المنيو. يرجى التأكد من اتصال الإنترنت وإعادة المحاولة.</div>
+                `;
             }
-            if (cleaned.startsWith('0') && cleaned.length > 9) {
-                cleaned = cleaned.substring(1); // remove leading '0'
-            }
-            return cleaned;
         }
 
-        // Formats phone numbers to friendly Egyptian format (e.g. 201016517586 -> 01016517586)
-        function formatPhoneFriendly(phone) {
-            if (!phone) return '';
-            let cleaned = phone.toString().replace(/\D/g, '');
-            if (cleaned.startsWith('20') && cleaned.length > 10) {
-                return '0' + cleaned.substring(2);
-            }
-            if (cleaned.startsWith('0')) {
-                return cleaned;
-            }
-            if (cleaned.length === 10) {
-                return '0' + cleaned;
-            }
-            return phone;
-        }
-
-        function findClientByPhone(phone) {
-            const cleanPhone = normalizePhone(phone);
-            if (!cleanPhone) return null;
-            return allClients.find(c => normalizePhone(c.Phone) === cleanPhone);
-        }
-
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        // Extracts quantities ordered of each product in the details text
-        function parseQuantities(detailsText, products) {
-            const results = {};
-            if (!detailsText || !products) return results;
-
-            // Clean text for matching
-            const cleanText = detailsText.toLowerCase()
-                .replace(/[أإآ]/g, 'ا')
-                .replace(/ة/g, 'ه')
-                .replace(/\s+/g, ' ');
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const loading = document.getElementById('productsLoading');
+            const searchVal = document.getElementById('txtSearch').value.trim().toLowerCase();
+            
+            grid.innerHTML = '';
+            let count = 0;
 
             products.forEach(p => {
-                if (!p.ProductName) return;
-                const prodName = p.ProductName.toLowerCase()
-                    .replace(/[أإآ]/g, 'ا')
-                    .replace(/ة/g, 'ه');
-
-                // Regex 1: number followed by product name
-                const regexBefore = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:كيلو|ك|عد|عدد)?\\s*${escapeRegExp(prodName)}`, 'i');
-                const matchBefore = cleanText.match(regexBefore);
-                if (matchBefore) {
-                    results[p.ProductName] = (results[p.ProductName] || 0) + parseFloat(matchBefore[1]);
-                    return;
-                }
-
-                // Regex 2: product name followed by number
-                const regexAfter = new RegExp(`${escapeRegExp(prodName)}\\s*(\\d+(?:\\.\\d+)?)`, 'i');
-                const matchAfter = cleanText.match(regexAfter);
-                if (matchAfter) {
-                    results[p.ProductName] = (results[p.ProductName] || 0) + parseFloat(matchAfter[1]);
-                }
-            });
-
-            return results;
-        }
-
-        // Calculates and renders summary of quantities required
-        function renderTotals(filteredOrders) {
-            const container = document.getElementById('totalsContainer');
-            const totals = {};
-
-            filteredOrders.forEach(o => {
-                const parsed = parseQuantities(o.details, allPrices);
-                for (const prod in parsed) {
-                    totals[prod] = (totals[prod] || 0) + parsed[prod];
-                }
-            });
-
-            const totalsList = Object.keys(totals).map(prod => {
-                return `
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded-3 text-center" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);">
-                            <div class="small opacity-75 fw-bold" style="font-size: 0.85rem;">${prod}</div>
-                            <h4 class="mb-0 fw-bold" style="font-size: 1.25rem;">${totals[prod]}</h4>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = totalsList || `
-                <div class="col-12 text-center small opacity-75">لا توجد أصناف مطلوب تجميعها حالياً.</div>
-            `;
-        }
-
-        // Render orders feed
-        function renderOrders() {
-            const container = document.getElementById('ordersContainer');
-            const searchVal = document.getElementById('searchInput').value.toLowerCase();
-            
-            let filtered = allOrders.filter(o => {
-                const matchedClient = findClientByPhone(o.clientPhone);
-                const dbName = matchedClient ? matchedClient.ClientName : '';
-                
-                const matchesSearch = o.clientName.toLowerCase().includes(searchVal) || 
-                                     dbName.toLowerCase().includes(searchVal) || 
-                                     o.clientPhone.includes(searchVal);
-                
-                const matchesStatus = activeFilter === 'all' || o.status === activeFilter;
-                
-                const matchesClient = !showOnlyNewClients || !matchedClient;
-                
-                const matchesProduct = activeProductFilter === 'all' || 
-                                       (o.details && o.details.toLowerCase()
-                                           .replace(/[أإآ]/g, 'ا')
-                                           .replace(/ة/g, 'ه')
-                                           .includes(activeProductFilter.toLowerCase()
-                                               .replace(/[أإآ]/g, 'ا')
-                                               .replace(/ة/g, 'ه')));
-                
-                const matchesDate = !activeDateFilter || (() => {
-                    const orderDate = new Date(o.time);
-                    const localYear = orderDate.getFullYear();
-                    const localMonth = String(orderDate.getMonth() + 1).padStart(2, '0');
-                    const localDay = String(orderDate.getDate()).padStart(2, '0');
-                    const formattedOrderDate = `${localYear}-${localMonth}-${localDay}`;
-                    return formattedOrderDate === activeDateFilter;
-                })();
-                
-                return matchesSearch && matchesStatus && matchesClient && matchesProduct && matchesDate;
-            });
-
-            // Dynamically render totals panel for the displayed orders
-            renderTotals(filtered);
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-5 text-muted">
-                        <p class="fs-5">📭 لا يوجد طلبات مطابقة للبحث</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(o => {
-                let badgeColor = 'warning';
-                let statusText = 'معلق';
-                if (o.status === 'Accepted') {
-                    badgeColor = 'success';
-                    statusText = 'مقبول';
-                } else if (o.status === 'Rejected') {
-                    badgeColor = 'danger';
-                    statusText = 'مرفوض';
-                }
-                const timeStr = new Date(o.time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-                // Match client with local database
-                const matchedClient = findClientByPhone(o.clientPhone);
-                let displayName = o.clientName;
-                let clientBadge = `<span class="badge bg-secondary opacity-75">⚪ عميل جديد</span>`;
-                if (matchedClient) {
-                    displayName = `${matchedClient.ClientName} (مسجل)`;
-                    clientBadge = `<span class="badge bg-success">🟢 مسجل لدينا</span>`;
-                }
-
-                return `
-                    <div class="card order-card status-${o.status}" onclick="openActionModal('${o.id}')">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold text-dark mb-0">${displayName}</h6>
-                                <span class="badge badge-status bg-${badgeColor}">${statusText}</span>
+                if (searchVal === '' || p.name.toLowerCase().includes(searchVal)) {
+                    count++;
+                    const qty = cart[p.id] ? cart[p.id].qty : 0;
+                    
+                    const cardHtml = `
+                        <div class="col-12 col-md-4">
+                            <div class="product-card">
+                                <div class="product-body">
+                                    <h6 class="product-title">${p.name}</h6>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="product-price-tag">${p.price.toFixed(2)}<span class="price-currency">ج.م</span></div>
+                                        
+                                        <div class="quantity-controller" style="width: 140px;">
+                                            <button class="btn-qty btn-qty-minus" onclick="updateCartItemQty('${p.id}', -1)"><i class="fa-solid fa-minus"></i></button>
+                                            <span class="qty-display" id="qty-${p.id}">${qty}</span>
+                                            <button class="btn-qty btn-qty-add" onclick="updateCartItemQty('${p.id}', 1)"><i class="fa-solid fa-plus"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-muted small mb-2">📱 ${formatPhoneFriendly(o.clientPhone)} ${clientBadge} | 🕒 ${timeStr}</p>
-                            <div class="order-details-box text-dark">${o.details}</div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', cardHtml);
+                }
+            });
+
+            loading.style.display = 'none';
+            if (count > 0) {
+                grid.style.display = 'flex';
+                document.getElementById('noProductsFound').style.display = 'none';
+            } else {
+                grid.style.display = 'none';
+                document.getElementById('noProductsFound').style.display = 'block';
+            }
+        }
+
+        // Live Search Filter
+        document.getElementById('txtSearch').addEventListener('input', () => {
+            renderProducts();
+        });
+
+        function updateCartItemQty(prodId, change) {
+            const product = products.find(p => p.id === prodId);
+            if (!product) return;
+
+            if (!cart[prodId]) {
+                cart[prodId] = { product: product, qty: 0 };
+            }
+
+            cart[prodId].qty += change;
+
+            if (cart[prodId].qty <= 0) {
+                delete cart[prodId];
+                const qtyLabel = document.getElementById(`qty-${prodId}`);
+                if (qtyLabel) qtyLabel.innerText = '0';
+            } else {
+                const qtyLabel = document.getElementById(`qty-${prodId}`);
+                if (qtyLabel) qtyLabel.innerText = cart[prodId].qty;
+            }
+
+            updateFloatingCartBar();
+        }
+
+        function updateFloatingCartBar() {
+            const bar = document.getElementById('floatingCartBar');
+            let totalQty = 0;
+            let totalPrice = 0;
+
+            for (const key in cart) {
+                totalQty += cart[key].qty;
+                totalPrice += cart[key].qty * cart[key].product.price;
+            }
+
+            document.getElementById('cartCountBadge').innerText = totalQty;
+            document.getElementById('cartTotalPrice').innerText = totalPrice.toFixed(2);
+
+            if (totalQty > 0) {
+                bar.classList.add('show');
+            } else {
+                bar.classList.remove('show');
+                // Close offcanvas if empty
+                const offcanvasEl = document.getElementById('cartOffcanvas');
+                const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                if (offcanvas) offcanvas.hide();
+            }
+        }
+
+        // Populate and show Cart List
+        const offcanvasEl = document.getElementById('cartOffcanvas');
+        offcanvasEl.addEventListener('show.bs.offcanvas', () => {
+            const list = document.getElementById('cartItemsList');
+            let totalPrice = 0;
+            list.innerHTML = '';
+
+            for (const key in cart) {
+                const item = cart[key];
+                const itemTotal = item.qty * item.product.price;
+                totalPrice += itemTotal;
+
+                const itemHtml = `
+                    <div class="cart-item-row">
+                        <div>
+                            <div class="fw-bold">${item.product.name}</div>
+                            <div class="small text-muted">${item.product.price.toFixed(2)} ج.م × ${item.qty}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-orange">${itemTotal.toFixed(2)} ج.م</span>
+                            <button class="btn btn-sm btn-outline-danger border-0" onclick="removeCartItem('${item.product.id}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </div>
                     </div>
                 `;
-            }).join('');
-        }
-
-        // Filter actions
-        function filterStatus(status) {
-            activeFilter = status;
-            document.querySelectorAll('.btn-filter').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            renderOrders();
-        }
-
-        function filterProduct(prod) {
-            activeProductFilter = prod;
-            renderOrders();
-        }
-
-        function filterDate(dateVal) {
-            activeDateFilter = dateVal;
-            updateTodayButtonState();
-            renderOrders();
-        }
-
-        function filterTodayOnly() {
-            const today = new Date();
-            const localYear = today.getFullYear();
-            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
-            const localDay = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${localYear}-${localMonth}-${localDay}`;
-            
-            const dateInput = document.getElementById('dateFilter');
-            if (activeDateFilter === todayStr) {
-                // Toggle off
-                dateInput.value = '';
-                activeDateFilter = '';
-            } else {
-                // Toggle on
-                dateInput.value = todayStr;
-                activeDateFilter = todayStr;
-            }
-            updateTodayButtonState();
-            renderOrders();
-        }
-
-        function updateTodayButtonState() {
-            const btn = document.getElementById('btnFilterToday');
-            const today = new Date();
-            const localYear = today.getFullYear();
-            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
-            const localDay = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${localYear}-${localMonth}-${localDay}`;
-
-            if (activeDateFilter === todayStr) {
-                btn.classList.add('active');
-                btn.className = 'btn btn-sm btn-secondary btn-filter-today';
-            } else {
-                btn.classList.remove('active');
-                btn.className = 'btn btn-sm btn-outline-secondary btn-filter-today';
-            }
-        }
-
-        function toggleNewClientsFilter() {
-            showOnlyNewClients = !showOnlyNewClients;
-            const btn = document.getElementById('btnFilterNewClients');
-            if (showOnlyNewClients) {
-                btn.classList.add('active');
-                btn.className = 'btn btn-sm btn-secondary btn-filter-client';
-            } else {
-                btn.classList.remove('active');
-                btn.className = 'btn btn-sm btn-outline-secondary btn-filter-client';
-            }
-            renderOrders();
-        }
-
-        document.getElementById('searchInput').addEventListener('input', renderOrders);
-
-        // Modal triggers
-        function openActionModal(id) {
-            const order = allOrders.find(o => o.id === id);
-            if (!order) return;
-            selectedOrderId = id;
-            
-            const matchedClient = findClientByPhone(order.clientPhone);
-            let displayName = order.clientName;
-            if (matchedClient) {
-                displayName = `${matchedClient.ClientName} (مسجل - هاتف: ${matchedClient.Phone || 'بدون'})`;
+                list.insertAdjacentHTML('beforeend', itemHtml);
             }
 
-            document.getElementById('modalClient').innerText = displayName;
-            document.getElementById('modalPhone').innerText = formatPhoneFriendly(order.clientPhone);
-            document.getElementById('modalDetails').value = order.details;
+            document.getElementById('offcanvasTotalPrice').innerText = totalPrice.toFixed(2) + " ج.م";
+        });
+
+        function removeCartItem(prodId) {
+            delete cart[prodId];
+            updateFloatingCartBar();
+            // Re-render items inside open offcanvas
+            const list = document.getElementById('cartItemsList');
+            let totalPrice = 0;
+            list.innerHTML = '';
+
+            for (const key in cart) {
+                const item = cart[key];
+                const itemTotal = item.qty * item.product.price;
+                totalPrice += itemTotal;
+
+                const itemHtml = `
+                    <div class="cart-item-row">
+                        <div>
+                            <div class="fw-bold">${item.product.name}</div>
+                            <div class="small text-muted">${item.product.price.toFixed(2)} ج.م × ${item.qty}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-orange">${itemTotal.toFixed(2)} ج.م</span>
+                            <button class="btn btn-sm btn-outline-danger border-0" onclick="removeCartItem('${item.product.id}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.insertAdjacentHTML('beforeend', itemHtml);
+            }
+            document.getElementById('offcanvasTotalPrice').innerText = totalPrice.toFixed(2) + " ج.م";
             
-            // Auto message suggestion
-            document.getElementById('modalMessage').value = order.status === 'Accepted' ? 'تم قبول طلبك وجاري تحضيره.' : '';
-            
+            // Re-render quantities on grid
+            renderProducts();
+        }
+
+        function openCheckoutModal() {
+            // Close offcanvas first
+            const offcanvasEl = document.getElementById('cartOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if (offcanvas) offcanvas.hide();
+
+            // Show modal
+            const myModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
             myModal.show();
         }
 
-        // Process Accept/Reject in Firestore
-        async function processOrder(status) {
-            const message = document.getElementById('modalMessage').value;
-            const updatedDetails = document.getElementById('modalDetails').value;
-            
+        async function submitOrder() {
+            const name = document.getElementById('txtClientName').value.trim();
+            const phone = document.getElementById('txtClientPhone').value.trim();
+            const notes = document.getElementById('txtNotes').value.trim();
+
+            if (!name || !phone) {
+                alert("يرجى ملء خانة الاسم ورقم الهاتف.");
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnSubmitOrder');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري إرسال الطلب...`;
+
+            // Build details text
+            let details = "📋 *تفاصيل الطلب من الويب:*\n";
+            let idx = 1;
+            for (const key in cart) {
+                const item = cart[key];
+                details += `\n${idx}- *${item.product.name}* (الكمية: ${item.qty})`;
+                idx++;
+            }
+            if (notes) {
+                details += `\n\n📝 *ملاحظات:* ${notes}`;
+            }
+
+            // Create Firestore Document payload
+            const orderId = Date.now().toString();
+            const orderPayload = {
+                fields: {
+                    id: { stringValue: orderId },
+                    clientPhone: { stringValue: phone },
+                    clientJid: { stringValue: phone + "@c.us" }, // Fallback JID format
+                    clientName: { stringValue: name },
+                    details: { stringValue: details },
+                    time: { stringValue: new Date().toISOString() },
+                    status: { stringValue: 'Pending' },
+                    whatsappStatus: { stringValue: 'none' },
+                    message: { stringValue: '' }
+                }
+            };
+
             try {
-                await db.collection('orders').doc(selectedOrderId).update({
-                    status: status,
-                    message: message,
-                    details: updatedDetails,
-                    whatsappStatus: 'none' // bot locally will catch this and send message
+                const url = `https://firestore.googleapis.com/v1/projects/${projectID}/databases/(default)/documents/orders`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderPayload)
                 });
-                myModal.hide();
+
+                if (!response.ok) throw new Error("Failed to write document to Firestore.");
+
+                alert("🎉 تم إرسال طلبك بنجاح! سيقوم المحاسب بمراجعته وتأكيده معك على الواتساب فوراً. ✅");
+                
+                // Clear cart and form
+                cart = {};
+                updateFloatingCartBar();
+                renderProducts();
+                document.getElementById('checkoutForm').reset();
+                
+                // Close modal
+                const modalEl = document.getElementById('checkoutModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+
             } catch (err) {
-                console.error('Failed to update order status in Firebase:', err);
-                alert('خطأ أثناء معالجة الطلب في السحابة.');
+                console.error("Error submitting order:", err);
+                alert("⚠️ حدث خطأ أثناء إرسال الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "✅ تأكيد وإرسال الطلب فوراً";
             }
         }
-
-        function populateProductFilterDropdown() {
-            const select = document.getElementById('productFilter');
-            const prices = allPrices || [];
-            select.innerHTML = '<option value="all">🔍 تصفية بالصنف (الكل)...</option>';
-            prices.forEach(p => {
-                if (p.ProductName) {
-                    select.innerHTML += `<option value="${p.ProductName}">${p.ProductName}</option>`;
-                }
-            });
-        }
-
-        // Listen to Firestore real-time updates
-        function initFirebaseSync() {
-            // 1. Sync clients metadata
-            db.collection('metadata').doc('clients').onSnapshot(doc => {
-                if (doc.exists) {
-                    allClients = doc.data().list || [];
-                    console.log('Synchronized clients list:', allClients.length);
-                    renderOrders();
-                }
-            }, err => {
-                console.error('Failed to sync clients from Firebase:', err);
-            });
-
-            // 2. Sync prices metadata (to populate product filters and calculations)
-            db.collection('metadata').doc('prices').onSnapshot(doc => {
-                if (doc.exists) {
-                    allPrices = doc.data().list || [];
-                    console.log('Synchronized prices list:', allPrices.length);
-                    populateProductFilterDropdown();
-                    renderOrders();
-                }
-            }, err => {
-                console.error('Failed to sync prices from Firebase:', err);
-            });
-
-            // 2. Sync orders
-            db.collection('orders').orderBy('time', 'desc').onSnapshot(snapshot => {
-                const prevLength = allOrders.length;
-                allOrders = [];
-                snapshot.forEach(doc => {
-                    allOrders.push(doc.data());
-                });
-                renderOrders();
-
-                // Sound alert for new orders
-                if (allOrders.length > prevLength && prevLength > 0) {
-                    if (allOrders[0] && allOrders[0].status === 'Pending') {
-                        try {
-                            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav').play();
-                        } catch {}
-                    }
-                }
-
-                document.getElementById('liveIndicator').className = "badge bg-success py-2 px-3 rounded-pill";
-                document.getElementById('liveIndicator').innerText = "📡 متصل مباشر (سحابي)";
-            }, err => {
-                console.error('Failed to sync orders from Firebase:', err);
-                document.getElementById('liveIndicator').className = "badge bg-danger py-2 px-3 rounded-pill";
-                document.getElementById('liveIndicator').innerText = "⚠️ غير متصل";
-            });
-
-            // 3. Sync bot status
-            db.collection('metadata').doc('status').onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    const status = data.status || 'Offline';
-                    const qr = data.qr || '';
-                    const statusLabel = document.getElementById('webBotStatus');
-                    const qrWrapper = document.getElementById('webBotQrWrapper');
-                    const qrImg = document.getElementById('webBotQrImg');
-                    const statusContainer = document.getElementById('botStatusContainer');
-
-                    statusContainer.style.display = 'block';
-
-                    if (status === 'Online') {
-                        statusLabel.innerHTML = "<span class='text-success fw-bold'>متصل ومتاح للعملاء ✅</span>";
-                        qrWrapper.style.display = 'none';
-                    } else if (status === 'QR_Ready') {
-                        statusLabel.innerHTML = "<span class='text-warning fw-bold'>في انتظار مسح الرمز 📲</span>";
-                        if (qr) {
-                            qrImg.src = qr;
-                            qrWrapper.style.display = 'block';
-                        } else {
-                            qrWrapper.style.display = 'none';
-                        }
-                    } else if (status === 'Connecting') {
-                        statusLabel.innerHTML = "<span class='text-primary fw-bold'>جاري تحضير المتصفح الخلفي... ⏳</span>";
-                        qrWrapper.style.display = 'none';
-                    } else {
-                        statusLabel.innerHTML = "<span class='text-secondary fw-bold'>متوقف حالياً ❌</span>";
-                        qrWrapper.style.display = 'none';
-                    }
-                }
-            }, err => {
-                console.error('Failed to sync bot status:', err);
-            });
-        }
-
-        function initializeDefaultFilters() {
-            const today = new Date();
-            const localYear = today.getFullYear();
-            const localMonth = String(today.getMonth() + 1).padStart(2, '0');
-            const localDay = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${localYear}-${localMonth}-${localDay}`;
-            
-            activeDateFilter = todayStr;
-            const dateInput = document.getElementById('dateFilter');
-            if (dateInput) {
-                dateInput.value = todayStr;
-            }
-            updateTodayButtonState();
-        }
-
-        // Initialize Default Filters & Firebase Synchronizer
-        initializeDefaultFilters();
-        initFirebaseSync();
     </script>
 </body>
 </html>
