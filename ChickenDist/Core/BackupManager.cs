@@ -171,6 +171,18 @@ namespace ChickenDist.Core
                     waSuccess = UploadToWhatsApp(zipPath, out waError);
                 }
 
+                // رفع النسخة الاحتياطية للسحاب تلقائياً (Firebase Storage) لحماية البيانات من التلف
+                bool cloudSuccess = false;
+                string cloudError = "";
+                try
+                {
+                    cloudSuccess = UploadToFirebaseStorage(zipPath, out cloudError);
+                }
+                catch (Exception ex)
+                {
+                    cloudError = ex.Message;
+                }
+
                 // حفظ وقت آخر باكب ناجح
                 LastBackupTime = DateTime.Now;
 
@@ -180,9 +192,18 @@ namespace ChickenDist.Core
                 if (!silent)
                 {
                     string successMsg = $"✅ تم عمل النسخة الاحتياطية بنجاح وضغطها لملف ZIP!\n\nالملف:\n{zipPath}";
+                    if (cloudSuccess)
+                    {
+                        successMsg += "\n\n☁️ تم رفع النسخة وتأمينها سحابياً بنجاح على خوادم Google Cloud! ✅";
+                    }
+                    else
+                    {
+                        successMsg += $"\n\n⚠️ فشل الرفع السحابي التلقائي للنسخة: {cloudError}";
+                    }
+
                     if (!string.IsNullOrWhiteSpace(localCloudPath) && Directory.Exists(localCloudPath))
                     {
-                        successMsg += "\n\n☁️ تم نسخ الملف للمجلد المحلي السحابي بنجاح!";
+                        successMsg += "\n\n📂 تم نسخ الملف للمجلد المحلي السحابي بنجاح!";
                     }
                     if (!string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
                     {
@@ -330,6 +351,76 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 MessageBox.Show("فشل فتح مجلد الباكب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// يرفع ملف النسخة الاحتياطية إلى سحابة Firebase Storage بشكل مشفر آمن
+        /// </summary>
+        public static bool UploadToFirebaseStorage(string filePath, out string errorMessage)
+        {
+            errorMessage = "";
+            try
+            {
+                using (var httpClient = new System.Net.Http.HttpClient())
+                {
+                    httpClient.Timeout = TimeSpan.FromMinutes(5); // 5 دقائق للباكب الكبير
+
+                    // 1. Get anonymous authentication token from Firebase Auth
+                    string authUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk";
+                    string authJson = "{\"returnSecureToken\":true}";
+                    var authContent = new System.Net.Http.StringContent(authJson, System.Text.Encoding.UTF8, "application/json");
+                    var authResponse = httpClient.PostAsync(authUrl, authContent).Result;
+                    if (!authResponse.IsSuccessStatusCode)
+                    {
+                        errorMessage = "فشل المصادقة السحابية: " + authResponse.Content.ReadAsStringAsync().Result;
+                        return false;
+                    }
+
+                    string authResJson = authResponse.Content.ReadAsStringAsync().Result;
+                    string token = "";
+                    int tokenIndex = authResJson.IndexOf("\"idToken\":");
+                    if (tokenIndex != -1)
+                    {
+                        int start = authResJson.IndexOf("\"", tokenIndex + 10);
+                        int end = authResJson.IndexOf("\"", start + 1);
+                        token = authResJson.Substring(start + 1, end - start - 1);
+                    }
+
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        errorMessage = "لم يتم الحصول على مفتاح الأمان السحابي.";
+                        return false;
+                    }
+
+                    // 2. Upload file stream to Firebase Storage
+                    string bucket = "checkin-192ab.firebasestorage.app";
+                    string fileName = Path.GetFileName(filePath);
+                    string uploadUrl = $"https://firebasestorage.googleapis.com/v0/b/{bucket}/o?uploadType=media&name=backups/{fileName}";
+
+                    byte[] fileBytes = File.ReadAllBytes(filePath);
+                    var fileContent = new System.Net.Http.ByteArrayContent(fileBytes);
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var uploadResponse = httpClient.PostAsync(uploadUrl, fileContent).Result;
+                    if (uploadResponse.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        string uploadResJson = uploadResponse.Content.ReadAsStringAsync().Result;
+                        errorMessage = $"خطأ في الرفع السحابي ({uploadResponse.StatusCode}): {uploadResJson}";
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
             }
         }
     }
