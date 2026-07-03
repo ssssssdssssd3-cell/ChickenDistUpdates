@@ -5,6 +5,8 @@ const path = require('path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
+const serverStartupTime = new Date();
+
 // Firebase Compat
 const firebase = require('firebase/compat/app');
 require('firebase/compat/firestore');
@@ -648,6 +650,16 @@ function listenForCommands() {
             snapshot.docChanges().forEach(async change => {
                 if (change.type === 'added' || change.type === 'modified') {
                     const cmd = change.doc.data();
+                    
+                    // Filter out stale pending commands sent before this server started
+                    const cmdTime = cmd.time ? new Date(cmd.time) : null;
+                    if (cmdTime && cmdTime < serverStartupTime) {
+                        try {
+                            await change.doc.ref.update({ status: 'expired' });
+                        } catch(e) {}
+                        return;
+                    }
+
                     if (cmd.type === 'start_bot') {
                         console.log('[Command]: Received start_bot command');
                         startBot();
