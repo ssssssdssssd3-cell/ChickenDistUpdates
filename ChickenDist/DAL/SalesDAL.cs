@@ -378,17 +378,21 @@ namespace ChickenDist.DAL
 
             if (returnedSaleID > 0 && !isDraft)
             {
-                foreach (var item in items)
+                // Run price threshold checks asynchronously in the background to free the UI thread instantly
+                System.Threading.Tasks.Task.Run(() =>
                 {
-                    try
+                    foreach (var item in items)
                     {
-                        ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                        try
+                        {
+                            ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
-                    }
-                }
+                });
             }
 
             return returnedSaleID;

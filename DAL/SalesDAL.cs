@@ -27,12 +27,25 @@ namespace ChickenDist.DAL
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
+                         ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL((
                              SELECT SUM(ri.Quantity * ri.UnitPrice)
                              FROM SalesReturns r
                              JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
                              WHERE r.SaleID = s.SaleID
-                         ), 0) AS ReturnAmount
+                         ), 0) AS ReturnAmount,
+                         ISNULL((
+                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0))
+                             FROM SaleItems si
+                             JOIN Products p ON si.ProductID = p.ProductID
+                             WHERE si.SaleID = s.SaleID
+                         ), 0) AS TotalCost,
+                         (s.TotalAmount - ISNULL((
+                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0))
+                             FROM SaleItems si
+                             JOIN Products p ON si.ProductID = p.ProductID
+                             WHERE si.SaleID = s.SaleID
+                         ), 0)) AS NetProfit
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -61,7 +74,8 @@ namespace ChickenDist.DAL
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
-                          p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation
+                          p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation,
+                          si.UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI
                   FROM SaleItems si JOIN Products p ON si.ProductID=p.ProductID
                   WHERE si.SaleID=@id",
                 DbHelper.P("@id", saleID));
@@ -70,7 +84,7 @@ namespace ChickenDist.DAL
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
         {
             int returnedSaleID = -1;
 
@@ -82,7 +96,7 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE())",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -90,7 +104,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
-                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn));
+                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -108,11 +122,68 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
-                        DbHelper.P("@damt", item.DiscountAmt), DbHelper.P("@pt", item.PriceTier ?? priceTier));
+                        DbHelper.P("@damt", item.DiscountAmt), DbHelper.P("@pt", item.PriceTier ?? priceTier),
+                        DbHelper.P("@un", item.UnitName), DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
+                        DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
+                        DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI));
+
+                    // Deduct from ProductBatches table
+                    if (!isDraft)
+                    {
+                        if (item.BatchID.HasValue)
+                        {
+                            decimal baseQty = item.Quantity * item.Factor;
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                DbHelper.P("@q", baseQty), DbHelper.P("@bid", item.BatchID.Value));
+                        }
+                        else
+                        {
+                            var hasExpObj = DbHelper.ScalarTrans(trans, "SELECT HasExpiry FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                            if (hasExpObj != null && hasExpObj != DBNull.Value && Convert.ToBoolean(hasExpObj))
+                            {
+                                decimal remainingQty = item.Quantity * item.Factor;
+                                var batchesDt = DbHelper.QueryTrans(trans, 
+                                    "SELECT BatchID, Quantity FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC",
+                                    DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse));
+                                foreach (DataRow bRow in batchesDt.Rows)
+                                {
+                                    int bId = Convert.ToInt32(bRow["BatchID"]);
+                                    decimal bQty = Convert.ToDecimal(bRow["Quantity"]);
+                                    decimal toDeduct = Math.Min(remainingQty, bQty);
+                                    if (toDeduct > 0)
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                            DbHelper.P("@q", toDeduct), DbHelper.P("@bid", bId));
+                                        remainingQty -= toDeduct;
+                                        if (remainingQty <= 0) break;
+                                    }
+                                }
+                                if (remainingQty > 0)
+                                {
+                                    var oldestBatchId = DbHelper.ScalarTrans(trans, "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse));
+                                    if (oldestBatchId != null && oldestBatchId != DBNull.Value)
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                                            DbHelper.P("@q", remainingQty), DbHelper.P("@bid", oldestBatchId));
+                                    }
+                                    else
+                                    {
+                                        DbHelper.ExecuteTrans(trans,
+                                            "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, -@q, @exp)",
+                                            DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@q", remainingQty), DbHelper.P("@exp", DateTime.Today.AddDays(30)));
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // check if price is different from product base price to log it in PriceChangesLog
                     if (!isDraft)
@@ -170,7 +241,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
-                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "حركة فوارغ فاتورة مبيعات " + code),
                             DbHelper.P("@by", Session.EmpID));
                     }
 
@@ -307,17 +378,21 @@ namespace ChickenDist.DAL
 
             if (returnedSaleID > 0 && !isDraft)
             {
-                foreach (var item in items)
+                // Run price threshold checks asynchronously in the background to free the UI thread instantly
+                System.Threading.Tasks.Task.Run(() =>
                 {
-                    try
+                    foreach (var item in items)
                     {
-                        ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                        try
+                        {
+                            ProductDAL.CheckAndActivatePendingPrice(item.ProductID);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        AppLogger.Error("CheckAndActivatePendingPrice failed inside SalesDAL.SaveSale", ex, $"ProductID: {item.ProductID}");
-                    }
-                }
+                });
             }
 
             return returnedSaleID;
@@ -553,7 +628,7 @@ namespace ChickenDist.DAL
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
         {
             bool success = false;
 
@@ -625,7 +700,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                 }
 
-                // 4. عكس الحركات المالية والأقفاص السابقة (العملاء، الخزينة، المندوب، الأقفاص)
+                // 4. عكس الحركات المالية والفوارغ السابقة (العملاء، الخزينة، المندوب، الأقفاص)
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
                     DbHelper.P("@id", saleID));
@@ -661,7 +736,7 @@ namespace ChickenDist.DAL
                     @"UPDATE Sales 
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
-                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE()
+                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
@@ -676,6 +751,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut),
                     DbHelper.P("@ci", cratesIn),
+                    DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@id", saleID));
 
                 // 7. إدخال البنود الجديدة
@@ -741,7 +817,7 @@ namespace ChickenDist.DAL
                     }
                 }
 
-                // 8. إنشاء الحركات المالية والأقفاص الجديدة
+                // 8. إنشاء الحركات المالية والفوارغ الجديدة
                 if (!isDraft)
                 {
                     if (clientID.HasValue && (cratesOut > 0 || cratesIn > 0))
@@ -749,7 +825,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO ClientCratesTransactions(ClientID,CratesOut,CratesIn,RefSaleID,Notes,CreatedBy) VALUES(@cid,@co,@ci,@ref,@n,@by)",
                             DbHelper.P("@cid", clientID.Value), DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn),
-                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل حركة أقفاص فاتورة مبيعات " + code),
+                            DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل حركة فوارغ فاتورة مبيعات " + code),
                             DbHelper.P("@by", Session.EmpID));
                     }
 
@@ -817,11 +893,14 @@ namespace ChickenDist.DAL
 
     public class SaleItemDTO
     {
+        public string IMEI { get; set; } = "";
         public int ProductID { get; set; }
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal PurchasePrice { get; set; } = 0m;
+        public DateTime? ExpiryDate { get; set; } = null;
+        public int? BatchID { get; set; } = null;
         public decimal StockQty { get; set; } = 0m;
         public decimal MinStockLimit { get; set; } = 0m;
         public string PartNumber { get; set; } = "";
@@ -831,6 +910,8 @@ namespace ChickenDist.DAL
         public string ProductCode { get; set; } = "";
         /// <summary>صنف خدمة — يُباع بالسالب بدون فحص المخزون</summary>
         public bool IsService { get; set; } = false;
+        public string UnitName { get; set; } = null;
+        public decimal Factor { get; set; } = 1.0m;
         /// <summary>نسبة الخصم % على الصنف</summary>
         public decimal DiscountPct { get; set; } = 0m;
         /// <summary>قيمة الخصم بالجنيه على الصنف</summary>
@@ -1503,13 +1584,15 @@ namespace ChickenDist.DAL
                 {
                     decimal lineTotal = it.Quantity * it.UnitPrice;
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt) " +
-                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,UnitName,Factor) " +
+                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0,@un,@fac)",
                         DbHelper.P("@sid", returnedID),
                         DbHelper.P("@pid", it.ProductID),
                         DbHelper.P("@qty", it.Quantity),
                         DbHelper.P("@up", it.UnitPrice),
-                        DbHelper.P("@tot", lineTotal));
+                        DbHelper.P("@tot", lineTotal),
+                        DbHelper.P("@un", it.UnitName),
+                        DbHelper.P("@fac", it.Factor));
                 }
 
                 // قيد العميل (Credit) إن كانت آجل
@@ -1635,10 +1718,12 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice) VALUES(@rid,@pid,@qty,@up,@tp)",
+                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
                         DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
-                        DbHelper.P("@tp", item.TotalPrice));
+                        DbHelper.P("@tp", item.TotalPrice),
+                        DbHelper.P("@un", item.UnitName),
+                        DbHelper.P("@fac", item.Factor));
                 }
 
                 // المنطق المحاسبي السليم:
@@ -1679,18 +1764,33 @@ namespace ChickenDist.DAL
         public static DataTable SalesByDay(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"SELECT 
+                @";WITH SaleCosts AS (
+                    SELECT s.SaleID,
+                           s.SaleDate,
+                           s.SaleType,
+                           s.TotalAmount,
+                           s.WarehouseID,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SaleCost
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                    GROUP BY s.SaleID, s.SaleDate, s.SaleType, s.TotalAmount, s.WarehouseID
+                )
+                SELECT 
                     CAST(SaleDate AS DATE) AS SaleDay,
                     COUNT(*) AS Count,
                     SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) AS CashTotal,
                     SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(CASE WHEN SaleType = 'DriverLoad' THEN TotalAmount ELSE 0 END) AS LoadTotal,
-                    SUM(TotalAmount) AS Total
-                  FROM Sales
-                  WHERE CAST(SaleDate AS DATE) BETWEEN @f AND @t AND IsPosted=1
-                    AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
-                  GROUP BY CAST(SaleDate AS DATE)
-                  ORDER BY SaleDay",
+                    SUM(TotalAmount) AS Total,
+                    SUM(SaleCost) AS TotalCost,
+                    SUM(TotalAmount) - SUM(SaleCost) AS NetProfit
+                FROM SaleCosts
+                WHERE CAST(SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+                GROUP BY CAST(SaleDate AS DATE)
+                ORDER BY SaleDay",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -1698,18 +1798,34 @@ namespace ChickenDist.DAL
         public static DataTable SalesByDriver(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"SELECT 
+                @";WITH SaleCosts AS (
+                    SELECT s.SaleID,
+                           s.DriverID,
+                           s.SaleDate,
+                           s.SaleType,
+                           s.TotalAmount,
+                           s.WarehouseID,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SaleCost
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                    GROUP BY s.SaleID, s.DriverID, s.SaleDate, s.SaleType, s.TotalAmount, s.WarehouseID
+                )
+                SELECT 
                     ISNULL(e.EmpName, N'مبيعات مباشرة') AS DriverName,
                     COUNT(s.SaleID) AS Count,
                     SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                     SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                    SUM(s.TotalAmount) AS Total
-                  FROM Sales s 
-                  LEFT JOIN Employees e ON s.DriverID = e.EmpID
-                  WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
-                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                  GROUP BY e.EmpName
-                  ORDER BY Total DESC",
+                    SUM(s.TotalAmount) AS Total,
+                    SUM(s.SaleCost) AS TotalCost,
+                    SUM(s.TotalAmount) - SUM(s.SaleCost) AS NetProfit
+                FROM SaleCosts s 
+                LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY e.EmpName
+                ORDER BY Total DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -1717,25 +1833,52 @@ namespace ChickenDist.DAL
         public static DataTable SalesByClient(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"SELECT 
+                @";WITH ClientSaleCosts AS (
+                    SELECT s.ClientID,
+                           SUM(s.TotalAmount) AS TotalSales,
+                           SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
+                           SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SalesCost,
+                           COUNT(DISTINCT s.SaleID) AS SaleCount
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY s.ClientID
+                ),
+                ClientReturnCosts AS (
+                    SELECT sr.ClientID,
+                           SUM(sr.TotalAmount) AS TotalReturns,
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS ReturnsCost
+                    FROM SalesReturns sr
+                    LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY sr.ClientID
+                )
+                SELECT 
                     c.ClientName,
                     ISNULL(c.Phone, N'---') AS Phone,
-                    COUNT(DISTINCT s.SaleID) AS Count,
-                    SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                    SUM(s.TotalAmount) AS Total,
-                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.ClientID = c.ClientID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsTotal,
+                    ISNULL(sc.SaleCount, 0) AS Count,
+                    ISNULL(sc.CashTotal, 0) AS CashTotal,
+                    ISNULL(sc.CreditTotal, 0) AS CreditTotal,
+                    ISNULL(rc.TotalReturns, 0) AS ReturnsTotal,
                     ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
+                    ISNULL(sc.TotalSales, 0) AS Total,
                     (c.OpeningBalance + 
                      ISNULL((SELECT SUM(ct.Debit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0) - 
                      ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0)
-                    ) AS CurrentBalance
-                  FROM Sales s 
-                  JOIN Clients c ON s.ClientID = c.ClientID
-                  WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted=1
-                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                  GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance
-                  ORDER BY Total DESC",
+                    ) AS CurrentBalance,
+                    (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS TotalCost,
+                    (ISNULL(sc.TotalSales, 0) - ISNULL(rc.TotalReturns, 0)) - (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS NetProfit
+                FROM Clients c
+                LEFT JOIN ClientSaleCosts sc ON c.ClientID = sc.ClientID
+                LEFT JOIN ClientReturnCosts rc ON c.ClientID = rc.ClientID
+                WHERE (sc.TotalSales > 0 OR rc.TotalReturns > 0 OR EXISTS (SELECT 1 FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t))
+                ORDER BY Total DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -1743,12 +1886,28 @@ namespace ChickenDist.DAL
         public static DataTable SalesByProduct(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @";WITH ReturnTotals AS (
+                @";WITH SaleTotals AS (
+                    SELECT si.ProductID,
+                           AVG(si.UnitPrice) AS AvgPrice,
+                           SUM(si.Quantity) AS TotalQty,
+                           SUM(si.TotalPrice) AS TotalAmount,
+                           SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) AS TotalCost
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY si.ProductID
+                ),
+                ReturnTotals AS (
                     SELECT ri.ProductID,
-                           SUM(ri.Quantity)   AS ReturnedQty,
-                           SUM(ri.TotalPrice) AS ReturnedAmount
+                           SUM(ri.Quantity) AS ReturnedQty,
+                           SUM(ri.TotalPrice) AS ReturnedAmount,
+                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) AS ReturnedCost
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    JOIN Products p ON ri.ProductID = p.ProductID
                     WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
                       AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                     GROUP BY ri.ProductID
@@ -1756,21 +1915,65 @@ namespace ChickenDist.DAL
                 SELECT 
                     p.ProductName,
                     p.Unit,
-                    AVG(si.UnitPrice)                                 AS AvgPrice,
-                    SUM(si.Quantity)                                   AS TotalQty,
-                    SUM(si.TotalPrice)                                 AS TotalAmount,
-                    ISNULL(rt.ReturnedQty, 0)                         AS ReturnedQty,
-                    ISNULL(rt.ReturnedAmount, 0)                       AS ReturnedAmount,
-                    SUM(si.Quantity)   - ISNULL(rt.ReturnedQty, 0)   AS NetQty,
-                    SUM(si.TotalPrice) - ISNULL(rt.ReturnedAmount, 0) AS NetAmount
-                FROM SaleItems si
-                JOIN Sales s    ON si.SaleID    = s.SaleID
-                JOIN Products p ON si.ProductID = p.ProductID
-                LEFT JOIN ReturnTotals rt ON rt.ProductID = p.ProductID
-                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND s.IsPosted = 1
-                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                GROUP BY p.ProductID, p.ProductName, p.Unit, rt.ReturnedQty, rt.ReturnedAmount
-                ORDER BY TotalQty DESC",
+                    ISNULL(st.AvgPrice, 0.0) AS AvgPrice,
+                    ISNULL(st.TotalQty, 0.0) AS TotalQty,
+                    ISNULL(st.TotalAmount, 0.0) AS TotalAmount,
+                    ISNULL(rt.ReturnedQty, 0.0) AS ReturnedQty,
+                    ISNULL(rt.ReturnedAmount, 0.0) AS ReturnedAmount,
+                    (ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) AS NetQty,
+                    (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) AS NetAmount,
+                    (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) AS TotalCost,
+                    ((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit
+                FROM Products p
+                LEFT JOIN SaleTotals st ON p.ProductID = st.ProductID
+                LEFT JOIN ReturnTotals rt ON p.ProductID = rt.ProductID
+                WHERE (st.TotalQty > 0 OR rt.ReturnedQty > 0)
+                ORDER BY NetQty DESC",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        public static DataTable GetInventoryValuation(int? warehouseID = null)
+        {
+            return DbHelper.Query(@"
+                SELECT 
+                    v.ProductCode,
+                    v.ProductName,
+                    v.Unit,
+                    p.PurchasePrice,
+                    v.SalePrice,
+                    SUM(v.CurrentQty) AS CurrentStock,
+                    SUM(v.CurrentQty * ISNULL(p.PurchasePrice, 0.0)) AS StockValue,
+                    SUM(v.CurrentQty * ISNULL(v.SalePrice, 0.0)) AS StockSaleValue,
+                    SUM(v.CurrentQty * (ISNULL(v.SalePrice, 0.0) - ISNULL(p.PurchasePrice, 0.0))) AS ExpectedProfit
+                FROM vw_CurrentStockByWarehouse v
+                JOIN Products p ON v.ProductID = p.ProductID
+                WHERE (@warehouseID IS NULL OR v.WarehouseID = @warehouseID)
+                GROUP BY v.ProductCode, v.ProductName, v.Unit, p.PurchasePrice, v.SalePrice
+                ORDER BY v.ProductName",
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        public static DataTable GetIncomeStatement(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            return DbHelper.Query(@"
+                SELECT 
+                    -- 1. المبيعات
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE IsPosted=1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS GrossSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS SalesReturns,
+                    
+                    -- 2. تكلفة المبيعات
+                    ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID JOIN Products p ON si.ProductID = p.ProductID WHERE s.IsPosted = 1 AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)), 0) AS GrossCOGS,
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID JOIN Products p ON ri.ProductID = p.ProductID WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsCOGS,
+                    
+                    -- 3. المصروفات
+                    ISNULL((SELECT SUM(Amount) FROM Expenses WHERE CAST(ExpenseDate AS DATE) BETWEEN @f AND @t), 0) AS GeneralExpenses,
+                    
+                    -- 4. الهالك والنافق
+                    -- أ. هالك مخزن
+                    ISNULL((SELECT SUM(wi.TotalCost) FROM WastageLossItems wi JOIN WastageLoss w ON wi.WastageID = w.WastageID WHERE CAST(w.WastageDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR w.WarehouseID = @warehouseID)), 0) AS WarehouseWastage,
+                    -- ب. نافق مندوب
+                    ISNULL((SELECT SUM(hi.DeadQty * dli.UnitPrice) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoadItems dli ON dh.LoadID = dli.LoadID AND hi.ProductID = dli.ProductID WHERE hi.DeadQty > 0 AND CAST(dh.HandoverDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR (SELECT dl.WarehouseID FROM DriverLoads dl WHERE dl.LoadID = dh.LoadID) = @warehouseID)), 0) AS DriverWastage",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
