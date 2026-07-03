@@ -29,5 +29,14 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.4.3" />
+    <PackageReference Include="Obfuscar" Version="2.2.38">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
+
+  <!-- Run Obfuscar automatically after build in Release mode -->
+  <Target Name="RunObfuscar" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="$(Obfuscar) &quot;$(ProjectDir)obfuscar.xml&quot;" />
+  </Target>
 </Project>

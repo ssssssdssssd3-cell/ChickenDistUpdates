@@ -4,11 +4,11 @@
 
 $ErrorActionPreference = "Stop"
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.22"
+$VERSION   = "2.0.23"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -78,8 +78,14 @@ Write-OK "Build successful"
 # Step 3: Verify Output
 Write-Step "Checking EXE"
 $exePath = Join-Path $OUT_DIR "ChickenDist.exe"
-if (-not (Test-Path $exePath)) {
-    Write-Fail "ChickenDist.exe not found in build directory!"
+
+# Overwrite with the obfuscated EXE from Obfuscated directory to secure the binary
+$obfuscatedSource = "$PROJECT_DIR\bin\Release\net48\Obfuscated\ChickenDist.exe"
+if (Test-Path $obfuscatedSource) {
+    Copy-Item $obfuscatedSource -Destination $exePath -Force
+    Write-OK "Applied Obfuscation to output binary successfully!"
+} else {
+    Write-Fail "Obfuscated binary not found at $obfuscatedSource"
 }
 
 $exeSize = (Get-Item $exePath).Length

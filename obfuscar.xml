@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Obfuscator>
+  <!-- Path of input and output directories -->
+  <Var name="InPath" value=".\bin\Release\net48" />
+  <Var name="OutPath" value=".\bin\Release\net48\Obfuscated" />
+
+  <!-- Global protection variables -->
+  <Var name="KeepPublicApi" value="true" />      <!-- Crucial for WinForms reflection and designer compatibility -->
+  <Var name="HidePrivateApi" value="true" />      <!-- Scrambles private fields, methods, properties -->
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="RenameMethods" value="true" />
+  <Var name="OptimizeMethods" value="true" />
+  <Var name="SuppressIldasm" value="true" />     <!-- Prevents disassembling using standard MSIL tools -->
+
+  <!-- The primary binary to protect -->
+  <Module file="$(InPath)\ChickenDist.exe" />
+</Obfuscator>
