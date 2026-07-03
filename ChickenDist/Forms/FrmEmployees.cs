@@ -368,6 +368,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("Clients", "إدارة وتعديل العملاء", 0),
             new ScreenInfo("InactiveClients", "شاشة تنشيط العملاء الراكدين", 0),
             new ScreenInfo("Vehicles", "إدارة المركبات والسيارات", 0),
+            new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 0),
 
             // Tab 1: Purchases & Suppliers (7)
             new ScreenInfo("Purchases", "شاشة المشتريات الجديدة", 1),
@@ -596,6 +597,14 @@ namespace ChickenDist.Forms
             }
         }
 
+        private static bool ToBool(object val)
+        {
+            if (val == null) return false;
+            if (val is bool b) return b;
+            var s = val.ToString().Trim().ToLowerInvariant();
+            return s == "true" || s == "1" || s == "yes";
+        }
+
         private void BtnSave_Click(object sender, EventArgs e)
         {
             var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
@@ -607,13 +616,13 @@ namespace ChickenDist.Forms
                     string screen = row.Cells["Screen"].Value?.ToString();
                     if (string.IsNullOrEmpty(screen)) continue;
 
-                    bool access = row.Cells["CanAccess"].Value != null && Convert.ToBoolean(row.Cells["CanAccess"].Value);
-                    bool editP = row.Cells["CanEditPrice"].Value != null && Convert.ToBoolean(row.Cells["CanEditPrice"].Value);
-                    bool editI = row.Cells["CanEditSalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanEditSalesInvoice"].Value);
-                    bool deleteI = row.Cells["CanDeleteSalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanDeleteSalesInvoice"].Value);
-                    bool copyI = row.Cells["CanCopySalesInvoice"].Value != null && Convert.ToBoolean(row.Cells["CanCopySalesInvoice"].Value);
-                    bool viewC = row.Cells["CanViewCost"].Value != null && Convert.ToBoolean(row.Cells["CanViewCost"].Value);
-                    
+                    bool access  = ToBool(row.Cells["CanAccess"].Value);
+                    bool editP   = ToBool(row.Cells["CanEditPrice"].Value);
+                    bool editI   = ToBool(row.Cells["CanEditSalesInvoice"].Value);
+                    bool deleteI = ToBool(row.Cells["CanDeleteSalesInvoice"].Value);
+                    bool copyI   = ToBool(row.Cells["CanCopySalesInvoice"].Value);
+                    bool viewC   = ToBool(row.Cells["CanViewCost"].Value);
+
                     EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
                 }
             }

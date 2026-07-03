@@ -417,7 +417,7 @@ namespace ChickenDist.Forms
             if (AppConfig.BusinessType == "Mobiles")
             {
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
-                    ("🔧 تذاكر الصيانة", "", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                    ("🔧 تذاكر الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
                 }));
             }
 
