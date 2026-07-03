@@ -12,10 +12,13 @@ namespace ChickenDist.Forms
     {
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
+        private FlowLayoutPanel pnlTabBar;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
         private Timer tmrPeriodicBackup;
+        private System.Collections.Generic.List<(Form form, Button tab)> _openTabs
+            = new System.Collections.Generic.List<(Form, Button)>();
 
         public FrmMain()
         {
@@ -183,13 +186,27 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0)
             };
 
+            // ===== Tab Bar =====
+            pnlTabBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Height = 36,
+                BackColor = Color.FromArgb(30, 30, 35),
+                Padding = new Padding(6, 4, 6, 0),
+                AutoScroll = false
+            };
+
             this.Controls.Add(pnlContent);
+            this.Controls.Add(pnlTabBar);
             this.Controls.Add(pnlNavBar);
             this.Controls.Add(pnlTopBar);
 
-            pnlTopBar.SendToBack(); // Docks first at the top
-            pnlNavBar.SendToBack();  // Docks second below top bar
-            pnlContent.BringToFront(); // Fills the rest
+            pnlTopBar.SendToBack();
+            pnlNavBar.SendToBack();
+            pnlTabBar.SendToBack();
+            pnlContent.BringToFront();
 
             this.Resize += (s, e) => UpdateLayout();
             UpdateLayout();
@@ -531,35 +548,134 @@ namespace ChickenDist.Forms
             public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
 
-        public void NavigateTo(Form form)
+        private Button _AddTab(Form form)
         {
-            if (_currentChild != null && !_currentChild.IsDisposed)
+            // Check if this form type is already open → switch to it
+            foreach (var entry in _openTabs)
             {
-                _currentChild.Close();
-                if (!_currentChild.IsDisposed)
+                if (!entry.form.IsDisposed && entry.form.GetType() == form.GetType())
                 {
-                    // The child form cancelled closing (e.g. user chose DialogResult.No on dirty invoice)
-                    return;
+                    SwitchToTab(entry.form, entry.tab);
+                    return entry.tab;
                 }
             }
 
+            // Create tab button
+            var tab = new Button
+            {
+                Text = TrimTabTitle(form.Text) + "  ✕",
+                AutoSize = false,
+                Width = 160,
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(50, 50, 60),
+                ForeColor = Color.FromArgb(200, 200, 210),
+                Font = new Font("Segoe UI", 8.5f),
+                Margin = new Padding(2, 0, 2, 0),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand,
+                Tag = form
+            };
+            tab.FlatAppearance.BorderSize = 0;
+            tab.FlatAppearance.MouseOverBackColor = Color.FromArgb(70, 70, 85);
+
+            // Switch on left-click anywhere except X zone
+            tab.MouseUp += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    // If click is on the right ~20px (the ✕ zone), close tab
+                    if (e.X >= tab.Width - 22)
+                        CloseTab(form, tab);
+                    else
+                        SwitchToTab(form, tab);
+                }
+            };
+
+            pnlTabBar.Controls.Add(tab);
+            _openTabs.Add((form, tab));
+            return tab;
+        }
+
+        private string TrimTabTitle(string title)
+        {
+            if (title == null) return "";
+            return title.Length > 18 ? title.Substring(0, 16) + ".." : title;
+        }
+
+        private void SwitchToTab(Form form, Button tab)
+        {
+            if (form == null || form.IsDisposed) return;
+
             _currentChild = form;
+
+            // Hide all children, show the selected one
+            foreach (Control c in pnlContent.Controls)
+                c.Visible = false;
+
+            if (!pnlContent.Controls.Contains(form))
+            {
+                form.TopLevel = false;
+                form.Dock = DockStyle.Fill;
+                form.FormBorderStyle = FormBorderStyle.None;
+                form.RightToLeft = RightToLeft.Yes;
+                pnlContent.Controls.Add(form);
+            }
+            form.Visible = true;
+            form.BringToFront();
+
+            // Update title
+            if (lblTitle != null) lblTitle.Text = form.Text;
+
+            HighlightActiveGroup(form.GetType().Name);
+            _RefreshTabStyles(tab);
+        }
+
+        private void CloseTab(Form form, Button tab)
+        {
+            // Remove from list
+            _openTabs.RemoveAll(t => t.form == form);
+            pnlTabBar.Controls.Remove(tab);
+
+            if (!form.IsDisposed)
+            {
+                pnlContent.Controls.Remove(form);
+                form.Dispose();
+            }
+
+            // Switch to last tab if any
+            if (_openTabs.Count > 0)
+            {
+                var last = _openTabs[_openTabs.Count - 1];
+                SwitchToTab(last.form, last.tab);
+            }
+            else
+            {
+                _currentChild = null;
+                NavigateTo(new FrmDashboard());
+            }
+        }
+
+        private void _RefreshTabStyles(Button activeTab)
+        {
+            foreach (var entry in _openTabs)
+            {
+                bool isActive = entry.tab == activeTab;
+                entry.tab.BackColor = isActive ? Color.FromArgb(5, 122, 85) : Color.FromArgb(50, 50, 60);
+                entry.tab.ForeColor = isActive ? Color.White : Color.FromArgb(200, 200, 210);
+                entry.tab.FlatAppearance.BorderSize = isActive ? 0 : 0;
+            }
+        }
+
+        public void NavigateTo(Form form)
+        {
             form.TopLevel = false;
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
 
-            pnlContent.Controls.Clear();
-            pnlContent.Controls.Add(form);
-            form.Show();
-            form.BringToFront();
-
-            if (lblTitle != null)
-            {
-                lblTitle.Text = form.Text;
-            }
-
-            HighlightActiveGroup(form.GetType().Name);
+            var tab = _AddTab(form);
+            SwitchToTab(form, tab);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
