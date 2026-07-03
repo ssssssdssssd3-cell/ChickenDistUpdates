@@ -208,8 +208,8 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 			tblContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 65f));  // جريد الفواتير (dgSales)
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 35f));  // تفاصيل الأصناف والتحكم (tblDetail)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 40f));  // جريد الفواتير (dgSales)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 60f));  // تفاصيل الأصناف والتحكم (tblDetail)
 
 			dgSales = MakeGrid();
 			dgSales.Margin = new Padding(10, 6, 10, 4);
