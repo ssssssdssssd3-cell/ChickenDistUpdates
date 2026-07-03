@@ -71,26 +71,6 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            var btnLogoutTop = new Button
-            {
-                Text = "خروج ↩",
-                Width = 85,
-                Dock = DockStyle.Left,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.Danger,
-                ForeColor = Color.White,
-                Font = Theme.FontBold,
-                Cursor = Cursors.Hand
-            };
-            btnLogoutTop.FlatAppearance.BorderSize = 0;
-            btnLogoutTop.Click += (s, e) => 
-            { 
-                if (MessageBox.Show("هل تريد تسجيل الخروج؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) 
-                { 
-                    Session.Clear(); 
-                    this.Close(); 
-                } 
-            };
 
             var btnHelpTop = new Button
             {
@@ -119,7 +99,6 @@ namespace ChickenDist.Forms
 
             pnlProfile.Controls.Add(lblUserInfo);
             pnlProfile.Controls.Add(btnHelpTop);
-            pnlProfile.Controls.Add(btnLogoutTop);
 
             this.lblTitle = new Label
             {
@@ -784,6 +763,27 @@ namespace ChickenDist.Forms
 
             var tab = _AddTab(form);
             SwitchToTab(form, tab);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Only ask when the user clicked X (not programmatic close)
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                var result = MessageBox.Show(
+                    "هل تريد الخروج من البرنامج؟",
+                    "تأكيد الخروج",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (result != DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
+            base.OnFormClosing(e);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
