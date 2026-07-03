@@ -357,31 +357,46 @@ namespace ChickenDist.Forms
         {
             try
             {
-                int qrKeyIdx = json.IndexOf("\"qr\"");
-                if (qrKeyIdx != -1)
+                // Firestore REST API escapes forward slashes as \/ in JSON strings
+                // Normalize before searching to handle both escaped and unescaped variants
+                string normalizedJson = json.Replace("\\/", "/");
+
+                int qrKeyIdx = normalizedJson.IndexOf("\"qr\"");
+                if (qrKeyIdx == -1) return;
+
+                int valStart = normalizedJson.IndexOf("\"stringValue\":", qrKeyIdx);
+                if (valStart == -1) return;
+
+                // Find the data URI prefix (PNG or jpeg fallback)
+                int startIdx = normalizedJson.IndexOf("data:image/png;base64,", valStart);
+                if (startIdx == -1)
+                    startIdx = normalizedJson.IndexOf("data:image/jpeg;base64,", valStart);
+                if (startIdx == -1) return;
+
+                int commaIdx = normalizedJson.IndexOf(",", startIdx);
+                if (commaIdx == -1) return;
+
+                int base64Start = commaIdx + 1;
+                int quoteEnd = normalizedJson.IndexOf("\"", base64Start);
+                if (quoteEnd == -1) return;
+
+                string base64 = normalizedJson.Substring(base64Start, quoteEnd - base64Start).Trim();
+                // Remove any whitespace/newlines that may appear in large base64 blocks
+                base64 = base64.Replace(" ", "").Replace("\n", "").Replace("\r", "");
+
+                byte[] bytes = Convert.FromBase64String(base64);
+                using (MemoryStream ms = new MemoryStream(bytes))
                 {
-                    int valStart = json.IndexOf("\"stringValue\":", qrKeyIdx);
-                    if (valStart != -1)
-                    {
-                        int startIdx = json.IndexOf("data:image/png;base64,", valStart);
-                        if (startIdx != -1)
-                        {
-                            int base64Start = startIdx + "data:image/png;base64,".Length;
-                            int quoteEnd = json.IndexOf("\"", base64Start);
-                            if (quoteEnd != -1)
-                            {
-                                string base64 = json.Substring(base64Start, quoteEnd - base64Start);
-                                byte[] bytes = Convert.FromBase64String(base64);
-                                using (MemoryStream ms = new MemoryStream(bytes))
-                                {
-                                    pbQrCode.Image = Image.FromStream(ms);
-                                }
-                            }
-                        }
-                    }
+                    var img = Image.FromStream(ms);
+                    pbQrCode.Image = img;
+                    pbQrCode.BackColor = Color.White;
                 }
+                LogMessage("✅ تم تحميل رمز QR — امسح الآن بهاتفك");
             }
-            catch {}
+            catch (Exception ex)
+            {
+                LogMessage($"⚠️ خطأ تحميل QR: {ex.Message}");
+            }
         }
 
         private async void BtnToggle_Click(object sender, EventArgs e)
