@@ -393,10 +393,15 @@ namespace ChickenDist.Core
                         return false;
                     }
 
-                    // 2. Upload file stream to Firebase Storage
+                    // 2. Upload file stream to Firebase Storage (separated by sanitized Company Name)
                     string bucket = "checkin-192ab.firebasestorage.app";
                     string fileName = Path.GetFileName(filePath);
-                    string uploadUrl = $"https://firebasestorage.googleapis.com/v0/b/{bucket}/o?uploadType=media&name=backups/{fileName}";
+                    
+                    // Sanitize company name for clean folder naming in URLs
+                    string rawCompany = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "DefaultCompany" : AppConfig.CompanyName.Trim();
+                    string safeCompany = rawCompany.Replace(" ", "_").Replace("/", "_").Replace("\\", "_").Replace(":", "_").Replace("?", "_").Replace("*", "_");
+                    
+                    string uploadUrl = $"https://firebasestorage.googleapis.com/v0/b/{bucket}/o?uploadType=media&name=backups/{safeCompany}/{fileName}";
 
                     byte[] fileBytes = File.ReadAllBytes(filePath);
                     var fileContent = new System.Net.Http.ByteArrayContent(fileBytes);
