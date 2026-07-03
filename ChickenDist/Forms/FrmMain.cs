@@ -12,7 +12,9 @@ namespace ChickenDist.Forms
     {
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
-        private FlowLayoutPanel pnlTabBar;
+        private Panel pnlTabBar;
+        private Button _btnOpenPages;
+        private Panel _pnlDropdown;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
@@ -186,17 +188,49 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0)
             };
 
-            // ===== Tab Bar =====
-            pnlTabBar = new FlowLayoutPanel
+            // ===== Tab Bar — single dropdown button =====
+            pnlTabBar = new Panel
             {
                 Dock = DockStyle.Top,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
                 Height = 36,
-                BackColor = Color.FromArgb(30, 30, 35),
-                Padding = new Padding(6, 4, 6, 0),
-                AutoScroll = false
+                BackColor = Color.FromArgb(28, 28, 35),
+                Padding = new Padding(0)
             };
+
+            _btnOpenPages = new Button
+            {
+                Text = "📑 الشاشات المفتوحة  ▾",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(45, 45, 58),
+                ForeColor = Color.FromArgb(210, 210, 225),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Size = new Size(200, 30),
+                Location = new Point(8, 3),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            _btnOpenPages.FlatAppearance.BorderSize = 1;
+            _btnOpenPages.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 90);
+            _btnOpenPages.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 78);
+            _btnOpenPages.Click += BtnOpenPages_Click;
+            pnlTabBar.Controls.Add(_btnOpenPages);
+
+            // Dropdown popup panel (hidden by default)
+            _pnlDropdown = new Panel
+            {
+                Visible = false,
+                BackColor = Color.FromArgb(30, 30, 40),
+                BorderStyle = BorderStyle.FixedSingle,
+                AutoSize = false,
+                Width = 260,
+                Height = 0 // will be set dynamically
+            };
+            this.Controls.Add(_pnlDropdown);
+            _pnlDropdown.BringToFront();
+
+            // Hide dropdown when clicking elsewhere
+            this.MouseDown += (s, e) => HideDropdown();
+            pnlContent.MouseDown += (s, e) => HideDropdown();
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
@@ -548,6 +582,109 @@ namespace ChickenDist.Forms
             public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
 
+        // ─── Dropdown open/close ───────────────────────────────────────────
+        private void BtnOpenPages_Click(object sender, EventArgs e)
+        {
+            if (_pnlDropdown.Visible)
+            {
+                HideDropdown();
+                return;
+            }
+            RebuildDropdown();
+            ShowDropdown();
+        }
+
+        private void ShowDropdown()
+        {
+            // Position below the button, within the form
+            var btnScreen = _btnOpenPages.PointToScreen(Point.Empty);
+            var formPos = this.PointToClient(btnScreen);
+            _pnlDropdown.Location = new Point(formPos.X, formPos.Y + _btnOpenPages.Height + 2);
+            _pnlDropdown.BringToFront();
+            _pnlDropdown.Visible = true;
+        }
+
+        private void HideDropdown()
+        {
+            _pnlDropdown.Visible = false;
+        }
+
+        private void RebuildDropdown()
+        {
+            _pnlDropdown.Controls.Clear();
+            int rowH = 38;
+            int y = 4;
+
+            if (_openTabs.Count == 0)
+            {
+                var lbl = new Label { Text = "لا توجد شاشات مفتوحة", ForeColor = Color.Gray, Font = new Font("Segoe UI", 9f), AutoSize = false, Width = 256, Height = 34, TextAlign = ContentAlignment.MiddleCenter, Location = new Point(2, y) };
+                _pnlDropdown.Controls.Add(lbl);
+                _pnlDropdown.Height = 42;
+                return;
+            }
+
+            foreach (var entry in _openTabs)
+            {
+                var form = entry.form;
+                var tab = entry.tab;
+                bool isActive = form == _currentChild;
+
+                // Row panel
+                var row = new Panel
+                {
+                    Width = 258,
+                    Height = rowH - 2,
+                    Location = new Point(1, y),
+                    BackColor = isActive ? Color.FromArgb(5, 110, 75) : Color.FromArgb(40, 40, 52),
+                    Cursor = Cursors.Hand
+                };
+
+                // Screen name label
+                var lblName = new Label
+                {
+                    Text = TrimTabTitle(form.Text),
+                    ForeColor = isActive ? Color.White : Color.FromArgb(210, 210, 225),
+                    Font = new Font("Segoe UI", 9.5f, isActive ? FontStyle.Bold : FontStyle.Regular),
+                    Location = new Point(8, 0),
+                    Width = 200,
+                    Height = rowH - 2,
+                    TextAlign = ContentAlignment.MiddleRight,
+                    Cursor = Cursors.Hand
+                };
+
+                // Close button
+                var btnClose = new Button
+                {
+                    Text = "✕",
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.Transparent,
+                    ForeColor = Color.FromArgb(180, 80, 80),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Size = new Size(30, rowH - 6),
+                    Location = new Point(224, 3),
+                    Cursor = Cursors.Hand
+                };
+                btnClose.FlatAppearance.BorderSize = 0;
+                btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(180, 50, 50);
+
+                // Capture for lambda
+                var capturedForm = form;
+                var capturedTab = tab;
+
+                lblName.Click += (s, e) => { HideDropdown(); SwitchToTab(capturedForm, capturedTab); };
+                row.Click += (s, e) => { HideDropdown(); SwitchToTab(capturedForm, capturedTab); };
+                btnClose.Click += (s, e) => { HideDropdown(); CloseTab(capturedForm, capturedTab); };
+
+                row.Controls.Add(lblName);
+                row.Controls.Add(btnClose);
+                _pnlDropdown.Controls.Add(row);
+                y += rowH;
+            }
+
+            _pnlDropdown.Height = y + 4;
+        }
+
+        // ─── Tab management ────────────────────────────────────────────────
         private Button _AddTab(Form form)
         {
             // Check if this form type is already open → switch to it
@@ -560,40 +697,10 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // Create tab button
-            var tab = new Button
-            {
-                Text = TrimTabTitle(form.Text) + "  ✕",
-                AutoSize = false,
-                Width = 160,
-                Height = 28,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(50, 50, 60),
-                ForeColor = Color.FromArgb(200, 200, 210),
-                Font = new Font("Segoe UI", 8.5f),
-                Margin = new Padding(2, 0, 2, 0),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Cursor = Cursors.Hand,
-                Tag = form
-            };
-            tab.FlatAppearance.BorderSize = 0;
-            tab.FlatAppearance.MouseOverBackColor = Color.FromArgb(70, 70, 85);
-
-            // Switch on left-click anywhere except X zone
-            tab.MouseUp += (s, e) =>
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    // If click is on the right ~20px (the ✕ zone), close tab
-                    if (e.X >= tab.Width - 22)
-                        CloseTab(form, tab);
-                    else
-                        SwitchToTab(form, tab);
-                }
-            };
-
-            pnlTabBar.Controls.Add(tab);
+            // Create dummy tag button (not shown directly, used as key)
+            var tab = new Button { Tag = form };
             _openTabs.Add((form, tab));
+            _UpdateDropdownButtonText();
             return tab;
         }
 
@@ -628,20 +735,21 @@ namespace ChickenDist.Forms
             if (lblTitle != null) lblTitle.Text = form.Text;
 
             HighlightActiveGroup(form.GetType().Name);
-            _RefreshTabStyles(tab);
+            _UpdateDropdownButtonText();
         }
 
         private void CloseTab(Form form, Button tab)
         {
             // Remove from list
             _openTabs.RemoveAll(t => t.form == form);
-            pnlTabBar.Controls.Remove(tab);
 
             if (!form.IsDisposed)
             {
                 pnlContent.Controls.Remove(form);
                 form.Dispose();
             }
+
+            _UpdateDropdownButtonText();
 
             // Switch to last tab if any
             if (_openTabs.Count > 0)
@@ -656,16 +764,16 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void _RefreshTabStyles(Button activeTab)
+        private void _UpdateDropdownButtonText()
         {
-            foreach (var entry in _openTabs)
-            {
-                bool isActive = entry.tab == activeTab;
-                entry.tab.BackColor = isActive ? Color.FromArgb(5, 122, 85) : Color.FromArgb(50, 50, 60);
-                entry.tab.ForeColor = isActive ? Color.White : Color.FromArgb(200, 200, 210);
-                entry.tab.FlatAppearance.BorderSize = isActive ? 0 : 0;
-            }
+            if (_btnOpenPages == null) return;
+            string active = _currentChild != null && !_currentChild.IsDisposed
+                ? TrimTabTitle(_currentChild.Text)
+                : "لا يوجد";
+            _btnOpenPages.Text = $"📑 {active}  ▾  ({_openTabs.Count})";
         }
+
+        private void _RefreshTabStyles(Button activeTab) { } // kept for compatibility
 
         public void NavigateTo(Form form)
         {
