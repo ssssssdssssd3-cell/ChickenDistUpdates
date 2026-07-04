@@ -60,16 +60,17 @@ namespace ChickenDist.Forms
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F)); // Pairing Code Control
 
-            // Header/Status Layout container to support refresh button
+            // Header/Status Layout container to support refresh and settings buttons
             TableLayoutPanel statusContainer = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 3,
                 RowCount = 1,
                 BackColor = Color.Transparent
             };
-            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70f));
-            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
+            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22f));
+            statusContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 23f));
 
             lblStatus = new Label 
             { 
@@ -82,7 +83,7 @@ namespace ChickenDist.Forms
             statusContainer.Controls.Add(lblStatus, 0, 0);
 
             var btnCheckStatus = Theme.MakeButton("🔄 تحديث الحالة", Theme.Primary);
-            btnCheckStatus.Size = new Size(140, 36);
+            btnCheckStatus.Size = new Size(130, 36);
             btnCheckStatus.Click += async (s, e) => {
                 btnCheckStatus.Enabled = false;
                 btnCheckStatus.Text = "⏳ جاري الفحص...";
@@ -91,6 +92,11 @@ namespace ChickenDist.Forms
                 btnCheckStatus.Enabled = true;
             };
             statusContainer.Controls.Add(btnCheckStatus, 1, 0);
+
+            var btnCloudSettings = Theme.MakeButton("⚙️ الإعدادات السحابية", Theme.Accent);
+            btnCloudSettings.Size = new Size(140, 36);
+            btnCloudSettings.Click += BtnCloudSettings_Click;
+            statusContainer.Controls.Add(btnCloudSettings, 2, 0);
 
             mainLayout.Controls.Add(statusContainer, 0, 0);
             mainLayout.SetColumnSpan(statusContainer, 2);
@@ -597,6 +603,113 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 LogMessage($"❌ خطأ أثناء إرسال طلب الربط: {ex.Message}");
+            }
+        }
+
+        private void BtnCloudSettings_Click(object sender, EventArgs e)
+        {
+            // Custom Password Dialog
+            using (Form pwdForm = new Form())
+            {
+                pwdForm.Text = "أمان الإدارة";
+                pwdForm.Size = new Size(350, 160);
+                pwdForm.StartPosition = FormStartPosition.CenterParent;
+                pwdForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                pwdForm.MaximizeBox = false;
+                pwdForm.MinimizeBox = false;
+                pwdForm.RightToLeft = RightToLeft.Yes;
+                pwdForm.RightToLeftLayout = true;
+                pwdForm.BackColor = Color.FromArgb(245, 246, 250);
+
+                Label lblPrompt = new Label { Text = "أدخل كلمة مرور الإدارة لفتح الإعدادات السحابية:", Location = new Point(15, 15), Size = new Size(300, 20), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                TextBox txtPassword = new TextBox { Location = new Point(15, 40), Size = new Size(300, 25), UseSystemPasswordChar = true, Font = new Font("Segoe UI", 10.5F) };
+                Button btnOk = new Button { Text = "دخول", Location = new Point(220, 80), Size = new Size(90, 30), DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                Button btnCancel = new Button { Text = "إلغاء", Location = new Point(120, 80), Size = new Size(90, 30), DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(149, 165, 166), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                btnOk.FlatAppearance.BorderSize = 0;
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                pwdForm.Controls.Add(lblPrompt);
+                pwdForm.Controls.Add(txtPassword);
+                pwdForm.Controls.Add(btnOk);
+                pwdForm.Controls.Add(btnCancel);
+                pwdForm.AcceptButton = btnOk;
+
+                if (pwdForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (txtPassword.Text == "Tamim")
+                    {
+                        OpenFirebaseSettingsDialog();
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ كلمة المرور غير صحيحة!", "خطأ في الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void OpenFirebaseSettingsDialog()
+        {
+            using (Form configForm = new Form())
+            {
+                configForm.Text = "إعدادات الاتصال السحابي (Firebase)";
+                configForm.Size = new Size(500, 380);
+                configForm.StartPosition = FormStartPosition.CenterParent;
+                configForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                configForm.MaximizeBox = false;
+                configForm.MinimizeBox = false;
+                configForm.RightToLeft = RightToLeft.Yes;
+                configForm.RightToLeftLayout = true;
+                configForm.BackColor = Color.FromArgb(245, 246, 250);
+
+                int top = 15;
+                
+                Label lblApiKey = new Label { Text = "Firebase API Key:", Location = new Point(15, top), Size = new Size(450, 20), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                TextBox txtApiKey = new TextBox { Text = AppConfig.FirebaseApiKey, Location = new Point(15, top + 20), Size = new Size(450, 25), RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 10F) };
+                
+                top += 55;
+                Label lblProjId = new Label { Text = "Project ID:", Location = new Point(15, top), Size = new Size(450, 20), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                TextBox txtProjId = new TextBox { Text = AppConfig.FirebaseProjectId, Location = new Point(15, top + 20), Size = new Size(450, 25), RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 10F) };
+
+                top += 55;
+                Label lblBucket = new Label { Text = "Storage Bucket:", Location = new Point(15, top), Size = new Size(450, 20), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                TextBox txtBucket = new TextBox { Text = AppConfig.FirebaseStorageBucket, Location = new Point(15, top + 20), Size = new Size(450, 25), RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 10F) };
+
+                top += 55;
+                Label lblWebUrl = new Label { Text = "Hosting Web URL (الرابط الرئيسي للويب دون admin.html):", Location = new Point(15, top), Size = new Size(450, 20), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                TextBox txtWebUrl = new TextBox { Text = AppConfig.FirebaseWebUrl, Location = new Point(15, top + 20), Size = new Size(450, 25), RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 10F) };
+
+                top += 60;
+                Button btnSave = new Button { Text = "💾 حفظ الإعدادات", Location = new Point(345, top), Size = new Size(120, 32), DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+                Button btnCancel = new Button { Text = "إلغاء", Location = new Point(215, top), Size = new Size(120, 32), DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(149, 165, 166), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9.5F) };
+                btnSave.FlatAppearance.BorderSize = 0;
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                configForm.Controls.Add(lblApiKey);
+                configForm.Controls.Add(txtApiKey);
+                configForm.Controls.Add(lblProjId);
+                configForm.Controls.Add(txtProjId);
+                configForm.Controls.Add(lblBucket);
+                configForm.Controls.Add(txtBucket);
+                configForm.Controls.Add(lblWebUrl);
+                configForm.Controls.Add(txtWebUrl);
+                configForm.Controls.Add(btnSave);
+                configForm.Controls.Add(btnCancel);
+                configForm.AcceptButton = btnSave;
+
+                if (configForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    AppConfig.FirebaseApiKey = txtApiKey.Text.Trim();
+                    AppConfig.FirebaseProjectId = txtProjId.Text.Trim();
+                    AppConfig.FirebaseStorageBucket = txtBucket.Text.Trim();
+                    AppConfig.FirebaseWebUrl = txtWebUrl.Text.Trim();
+                    
+                    MessageBox.Show("✅ تم حفظ الإعدادات بنجاح! يرجى إعادة تشغيل البوت لتطبيق التغييرات الجديدة.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LogMessage("🔄 تم تحديث إعدادات Firebase السحابية.");
+                    
+                    // Force refresh status URLs
+                    CheckBotStatusAsync().ConfigureAwait(false);
+                }
             }
         }
 
