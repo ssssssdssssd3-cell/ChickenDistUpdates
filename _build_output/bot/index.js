@@ -234,8 +234,13 @@ async function startBot(pairingPhone = null) {
     client.on('qr', async (qr) => {
         if (pairingPhone) {
             try {
-                console.log(`[WhatsApp]: Requesting pairing code for phone ${pairingPhone}...`);
-                const code = await client.requestPairingCode(pairingPhone);
+                // Normalize phone: remove leading 0 and add Egypt country code if needed
+                let normalizedPhone = pairingPhone.replace(/\s+/g, '').replace(/^\+/, '');
+                if (normalizedPhone.startsWith('0')) {
+                    normalizedPhone = '20' + normalizedPhone.substring(1);
+                }
+                console.log(`[WhatsApp]: Requesting pairing code for phone ${normalizedPhone} (original: ${pairingPhone})...`);
+                const code = await client.requestPairingCode(normalizedPhone);
                 console.log(`[WhatsApp]: Pairing code generated: ${code}`);
                 botStatus = 'PairingCode_Ready';
                 updateFirebaseStatus('PairingCode_Ready', '', code);
@@ -702,7 +707,7 @@ function listenForCommands() {
                     if (cmd.type === 'start_bot') {
                         console.log('[Command]: Received start_bot command');
                         const pPhone = cmd.pairingPhone || null;
-                        startBot(pPhone);
+                        await startBot(pPhone);
                         await change.doc.ref.update({ status: 'completed' });
                     }
                     else if (cmd.type === 'stop_bot') {
@@ -724,13 +729,9 @@ function listenForCommands() {
                             fs.rmSync(sessionDir, { recursive: true, force: true });
                             console.log('[ClearSession]: Session folder deleted.');
                         }
-                        await updateFirebaseStatus('Connecting');
+                        await updateFirebaseStatus('Offline');
                         await change.doc.ref.update({ status: 'completed' });
-                        // Restart after short delay
-                        setTimeout(() => {
-                            console.log('[ClearSession]: Restarting bot with fresh session...');
-                            startBot();
-                        }, 2000);
+                        console.log('[ClearSession]: Session cleared. Bot is now offline. Use start_bot or pairing code to reconnect.');
                     }
                     else if (cmd.type === 'send_backup') {
                         console.log(`[Command]: Received send_backup to ${cmd.phone} for file ${cmd.filePath}`);

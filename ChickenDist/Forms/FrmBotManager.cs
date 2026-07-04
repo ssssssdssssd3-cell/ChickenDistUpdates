@@ -326,12 +326,15 @@ namespace ChickenDist.Forms
             };
             btnRequestPairCode.FlatAppearance.BorderSize = 0;
             btnRequestPairCode.Click += async (s, e) => {
-                string phone = txtPairPhone.Text.Trim();
+                string phone = txtPairPhone.Text.Trim().Replace("+", "").Replace(" ", "");
                 if (string.IsNullOrEmpty(phone) || !System.Text.RegularExpressions.Regex.IsMatch(phone, "^[0-9]+$"))
                 {
                     MessageBox.Show("❌ يرجى إدخال رقم هاتف صحيح يحتوي على أرقام فقط وكود الدولة (مثال لمصر: 201012345678)", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+                // Normalize: if starts with 0, assume Egypt and prepend 20
+                if (phone.StartsWith("0"))
+                    phone = "20" + phone.Substring(1);
                 btnRequestPairCode.Enabled = false;
                 await SendStartBotWithPairingPhoneAsync(phone);
                 btnRequestPairCode.Enabled = true;
