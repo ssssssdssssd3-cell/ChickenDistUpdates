@@ -205,8 +205,16 @@ function listenForOrderActions() {
 // -------------------------------------------------------------
 // 1. WhatsApp Bot Initializer
 // -------------------------------------------------------------
-function startBot(pairingPhone = null) {
-    if (client) return;
+async function startBot(pairingPhone = null) {
+    if (client) {
+        console.log('[WhatsApp]: Destroying existing client before starting fresh...');
+        try {
+            await client.destroy();
+        } catch (err) {
+            console.error('Error destroying client:', err);
+        }
+        client = null;
+    }
     
     botStatus = 'Connecting';
     updateFirebaseStatus('Connecting');
