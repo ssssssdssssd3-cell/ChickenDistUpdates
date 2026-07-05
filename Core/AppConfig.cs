@@ -25,6 +25,12 @@ namespace ChickenDist.Core
             set => Set("CompanyName", value);
         }
 
+        public static string BusinessType
+        {
+            get => Get("BusinessType", "Supermarket");
+            set => Set("BusinessType", value);
+        }
+
         public static string AppTheme
         {
             get => Get("AppTheme", "Dark");
@@ -41,6 +47,12 @@ namespace ChickenDist.Core
         {
             get => Get("CompanyPhone2", "");
             set => Set("CompanyPhone2", value);
+        }
+
+        public static string CompanyAddress
+        {
+            get => Get("CompanyAddress", "");
+            set => Set("CompanyAddress", value);
         }
 
         public static string ReceiptPrintMode
@@ -127,6 +139,32 @@ namespace ChickenDist.Core
         {
             get => Get("ReceiptShowClientInfo", "false") == "true";
             set => Set("ReceiptShowClientInfo", value ? "true" : "false");
+        }
+
+        // ===== إعدادات Firebase السحابية الديناميكية لكل عميل =====
+
+        public static string FirebaseApiKey
+        {
+            get => Get("FirebaseApiKey", "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk");
+            set => Set("FirebaseApiKey", value);
+        }
+
+        public static string FirebaseProjectId
+        {
+            get => Get("FirebaseProjectId", "checkin-192ab");
+            set => Set("FirebaseProjectId", value);
+        }
+
+        public static string FirebaseStorageBucket
+        {
+            get => Get("FirebaseStorageBucket", "checkin-192ab.firebasestorage.app");
+            set => Set("FirebaseStorageBucket", value);
+        }
+
+        public static string FirebaseWebUrl
+        {
+            get => Get("FirebaseWebUrl", "https://checkin-192ab.web.app");
+            set => Set("FirebaseWebUrl", value);
         }
 
 
@@ -308,6 +346,12 @@ namespace ChickenDist.Core
             set => Set("WhatsAppBackupPhone", value);
         }
 
+        public static int BackupIntervalHours
+        {
+            get => int.TryParse(Get("BackupIntervalHours", "0"), out int val) ? val : 0;
+            set => Set("BackupIntervalHours", value.ToString());
+        }
+
         public static bool EnableCratesTracking
         {
             get => Get("EnableCratesTracking", "True") == "True";
@@ -340,6 +384,13 @@ namespace ChickenDist.Core
         {
             get => Get("ShiftRequired", "False") == "True";
             set => Set("ShiftRequired", value ? "True" : "False");
+        }
+
+        // ===== إعدادات الصلاحية =====
+        public static bool AllowSellExpired
+        {
+            get => Get("AllowSellExpired", "True") == "True";
+            set => Set("AllowSellExpired", value ? "True" : "False");
         }
 
 

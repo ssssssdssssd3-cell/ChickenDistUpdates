@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.34"
+$VERSION   = "2.0.36"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -16,7 +16,7 @@ $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistU
 # 📁 Paths
 # ────────────────────────────────────────────────────────────
 $REPO_ROOT    = $PSScriptRoot
-$PROJECT_DIR  = Join-Path $REPO_ROOT "ChickenDist"
+$PROJECT_DIR  = $REPO_ROOT
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
 $OUT_DIR      = Join-Path $REPO_ROOT "_build_output"
 $BIN_DEST     = Join-Path $REPO_ROOT "ChickenDist.bin"

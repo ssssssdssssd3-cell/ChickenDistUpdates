@@ -1099,10 +1099,8 @@ namespace ChickenDist.Forms
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            // Node server runs 24/7 as requested, so we keep the process running.
-            // If the user wants to terminate it entirely when application exits, 
-            // they can stop it manually, or we can terminate standard child process here:
-            /*
+            // Node server runs 24/7 as requested, but to allow updates to reload properly,
+            // we terminate the local child process when the manager form is closed.
             try
             {
                 if (_nodeProcess != null && !_nodeProcess.HasExited)
@@ -1111,7 +1109,6 @@ namespace ChickenDist.Forms
                 }
             }
             catch {}
-            */
             base.OnFormClosed(e);
         }
     }

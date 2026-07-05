@@ -19,6 +19,7 @@ namespace ChickenDist.Core
         public static bool CanSellDriverLoad { get; set; }
         public static bool CanSellInstallment { get; set; }
         public static bool CanEditShippingCharge { get; set; }
+        public static bool CanSelectDriver { get; set; }
 
         /// <summary>معرف الوردية الحالية المفتوحة (null = لا توجد وردية مفتوحة)</summary>
         public static int? CurrentShiftID { get; set; }
@@ -106,6 +107,7 @@ namespace ChickenDist.Core
             DefaultSafeID = null; AllowedSafeIDs = "";
             CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
+            CanSelectDriver = true;
             CurrentShiftID = null;
             _perms.Clear();
         }
@@ -121,7 +123,8 @@ namespace ChickenDist.Core
             "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
             "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
             "Settings", "BotManager",
-            "POS", "ShiftClose"
+            "POS", "ShiftClose",
+            "DashTreasury", "DashSales", "DashLoads", "DashBelowMin"
         };
     }
 

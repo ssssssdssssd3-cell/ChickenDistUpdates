@@ -19,6 +19,9 @@ namespace ChickenDist.DAL
         public decimal DiscountAmt { get; set; } = 0m;
         /// <summary>سعر البيع المقترح</summary>
         public decimal? SuggestedSalePrice { get; set; } = null;
+        public string UnitName { get; set; } = null;
+        public decimal Factor { get; set; } = 1.0m;
+        public DateTime? ExpiryDate { get; set; } = null;
 
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
@@ -78,17 +81,40 @@ namespace ChickenDist.DAL
                 DbHelper.P("@product", (object)productFilter ?? DBNull.Value));
         }
 
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
+        {
+            return DbHelper.Query(
+                @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
+                         ISNULL(s.SupplierName, N'---') AS SupplierName,
+                         p.TotalAmount, p.Notes, p.SupplierID,
+                         COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
+                         COALESCE(p.DiscountPct,   0) AS DiscountPct,
+                         COALESCE(p.TaxPct,        0) AS TaxPct,
+                         COALESCE(p.TaxAmount,     0) AS TaxAmount,
+                         w.WarehouseName
+                  FROM Purchases p
+                  LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                  LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
+                  WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                    AND p.IsPosted = 1
+                    AND (@warehouseID IS NULL OR p.WarehouseID = @warehouseID)
+                  ORDER BY p.PurchaseDate DESC",
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
         // ─── أصناف فاتورة معينة ──────────────────────────────────────────────────
         public static DataTable GetItems(int purchaseID)
         {
              return DbHelper.Query(
                  @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
-                          COALESCE(pi.DiscountPct, 0) AS DiscountPct,
-                          COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
-                          pi.SuggestedSalePrice
-                   FROM PurchaseItems pi
-                   JOIN Products pr ON pi.ProductID = pr.ProductID
-                   WHERE pi.PurchaseID = @id",
+                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
+                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
+                           pi.SuggestedSalePrice,
+                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate
+                    FROM PurchaseItems pi
+                    JOIN Products pr ON pi.ProductID = pr.ProductID
+                    WHERE pi.PurchaseID = @id",
                 DbHelper.P("@id", purchaseID));
         }
 
@@ -178,8 +204,8 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp)",
+                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
+                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
@@ -187,7 +213,41 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp",     item.TotalPrice),
                         DbHelper.P("@dpct",   item.DiscountPct),
                         DbHelper.P("@damt",   item.DiscountAmt),
-                        DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value));
+                        DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
+                        DbHelper.P("@un",     item.UnitName),
+                        DbHelper.P("@fac",    item.Factor),
+                        DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value));
+
+                    if (!isDraft && item.ExpiryDate.HasValue)
+                    {
+                        decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
+                        decimal baseQty = item.Quantity * factor;
+                        int wid = warehouseID ?? 1;
+
+                        var existingBatchId = DbHelper.ScalarTrans(trans,
+                            "SELECT BatchID FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
+                            DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@wid", wid),
+                            DbHelper.P("@exp", item.ExpiryDate.Value.Date));
+
+                        if (existingBatchId != null && existingBatchId != DBNull.Value)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                                DbHelper.P("@qty", baseQty),
+                                DbHelper.P("@bid", Convert.ToInt32(existingBatchId)));
+                        }
+                        else
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ProductBatches(ProductID, WarehouseID, Quantity, ExpiryDate, PurchaseID) VALUES (@pid, @wid, @qty, @exp, @purid)",
+                                DbHelper.P("@pid", item.ProductID),
+                                DbHelper.P("@wid", wid),
+                                DbHelper.P("@qty", baseQty),
+                                DbHelper.P("@exp", item.ExpiryDate.Value.Date),
+                                DbHelper.P("@purid", purchaseID));
+                        }
+                    }
                 }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────
@@ -223,6 +283,227 @@ namespace ChickenDist.DAL
 
             return returnedID;
         }
+
+        public static bool CanDeletePurchase(int purchaseID, out string reason)
+        {
+            reason = "";
+            var returnsCount = DbHelper.Scalar("SELECT COUNT(*) FROM PurchaseReturns WHERE PurchaseID = @id", DbHelper.P("@id", purchaseID));
+            if (Convert.ToInt32(returnsCount) > 0)
+            {
+                reason = "لا يمكن حذف أو تعديل الفاتورة لوجود مرتجع مشتريات مرتبط بها.";
+                return false;
+            }
+
+            var dtItems = PurchaseDAL.GetItems(purchaseID);
+            foreach (DataRow iRow in dtItems.Rows)
+            {
+                int productID = Convert.ToInt32(iRow["ProductID"]);
+                decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+                decimal factor = Convert.ToDecimal(iRow["Factor"]);
+                decimal baseQty = qty * factor;
+                DateTime? expDate = iRow["ExpiryDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(iRow["ExpiryDate"]);
+
+                if (expDate.HasValue)
+                {
+                    var batchQtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE ProductID=@pid AND ExpiryDate=@exp",
+                        DbHelper.P("@pid", productID), DbHelper.P("@exp", expDate.Value.Date));
+                    decimal currentBatchQty = batchQtyObj != null && batchQtyObj != DBNull.Value ? Convert.ToDecimal(batchQtyObj) : 0m;
+                    if (currentBatchQty < baseQty)
+                    {
+                        reason = $"لا يمكن حذف أو تعديل الفاتورة لأن الصنف \"{iRow["ProductName"]}\" تم بيع أجزاء منه (الكمية المتبقية بالصلاحية {currentBatchQty} أقل من المشتراة {baseQty}).";
+                        return false;
+                    }
+                }
+                else
+                {
+                    decimal currentStock = InventoryDAL.GetProductStock(productID);
+                    if (currentStock < baseQty)
+                    {
+                        reason = $"لا يمكن حذف أو تعديل الفاتورة لأن الصنف \"{iRow["ProductName"]}\" تم بيع أجزاء منه (الرصيد الحالي {currentStock} أقل من المشتراة {baseQty}).";
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public static bool DeletePurchase(int purchaseID)
+        {
+            try
+            {
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    var dtPurchase = DbHelper.QueryTrans(trans, "SELECT PurchaseType, TotalAmount, SupplierID, IsPosted, WarehouseID FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    if (dtPurchase.Rows.Count == 0) throw new Exception("الفاتورة غير موجودة.");
+                    var pRow = dtPurchase.Rows[0];
+                    bool isPosted = Convert.ToInt32(pRow["IsPosted"]) == 1;
+                    string type = pRow["PurchaseType"].ToString();
+                    decimal total = Convert.ToDecimal(pRow["TotalAmount"]);
+                    int? supplierID = pRow["SupplierID"] == DBNull.Value ? (int?)null : Convert.ToInt32(pRow["SupplierID"]);
+                    int wid = pRow["WarehouseID"] == DBNull.Value ? 1 : Convert.ToInt32(pRow["WarehouseID"]);
+
+                    if (isPosted)
+                    {
+                        var dtItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                        foreach (DataRow iRow in dtItems.Rows)
+                        {
+                            int productID = Convert.ToInt32(iRow["ProductID"]);
+                            decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+                            decimal factor = Convert.ToDecimal(iRow["Factor"]);
+                            decimal baseQty = qty * factor;
+                            DateTime? expDate = iRow["ExpiryDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(iRow["ExpiryDate"]);
+
+                            if (expDate.HasValue)
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
+                                    DbHelper.P("@q", baseQty), DbHelper.P("@pid", productID), DbHelper.P("@wid", wid), DbHelper.P("@exp", expDate.Value.Date));
+                            }
+                        }
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND TransType='PurchaseExpense'", DbHelper.P("@id", purchaseID));
+                    }
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Error deleting purchase {purchaseID}", ex);
+                return false;
+            }
+        }
+
+        public static bool UpdatePurchase(int purchaseID, string purchaseType, int? supplierID, decimal total, string notes, List<PurchaseItemDTO> items,
+            decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID)
+        {
+            try
+            {
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    int wid = warehouseID ?? 1;
+                    foreach (DataRow iRow in dtOldItems.Rows)
+                    {
+                        int productID = Convert.ToInt32(iRow["ProductID"]);
+                        decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+                        decimal factor = Convert.ToDecimal(iRow["Factor"]);
+                        decimal baseQty = qty * factor;
+                        DateTime? expDate = iRow["ExpiryDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(iRow["ExpiryDate"]);
+
+                        if (expDate.HasValue)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
+                                DbHelper.P("@q", baseQty), DbHelper.P("@pid", productID), DbHelper.P("@wid", wid), DbHelper.P("@exp", expDate.Value.Date));
+                        }
+                    }
+
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND TransType='PurchaseExpense'", DbHelper.P("@id", purchaseID));
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"UPDATE Purchases 
+                          SET PurchaseType=@typ, SupplierID=@sid, TotalAmount=@tot, Notes=@n, 
+                              DiscountAmount=@discAmt, DiscountPct=@discPct, TaxPct=@taxPct, TaxAmount=@taxAmt,
+                              WarehouseID=@wid
+                          WHERE PurchaseID=@id",
+                        DbHelper.P("@typ",     purchaseType),
+                        DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                        DbHelper.P("@tot",     total),
+                        DbHelper.P("@n",       notes),
+                        DbHelper.P("@discAmt", discountAmount),
+                        DbHelper.P("@discPct", discountPct),
+                        DbHelper.P("@taxPct",  taxPct),
+                        DbHelper.P("@taxAmt",  taxAmt),
+                        DbHelper.P("@wid",     wid),
+                        DbHelper.P("@id",      purchaseID));
+
+                    foreach (var item in items)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO PurchaseItems
+                                (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
+                              VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
+                            DbHelper.P("@pid",    purchaseID),
+                            DbHelper.P("@prodid", item.ProductID),
+                            DbHelper.P("@qty",    item.Quantity),
+                            DbHelper.P("@up",     item.UnitPrice),
+                            DbHelper.P("@tp",     item.TotalPrice),
+                            DbHelper.P("@dpct",   item.DiscountPct),
+                            DbHelper.P("@damt",   item.DiscountAmt),
+                            DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
+                            DbHelper.P("@un",     item.UnitName),
+                            DbHelper.P("@fac",    item.Factor),
+                            DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value));
+
+                        if (item.ExpiryDate.HasValue)
+                        {
+                            decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
+                            decimal baseQty = item.Quantity * factor;
+
+                            var existingBatchId = DbHelper.ScalarTrans(trans,
+                                "SELECT BatchID FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
+                                DbHelper.P("@pid", item.ProductID),
+                                DbHelper.P("@wid", wid),
+                                DbHelper.P("@exp", item.ExpiryDate.Value.Date));
+
+                            if (existingBatchId != null && existingBatchId != DBNull.Value)
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                                    DbHelper.P("@qty", baseQty),
+                                    DbHelper.P("@bid", Convert.ToInt32(existingBatchId)));
+                            }
+                            else
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    "INSERT INTO ProductBatches(ProductID, WarehouseID, Quantity, ExpiryDate, PurchaseID) VALUES (@pid, @wid, @qty, @exp, @purid)",
+                                    DbHelper.P("@pid", item.ProductID),
+                                    DbHelper.P("@wid", wid),
+                                    DbHelper.P("@qty", baseQty),
+                                    DbHelper.P("@exp", item.ExpiryDate.Value.Date),
+                                    DbHelper.P("@purid", purchaseID));
+                            }
+                        }
+                    }
+
+                    var pCodeObj = DbHelper.ScalarTrans(trans, "SELECT PurchaseCode FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    string code = pCodeObj?.ToString() ?? purchaseID.ToString();
+
+                    if (purchaseType == "Credit" && supplierID.HasValue)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
+                            " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
+                            DbHelper.P("@sid", supplierID.Value),
+                            DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", purchaseID),
+                            DbHelper.P("@n",   "تعديل فاتورة مشتريات " + code),
+                            DbHelper.P("@by",  Session.EmpID));
+                    }
+
+                    if (purchaseType == "Cash")
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)" +
+                            " VALUES(GETDATE(),'PurchaseExpense',@amt,@ref,@n,@by)",
+                            DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", purchaseID),
+                            DbHelper.P("@n",   "تعديل مشتريات نقدية " + code),
+                            DbHelper.P("@by",  Session.EmpID));
+                    }
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Error updating purchase {purchaseID}", ex);
+                return false;
+            }
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -250,7 +531,8 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int returnID)
         {
             return DbHelper.Query(
-                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice
+                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice,
+                         pri.UnitName, COALESCE(pri.Factor, 1.0) AS Factor
                   FROM PurchaseReturnItems pri
                   JOIN Products p ON pri.ProductID = p.ProductID
                   WHERE pri.ReturnID = @id",
@@ -297,13 +579,15 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice)" +
-                        " VALUES(@rid,@pid,@qty,@up,@tp)",
+                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor)" +
+                        " VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
                         DbHelper.P("@rid", retID),
                         DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity),
                         DbHelper.P("@up",  item.UnitPrice),
-                        DbHelper.P("@tp",  item.TotalPrice));
+                        DbHelper.P("@tp",  item.TotalPrice),
+                        DbHelper.P("@un",  item.UnitName),
+                        DbHelper.P("@fac", item.Factor));
                 }
 
                 // القيد المحاسبي السليم

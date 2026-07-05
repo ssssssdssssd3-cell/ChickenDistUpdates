@@ -9,13 +9,13 @@ namespace ChickenDist.DAL
     public static class InventoryDAL
     {
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false)
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null)
         {
             string filter = "";
             List<SqlParameter> prms = new List<SqlParameter>();
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                filter = " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term) ";
+                filter = " AND (t.ProductName LIKE @term OR t.ProductCode LIKE @term OR t.PartNumber LIKE @term) ";
                 prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
             }
 
@@ -24,97 +24,137 @@ namespace ChickenDist.DAL
                 prms.Add(DbHelper.P("@wid", warehouseID.Value));
             }
 
+            if (categoryID.HasValue)
+            {
+                prms.Add(DbHelper.P("@catid", categoryID.Value));
+            }
+
             string sql = $@"
                 SELECT * FROM (
-                SELECT 
-                    p.ProductID,
-                    p.ProductCode,
-                    p.PartNumber,
-                    p.ProductName,
-                    p.Unit,
-                    p.SalePrice,
-                    p.PurchasePrice,
-                    p.MinStockLimit,
-                    p.ShelfLocation,
-                    ISNULL(adj.ActualQty, 0) + 
-                    -- Incoming since adjustment: Sales Returns
-                    ISNULL((SELECT SUM(ri.Quantity) 
-                            FROM ReturnItems ri 
-                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                            WHERE ri.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Driver Handover Returns
-                    ISNULL((SELECT SUM(hi.ReturnedQty) 
-                            FROM HandoverItems hi 
-                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                            WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM(pi.Quantity)
-                            FROM PurchaseItems pi
-                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                            WHERE pi.ProductID = p.ProductID
-                              AND pu.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Warehouse Transfers
-                    ISNULL((SELECT SUM(ti.Quantity)
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM(pri.Quantity)
-                              FROM PurchaseReturnItems pri
-                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                              WHERE pri.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity) 
-                            FROM SaleItems si 
-                            JOIN Sales s ON si.SaleID = s.SaleID
-                            WHERE si.ProductID = p.ProductID 
-                              AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
-                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Warehouse Transfers
-                    - ISNULL((SELECT SUM(ti.Quantity)
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity)
-                              FROM WastageLossItems wli
-                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
-                              WHERE wli.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
-                    p.IsActive
-                FROM Products p
-                OUTER APPLY (
-                    SELECT TOP 1 sa.AdjDate, sa.ActualQty 
-                    FROM StockAdjustments sa 
-                    WHERE sa.ProductID = p.ProductID 
-                      {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
-                    ORDER BY sa.AdjDate DESC
-                ) adj
+                    -- Part 1: Products without expiry (HasExpiry = 0)
+                    SELECT 
+                        p.ProductID,
+                        p.ProductCode,
+                        p.PartNumber,
+                        p.ProductName,
+                        p.Unit,
+                        p.SalePrice,
+                        p.PurchasePrice,
+                        p.MinStockLimit,
+                        p.ShelfLocation,
+                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
+                        p.Unit3Factor, 
+                        0 AS HasExpiry, 
+                        p.DefaultExpiryDays, 
+                        p.CategoryID,
+                        ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)), 0) + 
+                        -- Incoming since adjustment: Sales Returns
+                        ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming since adjustment: Driver Handover Returns
+                        ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming since adjustment: Purchases
+                        ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming since adjustment: Warehouse Transfers
+                        ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
+                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                        -- Outgoing since adjustment: Purchase Returns
+                        - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                        -- Outgoing since adjustment: Warehouse Sales & Driver Loads
+                        - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                        -- Outgoing since adjustment: Warehouse Transfers
+                        - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                        -- Outgoing since adjustment: Wastage & Loss
+                        - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
+                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
+                        p.IsActive,
+                        NULL AS BatchID,
+                        CAST(NULL AS DATE) AS ExpiryDate
+                    FROM Products p
+                    OUTER APPLY (
+                        SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
+                        FROM StockAdjustments sa 
+                        WHERE sa.ProductID = p.ProductID 
+                          {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
+                        ORDER BY sa.AdjDate DESC
+                    ) adj
+                    WHERE COALESCE(p.HasExpiry, 0) = 0
+
+                    UNION ALL
+
+                    -- Part 2: Products with expiry (HasExpiry = 1) that have batches in ProductBatches
+                    SELECT 
+                        p.ProductID,
+                        p.ProductCode,
+                        p.PartNumber,
+                        p.ProductName,
+                        p.Unit,
+                        p.SalePrice,
+                        p.PurchasePrice,
+                        p.MinStockLimit,
+                        p.ShelfLocation,
+                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
+                        p.Unit3Factor, 
+                        1 AS HasExpiry, 
+                        p.DefaultExpiryDays, 
+                        p.CategoryID,
+                        pb.Quantity AS BookQty,
+                        p.IsActive,
+                        pb.BatchID,
+                        pb.ExpiryDate
+                    FROM Products p
+                    JOIN ProductBatches pb ON p.ProductID = pb.ProductID
+                    WHERE COALESCE(p.HasExpiry, 0) = 1
+                      {(warehouseID.HasValue ? "AND pb.WarehouseID = @wid" : "")}
+
+                    UNION ALL
+
+                    -- Part 3: Products with expiry (HasExpiry = 1) that do NOT have any batches in ProductBatches
+                    SELECT 
+                        p.ProductID,
+                        p.ProductCode,
+                        p.PartNumber,
+                        p.ProductName,
+                        p.Unit,
+                        p.SalePrice,
+                        p.PurchasePrice,
+                        p.MinStockLimit,
+                        p.ShelfLocation,
+                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
+                        p.Unit3Factor, 
+                        1 AS HasExpiry, 
+                        p.DefaultExpiryDays, 
+                        p.CategoryID,
+                        0.000 AS BookQty,
+                        p.IsActive,
+                        NULL AS BatchID,
+                        CAST(NULL AS DATE) AS ExpiryDate
+                    FROM Products p
+                    WHERE COALESCE(p.HasExpiry, 0) = 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM ProductBatches pb 
+                          WHERE pb.ProductID = p.ProductID 
+                            {(warehouseID.HasValue ? "AND pb.WarehouseID = @wid" : "")}
+                      )
                 ) AS t
                 WHERE t.IsActive = 1 {filter}
                 {(belowMinOnly ? " AND t.MinStockLimit > 0 AND t.BookQty <= t.MinStockLimit" : "")}
-                ORDER BY t.ProductName";
+                {(hideZeroStock ? " AND t.BookQty <> 0" : "")}
+                {(expiryOnly ? " AND t.HasExpiry = 1" : "")}
+                {(categoryID.HasValue ? " AND t.CategoryID = @catid" : "")}
+                ORDER BY t.ProductName, t.ExpiryDate ASC";
 
             return DbHelper.Query(sql, prms.ToArray());
         }
+
 
         /// <summary>جلب رصيد صنف محدد في مخزن معين (أو إجمالي المخازن)</summary>
         public static decimal GetProductStock(int productID, int? warehouseID = null)
@@ -127,72 +167,34 @@ namespace ChickenDist.DAL
 
             string sql = $@"
                 SELECT 
-                    ISNULL(adj.ActualQty, 0) + 
+                    ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)), 0) + 
                     -- Incoming since adjustment: Sales Returns
-                    ISNULL((SELECT SUM(ri.Quantity) 
-                            FROM ReturnItems ri 
-                            JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
-                            WHERE ri.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Driver Handover Returns
-                    ISNULL((SELECT SUM(hi.ReturnedQty) 
-                            FROM HandoverItems hi 
-                            JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
-                            JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                            WHERE hi.ProductID = p.ProductID 
-                              AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM(pi.Quantity)
-                            FROM PurchaseItems pi
-                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                            WHERE pi.ProductID = p.ProductID
-                              AND pu.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Warehouse Transfers
-                    ISNULL((SELECT SUM(ti.Quantity)
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                    ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM(pri.Quantity)
-                              FROM PurchaseReturnItems pri
-                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                              WHERE pri.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity) 
-                            FROM SaleItems si 
-                            JOIN Sales s ON si.SaleID = s.SaleID
-                            WHERE si.ProductID = p.ProductID 
-                              AND s.IsPosted = 1
-                              AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
-                              AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
-                    - ISNULL((SELECT SUM(ti.Quantity)
-                            FROM WarehouseTransferItems ti
-                            JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                            WHERE ti.ProductID = p.ProductID
-                              AND t.IsPosted = 1
-                              AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)
-                              {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity)
-                              FROM WastageLossItems wli
-                              JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
-                              WHERE wli.ProductID = p.ProductID
-                                AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)
-                                {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
+                    - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
                 FROM Products p
                 OUTER APPLY (
-                    SELECT TOP 1 sa.AdjDate, sa.ActualQty 
+                    SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
                     FROM StockAdjustments sa 
                     WHERE sa.ProductID = p.ProductID 
                       {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
@@ -205,17 +207,19 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>حفظ تسوية جردية لصنف في مخزن محدد</summary>
-        public static int SaveAdjustment(int productID, int warehouseID, decimal bookQty, decimal actualQty, string notes)
+        public static int SaveAdjustment(int productID, int warehouseID, decimal bookQty, decimal actualQty, string notes, string unitName = null, decimal? factor = null)
         {
             return DbHelper.ExecuteInsert(
-                @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy)
-                  VALUES (@pid, @wid, @bq, @aq, @notes, @by)",
+                @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                  VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac)",
                 DbHelper.P("@pid", productID),
                 DbHelper.P("@wid", warehouseID),
                 DbHelper.P("@bq", bookQty),
                 DbHelper.P("@aq", actualQty),
                 DbHelper.P("@notes", notes),
-                DbHelper.P("@by", Session.EmpID)
+                DbHelper.P("@by", Session.EmpID),
+                DbHelper.P("@un", unitName),
+                DbHelper.P("@fac", factor ?? (object)DBNull.Value)
             );
         }
 
@@ -248,11 +252,16 @@ namespace ChickenDist.DAL
                     p.ProductCode,
                     p.ProductName,
                     p.Unit,
+                    p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                    p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
+                    p.Unit3Factor,
                     sa.BookQty,
                     sa.ActualQty,
                     (sa.ActualQty - sa.BookQty) AS DiffQty,
                     sa.Notes,
-                    e.EmpName AS CreatedBy
+                    e.EmpName AS CreatedBy,
+                    sa.UnitName AS AdjUnitName,
+                    sa.Factor AS AdjFactor
                 FROM StockAdjustments sa
                 JOIN Products p ON sa.ProductID = p.ProductID
                 JOIN Warehouses w ON sa.WarehouseID = w.WarehouseID
@@ -305,10 +314,11 @@ namespace ChickenDist.DAL
                         END AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        si.Quantity AS QtyOut,
+                        si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
                         s.Notes
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN Products p ON si.ProductID = p.ProductID
                     JOIN Warehouses w ON s.WarehouseID = w.WarehouseID
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -326,11 +336,12 @@ namespace ChickenDist.DAL
                         ISNULL(s.SaleCode, N'---') AS RefCode,
                         ISNULL(c.ClientName, N'---') AS PersonName,
                         w.WarehouseName,
-                        ri.Quantity AS QtyIn,
+                        ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         sr.Notes
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    JOIN Products p ON ri.ProductID = p.ProductID
                     JOIN Warehouses w ON sr.WarehouseID = w.WarehouseID
                     LEFT JOIN Sales s ON sr.SaleID = s.SaleID
                     LEFT JOIN Clients c ON sr.ClientID = c.ClientID
@@ -346,12 +357,13 @@ namespace ChickenDist.DAL
                         ISNULL(s.SaleCode, N'---') AS RefCode,
                         ISNULL(e.EmpName, N'---') AS PersonName,
                         w.WarehouseName,
-                        hi.ReturnedQty AS QtyIn,
+                        hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         dh.Notes
                     FROM HandoverItems hi
                     JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                     JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                    JOIN Products p ON hi.ProductID = p.ProductID
                     JOIN Warehouses w ON dl.WarehouseID = w.WarehouseID
                     JOIN Sales s ON dl.SaleID = s.SaleID
                     LEFT JOIN Employees e ON dh.DriverID = e.EmpID
@@ -367,10 +379,11 @@ namespace ChickenDist.DAL
                         N'تسوية #' + CAST(sa.AdjID AS NVARCHAR(20)) AS RefCode,
                         ISNULL(e.EmpName, N'---') AS PersonName,
                         w.WarehouseName,
-                        CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) ELSE 0.00 END AS QtyIn,
-                        CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) ELSE 0.00 END AS QtyOut,
+                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) ELSE 0.00 END AS QtyIn,
+                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) < 0 THEN ABS((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0))) ELSE 0.00 END AS QtyOut,
                         sa.Notes
                     FROM StockAdjustments sa
+                    JOIN Products p ON sa.ProductID = p.ProductID
                     JOIN Warehouses w ON sa.WarehouseID = w.WarehouseID
                     LEFT JOIN Employees e ON sa.CreatedBy = e.EmpID
                     WHERE sa.ProductID = @pid
@@ -389,11 +402,12 @@ namespace ChickenDist.DAL
                         pu.PurchaseCode AS RefCode,
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
-                        pi.Quantity AS QtyIn,
+                        pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         pu.Notes
                     FROM PurchaseItems pi
                     JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    JOIN Products p ON pi.ProductID = p.ProductID
                     JOIN Warehouses w ON pu.WarehouseID = w.WarehouseID
                     LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
                     WHERE pi.ProductID = @pid AND pu.IsPosted = 1
@@ -409,10 +423,11 @@ namespace ChickenDist.DAL
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        pri.Quantity AS QtyOut,
+                        pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
                         pr.Notes
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    JOIN Products p ON pri.ProductID = p.ProductID
                     JOIN Warehouses w ON pr.WarehouseID = w.WarehouseID
                     LEFT JOIN Suppliers sup ON pr.SupplierID = sup.SupplierID
                     WHERE pri.ProductID = @pid
@@ -427,11 +442,12 @@ namespace ChickenDist.DAL
                         t.TransferCode AS RefCode,
                         N'من: ' + wFrom.WarehouseName AS PersonName,
                         wTo.WarehouseName,
-                        ti.Quantity AS QtyIn,
+                        ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         t.Notes
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    JOIN Products p ON ti.ProductID = p.ProductID
                     JOIN Warehouses wFrom ON t.FromWarehouseID = wFrom.WarehouseID
                     JOIN Warehouses wTo ON t.ToWarehouseID = wTo.WarehouseID
                     WHERE ti.ProductID = @pid AND t.IsPosted = 1
@@ -447,10 +463,11 @@ namespace ChickenDist.DAL
                         N'إلى: ' + wTo.WarehouseName AS PersonName,
                         wFrom.WarehouseName,
                         0.00 AS QtyIn,
-                        ti.Quantity AS QtyOut,
+                        ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
                         t.Notes
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    JOIN Products p ON ti.ProductID = p.ProductID
                     JOIN Warehouses wFrom ON t.FromWarehouseID = wFrom.WarehouseID
                     JOIN Warehouses wTo ON t.ToWarehouseID = wTo.WarehouseID
                     WHERE ti.ProductID = @pid AND t.IsPosted = 1

@@ -1,5 +1,5 @@
-version=2.0.35
+version=2.0.36
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=
-changelog=v2.0.35 - 2026-07-05: رسالة واتساب باسم الشركة من الإعدادات - إيموشن سلة تسوق في الفاتورة - حل خطأ 404 في Cloud Backup Manager
+sha256=4A264061D5B8A5CC0A8FF4E794E83A4BAAFF496473E9E789F3601E8CB464AC6C
+changelog=v2.0.36 - 2026-07-06: Bug fixes and UI improvements
