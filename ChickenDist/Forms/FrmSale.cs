@@ -3993,7 +3993,7 @@ namespace ChickenDist.Forms
 						decimal qty   = Convert.ToDecimal(r["Quantity"]);
 						decimal price = Convert.ToDecimal(r["UnitPrice"]);
 						decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-						sb.AppendLine($"🐥 {name}");
+						sb.AppendLine($"🛒 {name}");
 						sb.AppendLine($"▪ الكمية : {qty:0.##}");
 						sb.AppendLine($"▪ السعر : {price:N2} ج");
 						sb.AppendLine($"▪ الإجمالي : {tot:N2} ج");
@@ -4293,9 +4293,9 @@ namespace ChickenDist.Forms
 
 					g.DrawString(AppConfig.CompanyName, fComp, bNavy, new RectangleF(0, y, w, 28), center);
 					
-					// رسم دجاجتين كشعار
-					DrawChickenSilhouette(g, 35, y - 25, 40);
-					DrawChickenSilhouette(g, w - 75, y - 25, 40);
+					// رسم سلتين للتسوق كشعار
+					DrawShoppingCartIcon(g, 35, y - 20, 38);
+					DrawShoppingCartIcon(g, w - 73, y - 20, 38);
 					y += 40;
 
 					// مربع البيانات الفوقية
@@ -4476,8 +4476,8 @@ namespace ChickenDist.Forms
 					g.DrawRectangle(pNavyThin, 20, y, w - 40, footerH);
 					g.DrawString("شكراً لتعاملكم معنا", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
 					
-					DrawChickenSilhouette(g, 100, y + 10, 25);
-					DrawChickenSilhouette(g, w - 125, y + 10, 25);
+					DrawShoppingCartIcon(g, 100, y + 10, 25);
+					DrawShoppingCartIcon(g, w - 125, y + 10, 25);
 
 					// الدعاية للبرنامج
 					var fPromo = new Font("Arial", 10f, FontStyle.Bold);
@@ -4499,37 +4499,38 @@ namespace ChickenDist.Forms
 			return bmp;
 		}
 
-		private void DrawChickenSilhouette(Graphics g, float x, float y, float size)
+		/// <summary>يرسم أيقونة سلة تسوق بشكل متجهي احترافي بديلاً عن رسم الدجاجة</summary>
+		private void DrawShoppingCartIcon(Graphics g, float x, float y, float size)
 		{
-			using (var brush = new SolidBrush(Color.FromArgb(0, 51, 153)))
+			var cartColor = Color.FromArgb(0, 51, 153);
+			using (var brush = new SolidBrush(cartColor))
+			using (var pen = new Pen(cartColor, size * 0.1f))
+			using (var penThin = new Pen(cartColor, size * 0.07f))
 			{
-				// Body (oval)
-				g.FillEllipse(brush, x, y + size * 0.3f, size, size * 0.7f);
-				// Head (circle)
-				g.FillEllipse(brush, x + size * 0.4f, y, size * 0.5f, size * 0.5f);
+				// Handle (bar at top left)
+				g.DrawLine(pen, x, y, x + size * 0.18f, y);
+				g.DrawLine(pen, x + size * 0.18f, y, x + size * 0.3f, y + size * 0.35f);
 				
-				// Beak (triangle facing right)
-				var beakPoints = new PointF[] {
-					new PointF(x + size * 1.02f, y + size * 0.25f),
-					new PointF(x + size * 0.88f, y + size * 0.18f),
-					new PointF(x + size * 0.88f, y + size * 0.32f)
+				// Cart basket (trapezoid)
+				var basketPts = new PointF[] {
+					new PointF(x + size * 0.25f, y + size * 0.3f),
+					new PointF(x + size * 1.02f, y + size * 0.3f),
+					new PointF(x + size * 0.9f,  y + size * 0.78f),
+					new PointF(x + size * 0.37f, y + size * 0.78f)
 				};
-				g.FillPolygon(brush, beakPoints);
+				g.DrawPolygon(pen, basketPts);
 				
-				// Tail (triangle facing left)
-				var tailPoints = new PointF[] {
-					new PointF(x, y + size * 0.4f),
-					new PointF(x - size * 0.2f, y + size * 0.1f),
-					new PointF(x + size * 0.2f, y + size * 0.5f)
-				};
-				g.FillPolygon(brush, tailPoints);
+				// Vertical divider lines inside basket
+				g.DrawLine(penThin, x + size * 0.55f, y + size * 0.35f, x + size * 0.5f, y + size * 0.74f);
+				g.DrawLine(penThin, x + size * 0.75f, y + size * 0.35f, x + size * 0.72f, y + size * 0.74f);
 				
-				// Legs
-				using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))
-				{
-					g.DrawLine(pen, x + size * 0.4f, y + size * 0.9f, x + size * 0.35f, y + size * 1.2f);
-					g.DrawLine(pen, x + size * 0.6f, y + size * 0.9f, x + size * 0.65f, y + size * 1.2f);
-				}
+				// Left wheel
+				g.FillEllipse(brush, x + size * 0.38f, y + size * 0.84f, size * 0.17f, size * 0.17f);
+				g.FillEllipse(new SolidBrush(Color.White), x + size * 0.43f, y + size * 0.89f, size * 0.07f, size * 0.07f);
+				
+				// Right wheel
+				g.FillEllipse(brush, x + size * 0.75f, y + size * 0.84f, size * 0.17f, size * 0.17f);
+				g.FillEllipse(new SolidBrush(Color.White), x + size * 0.80f, y + size * 0.89f, size * 0.07f, size * 0.07f);
 			}
 		}
 

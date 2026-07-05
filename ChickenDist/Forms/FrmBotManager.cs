@@ -211,7 +211,7 @@ namespace ChickenDist.Forms
             pnlAccountant.Controls.Add(lblAccTitle);
 
             // Use permanent cloud URL instead of local IP address
-            string accUrl = "https://checkin-192ab.web.app/admin.html";
+            string accUrl = $"https://{AppConfig.FirebaseProjectId}.web.app/admin.html";
 
             txtAccUrl = new TextBox
             {
@@ -785,7 +785,7 @@ namespace ChickenDist.Forms
 
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync(
-                    "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands",
+                    $"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/commands",
                     content);
 
                 if (response.IsSuccessStatusCode)
@@ -823,7 +823,7 @@ namespace ChickenDist.Forms
                               "}";
                               
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands", content);
+                var response = await _httpClient.PostAsync($"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/commands", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -918,8 +918,8 @@ namespace ChickenDist.Forms
                 var pricesContent = new StringContent(pricesBody, Encoding.UTF8, "application/json");
                 var clientsContent = new StringContent(clientsBody, Encoding.UTF8, "application/json");
 
-                var pricesRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/prices?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = pricesContent };
-                var clientsRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/clients?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = clientsContent };
+                var pricesRequest = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/metadata/prices?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = pricesContent };
+                var clientsRequest = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{AppConfig.FirebaseProjectId}/databases/(default)/documents/metadata/clients?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = clientsContent };
 
                 var pricesResponse = await _httpClient.SendAsync(pricesRequest);
                 var clientsResponse = await _httpClient.SendAsync(clientsRequest);

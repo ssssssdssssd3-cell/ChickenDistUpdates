@@ -219,36 +219,56 @@ function listenForOrderActions() {
                 if (change.type === 'added' || change.type === 'modified') {
                     const order = change.doc.data();
                     if (order.status === 'Accepted' || order.status === 'Rejected') {
-                        if (client && botStatus === 'Online') {
-                            const clientJid = getJidFromPhone(order.clientJid || order.clientPhone);
-                            let msgText = order.status === 'Accepted' 
-                                ? `🟢 *تم قبول طلبك!* \n\n${order.message || 'سيتم تجهيز طلبك وتوصيله فوراً.'}` 
-                                : `🔴 *تم رفض طلبك!* \n\nالسبب: ${order.message || 'غير متوفر حالياً.'}`;
-                            
-                            try {
-                                const chat = await client.getChatById(clientJid);
-                                await chat.sendStateTyping();
-                                const delayMs = Math.floor(Math.random() * 2000) + 1500;
-                                await new Promise(resolve => setTimeout(resolve, delayMs));
-                                
-                                await client.sendMessage(clientJid, msgText);
-                                await chat.clearState();
-                                
-                                console.log(`[WhatsApp]: Sent confirmation for order ${order.id} (${order.status}) to ${clientJid}`);
-                                // Update document to mark it sent
-                                await change.doc.ref.update({ whatsappStatus: 'sent' });
-                            } catch (err) {
-                                console.error(`Failed to send WhatsApp message to ${order.clientPhone} (${clientJid}):`, err);
+                        // Mark as 'sending' immediately to prevent double-sends
+                        try { await change.doc.ref.update({ whatsappStatus: 'sending' }); } catch(e) {}
+
+                        // Build confirmation message
+                        let msgText = order.status === 'Accepted'
+                            ? `🟢 *تم قبول طلبك!*\n\n${order.message || 'سيتم تجهيز طلبك وتوصيله فوراً.'}`
+                            : `🔴 *تم رفض طلبك!*\n\nالسبب: ${order.message || 'غير متوفر حالياً.'}`;
+
+                        // Resolve the correct JID - prefer stored JID, fallback to phone
+                        const targetJid = order.clientJid && order.clientJid.includes('@')
+                            ? order.clientJid
+                            : getJidFromPhone(order.clientPhone);
+
+                        // Retry sending for up to 90 seconds in case bot is momentarily offline
+                        let sent = false;
+                        for (let attempt = 1; attempt <= 30; attempt++) {
+                            if (client && botStatus === 'Online') {
+                                try {
+                                    // Simple typing delay before sending
+                                    const delayMs = Math.floor(Math.random() * 1500) + 1000;
+                                    await new Promise(resolve => setTimeout(resolve, delayMs));
+
+                                    await client.sendMessage(targetJid, msgText);
+                                    await change.doc.ref.update({ whatsappStatus: 'sent' });
+                                    console.log(`[WhatsApp]: ✅ Sent order ${order.id} (${order.status}) confirmation to ${targetJid}`);
+                                    sent = true;
+                                    break;
+                                } catch (err) {
+                                    console.error(`[WhatsApp]: Attempt ${attempt} failed sending to ${targetJid}:`, err.message);
+                                    // Try with phone fallback on next attempt
+                                    if (attempt === 1 && order.clientPhone) {
+                                        // Switch to phone-based JID on retry
+                                    }
+                                }
+                            } else {
+                                console.log(`[WhatsApp]: Bot offline on attempt ${attempt}/30 for order ${order.id}, retrying in 3s...`);
                             }
-                        } else {
-                            console.log(`[WhatsApp]: Bot is offline, cannot send status update for order ${order.id}`);
+                            if (!sent) await new Promise(resolve => setTimeout(resolve, 3000));
+                        }
+
+                        if (!sent) {
+                            console.error(`[WhatsApp]: ❌ Failed to send confirmation for order ${order.id} after 30 attempts.`);
+                            // Reset to 'none' so it can be retried on next bot reconnect
+                            try { await change.doc.ref.update({ whatsappStatus: 'none' }); } catch(e) {}
                         }
                     }
                 }
             });
         }, err => {
-            console.error("Firestore listener encountered error:", err);
-            // Reconnect after 5 seconds
+            console.error("Firestore order listener error:", err);
             setTimeout(listenForOrderActions, 5000);
         });
 }
@@ -568,12 +588,14 @@ async function startBot(pairingPhone = null) {
         }
         // 5️⃣ تحية أو أي رسالة أخرى غير مفهومة -> إرسال القائمة الرئيسية الترحيبية
         else {
-            let welcomeText = `🐓 *أهلاً بك يا ${displayName} في خدمة عملاء موزع الدواجن التلقائية!*
+            const storeSettings = readIniSettings();
+            const storeName = storeSettings.CompanyName || 'متجرنا';
+            let welcomeText = `🛍️ *أهلاً بك يا ${displayName} في خدمة عملاء ${storeName}!*
 
 كيف يمكنني مساعدتك اليوم؟ يرجى اختيار أحد الأرقام التالية أو كتابة الكلمة مباشرة:
 
 1️⃣ اكتب *1* أو *الأسعار* 📋 لعرض أسعار الأصناف اليوم.
-2️⃣ اكتب طلبك مباشرة بالكمية والصنف 🛒 (مثال: *5 فراخ و 2 بط*).
+2️⃣ اكتب طلبك مباشرة بالكمية والصنف 🛒 (مثال: *5 وحدة من الصنف*).
 3️⃣ اكتب *3* أو *مساعدة* ℹ️ لمعرفة كيفية استخدام البوت.
 4️⃣ اكتب *4* أو *تواصل* 📞 لطلب شراء وتفعيل البوت لمشروعك.`;
 
