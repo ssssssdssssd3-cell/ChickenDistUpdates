@@ -49,6 +49,12 @@ namespace ChickenDist.Core
             set => Set("CompanyPhone2", value);
         }
 
+        public static string CompanyAddress
+        {
+            get => Get("CompanyAddress", "");
+            set => Set("CompanyAddress", value);
+        }
+
         public static string ReceiptPrintMode
         {
             get => Get("ReceiptPrintMode", "Detailed");

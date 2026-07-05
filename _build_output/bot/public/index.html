@@ -226,19 +226,38 @@
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.2);
         }
+
+        .text-orange {
+            color: var(--primary-color) !important;
+        }
+
+        .store-info-bar a {
+            color: rgba(255, 255, 255, 0.85);
+            transition: color 0.2s;
+        }
+        .store-info-bar a:hover {
+            color: var(--primary-color) !important;
+        }
     </style>
 </head>
 <body>
 
     <!-- App Header -->
     <div class="app-header mb-4">
-        <div class="container d-flex align-items-center gap-3">
-            <div class="store-logo-icon">
-                <i class="fa-solid var(--logo-icon, fa-store)"></i>
+        <div class="container">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="store-logo-icon">
+                    <i class="fa-solid fa-store text-orange"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold" id="lblCompanyName">جاري التحميل...</h3>
+                    <p class="mb-0 small opacity-75" id="lblSubtitle">المنيو الرقمي والطلب المباشر 📱🛒</p>
+                </div>
             </div>
-            <div>
-                <h4 class="mb-1 fw-bold" id="lblCompanyName">متجر الهدى</h4>
-                <p class="mb-0 small opacity-75">اطلب مباشرة من المنيو الرقمي الآن 📱🛒</p>
+            <div class="store-info-bar d-flex flex-wrap gap-3 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.9rem;">
+                <div id="lblAddressContainer" style="display:none;"><i class="fa-solid fa-location-dot text-orange me-1"></i> <span id="lblAddress"></span></div>
+                <div id="lblPhone1Container" style="display:none;"><i class="fa-solid fa-phone text-orange me-1"></i> <a href="" id="lblPhone1"></a></div>
+                <div id="lblPhone2Container" style="display:none;"><i class="fa-solid fa-phone text-orange me-1"></i> <a href="" id="lblPhone2"></a></div>
             </div>
         </div>
     </div>
@@ -343,14 +362,63 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        const projectID = "checkin-192ab";
+        // Resolve projectID dynamically from the hosting URL
+        let projectID = "checkin-192ab"; // Default fallback
+        const hostname = window.location.hostname;
+        if (hostname.endsWith(".web.app") || hostname.endsWith(".firebaseapp.com")) {
+            projectID = hostname.split('.')[0];
+        }
+
         let products = [];
         let cart = {};
 
-        // Fetch products list from Firestore document metadata/prices on startup
+        // Fetch store info and prices from Firestore on startup
         document.addEventListener('DOMContentLoaded', () => {
+            fetchStoreInfo();
             fetchPricesFromCloud();
         });
+
+        async function fetchStoreInfo() {
+            try {
+                const url = `https://firestore.googleapis.com/v1/projects/${projectID}/databases/(default)/documents/metadata/store_info`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    // Fallback to default name if metadata document doesn't exist yet
+                    document.getElementById('lblCompanyName').innerText = "المنيو الرقمي";
+                    return;
+                }
+                const data = await response.json();
+                if (data.fields) {
+                    const fields = data.fields;
+                    const companyName = fields.companyName ? fields.companyName.stringValue : "المنيو الرقمي";
+                    const phone1 = fields.phone1 ? fields.phone1.stringValue : "";
+                    const phone2 = fields.phone2 ? fields.phone2.stringValue : "";
+                    const address = fields.address ? fields.address.stringValue : "";
+
+                    document.getElementById('lblCompanyName').innerText = companyName;
+
+                    if (address) {
+                        document.getElementById('lblAddress').innerText = address;
+                        document.getElementById('lblAddressContainer').style.display = 'block';
+                    }
+                    if (phone1) {
+                        const cleanP1 = phone1.trim();
+                        document.getElementById('lblPhone1').innerText = cleanP1;
+                        document.getElementById('lblPhone1').href = `tel:${cleanP1}`;
+                        document.getElementById('lblPhone1Container').style.display = 'block';
+                    }
+                    if (phone2) {
+                        const cleanP2 = phone2.trim();
+                        document.getElementById('lblPhone2').innerText = cleanP2;
+                        document.getElementById('lblPhone2').href = `tel:${cleanP2}`;
+                        document.getElementById('lblPhone2Container').style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching store info:", err);
+                document.getElementById('lblCompanyName').innerText = "المنيو الرقمي";
+            }
+        }
 
         async function fetchPricesFromCloud() {
             try {
@@ -359,10 +427,6 @@
                 if (!response.ok) throw new Error("Failed to fetch prices.");
                 
                 const data = await response.json();
-                
-                // Parse company name from configuration if available or set default
-                // In a production system, metadata could also store the merchant name.
-                document.getElementById('lblCompanyName').innerText = "منيو المبيعات المباشر";
 
                 if (data.fields && data.fields.list && data.fields.list.arrayValue && data.fields.list.arrayValue.values) {
                     const values = data.fields.list.arrayValue.values;
@@ -567,6 +631,12 @@
 
             if (!name || !phone) {
                 alert("يرجى ملء خانة الاسم ورقم الهاتف.");
+                return;
+            }
+
+            const egyptPhoneRegex = /^01[0125][0-9]{8}$/;
+            if (!egyptPhoneRegex.test(phone)) {
+                alert("⚠️ يرجى إدخال رقم هاتف محمول صحيح مكون من 11 رقماً ويبدأ بـ (010, 011, 012, 015)");
                 return;
             }
 

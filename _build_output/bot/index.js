@@ -43,6 +43,57 @@ if (fs.existsSync(configPath)) {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ── INI & Store Info Syncer ───────────────────────────────
+function readIniSettings() {
+    const iniPath = path.join(__dirname, '..', 'app_settings.ini');
+    const settings = {
+        CompanyName: "منيو المتجر",
+        CompanyPhone1: "",
+        CompanyPhone2: "",
+        CompanyAddress: ""
+    };
+    if (fs.existsSync(iniPath)) {
+        try {
+            const content = fs.readFileSync(iniPath, 'utf8');
+            const lines = content.split(/\r?\n/);
+            for (const line of lines) {
+                const cleanLine = line.trim();
+                if (!cleanLine || cleanLine.startsWith(';') || cleanLine.startsWith('#')) continue;
+                const parts = cleanLine.split('=');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const val = parts.slice(1).join('=').trim();
+                    if (key in settings) {
+                        settings[key] = val;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to read app_settings.ini in bot:', e);
+        }
+    }
+    return settings;
+}
+
+async function updateStoreInfoInFirestore() {
+    const storeInfo = readIniSettings();
+    try {
+        await db.collection('metadata').doc('store_info').set({
+            companyName: storeInfo.CompanyName,
+            phone1: storeInfo.CompanyPhone1,
+            phone2: storeInfo.CompanyPhone2,
+            address: storeInfo.CompanyAddress,
+            updatedTime: new Date().toISOString()
+        });
+        console.log('[FirestoreStoreInfo]: Store info synced successfully:', storeInfo);
+    } catch (err) {
+        console.error('Failed to sync store info to Firestore:', err);
+    }
+}
+
+// Call on startup
+updateStoreInfoInFirestore().catch(e => console.error(e));
+
 let botStatus = 'Offline'; // Offline, Connecting, QR_Ready, Online
 let latestQrCode = '';
 let client = null;
@@ -341,6 +392,13 @@ async function startBot(pairingPhone = null) {
 
     // Handle incoming customer chats
     client.on('message', async msg => {
+        // Ignore messages older than 60 seconds (prevents backlog spam on startup)
+        const messageAge = Math.floor(Date.now() / 1000) - msg.timestamp;
+        if (messageAge > 60) {
+            console.log(`[Message]: Ignored old message (Age: ${messageAge}s) from ${msg.from}`);
+            return;
+        }
+
         const text = msg.body.trim();
         const from = msg.from;
         const lowerText = text.toLowerCase();

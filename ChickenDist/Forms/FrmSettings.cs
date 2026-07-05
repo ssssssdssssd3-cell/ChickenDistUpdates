@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
@@ -12,6 +12,7 @@ namespace ChickenDist.Forms
         private TextBox txtCompanyName;
         private TextBox txtCompanyPhone1;
         private TextBox txtCompanyPhone2;
+        private TextBox txtCompanyAddress;
         private TextBox txtShopLogoPath;
         private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
@@ -116,6 +117,21 @@ namespace ChickenDist.Forms
             };
             txtCompanyPhone2.Text = AppConfig.CompanyPhone2;
             this.Controls.Add(txtCompanyPhone2);
+            y += 40;
+
+            // ── عنوان الشركة ─────────────────────────────────────
+            AddLabel("عنوان الشركة / النشاط:", 20, ref y, 0);
+            txtCompanyAddress = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyAddress.Text = AppConfig.CompanyAddress;
+            this.Controls.Add(txtCompanyAddress);
             y += 40;
 
             // ── شعار الشركة ──────────────────────────────────────
@@ -956,6 +972,7 @@ namespace ChickenDist.Forms
                 };
                 AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
                 AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
