@@ -352,259 +352,325 @@ async function startBot(pairingPhone = null) {
         console.log('Bot disconnected:', reason);
     });
 
-    // ── أرقام التواصل والدعم للبوت (يمكنك تعديلها بأرقامك الفعلية) ─────────────────
-    const BOT_SALES_PHONE  = '01016517586'; // رقم شراء وتفعيل البوت
+    // ── البوت المصري - شخصية تفاعلية بالعامية المصرية ────────────────────
+    const BOT_SALES_PHONE  = '01016517586';
 
-    // دالة للتحقق مما إذا كان النص يحتوي على اسم صنف من قائمة الأسعار
+    // تحية حسب الوقت
+    function getTimeGreeting() {
+        const h = new Date().getHours();
+        if (h >= 5  && h < 12) return 'صباح الفل';
+        if (h >= 12 && h < 17) return 'مسا الخير';
+        if (h >= 17 && h < 21) return 'مسا النور';
+        return 'مسا الخير يابخت';
+    }
+
+    // اختيار عشوائي من مصفوفة
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    // القائمة الرئيسية - تتغير كل مرة
+    function getMainMenu(name, storeName, showLink) {
+        const intros = [
+            `هلا يا *${name}* في خدمتك دايما، إيه اللي نقدر نعملهلك انهارده؟ صلي على النبي`,
+            `أهلاً بيك يا *${name}*! إيه اللي تأمر بيه النهاردة؟ أنا هنا للخدمة ف أي وقت`,
+            `نورت يا *${name}*! تفضل أنا خدمتك`,
+            `مرحباً *${name}*! إيه إللي يتعمل معاك؟ كلنا في خدمتك`,
+        ];
+        let msg = pick(intros) + `\n\n`;
+        msg += `1️⃣ اكتب *1* أو *الأسعار* 📋 عشان شوف أسعار النهاردة.\n`;
+        msg += `2️⃣ كاتب *طلبك* في رسالة مباشرة 🛒 (مثال: *5 وحدة كذا*)\n`;
+        msg += `3️⃣ اكتب *3* أو *مساعدة* ℹ️ لو محتاج تعليمات.\n`;
+        msg += `4️⃣ اكتب *4* أو *تواصل* 📞 لو عايز تتكلم معنا.`;
+        if (showLink) {
+            msg += `\n\n💡 *أنت مسجل عندنا؟* ابعت *رقم تليفونك المسجل* في رسالة وأنا هربط حسابك.`;
+        }
+        return msg;
+    }
+
+    // التعرف على نية العميل (بالعامية المصرية)
+    function detectIntent(text) {
+        const t = text.toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه');
+        // شكر
+        if (/شكرا|تسلم|مشكور|مبروك|بارك|خليك تعيش|merci|thanks|thank|bravo|برافو|تمام/.test(t)) return 'thanks';
+        // شكوى
+        if (/زهقت|متأخر|متأخره|بطيئ|مش كويس|وش|زبالة|واحد بس|كده|زفت|مش طيب|غلط|مش صح|ليه كده/.test(t)) return 'complaint';
+        // متابعة طلب
+        if (/طلبي|اوردري|وين طلبي|فين طلبي|حالة طلبي|وصل طلبي|اتاكلمو معايا|متى هيجي|هيتوصل امتى|متى هيوصل|موعد التسليم|تعديل طلبي|الغا طلبي/.test(t)) return 'trackorder';
+        // عرض سعر منتجمحدد
+        if (/بكام|بكم|سعر ال|بكم ال|عندكم|عندك|متوفر|فيه عندك|فيه عندكم|شوفلوك/.test(t)) return 'productquery';
+        // تحيات
+        if (/^سلام|^هلا|^هاي|^هاية|^hi$|^hello|^صباح|^مسا|^مرحب|^عامل إيه|^إيه الأخبار/.test(t)) return 'greeting';
+        // جمل لا تخص العمل
+        if (/كيفك|كيف حالك|عامل إيه|عامل ايه|إيه الأخبار|ايه الاخبار/.test(t)) return 'smalltalk';
+        return null;
+    }
+
+    // دالة للتحقق من الاسم من قائمة الأسعار
     function checkContainsProduct(messageText, pricesList) {
         if (!pricesList || pricesList.length === 0) return false;
-        
-        // تنظيف النص وتبسيطه للمقارنة
-        const cleanMsg = messageText.toLowerCase()
-            .replace(/[أإآ]/g, 'ا')
-            .replace(/ة/g, 'ه')
-            .replace(/\s+/g, '');
-
+        const cleanMsg = messageText.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/\s+/g, '');
         for (const p of pricesList) {
             if (!p.ProductName) continue;
-            
-            // تنظيف اسم الصنف
-            const cleanProd = p.ProductName.toLowerCase()
-                .replace(/[أإآ]/g, 'ا')
-                .replace(/ة/g, 'ه')
-                .replace(/\s+/g, '');
-
-            if (cleanProd.length > 2) {
-                if (cleanMsg.includes(cleanProd)) {
-                    return true;
-                }
-            } else if (cleanProd.length > 0) {
-                // للأصناف ذات الأسماء القصيرة جداً، نتأكد من مطابقة كلمة كاملة
-                const words = messageText.toLowerCase().split(/[\s\d\+\-\*\/\\_]+/);
-                if (words.includes(cleanProd)) {
-                    return true;
-                }
-            }
+            const cleanProd = p.ProductName.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/\s+/g, '');
+            if (cleanProd.length > 2 && cleanMsg.includes(cleanProd)) return true;
         }
         return false;
     }
 
-    // Helper function for anti-ban safe replies with simulated typing delay
+    // رد آمن مع مؤشر الكتابة
     async function safeReply(msg, replyText) {
         try {
             const chat = await msg.getChat();
-            // Start typing indicator
             await chat.sendStateTyping();
-            
-            // Random delay between 1.5 and 3.5 seconds
             const delayMs = Math.floor(Math.random() * 2000) + 1500;
             await new Promise(resolve => setTimeout(resolve, delayMs));
-            
-            // Send reply and clear typing state
             await msg.reply(replyText);
             await chat.clearState();
         } catch (err) {
-            console.error('safeReply encountered error:', err);
-            // Fallback to direct reply if state fails
+            console.error('safeReply error:', err);
             try { await msg.reply(replyText); } catch(e) {}
         }
     }
 
-    // Handle incoming customer chats
+    // ── معالجة الرسائل ──────────────────────────────────
     client.on('message', async msg => {
-        // Ignore messages older than 60 seconds (prevents backlog spam on startup)
         const messageAge = Math.floor(Date.now() / 1000) - msg.timestamp;
         if (messageAge > 60) {
             console.log(`[Message]: Ignored old message (Age: ${messageAge}s) from ${msg.from}`);
             return;
         }
 
+        // رسائل صوتية أو صور
+        if (msg.type === 'ptt' || msg.type === 'audio') {
+            await safeReply(msg, pick([
+                `يا *${(await msg.getContact()).pushname || 'صديقي'}* متقدرش على الرسائل الصوتية دلوقتي بس كتبلي طلبك وأنا هجيبلك ف الحال 😊`,
+                `فيه مشكلة ف الفويس ميسيج دلوقتي، كتبلي طلبك كتابة وهنجيبلك فوراً ✍️`
+            ]));
+            return;
+        }
+
+        if (msg.type === 'image' || msg.type === 'video' || msg.type === 'document') {
+            await safeReply(msg, pick([
+                `شكراً على التواصل، بس مولعرفش أفتح صور وملفات دلوقتي خد خاطري. كتبلي طلبك وأنا هجيبلك! ✏️`,
+                `مش قادر أفتح الصورة دي معايا، بس اكتبلي طلبك ف رسالة وأنا هسجلهلك حالاً خي لو! 😊`
+            ]));
+            return;
+        }
+
         const text = msg.body.trim();
         const from = msg.from;
-        const lowerText = text.toLowerCase();
+        const lowerText = text.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
 
         const phone = from.split('@')[0];
         const contact = await msg.getContact();
-        const whatsappPushName = contact.pushname || 'عميل مجهول';
-        
-        // جلب قائمة العملاء لمطابقة الاسم
+        const whatsappPushName = contact.pushname || 'صديقي';
+
         const clients = readJSON('clients.json', []);
-        
-        // 1. Resolve actual phone number from mappings or JID
         const actualPhone = clientMappings[phone] || phone;
         const cleanPhone = normalizePhone(phone);
         const cleanActualPhone = normalizePhone(actualPhone);
-        
-        // 2. Search by both JID user ID and the resolved phone
         const matchedClient = clients.find(c => {
             const cleanCPhone = normalizePhone(c.Phone);
             return cleanCPhone === cleanPhone || cleanCPhone === cleanActualPhone;
         });
-        
+
         const displayName = matchedClient ? matchedClient.ClientName : whatsappPushName;
-        // Display registered phone number if matched, otherwise friendly format of actual resolved phone number
         const orderPhone = matchedClient ? matchedClient.Phone : actualPhone;
+        const storeSettings = readIniSettings();
+        const storeName = storeSettings.CompanyName || 'متجرنا';
 
-        console.log(`[Message Match]: JID=${from}, Phone=${phone}, MappedPhone=${clientMappings[phone] || 'none'}, ResolvedPhone=${orderPhone}, MatchedName=${displayName}`);
+        console.log(`[Message]: JID=${from}, Name=${displayName}, Mapped=${clientMappings[phone] || 'none'}`);
 
-        // Check if user is sending an Egypt mobile number to link/register their account
+        // محاولة ربط رقم تليفون مصري
         const cleanText = text.replace(/\s+/g, '');
         const isEgyptPhone = /^(01[0125]\d{8})$/.test(cleanText) || /^(201[0125]\d{8})$/.test(cleanText);
-        
         if (isEgyptPhone && !matchedClient) {
             const cleanTargetPhone = normalizePhone(cleanText);
             const foundInDb = clients.find(c => normalizePhone(c.Phone) === cleanTargetPhone);
             if (foundInDb) {
-                // Link account to existing client!
                 clientMappings[phone] = foundInDb.Phone;
                 try {
-                    await db.collection('client_mappings').doc(phone).set({
-                        phone: foundInDb.Phone,
-                        name: foundInDb.ClientName,
-                        updatedTime: new Date().toISOString()
-                    });
-                    console.log(`[Mappings]: Mapped LID ${phone} to registered phone ${foundInDb.Phone} (${foundInDb.ClientName})`);
-                    await safeReply(msg, `✅ تم ربط حساب الواتساب الخاص بك بالعميل المسجل لدينا: *${foundInDb.ClientName}* بنجاح!\nيمكنك الآن كتابة طلبك مباشرة في رسالة (مثال: *5 فراخ و 2 بط*).`);
-                } catch (err) {
-                    console.error('Failed to save mapping to Firestore:', err);
-                    await safeReply(msg, 'حدث خطأ أثناء ربط الحساب، يرجى المحاولة مرة أخرى لاحقاً.');
-                }
+                    await db.collection('client_mappings').doc(phone).set({ phone: foundInDb.Phone, name: foundInDb.ClientName, updatedTime: new Date().toISOString() });
+                    await safeReply(msg, `عظيم! تم ربط حسابك بالعميل *${foundInDb.ClientName}* بنجاح الحين والحين! 🎉\nدلوقتي تقدر تكتبلنا طلبك وأحنا هنجهزهلك على طول! 😊`);
+                } catch(e) { await safeReply(msg, 'حصل خطأ ف الربط، جرب تاني من فضلك.'); }
                 return;
             } else {
-                // Register LID as a new client mapping!
-                // This lets the accountant see their phone number for communication
                 clientMappings[phone] = cleanText;
                 try {
-                    await db.collection('client_mappings').doc(phone).set({
-                        phone: cleanText,
-                        name: whatsappPushName,
-                        updatedTime: new Date().toISOString()
-                    });
-                    console.log(`[Mappings]: Registered new client LID ${phone} with phone ${cleanText}`);
-                    await safeReply(msg, `✅ تم تسجيل رقم هاتفك: *${text}* بنجاح كعميل جديد لدينا!\nيمكنك الآن إرسال طلبك مباشرة وسيقوم المحاسب بالتواصل معك على هذا الرقم لتأكيد تفاصيل الطلب.`);
-                } catch (err) {
-                    console.error('Failed to save new client mapping to Firestore:', err);
-                    await safeReply(msg, 'حدث خطأ أثناء تسجيل حسابك، يرجى المحاولة مرة أخرى لاحقاً.');
-                }
+                    await db.collection('client_mappings').doc(phone).set({ phone: cleanText, name: whatsappPushName, updatedTime: new Date().toISOString() });
+                    await safeReply(msg, `تمام! تم تسجيل رقم *${text}* بنجاح! دلوقتي تقدر تبعتلنا طلبك والمحاسب هيتواصل معاك لتأكيد التفاصيل. 🎉`);
+                } catch(e) { await safeReply(msg, 'حصل خطأ ف التسجيل، جرب تاني.'); }
                 return;
             }
         }
 
-        // جلب قائمة الأسعار للفحص
         const prices = readJSON('prices.json', []);
 
-        // تحديد نوع الرسالة
-        const isPriceQuery = text === '1' || 
-                             text === 'الأسعار' || 
-                             text === 'الاسعار' ||
-                             lowerText.includes('سعر') || 
-                             lowerText.includes('اسعار') || 
-                             lowerText.includes('أسعار') || 
-                             lowerText.includes('بكام') || 
-                             lowerText.includes('بكم');
-
-        const isHelpQuery = text === '3' || 
-                            text === 'مساعدة' || 
-                            text === 'المساعدة' || 
-                            lowerText.includes('help') || 
-                            lowerText.includes('كيف');
-
-        const isContactQuery = text === '4' || 
-                               text === 'تواصل' || 
-                               text === 'اتصال' || 
-                               lowerText.includes('رقم') || 
-                               lowerText.includes('تليفون');
-
-        // قائمة التحيات الشائعة
-        const greetings = ['السلام عليكم', 'مرحبا', 'مرحب', 'هلا', 'سلام', 'صباح الخير', 'مساء الخير', 'hi', 'hello', 'اهلين'];
-        const isGreeting = greetings.includes(lowerText) || greetings.some(g => lowerText.startsWith(g));
-
-        // فحص إذا كان النص يمثل طلباً (يحتوي على اسم صنف من القائمة)
+        // تحديد نوع الطلب
+        const isPriceQuery = /^1$|الاسعار|الأسعار|سعر|بكام|بكم|ثمن/.test(lowerText);
+        const isHelpQuery = /^3$|مساعده|مساعدة|كيف|بجربه|help/.test(lowerText);
+        const isContactQuery = /^4$|تواصل|اتصال|تليفونكم|هاتف|مدير|ادارة/.test(lowerText);
         const hasProduct = checkContainsProduct(text, prices);
+        const intent = detectIntent(lowerText);
 
-        // 1️⃣ استعلام الأسعار
+        // ─ 1. استعلام الأسعار
         if (isPriceQuery) {
             if (prices.length === 0) {
-                await safeReply(msg, 'عذراً، قائمة الأسعار غير متوفرة حالياً.');
+                await safeReply(msg, pick([
+                    `واللهيا *${displayName}*، الأسعار متجددتيش دلوقتي! كلمنا بكرة وهنزودك بأحدث الأسعار 🙏`,
+                    `لسة قائمة أسعار متاحة دلوقتي، اتصل بنا على طول.`
+                ]));
                 return;
             }
-            let replyText = '📋 *قائمة أسعار اليوم:*\n\n';
-            prices.forEach(p => {
-                replyText += `▪️ *${p.ProductName}*: ${p.Price} ج.م\n`;
-            });
-            replyText += '\n*لطلب أوردر، اكتب الصنف والكمية مباشرة في رسالة.*\n*مثال:* 5 فراخ و 2 بط';
+            let replyText = pick([`📌 *أسعار النهاردة يا ${displayName}:*`, `📌 *قائمة أسعارنا ليك يا ${displayName}:*`]) + `\n\n`;
+            prices.forEach(p => { replyText += `▪️ *${p.ProductName}*: ${p.Price} ج.م\n`; });
+            replyText += pick([
+                `\nعايز تطلب؟ بس اكتب الصنف والكمية وأنا هسجلهلك في الحال! 😊`,
+                `\nموزبكم حاجة تطلبها؟ اكتب طلبك وأحنا هنجهزهلك! 🛒`
+            ]);
             await safeReply(msg, replyText);
+            return;
         }
-        // 2️⃣ استعلام المساعدة
-        else if (isHelpQuery) {
-            const helpText = `ℹ️ *دليل الاستخدام السريع للبوت:*
 
-- *لمعرفة الأسعار*: اكتب كلمة *الأسعار* أو رقم *1*.
-- *لطلب أوردر جديد*: اكتب طلبك مباشرة بالكمية والصنف دون الحاجة لكلمات إضافية.
-  *(مثال: 5 كيلو فراخ و 2 بط)*
-- *لطلب شراء البوت وتفعيل الخدمة*: اكتب كلمة *تواصل* أو رقم *4*.`;
-            await safeReply(msg, helpText);
+        // ─ 2. مساعدة
+        if (isHelpQuery) {
+            await safeReply(msg, `👋 تمام يا *${displayName}*! إيه اللي تحتاجه:
+
+🔵 *عشان تعرف الأسعار:* اكتب *الأسعار* أو *1*
+
+🔵 *عشان تطلب:* اكتب طلبك مباشرة بالكمية والصنف
+   مثال: *10 وحدة كذا و 5 وحدة كيت*
+
+🔵 *عشان تتابع طلبك:* اكتب *طلبي*
+
+🔵 *عشان تتواصل مع المدير:* اكتب *تواصل*
+
+أي سؤال تاني أنا هنا للخدمة! 😊`);
+            return;
         }
-        // 3️⃣ استعلام أرقام التواصل وشراء البوت
-        else if (isContactQuery) {
-            const contactText = `📞 *أرقام التواصل والدعم الفني:*
 
-🤖 *لشراء وتفعيل بوت واتساب لمشروعك:*
-- للتواصل مع مطور البوت: *${BOT_SALES_PHONE}*
+        // ─ 3. تواصل
+        if (isContactQuery) {
+            await safeReply(msg, `📞 حاضر يا *${displayName}*!
 
-💬 *للاستفسارات العامة:*
-- الإدارة: يسعدنا دائماً تواصلك معنا مباشرة!`;
-            await safeReply(msg, contactText);
+👤 للتواصل مع الإدارة مباشرة، كلمنا على أي وقت.
+
+🤖 لشراء بوت واتساب لمشروعك:
+📱 *${BOT_SALES_PHONE}*`);
+            return;
         }
-        // 4️⃣ تقديم طلب تلقائي (لو الرسالة تحتوي على اسم صنف)
-        else if (hasProduct) {
+
+        // ─ 4. شكر
+        if (intent === 'thanks') {
+            await safeReply(msg, pick([
+                `على إيه يا *${displayName}*! أحنا في خدمتك دايما، لو عايز حاجة تاني بس اكتب لنا! 😊`,
+                `ربنا يخليك يا *${displayName}*! رضاك سعادتنا، الطلب الجاي دايما منعندنا! 💚`,
+                `العفو يا *${displayName}*، دا شغلنا! بلا ملل حاجة تاني أنا هنا 🙌`,
+                `يسعدنا خدمتك يا *${displayName}*! هنعمل طلب جديد حبة؟ 🛒`
+            ]));
+            return;
+        }
+
+        // ─ 5. شكوى
+        if (intent === 'complaint') {
+            await safeReply(msg, pick([
+                `آسف جداً يا *${displayName}*، بنعمل إنها تتحل! كلم الإدارة مباشرة عشان نحل الموضوع في الحال 🙏`,
+                `معلش يا *${displayName}*، كلمنا وأحنا هنحلها على طول. اكتب *تواصل* وأحنا هنكلمك في الحال! 📞`,
+                `واللهيا متآسفين، هتكلموا مع *${displayName}* في الحال. إيه المشكلة بالتحديد؟`
+            ]));
+            return;
+        }
+
+        // ─ 6. متابعة طلب
+        if (intent === 'trackorder') {
+            const localOrders = readJSON('orders.json', []);
+            const myOrders = localOrders.filter(o => normalizePhone(o.clientPhone) === normalizePhone(orderPhone) || o.clientJid === from);
+            if (myOrders.length === 0) {
+                await safeReply(msg, pick([
+                    `دورت لك يا *${displayName}*، ملقيتش طلب ليك عندنا دلوقتي. عايز تطلب حاجة دلوقتي؟ 🛒`,
+                    `مفيش طلبات دلوقتي يا *${displayName}*. لو عايز تطلب اكتب الصنف والكمية وأنا هسجلهلك!`
+                ]));
+            } else {
+                const last = myOrders[0];
+                const statusMap = { Pending: '⛳ بيتراجع من المحاسب', Accepted: '✅ اتقبل', Rejected: '❌ اترفض' };
+                const statusText = statusMap[last.status] || last.status;
+                await safeReply(msg, `📦 *آخر طلب ليك يا ${displayName}:*\n\n🗒️ *التفاصيل:* ${last.details}\n📊 *الحالة:* ${statusText}\n🕒 *الوقت:* ${new Date(last.time).toLocaleString('ar-EG')}${last.message ? '\n\n💬 *رسالة:* ' + last.message : ''}`);
+            }
+            return;
+        }
+
+        // ─ 7. سؤال عن سعر منتج محدد
+        if (intent === 'productquery') {
+            const matchedPrice = prices.find(p => {
+                const cleanProd = p.ProductName.toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/\s+/g,'');
+                return lowerText.replace(/\s+/g,'').includes(cleanProd) && cleanProd.length > 2;
+            });
+            if (matchedPrice) {
+                await safeReply(msg, pick([
+                    `طبعاً يا *${displayName}*! ✨ *${matchedPrice.ProductName}* بسعر *${matchedPrice.Price} ج.م* النهاردة.\n\nعايز طلب؟ بس اكتبلي الكمية وأنا هسجلهلك حالاً! 😊`,
+                    `أيوه! عندنا *${matchedPrice.ProductName}* بسعر *${matchedPrice.Price} ج.م*. عايز كم كيلو؟ اكتبلي! 🛒`
+                ]));
+            } else {
+                await safeReply(msg, `👀 ملقيتش الصنف ده في قائمتنا دلوقتي يا *${displayName}*! اكتب *الأسعار* عشان تشوف كل ما عندنا!`);
+            }
+            return;
+        }
+
+        // ─ 8. تحية عادية → إرسال القائمة مع تحية بالوقت
+        if (intent === 'greeting') {
+            const greeting = getTimeGreeting();
+            const greetReplies = [
+                `${greeting} يا *${displayName}*! أهلاً بيك في *${storeName}*. إيه اللي نقدر نعملهلك النهاردة؟`,
+                `${greeting}! نورتينا يا *${displayName}* في *${storeName}* ✨`,
+                `هلا وسهلاً يا *${displayName}*! ${greeting}! تفضل بينا!`,
+            ];
+            await safeReply(msg, pick(greetReplies) + `\n\n` + getMainMenu(displayName, storeName, !matchedClient));
+            return;
+        }
+
+        // ─ 9. Smalltalk (كيفك، إيه الأخبار)
+        if (intent === 'smalltalk') {
+            await safeReply(msg, pick([
+                `أنا تمام يا *${displayName}* وجاهز لخدمتك! إيه اللي تحتاجه اليوم؟ 🛒`,
+                `بخير ونشاط وجاهزين للخدمة يا *${displayName}*! عايز تطلب حاجة؟ 😊`,
+                `كويس حمدلله! إيه اللي نعملهلك يا *${displayName}*؟ 👋`
+            ]));
+            return;
+        }
+
+        // ─ 10. طلب تلقائي (الرسالة فيها صنف موجود)
+        if (hasProduct) {
             const orderId = Date.now().toString();
             const newOrder = {
                 id: orderId,
                 clientPhone: orderPhone,
-                clientJid: from, // Store full JID for replies
+                clientJid: from,
                 clientName: displayName,
-                details: text, // كامل الرسالة هي تفاصيل الطلب
+                details: text,
                 time: new Date().toISOString(),
-                status: 'Pending', // Pending, Accepted, Rejected
+                status: 'Pending',
                 whatsappStatus: 'none',
                 message: ''
             };
-            
-            // حفظ محلي
             const localOrders = readJSON('orders.json', []);
             localOrders.unshift(newOrder);
             writeJSON('orders.json', localOrders);
-
-            // رفع سحابي
             try {
                 await db.collection('orders').doc(orderId).set(newOrder);
                 console.log(`[Firestore]: Auto-detected order ${orderId} from ${displayName}`);
             } catch (err) {
-                console.error('Failed to save auto-detected order in Firestore:', err);
+                console.error('Failed to save order:', err);
             }
-            
-            await safeReply(msg, `✅ أهلاً يا *${displayName}*، تم استلام طلبك بنجاح وجاري مراجعته من قبل الإدارة. ستصلك رسالة هنا فور قبول الطلب وتجهيزه!`);
+            await safeReply(msg, pick([
+                `عظيم! أوردرك وصلنا يا *${displayName}* وبيتراجع دلوقتي. المحاسب هيردعليك بالتأكيد حالاً! 😊`,
+                `تمام يا *${displayName}*! طلبك اتسجل ومش هيطول. انتظر تأكيد المحاسب على الواتساب! 🕒`,
+                `بسم الله! استلمنا طلبك يا *${displayName}* وبجري مراجعته. ستوصلك رسالة هنا فور قبول الطلب! 📬`,
+                `جامد يا *${displayName}*! سجلنا طلبك دلوقتي وهيبقى تقدر تتابع حالته بكتابة *طلبي*! 🚀`
+            ]));
+            return;
         }
-        // 5️⃣ تحية أو أي رسالة أخرى غير مفهومة -> إرسال القائمة الرئيسية الترحيبية
-        else {
-            const storeSettings = readIniSettings();
-            const storeName = storeSettings.CompanyName || 'متجرنا';
-            let welcomeText = `🛍️ *أهلاً بك يا ${displayName} في خدمة عملاء ${storeName}!*
 
-كيف يمكنني مساعدتك اليوم؟ يرجى اختيار أحد الأرقام التالية أو كتابة الكلمة مباشرة:
-
-1️⃣ اكتب *1* أو *الأسعار* 📋 لعرض أسعار الأصناف اليوم.
-2️⃣ اكتب طلبك مباشرة بالكمية والصنف 🛒 (مثال: *5 وحدة من الصنف*).
-3️⃣ اكتب *3* أو *مساعدة* ℹ️ لمعرفة كيفية استخدام البوت.
-4️⃣ اكتب *4* أو *تواصل* 📞 لطلب شراء وتفعيل البوت لمشروعك.`;
-
-            if (!matchedClient) {
-                welcomeText += `\n\n💡 *هل أنت عميل مسجل لدينا؟*\nاكتب *رقم تليفونك المسجل* في رسالة الآن لربط حسابك باسمك الحقيقي وتسهيل تأكيد طلباتك!`;
-            }
-
-            await safeReply(msg, welcomeText);
-        }
+        // ─ 11. رسالة غير مفهومة → القائمة الرئيسية
+        await safeReply(msg, getMainMenu(displayName, storeName, !matchedClient));
     });
 
     client.initialize().catch(err => {
