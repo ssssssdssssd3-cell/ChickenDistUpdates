@@ -188,6 +188,7 @@ namespace ChickenDist.Forms
 				("🚚 مبيعات المناديب", "SalesByDriver"),
 				("👥 مبيعات العملاء الشاملة", "SalesByClient"),
 				("⚖️ أرصدة وبيانات العملاء", "ClientBalances"),
+				("⏳ أعمار الديون (الديون الراكدة)", "DebtAging"),
 				("📦 مبيعات الأصناف والصافي", "SalesByProduct"),
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
 				("📋 سجل تقفيل المناديب", "Handovers"),
@@ -224,7 +225,7 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Clients")
 					{
-						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales");
+						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales" || report.tag == "DebtAging");
 					}
 					else if (_targetModule == "Suppliers")
 					{
@@ -947,6 +948,21 @@ namespace ChickenDist.Forms
 						("OpeningBalance", "رصيد افتتاحي"),
 						("Balance", "المديونية الحالية"),
 						("Notes", "ملاحظات")
+					}, dataGridView);
+					break;
+				case "DebtAging":
+					_currentDt = ReportDAL.DebtAgingReport(dtpFrom.Value, dtpTo.Value);
+					SetupGrid(new(string, string)[9]
+					{
+						("ClientCode", "كود العميل"),
+						("ClientName", "اسم العميل"),
+						("Phone", "رقم الهاتف"),
+						("Balance", "المديونية الحالية"),
+						("LastInvoiceDate", "تاريخ آخر فاتورة"),
+						("LastInvoiceAmount", "قيمة آخر فاتورة"),
+						("LastPaymentDate", "تاريخ آخر توريد"),
+						("LastPaymentAmount", "قيمة آخر توريد"),
+						("DaysSinceLastPayment", "أيام منذ آخر توريد")
 					}, dataGridView);
 					break;
 				case "FinancialSummary":

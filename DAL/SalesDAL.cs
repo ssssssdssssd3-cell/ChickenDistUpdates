@@ -2097,6 +2097,41 @@ namespace ChickenDist.DAL
                 ORDER BY c.ClientName");
         }
 
+        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate)
+        {
+            return DbHelper.Query(@"
+                ;WITH LastPayment AS (
+                    SELECT ClientID, TransDate AS LastPaymentDate, Credit AS LastPaymentAmount,
+                           ROW_NUMBER() OVER (PARTITION BY ClientID ORDER BY TransDate DESC, TransID DESC) AS rn
+                    FROM ClientTransactions
+                    WHERE TransType = 'Payment'
+                ),
+                LastInvoice AS (
+                    SELECT ClientID, TransDate AS LastInvoiceDate, Debit AS LastInvoiceAmount,
+                           ROW_NUMBER() OVER (PARTITION BY ClientID ORDER BY TransDate DESC, TransID DESC) AS rn
+                    FROM ClientTransactions
+                    WHERE TransType = 'Sale'
+                )
+                SELECT 
+                    c.ClientCode,
+                    c.ClientName,
+                    ISNULL(c.Phone, N'---') AS Phone,
+                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    lp.LastPaymentDate,
+                    ISNULL(lp.LastPaymentAmount, 0) AS LastPaymentAmount,
+                    li.LastInvoiceDate,
+                    ISNULL(li.LastInvoiceAmount, 0) AS LastInvoiceAmount,
+                    DATEDIFF(day, lp.LastPaymentDate, GETDATE()) AS DaysSinceLastPayment
+                FROM Clients c
+                LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                LEFT JOIN LastPayment lp ON c.ClientID = lp.ClientID AND lp.rn = 1
+                LEFT JOIN LastInvoice li ON c.ClientID = li.ClientID AND li.rn = 1
+                WHERE ISNULL(cb.Balance, c.OpeningBalance) > 0
+                  AND (lp.LastPaymentDate IS NULL OR lp.LastPaymentDate < @FromDate)
+                ORDER BY Balance DESC, c.ClientName",
+                DbHelper.P("@FromDate", fromDate.Date));
+        }
+
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>
         public static DataTable GetProductQtyDetail(DateTime from, DateTime to, int? warehouseID = null)
         {
