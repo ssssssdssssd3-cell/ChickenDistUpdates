@@ -144,6 +144,7 @@ namespace ChickenDist.Forms
             };
 
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, pbUpdate });
+            this.AcceptButton = btnLogin;
 
             this.Shown += FrmLogin_Shown;
         }

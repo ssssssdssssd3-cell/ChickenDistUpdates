@@ -15,6 +15,7 @@ namespace ChickenDist.Forms
         private Panel pnlTabBar;
         private Button _btnOpenPages;
         private ToolStripDropDown _pnlDropdown;
+        private FlowLayoutPanel pnlHeaderRight;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
@@ -171,10 +172,19 @@ namespace ChickenDist.Forms
             pnlTabBar = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 40,
+                Height = 42,
                 BackColor = Color.FromArgb(28, 28, 35),
-                Padding = new Padding(6, 4, 6, 4)
+                Padding = new Padding(6, 5, 6, 5)
             };
+
+            // Left panel for close button
+            var pnlHeaderLeft = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 160,
+                BackColor = Color.Transparent
+            };
+            pnlTabBar.Controls.Add(pnlHeaderLeft);
 
             // Close button to go back to home screen
             var btnCloseCurrent = new Button
@@ -184,8 +194,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(180, 50, 50),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(180, 32),
-                Location = new Point(8, 4),
+                Dock = DockStyle.Fill,
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -197,7 +206,20 @@ namespace ChickenDist.Forms
                     CloseTab(_currentChild, entry.tab);
                 }
             };
-            pnlTabBar.Controls.Add(btnCloseCurrent);
+            pnlHeaderLeft.Controls.Add(btnCloseCurrent);
+
+            // Right panel for Open screens dropdown and Quick-access icons
+            pnlHeaderRight = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+                Margin = Padding.Empty
+            };
+            pnlTabBar.Controls.Add(pnlHeaderRight);
 
             // Open Pages Button
             _btnOpenPages = new Button
@@ -206,29 +228,19 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(45, 45, 58),
                 ForeColor = Color.FromArgb(210, 210, 225),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Size = new Size(220, 32),
-                Location = new Point(195, 4),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Size = new Size(160, 32),
                 Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(4, 0, 4, 0)
             };
             _btnOpenPages.FlatAppearance.BorderSize = 1;
             _btnOpenPages.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 90);
             _btnOpenPages.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 78);
             _btnOpenPages.Click += BtnOpenPages_Click;
-            pnlTabBar.Controls.Add(_btnOpenPages);
 
-            // Active Title Label
-            lblTitle = new Label
-            {
-                Text = "",
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                Size = new Size(300, 32),
-                Location = new Point(430, 4),
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            pnlTabBar.Controls.Add(lblTitle);
+            // Build navigation icons inside the top bar
+            BuildTopNavBar(pnlHeaderRight);
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
@@ -566,6 +578,169 @@ namespace ChickenDist.Forms
                 };
 
                 pnlNavBar.Controls.Add(btn);
+            }
+        }
+
+        private void BuildTopNavBar(FlowLayoutPanel pnlHeaderRight)
+        {
+            pnlHeaderRight.Controls.Clear();
+
+            // Add the "Open Screens" button first (so it sits on the right-most side)
+            pnlHeaderRight.Controls.Add(_btnOpenPages);
+
+            var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
+            {
+                ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
+                    ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
+                }),
+
+                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
+                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
+                    ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
+                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
+                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
+                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
+                }),
+
+                ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
+                    ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
+                    ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
+                    ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("📊 تقارير المشتريات", "Reports,Purchases",      (Action)(() => NavigateTo(new FrmReports("Purchases")))),
+                }),
+
+                ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
+                    ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
+                    ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
+                    ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
+                    ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => NavigateTo(new FrmImportProducts()))),
+                    ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
+                    ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
+                    ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
+                    ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
+                    ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
+                    ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("📊 تقارير المخازن",   "Reports,Products",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
+                }),
+
+                ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
+                    ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
+                    ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
+                    ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
+                }),
+
+                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
+                    ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
+                    ("📊 كشف حساب مورد", "SupplierStatement", (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد", "SupplierPayment", (Action)(() => OpenSupplierPaymentSelector())),
+                    ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
+                }),
+
+                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
+                    ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
+                    ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
+                    ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
+                    ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
+                    ("📋 عهدة المناديب",   "DriverCustody",  (Action)(() => NavigateTo(new FrmDriverCustody()))),
+                    ("🏆 أداء المناديب",   "DriverLeaderboard", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
+                    ("📊 تقارير المناديب", "Reports,DriverHandover",         (Action)(() => NavigateTo(new FrmReports("Drivers")))),
+                }),
+
+                ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
+                    ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 التقارير المالية", "Reports",   (Action)(() => NavigateTo(new FrmReports("Financials")))),
+                    ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
+                    ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
+                }),
+
+                ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
+                    ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
+                    ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
+                    ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
+                    ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
+                    ("📊 التقارير الشاملة", "Reports",              (Action)(() => NavigateTo(new FrmReports(null)))),
+                    ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
+                }),
+            };
+
+            if (AppConfig.BusinessType == "Mobiles")
+            {
+                groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
+                    ("🔧 تذاكر الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                }));
+            }
+
+            foreach (var group in groups)
+            {
+                // Check permissions
+                bool hasAnyAccess = false;
+                foreach (var item in group.items)
+                {
+                    if (UserCanAccess(item.screen))
+                    { 
+                        hasAnyAccess = true; 
+                        break; 
+                    }
+                }
+                if (!hasAnyAccess) continue;
+
+                // Build context menu dropdown
+                var menu = new ContextMenuStrip();
+                menu.BackColor  = Theme.BgCard;
+                menu.ForeColor  = Theme.TextMain;
+                menu.Font       = new Font("Segoe UI", 9.5f);
+                menu.ShowImageMargin = false;
+                menu.Renderer   = new ToolStripProfessionalRenderer(new MenuColorTable());
+
+                foreach (var item in group.items)
+                {
+                    if (!UserCanAccess(item.screen)) continue;
+                    
+                    var menuItem = new ToolStripMenuItem(item.text)
+                    {
+                        ForeColor = Theme.TextMain,
+                        BackColor = Theme.BgCard,
+                        Padding   = new Padding(8, 6, 8, 6)
+                    };
+                    var act = item.action;
+                    menuItem.Click += (s, e) => act();
+                    menu.Items.Add(menuItem);
+                }
+
+                // Add small top navigation button
+                var btn = new Button
+                {
+                    Text      = $"{group.icon} {group.label}",
+                    Height    = 32,
+                    Width     = 95,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(45, 45, 58),
+                    ForeColor = Color.FromArgb(220, 220, 235),
+                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Cursor    = Cursors.Hand,
+                    Margin    = new Padding(3, 0, 3, 0)
+                };
+                btn.FlatAppearance.BorderSize = 1;
+                btn.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 90);
+                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 78);
+
+                if (group.label == "الرئيسية")
+                {
+                    btn.Click += (s, e) => NavigateTo(new FrmDashboard());
+                }
+                else
+                {
+                    btn.Click += (s, e) => menu.Show(btn, new Point(0, btn.Height));
+                }
+
+                pnlHeaderRight.Controls.Add(btn);
             }
         }
 
