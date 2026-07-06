@@ -13,7 +13,8 @@ namespace ChickenDist.Forms
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
         private Panel pnlTabBar;
-        private FlowLayoutPanel pnlTabsContainer;
+        private Button _btnOpenPages;
+        private ToolStripDropDown _pnlDropdown;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
@@ -166,26 +167,68 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0)
             };
 
-            // ===== Tab Bar — single dropdown button =====
+            // ===== Tab Bar — Full Screen Navigation Header =====
             pnlTabBar = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 36,
+                Height = 40,
                 BackColor = Color.FromArgb(28, 28, 35),
-                Padding = new Padding(0)
+                Padding = new Padding(6, 4, 6, 4)
             };
 
-            pnlTabsContainer = new FlowLayoutPanel
+            // Close button to go back to home screen
+            var btnCloseCurrent = new Button
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.Transparent,
-                Padding = new Padding(4, 2, 4, 2),
-                Margin = Padding.Empty
+                Text = "✕ إغلاق والعودة للرئيسية",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(180, 50, 50),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Size = new Size(180, 32),
+                Location = new Point(8, 4),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
             };
-            pnlTabBar.Controls.Add(pnlTabsContainer);
+            btnCloseCurrent.FlatAppearance.BorderSize = 0;
+            btnCloseCurrent.Click += (s, e) => {
+                if (_currentChild != null && !(_currentChild is FrmDashboard))
+                {
+                    var entry = _openTabs.Find(t => t.form == _currentChild);
+                    CloseTab(_currentChild, entry.tab);
+                }
+            };
+            pnlTabBar.Controls.Add(btnCloseCurrent);
+
+            // Open Pages Button
+            _btnOpenPages = new Button
+            {
+                Text = "📑 الشاشات المفتوحة (0) ▾",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(45, 45, 58),
+                ForeColor = Color.FromArgb(210, 210, 225),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Size = new Size(220, 32),
+                Location = new Point(195, 4),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            _btnOpenPages.FlatAppearance.BorderSize = 1;
+            _btnOpenPages.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 90);
+            _btnOpenPages.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 78);
+            _btnOpenPages.Click += BtnOpenPages_Click;
+            pnlTabBar.Controls.Add(_btnOpenPages);
+
+            // Active Title Label
+            lblTitle = new Label
+            {
+                Text = "",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Size = new Size(300, 32),
+                Location = new Point(430, 4),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlTabBar.Controls.Add(lblTitle);
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
@@ -537,67 +580,238 @@ namespace ChickenDist.Forms
             public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
 
-        // ─── Dynamic Tab Bar ───────────────────────────────────────────────
-        private void _UpdateTabList()
+        // ─── Dropdown list of Open Screens (Max 6 + More...) ───────────────
+        private void BtnOpenPages_Click(object sender, EventArgs e)
         {
-            if (pnlTabsContainer == null) return;
-            pnlTabsContainer.Controls.Clear();
-            foreach (var entry in _openTabs)
+            if (_pnlDropdown == null)
             {
-                var form = entry.form;
-                var tabBtn = entry.tab;
-                bool isActive = (form == _currentChild);
-
-                var tabControl = new Panel
+                _pnlDropdown = new ToolStripDropDown
                 {
-                    Width = 160,
-                    Height = 28,
+                    BackColor = Color.FromArgb(30, 30, 40),
+                    Padding = Padding.Empty,
+                    Margin = Padding.Empty,
+                    DropShadowEnabled = true
+                };
+            }
+            else
+            {
+                _pnlDropdown.Close();
+            }
+
+            _pnlDropdown.Items.Clear();
+            int rowH = 38;
+
+            if (_openTabs.Count == 0)
+            {
+                var lbl = new Label 
+                { 
+                    Text = "لا توجد شاشات مفتوحة", 
+                    ForeColor = Color.Gray, 
+                    Font = new Font("Segoe UI", 9f), 
+                    AutoSize = false, 
+                    Width = 256, 
+                    Height = 34, 
+                    TextAlign = ContentAlignment.MiddleCenter 
+                };
+                var host = new ToolStripControlHost(lbl) { Padding = Padding.Empty, Margin = Padding.Empty };
+                _pnlDropdown.Items.Add(host);
+                _pnlDropdown.Show(_btnOpenPages, new Point(0, _btnOpenPages.Height));
+                return;
+            }
+
+            int countToShow = Math.Min(_openTabs.Count, 6);
+            
+            // Container flow layout panel to host inside ToolStripDropDown
+            var container = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Width = 260,
+                Height = ((countToShow + (_openTabs.Count > 6 ? 1 : 0)) * rowH) + 8,
+                Padding = new Padding(1, 4, 1, 4),
+                Margin = Padding.Empty,
+                BackColor = Color.FromArgb(30, 30, 40)
+            };
+
+            for (int i = 0; i < countToShow; i++)
+            {
+                var entry = _openTabs[i];
+                var form = entry.form;
+                var tab = entry.tab;
+                bool isActive = form == _currentChild;
+
+                var row = new Panel
+                {
+                    Width = 256,
+                    Height = rowH - 2,
                     BackColor = isActive ? Color.FromArgb(5, 110, 75) : Color.FromArgb(40, 40, 52),
-                    Margin = new Padding(4, 4, 4, 4),
-                    Padding = new Padding(2),
-                    Cursor = Cursors.Hand
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(0, 1, 0, 1)
                 };
 
-                var lblTitle = new Label
+                var lblName = new Label
                 {
                     Text = TrimTabTitle(form.Text),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9f, isActive ? FontStyle.Bold : FontStyle.Regular),
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleCenter,
+                    ForeColor = isActive ? Color.White : Color.FromArgb(210, 210, 225),
+                    Font = new Font("Segoe UI", 9.5f, isActive ? FontStyle.Bold : FontStyle.Regular),
+                    Location = new Point(4, 0),
+                    Width = 210,
+                    Height = rowH - 2,
+                    TextAlign = ContentAlignment.MiddleRight,
                     Cursor = Cursors.Hand
                 };
 
                 var btnClose = new Button
                 {
                     Text = "✕",
-                    Size = new Size(18, 18),
-                    Dock = DockStyle.Left,
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.Transparent,
-                    ForeColor = isActive ? Color.White : Color.FromArgb(180, 80, 80),
-                    Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(180, 80, 80),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Size = new Size(30, rowH - 6),
+                    Location = new Point(220, 2),
                     Cursor = Cursors.Hand
                 };
                 btnClose.FlatAppearance.BorderSize = 0;
                 btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(180, 50, 50);
 
                 var capturedForm = form;
-                var capturedTab = tabBtn;
+                var capturedTab = tab;
 
-                lblTitle.Click += (s, e) => SwitchToTab(capturedForm, capturedTab);
-                tabControl.Click += (s, e) => SwitchToTab(capturedForm, capturedTab);
-                btnClose.Click += (s, e) => CloseTab(capturedForm, capturedTab);
+                lblName.Click += (snd, ev) => { _pnlDropdown.Close(); SwitchToTab(capturedForm, capturedTab); };
+                row.Click += (snd, ev) => { _pnlDropdown.Close(); SwitchToTab(capturedForm, capturedTab); };
+                btnClose.Click += (snd, ev) => { _pnlDropdown.Close(); CloseTab(capturedForm, capturedTab); };
 
-                tabControl.Controls.Add(lblTitle);
-                tabControl.Controls.Add(btnClose);
-                pnlTabsContainer.Controls.Add(tabControl);
+                row.Controls.Add(lblName);
+                row.Controls.Add(btnClose);
+                container.Controls.Add(row);
+            }
+
+            if (_openTabs.Count > 6)
+            {
+                var rowMore = new Panel
+                {
+                    Width = 256,
+                    Height = rowH - 2,
+                    BackColor = Color.FromArgb(45, 45, 58),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(0, 1, 0, 1)
+                };
+
+                var lblMore = new Label
+                {
+                    Text = "🔍 المزيد من الشاشات المفتوحة...",
+                    ForeColor = Color.FromArgb(220, 220, 240),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Location = new Point(4, 0),
+                    Width = 248,
+                    Height = rowH - 2,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Cursor = Cursors.Hand
+                };
+
+                lblMore.Click += (snd, ev) => { _pnlDropdown.Close(); ShowMoreScreensDialog(); };
+                rowMore.Click += (snd, ev) => { _pnlDropdown.Close(); ShowMoreScreensDialog(); };
+
+                rowMore.Controls.Add(lblMore);
+                container.Controls.Add(rowMore);
+            }
+
+            var containerHost = new ToolStripControlHost(container) { Padding = Padding.Empty, Margin = Padding.Empty };
+            _pnlDropdown.Items.Add(containerHost);
+            _pnlDropdown.Show(_btnOpenPages, new Point(0, _btnOpenPages.Height));
+        }
+
+        private void ShowMoreScreensDialog()
+        {
+            using (var dlg = new Form())
+            {
+                dlg.Text = "كل الشاشات المفتوحة للتنقل";
+                dlg.Size = new Size(350, 450);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Theme.BgMain;
+                dlg.Font = Theme.FontMain;
+
+                var lbl = new Label
+                {
+                    Text = "اختر الشاشة التي ترغب في الانتقال إليها:",
+                    Location = new Point(12, 12),
+                    Size = new Size(310, 20),
+                    ForeColor = Theme.TextMain
+                };
+
+                var lst = new ListBox
+                {
+                    Location = new Point(12, 40),
+                    Size = new Size(310, 280),
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Font = new Font("Segoe UI", 10f)
+                };
+
+                foreach (var entry in _openTabs)
+                {
+                    lst.Items.Add(entry.form.Text);
+                }
+
+                var btnGo = Theme.MakeButton("✔ انتقال", 12, 340, 140, 35, Theme.Accent);
+                var btnCloseTab = Theme.MakeButton("❌ إغلاق الشاشة", 182, 340, 140, 35, Color.FromArgb(180, 50, 50));
+                btnCloseTab.ForeColor = Color.White;
+
+                btnGo.Click += (s, e) =>
+                {
+                    if (lst.SelectedIndex >= 0)
+                    {
+                        var entry = _openTabs[lst.SelectedIndex];
+                        SwitchToTab(entry.form, entry.tab);
+                        dlg.DialogResult = DialogResult.OK;
+                        dlg.Close();
+                    }
+                };
+
+                btnCloseTab.Click += (s, e) =>
+                {
+                    if (lst.SelectedIndex >= 0)
+                    {
+                        var entry = _openTabs[lst.SelectedIndex];
+                        CloseTab(entry.form, entry.tab);
+                        
+                        lst.Items.Clear();
+                        foreach (var ent in _openTabs)
+                        {
+                            lst.Items.Add(ent.form.Text);
+                        }
+                        if (_openTabs.Count == 0) dlg.Close();
+                    }
+                };
+
+                lst.DoubleClick += (s, e) =>
+                {
+                    if (lst.SelectedIndex >= 0)
+                    {
+                        var entry = _openTabs[lst.SelectedIndex];
+                        SwitchToTab(entry.form, entry.tab);
+                        dlg.DialogResult = DialogResult.OK;
+                        dlg.Close();
+                    }
+                };
+
+                dlg.Controls.AddRange(new Control[] { lbl, lst, btnGo, btnCloseTab });
+                dlg.ShowDialog();
             }
         }
 
         // ─── Tab management ────────────────────────────────────────────────
         private Button _AddTab(Form form)
         {
+            if (form is FrmDashboard) return null;
+
             // Check if this form type is already open → switch to it
             foreach (var entry in _openTabs)
             {
@@ -643,9 +857,27 @@ namespace ChickenDist.Forms
             form.BringToFront();
 
             // Update title
-            if (lblTitle != null) lblTitle.Text = form.Text;
+            if (lblTitle != null)
+            {
+                lblTitle.Text = form is FrmDashboard ? "" : "الشاشة الحالية: " + form.Text;
+            }
 
             HighlightActiveGroup(form.GetType().Name);
+
+            // Layout adjustments to open child forms in full-screen mode:
+            if (form is FrmDashboard)
+            {
+                pnlNavBar.Visible = true;
+                pnlTopBar.Visible = true;
+                pnlTabBar.Visible = false;
+            }
+            else
+            {
+                pnlNavBar.Visible = false;
+                pnlTopBar.Visible = false;
+                pnlTabBar.Visible = true;
+            }
+
             _UpdateDropdownButtonText();
         }
 
@@ -677,7 +909,10 @@ namespace ChickenDist.Forms
 
         private void _UpdateDropdownButtonText()
         {
-            _UpdateTabList();
+            if (_btnOpenPages != null)
+            {
+                _btnOpenPages.Text = $"📑 الشاشات المفتوحة ({_openTabs.Count}) ▾";
+            }
         }
 
         private void _RefreshTabStyles(Button activeTab) { } // kept for compatibility
