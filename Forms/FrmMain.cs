@@ -180,7 +180,7 @@ namespace ChickenDist.Forms
             // Left panel for close button
             var pnlHeaderLeft = new Panel
             {
-                Dock = DockStyle.Left,
+                Dock = DockStyle.Right, // Docking Right mirrors to the visual Left side under RTL layout
                 Width = 160,
                 BackColor = Color.Transparent
             };
@@ -211,8 +211,8 @@ namespace ChickenDist.Forms
             // Right panel for Open screens dropdown and Quick-access icons
             pnlHeaderRight = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
+                Dock = DockStyle.Fill, // Docking Fill mirrors to the visual Right side under RTL layout
+                FlowDirection = FlowDirection.LeftToRight, // LeftToRight flows from mirrored 0 (visual Right) to visual Left
                 WrapContents = false,
                 AutoScroll = false,
                 BackColor = Color.Transparent,
