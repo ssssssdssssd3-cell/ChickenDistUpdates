@@ -246,17 +246,25 @@ namespace ChickenDist.Forms
             }
 
             // تحقق من عدم تكرار الأكواد الدولية
-
             string barcodesInput = txtInternationalCode.Text.Trim();
             if (!string.IsNullOrEmpty(barcodesInput))
             {
-                string[] barcodes = barcodesInput.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] barcodes = barcodesInput.Split(new[] { ',', ';', ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var bc in barcodes)
                 {
-                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _selectedID);
+                    string trimmed = bc.Trim();
+                    if (seen.Contains(trimmed))
+                    {
+                        MessageBox.Show($"تنبيه: الكود الدولي \"{trimmed}\" مكرر داخل نفس الصنف!", "تكرار كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    seen.Add(trimmed);
+
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(trimmed, _selectedID);
                     if (owner != null)
                     {
-                        MessageBox.Show($"تعارض: الكود \"{bc}\" مسجَّل بالفعل لصنف بكود محلي: {owner}", "تعارض كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"تعارض: الكود \"{trimmed}\" مسجَّل بالفعل لصنف بكود محلي: {owner}", "تعارض كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }

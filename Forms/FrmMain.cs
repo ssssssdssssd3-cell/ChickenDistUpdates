@@ -13,8 +13,7 @@ namespace ChickenDist.Forms
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
         private Panel pnlTabBar;
-        private Button _btnOpenPages;
-        private ToolStripDropDown _pnlDropdown;
+        private FlowLayoutPanel pnlTabsContainer;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
@@ -176,32 +175,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0)
             };
 
-            _btnOpenPages = new Button
+            pnlTabsContainer = new FlowLayoutPanel
             {
-                Text = "📑 الشاشات المفتوحة  ▾",
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(45, 45, 58),
-                ForeColor = Color.FromArgb(210, 210, 225),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Size = new Size(200, 30),
-                Location = new Point(8, 3),
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Padding = new Padding(4, 2, 4, 2),
+                Margin = Padding.Empty
             };
-            _btnOpenPages.FlatAppearance.BorderSize = 1;
-            _btnOpenPages.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 90);
-            _btnOpenPages.FlatAppearance.MouseOverBackColor = Color.FromArgb(60, 60, 78);
-            _btnOpenPages.Click += BtnOpenPages_Click;
-            pnlTabBar.Controls.Add(_btnOpenPages);
-
-            // Dropdown popup panel using ToolStripDropDown (ensures it is never clipped/covered)
-            _pnlDropdown = new ToolStripDropDown
-            {
-                BackColor = Color.FromArgb(30, 30, 40),
-                Padding = Padding.Empty,
-                Margin = Padding.Empty,
-                DropShadowEnabled = true
-            };
+            pnlTabBar.Controls.Add(pnlTabsContainer);
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
@@ -553,122 +537,62 @@ namespace ChickenDist.Forms
             public override Color ImageMarginGradientEnd   => Theme.BgCard;
         }
 
-        // ─── Dropdown open/close ───────────────────────────────────────────
-        private void BtnOpenPages_Click(object sender, EventArgs e)
+        // ─── Dynamic Tab Bar ───────────────────────────────────────────────
+        private void _UpdateTabList()
         {
-            if (_pnlDropdown.Visible)
-            {
-                HideDropdown();
-                return;
-            }
-            RebuildDropdown();
-            ShowDropdown();
-        }
-
-        private void ShowDropdown()
-        {
-            // Position exactly below the button using native ToolStripDropDown.Show
-            _pnlDropdown.Show(_btnOpenPages, new Point(0, _btnOpenPages.Height));
-        }
-
-        private void HideDropdown()
-        {
-            _pnlDropdown.Close();
-        }
-
-        private void RebuildDropdown()
-        {
-            _pnlDropdown.Items.Clear();
-            int rowH = 38;
-
-            if (_openTabs.Count == 0)
-            {
-                var lbl = new Label 
-                { 
-                    Text = "لا توجد شاشات مفتوحة", 
-                    ForeColor = Color.Gray, 
-                    Font = new Font("Segoe UI", 9f), 
-                    AutoSize = false, 
-                    Width = 256, 
-                    Height = 34, 
-                    TextAlign = ContentAlignment.MiddleCenter 
-                };
-                var host = new ToolStripControlHost(lbl) { Padding = Padding.Empty, Margin = Padding.Empty };
-                _pnlDropdown.Items.Add(host);
-                return;
-            }
-
-            // Container flow layout panel to host inside ToolStripDropDown
-            var container = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Width = 260,
-                Height = (_openTabs.Count * rowH) + 8,
-                Padding = new Padding(1, 4, 1, 4),
-                Margin = Padding.Empty,
-                BackColor = Color.FromArgb(30, 30, 40)
-            };
-
+            if (pnlTabsContainer == null) return;
+            pnlTabsContainer.Controls.Clear();
             foreach (var entry in _openTabs)
             {
                 var form = entry.form;
-                var tab = entry.tab;
-                bool isActive = form == _currentChild;
+                var tabBtn = entry.tab;
+                bool isActive = (form == _currentChild);
 
-                // Row panel
-                var row = new Panel
+                var tabControl = new Panel
                 {
-                    Width = 256,
-                    Height = rowH - 2,
+                    Width = 160,
+                    Height = 28,
                     BackColor = isActive ? Color.FromArgb(5, 110, 75) : Color.FromArgb(40, 40, 52),
-                    Cursor = Cursors.Hand,
-                    Margin = new Padding(0, 1, 0, 1)
-                };
-
-                // Screen name label (RightToLeft support alignment)
-                var lblName = new Label
-                {
-                    Text = TrimTabTitle(form.Text),
-                    ForeColor = isActive ? Color.White : Color.FromArgb(210, 210, 225),
-                    Font = new Font("Segoe UI", 9.5f, isActive ? FontStyle.Bold : FontStyle.Regular),
-                    Location = new Point(4, 0),
-                    Width = 210,
-                    Height = rowH - 2,
-                    TextAlign = ContentAlignment.MiddleRight,
+                    Margin = new Padding(4, 4, 4, 4),
+                    Padding = new Padding(2),
                     Cursor = Cursors.Hand
                 };
 
-                // Close button
+                var lblTitle = new Label
+                {
+                    Text = TrimTabTitle(form.Text),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9f, isActive ? FontStyle.Bold : FontStyle.Regular),
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Cursor = Cursors.Hand
+                };
+
                 var btnClose = new Button
                 {
                     Text = "✕",
+                    Size = new Size(18, 18),
+                    Dock = DockStyle.Left,
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.Transparent,
-                    ForeColor = Color.FromArgb(180, 80, 80),
-                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    Size = new Size(30, rowH - 6),
-                    Location = new Point(220, 2),
+                    ForeColor = isActive ? Color.White : Color.FromArgb(180, 80, 80),
+                    Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 btnClose.FlatAppearance.BorderSize = 0;
                 btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(180, 50, 50);
 
-                // Capture variables for event handlers
                 var capturedForm = form;
-                var capturedTab = tab;
+                var capturedTab = tabBtn;
 
-                lblName.Click += (s, e) => { HideDropdown(); SwitchToTab(capturedForm, capturedTab); };
-                row.Click += (s, e) => { HideDropdown(); SwitchToTab(capturedForm, capturedTab); };
-                btnClose.Click += (s, e) => { HideDropdown(); CloseTab(capturedForm, capturedTab); };
+                lblTitle.Click += (s, e) => SwitchToTab(capturedForm, capturedTab);
+                tabControl.Click += (s, e) => SwitchToTab(capturedForm, capturedTab);
+                btnClose.Click += (s, e) => CloseTab(capturedForm, capturedTab);
 
-                row.Controls.Add(lblName);
-                row.Controls.Add(btnClose);
-                container.Controls.Add(row);
+                tabControl.Controls.Add(lblTitle);
+                tabControl.Controls.Add(btnClose);
+                pnlTabsContainer.Controls.Add(tabControl);
             }
-
-            var containerHost = new ToolStripControlHost(container) { Padding = Padding.Empty, Margin = Padding.Empty };
-            _pnlDropdown.Items.Add(containerHost);
         }
 
         // ─── Tab management ────────────────────────────────────────────────
@@ -753,11 +677,7 @@ namespace ChickenDist.Forms
 
         private void _UpdateDropdownButtonText()
         {
-            if (_btnOpenPages == null) return;
-            string active = _currentChild != null && !_currentChild.IsDisposed
-                ? TrimTabTitle(_currentChild.Text)
-                : "لا يوجد";
-            _btnOpenPages.Text = $"📑 {active}  ▾  ({_openTabs.Count})";
+            _UpdateTabList();
         }
 
         private void _RefreshTabStyles(Button activeTab) { } // kept for compatibility

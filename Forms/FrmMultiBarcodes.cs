@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
@@ -110,6 +111,24 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrWhiteSpace(txtBarcode8.Text)) list.Add(txtBarcode8.Text.Trim());
                 if (!string.IsNullOrWhiteSpace(txtBarcode9.Text)) list.Add(txtBarcode9.Text.Trim());
                 if (!string.IsNullOrWhiteSpace(txtBarcode10.Text)) list.Add(txtBarcode10.Text.Trim());
+
+                var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var bc in list)
+                {
+                    if (seen.Contains(bc))
+                    {
+                        MessageBox.Show($"تنبيه: الكود الدولي \"{bc}\" مكرر داخل نفس الصنف!", "تكرار كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    seen.Add(bc);
+
+                    string owner = ProductDAL.GetOwnerOfInternationalBarcode(bc, _productID);
+                    if (owner != null)
+                    {
+                        MessageBox.Show($"تعارض: الكود \"{bc}\" مسجَّل بالفعل لصنف بكود محلي: {owner}", "تعارض كود دولي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
 
                 ResultBarcodes = string.Join(",", list);
                 DialogResult = DialogResult.OK;
