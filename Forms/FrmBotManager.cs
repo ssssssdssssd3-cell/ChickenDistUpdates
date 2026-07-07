@@ -39,7 +39,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(720, 600);
+            this.Size = new Size(720, 680);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 95F)); // Accountant App Link
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 175F)); // Accountant and Client App Links
 
             // Header/Status Layout container to support refresh button
             TableLayoutPanel statusContainer = new TableLayoutPanel
@@ -183,7 +183,7 @@ namespace ChickenDist.Forms
             mainLayout.Controls.Add(lblLastSync, 0, 3);
             mainLayout.SetColumnSpan(lblLastSync, 2);
 
-            // Accountant Link Panel (Row 4)
+            // Accountant and Client Links Panel (Row 4)
             Panel pnlAccountant = new Panel 
             { 
                 Dock = DockStyle.Fill, 
@@ -192,9 +192,10 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle
             };
             
+            // ─── 1. Accountant App Link ───
             Label lblAccTitle = new Label
             {
-                Text = "📱 تطبيق المحاسب لاستقبال طلبات البوت (على الموبايل أو المتصفح):",
+                Text = "📱 رابط تطبيق المحاسب (لاستقبال وتأكيد الطلبات سحابياً):",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
@@ -202,8 +203,7 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(lblAccTitle);
 
-            // Use permanent cloud URL instead of local IP address
-            string accUrl = "https://checkin-192ab.web.app";
+            string accUrl = "https://checkin-192ab.web.app/admin.html";
 
             txtAccUrl = new TextBox
             {
@@ -253,13 +253,75 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(btnOpenAccUrl);
 
+            // ─── 2. Client Web Site Link ───
+            Label lblClientTitle = new Label
+            {
+                Text = "🛒 رابط موقع طلبات العملاء (الويب سايت لنشره للزبائن):",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(10, 68)
+            };
+            pnlAccountant.Controls.Add(lblClientTitle);
+
+            string clientUrl = "https://checkin-192ab.web.app";
+
+            TextBox txtClientUrl = new TextBox
+            {
+                Text = clientUrl,
+                ReadOnly = true,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(39, 174, 96),
+                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
+                Location = new Point(230, 92),
+                Width = 400,
+                RightToLeft = RightToLeft.No
+            };
+            pnlAccountant.Controls.Add(txtClientUrl);
+
+            Button btnCopyClientUrl = new Button
+            {
+                Text = "نسخ الرابط",
+                BackColor = Color.FromArgb(149, 165, 166),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(120, 91),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnCopyClientUrl.FlatAppearance.BorderSize = 0;
+            btnCopyClientUrl.Click += (s, e) => {
+                Clipboard.SetText(txtClientUrl.Text);
+                MessageBox.Show("✅ تم نسخ رابط موقع طلبات العملاء إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            pnlAccountant.Controls.Add(btnCopyClientUrl);
+
+            Button btnOpenClientUrl = new Button
+            {
+                Text = "فتح الموقع",
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(10, 91),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnOpenClientUrl.FlatAppearance.BorderSize = 0;
+            btnOpenClientUrl.Click += (s, e) => {
+                try { Process.Start(txtClientUrl.Text); } catch {}
+            };
+            pnlAccountant.Controls.Add(btnOpenClientUrl);
+
+            // ─── 3. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 افتح هذا الرابط السحابي من موبايل المحاسب في أي مكان لاستقبال وتأكيد طلبات الواتساب مباشرة.",
+                Text = "💡 النصيحة: انشر رابط الويب سايت الأخضر لعملائك ليطلبوا منه، وافتح الرابط الأزرق في موبايل المحاسب لإدارتها.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
-                Location = new Point(10, 65)
+                Location = new Point(10, 135)
             };
             pnlAccountant.Controls.Add(lblAccTip);
 

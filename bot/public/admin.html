@@ -167,6 +167,7 @@
                 <div class="modal-footer d-flex gap-2 justify-content-start border-0 pt-0">
                     <button type="button" class="btn btn-success py-2 px-3 flex-grow-1" onclick="processOrder('Accepted')" style="border-radius: 10px;">قبول وتأكيد ✅</button>
                     <button type="button" class="btn btn-danger py-2 px-3" onclick="processOrder('Rejected')" style="border-radius: 10px;">رفض ❌</button>
+                    <button type="button" class="btn btn-outline-danger py-2 px-3" onclick="deleteOrder()" style="border-radius: 10px;">حذف 🗑️</button>
                     <button type="button" class="btn btn-secondary py-2 px-3" data-bs-dismiss="modal" style="border-radius: 10px;">إغلاق</button>
                 </div>
             </div>
@@ -506,6 +507,27 @@
             } catch (err) {
                 console.error('Failed to update order status in Firebase:', err);
                 alert('خطأ أثناء معالجة الطلب في السحابة.');
+            }
+        }
+
+        async function deleteOrder() {
+            if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً من السحابة والنظام المحلي؟')) return;
+            
+            try {
+                // Call local delete endpoint which handles both firestore and local file
+                const response = await fetch(`/api/orders/${selectedOrderId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    myModal.hide();
+                } else {
+                    const data = await response.json();
+                    alert('فشل حذف الطلب: ' + (data.error || 'خطأ غير معروف'));
+                }
+            } catch (err) {
+                console.error('Error deleting order:', err);
+                alert('حدث خطأ أثناء محاولة حذف الطلب.');
             }
         }
 

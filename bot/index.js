@@ -816,6 +816,29 @@ app.get('/api/orders', (req, res) => {
     res.json(readJSON('orders.json', []));
 });
 
+app.delete('/api/orders/:id', async (req, res) => {
+    const orderId = req.params.id;
+    try {
+        // 1. Delete from Firestore
+        try {
+            await db.collection('orders').doc(orderId).delete();
+            console.log(`[Firestore]: Order ${orderId} deleted successfully.`);
+        } catch (fErr) {
+            console.error(`[Firestore]: Failed to delete order ${orderId}:`, fErr);
+        }
+
+        // 2. Delete from local orders.json
+        const localOrders = readJSON('orders.json', []);
+        const filteredOrders = localOrders.filter(o => o.id !== orderId);
+        writeJSON('orders.json', filteredOrders);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Failed to delete order:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 let metadataUnsubscribePrices = null;
 let metadataUnsubscribeClients = null;
 
