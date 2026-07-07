@@ -531,6 +531,19 @@ namespace ChickenDist.Forms
 
             var g = e.Graphics;
 
+            string labelType = (AppConfig.BarcodeStickerSize == "38x26_double") ? "Split" : "Full";
+            int labelsPerRow = (labelType == "Split") ? 2 : 1;
+
+            float pageWidth = e.PageBounds.Width;
+            float pageHeight = e.PageBounds.Height;
+            float leftMargin = 5;
+            float topMargin = 5;
+
+            float labelWidth = labelType == "Full" ? pageWidth : (pageWidth / labelsPerRow);
+            float labelHeight = pageHeight - (topMargin * 2);
+
+            bool isSmallSticker = (AppConfig.BarcodeStickerSize == "38x26" || AppConfig.BarcodeStickerSize == "38x26_double");
+
             string template = "Standard";
             bool isCode128 = true;
 
@@ -546,18 +559,7 @@ namespace ChickenDist.Forms
                 isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
             }
 
-            string labelType = (AppConfig.BarcodeStickerSize == "38x26") ? "Split" : "Full";
-            int labelsPerRow = (labelType == "Split") ? 2 : 1;
 
-            float pageWidth = e.PageBounds.Width;
-            float pageHeight = e.PageBounds.Height;
-            float leftMargin = 5;
-            float topMargin = 5;
-
-            float labelWidth = labelType == "Full" ? pageWidth : (pageWidth / labelsPerRow);
-            float labelHeight = pageHeight - (topMargin * 2);
-
-            bool isSmallSticker = (AppConfig.BarcodeStickerSize == "38x26");
 
             var fCompany  = new Font("Arial", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
             var fName     = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
@@ -755,12 +757,12 @@ namespace ChickenDist.Forms
                 float moduleWidth = width / totalModules;
                 
                 // Cap module width to prevent extremely fat bleeding bars for short codes
-                float maxModuleWidth = (width < 140f) ? 0.95f : 1.15f; 
+                float maxModuleWidth = (width < 140f) ? 1.5f : 2.0f; 
                 if (moduleWidth > maxModuleWidth)
                 {
                     moduleWidth = maxModuleWidth;
                 }
-                if (moduleWidth < 0.5f) moduleWidth = 0.5f;
+                if (moduleWidth < 1.0f) moduleWidth = 1.0f;
 
                 // Center the barcode
                 float actualBarcodeWidth = totalModules * moduleWidth;
@@ -820,12 +822,12 @@ namespace ChickenDist.Forms
                 float moduleWidth = width / totalUnits;
                 
                 // Cap module width to prevent extremely fat bleeding bars for short codes
-                float maxModuleWidth = (width < 140f) ? 0.90f : 1.10f; 
+                float maxModuleWidth = (width < 140f) ? 1.5f : 2.0f; 
                 if (moduleWidth > maxModuleWidth)
                 {
                     moduleWidth = maxModuleWidth;
                 }
-                if (moduleWidth < 0.5f) moduleWidth = 0.5f;
+                if (moduleWidth < 1.0f) moduleWidth = 1.0f;
 
                 // Center the barcode
                 float actualBarcodeWidth = totalUnits * moduleWidth;
