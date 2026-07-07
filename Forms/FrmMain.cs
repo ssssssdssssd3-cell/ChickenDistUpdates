@@ -127,6 +127,7 @@ namespace ChickenDist.Forms
                 WrapContents = true,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                RightToLeft = RightToLeft.No, // Prevent double-reversal of FlowLayoutPanel child rendering in mirrored RTL forms
                 BackColor = Theme.BgNavBar,
                 Padding = new Padding(10, 5, 10, 5),
                 AllowDrop = true
@@ -215,6 +216,7 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.LeftToRight, // LeftToRight flows from mirrored 0 (visual Right) to visual Left
                 WrapContents = false,
                 AutoScroll = false,
+                RightToLeft = RightToLeft.No, // Prevent double-reversal of FlowLayoutPanel child rendering in mirrored RTL forms
                 BackColor = Color.Transparent,
                 Padding = new Padding(0),
                 Margin = Padding.Empty
