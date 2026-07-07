@@ -25,6 +25,12 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // التحقق من تفعيل ترخيص البرنامج
+            if (!ChickenDist.Core.LicenseManager.CheckLicense())
+            {
+                return;
+            }
+
             // Show Login
             var login = new FrmLogin();
             if (login.ShowDialog() != DialogResult.OK)
