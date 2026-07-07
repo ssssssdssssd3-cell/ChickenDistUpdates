@@ -10,8 +10,10 @@ namespace ChickenDist.Forms
     public class FrmProductCard : Form
     {
         private TextBox txtCode, txtName, txtUnit, txtDescription, txtPartNumber, txtCarModel, txtBrand, txtShelfLocation, txtInternationalCode;
+        private TextBox txtUnit2Name, txtUnit2Barcode, txtUnit1Name, txtUnit1Barcode;
         private ComboBox cboCategory;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
+        private NumericUpDown nudUnit3Factor, nudUnit2Factor;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService;
         private Button btnSave, btnCancel;
         private int _selectedID = 0;
@@ -34,7 +36,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _selectedID > 0 ? "تعديل بيانات الصنف" : "إضافة صنف جديد";
-            this.Size = new Size(765, 510);
+            this.Size = new Size(765, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -45,7 +47,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Main Panel for 2-column layout (takes place of tcDetails)
-            var pnlDetails = new Panel { Dock = DockStyle.Top, Height = 410, BackColor = Theme.BgCard, Padding = new Padding(15) };
+            var pnlDetails = new Panel { Dock = DockStyle.Top, Height = 380, BackColor = Theme.BgCard, Padding = new Padding(15) };
             this.Controls.Add(pnlDetails);
 
             // Populate Column 1 (Right Column): Basic Info & Description
@@ -70,25 +72,25 @@ namespace ChickenDist.Forms
             AddField(pnlDetails, "الماركة:", rx, ry, out txtBrand);
             ry += 40;
 
-            AddField(pnlDetails, "الوحدة:", rx, ry, out txtUnit);
+            AddField(pnlDetails, "الوحدة الكبرى:", rx, ry, out txtUnit);
             ry += 40;
 
             // Checkboxes on separate rows (independent options)
             chkActive = new CheckBox { Text = "صنف نشط", Location = new Point(rx, ry), ForeColor = Theme.TextMain, Checked = true, AutoSize = true };
             pnlDetails.Controls.Add(chkActive);
-            ry += 32;
+            ry += 28;
 
             chkPrintLocalBarcode = new CheckBox { Text = "طباعة باركود محلي", Location = new Point(rx, ry), ForeColor = Theme.TextMain, Checked = true, AutoSize = true };
             pnlDetails.Controls.Add(chkPrintLocalBarcode);
-            ry += 32;
+            ry += 28;
 
             chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(rx, ry), ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = true };
             chkIsService.Font = new Font(Theme.FontMain, FontStyle.Bold);
             pnlDetails.Controls.Add(chkIsService);
-            ry += 35;
+            ry += 32;
 
             pnlDetails.Controls.Add(new Label { Text = "الوصف:", Location = new Point(rx + 215, ry + 3), Width = 90, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain });
-            txtDescription = new TextBox { Location = new Point(rx, ry), Width = 205, Height = 100, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            txtDescription = new TextBox { Location = new Point(rx, ry), Width = 205, Height = 65, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlDetails.Controls.Add(txtDescription);
 
 
@@ -97,10 +99,10 @@ namespace ChickenDist.Forms
             int lx = 30;
             int ly = 20;
 
-            AddNud(pnlDetails, "سعر الشراء:", lx, ly, out nudPurchasePrice, 2);
+            AddNud(pnlDetails, "سعر شراء الكبرى:", lx, ly, out nudPurchasePrice, 2);
             ly += 40;
 
-            AddNud(pnlDetails, "سعر قطاعي:", lx, ly, out nudPrice, 2);
+            AddNud(pnlDetails, "سعر بيع الكبرى:", lx, ly, out nudPrice, 2);
             ly += 40;
 
             AddNud(pnlDetails, "سعر نصف الجملة:", lx, ly, out nudSemiWholesalePrice, 2);
@@ -126,6 +128,58 @@ namespace ChickenDist.Forms
             ly += 40;
 
             AddField(pnlDetails, "الموديل المتوافق:", lx, ly, out txtCarModel);
+
+
+            // ===== ميزة الوحدات المتعددة (إعدادات التجزئة تلقائية الأسعار) =====
+            var pnlMultiUnits = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.BgCard, Padding = new Padding(15, 0, 15, 10) };
+            this.Controls.Add(pnlMultiUnits);
+
+            var grpUnits = new GroupBox
+            {
+                Text = "📦 إعدادات الوحدات المتعددة (التجزئة تلقائية الأسعار)",
+                Dock = DockStyle.Fill,
+                ForeColor = Theme.Accent,
+                Font = new Font(Theme.FontMain.FontFamily, 9.5F, FontStyle.Bold)
+            };
+            pnlMultiUnits.Controls.Add(grpUnits);
+
+            // Row 1: Medium Unit
+            grpUnits.Controls.Add(new Label { Text = "الوحدة المتوسطة:", Location = new Point(570, 30), Width = 120, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txtUnit2Name = new TextBox { Location = new Point(430, 27), Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            grpUnits.Controls.Add(txtUnit2Name);
+
+            grpUnits.Controls.Add(new Label { Text = "باركود المتوسطة:", Location = new Point(310, 30), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txtUnit2Barcode = new TextBox { Location = new Point(170, 27), Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            grpUnits.Controls.Add(txtUnit2Barcode);
+
+            grpUnits.Controls.Add(new Label { Text = "العدد في الكبرى:", Location = new Point(90, 30), Width = 75, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            nudUnit3Factor = new NumericUpDown { Location = new Point(10, 27), Width = 70, Minimum = 1, Maximum = 999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Value = 1 };
+            grpUnits.Controls.Add(nudUnit3Factor);
+
+            // Row 2: Small Unit
+            grpUnits.Controls.Add(new Label { Text = "الوحدة الصغرى:", Location = new Point(570, 70), Width = 120, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txtUnit1Name = new TextBox { Location = new Point(430, 67), Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            grpUnits.Controls.Add(txtUnit1Name);
+
+            grpUnits.Controls.Add(new Label { Text = "باركود الصغرى:", Location = new Point(310, 70), Width = 110, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txtUnit1Barcode = new TextBox { Location = new Point(170, 67), Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            grpUnits.Controls.Add(txtUnit1Barcode);
+
+            grpUnits.Controls.Add(new Label { Text = "العدد بالمتوسطة/الكبرى:", Location = new Point(85, 70), Width = 80, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain.FontFamily, 8.0F) });
+            nudUnit2Factor = new NumericUpDown { Location = new Point(10, 67), Width = 70, Minimum = 1, Maximum = 999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Value = 1 };
+            grpUnits.Controls.Add(nudUnit2Factor);
+
+            // Row 3: Guide/Tip Note
+            var lblAccTip = new Label
+            {
+                Text = "💡 تنبيه: إذا لم تستخدم وحدة متوسطة، اكتب معامل تحويل الصغرى في الكبرى مباشرة بخانة (العدد بالمتوسطة/الكبرى) واترك المتوسطة فارغة.",
+                Font = new Font(Theme.FontMain.FontFamily, 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(127, 140, 141),
+                Location = new Point(10, 110),
+                Size = new Size(700, 25),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            grpUnits.Controls.Add(lblAccTip);
 
 
             // Footer Panel for Save / Cancel
@@ -191,6 +245,15 @@ namespace ChickenDist.Forms
             chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : true;
             chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
 
+            // تحميل الوحدات المتعددة وعوامل التحويل
+            txtUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
+            txtUnit2Barcode.Text = dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value ? dr["Unit2Barcode"].ToString() : "";
+            nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value && Convert.ToDecimal(dr["Unit3Factor"]) > 0 ? Convert.ToDecimal(dr["Unit3Factor"]) : 1m;
+
+            txtUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
+            txtUnit1Barcode.Text = dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value ? dr["Unit1Barcode"].ToString() : "";
+            nudUnit2Factor.Value = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value && Convert.ToDecimal(dr["Unit2Factor"]) > 0 ? Convert.ToDecimal(dr["Unit2Factor"]) : 1m;
+
             // تحديد التصنيف في الـ ComboBox
             if (dr["CategoryID"] != DBNull.Value)
             {
@@ -230,6 +293,13 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             chkPrintLocalBarcode.Checked = true;
             chkIsService.Checked = false;
+
+            txtUnit2Name.Clear();
+            txtUnit2Barcode.Clear();
+            nudUnit3Factor.Value = 1;
+            txtUnit1Name.Clear();
+            txtUnit1Barcode.Clear();
+            nudUnit2Factor.Value = 1;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -276,11 +346,59 @@ namespace ChickenDist.Forms
                 categoryID = ci.ID;
             }
 
+            // ─── احتساب قيم التجزئة والوحدات المتعددة تلقائياً ───
+            string u1Name = txtUnit1Name.Text.Trim();
+            string u1Barcode = txtUnit1Barcode.Text.Trim();
+            decimal? u1SalePrice = null;
+            decimal? u1PurchasePrice = null;
+
+            string u2Name = txtUnit2Name.Text.Trim();
+            string u2Barcode = txtUnit2Barcode.Text.Trim();
+            decimal? u2Factor = null;
+            decimal? u2SalePrice = null;
+            decimal? u2PurchasePrice = null;
+
+            decimal? u3Factor = null;
+
+            // 1. حالة وجود 3 وحدات (كبرى، متوسطة، صغرى)
+            if (!string.IsNullOrEmpty(u2Name) && !string.IsNullOrEmpty(u1Name))
+            {
+                decimal u3f = nudUnit3Factor.Value; // عدد المتوسطة في الكبرى
+                if (u3f <= 0) u3f = 1;
+                u3Factor = u3f;
+
+                decimal u2f = nudUnit2Factor.Value; // عدد الصغرى في المتوسطة
+                if (u2f <= 0) u2f = 1;
+                u2Factor = u2f;
+
+                // سعر المتوسطة = سعر الكبرى / عدد المتوسطة في الكبرى
+                u2SalePrice = nudPrice.Value / u3f;
+                u2PurchasePrice = nudPurchasePrice.Value / u3f;
+
+                // سعر الصغرى = سعر المتوسطة / عدد الصغرى في المتوسطة
+                u1SalePrice = u2SalePrice.Value / u2f;
+                u1PurchasePrice = u2PurchasePrice.Value / u2f;
+            }
+            // 2. حالة وجود وحدتين فقط (كبرى وصغرى) - بدون وحدة متوسطة
+            else if (string.IsNullOrEmpty(u2Name) && !string.IsNullOrEmpty(u1Name))
+            {
+                decimal u2f = nudUnit2Factor.Value; // عدد الصغرى في الكبرى مباشرة
+                if (u2f <= 0) u2f = 1;
+                u2Factor = u2f;
+
+                // سعر الصغرى = سعر الكبرى / المعامل
+                u1SalePrice = nudPrice.Value / u2f;
+                u1PurchasePrice = nudPurchasePrice.Value / u2f;
+            }
+
             int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtUnit.Text, nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
                 nudWholesalePrice.Value, nudSemiWholesalePrice.Value, txtInternationalCode.Text.Trim(), chkPrintLocalBarcode.Checked,
-                chkIsService.Checked);
+                chkIsService.Checked,
+                u1Name, u1Barcode, u1SalePrice, u1PurchasePrice,
+                u2Name, u2Factor, u2Barcode, u2SalePrice, u2PurchasePrice,
+                u3Factor);
             
             if (id > 0) 
             { 
