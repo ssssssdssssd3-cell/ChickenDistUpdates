@@ -20,6 +20,8 @@ namespace ChickenDist.Core
             if (string.IsNullOrWhiteSpace(barcode))
                 return result;
 
+            barcode = barcode.Trim();
+
             string prefix = AppConfig.BarcodeScalePrefix;
             int codeLen = AppConfig.BarcodeScaleItemCodeLength;
             int weightLen = AppConfig.BarcodeScaleWeightLength;

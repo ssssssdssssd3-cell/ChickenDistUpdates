@@ -287,14 +287,22 @@ namespace ChickenDist.Forms
         private void AddProductByCode(string code)
         {
             // بحث بالباركود أو الكود
+            string trimmedC = code.TrimStart('0');
+            if (string.IsNullOrEmpty(trimmedC)) trimmedC = "0";
+            string paddedC = code;
+            if (int.TryParse(code, out int cVal))
+            {
+                paddedC = cVal.ToString("D8");
+            }
+
             var dt = DbHelper.Query(@"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice,
                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice,
                        p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
                        p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                 FROM Products p
-                WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.InternationalCode = @c OR p.Unit1Barcode = @c OR p.Unit2Barcode = @c)",
-                DbHelper.P("@c", code));
+                WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.Unit1Barcode = @c OR p.Unit2Barcode = @c)",
+                DbHelper.P("@c", code), DbHelper.P("@trimmed", trimmedC), DbHelper.P("@padded", paddedC));
 
             if (dt.Rows.Count == 0)
             {
@@ -308,13 +316,22 @@ namespace ChickenDist.Forms
                     decimal weight = 0;
                     if (decimal.TryParse(weightStr, out weight)) weight /= AppConfig.BarcodeScaleDivideBy;
 
+                    string trimmedItemCode = itemCode.TrimStart('0');
+                    if (string.IsNullOrEmpty(trimmedItemCode)) trimmedItemCode = "0";
+                    string paddedItemCode = itemCode;
+                    if (int.TryParse(itemCode, out int itemCodeVal))
+                    {
+                        paddedItemCode = itemCodeVal.ToString("D8");
+                    }
+
                     dt = DbHelper.Query(@"
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                                p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
                                p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
-                        WHERE p.IsActive = 1 AND p.ProductCode = @c", DbHelper.P("@c", itemCode));
+                        WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded)", 
+                        DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode));
                     if (dt.Rows.Count > 0 && weight > 0)
                     {
                         var row2 = dt.Rows[0];

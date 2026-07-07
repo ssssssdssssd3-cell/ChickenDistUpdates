@@ -1390,7 +1390,11 @@ namespace ChickenDist.Forms
 				_pendingBarcodeWeight = res.WeightOrPrice;
 				foreach (var ci in allItems)
 				{
-					if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
+					if (ci.ID > 0 && (
+						ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+						ci.PartNumber == res.ItemCode ||
+						(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+					))
 					{
 						foundItem = ci;
 						break;
@@ -1477,7 +1481,11 @@ namespace ChickenDist.Forms
 					// Search for item by scale code in unfiltered list
 					foreach (var ci in allItems)
 					{
-						if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
+						if (ci.ID > 0 && (
+							ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+							ci.PartNumber == res.ItemCode ||
+							(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+						))
 						{
 							foundItem = ci;
 							break;
