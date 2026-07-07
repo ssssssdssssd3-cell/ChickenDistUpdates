@@ -257,7 +257,8 @@ namespace ChickenDist.DAL
         public static string GetNextProductCode()
         {
             var result = DbHelper.Scalar("SELECT COALESCE(MAX(ProductID), 0) + 1 FROM Products");
-            return result != null ? result.ToString() : "1";
+            int nextId = (result != null) ? Convert.ToInt32(result) : 1;
+            return nextId.ToString("D8"); // Padded to 8 digits, e.g., "00000008"
         }
 
         public static DataTable GetAll(bool activeOnly = false)
@@ -388,6 +389,18 @@ namespace ChickenDist.DAL
         public static DataTable FindByCode(string code)
         {
             if (string.IsNullOrWhiteSpace(code)) return new DataTable();
+
+            // Trim leading zeros for matching short ProductCode
+            string trimmedCode = code.TrimStart('0');
+            if (string.IsNullOrEmpty(trimmedCode)) trimmedCode = "0";
+
+            // Pad to 8 digits for matching padded ProductCode
+            string paddedCode = code;
+            if (int.TryParse(code, out int codeVal))
+            {
+                paddedCode = codeVal.ToString("D8");
+            }
+
             return DbHelper.Query(
                 @"SELECT TOP 1 p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, 
                          p.SalePrice, p.PurchasePrice, p.MinStockLimit, p.InternationalCode,
@@ -401,10 +414,13 @@ namespace ChickenDist.DAL
                           END AS MatchedUnit
                   FROM Products p
                   WHERE p.IsActive = 1
-                    AND (p.ProductCode = @code OR p.PartNumber = @code OR p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%'
+                    AND (p.ProductCode = @code OR p.ProductCode = @trimmed OR p.ProductCode = @padded
+                         OR p.PartNumber = @code OR p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%'
                          OR p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%'
                          OR p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%')",
-                DbHelper.P("@code", code));
+                DbHelper.P("@code", code.Trim()),
+                DbHelper.P("@trimmed", trimmedCode),
+                DbHelper.P("@padded", paddedCode));
         }
 
         /// <summary>

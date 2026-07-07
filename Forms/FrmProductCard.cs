@@ -590,6 +590,14 @@ namespace ChickenDist.Forms
             nudDefaultExpiryDays.Value = dr.Table.Columns.Contains("DefaultExpiryDays") && dr["DefaultExpiryDays"] != DBNull.Value ? Convert.ToDecimal(dr["DefaultExpiryDays"]) : 0m;
             nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
 
+            if (chkPrintLocalBarcode.Checked)
+            {
+                if (int.TryParse(txtCode.Text, out int codeVal))
+                {
+                    txtCode.Text = codeVal.ToString("D8");
+                }
+            }
+
             // Multi-Unit Details
             cboUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
             txtUnit1Barcode.Text = dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value ? dr["Unit1Barcode"].ToString() : "";
@@ -769,8 +777,17 @@ namespace ChickenDist.Forms
             // Recalculate prices one last time to be safe before saving
             RecalculateSubUnitPrices();
 
+            string prodCode = txtCode.Text.Trim();
+            if (chkPrintLocalBarcode.Checked)
+            {
+                if (int.TryParse(prodCode, out int codeVal))
+                {
+                    prodCode = codeVal.ToString("D8");
+                }
+            }
+
             // الحفظ في قاعدة البيانات
-            int id = ProductDAL.Save(_selectedID, txtCode.Text, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
+            int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
                 txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
                 nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
