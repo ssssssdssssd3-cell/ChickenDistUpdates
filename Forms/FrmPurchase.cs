@@ -403,6 +403,7 @@ namespace ChickenDist.Forms
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
             dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
+            dgItems.EditingControlShowing += DgItems_EditingControlShowing;
 
             // سهم لأسفل في آخر سطر → سطر كود جديد | Insert = نفس الشيء
             dgItems.KeyDown += (s, ke) =>
@@ -733,6 +734,52 @@ namespace ChickenDist.Forms
             {
                 dgItems.EndEdit();
             }
+
+			// ─── اختصارات تغيير الوحدات بالكيبورد (Ctrl + 1/2/3) ───
+			if (e.Control && (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1 || e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2 || e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3))
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					int rowIndex = dgItems.CurrentRow.Index;
+					var dto = _items[rowIndex];
+					ComboItem prod = GetProductComboItem(dto.ProductID);
+					if (prod != null)
+					{
+						string targetUnit = null;
+						if (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1)
+						{
+							targetUnit = prod.BaseUnitName; // الوحدة الكبرى
+						}
+						else if (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2)
+						{
+							targetUnit = prod.Unit2Name; // الوحدة المتوسطة
+						}
+						else if (e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3)
+						{
+							targetUnit = prod.Unit1Name; // الوحدة الصغرى
+						}
+
+						if (!string.IsNullOrEmpty(targetUnit))
+						{
+							if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
+							
+							if (dgItems.Rows[rowIndex].Cells["UnitName"] is DataGridViewComboBoxCell cell)
+							{
+								if (cell.Items.Contains(targetUnit))
+								{
+									cell.Value = targetUnit;
+									HandleUnitChange(dgItems.Rows[rowIndex], dto, targetUnit);
+									e.Handled = true;
+								}
+								else
+								{
+									MessageBox.Show($"⚠️ الوحدة '{targetUnit}' غير متوفرة لهذا الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								}
+							}
+						}
+					}
+				}
+			}
 
             if      (e.KeyCode == Keys.F2)  { ClearInvoice();           e.Handled = true; }
             else if (e.KeyCode == Keys.F5)  { BtnSave_Click(null,null); e.Handled = true; }
@@ -1550,6 +1597,22 @@ namespace ChickenDist.Forms
                 _items.RemoveAt(e.RowIndex);
                 RefreshGrid();
                 _isDirty = true;
+            }
+            else if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+            {
+                dgItems.CurrentCell = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                dgItems.BeginEdit(true);
+            }
+        }
+
+        private void DgItems_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
+        {
+            if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName")
+            {
+                if (e.Control is ComboBox comboBox)
+                {
+                    comboBox.DroppedDown = true;
+                }
             }
         }
 
