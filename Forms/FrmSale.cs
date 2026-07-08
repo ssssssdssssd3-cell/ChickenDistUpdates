@@ -1105,6 +1105,7 @@ namespace ChickenDist.Forms
 			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
 			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
+			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج", 0, 0, 95, 26, Color.FromArgb(70, 70, 70));
 
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
@@ -1114,6 +1115,7 @@ namespace ChickenDist.Forms
 			btnPrint.Anchor = AnchorStyles.None;
 			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
+			btnOpenDrawer.Anchor = AnchorStyles.None;
 
 			btnSave.Click += BtnSave_Click;
 			btnHold.Click += BtnHold_Click;
@@ -1123,6 +1125,7 @@ namespace ChickenDist.Forms
 			btnPrint.Click += BtnPrint_Click;
 			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
+			btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
 			var pnlFooterButtons = new FlowLayoutPanel
 			{
@@ -1142,8 +1145,9 @@ namespace ChickenDist.Forms
 			btnTawreed.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
+			btnOpenDrawer.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -1257,6 +1261,7 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F9)  { btnPrint.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
+			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

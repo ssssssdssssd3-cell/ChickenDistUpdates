@@ -19,7 +19,7 @@ namespace ChickenDist.Forms
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
         private Label _lPaid;
-        private Button _btnPrint, _btnWhatsApp;
+        private Button _btnPrint, _btnWhatsApp, btnOpenDrawer;
         private TextBox txtPaid;
         private Button btnPay, btnNew, btnCancel, btnSearchProduct;
         private ComboBox cboClient;
@@ -193,6 +193,10 @@ namespace ChickenDist.Forms
             _btnWhatsApp.ForeColor = Color.White;
             _btnWhatsApp.Click += (s, e) => { if (_lastSaleID > 0) SendWhatsAppReceipt(_lastSaleID); };
 
+            btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج", Color.FromArgb(70, 70, 70), new Point(895, 130), new Size(150, 55));
+            btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
+
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);
             pnlTotals.Controls.Add(_lPaid);
@@ -203,6 +207,7 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnCancel);
             pnlTotals.Controls.Add(_btnPrint);
             pnlTotals.Controls.Add(_btnWhatsApp);
+            pnlTotals.Controls.Add(btnOpenDrawer);
             this.Controls.Add(pnlTotals);
 
             this.Resize += (s, e) => LayoutPanels();
@@ -239,11 +244,12 @@ namespace ChickenDist.Forms
             lblChange.Location = new Point(20, 45);
             lblChange.Size     = new Size(Math.Max(100, midX - 130), 40);
             // الأزرار: توزيع من اليمين لليسار
-            if (_btnPrint != null) { _btnPrint.Location = new Point(totW - 145, 130); _btnPrint.Size = new Size(125, 55); }
-            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 275, 130); _btnWhatsApp.Size = new Size(120, 55); }
-            if (btnCancel != null) { btnCancel.Location = new Point(totW - 460, 130); btnCancel.Size = new Size(175, 55); }
-            if (btnNew    != null) { btnNew.Location    = new Point(totW - 680, 130); btnNew.Size    = new Size(210, 55); }
-            if (btnPay    != null) { btnPay.Location    = new Point(20, 130);          btnPay.Size    = new Size(Math.Max(150, totW - 710), 55); }
+            if (_btnPrint != null) { _btnPrint.Location = new Point(totW - 135, 130); _btnPrint.Size = new Size(115, 55); }
+            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 250, 130); _btnWhatsApp.Size = new Size(110, 55); }
+            if (btnOpenDrawer != null) { btnOpenDrawer.Location = new Point(totW - 395, 130); btnOpenDrawer.Size = new Size(140, 55); }
+            if (btnCancel != null) { btnCancel.Location = new Point(totW - 575, 130); btnCancel.Size = new Size(175, 55); }
+            if (btnNew    != null) { btnNew.Location    = new Point(totW - 790, 130); btnNew.Size    = new Size(210, 55); }
+            if (btnPay    != null) { btnPay.Location    = new Point(20, 130);          btnPay.Size    = new Size(Math.Max(150, totW - 815), 55); }
         }
 
         // ── اختصارات لوحة المفاتيح ───────────────────────────
@@ -254,6 +260,7 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
             else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
+            else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
         }
 
         // ── مسح الباركود ──────────────────────────────────────
