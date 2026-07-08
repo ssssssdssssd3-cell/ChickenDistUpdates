@@ -1105,7 +1105,7 @@ namespace ChickenDist.Forms
 			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
 			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
-			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج", 0, 0, 95, 26, Color.FromArgb(70, 70, 70));
+			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج (Ctrl+D)", 0, 0, 135, 26, Color.FromArgb(70, 70, 70));
 
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
@@ -1159,7 +1159,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,

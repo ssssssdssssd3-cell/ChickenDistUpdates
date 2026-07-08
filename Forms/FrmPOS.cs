@@ -193,7 +193,7 @@ namespace ChickenDist.Forms
             _btnWhatsApp.ForeColor = Color.White;
             _btnWhatsApp.Click += (s, e) => { if (_lastSaleID > 0) SendWhatsAppReceipt(_lastSaleID); };
 
-            btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج", Color.FromArgb(70, 70, 70), new Point(895, 130), new Size(150, 55));
+            btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج\n(Ctrl+D)", Color.FromArgb(70, 70, 70), new Point(895, 130), new Size(150, 55));
             btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
