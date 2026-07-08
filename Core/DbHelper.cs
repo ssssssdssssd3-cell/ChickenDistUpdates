@@ -1975,6 +1975,17 @@ namespace ChickenDist.Core
                     -- زيادة حجم الباركود الأساسي أيضاً للاحتياط
                     ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(500) NULL;
                 END");
+
+                // ===== ميزة تحديد وحدة البيع الافتراضية للمنتج =====
+                SafeMigrate("Products.DefaultSaleUnit", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'DefaultSaleUnit') IS NULL
+                    BEGIN
+                        ALTER TABLE Products ADD DefaultSaleUnit NVARCHAR(50) NULL;
+                    END
+                END");
+
                 // Save version number so we don't repeat inspection on next startup
                 try
                 {

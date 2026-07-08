@@ -306,6 +306,7 @@ namespace ChickenDist.Forms
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice,
                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice,
                        p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                       p.Unit3Factor, p.DefaultSaleUnit,
                        p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                 FROM Products p
                 WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.Unit1Barcode = @c OR p.Unit2Barcode = @c)",
@@ -335,6 +336,7 @@ namespace ChickenDist.Forms
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                                p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
                                p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                               p.Unit3Factor, p.DefaultSaleUnit,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
                         WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded)", 
@@ -475,6 +477,38 @@ namespace ChickenDist.Forms
             string name = row["ProductName"]?.ToString() ?? "";
             decimal price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
             decimal cost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
+
+            if (string.IsNullOrEmpty(unitName))
+            {
+                string defUnit = row.Table.Columns.Contains("DefaultSaleUnit") && row["DefaultSaleUnit"] != DBNull.Value 
+                    ? row["DefaultSaleUnit"].ToString() : "";
+                if (string.IsNullOrEmpty(defUnit)) defUnit = "الكبرى";
+
+                string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : null;
+                string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : null;
+                string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : null;
+
+                if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
+                {
+                    unitName = u2Name;
+                    if (row["Unit2SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit2SalePrice"]);
+                    if (row["Unit2Factor"] != DBNull.Value) factor = Convert.ToDecimal(row["Unit2Factor"]);
+                }
+                else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
+                {
+                    unitName = u1Name;
+                    if (row["Unit1SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit1SalePrice"]);
+                    factor = 1m;
+                }
+                else // "الكبرى" or default
+                {
+                    unitName = !string.IsNullOrEmpty(baseUnit) ? baseUnit : u1Name;
+                    decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+                    decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+                    factor = u2f * u3f;
+                    price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
+                }
+            }
 
             bool hasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]);
 
@@ -878,6 +912,7 @@ namespace ChickenDist.Forms
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                                p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
                                p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                               p.Unit3Factor, p.DefaultSaleUnit,
                                COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
                         WHERE p.ProductID = @id", DbHelper.P("@id", frm.SelectedProductID));
@@ -938,7 +973,7 @@ namespace ChickenDist.Forms
                 btn.FlatAppearance.BorderSize = 0;
                 btn.Click += (s, e) =>
                 {
-                    var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", (int)((Button)s).Tag));
+                    var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", (int)((Button)s).Tag));
                     if (dtP.Rows.Count > 0)
                     {
                         var row = dtP.Rows[0];

@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         // Multi-Unit Controls
         private TextBox txtUnit1Barcode;
-        private ComboBox cboUnit1Name, cboUnit2Name;
+        private ComboBox cboUnit1Name, cboUnit2Name, cboDefaultSaleUnit;
         private Button btnAddUnit1Name, btnAddUnit2Name;
         private NumericUpDown nudUnit1SalePrice, nudUnit1PurchasePrice;
         private TextBox txtUnit2Barcode;
@@ -339,6 +339,12 @@ namespace ChickenDist.Forms
             var lblNote = new Label { Text = "*(أو تحتوي كم صغرى مباشرة في حال عدم تفعيل الوحدة الوسطى)", Location = new Point(10, 270), Width = 280, Height = 50, ForeColor = Color.Gray, Font = new Font("Segoe UI", 8.5f, FontStyle.Italic) };
             grpUnit1.Controls.Add(lblNote);
 
+            var lblDefaultSaleUnit = new Label { Text = "وحدة البيع الافتراضية:", Location = new Point(10 + 155, 325 + 3), Width = 140, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboDefaultSaleUnit = new ComboBox { Location = new Point(10, 325), Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            cboDefaultSaleUnit.Items.AddRange(new string[] { "الكبرى", "الوسطى", "الصغرى" });
+            cboDefaultSaleUnit.SelectedIndex = 0; // Default is الكبرى
+            grpUnit1.Controls.AddRange(new Control[] { lblDefaultSaleUnit, cboDefaultSaleUnit });
+
             // Make unit secondary prices read-only and distinctly styled so they are calculated-only
             nudUnit2SalePrice.ReadOnly = true;
             nudUnit2PurchasePrice.ReadOnly = true;
@@ -612,6 +618,15 @@ namespace ChickenDist.Forms
 
             nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
 
+            // Default sale unit loading
+            string dsu = dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value ? dr["DefaultSaleUnit"].ToString() : "";
+            if (cboDefaultSaleUnit != null)
+            {
+                if (dsu == "الوسطى") cboDefaultSaleUnit.SelectedIndex = 1;
+                else if (dsu == "الصغرى") cboDefaultSaleUnit.SelectedIndex = 2;
+                else cboDefaultSaleUnit.SelectedIndex = 0;
+            }
+
             // تحديد التصنيف في الـ ComboBox
             if (dr["CategoryID"] != DBNull.Value)
             {
@@ -673,6 +688,7 @@ namespace ChickenDist.Forms
             nudUnit2PurchasePrice.Value = 0;
 
             nudUnit3Factor.Value = 0;
+            if (cboDefaultSaleUnit != null) cboDefaultSaleUnit.SelectedIndex = 0;
             
             RecalculateSubUnitPrices();
             UpdateUnitHeaders();
@@ -795,7 +811,7 @@ namespace ChickenDist.Forms
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, txtProducerCompany.Text.Trim(),
-                chkHasExpiry.Checked, chkHasExpiry.Checked ? (int?)nudDefaultExpiryDays.Value : null);
+                chkHasExpiry.Checked, chkHasExpiry.Checked ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text);
 
             if (id > 0)
             {
