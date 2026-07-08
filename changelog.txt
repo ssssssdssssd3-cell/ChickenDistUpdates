@@ -1,3 +1,12 @@
+v2.0.56 - 2026-07-08
+- Debt Aging: Implemented multi-criteria search and filter options (Clients, Drivers/Representatives, Days Overdue threshold, and text search) inside FrmReports.
+- Print Templates: Added GridReceipt and FancyReceipt templates for thermal printers.
+- Print Templates: Added SparePartsGrid and SupermarketA4 templates for A4 printers.
+- Layout: Enabled visible gridlines and borders separating columns/rows for A4/A5 and thermal receipt printouts.
+
+v2.0.55 - 2026-07-07
+- Products: Implemented default selling unit choice (الكبرى / الوسطى / الصغرى) on scan, falling back to Largest Unit.
+
 v1.9.83 - 2026-06-30
 - Layout: Refactored the maintenance screen (FrmMaintenance) layout to use a strict TableLayoutPanel container hierarchy, preventing the top filter bar or bottom financials panel from overlapping the tickets grid on any screen resolution.
 - Support Bot: Completely redesigned the chatbot (FrmSupportBot) layout to use proper docked panels (preventing bottom controls from being cut off). Added customized quick action chips and detailed responses for cost calculation, changing sales prices, and explaining screens depending on the active business type.

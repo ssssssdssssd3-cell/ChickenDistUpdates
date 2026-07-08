@@ -2097,10 +2097,14 @@ namespace ChickenDist.DAL
                 ORDER BY c.ClientName");
         }
 
-        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate)
+        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate, int? driverID = null, decimal minBalance = 0, int minDays = 0)
         {
-            return DbHelper.Query(@"
-                ;WITH LastPayment AS (
+            var parameters = new List<SqlParameter>
+            {
+                DbHelper.P("@FromDate", fromDate.Date)
+            };
+
+            string sql = @";WITH LastPayment AS (
                     SELECT ClientID, TransDate AS LastPaymentDate, Credit AS LastPaymentAmount,
                            ROW_NUMBER() OVER (PARTITION BY ClientID ORDER BY TransDate DESC, TransID DESC) AS rn
                     FROM ClientTransactions
@@ -2126,10 +2130,26 @@ namespace ChickenDist.DAL
                 LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                 LEFT JOIN LastPayment lp ON c.ClientID = lp.ClientID AND lp.rn = 1
                 LEFT JOIN LastInvoice li ON c.ClientID = li.ClientID AND li.rn = 1
-                WHERE ISNULL(cb.Balance, c.OpeningBalance) > 0
-                  AND (lp.LastPaymentDate IS NULL OR lp.LastPaymentDate < @FromDate)
-                ORDER BY Balance DESC, c.ClientName",
-                DbHelper.P("@FromDate", fromDate.Date));
+                WHERE ISNULL(cb.Balance, c.OpeningBalance) >= @MinBalance ";
+
+            parameters.Add(DbHelper.P("@MinBalance", minBalance > 0 ? minBalance : 0.01m));
+
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                sql += " AND c.DriverID = @DriverID ";
+                parameters.Add(DbHelper.P("@DriverID", driverID.Value));
+            }
+
+            if (minDays > 0)
+            {
+                sql += " AND DATEDIFF(day, lp.LastPaymentDate, GETDATE()) >= @MinDays ";
+                parameters.Add(DbHelper.P("@MinDays", minDays));
+            }
+
+            sql += " AND (lp.LastPaymentDate IS NULL OR lp.LastPaymentDate < @FromDate) ";
+            sql += " ORDER BY Balance DESC, c.ClientName";
+
+            return DbHelper.Query(sql, parameters.ToArray());
         }
 
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>

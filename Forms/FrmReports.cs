@@ -163,7 +163,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					DataGridView dataGridView = tabReports.SelectedTab?.Controls.OfType<DataGridView>().FirstOrDefault();
+					DataGridView dataGridView = FindDataGridView(tabReports.SelectedTab);
 					if (dataGridView != null)
 					{
 						FilterGrid(dataGridView, txtSearchClient.Text.Trim());
@@ -647,6 +647,104 @@ namespace ChickenDist.Forms
 					tabReports.TabPages.Add(tabPage);
 					continue;
 				}
+
+				if (item2 == "DebtAging")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 2,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(5)
+					};
+
+					Label lblDriver = new Label { Text = "المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboDriver = new ComboBox { Name = "cboFilterDriver", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					
+					Label lblMinBalance = new Label { Text = "رصيد أكبر من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					NumericUpDown nudMinBalance = new NumericUpDown { Name = "nudFilterMinBalance", Width = 100, Minimum = 0, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblOverdueDays = new Label { Text = "تأخير السداد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					ComboBox cboOverdueDays = new ComboBox { Name = "cboFilterOverdueDays", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					cboDriver.Items.Add(new ComboItem(0, "كل المناديب"));
+					try
+					{
+						DataTable dtDrivers = EmployeeDAL.GetDrivers();
+						foreach (DataRow r in dtDrivers.Rows)
+						{
+							cboDriver.Items.Add(new ComboItem(Convert.ToInt32(r["EmpID"]), r["EmpName"].ToString()));
+						}
+					}
+					catch { }
+					cboDriver.DisplayMember = "Text";
+					cboDriver.SelectedIndex = 0;
+
+					cboOverdueDays.Items.Add(new ComboItem(0, "كل الديون"));
+					cboOverdueDays.Items.Add(new ComboItem(30, "أكثر من 30 يوم"));
+					cboOverdueDays.Items.Add(new ComboItem(60, "أكثر من 60 يوم"));
+					cboOverdueDays.Items.Add(new ComboItem(90, "أكثر من 90 يوم"));
+					cboOverdueDays.Items.Add(new ComboItem(120, "أكثر من 120 يوم"));
+					cboOverdueDays.DisplayMember = "Text";
+					cboOverdueDays.SelectedIndex = 0;
+
+					cboDriver.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					nudMinBalance.ValueChanged += (s, e) => LoadCurrentTab();
+					cboOverdueDays.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblDriver, cboDriver, lblMinBalance, nudMinBalance, lblOverdueDays, cboOverdueDays });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgDebtAging = new DataGridView
+					{
+						Name = "dgDebtAging",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgDebtAging, 0, 1);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
 				DataGridView value = new DataGridView
 				{
 					Dock = DockStyle.Fill,
@@ -951,19 +1049,43 @@ namespace ChickenDist.Forms
 					}, dataGridView);
 					break;
 				case "DebtAging":
-					_currentDt = ReportDAL.DebtAgingReport(dtpFrom.Value, dtpTo.Value);
-					SetupGrid(new(string, string)[9]
 					{
-						("ClientCode", "كود العميل"),
-						("ClientName", "اسم العميل"),
-						("Phone", "رقم الهاتف"),
-						("Balance", "المديونية الحالية"),
-						("LastInvoiceDate", "تاريخ آخر فاتورة"),
-						("LastInvoiceAmount", "قيمة آخر فاتورة"),
-						("LastPaymentDate", "تاريخ آخر توريد"),
-						("LastPaymentAmount", "قيمة آخر توريد"),
-						("DaysSinceLastPayment", "أيام منذ آخر توريد")
-					}, dataGridView);
+						int? filterDriverID = null;
+						decimal filterMinBalance = 0;
+						int filterMinDays = 0;
+
+						var cboDriver = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterDriver");
+						if (cboDriver != null && cboDriver.SelectedItem is ComboItem drItem && drItem.ID > 0)
+						{
+							filterDriverID = drItem.ID;
+						}
+
+						var nudMinBalance = FindControlByName<NumericUpDown>(tabReports.SelectedTab, "nudFilterMinBalance");
+						if (nudMinBalance != null)
+						{
+							filterMinBalance = nudMinBalance.Value;
+						}
+
+						var cboOverdueDays = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterOverdueDays");
+						if (cboOverdueDays != null && cboOverdueDays.SelectedItem is ComboItem daysItem && daysItem.ID > 0)
+						{
+							filterMinDays = daysItem.ID;
+						}
+
+						_currentDt = ReportDAL.DebtAgingReport(dtpFrom.Value, dtpTo.Value, filterDriverID, filterMinBalance, filterMinDays);
+						SetupGrid(new(string, string)[9]
+						{
+							("ClientCode", "كود العميل"),
+							("ClientName", "اسم العميل"),
+							("Phone", "رقم الهاتف"),
+							("Balance", "المديونية الحالية"),
+							("LastInvoiceDate", "تاريخ آخر فاتورة"),
+							("LastInvoiceAmount", "قيمة آخر فاتورة"),
+							("LastPaymentDate", "تاريخ آخر توريد"),
+							("LastPaymentAmount", "قيمة آخر توريد"),
+							("DaysSinceLastPayment", "أيام منذ آخر توريد")
+						}, dataGridView);
+					}
 					break;
 				case "FinancialSummary":
 					_currentDt = ReportDAL.GetFinancialSummary(dtpFrom.Value, dtpTo.Value, warehouseID);
@@ -2262,6 +2384,18 @@ namespace ChickenDist.Forms
 			{
 				dg.ResumeLayout();
 			}
+		}
+
+		private DataGridView FindDataGridView(Control parent)
+		{
+			if (parent == null) return null;
+			if (parent is DataGridView dg) return dg;
+			foreach (Control child in parent.Controls)
+			{
+				var found = FindDataGridView(child);
+				if (found != null) return found;
+			}
+			return null;
 		}
 	}
 }

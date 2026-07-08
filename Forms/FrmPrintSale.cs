@@ -347,6 +347,133 @@ namespace ChickenDist.Forms
                         e.HasMorePages = false;
                         g.DrawLine(new Pen(Color.Black, 1f) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }, lMargin, y, pageW - rMargin, y); y += 6;
                     }
+                    else if (string.Equals(template, "GridReceipt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // GridReceipt: Highly readable, columns and rows separated clearly by clean lines
+                        g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 25), center); y += 22;
+                        g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
+                        g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 6;
+
+                        if (_saleRow != null)
+                        {
+                            g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                            g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                            g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
+                        }
+                        g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 4;
+
+                        // Grid Columns Setup
+                        int wTotGrid = 60;
+                        int wPriceGrid = 55;
+                        int wQtyGrid = 40;
+                        int wNameGrid = printableW - wTotGrid - wPriceGrid - wQtyGrid;
+
+                        int colTotG = lMargin;
+                        int colPriceG = colTotG + wTotGrid;
+                        int colQtyG = colPriceG + wPriceGrid;
+                        int colNameG = colQtyG + wQtyGrid;
+
+                        int headY = y - 2;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(240, 240, 240)), lMargin, headY, printableW, 20);
+                        var alignCenter = new StringFormat { Alignment = StringAlignment.Center };
+
+                        g.DrawString("الإجمالي", small, Brushes.Black, new RectangleF(colTotG, y + 1, wTotGrid, 16), alignCenter);
+                        g.DrawString("السعر", small, Brushes.Black, new RectangleF(colPriceG, y + 1, wPriceGrid, 16), alignCenter);
+                        g.DrawString("الكمية", small, Brushes.Black, new RectangleF(colQtyG, y + 1, wQtyGrid, 16), alignCenter);
+                        g.DrawString("الصنف", small, Brushes.Black, new RectangleF(colNameG, y + 1, wNameGrid - 4, 16), right);
+                        y += 20;
+
+                        g.DrawLine(Pens.Black, lMargin, headY, pageW - rMargin, headY); // top
+                        g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); // bottom
+                        g.DrawLine(Pens.Black, colTotG, headY, colTotG, y);
+                        g.DrawLine(Pens.Black, colPriceG, headY, colPriceG, y);
+                        g.DrawLine(Pens.Black, colQtyG, headY, colQtyG, y);
+                        g.DrawLine(Pens.Black, colNameG, headY, colNameG, y);
+                        g.DrawLine(Pens.Black, pageW - rMargin, headY, pageW - rMargin, y);
+
+                        y += 4;
+
+                        if (_items != null)
+                        {
+                            while (_printItemIndex < _items.Rows.Count)
+                            {
+                                if (y + 35 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                DataRow r = _items.Rows[_printItemIndex];
+                                string prodName = r["ProductName"].ToString();
+                                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+
+                                int itemY = y - 2;
+
+                                g.DrawString(prodName, small, Brushes.Black, new RectangleF(colNameG, y, wNameGrid - 4, 16), right);
+                                g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQtyG, y, wQtyGrid, 16), alignCenter);
+                                g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPriceG, y, wPriceGrid, 16), alignCenter);
+                                g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTotG, y, wTotGrid, 16), alignCenter);
+                                y += 18;
+
+                                g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); // row separator
+                                g.DrawLine(Pens.Black, colTotG, itemY, colTotG, y);
+                                g.DrawLine(Pens.Black, colPriceG, itemY, colPriceG, y);
+                                g.DrawLine(Pens.Black, colQtyG, itemY, colQtyG, y);
+                                g.DrawLine(Pens.Black, colNameG, itemY, colNameG, y);
+                                g.DrawLine(Pens.Black, pageW - rMargin, itemY, pageW - rMargin, y);
+
+                                _runningTotal += tot;
+                                _printItemIndex++;
+                            }
+                        }
+                        e.HasMorePages = false;
+                        g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 6;
+                    }
+                    else if (string.Equals(template, "FancyReceipt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // FancyReceipt: Ornamented borders, elegant labels and divider lines
+                        g.DrawString("*** " + AppConfig.CompanyName + " ***", boldBig, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
+                        g.DrawString("==========================", small, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+                        g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
+
+                        if (_saleRow != null)
+                        {
+                            g.DrawString($"رقم المستند: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                            g.DrawString($"التاريخ والوقت: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+                            g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
+                        }
+                        g.DrawString("--------------------------", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+
+                        if (_items != null)
+                        {
+                            while (_printItemIndex < _items.Rows.Count)
+                            {
+                                if (y + 40 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                DataRow r = _items.Rows[_printItemIndex];
+                                string prodName = r["ProductName"].ToString();
+                                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+
+                                g.DrawString(prodName, bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right);
+                                y += 16;
+                                g.DrawString($"{qty:0.##} x {price:N2} = {tot:N2} ج.م", normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 14), right);
+                                y += 16;
+
+                                _runningTotal += tot;
+                                _printItemIndex++;
+                            }
+                        }
+                        e.HasMorePages = false;
+                        g.DrawString("--------------------------", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+                    }
                     else
                     {
                         // ==========================================
@@ -646,6 +773,39 @@ namespace ChickenDist.Forms
                         g.DrawLine(new Pen(Color.LightGray, 1f), margin, y, pageW - margin, y);
                         y += 10;
                     }
+                    else if (string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Industrial Spare Parts Header
+                        g.DrawString("فاتورة بيع قطع غيار ومستلزمات", boldBigSheet, Brushes.SteelBlue, new RectangleF(0, y, pageW, 28), center); y += 28;
+                        g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                        g.DrawLine(new Pen(Color.SteelBlue, 2f), margin, y, pageW - margin, y); y += 10;
+
+                        if (_saleRow != null)
+                        {
+                            g.DrawString($"كود الفاتورة: {_saleRow["SaleCode"]}", boldSheet, Brushes.Black, margin, y);
+                            g.DrawString($"تاريخ البيع: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy HH:mm}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                            y += 20;
+                            g.DrawString($"العميل (الحساب): {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                            y += 25;
+                        }
+                    }
+                    else if (string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Supermarket Header
+                        g.DrawString("فاتورة مبيعات التجزئة والماركت", boldBigSheet, Brushes.OliveDrab, new RectangleF(0, y, pageW, 28), center); y += 28;
+                        g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                        g.DrawLine(new Pen(Color.OliveDrab, 1.5f), margin, y, pageW - margin, y); y += 10;
+
+                        if (_saleRow != null)
+                        {
+                            string payType = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, margin, y);
+                            g.DrawString($"تاريخ المعاملة: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy HH:mm}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                            y += 20;
+                            g.DrawString($"العميل: {_saleRow["ClientName"]}  ({payType})", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                            y += 25;
+                        }
+                    }
                     else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
                     {
                         // Official header
@@ -715,16 +875,19 @@ namespace ChickenDist.Forms
 
                     // ===== Table Header =====
                     int xTotal    = margin;       // Total amount
-                    int xDiscount = 105;          // Discount
-                    int xPrice    = 170;          // Unit price
-                    int xQty      = 255;          // Quantity
-                    int xProduct  = 340;          // Product Name
-
                     int colWTotal    = 80;
+                    
+                    int xDiscount = xTotal + colWTotal; // Discount
                     int colWDiscount = 60;
+                    
+                    int xPrice    = xDiscount + colWDiscount; // Unit price
                     int colWPrice    = 80;
+                    
+                    int xQty      = xPrice + colWPrice; // Quantity
                     int colWQty      = 80;
-                    int colWProduct  = 220;
+                    
+                    int xProduct  = xQty + colWQty; // Product Name
+                    int colWProduct  = pageW - 2 * margin - colWTotal - colWDiscount - colWPrice - colWQty;
 
                     if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
@@ -736,6 +899,30 @@ namespace ChickenDist.Forms
                         DrawColHeader(g, boldSheet, "السعر", xPrice, colWPrice, y + 2, Brushes.White);
                         DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 2, Brushes.White);
                         DrawColHeader(g, boldSheet, "الصنف", xProduct, colWProduct, y + 2, Brushes.White);
+                        y += 22;
+                    }
+                    else if (string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // SteelBlue filled header block for SpareParts
+                        g.FillRectangle(Brushes.SteelBlue, margin, y, pageW - 2 * margin, 24);
+                        
+                        DrawColHeader(g, boldSheet, "الإجمالي", xTotal, colWTotal, y + 3, Brushes.White);
+                        DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 3, Brushes.White);
+                        DrawColHeader(g, boldSheet, "السعر", xPrice, colWPrice, y + 3, Brushes.White);
+                        DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 3, Brushes.White);
+                        DrawColHeader(g, boldSheet, "بيان قطع الغيار والصنف", xProduct, colWProduct, y + 3, Brushes.White);
+                        y += 24;
+                    }
+                    else if (string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // OliveDrab filled header block for Supermarket
+                        g.FillRectangle(Brushes.OliveDrab, margin, y, pageW - 2 * margin, 22);
+                        
+                        DrawColHeader(g, boldSheet, "الإجمالي", xTotal, colWTotal, y + 2, Brushes.White);
+                        DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 2, Brushes.White);
+                        DrawColHeader(g, boldSheet, "السعر", xPrice, colWPrice, y + 2, Brushes.White);
+                        DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 2, Brushes.White);
+                        DrawColHeader(g, boldSheet, "المنتج", xProduct, colWProduct, y + 2, Brushes.White);
                         y += 22;
                     }
                     else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
@@ -799,14 +986,30 @@ namespace ChickenDist.Forms
                             else if (itemDiscAmt > 0)
                                 discText = itemDiscAmt.ToString("F2");
 
-                            if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
                             {
-                                // Draw grid boxes for official template
-                                g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, 18);
-                                g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, 18);
-                                g.DrawRectangle(Pens.Black, xPrice, y, colWPrice, 18);
-                                g.DrawRectangle(Pens.Black, xQty, y, colWQty, 18);
-                                g.DrawRectangle(Pens.Black, xProduct, y, colWProduct, 18);
+                                Pen borderPen = string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.SteelBlue, 1f) :
+                                                string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.OliveDrab, 1f) :
+                                                Pens.Black;
+
+                                // Draw grid boxes for official/spareparts/supermarket templates
+                                g.DrawRectangle(borderPen, xTotal, y, colWTotal, 18);
+                                g.DrawRectangle(borderPen, xDiscount, y, colWDiscount, 18);
+                                g.DrawRectangle(borderPen, xPrice, y, colWPrice, 18);
+                                g.DrawRectangle(borderPen, xQty, y, colWQty, 18);
+                                g.DrawRectangle(borderPen, xProduct, y, colWProduct, 18);
+                            }
+                            else
+                            {
+                                // Draw subtle horizontal gridlines for other templates
+                                g.DrawLine(Pens.LightGray, margin, y + 18, pageW - margin, y + 18);
+                                // Draw vertical lines separating columns
+                                g.DrawLine(Pens.LightGray, xDiscount, y, xDiscount, y + 18);
+                                g.DrawLine(Pens.LightGray, xPrice, y, xPrice, y + 18);
+                                g.DrawLine(Pens.LightGray, xQty, y, xQty, y + 18);
+                                g.DrawLine(Pens.LightGray, xProduct, y, xProduct, y + 18);
                             }
 
                             DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y + 2);
@@ -817,11 +1020,6 @@ namespace ChickenDist.Forms
                             
                             _runningTotal += tot; 
                             y += 18;
-
-                            if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
-                            {
-                                g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y);
-                            }
 
                             _printItemIndex++;
                         }
@@ -858,6 +1056,40 @@ namespace ChickenDist.Forms
                             g.DrawString($"خدمة الشحن: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
                         }
                         g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
+                    }
+                    else if (string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        g.DrawLine(new Pen(Color.SteelBlue, 2f), margin, y, pageW - margin, y); y += 8;
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
+                        {
+                            g.DrawString($"إجمالي الفاتورة: {_runningTotal:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (invDiscountAmt > 0)
+                        {
+                            g.DrawString($"الخصم الممنوح: -{invDiscountAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (shippingAmt > 0)
+                        {
+                            g.DrawString($"مصاريف شحن وتوزيع: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        g.DrawString($"صافي المطلوب: {netAmount:N2} جنيه", boldSheet, Brushes.SteelBlue, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
+                    }
+                    else if (string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
+                    {
+                        g.DrawLine(new Pen(Color.OliveDrab, 1.5f), margin, y, pageW - margin, y); y += 8;
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
+                        {
+                            g.DrawString($"إجمالي المنتجات: {_runningTotal:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (invDiscountAmt > 0)
+                        {
+                            g.DrawString($"الخصم التجاري: -{invDiscountAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (shippingAmt > 0)
+                        {
+                            g.DrawString($"خدمة توصيل الطلبات: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        g.DrawString($"إجمالي الحساب الصافي: {netAmount:N2} جنيه", boldSheet, Brushes.OliveDrab, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }
                     else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
                     {
