@@ -34,16 +34,54 @@ namespace ChickenDist.Forms
 
             // Logo/Header panel
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary };
-            var lblLogo = new Label
+            
+            PictureBox pbLogo = null;
+            Label lblLogo = null;
+            Image logoImg = null;
+
+            if (!string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
             {
-                Text = "🚚",
-                Font = new Font("Segoe UI Emoji", 50f),
-                ForeColor = Theme.Accent,
-                AutoSize = false,
-                Size = new Size(480, 90),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Top = 10
-            };
+                try
+                {
+                    byte[] bytes = System.IO.File.ReadAllBytes(AppConfig.ShopLogoPath);
+                    using (var ms = new System.IO.MemoryStream(bytes))
+                    {
+                        logoImg = Image.FromStream(ms);
+                    }
+                }
+                catch { }
+            }
+
+            if (logoImg == null)
+            {
+                logoImg = Theme.GetCompanyLogo();
+            }
+
+            if (logoImg != null)
+            {
+                pbLogo = new PictureBox
+                {
+                    Image = logoImg,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Size = new Size(130, 80),
+                    Location = new Point((480 - 130) / 2, 10),
+                    BackColor = Color.Transparent
+                };
+            }
+            else
+            {
+                lblLogo = new Label
+                {
+                    Text = "🚚",
+                    Font = new Font("Segoe UI Emoji", 50f),
+                    ForeColor = Theme.Accent,
+                    AutoSize = false,
+                    Size = new Size(480, 90),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Top = 10
+                };
+            }
+
             var lblTitle = new Label
             {
                 Text = AppConfig.CompanyName,
@@ -64,7 +102,11 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleCenter,
                 Top = 144
             };
-            pnlTop.Controls.AddRange(new Control[] { lblLogo, lblTitle, lblSub });
+
+            if (pbLogo != null)
+                pnlTop.Controls.AddRange(new Control[] { pbLogo, lblTitle, lblSub });
+            else
+                pnlTop.Controls.AddRange(new Control[] { lblLogo, lblTitle, lblSub });
 
             // White card panel
             var pnlCard = new Panel
@@ -107,7 +149,22 @@ namespace ChickenDist.Forms
             };
             btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.Click += BtnLogin_Click;
-            txtPass.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) BtnLogin_Click(null, null); };
+            
+            txtUser.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    txtPass.Focus();
+                }
+            };
+            
+            txtPass.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    BtnLogin_Click(null, null);
+                }
+            };
 
             pnlCard.Controls.AddRange(new Control[] { lblUserLbl, txtUser, lblPassLbl, txtPass, lblError, btnLogin });
 
@@ -144,7 +201,6 @@ namespace ChickenDist.Forms
             };
 
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, pbUpdate });
-            this.AcceptButton = btnLogin;
 
             this.Shown += FrmLogin_Shown;
         }
