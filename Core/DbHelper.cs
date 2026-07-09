@@ -169,7 +169,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 21;
+        private const int CurrentSchemaVersion = 22;
 
         public static void EnsureDatabaseSchema()
         {

@@ -1,3 +1,6 @@
+v2.0.61 - 2026-07-09
+- Migration: Incremented schema version to 22 to force startup execution of the ExpenseTypes table creation.
+
 v2.0.60 - 2026-07-09
 - Expenses: Renamed screen/tab to Operating Expenses (المصروفات التشغيلية), removed supplier payments from this screen, and added support for dynamic expense categories managed via FrmLookupManager.
 
