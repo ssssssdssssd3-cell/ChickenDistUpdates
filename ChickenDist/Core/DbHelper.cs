@@ -169,7 +169,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 22;
+        private const int CurrentSchemaVersion = 23;
 
         public static void EnsureDatabaseSchema()
         {
@@ -1992,6 +1992,87 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ALTER COLUMN Unit2Barcode NVARCHAR(500) NULL;
                     -- زيادة حجم الباركود الأساسي أيضاً للاحتياط
                     ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(500) NULL;
+                END");
+
+                // ===== 5. نظام التسويات المحاسبية والميزانية العمومية وقائمة الدخل =====
+                SafeMigrate("Accounting.AdjustmentsTable", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AccountingAdjustments')
+                BEGIN
+                    CREATE TABLE AccountingAdjustments (
+                        AccountKey   NVARCHAR(100) PRIMARY KEY,
+                        AccountValue DECIMAL(18,2) NOT NULL DEFAULT 0
+                    );
+                    
+                    INSERT INTO AccountingAdjustments (AccountKey, AccountValue) VALUES
+                    ('Land', 0),
+                    ('Buildings', 0),
+                    ('Machinery', 0),
+                    ('Vehicles', 0),
+                    ('Furniture', 0),
+                    ('Computers', 0),
+                    ('Investments', 0),
+                    ('Intangibles', 0),
+                    ('AccumulatedDepreciation', 0),
+                    ('NotesReceivable', 0),
+                    ('PrepaidExpenses', 0),
+                    ('AccruedRevenues', 0),
+                    ('CustodiesAdvances', 0),
+                    ('NotesPayable', 0),
+                    ('ShortTermLoans', 0),
+                    ('AccruedTax', 0),
+                    ('AccruedInsurance', 0),
+                    ('AccruedExpenses', 0),
+                    ('DeferredRevenues', 0),
+                    ('LongTermLoans', 0),
+                    ('LongTermLiabilities', 0),
+                    ('Capital', 0),
+                    ('LegalReserve', 0),
+                    ('GeneralReserve', 0),
+                    ('RetainedEarnings', 0),
+                    ('Drawings', 0),
+                    ('GainOnAssetSale', 0),
+                    ('InterestEarned', 0),
+                    ('FXGain', 0),
+                    ('OtherRevenues', 0),
+                    ('InterestPaid', 0),
+                    ('FXLoss', 0),
+                    ('LossOnAssetSale', 0),
+                    ('FinesPenalties', 0),
+                    ('OtherExpenses', 0),
+                    ('IncomeTax', 0);
+                END");
+
+                SafeMigrate("ExpenseTypes.SeedProfessional", @"
+                IF OBJECT_ID('ExpenseTypes', 'U') IS NOT NULL
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الرواتب والأجور')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0010', N'الرواتب والأجور');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'التأمينات')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0011', N'التأمينات');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الإيجارات')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0012', N'الإيجارات');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الكهرباء والمياه')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0013', N'الكهرباء والمياه');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الاتصالات والإنترنت')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0014', N'الاتصالات والإنترنت');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الوقود والمحروقات')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0015', N'الوقود والمحروقات');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الصيانة')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0016', N'الصيانة');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'النقل والشحن')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0017', N'النقل والشحن');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'التسويق والإعلان')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0018', N'التسويق والإعلان');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الضيافة')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0019', N'الضيافة');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الأدوات المكتبية')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0020', N'الأدوات المكتبية');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'الإهلاك')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0021', N'الإهلاك');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'المصروفات البنكية')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0022', N'المصروفات البنكية');
+                    IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'مصروفات متنوعة')
+                        INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0023', N'مصروفات متنوعة');
                 END");
                 // Save version number so we don't repeat inspection on next startup
                 try
