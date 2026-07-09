@@ -35,12 +35,12 @@ namespace ChickenDist.Core
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true };
+                    _perms[s] = new PermInfo { CanAccess = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true };
                 return;
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
@@ -54,7 +54,8 @@ namespace ChickenDist.Core
                         CanEditSalesInvoice = row["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanEditSalesInvoice"]),
                         CanDeleteSalesInvoice = row.Table.Columns.Contains("CanDeleteSalesInvoice") && row["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanDeleteSalesInvoice"]),
                         CanCopySalesInvoice = row.Table.Columns.Contains("CanCopySalesInvoice") && row["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(row["CanCopySalesInvoice"]),
-                        CanViewCost  = row["CanViewCost"]  != DBNull.Value && Convert.ToBoolean(row["CanViewCost"])
+                        CanViewCost  = row["CanViewCost"]  != DBNull.Value && Convert.ToBoolean(row["CanViewCost"]),
+                        CanOrderColumns = row.Table.Columns.Contains("CanOrderColumns") && row["CanOrderColumns"] != DBNull.Value && Convert.ToBoolean(row["CanOrderColumns"])
                     };
                 }
                 catch (Exception ex)
@@ -101,6 +102,69 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanViewCost;
         }
 
+        public static bool CanOrderColumns(string screen)
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanOrderColumns;
+        }
+
+        public static void SaveColumnOrder(System.Windows.Forms.DataGridView dgv, string gridKey)
+        {
+            try
+            {
+                var list = new List<string>();
+                foreach (System.Windows.Forms.DataGridViewColumn col in dgv.Columns)
+                {
+                    list.Add($"{col.Name}:{col.DisplayIndex}");
+                }
+                string val = string.Join(",", list);
+                AppConfig.Set($"GridCols_{gridKey}_Emp_{EmpID}", val);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Error saving column order", ex, "Session.SaveColumnOrder");
+            }
+        }
+
+        public static void LoadColumnOrder(System.Windows.Forms.DataGridView dgv, string gridKey)
+        {
+            try
+            {
+                string val = AppConfig.Get($"GridCols_{gridKey}_Emp_{EmpID}", "");
+                if (string.IsNullOrEmpty(val)) return;
+
+                var parts = val.Split(',');
+                var dict = new Dictionary<string, int>();
+                foreach (var part in parts)
+                {
+                    var pair = part.Split(':');
+                    if (pair.Length == 2 && int.TryParse(pair[1], out int idx))
+                    {
+                        dict[pair[0]] = idx;
+                    }
+                }
+
+                var sortedCols = new List<System.Windows.Forms.DataGridViewColumn>();
+                foreach (System.Windows.Forms.DataGridViewColumn col in dgv.Columns)
+                {
+                    if (dict.ContainsKey(col.Name))
+                    {
+                        sortedCols.Add(col);
+                    }
+                }
+                sortedCols.Sort((a, b) => dict[a.Name].CompareTo(dict[b.Name]));
+
+                foreach (var col in sortedCols)
+                {
+                    col.DisplayIndex = dict[col.Name];
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Error loading column order", ex, "Session.LoadColumnOrder");
+            }
+        }
+
         public static void Clear()
         {
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
@@ -136,5 +200,6 @@ namespace ChickenDist.Core
         public bool CanDeleteSalesInvoice { get; set; }
         public bool CanCopySalesInvoice { get; set; }
         public bool CanViewCost { get; set; }
+        public bool CanOrderColumns { get; set; }
     }
 }

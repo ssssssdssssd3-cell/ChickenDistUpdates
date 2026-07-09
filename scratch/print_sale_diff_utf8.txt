@@ -1,0 +1,706 @@
+﻿diff --git a/Forms/FrmPrintSale.cs b/Forms/FrmPrintSale.cs
+index 02ed1bb..a0d70b5 100644
+--- a/Forms/FrmPrintSale.cs
++++ b/Forms/FrmPrintSale.cs
+@@ -114,8 +114,6 @@ namespace ChickenDist.Forms
+ 
+                 if (isReceipt)
+                 {
+-                    // ==========================================
+-                    // THERMAL RECEIPT LAYOUT (80mm width)
+                     // ==========================================
+                     string template = AppConfig.ReceiptTemplate;
+                     
+@@ -150,7 +148,7 @@ namespace ChickenDist.Forms
+                                 {
+                                     e.HasMorePages = true;
+                                     return;
+-                                }
++                               }
+                                 DataRow r = _items.Rows[_printItemIndex];
+                                 string prodName = r["ProductName"].ToString();
+                                 decimal qty = Convert.ToDecimal(r["Quantity"]);
+@@ -166,6 +164,9 @@ namespace ChickenDist.Forms
+                                 g.DrawString(tot.ToString("N2"), bold, Brushes.Black, new RectangleF(lMargin, y, 80, 14), left);
+                                 y += 15;
+                                 
++                                g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); // Row separator
++                                y += 4;
++                                
+                                 _runningTotal += tot;
+                                 _printItemIndex++;
+                             }
+@@ -205,7 +206,7 @@ namespace ChickenDist.Forms
+                         int colSplit = lMargin + 70;
+                         int wNameModern = printableW - 70;
+                         int headerY = y - 2;
+-
++ 
+                         g.DrawString("╪º┘ä╪╡┘å┘ü ┘ê╪º┘ä┘â┘à┘è╪⌐", bold, Brushes.Black, new RectangleF(colSplit, y, wNameModern - 4, 16), right);
+                         g.DrawString("╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", bold, Brushes.Black, new RectangleF(lMargin + 4, y, 70 - 4, 16), left);
+                         y += 18;
+@@ -235,7 +236,7 @@ namespace ChickenDist.Forms
+                                 decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+                                 
+                                 int itemY = y - 2;
+-
++ 
+                                 g.DrawString(prodName, bold, Brushes.Black, new RectangleF(colSplit, y, wNameModern - 4, 16), right);
+                                 g.DrawString(tot.ToString("N2"), bold, Brushes.Black, new RectangleF(lMargin + 4, y, 70 - 4, 16), left);
+                                 y += 15;
+@@ -294,6 +295,10 @@ namespace ChickenDist.Forms
+                                 g.DrawString(itemLineLeft, small, Brushes.Black, new RectangleF(lMargin, y, 120, 14), left);
+                                 y += 13;
+                                 
++                                // Draw light dotted line between rows
++                                g.DrawLine(new Pen(Color.LightGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }, lMargin, y, pageW - rMargin, y);
++                                y += 2;
++                                
+                                 _runningTotal += tot;
+                                 _printItemIndex++;
+                             }
+@@ -339,6 +344,10 @@ namespace ChickenDist.Forms
+                                 g.DrawString(details, normal, Brushes.DimGray, new RectangleF(lMargin, y, printableW, 16), right);
+                                 y += 16;
+                                 
++                                // Elegant separator line
++                                g.DrawLine(new Pen(Color.LightGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }, lMargin, y, pageW - rMargin, y);
++                                y += 3;
++                                
+                                 _runningTotal += tot;
+                                 _printItemIndex++;
+                             }
+@@ -353,7 +362,7 @@ namespace ChickenDist.Forms
+                         g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 25), center); y += 22;
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
+                         g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 6;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             g.DrawString($"╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+@@ -361,28 +370,28 @@ namespace ChickenDist.Forms
+                             g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
+                         }
+                         g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 4;
+-
++ 
+                         // Grid Columns Setup
+                         int wTotGrid = 60;
+                         int wPriceGrid = 55;
+                         int wQtyGrid = 40;
+                         int wNameGrid = printableW - wTotGrid - wPriceGrid - wQtyGrid;
+-
++ 
+                         int colTotG = lMargin;
+                         int colPriceG = colTotG + wTotGrid;
+                         int colQtyG = colPriceG + wPriceGrid;
+                         int colNameG = colQtyG + wQtyGrid;
+-
++ 
+                         int headY = y - 2;
+                         g.FillRectangle(new SolidBrush(Color.FromArgb(240, 240, 240)), lMargin, headY, printableW, 20);
+                         var alignCenter = new StringFormat { Alignment = StringAlignment.Center };
+-
++ 
+                         g.DrawString("╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", small, Brushes.Black, new RectangleF(colTotG, y + 1, wTotGrid, 16), alignCenter);
+                         g.DrawString("╪º┘ä╪│╪╣╪▒", small, Brushes.Black, new RectangleF(colPriceG, y + 1, wPriceGrid, 16), alignCenter);
+                         g.DrawString("╪º┘ä┘â┘à┘è╪⌐", small, Brushes.Black, new RectangleF(colQtyG, y + 1, wQtyGrid, 16), alignCenter);
+                         g.DrawString("╪º┘ä╪╡┘å┘ü", small, Brushes.Black, new RectangleF(colNameG, y + 1, wNameGrid - 4, 16), right);
+                         y += 20;
+-
++ 
+                         g.DrawLine(Pens.Black, lMargin, headY, pageW - rMargin, headY); // top
+                         g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); // bottom
+                         g.DrawLine(Pens.Black, colTotG, headY, colTotG, y);
+@@ -390,9 +399,9 @@ namespace ChickenDist.Forms
+                         g.DrawLine(Pens.Black, colQtyG, headY, colQtyG, y);
+                         g.DrawLine(Pens.Black, colNameG, headY, colNameG, y);
+                         g.DrawLine(Pens.Black, pageW - rMargin, headY, pageW - rMargin, y);
+-
++ 
+                         y += 4;
+-
++ 
+                         if (_items != null)
+                         {
+                             while (_printItemIndex < _items.Rows.Count)
+@@ -402,28 +411,28 @@ namespace ChickenDist.Forms
+                                     e.HasMorePages = true;
+                                     return;
+                                 }
+-
++ 
+                                 DataRow r = _items.Rows[_printItemIndex];
+                                 string prodName = r["ProductName"].ToString();
+                                 decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                 decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                                 decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+-
++ 
+                                 int itemY = y - 2;
+-
++ 
+                                 g.DrawString(prodName, small, Brushes.Black, new RectangleF(colNameG, y, wNameGrid - 4, 16), right);
+                                 g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQtyG, y, wQtyGrid, 16), alignCenter);
+                                 g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPriceG, y, wPriceGrid, 16), alignCenter);
+                                 g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTotG, y, wTotGrid, 16), alignCenter);
+                                 y += 18;
+-
++ 
+                                 g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); // row separator
+                                 g.DrawLine(Pens.Black, colTotG, itemY, colTotG, y);
+                                 g.DrawLine(Pens.Black, colPriceG, itemY, colPriceG, y);
+                                 g.DrawLine(Pens.Black, colQtyG, itemY, colQtyG, y);
+                                 g.DrawLine(Pens.Black, colNameG, itemY, colNameG, y);
+                                 g.DrawLine(Pens.Black, pageW - rMargin, itemY, pageW - rMargin, y);
+-
++ 
+                                 _runningTotal += tot;
+                                 _printItemIndex++;
+                             }
+@@ -437,7 +446,7 @@ namespace ChickenDist.Forms
+                         g.DrawString("*** " + AppConfig.CompanyName + " ***", boldBig, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
+                         g.DrawString("==========================", small, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             g.DrawString($"╪▒┘é┘à ╪º┘ä┘à╪│╪¬┘å╪»: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
+@@ -445,7 +454,7 @@ namespace ChickenDist.Forms
+                             g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
+                         }
+                         g.DrawString("--------------------------", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+-
++ 
+                         if (_items != null)
+                         {
+                             while (_printItemIndex < _items.Rows.Count)
+@@ -455,18 +464,22 @@ namespace ChickenDist.Forms
+                                     e.HasMorePages = true;
+                                     return;
+                                 }
+-
++ 
+                                 DataRow r = _items.Rows[_printItemIndex];
+                                 string prodName = r["ProductName"].ToString();
+                                 decimal qty = Convert.ToDecimal(r["Quantity"]);
+                                 decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                                 decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+-
++ 
+                                 g.DrawString(prodName, bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right);
+                                 y += 16;
+                                 g.DrawString($"{qty:0.##} x {price:N2} = {tot:N2} ╪¼.┘à", normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 14), right);
+                                 y += 16;
+-
++ 
++                                // Divider line
++                                g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y);
++                                y += 3;
++                                
+                                 _runningTotal += tot;
+                                 _printItemIndex++;
+                             }
+@@ -474,6 +487,175 @@ namespace ChickenDist.Forms
+                         e.HasMorePages = false;
+                         g.DrawString("--------------------------", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+                     }
++                    else if (string.Equals(template, "RestaurantReceipt", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // RestaurantReceipt: optimized for restaurants and cafes (bold accents, crimson/red theme)
++                        g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Crimson, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
++                        g.DrawString("Γÿà ╪╖╪╣╪º┘à ╪│┘ü╪▒┘è ┘ê╪╡╪º┘ä╪⌐ Γÿà", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center); y += 18;
++                        
++                        if (_saleRow != null)
++                        {
++                            g.DrawString($"╪╖┘ä╪¿ ╪▒┘é┘à: {_saleRow["SaleCode"]}", boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 22;
++                            g.DrawString($"╪º┘ä╪¬╪º╪▒┘è╪«: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
++                            
++                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
++                            g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]} ({typeLabel})", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
++                        }
++                        
++                        g.DrawLine(new Pen(Color.Crimson, 1.5f), lMargin, y, pageW - rMargin, y); y += 4;
++                        
++                        // Columns widths
++                        int wTotRest = 60;
++                        int wQtyRest = 45;
++                        int wNameRest = printableW - wTotRest - wQtyRest;
++                        
++                        int colTotRest = lMargin;
++                        int colQtyRest = colTotRest + wTotRest;
++                        int colNameRest = colQtyRest + wQtyRest;
++                        
++                        // Header
++                        int headY = y;
++                        g.FillRectangle(new SolidBrush(Color.FromArgb(255, 235, 235)), lMargin, headY, printableW, 20);
++                        var alignCenter = new StringFormat { Alignment = StringAlignment.Center };
++                        
++                        g.DrawString("╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", bold, Brushes.Crimson, new RectangleF(colTotRest, y + 1, wTotRest, 16), alignCenter);
++                        g.DrawString("╪º┘ä┘â┘à┘è╪⌐", bold, Brushes.Crimson, new RectangleF(colQtyRest, y + 1, wQtyRest, 16), alignCenter);
++                        g.DrawString("╪º┘ä╪╡┘å┘ü ┘ê╪º┘ä╪¿┘è╪º┘å", bold, Brushes.Crimson, new RectangleF(colNameRest, y + 1, wNameRest - 4, 16), right);
++                        y += 20;
++                        
++                        g.DrawLine(Pens.Crimson, lMargin, headY, pageW - rMargin, headY);
++                        g.DrawLine(Pens.Crimson, lMargin, y, pageW - rMargin, y);
++                        g.DrawLine(Pens.Crimson, colTotRest, headY, colTotRest, y);
++                        g.DrawLine(Pens.Crimson, colQtyRest, headY, colQtyRest, y);
++                        g.DrawLine(Pens.Crimson, colNameRest, headY, colNameRest, y);
++                        g.DrawLine(Pens.Crimson, pageW - rMargin, headY, pageW - rMargin, y);
++                        
++                        y += 4;
++                        
++                        if (_items != null)
++                        {
++                            while (_printItemIndex < _items.Rows.Count)
++                            {
++                                if (y + 40 > e.PageBounds.Height)
++                                {
++                                    e.HasMorePages = true;
++                                    return;
++                                }
++                                
++                                DataRow r = _items.Rows[_printItemIndex];
++                                string prodName = r["ProductName"].ToString();
++                                decimal qty = Convert.ToDecimal(r["Quantity"]);
++                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
++                                int itemY = y - 2;
++                                
++                                g.DrawString(prodName, bold, Brushes.Black, new RectangleF(colNameRest, y, wNameRest - 4, 16), right);
++                                g.DrawString(qty.ToString("0.##"), bold, Brushes.Black, new RectangleF(colQtyRest, y, wQtyRest, 16), alignCenter);
++                                g.DrawString(tot.ToString("N2"), bold, Brushes.Black, new RectangleF(colTotRest, y, wTotRest, 16), alignCenter);
++                                y += 18;
++                                
++                                g.DrawLine(Pens.LightCoral, lMargin, y, pageW - rMargin, y); // Row Line
++                                g.DrawLine(Pens.LightCoral, colTotRest, itemY, colTotRest, y);
++                                g.DrawLine(Pens.LightCoral, colQtyRest, itemY, colQtyRest, y);
++                                g.DrawLine(Pens.LightCoral, colNameRest, itemY, colNameRest, y);
++                                g.DrawLine(Pens.LightCoral, pageW - rMargin, itemY, pageW - rMargin, y);
++                                
++                                _runningTotal += tot;
++                                _printItemIndex++;
++                            }
++                        }
++                        
++                        e.HasMorePages = false;
++                        g.DrawLine(new Pen(Color.Crimson, 1.5f), lMargin, y, pageW - rMargin, y); y += 6;
++                    }
++                    else if (string.Equals(template, "PharmacyReceipt", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // PharmacyReceipt: clean look for pharmacy (Teal theme, clinical details)
++                        g.DrawString("Γ£Ü " + AppConfig.CompanyName + " Γ£Ü", boldBig, Brushes.Teal, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
++                        g.DrawString("╪╡┘è╪»┘ä┘è╪⌐ - Pharmacy", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center); y += 18;
++                        
++                        if (_saleRow != null)
++                        {
++                            g.DrawString($"╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
++                            g.DrawString($"╪º┘ä╪¬╪º╪▒┘è╪«: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
++                            g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
++                        }
++                        
++                        g.DrawLine(new Pen(Color.Teal, 1.5f), lMargin, y, pageW - rMargin, y); y += 4;
++                        
++                        int wTotPh = 55;
++                        int wQtyPh = 35;
++                        int wPricePh = 50;
++                        int wNamePh = printableW - wTotPh - wQtyPh - wPricePh;
++                        
++                        int colTotPh = lMargin;
++                        int colPricePh = colTotPh + wTotPh;
++                        int colQtyPh = colPricePh + wPricePh;
++                        int colNamePh = colQtyPh + wQtyPh;
++                        
++                        int headY = y;
++                        g.FillRectangle(new SolidBrush(Color.FromArgb(230, 245, 245)), lMargin, headY, printableW, 20);
++                        var alignCenter = new StringFormat { Alignment = StringAlignment.Center };
++                        
++                        g.DrawString("╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", small, Brushes.Teal, new RectangleF(colTotPh, y + 1, wTotPh, 16), alignCenter);
++                        g.DrawString("╪º┘ä╪│╪╣╪▒", small, Brushes.Teal, new RectangleF(colPricePh, y + 1, wPricePh, 16), alignCenter);
++                        g.DrawString("╪º┘ä┘â┘à┘è╪⌐", small, Brushes.Teal, new RectangleF(colQtyPh, y + 1, wQtyPh, 16), alignCenter);
++                        g.DrawString("╪º┘ä╪»┘ê╪º╪í / ╪º┘ä┘à╪│╪¬╪¡╪╢╪▒", small, Brushes.Teal, new RectangleF(colNamePh, y + 1, wNamePh - 4, 16), right);
++                        y += 20;
++                        
++                        g.DrawLine(Pens.Teal, lMargin, headY, pageW - rMargin, headY);
++                        g.DrawLine(Pens.Teal, lMargin, y, pageW - rMargin, y);
++                        g.DrawLine(Pens.Teal, colTotPh, headY, colTotPh, y);
++                        g.DrawLine(Pens.Teal, colPricePh, headY, colPricePh, y);
++                        g.DrawLine(Pens.Teal, colQtyPh, headY, colQtyPh, y);
++                        g.DrawLine(Pens.Teal, colNamePh, headY, colNamePh, y);
++                        g.DrawLine(Pens.Teal, pageW - rMargin, headY, pageW - rMargin, y);
++                        
++                        y += 4;
++                        
++                        if (_items != null)
++                        {
++                            while (_printItemIndex < _items.Rows.Count)
++                            {
++                                if (y + 35 > e.PageBounds.Height)
++                                {
++                                    e.HasMorePages = true;
++                                    return;
++                                }
++                                
++                                DataRow r = _items.Rows[_printItemIndex];
++                                string prodName = r["ProductName"].ToString();
++                                decimal qty = Convert.ToDecimal(r["Quantity"]);
++                                decimal price = Convert.ToDecimal(r["UnitPrice"]);
++                                decimal tot = Convert.ToDecimal(r["TotalPrice"]);
++                                int itemY = y - 2;
++                                
++                                g.DrawString(prodName, small, Brushes.Black, new RectangleF(colNamePh, y, wNamePh - 4, 16), right);
++                                g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQtyPh, y, wQtyPh, 16), alignCenter);
++                                g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPricePh, y, wPricePh, 16), alignCenter);
++                                g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTotPh, y, wTotPh, 16), alignCenter);
++                                y += 18;
++                                
++                                g.DrawLine(Pens.LightBlue, lMargin, y, pageW - rMargin, y); // Row Line
++                                g.DrawLine(Pens.LightBlue, colTotPh, itemY, colTotPh, y);
++                                g.DrawLine(Pens.LightBlue, colPricePh, itemY, colPricePh, y);
++                                g.DrawLine(Pens.LightBlue, colQtyPh, itemY, colQtyPh, y);
++                                g.DrawLine(Pens.LightBlue, colNamePh, itemY, colNamePh, y);
++                                g.DrawLine(Pens.LightBlue, pageW - rMargin, itemY, pageW - rMargin, y);
++                                
++                                _runningTotal += tot;
++                                _printItemIndex++;
++                            }
++                        }
++                        
++                        e.HasMorePages = false;
++                        g.DrawLine(new Pen(Color.Teal, 1.5f), lMargin, y, pageW - rMargin, y); y += 6;
++                    }                _runningTotal += tot;
++                                _printItemIndex++;
++                            }
++                        }
++                        e.HasMorePages = false;
++                        g.DrawString("--------------------------", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
++                    }
+                     else
+                     {
+                         // ==========================================
+@@ -731,27 +913,10 @@ namespace ChickenDist.Forms
+                         }
+                     }
+ 
+-                    g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+-                    if (AppConfig.BusinessType == "Clothing")
+-                    {
+-                        g.DrawString("╪│┘è╪º╪│╪⌐ ╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä ┘ê╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣:\n╪º┘ä╪º╪│╪¬╪¿╪»╪º┘ä ╪«┘ä╪º┘ä 14 ┘è┘ê┘à╪º┘ï ┘ê╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣ ╪«┘ä╪º┘ä 7 ╪ú┘è╪º┘à ┘à┘å ╪¬╪º╪▒┘è╪« ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐ ╪¿╪┤╪▒╪╖ ┘ê╪¼┘ê╪» ╪¬┘â╪¬ ╪º┘ä┘à┘ä╪º╪¿╪│ ┘ê╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐.", small, Brushes.Black, new RectangleF(lMargin, y, printableW, 32), center);
+-                        y += 34;
+-                        g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+-                    }
+-                    string footerText = string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase) 
+-                        ? "┘å╪┤┘â╪▒┘â┘à ┘ä╪▓┘è╪º╪▒╪¬┘â┘à ╪º┘ä┘â╪▒┘è┘à╪⌐ ┘ê╪½┘é╪¬┘â┘à ╪¿┘å╪º" 
+-                        : "╪┤┘â╪▒╪º┘ï ┘ä╪¬╪╣╪º┘à┘ä┘â┘à ┘à╪╣┘å╪º";
+-                    g.DrawString(footerText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
+-                }
+-                else
+-                {
+-                    // ==========================================
+-                    // STANDARD A4/A5 SHEET LAYOUT
+-                    // ==========================================
+-                    string a4Template = AppConfig.A4Template;
++                    g.DrawLine                    string a4Template = AppConfig.A4Template;
+                     var boldBigSheet = new Font("Arial", 14, FontStyle.Bold);
+                     var boldSheet = new Font("Arial", 10, FontStyle.Bold);
+-
++ 
+                     if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
+                     {
+                         // Modern minimalist header
+@@ -760,7 +925,7 @@ namespace ChickenDist.Forms
+                         y += 32;
+                         g.DrawLine(new Pen(Color.DarkSlateGray, 1.5f), margin, y, pageW - margin, y);
+                         y += 8;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
+@@ -779,7 +944,7 @@ namespace ChickenDist.Forms
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ╪¿┘è╪╣ ┘é╪╖╪╣ ╪║┘è╪º╪▒ ┘ê┘à╪│╪¬┘ä╪▓┘à╪º╪¬", boldBigSheet, Brushes.SteelBlue, new RectangleF(0, y, pageW, 28), center); y += 28;
+                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                         g.DrawLine(new Pen(Color.SteelBlue, 2f), margin, y, pageW - margin, y); y += 10;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             g.DrawString($"┘â┘ê╪» ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}", boldSheet, Brushes.Black, margin, y);
+@@ -795,7 +960,7 @@ namespace ChickenDist.Forms
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬ ╪º┘ä╪¬╪¼╪▓╪ª╪⌐ ┘ê╪º┘ä┘à╪º╪▒┘â╪¬", boldBigSheet, Brushes.OliveDrab, new RectangleF(0, y, pageW, 28), center); y += 28;
+                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                         g.DrawLine(new Pen(Color.OliveDrab, 1.5f), margin, y, pageW - margin, y); y += 10;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             string payType = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
+@@ -813,17 +978,17 @@ namespace ChickenDist.Forms
+                         y += 25;
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬ ╪▒╪│┘à┘è╪⌐", boldSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW, 20), center);
+                         y += 22;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             // Draw structured metadata box
+                             g.DrawRectangle(new Pen(Color.Black, 1f), margin, y, pageW - 2 * margin, 50);
+                             g.DrawLine(new Pen(Color.Black, 1f), margin + 270, y, margin + 270, y + 50);
+                             g.DrawLine(new Pen(Color.Black, 1f), margin, y + 25, pageW - margin, y + 25);
+-
++ 
+                             string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
+                             string driverText = _saleRow["DriverName"].ToString() != "---" ? _saleRow["DriverName"].ToString() : "---";
+-
++ 
+                             // Top-Right: Client
+                             g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(margin + 275, y + 4, 230, 18), right);
+                             // Bottom-Right: Driver
+@@ -843,7 +1008,7 @@ namespace ChickenDist.Forms
+                         y += 25;
+                         g.DrawLine(Pens.Black, margin, y, pageW - margin, y);
+                         y += 8;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
+@@ -853,26 +1018,65 @@ namespace ChickenDist.Forms
+                         g.DrawLine(Pens.Black, margin, y, pageW - margin, y);
+                         y += 8;
+                     }
++                    else if (string.Equals(a4Template, "ElegantClassic", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // Elegant Classic Header (Navy & Gold Accent)
++                        g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬", boldBigSheet, Brushes.Navy, new RectangleF(0, y, pageW, 30), center); y += 30;
++                        g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.DarkGoldenrod, new RectangleF(0, y, pageW, 22), center); y += 25;
++                        g.DrawLine(new Pen(Color.Navy, 2), margin, y, pageW - margin, y);
++                        g.DrawLine(new Pen(Color.DarkGoldenrod, 1), margin, y + 2, pageW - margin, y + 2); y += 10;
++
++                        if (_saleRow != null)
++                        {
++                            g.DrawString($"╪º┘ä╪¬╪º╪▒┘è╪«: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
++                            g.DrawString($"╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}", normal, Brushes.Black, margin, y);
++                            y += 20;
++
++                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
++                            string driverText = _saleRow["DriverName"].ToString() != "---" ? $"  |  ╪º┘ä┘à┘å╪»┘ê╪¿: {_saleRow["DriverName"]}" : "";
++                            g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}{driverText}   |   ╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣: {typeLabel}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
++                            y += 25;
++                        }
++                    }
++                    else if (string.Equals(a4Template, "CorporateModern", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // Corporate Modern Header (Teal & Slate Gray style)
++                        g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.Teal, margin, y);
++                        g.DrawString("INVOICE / ┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬", boldBigSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW - margin, 30), right);
++                        y += 32;
++                        g.DrawLine(new Pen(Color.Teal, 2f), margin, y, pageW - margin, y);
++                        y += 8;
++
++                        if (_saleRow != null)
++                        {
++                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
++                            g.DrawString($"╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}  |  ╪º┘ä╪¬╪º╪▒┘è╪«: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy HH:mm}", normal, Brushes.Black, margin, y);
++                            g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}  |  ╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»┘ü╪╣: {typeLabel}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
++                            y += 24;
++                        }
++                        g.DrawLine(new Pen(Color.LightGray, 1f), margin, y, pageW - margin, y);
++                        y += 10;
++                    }
+                     else
+                     {
+                         // Classic Standard Blue
+                         g.DrawString("┘ü╪º╪¬┘ê╪▒╪⌐ ┘à╪¿┘è╪╣╪º╪¬", boldBigSheet, Brushes.DarkBlue, new RectangleF(0, y, pageW, 30), center); y += 30;
+                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
+                         g.DrawLine(new Pen(Color.DarkBlue, 2), margin, y, pageW - margin, y); y += 10;
+-
++ 
+                         if (_saleRow != null)
+                         {
+                             g.DrawString($"╪º┘ä╪¬╪º╪▒┘è╪«: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                             g.DrawString($"╪▒┘é┘à ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_saleRow["SaleCode"]}", normal, Brushes.Black, margin, y);
+                             y += 20;
+-
++ 
+                             string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "╪ó╪¼┘ä" : "┘å┘é╪»┘è";
+                             string driverText = _saleRow["DriverName"].ToString() != "---" ? $"  |  ╪º┘ä┘à┘å╪»┘ê╪¿: {_saleRow["DriverName"]}" : "";
+                             g.DrawString($"╪º┘ä╪╣┘à┘è┘ä: {_saleRow["ClientName"]}{driverText}   |   ╪º┘ä┘å┘ê╪╣: {typeLabel}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
+                             y += 25;
+                         }
+                     }
+-
++ 
+                     // ===== Table Header =====
+                     int xTotal    = margin;       // Total amount
+                     int colWTotal    = 80;
+@@ -888,7 +1092,7 @@ namespace ChickenDist.Forms
+                     
+                     int xProduct  = xQty + colWQty; // Product Name
+                     int colWProduct  = pageW - 2 * margin - colWTotal - colWDiscount - colWPrice - colWQty;
+-
++ 
+                     if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
+                     {
+                         // Charcoal filled header block
+@@ -937,6 +1141,30 @@ namespace ChickenDist.Forms
+                         DrawColHeader(g, boldSheet, "╪º┘ä╪╡┘å┘ü", xProduct, colWProduct, y + 2, Brushes.White);
+                         y += 22;
+                     }
++                    else if (string.Equals(a4Template, "ElegantClassic", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // Navy blue header block
++                        g.FillRectangle(Brushes.Navy, margin, y, pageW - 2 * margin, 22);
++                        
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", xTotal, colWTotal, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪«╪╡┘à", xDiscount, colWDiscount, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪│╪╣╪▒", xPrice, colWPrice, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä┘â┘à┘è╪⌐", xQty, colWQty, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪╡┘å┘ü", xProduct, colWProduct, y + 2, Brushes.White);
++                        y += 22;
++                    }
++                    else if (string.Equals(a4Template, "CorporateModern", StringComparison.OrdinalIgnoreCase))
++                    {
++                        // Teal header block
++                        g.FillRectangle(Brushes.Teal, margin, y, pageW - 2 * margin, 22);
++                        
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪Ñ╪¼┘à╪º┘ä┘è", xTotal, colWTotal, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪«╪╡┘à", xDiscount, colWDiscount, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪│╪╣╪▒", xPrice, colWPrice, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä┘â┘à┘è╪⌐", xQty, colWQty, y + 2, Brushes.White);
++                        DrawColHeader(g, boldSheet, "╪º┘ä╪╡┘å┘ü", xProduct, colWProduct, y + 2, Brushes.White);
++                        y += 22;
++                    }
+                     else if (string.Equals(a4Template, "Simple", StringComparison.OrdinalIgnoreCase))
+                     {
+                         // Simple: plain text list
+@@ -961,7 +1189,7 @@ namespace ChickenDist.Forms
+                         g.DrawLine(Pens.Gray, margin, y, pageW - margin, y);
+                         y += 4;
+                     }
+-
++ 
+                     // ===== Items =====
+                     if (_items != null)
+                     {
+@@ -972,7 +1200,7 @@ namespace ChickenDist.Forms
+                                 e.HasMorePages = true;
+                                 return;
+                             }
+-
++ 
+                             DataRow r = _items.Rows[_printItemIndex];
+                             decimal qty   = Convert.ToDecimal(r["Quantity"]);
+                             decimal price = Convert.ToDecimal(r["UnitPrice"]);
+@@ -985,16 +1213,20 @@ namespace ChickenDist.Forms
+                                 discText = $"{itemDiscPct:0.##}%";
+                             else if (itemDiscAmt > 0)
+                                 discText = itemDiscAmt.ToString("F2");
+-
++ 
+                             if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ||
+-                                string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
++                                string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase) ||
++                                string.Equals(a4Template, "ElegantClassic", StringComparison.OrdinalIgnoreCase) ||
++                                string.Equals(a4Template, "CorporateModern", StringComparison.OrdinalIgnoreCase))
+                             {
+                                 Pen borderPen = string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.SteelBlue, 1f) :
+                                                 string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.OliveDrab, 1f) :
++                                                string.Equals(a4Template, "ElegantClassic", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.Navy, 1f) :
++                                                string.Equals(a4Template, "CorporateModern", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.Teal, 1f) :
+                                                 Pens.Black;
+-
+-                                // Draw grid boxes for official/spareparts/supermarket templates
++ 
++                                // Draw grid boxes for official/spareparts/supermarket/elegant/corporate templates
+                                 g.DrawRectangle(borderPen, xTotal, y, colWTotal, 18);
+                                 g.DrawRectangle(borderPen, xDiscount, y, colWDiscount, 18);
+                                 g.DrawRectangle(borderPen, xPrice, y, colWPrice, 18);
+@@ -1003,15 +1235,17 @@ namespace ChickenDist.Forms
+                             }
+                             else
+                             {
+-                                // Draw subtle horizontal gridlines for other templates
++                                // Draw subtle horizontal gridlines for other templates (including outer borders)
+                                 g.DrawLine(Pens.LightGray, margin, y + 18, pageW - margin, y + 18);
+                                 // Draw vertical lines separating columns
++                                g.DrawLine(Pens.LightGray, margin, y, margin, y + 18);
+                                 g.DrawLine(Pens.LightGray, xDiscount, y, xDiscount, y + 18);
+                                 g.DrawLine(Pens.LightGray, xPrice, y, xPrice, y + 18);
+                                 g.DrawLine(Pens.LightGray, xQty, y, xQty, y + 18);
+                                 g.DrawLine(Pens.LightGray, xProduct, y, xProduct, y + 18);
++                                g.DrawLine(Pens.LightGray, pageW - margin, y, pageW - margin, y + 18);
+                             }
+-
++ 
+                             DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y + 2);
+                             DrawColCell(g, normal, discText,               xDiscount, colWDiscount, y + 2);
+                             DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y + 2);
+@@ -1020,13 +1254,13 @@ namespace ChickenDist.Forms
+                             
+                             _runningTotal += tot; 
+                             y += 18;
+-
++ 
+                             _printItemIndex++;
+                         }
+                     }
+                     
+                     e.HasMorePages = false;
+-
++ 
+                     // ===== Totals section =====
+                     decimal invDiscountAmt = 0;
+                     decimal invDiscountPct = 0;
+@@ -1039,7 +1273,7 @@ namespace ChickenDist.Forms
+                         shippingAmt = _saleRow.Table.Columns.Contains("ShippingCharge") && _saleRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(_saleRow["ShippingCharge"]) : 0m;
+                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
+                     }
+-
++ 
+                     if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
+                     {
+                         g.DrawLine(new Pen(Color.DarkSlateGray, 1.5f), margin, y, pageW - margin, y); y += 8;
+@@ -1091,6 +1325,40 @@ namespace ChickenDist.Forms
+                         }
+                         g.DrawString($"╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪¡╪│╪º╪¿ ╪º┘ä╪╡╪º┘ü┘è: {netAmount:N2} ╪¼┘å┘è┘ç", boldSheet, Brushes.OliveDrab, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
+                     }
++                    else if (string.Equals(a4Template, "ElegantClassic", StringComparison.OrdinalIgnoreCase))
++                    {
++                        g.DrawLine(new Pen(Color.Navy, 1.5f), margin, y, pageW - margin, y); y += 8;
++                        if (invDiscountAmt > 0 || shippingAmt > 0)
++                        {
++                            g.DrawString($"╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä╪ú╪╡┘å╪º┘ü: {_runningTotal:N2} ╪¼┘å┘è┘ç", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        if (invDiscountAmt > 0)
++                        {
++                            g.DrawString($"╪º┘ä╪«╪╡┘à ╪º┘ä┘à┘à┘å┘ê╪¡: -{invDiscountAmt:N2} ╪¼┘å┘è┘ç", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        if (shippingAmt > 0)
++                        {
++                            g.DrawString($"╪«╪»┘à╪⌐ ╪º┘ä╪┤╪¡┘å ┘ê╪º┘ä╪¬┘ê╪╡┘è┘ä: +{shippingAmt:N2} ╪¼┘å┘è┘ç", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        g.DrawString($"╪╡╪º┘ü┘è ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä┘à╪╖┘ä┘ê╪¿╪⌐: {netAmount:N2} ╪¼┘å┘è┘ç", boldSheet, Brushes.Navy, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
++                    }
++                    else if (string.Equals(a4Template, "CorporateModern", StringComparison.OrdinalIgnoreCase))
++                    {
++                        g.DrawLine(new Pen(Color.Teal, 1.5f), margin, y, pageW - margin, y); y += 8;
++                        if (invDiscountAmt > 0 || shippingAmt > 0)
++                        {
++                            g.DrawString($"╪Ñ╪¼┘à╪º┘ä┘è ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {_runningTotal:N2} ╪¼┘å┘è┘ç", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        if (invDiscountAmt > 0)
++                        {
++                            g.DrawString($"╪«╪╡┘à ╪¬╪¼╪º╪▒┘è: -{invDiscountAmt:N2} ╪¼┘å┘è┘ç ({invDiscountPct:0.##}%)", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        if (shippingAmt > 0)
++                        {
++                            g.DrawString($"┘à╪╡╪º╪▒┘è┘ü ┘å┘é┘ä / ╪┤╪¡┘å: +{shippingAmt:N2} ╪¼┘å┘è┘ç", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
++                        }
++                        g.DrawString($"╪╡╪º┘ü┘è ╪º┘ä┘ü╪º╪¬┘ê╪▒╪⌐: {netAmount:N2} ╪¼┘å┘è┘ç", boldSheet, Brushes.Teal, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
++                    }
+                     else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
+                     {
+                         g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 8;

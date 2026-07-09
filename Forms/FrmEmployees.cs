@@ -499,6 +499,7 @@ namespace ChickenDist.Forms
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "حذف الفاتورة", FillWeight = 25 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "نسخ الفاتورة", FillWeight = 25 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "رؤية التكلفة", FillWeight = 25 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "ترتيب الأعمدة", FillWeight = 25 });
             dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             return dg;
         }
@@ -533,7 +534,7 @@ namespace ChickenDist.Forms
 
             foreach (var screen in ScreensList)
             {
-                bool access = false, editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false;
+                bool access = false, editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
                 foreach (DataRow r in dt.Rows)
                 {
                     if (string.Equals(r["ScreenName"].ToString(), screen.Key, StringComparison.OrdinalIgnoreCase))
@@ -544,6 +545,7 @@ namespace ChickenDist.Forms
                         deleteInvoice = r.Table.Columns.Contains("CanDeleteSalesInvoice") && r["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanDeleteSalesInvoice"]);
                         copyInvoice = r.Table.Columns.Contains("CanCopySalesInvoice") && r["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanCopySalesInvoice"]);
                         viewCost = r.Table.Columns.Contains("CanViewCost") && r["CanViewCost"] != DBNull.Value && Convert.ToBoolean(r["CanViewCost"]);
+                        orderColumns = r.Table.Columns.Contains("CanOrderColumns") && r["CanOrderColumns"] != DBNull.Value && Convert.ToBoolean(r["CanOrderColumns"]);
                         break;
                     }
                 }
@@ -556,7 +558,7 @@ namespace ChickenDist.Forms
 
                 if (targetGrid != null)
                 {
-                    int ri = targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost);
+                    int ri = targetGrid.Rows.Add(screen.Key, screen.Name, access, editPrice, editInvoice, deleteInvoice, copyInvoice, viewCost, orderColumns);
                     
                     bool isSalesScreen = string.Equals(screen.Key, "Sales", StringComparison.OrdinalIgnoreCase) ||
                                          string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase) ||
@@ -593,6 +595,18 @@ namespace ChickenDist.Forms
                             targetGrid.Rows[ri].Cells[colIdx].Style.BackColor = Color.FromArgb(240, 240, 240);
                         }
                     }
+
+                    // Format CanOrderColumns (colIdx = 8)
+                    bool isOrderColumnsApplicable = string.Equals(screen.Key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                    string.Equals(screen.Key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                    string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (!isOrderColumnsApplicable)
+                    {
+                        targetGrid.Rows[ri].Cells[8] = new DataGridViewTextBoxCell { Value = "" };
+                        targetGrid.Rows[ri].Cells[8].ReadOnly = true;
+                        targetGrid.Rows[ri].Cells[8].Style.BackColor = Color.FromArgb(240, 240, 240);
+                    }
                 }
             }
         }
@@ -622,8 +636,9 @@ namespace ChickenDist.Forms
                     bool deleteI = ToBool(row.Cells["CanDeleteSalesInvoice"].Value);
                     bool copyI   = ToBool(row.Cells["CanCopySalesInvoice"].Value);
                     bool viewC   = ToBool(row.Cells["CanViewCost"].Value);
+                    bool orderC  = ToBool(row.Cells["CanOrderColumns"].Value);
 
-                    EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC);
+                    EmployeeDAL.SavePermissions(_empID, screen, access, editP, editI, deleteI, copyI, viewC, orderC);
                 }
             }
             MessageBox.Show("✅ تم حفظ الصلاحيات بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);

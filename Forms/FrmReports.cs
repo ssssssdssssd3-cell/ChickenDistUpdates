@@ -670,13 +670,16 @@ namespace ChickenDist.Forms
 					};
 
 					Label lblDriver = new Label { Text = "المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
-					ComboBox cboDriver = new ComboBox { Name = "cboFilterDriver", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					ComboBox cboDriver = new ComboBox { Name = "cboFilterDriver", Width = 120, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
 					
 					Label lblMinBalance = new Label { Text = "رصيد أكبر من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
-					NumericUpDown nudMinBalance = new NumericUpDown { Name = "nudFilterMinBalance", Width = 100, Minimum = 0, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
+					NumericUpDown nudMinBalance = new NumericUpDown { Name = "nudFilterMinBalance", Width = 80, Minimum = 0, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
 
 					Label lblOverdueDays = new Label { Text = "تأخير السداد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
-					ComboBox cboOverdueDays = new ComboBox { Name = "cboFilterOverdueDays", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+					ComboBox cboOverdueDays = new ComboBox { Name = "cboFilterOverdueDays", Width = 120, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 0, 0) };
+
+					Label lblSearch = new Label { Text = "بحث بالعميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+					TextBox txtSearch = new TextBox { Name = "txtFilterSearch", Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 4, 0, 0) };
 
 					cboDriver.Items.Add(new ComboItem(0, "كل المناديب"));
 					try
@@ -702,8 +705,9 @@ namespace ChickenDist.Forms
 					cboDriver.SelectedIndexChanged += (s, e) => LoadCurrentTab();
 					nudMinBalance.ValueChanged += (s, e) => LoadCurrentTab();
 					cboOverdueDays.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					txtSearch.TextChanged += (s, e) => LoadCurrentTab();
 
-					pnlFilters.Controls.AddRange(new Control[] { lblDriver, cboDriver, lblMinBalance, nudMinBalance, lblOverdueDays, cboOverdueDays });
+					pnlFilters.Controls.AddRange(new Control[] { lblDriver, cboDriver, lblMinBalance, nudMinBalance, lblOverdueDays, cboOverdueDays, lblSearch, txtSearch });
 					layout.Controls.Add(pnlFilters, 0, 0);
 
 					DataGridView dgDebtAging = new DataGridView
@@ -1072,7 +1076,14 @@ namespace ChickenDist.Forms
 							filterMinDays = daysItem.ID;
 						}
 
-						_currentDt = ReportDAL.DebtAgingReport(dtpFrom.Value, dtpTo.Value, filterDriverID, filterMinBalance, filterMinDays);
+						string filterSearch = "";
+						var txtSearch = FindControlByName<TextBox>(tabReports.SelectedTab, "txtFilterSearch");
+						if (txtSearch != null)
+						{
+							filterSearch = txtSearch.Text.Trim();
+						}
+
+						_currentDt = ReportDAL.DebtAgingReport(dtpFrom.Value, dtpTo.Value, filterDriverID, filterMinBalance, filterMinDays, filterSearch);
 						SetupGrid(new(string, string)[9]
 						{
 							("ClientCode", "كود العميل"),

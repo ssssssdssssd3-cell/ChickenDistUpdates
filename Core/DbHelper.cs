@@ -179,7 +179,16 @@ namespace ChickenDist.Core
                 string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
                 if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
                 {
-                    return;
+                    // Double check a critical column to handle database restore cases
+                    try
+                    {
+                        var colExists = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
+                        if (colExists != null && colExists != DBNull.Value)
+                        {
+                            return;
+                        }
+                    }
+                    catch { }
                 }
             }
             catch { }
@@ -804,6 +813,11 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanCopySalesInvoice')
                 BEGIN
                     ALTER TABLE Permissions ADD CanCopySalesInvoice BIT DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanOrderColumns')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanOrderColumns BIT DEFAULT 0;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')

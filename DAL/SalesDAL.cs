@@ -2097,7 +2097,7 @@ namespace ChickenDist.DAL
                 ORDER BY c.ClientName");
         }
 
-        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate, int? driverID = null, decimal minBalance = 0, int minDays = 0)
+        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate, int? driverID = null, decimal minBalance = 0, int minDays = 0, string searchText = "", string addressText = "", string priceTier = "")
         {
             var parameters = new List<SqlParameter>
             {
@@ -2120,12 +2120,14 @@ namespace ChickenDist.DAL
                     c.ClientCode,
                     c.ClientName,
                     ISNULL(c.Phone, N'---') AS Phone,
+                    ISNULL(c.Address, N'---') AS Address,
+                    COALESCE(c.DefaultPriceTier, N'تجزئة') AS DefaultPriceTier,
                     ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
                     lp.LastPaymentDate,
                     ISNULL(lp.LastPaymentAmount, 0) AS LastPaymentAmount,
                     li.LastInvoiceDate,
                     ISNULL(li.LastInvoiceAmount, 0) AS LastInvoiceAmount,
-                    DATEDIFF(day, lp.LastPaymentDate, GETDATE()) AS DaysSinceLastPayment
+                    DATEDIFF(day, COALESCE(lp.LastPaymentDate, li.LastInvoiceDate, c.CreatedAt), GETDATE()) AS DaysSinceLastPayment
                 FROM Clients c
                 LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                 LEFT JOIN LastPayment lp ON c.ClientID = lp.ClientID AND lp.rn = 1
@@ -2142,8 +2144,26 @@ namespace ChickenDist.DAL
 
             if (minDays > 0)
             {
-                sql += " AND DATEDIFF(day, lp.LastPaymentDate, GETDATE()) >= @MinDays ";
+                sql += " AND DATEDIFF(day, COALESCE(lp.LastPaymentDate, li.LastInvoiceDate, c.CreatedAt), GETDATE()) >= @MinDays ";
                 parameters.Add(DbHelper.P("@MinDays", minDays));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                sql += " AND (c.ClientName LIKE @SearchText OR c.ClientCode LIKE @SearchText OR c.Phone LIKE @SearchText OR c.Phone2 LIKE @SearchText) ";
+                parameters.Add(DbHelper.P("@SearchText", "%" + searchText + "%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(addressText))
+            {
+                sql += " AND c.Address LIKE @AddressText ";
+                parameters.Add(DbHelper.P("@AddressText", "%" + addressText + "%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(priceTier) && priceTier != "كل الفئات")
+            {
+                sql += " AND COALESCE(c.DefaultPriceTier, N'تجزئة') = @PriceTier ";
+                parameters.Add(DbHelper.P("@PriceTier", priceTier));
             }
 
             sql += " AND (lp.LastPaymentDate IS NULL OR lp.LastPaymentDate < @FromDate) ";

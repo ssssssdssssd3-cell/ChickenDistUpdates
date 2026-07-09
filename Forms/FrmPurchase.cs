@@ -400,6 +400,9 @@ namespace ChickenDist.Forms
                 dgItems.Columns["ProductName"].MinimumWidth = 160;
             }
 
+            dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("Purchases");
+            Session.LoadColumnOrder(dgItems, "Purchases");
+
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
             dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
@@ -441,6 +444,7 @@ namespace ChickenDist.Forms
             };
             btnCustomizeCols.FlatAppearance.BorderSize = 0;
             btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
+            btnCustomizeCols.Visible = Session.CanOrderColumns("Purchases");
             pnlItems.Controls.Add(btnCustomizeCols);
             btnCustomizeCols.BringToFront();
 

@@ -129,19 +129,19 @@ namespace ChickenDist.DAL
         // Permissions
         public static DataTable GetPermissions(int empID)
         {
-            return DbHelper.Query("SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            return DbHelper.Query("SELECT ScreenName, CanAccess, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
         }
 
-        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canEditSalesInvoice, bool canDeleteSalesInvoice, bool canCopySalesInvoice, bool canViewCost)
+        public static void SavePermissions(int empID, string screen, bool canAccess, bool canEditPrice, bool canEditSalesInvoice, bool canDeleteSalesInvoice, bool canCopySalesInvoice, bool canViewCost, bool canOrderColumns)
         {
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
                 DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             if (Convert.ToInt32(exists) > 0)
-                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanEditSalesInvoice=@cesi,CanDeleteSalesInvoice=@cdsi,CanCopySalesInvoice=@ccsi,CanViewCost=@cvc WHERE EmpID=@e AND ScreenName=@s",
-                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
+                DbHelper.Execute("UPDATE Permissions SET CanAccess=@a,CanEditPrice=@ep,CanEditSalesInvoice=@cesi,CanDeleteSalesInvoice=@cdsi,CanCopySalesInvoice=@ccsi,CanViewCost=@cvc,CanOrderColumns=@coc WHERE EmpID=@e AND ScreenName=@s",
+                    DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns), DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
-                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice,CanDeleteSalesInvoice,CanCopySalesInvoice,CanViewCost) VALUES(@e,@s,@a,@ep,@cesi,@cdsi,@ccsi,@cvc)",
-                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost));
+                DbHelper.Execute("INSERT INTO Permissions(EmpID,ScreenName,CanAccess,CanEditPrice,CanEditSalesInvoice,CanDeleteSalesInvoice,CanCopySalesInvoice,CanViewCost,CanOrderColumns) VALUES(@e,@s,@a,@ep,@cesi,@cdsi,@ccsi,@cvc,@coc)",
+                    DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns));
         }
 
         public static DataTable GetTransactions(int empID, DateTime from, DateTime to, string typeFilter)

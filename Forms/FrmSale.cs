@@ -760,6 +760,13 @@ namespace ChickenDist.Forms
 			btnCustomizeCols.FlatAppearance.BorderSize = 0;
 			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
 
+			bool canOrder = Session.CanOrderColumns("Sales");
+			btnCustomizeCols.Visible = canOrder;
+			if (!canOrder)
+			{
+				tblProductBar.ColumnStyles[5].Width = 0f;
+			}
+
 			tblProductBar.Controls.Add(lblProductTitle, 0, 0);
 			tblProductBar.Controls.Add(txtProductCode, 1, 0);
 			tblProductBar.Controls.Add(cboProduct, 2, 0);
@@ -889,6 +896,9 @@ namespace ChickenDist.Forms
 				dgItems.Columns["ProductName"].MinimumWidth = 160;
 			}
 			
+			dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("Sales");
+			Session.LoadColumnOrder(dgItems, "Sales");
+
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
 			dgItems.EditingControlShowing += DgItems_EditingControlShowing;
@@ -3614,6 +3624,11 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			if (Session.CanOrderColumns("Sales"))
+			{
+				Session.SaveColumnOrder(dgItems, "Sales");
+			}
+
 			if (AppConfig.ScaleEnabled)
 			{
 				ScaleService.Instance.WeightChanged -= ScaleService_WeightChanged;

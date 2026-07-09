@@ -21,7 +21,7 @@ namespace ChickenDist.Forms
         private Label _lPaid;
         private Button _btnPrint, _btnWhatsApp, btnOpenDrawer;
         private TextBox txtPaid;
-        private Button btnPay, btnNew, btnCancel, btnSearchProduct;
+        private Button btnPay, btnNew, btnCancel, btnSearchProduct, btnCustomizeCols;
         private ComboBox cboClient;
         private Panel pnlClient;
         private FlowLayoutPanel flowQuickItems;
@@ -83,6 +83,24 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(btnSearchProduct);
             txtBarcode.BringToFront();
             btnSearchProduct.BringToFront();
+
+            btnCustomizeCols = new Button
+            {
+                Text      = "⚙️ الأعمدة",
+                Size      = new Size(95, 32),
+                Location  = new Point(375, 35),
+                BackColor = Color.FromArgb(55, 65, 81),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            btnCustomizeCols.FlatAppearance.BorderSize = 0;
+            btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
+            btnCustomizeCols.Visible = Session.CanOrderColumns("POS");
+            pnlTop.Controls.Add(btnCustomizeCols);
+            btnCustomizeCols.BringToFront();
+
             this.Controls.Add(pnlTop);
 
             // ── جدول الأصناف (يسار) ──────────────────────────
@@ -130,6 +148,11 @@ namespace ChickenDist.Forms
             dgItems.Columns["Price"].Width = 80;
             dgItems.Columns["Discount"].Width = 60;
             dgItems.Columns["Total"].Width = 90;
+
+            dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("POS");
+            Session.LoadColumnOrder(dgItems, "POS");
+            LoadColumnSettings();
+
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
             this.Controls.Add(dgItems);
@@ -210,6 +233,7 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnOpenDrawer);
             this.Controls.Add(pnlTotals);
 
+            this.FormClosing += FrmPOS_FormClosing;
             this.Resize += (s, e) => LayoutPanels();
             LayoutPanels();
         }
@@ -1261,6 +1285,199 @@ namespace ChickenDist.Forms
             var result = form.ShowDialog();
             value = textBox.Text;
             return result == DialogResult.OK;
+        }
+
+        private void FrmPOS_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (Session.CanOrderColumns("POS"))
+            {
+                Session.SaveColumnOrder(dgItems, "POS");
+            }
+        }
+
+        private void ShowColumnCustomizer()
+        {
+            var dlg = new Form
+            {
+                Text            = "⚙️ تخصيص أعمدة المبيعات السريعة",
+                Size            = new Size(360, 480),
+                StartPosition   = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                RightToLeft     = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor       = Color.FromArgb(30, 30, 45),
+                Font            = new Font("Segoe UI", 10f)
+            };
+
+            var lblHint = new Label
+            {
+                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Dock      = DockStyle.Top,
+                Height    = 32,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(150, 200, 255),
+                Font      = new Font("Segoe UI", 9f)
+            };
+
+            var clb = new CheckedListBox
+            {
+                Dock            = DockStyle.Fill,
+                CheckOnClick    = true,
+                BackColor       = Color.FromArgb(40, 42, 58),
+                ForeColor       = Color.White,
+                BorderStyle     = BorderStyle.None,
+                Font            = new Font("Segoe UI", 10f),
+                RightToLeft     = RightToLeft.Yes
+            };
+
+            foreach (DataGridViewColumn col in dgItems.Columns)
+            {
+                clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
+            }
+
+            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
+
+            btnUp.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i <= 0) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i - 1, item);
+                clb.SetItemChecked(i - 1, chk);
+                clb.SelectedIndex = i - 1;
+            };
+            btnDown.Click += (s, e) =>
+            {
+                int i = clb.SelectedIndex;
+                if (i < 0 || i >= clb.Items.Count - 1) return;
+                var item    = clb.Items[i];
+                bool chk    = clb.GetItemChecked(i);
+                clb.Items.RemoveAt(i);
+                clb.Items.Insert(i + 1, item);
+                clb.SetItemChecked(i + 1, chk);
+                clb.SelectedIndex = i + 1;
+            };
+
+            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
+
+            var pnlArrows = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 40,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlArrows.Controls.AddRange(new Control[] { btnDown, btnUp });
+
+            var pnlFooter = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Bottom,
+                Height        = 44,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor     = Color.Transparent,
+                Padding       = new Padding(5, 5, 5, 0)
+            };
+            pnlFooter.Controls.AddRange(new Control[] { btnCancel, btnOk });
+
+            dlg.Controls.Add(clb);
+            dlg.Controls.Add(pnlArrows);
+            dlg.Controls.Add(pnlFooter);
+            dlg.Controls.Add(lblHint);
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                int displayIndex = 0;
+                var hiddenNames  = new List<string>();
+                var orderedNames = new List<string>();
+
+                for (int i = 0; i < clb.Items.Count; i++)
+                {
+                    if (!(clb.Items[i] is ColEntry ce)) continue;
+                    orderedNames.Add(ce.ColName);
+                    bool visible = clb.GetItemChecked(i);
+                    if (!visible) hiddenNames.Add(ce.ColName);
+
+                    if (dgItems.Columns.Contains(ce.ColName))
+                    {
+                        dgItems.Columns[ce.ColName].Visible      = visible;
+                        dgItems.Columns[ce.ColName].DisplayIndex = displayIndex++;
+                    }
+                }
+
+                SaveColumnSettings(orderedNames, hiddenNames);
+            }
+        }
+
+        private void SaveColumnSettings(List<string> ordered = null, List<string> hidden = null)
+        {
+            try
+            {
+                if (ordered == null)
+                {
+                    ordered = new List<string>();
+                    hidden = new List<string>();
+                    foreach (DataGridViewColumn col in dgItems.Columns)
+                    {
+                        ordered.Add(col.Name);
+                        if (!col.Visible) hidden.Add(col.Name);
+                    }
+                }
+                Core.LicenseManager.WriteIniValue("POSGridColumns", "Order",  string.Join(",", ordered));
+                Core.LicenseManager.WriteIniValue("POSGridColumns", "Hidden", string.Join(",", hidden));
+            }
+            catch { }
+        }
+
+        private void LoadColumnSettings()
+        {
+            try
+            {
+                string orderVal  = Core.LicenseManager.ReadIniValue("POSGridColumns", "Order",  "");
+                string hiddenVal = Core.LicenseManager.ReadIniValue("POSGridColumns", "Hidden", "");
+
+                if (string.IsNullOrWhiteSpace(orderVal)) return;
+
+                var ordered = new List<string>(orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+                var hidden  = new List<string>(string.IsNullOrEmpty(hiddenVal) ? new string[0] : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                foreach (DataGridViewColumn col in dgItems.Columns)
+                {
+                    if (!ordered.Contains(col.Name))
+                    {
+                        ordered.Add(col.Name);
+                    }
+                }
+
+                int displayIndex = 0;
+                foreach (string colName in ordered)
+                {
+                    if (!dgItems.Columns.Contains(colName)) continue;
+                    dgItems.Columns[colName].Visible      = !hidden.Contains(colName);
+                    dgItems.Columns[colName].DisplayIndex = displayIndex++;
+                }
+            }
+            catch { }
+        }
+
+        private class ColEntry
+        {
+            public string ColName { get; }
+            public string HeaderText { get; }
+            public ColEntry(string name, string header)
+            {
+                ColName = name;
+                HeaderText = header;
+            }
+            public override string ToString() => HeaderText;
         }
     }
 }

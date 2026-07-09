@@ -165,6 +165,8 @@ namespace ChickenDist.Forms
                                 g.DrawString($"{qty:0.##} × {price:N2}", normal, Brushes.DimGray, new RectangleF(lMargin + 80, y, printableW - 80, 14), right);
                                 g.DrawString(tot.ToString("N2"), bold, Brushes.Black, new RectangleF(lMargin, y, 80, 14), left);
                                 y += 15;
+                                g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y);
+                                y += 4;
                                 
                                 _runningTotal += tot;
                                 _printItemIndex++;
@@ -293,6 +295,8 @@ namespace ChickenDist.Forms
                                 g.DrawString(itemLineRight, small, Brushes.Black, new RectangleF(lMargin + 120, y, printableW - 120, 14), right);
                                 g.DrawString(itemLineLeft, small, Brushes.Black, new RectangleF(lMargin, y, 120, 14), left);
                                 y += 13;
+                                g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y);
+                                y += 3;
                                 
                                 _runningTotal += tot;
                                 _printItemIndex++;
