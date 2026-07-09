@@ -920,10 +920,15 @@ namespace ChickenDist.Forms
                     if (name.StartsWith("👉") || name.StartsWith("⚖️") || name.StartsWith("📊") || name.StartsWith("🏆"))
                     {
                         dgPL.Rows[idx].DefaultCellStyle.Font = new Font(Theme.FontBold.FontFamily, 9.5f, FontStyle.Bold);
-                        dgPL.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(40, 48, 60);
                         if (name.StartsWith("🏆"))
                         {
-                            dgPL.Rows[idx].DefaultCellStyle.ForeColor = net >= 0 ? Color.LightGreen : Color.LightPink;
+                            dgPL.Rows[idx].DefaultCellStyle.BackColor = Theme.Primary;
+                            dgPL.Rows[idx].DefaultCellStyle.ForeColor = Color.White;
+                        }
+                        else
+                        {
+                            dgPL.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(235, 243, 250);
+                            dgPL.Rows[idx].DefaultCellStyle.ForeColor = Theme.Primary;
                         }
                     }
                 }
@@ -1072,11 +1077,15 @@ namespace ChickenDist.Forms
                         liabAcc.StartsWith("🔴") || liabAcc.StartsWith("🔵") || liabAcc.StartsWith("👉") || liabAcc.StartsWith("🏆"))
                     {
                         dgBS.Rows[idx].DefaultCellStyle.Font = new Font(Theme.FontBold.FontFamily, 9.5f, FontStyle.Bold);
-                        dgBS.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(40, 48, 60);
-
                         if (assetAcc.StartsWith("🏆") || liabAcc.StartsWith("🏆"))
                         {
-                            dgBS.Rows[idx].DefaultCellStyle.ForeColor = Color.Yellow;
+                            dgBS.Rows[idx].DefaultCellStyle.BackColor = Theme.Primary;
+                            dgBS.Rows[idx].DefaultCellStyle.ForeColor = Color.White;
+                        }
+                        else
+                        {
+                            dgBS.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(235, 243, 250);
+                            dgBS.Rows[idx].DefaultCellStyle.ForeColor = Theme.Primary;
                         }
                     }
                 }
