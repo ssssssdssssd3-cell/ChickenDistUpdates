@@ -17,6 +17,7 @@ namespace ChickenDist.Forms
         private DataGridView dgCash;
         private DateTimePicker dtpCashFrom, dtpCashTo;
         private ComboBox cboSafeFilter;
+        private ComboBox cboTransTypeFilter;
         private Button btnLoadCash;
         private Label lblCashBalance, lblCashIn, lblCashOut;
 
@@ -112,6 +113,21 @@ namespace ChickenDist.Forms
             };
             cboSafeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
             pnlF.Controls.Add(cboSafeFilter);
+
+            pnlF.Controls.Add(new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
+            cboTransTypeFilter = new ComboBox
+            {
+                Width = 115,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(10, 4, 0, 0)
+            };
+            cboTransTypeFilter.Items.AddRange(new object[] { "الكل", "وارد (توريد)", "صادر (صرف)" });
+            cboTransTypeFilter.SelectedIndex = 0;
+            cboTransTypeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
+            pnlF.Controls.Add(cboTransTypeFilter);
             
             btnLoadCash = Theme.MakeButton("عرض", Theme.Accent);
             btnLoadCash.Size = new Size(70, 32);
@@ -481,6 +497,13 @@ namespace ChickenDist.Forms
             {
                 decimal inAmt = Convert.ToDecimal(r["AmountIn"]);
                 decimal outAmt = Convert.ToDecimal(r["AmountOut"]);
+
+                if (cboTransTypeFilter != null)
+                {
+                    if (cboTransTypeFilter.SelectedIndex == 1 && inAmt == 0) continue; // وارد (توريد) فقط
+                    if (cboTransTypeFilter.SelectedIndex == 2 && outAmt == 0) continue; // صادر (صرف) فقط
+                }
+
                 decimal net = inAmt - outAmt;
                 
                 string transType = r["TransType"].ToString();

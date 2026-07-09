@@ -1,3 +1,12 @@
+v2.0.59 - 2026-07-09
+- Cashbox: Added transaction type filter (All, Inflow/Receipt, Outflow/Payment) inside FrmCashBox to easily filter cash register movements.
+
+v2.0.58 - 2026-07-09
+- Bot: UI and setup updates for the support chatbot.
+
+v2.0.57 - 2026-07-09
+- Database: Auto-configured new databases to default to Simple Recovery Mode.
+
 v2.0.56 - 2026-07-08
 - Debt Aging: Implemented multi-criteria search and filter options (Clients, Drivers/Representatives, Days Overdue threshold, and text search) inside FrmReports.
 - Print Templates: Added GridReceipt and FancyReceipt templates for thermal printers.
