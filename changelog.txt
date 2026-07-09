@@ -1,3 +1,6 @@
+v2.0.60 - 2026-07-09
+- Expenses: Renamed screen/tab to Operating Expenses (المصروفات التشغيلية), removed supplier payments from this screen, and added support for dynamic expense categories managed via FrmLookupManager.
+
 v2.0.59 - 2026-07-09
 - Cashbox: Added transaction type filter (All, Inflow/Receipt, Outflow/Payment) inside FrmCashBox to easily filter cash register movements.
 

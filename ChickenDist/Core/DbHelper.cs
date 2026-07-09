@@ -1667,6 +1667,24 @@ namespace ChickenDist.Core
                     );
                 END");
 
+                SafeMigrate("ExpenseTypes", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ExpenseTypes')
+                BEGIN
+                    CREATE TABLE ExpenseTypes (
+                        ExpenseTypeID   INT IDENTITY(1,1) PRIMARY KEY,
+                        ExpenseTypeCode NVARCHAR(20) NOT NULL UNIQUE,
+                        ExpenseTypeName NVARCHAR(100) NOT NULL UNIQUE
+                    );
+                    INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES
+                    ('EXP-0001', N'رواتب'),
+                    ('EXP-0002', N'وقود'),
+                    ('EXP-0003', N'صيانة'),
+                    ('EXP-0004', N'مصروف إداري'),
+                    ('EXP-0005', N'مواد تغليف'),
+                    ('EXP-0006', N'نقل'),
+                    ('EXP-0007', N'أخرى');
+                END");
+
                 SafeMigrate("Brands", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Brands')
                 BEGIN

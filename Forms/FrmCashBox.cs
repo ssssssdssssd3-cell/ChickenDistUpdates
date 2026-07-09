@@ -26,7 +26,6 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpExpFrom, dtpExpTo;
         private Button btnLoadExp, btnNewExp, btnSaveExp, btnDelExp;
         private ComboBox cboExpType;
-        private ComboBox cboExpSupplier;
         private ComboBox cboExpVehicleType;
         private ComboBox cboExpVehicle;
         private ComboBox cboExpVehicleFilter;
@@ -48,16 +47,13 @@ namespace ChickenDist.Forms
 
         public FrmCashBox(int supplierID, string supplierName) : this()
         {
-            _selectedSupplierForExpense = supplierID;
-            _selectedSupplierNameForExpense = supplierName;
             tabMain.SelectedTab = tabExpenses;
-            SelectSupplierInExpenseCombo(supplierID);
             cboExpType.Focus();
         }
 
         private void InitUI()
         {
-            this.Text = "الخزنة والمصروفات";
+            this.Text = "الخزنة والمصروفات التشغيلية";
             this.Size = new Size(1020, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -67,7 +63,7 @@ namespace ChickenDist.Forms
 
             tabMain = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontMain };
             tabCash = new TabPage("حركات الخزنة") { BackColor = Theme.BgMain };
-            tabExpenses = new TabPage("المصروفات") { BackColor = Theme.BgMain };
+            tabExpenses = new TabPage("المصروفات التشغيلية") { BackColor = Theme.BgMain };
             tabMain.TabPages.AddRange(new[] { tabCash, tabExpenses });
             this.Controls.Add(tabMain);
 
@@ -75,7 +71,7 @@ namespace ChickenDist.Forms
             BuildExpensesTab();
             
             LoadSafesCombos();
-            LoadSuppliersToCombo();
+            LoadExpenseTypes();
             LoadVehicleFilters();
 
             Theme.ApplyFormRTL(this);
@@ -262,7 +258,6 @@ namespace ChickenDist.Forms
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "SafeAccountID", Visible = false });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseDate", HeaderText = "التاريخ", FillWeight = 35 });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseType", HeaderText = "النوع", FillWeight = 25 });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Supplier", HeaderText = "المورد", FillWeight = 25 });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Vehicle", HeaderText = "العربة / المركبة", FillWeight = 25 });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Amount", HeaderText = "المبلغ", FillWeight = 20 });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان" });
@@ -280,15 +275,15 @@ namespace ChickenDist.Forms
             var tblFields = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 370,
+                Height = 320,
                 ColumnCount = 2,
-                RowCount = 7,
+                RowCount = 6,
                 RightToLeft = RightToLeft.Yes,
                 Padding = new Padding(5)
             };
             tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f)); // Label column
             tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65f)); // Input column
-            for (int i = 0; i < 7; i++) tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
+            for (int i = 0; i < 6; i++) tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
 
             // Row 0: Date
             var lblDate = new Label { Text = "التاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -298,17 +293,43 @@ namespace ChickenDist.Forms
 
             // Row 1: Type
             var lblType = new Label { Text = "نوع المصروف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            
+            var pnlTypeContainer = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0),
+                Padding = new Padding(0),
+                BackColor = Color.Transparent
+            };
+            pnlTypeContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlTypeContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 35f));
+            
             cboExpType = new ComboBox 
             { 
                 Dock = DockStyle.Fill, 
-                DropDownStyle = ComboBoxStyle.DropDown, 
+                DropDownStyle = ComboBoxStyle.DropDownList, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(0, 5, 0, 5)
             };
-            cboExpType.Items.AddRange(new object[] { "رواتب", "وقود", "صيانة", "مصروف إداري", "مواد تغليف", "نقل", "أخرى" });
+            
+            var btnAddExpType = Theme.MakeButton("➕", 0, 0, 30, 32, Color.FromArgb(70, 70, 70));
+            btnAddExpType.Dock = DockStyle.Fill;
+            btnAddExpType.Margin = new Padding(3, 4, 0, 4);
+            btnAddExpType.Click += (s, e) => 
+            {
+                new FrmLookupManager("ExpenseTypes", "ExpenseTypeID", "ExpenseTypeCode", "ExpenseTypeName", "EXP", "بنود المصروفات").ShowDialog();
+                LoadExpenseTypes();
+            };
+            
+            pnlTypeContainer.Controls.Add(cboExpType, 0, 0);
+            pnlTypeContainer.Controls.Add(btnAddExpType, 1, 0);
+            
             tblFields.Controls.Add(lblType, 0, 1);
-            tblFields.Controls.Add(cboExpType, 1, 1);
+            tblFields.Controls.Add(pnlTypeContainer, 1, 1);
 
             // Row 2: Amount
             var lblAmountVal = new Label { Text = "المبلغ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -325,19 +346,13 @@ namespace ChickenDist.Forms
             tblFields.Controls.Add(lblAmountVal, 0, 2);
             tblFields.Controls.Add(nudExpAmount, 1, 2);
 
-            // Row 3: Supplier (optional)
-            var lblSupplier = new Label { Text = "المورد (اختياري):", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            cboExpSupplier = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(0, 5, 0, 5) };
-            tblFields.Controls.Add(lblSupplier, 0, 3);
-            tblFields.Controls.Add(cboExpSupplier, 1, 3);
-
-            // Row 4: Vehicle (optional)
+            // Row 3: Vehicle (optional)
             var lblVehicle = new Label { Text = "العربية / المركبة (اختياري):", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cboExpVehicle = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(0, 5, 0, 5) };
-            tblFields.Controls.Add(lblVehicle, 0, 4);
-            tblFields.Controls.Add(cboExpVehicle, 1, 4);
+            tblFields.Controls.Add(lblVehicle, 0, 3);
+            tblFields.Controls.Add(cboExpVehicle, 1, 3);
 
-            // Row 5: Notes
+            // Row 4: Notes
             var lblNotesVal = new Label { Text = "البيان:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             txtExpNotes = new TextBox 
             { 
@@ -347,10 +362,10 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 5, 0, 5),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            tblFields.Controls.Add(lblNotesVal, 0, 5);
-            tblFields.Controls.Add(txtExpNotes, 1, 5);
+            tblFields.Controls.Add(lblNotesVal, 0, 4);
+            tblFields.Controls.Add(txtExpNotes, 1, 4);
 
-            // Row 6: Source Safe Account for Expense
+            // Row 5: Source Safe Account for Expense
             var lblExpSafe = new Label { Text = "حساب الدفع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cboExpSafeAccount = new ComboBox
             {
@@ -361,8 +376,8 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(0, 5, 0, 5)
             };
-            tblFields.Controls.Add(lblExpSafe, 0, 6);
-            tblFields.Controls.Add(cboExpSafeAccount, 1, 6);
+            tblFields.Controls.Add(lblExpSafe, 0, 5);
+            tblFields.Controls.Add(cboExpSafeAccount, 1, 5);
 
             pnlDetails.Controls.Add(tblFields);
 
@@ -882,7 +897,7 @@ namespace ChickenDist.Forms
                     r["VehicleID"],
                     r["SafeAccountID"],
                     Convert.ToDateTime(r["ExpenseDate"]).ToString("dd/MM/yyyy"),
-                    r["ExpenseType"], r["SupplierName"], vehicleLabel,
+                    r["ExpenseType"], vehicleLabel,
                     Convert.ToDecimal(r["Amount"]).ToString("N2"), r["Notes"]);
             }
         }
@@ -897,12 +912,6 @@ namespace ChickenDist.Forms
             if (decimal.TryParse(row.Cells["Amount"].Value?.ToString(), out decimal amt)) nudExpAmount.Value = amt;
             txtExpNotes.Text = row.Cells["Notes"].Value?.ToString();
             
-            // select supplier if present
-            var supName = row.Cells["Supplier"].Value?.ToString();
-            if (!string.IsNullOrWhiteSpace(supName) && cboExpSupplier.Items.Count > 0)
-                cboExpSupplier.SelectedIndex = cboExpSupplier.FindStringExact(supName);
-            else cboExpSupplier.SelectedIndex = -1;
-
             // select vehicle if present
             if (cboExpVehicle.Items.Count > 0)
             {
@@ -954,8 +963,6 @@ namespace ChickenDist.Forms
             if (string.IsNullOrWhiteSpace(cboExpType.Text)) { MessageBox.Show("اختر نوع المصروف"); return; }
             if (nudExpAmount.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر"); return; }
             int? supplierID = null;
-            if (cboExpSupplier.SelectedItem != null && cboExpSupplier.SelectedValue != null && int.TryParse(cboExpSupplier.SelectedValue.ToString(), out int sid) && sid > 0)
-                supplierID = sid;
             int? vehicleID = null;
             if (cboExpVehicle.SelectedItem != null && cboExpVehicle.SelectedValue != null && int.TryParse(cboExpVehicle.SelectedValue.ToString(), out int vid) && vid > 0)
                 vehicleID = vid;
@@ -983,26 +990,21 @@ namespace ChickenDist.Forms
             { AccountDAL.DeleteExpense(_selectedExpID); ClearExp(); LoadExpenses(); LoadCashBox(); }
         }
 
-        private void LoadSuppliersToCombo()
+        private void LoadExpenseTypes()
         {
+            cboExpType.Items.Clear();
             try
             {
-                var dt = SupplierDAL.GetAll();
-                var emptyRow = dt.NewRow();
-                emptyRow["SupplierID"] = DBNull.Value;
-                emptyRow["SupplierName"] = "--- لا يوجد ---";
-                dt.Rows.InsertAt(emptyRow, 0);
-                cboExpSupplier.DataSource = dt;
-                cboExpSupplier.DisplayMember = "SupplierName";
-                cboExpSupplier.ValueMember = "SupplierID";
-                if (_selectedSupplierForExpense > 0)
+                DataTable dt = DbHelper.Query("SELECT ExpenseTypeName FROM ExpenseTypes ORDER BY ExpenseTypeID");
+                foreach (DataRow r in dt.Rows)
                 {
-                    SelectSupplierInExpenseCombo(_selectedSupplierForExpense);
+                    cboExpType.Items.Add(r["ExpenseTypeName"].ToString());
                 }
+                if (cboExpType.Items.Count > 0) cboExpType.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("Load suppliers failed: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Load expense types failed: " + ex.Message);
             }
         }
 
@@ -1072,22 +1074,6 @@ namespace ChickenDist.Forms
             dt.Rows.InsertAt(emptyRow, 0);
             cboExpVehicleFilter.DataSource = dt;
             cboExpVehicleFilter.SelectedIndex = 0;
-        }
-
-        private void SelectSupplierInExpenseCombo(int supplierID)
-        {
-            if (supplierID <= 0 || cboExpSupplier.Items.Count == 0) return;
-            for (int i = 0; i < cboExpSupplier.Items.Count; i++)
-            {
-                if (cboExpSupplier.Items[i] is DataRowView drv && drv["SupplierID"] != DBNull.Value)
-                {
-                    if (Convert.ToInt32(drv["SupplierID"]) == supplierID)
-                    {
-                        cboExpSupplier.SelectedIndex = i;
-                        return;
-                    }
-                }
-            }
         }
     }
 }
