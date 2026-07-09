@@ -327,7 +327,7 @@ namespace ChickenDist.DAL
                         InstallmentDAL.AddAuditLogTrans(trans, "Create", contractID, "", $"إنشاء عقد التقسيط بقيمة: {total:N2} ج");
                     }
 
-                    // نقدي: أضف للخزنة
+                    // نقدي: أضف للخزنة وسجل في حساب العميل دائماً
                     if (typeStr == "Cash")
                     {
                         decimal actualPaid = cashPaid ?? total;
@@ -337,24 +337,21 @@ namespace ChickenDist.DAL
                             DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
 
-                        if (clientID.HasValue && actualPaid != total)
+                        // تسجيل الفاتورة وسداد العميل دائماً في ClientTransactions (يظهر في كشف الحساب)
+                        if (clientID.HasValue)
                         {
-                            if (actualPaid < total)
-                            {
-                                DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
-                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total - actualPaid),
-                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", "متبقي فاتورة بيع نقدي " + code),
-                                    DbHelper.P("@by", Session.EmpID));
-                            }
-                            else
-                            {
-                                DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@notes,@uid)",
-                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid - total),
-                                    DbHelper.P("@ref", saleID), DbHelper.P("@notes", "زيادة فاتورة بيع نقدي " + code),
-                                    DbHelper.P("@uid", Session.EmpID));
-                            }
+                            // مدين: قيمة الفاتورة كاملة
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
+                            // دائن: المبلغ المسدد فعلاً
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
                         }
                     }
 
@@ -847,24 +844,21 @@ namespace ChickenDist.DAL
                             DbHelper.P("@n", "تعديل بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
 
-                        if (clientID.HasValue && actualPaid != total)
+                        // تسجيل الفاتورة وسداد العميل دائماً في ClientTransactions (يظهر في كشف الحساب)
+                        if (clientID.HasValue)
                         {
-                            if (actualPaid < total)
-                            {
-                                DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
-                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total - actualPaid),
-                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", "متبقي تعديل فاتورة بيع نقدي " + code),
-                                    DbHelper.P("@by", Session.EmpID));
-                            }
-                            else
-                            {
-                                DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@notes,@uid)",
-                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid - total),
-                                    DbHelper.P("@ref", saleID), DbHelper.P("@notes", "زيادة تعديل فاتورة بيع نقدي " + code),
-                                    DbHelper.P("@uid", Session.EmpID));
-                            }
+                            // مدين: قيمة الفاتورة كاملة
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
+                            // دائن: المبلغ المسدد فعلاً
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد تعديل فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
                         }
                     }
                     else if (typeStr == "DriverLoad" && driverID.HasValue)
