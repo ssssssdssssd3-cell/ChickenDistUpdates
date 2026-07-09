@@ -191,6 +191,7 @@ namespace ChickenDist.Forms
             lblSupp.Dock = DockStyle.Fill;
             lblSupp.TextAlign = ContentAlignment.MiddleRight;
             lblSupp.Margin = new Padding(2);
+            var pnlSupplier = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
             cboSupplier = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -198,6 +199,41 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
+            Button btnSupplierAdd = new Button
+            {
+                Text = "➕",
+                Width = 30,
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Success,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Left,
+                Margin = new Padding(2)
+            };
+            btnSupplierAdd.FlatAppearance.BorderSize = 0;
+            btnSupplierAdd.Click += (s, e) =>
+            {
+                new FrmSuppliers().ShowDialog();
+                // Reload combos
+                LoadCombos();
+                // Try to select the latest supplier
+                object latestIdObj = DbHelper.Scalar("SELECT TOP 1 SupplierID FROM Suppliers ORDER BY SupplierID DESC");
+                if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+                {
+                    for (int i = 0; i < cboSupplier.Items.Count; i++)
+                    {
+                        if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
+                        {
+                            cboSupplier.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            };
+            pnlSupplier.Controls.Add(cboSupplier);
+            pnlSupplier.Controls.Add(btnSupplierAdd);
+            cboSupplier.SendToBack();
 
             // التاريخ
             var lblDate = MakeLabel("التاريخ:", 0, 0);
@@ -226,7 +262,7 @@ namespace ChickenDist.Forms
 
             // إضافة إلى الجدول — صف 0
             tbl.Controls.Add(lblSupp,       0, 0);
-            tbl.Controls.Add(cboSupplier,   1, 0);
+            tbl.Controls.Add(pnlSupplier,   1, 0);
             tbl.Controls.Add(lblDate,       2, 0);
             tbl.Controls.Add(dtpDate,       3, 0);
             tbl.Controls.Add(lblType,       4, 0);

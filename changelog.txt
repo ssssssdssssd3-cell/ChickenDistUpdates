@@ -1,3 +1,6 @@
+v2.0.63 - 2026-07-09
+- Sales & Purchases: Added shortcut (➕) buttons to add new clients in FrmSale and new suppliers in FrmPurchase directly, automatically reloading the list and selecting the newly created contact.
+
 v2.0.62 - 2026-07-09
 - Financial Reports: Fixed critical accounting errors in FrmFinancialPosition and SalesDAL (P&L, COGS, inventory valuation, sales by client/day/product) where multi-unit product stock quantities were multiplied directly by the main unit price instead of dividing by their factor.
 - Financial Position: Fixed cash totals to include the SafeAccounts opening balances by querying the vw_SafeAccountBalances view.

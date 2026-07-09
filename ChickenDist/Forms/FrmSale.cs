@@ -306,10 +306,60 @@ namespace ChickenDist.Forms
 				}
 			};
 
+			Button btnClientAdd = new Button
+			{
+				Text = "➕",
+				Width = 30,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Theme.Success,
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Dock = DockStyle.Left,
+				Margin = new Padding(2)
+			};
+			btnClientAdd.FlatAppearance.BorderSize = 0;
+			btnClientAdd.Click += (s, e) =>
+			{
+				new FrmClients().ShowDialog();
+				// Reload clients
+				DataTable all = ClientDAL.GetAll(activeOnly: true);
+				cboClient.BeginUpdate();
+				cboClient.Items.Clear();
+				List<ComboItem> clientItems = new List<ComboItem>();
+				clientItems.Add(new ComboItem(0, "-- اختر عميل --"));
+				foreach (DataRow row in all.Rows)
+				{
+					var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
+					item.ClientCode = row["ClientCode"] != DBNull.Value ? row["ClientCode"].ToString().Trim() : "";
+					item.Phone = row["Phone"] != DBNull.Value ? row["Phone"].ToString().Trim() : "";
+					item.Phone2 = row["Phone2"] != DBNull.Value ? row["Phone2"].ToString().Trim() : "";
+					clientItems.Add(item);
+				}
+				cboClient.Items.AddRange(clientItems.ToArray());
+				cboClient.Tag = clientItems;
+				cboClient.EndUpdate();
+
+				// Try to select the latest client
+				object latestIdObj = DbHelper.Scalar("SELECT TOP 1 ClientID FROM Clients ORDER BY ClientID DESC");
+				if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+				{
+					for (int i = 0; i < cboClient.Items.Count; i++)
+					{
+						if (cboClient.Items[i] is ComboItem ci && ci.ID == latestId)
+						{
+							cboClient.SelectedIndex = i;
+							break;
+						}
+					}
+				}
+			};
+
 			pnlClient.Controls.Add(cboClient);
 			pnlClient.Controls.Add(lblClientBalance);
 			pnlClient.Controls.Add(btnClientSearch);
 			pnlClient.Controls.Add(btnClientStatement);
+			pnlClient.Controls.Add(btnClientAdd);
 			cboClient.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
