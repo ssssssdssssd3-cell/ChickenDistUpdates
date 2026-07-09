@@ -203,7 +203,8 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(lblAccTitle);
 
-            string accUrl = "https://checkin-192ab.web.app/admin.html";
+            string projectId = GetFirebaseProjectId();
+            string accUrl = $"https://{projectId}.web.app/admin.html";
 
             txtAccUrl = new TextBox
             {
@@ -264,7 +265,7 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(lblClientTitle);
 
-            string clientUrl = "https://checkin-192ab.web.app";
+            string clientUrl = $"https://{projectId}.web.app";
 
             TextBox txtClientUrl = new TextBox
             {
@@ -376,12 +377,14 @@ namespace ChickenDist.Forms
         {
             try
             {
-                var response = await _httpClient.GetAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/status");
+                string projectId = GetFirebaseProjectId();
+                var response = await _httpClient.GetAsync($"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/status");
                 if (response.IsSuccessStatusCode)
                 {
-                    if (txtAccUrl != null && txtAccUrl.Text != "https://checkin-192ab.web.app")
+                    string targetAccUrl = $"https://{projectId}.web.app/admin.html";
+                    if (txtAccUrl != null && txtAccUrl.Text != targetAccUrl)
                     {
-                        txtAccUrl.Text = "https://checkin-192ab.web.app";
+                        txtAccUrl.Text = targetAccUrl;
                     }
 
                     string json = await response.Content.ReadAsStringAsync();
@@ -544,9 +547,10 @@ namespace ChickenDist.Forms
                     "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
                     "}}";
 
+                string projectId = GetFirebaseProjectId();
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync(
-                    "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands",
+                    $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/commands",
                     content);
 
                 if (response.IsSuccessStatusCode)
@@ -583,8 +587,9 @@ namespace ChickenDist.Forms
                               "}" +
                               "}";
                               
+                string projectId = GetFirebaseProjectId();
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/commands", content);
+                var response = await _httpClient.PostAsync($"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/commands", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -679,8 +684,9 @@ namespace ChickenDist.Forms
                 var pricesContent = new StringContent(pricesBody, Encoding.UTF8, "application/json");
                 var clientsContent = new StringContent(clientsBody, Encoding.UTF8, "application/json");
 
-                var pricesRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/prices?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = pricesContent };
-                var clientsRequest = new HttpRequestMessage(new HttpMethod("PATCH"), "https://firestore.googleapis.com/v1/projects/checkin-192ab/databases/(default)/documents/metadata/clients?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = clientsContent };
+                string projectId = GetFirebaseProjectId();
+                var pricesRequest = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/prices?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = pricesContent };
+                var clientsRequest = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/clients?updateMask.fieldPaths=list&updateMask.fieldPaths=updatedTime") { Content = clientsContent };
 
                 var pricesResponse = await _httpClient.SendAsync(pricesRequest);
                 var clientsResponse = await _httpClient.SendAsync(clientsRequest);
@@ -829,6 +835,39 @@ namespace ChickenDist.Forms
             {
                 LogMessage($"⚠️ فشل تشغيل خادم البوت تلقائياً: {ex.Message}");
             }
+        }
+
+        private string GetBotDirectory()
+        {
+            string botDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot");
+            if (!Directory.Exists(botDir))
+            {
+                string parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)?.Parent?.FullName;
+                if (parent != null)
+                {
+                    botDir = Path.Combine(parent, "bot");
+                }
+            }
+            return botDir;
+        }
+
+        private string GetFirebaseProjectId()
+        {
+            try
+            {
+                string path = Path.Combine(GetBotDirectory(), "firebase_config.json");
+                if (File.Exists(path))
+                {
+                    string content = File.ReadAllText(path);
+                    var match = System.Text.RegularExpressions.Regex.Match(content, @"""projectId""\s*:\s*""([^""]+)""");
+                    if (match.Success)
+                    {
+                        return match.Groups[1].Value;
+                    }
+                }
+            }
+            catch { }
+            return "checkin-192ab";
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

@@ -180,22 +180,26 @@
     <!-- Firebase SDK (Compat version for simplicity) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
 
     <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
-            authDomain: "checkin-192ab.firebaseapp.com",
-            projectId: "checkin-192ab",
-            storageBucket: "checkin-192ab.firebasestorage.app",
-            messagingSenderId: "818712709979",
-            appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
-            measurementId: "G-6YV1QPB7M6"
-        };
-
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        let db;
+        try {
+            db = firebase.firestore();
+        } catch (e) {
+            const firebaseConfig = {
+                apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
+                authDomain: "checkin-192ab.firebaseapp.com",
+                projectId: "checkin-192ab",
+                storageBucket: "checkin-192ab.firebasestorage.app",
+                messagingSenderId: "818712709979",
+                appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
+                measurementId: "G-6YV1QPB7M6"
+            };
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        }
 
         let allOrders = [];
         let allClients = [];
