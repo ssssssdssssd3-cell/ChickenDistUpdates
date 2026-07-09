@@ -797,7 +797,7 @@ namespace ChickenDist.Forms
             object returnsObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount), 0) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal returns = returnsObj != null ? Convert.ToDecimal(returnsObj) : 0m;
 
-            object discountsObj = DbHelper.Scalar("SELECT ISNULL(SUM(DiscountAmt), 0) FROM Sales WHERE IsPosted = 1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            object discountsObj = DbHelper.Scalar("SELECT ISNULL(SUM(DiscountAmount), 0) FROM Sales WHERE IsPosted = 1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal discounts = discountsObj != null ? Convert.ToDecimal(discountsObj) : 0m;
 
             decimal netSales = grossSales - returns - discounts;
@@ -837,13 +837,11 @@ namespace ChickenDist.Forms
             dt.Rows.Add("📊 مجمل الربح (الخسارة) التجاري", 0, grossProfit, grossProfit);
             dt.Rows.Add("إيرادات تشغيلية أخرى", 0, otherOpRevenues, otherOpRevenues);
 
-            // المصاريف التشغيلية التفصيلية
             var dtExps = DbHelper.Query(@"
-                SELECT ISNULL(t.ExpenseTypeName, N'مصروفات متنوعة') AS TypeName, SUM(e.Amount) AS Total
+                SELECT ISNULL(e.ExpenseType, N'مصروفات متنوعة') AS TypeName, SUM(e.Amount) AS Total
                 FROM Expenses e
-                LEFT JOIN ExpenseTypes t ON e.ExpenseTypeID = t.ExpenseTypeID
                 WHERE CAST(e.ExpenseDate AS DATE) BETWEEN @f AND @t
-                GROUP BY t.ExpenseTypeName", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+                GROUP BY e.ExpenseType", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
 
             decimal totalOperatingExpenses = 0m;
             foreach (DataRow r in dtExps.Rows)
