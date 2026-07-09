@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
@@ -28,28 +28,29 @@ namespace ChickenDist.DAL
                          s.TotalAmount, s.Notes,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
-                         ISNULL((
-                             SELECT SUM(ri.Quantity * ri.UnitPrice)
-                             FROM SalesReturns r
-                             JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
-                             WHERE r.SaleID = s.SaleID
-                         ), 0) AS ReturnAmount,
-                         ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
-                             FROM SaleItems si
-                             JOIN Products p ON si.ProductID = p.ProductID
-                             WHERE si.SaleID = s.SaleID
-                         ), 0) AS TotalCost,
-                         (s.TotalAmount - ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
-                             FROM SaleItems si
-                             JOIN Products p ON si.ProductID = p.ProductID
-                             WHERE si.SaleID = s.SaleID
-                         ), 0)) AS NetProfit
+                         ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
+                         ISNULL(costs.TotalCost, 0) AS TotalCost,
+                         (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
+                  LEFT JOIN (
+                      SELECT r.SaleID, SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount
+                      FROM SalesReturns r
+                      JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                      GROUP BY r.SaleID
+                  ) ret ON ret.SaleID = s.SaleID
+                  LEFT JOIN (
+                      SELECT si.SaleID,
+                             SUM(si.Quantity * ISNULL(si.Factor, 1.0) *
+                                 COALESCE(NULLIF(p.Unit1PurchasePrice, 0),
+                                 ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0),
+                                 NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
+                      FROM SaleItems si
+                      JOIN Products p ON si.ProductID = p.ProductID
+                      GROUP BY si.SaleID
+                  ) costs ON costs.SaleID = s.SaleID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
@@ -1838,7 +1839,7 @@ namespace ChickenDist.DAL
                            SUM(s.TotalAmount) AS TotalSales,
                            SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                            SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                            ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
                            COUNT(DISTINCT s.SaleID) AS SaleCount
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
@@ -1851,7 +1852,7 @@ namespace ChickenDist.DAL
                 ClientReturnCosts AS (
                     SELECT sr.ClientID,
                            SUM(sr.TotalAmount) AS TotalReturns,
-                            ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -2095,6 +2096,81 @@ namespace ChickenDist.DAL
                 LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                 LEFT JOIN Employees e ON c.DriverID = e.EmpID
                 ORDER BY c.ClientName");
+        }
+
+        public static DataTable DebtAgingReport(DateTime fromDate, DateTime toDate, int? driverID = null, decimal minBalance = 0, int minDays = 0, string searchText = "", string addressText = "", string priceTier = "")
+        {
+            var parameters = new List<SqlParameter>
+            {
+                DbHelper.P("@FromDate", fromDate.Date)
+            };
+
+            string sql = @";WITH LastPayment AS (
+                    SELECT ClientID, TransDate AS LastPaymentDate, Credit AS LastPaymentAmount,
+                           ROW_NUMBER() OVER (PARTITION BY ClientID ORDER BY TransDate DESC, TransID DESC) AS rn
+                    FROM ClientTransactions
+                    WHERE TransType = 'Payment'
+                ),
+                LastInvoice AS (
+                    SELECT ClientID, TransDate AS LastInvoiceDate, Debit AS LastInvoiceAmount,
+                           ROW_NUMBER() OVER (PARTITION BY ClientID ORDER BY TransDate DESC, TransID DESC) AS rn
+                    FROM ClientTransactions
+                    WHERE TransType = 'Sale'
+                )
+                SELECT 
+                    c.ClientCode,
+                    c.ClientName,
+                    ISNULL(c.Phone, N'---') AS Phone,
+                    ISNULL(c.Address, N'---') AS Address,
+                    COALESCE(c.DefaultPriceTier, N'تجزئة') AS DefaultPriceTier,
+                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                    lp.LastPaymentDate,
+                    ISNULL(lp.LastPaymentAmount, 0) AS LastPaymentAmount,
+                    li.LastInvoiceDate,
+                    ISNULL(li.LastInvoiceAmount, 0) AS LastInvoiceAmount,
+                    DATEDIFF(day, COALESCE(lp.LastPaymentDate, li.LastInvoiceDate, c.CreatedAt), GETDATE()) AS DaysSinceLastPayment
+                FROM Clients c
+                LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                LEFT JOIN LastPayment lp ON c.ClientID = lp.ClientID AND lp.rn = 1
+                LEFT JOIN LastInvoice li ON c.ClientID = li.ClientID AND li.rn = 1
+                WHERE ISNULL(cb.Balance, c.OpeningBalance) >= @MinBalance ";
+
+            parameters.Add(DbHelper.P("@MinBalance", minBalance > 0 ? minBalance : 0.01m));
+
+            if (driverID.HasValue && driverID.Value > 0)
+            {
+                sql += " AND c.DriverID = @DriverID ";
+                parameters.Add(DbHelper.P("@DriverID", driverID.Value));
+            }
+
+            if (minDays > 0)
+            {
+                sql += " AND DATEDIFF(day, COALESCE(lp.LastPaymentDate, li.LastInvoiceDate, c.CreatedAt), GETDATE()) >= @MinDays ";
+                parameters.Add(DbHelper.P("@MinDays", minDays));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                sql += " AND (c.ClientName LIKE @SearchText OR c.ClientCode LIKE @SearchText OR c.Phone LIKE @SearchText OR c.Phone2 LIKE @SearchText) ";
+                parameters.Add(DbHelper.P("@SearchText", "%" + searchText + "%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(addressText))
+            {
+                sql += " AND c.Address LIKE @AddressText ";
+                parameters.Add(DbHelper.P("@AddressText", "%" + addressText + "%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(priceTier) && priceTier != "كل الفئات")
+            {
+                sql += " AND COALESCE(c.DefaultPriceTier, N'تجزئة') = @PriceTier ";
+                parameters.Add(DbHelper.P("@PriceTier", priceTier));
+            }
+
+            sql += " AND (lp.LastPaymentDate IS NULL OR lp.LastPaymentDate < @FromDate) ";
+            sql += " ORDER BY Balance DESC, c.ClientName";
+
+            return DbHelper.Query(sql, parameters.ToArray());
         }
 
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>

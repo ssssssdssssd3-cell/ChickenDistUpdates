@@ -169,7 +169,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 23;
+        private const int CurrentSchemaVersion = 24;
 
         public static void EnsureDatabaseSchema()
         {
@@ -179,7 +179,16 @@ namespace ChickenDist.Core
                 string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
                 if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
                 {
-                    return;
+                    // Double check a critical column to handle database restore cases
+                    try
+                    {
+                        var colExists = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
+                        if (colExists != null && colExists != DBNull.Value)
+                        {
+                            return;
+                        }
+                    }
+                    catch { }
                 }
             }
             catch { }
@@ -804,6 +813,11 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanCopySalesInvoice')
                 BEGIN
                     ALTER TABLE Permissions ADD CanCopySalesInvoice BIT DEFAULT 0;
+                END
+                
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanOrderColumns')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanOrderColumns BIT DEFAULT 0;
                 END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
@@ -1994,6 +2008,16 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ALTER COLUMN ProductCode NVARCHAR(500) NULL;
                 END");
 
+                // ===== ميزة تحديد وحدة البيع الافتراضية للمنتج =====
+                SafeMigrate("Products.DefaultSaleUnit", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'DefaultSaleUnit') IS NULL
+                    BEGIN
+                        ALTER TABLE Products ADD DefaultSaleUnit NVARCHAR(50) NULL;
+                    END
+                END");
+
                 // ===== 5. نظام التسويات المحاسبية والميزانية العمومية وقائمة الدخل =====
                 SafeMigrate("Accounting.AdjustmentsTable", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AccountingAdjustments')
@@ -2074,6 +2098,74 @@ namespace ChickenDist.Core
                     IF NOT EXISTS (SELECT * FROM ExpenseTypes WHERE ExpenseTypeName = N'مصروفات متنوعة')
                         INSERT INTO ExpenseTypes (ExpenseTypeCode, ExpenseTypeName) VALUES ('EXP-0023', N'مصروفات متنوعة');
                 END");
+
+                // ===== v24: Performance Indexes =====
+                SafeMigrate("IX_Sales_SaleDate", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_SaleDate' AND object_id = OBJECT_ID('Sales'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_Sales_SaleDate ON Sales(SaleDate DESC);
+                END");
+
+                SafeMigrate("IX_Sales_ClientID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_ClientID' AND object_id = OBJECT_ID('Sales'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_Sales_ClientID ON Sales(ClientID) INCLUDE (SaleDate, TotalAmount, SaleType);
+                END");
+
+                SafeMigrate("IX_SaleItems_SaleID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_SaleID' AND object_id = OBJECT_ID('SaleItems'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_SaleItems_SaleID ON SaleItems(SaleID) INCLUDE (ProductID, Quantity, UnitPrice, TotalPrice, Factor);
+                END");
+
+                SafeMigrate("IX_SaleItems_ProductID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_ProductID' AND object_id = OBJECT_ID('SaleItems'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_SaleItems_ProductID ON SaleItems(ProductID);
+                END");
+
+                SafeMigrate("IX_ClientTrans_ClientID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTrans_ClientID' AND object_id = OBJECT_ID('ClientTransactions'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_ClientTrans_ClientID ON ClientTransactions(ClientID) INCLUDE (Debit, Credit, TransType);
+                END");
+
+                SafeMigrate("IX_ClientTrans_TransDate", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTrans_TransDate' AND object_id = OBJECT_ID('ClientTransactions'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_ClientTrans_TransDate ON ClientTransactions(TransDate DESC);
+                END");
+
+                SafeMigrate("IX_SupplierTrans_SupplierID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplierTrans_SupplierID' AND object_id = OBJECT_ID('SupplierTransactions'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_SupplierTrans_SupplierID ON SupplierTransactions(SupplierID) INCLUDE (Debit, Credit, TransType);
+                END");
+
+                SafeMigrate("IX_SupplierTrans_TransDate", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplierTrans_TransDate' AND object_id = OBJECT_ID('SupplierTransactions'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_SupplierTrans_TransDate ON SupplierTransactions(TransDate DESC);
+                END");
+
+                SafeMigrate("IX_SalesReturns_SaleID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SalesReturns_SaleID' AND object_id = OBJECT_ID('SalesReturns'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_SalesReturns_SaleID ON SalesReturns(SaleID);
+                END");
+
+                SafeMigrate("IX_ReturnItems_ReturnID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_ReturnID' AND object_id = OBJECT_ID('ReturnItems'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_ReturnItems_ReturnID ON ReturnItems(ReturnID) INCLUDE (Quantity, UnitPrice);
+                END");
+
+                SafeMigrate("IX_Purchases_SupplierID", @"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Purchases_SupplierID' AND object_id = OBJECT_ID('Purchases'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_Purchases_SupplierID ON Purchases(SupplierID) INCLUDE (PurchaseDate, TotalAmount);
+                END");
+
                 // Save version number so we don't repeat inspection on next startup
                 try
                 {

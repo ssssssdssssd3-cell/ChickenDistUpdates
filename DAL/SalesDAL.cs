@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
@@ -28,28 +28,29 @@ namespace ChickenDist.DAL
                          s.TotalAmount, s.Notes,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
-                         ISNULL((
-                             SELECT SUM(ri.Quantity * ri.UnitPrice)
-                             FROM SalesReturns r
-                             JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
-                             WHERE r.SaleID = s.SaleID
-                         ), 0) AS ReturnAmount,
-                         ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
-                             FROM SaleItems si
-                             JOIN Products p ON si.ProductID = p.ProductID
-                             WHERE si.SaleID = s.SaleID
-                         ), 0) AS TotalCost,
-                         (s.TotalAmount - ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
-                             FROM SaleItems si
-                             JOIN Products p ON si.ProductID = p.ProductID
-                             WHERE si.SaleID = s.SaleID
-                         ), 0)) AS NetProfit
+                         ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
+                         ISNULL(costs.TotalCost, 0) AS TotalCost,
+                         (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
+                  LEFT JOIN (
+                      SELECT r.SaleID, SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount
+                      FROM SalesReturns r
+                      JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                      GROUP BY r.SaleID
+                  ) ret ON ret.SaleID = s.SaleID
+                  LEFT JOIN (
+                      SELECT si.SaleID,
+                             SUM(si.Quantity * ISNULL(si.Factor, 1.0) *
+                                 COALESCE(NULLIF(p.Unit1PurchasePrice, 0),
+                                 ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0),
+                                 NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
+                      FROM SaleItems si
+                      JOIN Products p ON si.ProductID = p.ProductID
+                      GROUP BY si.SaleID
+                  ) costs ON costs.SaleID = s.SaleID
                   WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)

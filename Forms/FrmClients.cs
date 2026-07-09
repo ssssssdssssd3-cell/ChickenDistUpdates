@@ -228,13 +228,21 @@ namespace ChickenDist.Forms
                 ? ClientDAL.GetAll()
                 : ClientDAL.Search(search);
 
+            // تعطيل AutoSize أثناء التحميل لتسريع عرض العملاء
+            dgClients.SuspendLayout();
+            var oldMode = dgClients.AutoSizeColumnsMode;
+            dgClients.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             foreach (DataRow r in dt.Rows)
             {
                 decimal bal = Convert.ToDecimal(r["Balance"]);
                 int cratesBal = Convert.ToInt32(r["CratesBalance"]);
                 var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " فارغ");
-                if (bal > 0) dgClients.Rows[row].DefaultCellStyle.ForeColor = Color.OrangeRed;
+                if (bal > 0) dgClients.Rows[row].DefaultCellStyle.ForeColor = System.Drawing.Color.OrangeRed;
             }
+
+            dgClients.AutoSizeColumnsMode = oldMode;
+            dgClients.ResumeLayout();
         }
 
         private void DgClients_SelectionChanged(object sender, EventArgs e)

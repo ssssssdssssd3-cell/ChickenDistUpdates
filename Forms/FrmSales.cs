@@ -510,6 +510,12 @@ namespace ChickenDist.Forms
 			decimal credit = 0m;
 			decimal driver = 0m;
 			decimal shipping = 0m;
+
+			// تعطيل AutoSize أثناء التحميل لتسريع عرض البيانات الكثيرة
+			dgSales.SuspendLayout();
+			var oldMode = dgSales.AutoSizeColumnsMode;
+			dgSales.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
 			foreach (DataRow row in _allSalesDt.Rows)
 			{
 				string text2 = row["SaleCode"].ToString().ToLower();
@@ -558,6 +564,11 @@ namespace ChickenDist.Forms
 						row["Notes"]);
 				}
 			}
+
+			// إعادة تفعيل AutoSize بعد اكتمال التحميل
+			dgSales.AutoSizeColumnsMode = oldMode;
+			dgSales.ResumeLayout();
+
 			UpdateSummary(tot, ret, cash, credit, driver, shipping);
 		}
 
