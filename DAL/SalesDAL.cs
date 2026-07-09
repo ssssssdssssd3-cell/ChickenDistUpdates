@@ -35,13 +35,13 @@ namespace ChickenDist.DAL
                              WHERE r.SaleID = s.SaleID
                          ), 0) AS ReturnAmount,
                          ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0))
+                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
                              FROM SaleItems si
                              JOIN Products p ON si.ProductID = p.ProductID
                              WHERE si.SaleID = s.SaleID
                          ), 0) AS TotalCost,
                          (s.TotalAmount - ISNULL((
-                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0))
+                             SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)))
                              FROM SaleItems si
                              JOIN Products p ON si.ProductID = p.ProductID
                              WHERE si.SaleID = s.SaleID
@@ -1770,7 +1770,7 @@ namespace ChickenDist.DAL
                            s.SaleType,
                            s.TotalAmount,
                            s.WarehouseID,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -1805,7 +1805,7 @@ namespace ChickenDist.DAL
                            s.SaleType,
                            s.TotalAmount,
                            s.WarehouseID,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -1838,7 +1838,7 @@ namespace ChickenDist.DAL
                            SUM(s.TotalAmount) AS TotalSales,
                            SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                            SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS SalesCost,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
                            COUNT(DISTINCT s.SaleID) AS SaleCount
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
@@ -1851,7 +1851,7 @@ namespace ChickenDist.DAL
                 ClientReturnCosts AS (
                     SELECT sr.ClientID,
                            SUM(sr.TotalAmount) AS TotalReturns,
-                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -1891,7 +1891,7 @@ namespace ChickenDist.DAL
                            AVG(si.UnitPrice) AS AvgPrice,
                            SUM(si.Quantity) AS TotalQty,
                            SUM(si.TotalPrice) AS TotalAmount,
-                           SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) AS TotalCost
+                           SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
                     JOIN Products p ON si.ProductID = p.ProductID
@@ -1904,7 +1904,7 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID,
                            SUM(ri.Quantity) AS ReturnedQty,
                            SUM(ri.TotalPrice) AS ReturnedAmount,
-                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) AS ReturnedCost
+                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS ReturnedCost
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     JOIN Products p ON ri.ProductID = p.ProductID
@@ -1943,9 +1943,9 @@ namespace ChickenDist.DAL
                     p.PurchasePrice,
                     v.SalePrice,
                     SUM(v.CurrentQty) AS CurrentStock,
-                    SUM(v.CurrentQty * ISNULL(p.PurchasePrice, 0.0)) AS StockValue,
-                    SUM(v.CurrentQty * ISNULL(v.SalePrice, 0.0)) AS StockSaleValue,
-                    SUM(v.CurrentQty * (ISNULL(v.SalePrice, 0.0) - ISNULL(p.PurchasePrice, 0.0))) AS ExpectedProfit
+                    SUM(v.CurrentQty * (ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit2Factor * p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), 1.0))) AS StockValue,
+                    SUM(v.CurrentQty * (ISNULL(v.SalePrice, 0.0) / COALESCE(NULLIF(p.Unit2Factor * p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), 1.0))) AS StockSaleValue,
+                    SUM(v.CurrentQty * ((ISNULL(v.SalePrice, 0.0) - ISNULL(p.PurchasePrice, 0.0)) / COALESCE(NULLIF(p.Unit2Factor * p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), 1.0))) AS ExpectedProfit
                 FROM vw_CurrentStockByWarehouse v
                 JOIN Products p ON v.ProductID = p.ProductID
                 WHERE (@warehouseID IS NULL OR v.WarehouseID = @warehouseID)
@@ -1963,8 +1963,8 @@ namespace ChickenDist.DAL
                     ISNULL((SELECT SUM(TotalAmount) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)), 0) AS SalesReturns,
                     
                     -- 2. تكلفة المبيعات
-                    ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID JOIN Products p ON si.ProductID = p.ProductID WHERE s.IsPosted = 1 AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)), 0) AS GrossCOGS,
-                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * ISNULL(p.PurchasePrice, 0.0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID JOIN Products p ON ri.ProductID = p.ProductID WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsCOGS,
+                    ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID JOIN Products p ON si.ProductID = p.ProductID WHERE s.IsPosted = 1 AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)), 0) AS GrossCOGS,
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID JOIN Products p ON ri.ProductID = p.ProductID WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsCOGS,
                     
                     -- 3. المصروفات
                     ISNULL((SELECT SUM(Amount) FROM Expenses WHERE CAST(ExpenseDate AS DATE) BETWEEN @f AND @t), 0) AS GeneralExpenses,

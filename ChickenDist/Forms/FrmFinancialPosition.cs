@@ -237,21 +237,27 @@ namespace ChickenDist.Forms
             try
             {
                 // 1. حساب إجمالي النقدية
-                object cashObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn - AmountOut), 0) FROM CashBox");
+                object cashObj = DbHelper.Scalar("SELECT ISNULL(SUM(Balance), 0) FROM vw_SafeAccountBalances");
                 decimal totalCash = cashObj != null ? Convert.ToDecimal(cashObj) : 0m;
                 lblTotalCash.Text = $"{totalCash:N2} ج";
 
                 // 2. حساب قيمة البضاعة بسعر الشراء وسعر البيع
-                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ps.Quantity * p.PurchasePrice), 0) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID");
+                object purObj = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(v.CurrentQty * (p.PurchasePrice / COALESCE(NULLIF(p.Unit2Factor * p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), 1.0))), 0) 
+                    FROM vw_CurrentStockByWarehouse v 
+                    JOIN Products p ON v.ProductID = p.ProductID");
                 decimal invPurchase = purObj != null ? Convert.ToDecimal(purObj) : 0m;
                 lblInventoryPurchase.Text = $"{invPurchase:N2} ج";
 
-                object saleObj = DbHelper.Scalar("SELECT ISNULL(SUM(ps.Quantity * p.SalePrice), 0) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID");
+                object saleObj = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(v.CurrentQty * (p.SalePrice / COALESCE(NULLIF(p.Unit2Factor * p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), 1.0))), 0) 
+                    FROM vw_CurrentStockByWarehouse v 
+                    JOIN Products p ON v.ProductID = p.ProductID");
                 decimal invSale = saleObj != null ? Convert.ToDecimal(saleObj) : 0m;
 
                 decimal expectedProfit = invSale - invPurchase;
                 lblExpectedAssets.Text = $"إجمالي تكلفة المخزون (بالشراء): {invPurchase:N2} ج   |   القيمة البيعية المتوقعة: {invSale:N2} ج   |   أرباح المخزون المتوقعة: {expectedProfit:N2} ج";
-
+                
                 // 3. حساب مستحقات العملاء (المدينين فقط)
                 object clientObj = DbHelper.Scalar(@"
                     SELECT ISNULL(SUM(CurrentBalance), 0) FROM (
@@ -286,8 +292,8 @@ namespace ChickenDist.Forms
                             WHEN 'Cash' THEN N'خزينة نقدية' 
                             WHEN 'Bank' THEN N'حساب بنكي' 
                             ELSE N'شبكة/فيزا' END AS SafeType,
-                        ISNULL((SELECT SUM(AmountIn - AmountOut) FROM CashBox WHERE AccountID = sa.AccountID), 0) AS Balance
-                    FROM SafeAccounts sa
+                        sa.Balance
+                    FROM vw_SafeAccountBalances sa
                     ORDER BY sa.AccountName");
                 
                 dgSafes.Rows.Clear();
