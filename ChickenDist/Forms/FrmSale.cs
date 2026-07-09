@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
 
 		private Button btnTypeInstallment;
 
-		private string _invoiceType = "Credit";
+		private string _invoiceType = "Cash";
 
 		private Label lblClient;
 
@@ -810,6 +810,13 @@ namespace ChickenDist.Forms
 			btnCustomizeCols.FlatAppearance.BorderSize = 0;
 			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
 
+			bool canOrder = Session.CanOrderColumns("Sales");
+			btnCustomizeCols.Visible = canOrder;
+			if (!canOrder)
+			{
+				tblProductBar.ColumnStyles[5].Width = 0f;
+			}
+
 			tblProductBar.Controls.Add(lblProductTitle, 0, 0);
 			tblProductBar.Controls.Add(txtProductCode, 1, 0);
 			tblProductBar.Controls.Add(cboProduct, 2, 0);
@@ -939,8 +946,12 @@ namespace ChickenDist.Forms
 				dgItems.Columns["ProductName"].MinimumWidth = 160;
 			}
 			
+			dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("Sales");
+			Session.LoadColumnOrder(dgItems, "Sales");
+
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
+			dgItems.EditingControlShowing += DgItems_EditingControlShowing;
 			dgItems.RowsAdded   += (s, e) => _isDirty = true;
 			dgItems.RowsRemoved += (s, e) => _isDirty = true;
 			
@@ -1154,6 +1165,7 @@ namespace ChickenDist.Forms
 			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
 			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
+			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج (Ctrl+D)", 0, 0, 135, 26, Color.FromArgb(70, 70, 70));
 
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
@@ -1163,6 +1175,7 @@ namespace ChickenDist.Forms
 			btnPrint.Anchor = AnchorStyles.None;
 			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
+			btnOpenDrawer.Anchor = AnchorStyles.None;
 
 			btnSave.Click += BtnSave_Click;
 			btnHold.Click += BtnHold_Click;
@@ -1172,6 +1185,7 @@ namespace ChickenDist.Forms
 			btnPrint.Click += BtnPrint_Click;
 			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
+			btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
 			var pnlFooterButtons = new FlowLayoutPanel
 			{
@@ -1191,8 +1205,9 @@ namespace ChickenDist.Forms
 			btnTawreed.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
+			btnOpenDrawer.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -1204,7 +1219,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -1255,11 +1270,58 @@ namespace ChickenDist.Forms
                 }
             }
 
+			// ─── اختصارات تغيير الوحدات بالكيبورد (Ctrl + 1/2/3) ───
+			if (e.Control && (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1 || e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2 || e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3))
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					int rowIndex = dgItems.CurrentRow.Index;
+					var dto = _items[rowIndex];
+					ComboItem prod = GetProductComboItem(dto.ProductID);
+					if (prod != null)
+					{
+						string targetUnit = null;
+						if (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1)
+						{
+							targetUnit = prod.BaseUnitName; // الوحدة الكبرى
+						}
+						else if (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2)
+						{
+							targetUnit = prod.Unit2Name; // الوحدة المتوسطة
+						}
+						else if (e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3)
+						{
+							targetUnit = prod.Unit1Name; // الوحدة الصغرى
+						}
+
+						if (!string.IsNullOrEmpty(targetUnit))
+						{
+							if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
+							
+							if (dgItems.Rows[rowIndex].Cells["UnitName"] is DataGridViewComboBoxCell cell)
+							{
+								if (cell.Items.Contains(targetUnit))
+								{
+									cell.Value = targetUnit;
+									HandleUnitChange(dgItems.Rows[rowIndex], dto, targetUnit);
+									e.Handled = true;
+								}
+								else
+								{
+									MessageBox.Show($"⚠️ الوحدة '{targetUnit}' غير متوفرة لهذا الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								}
+							}
+						}
+					}
+				}
+			}
+
 			if      (e.KeyCode == Keys.F2)  { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9)  { btnPrint.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
+			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -1393,7 +1455,11 @@ namespace ChickenDist.Forms
 				_pendingBarcodeWeight = res.WeightOrPrice;
 				foreach (var ci in allItems)
 				{
-					if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
+					if (ci.ID > 0 && (
+						ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+						ci.PartNumber == res.ItemCode ||
+						(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+					))
 					{
 						foundItem = ci;
 						break;
@@ -1480,7 +1546,11 @@ namespace ChickenDist.Forms
 					// Search for item by scale code in unfiltered list
 					foreach (var ci in allItems)
 					{
-						if (ci.ID > 0 && (ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || ci.PartNumber == res.ItemCode))
+						if (ci.ID > 0 && (
+							ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+							ci.PartNumber == res.ItemCode ||
+							(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+						))
 						{
 							foundItem = ci;
 							break;
@@ -1739,6 +1809,7 @@ namespace ChickenDist.Forms
 					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+					itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					itemOld.BaseUnitName = baseUnit;
 					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
@@ -1766,6 +1837,7 @@ namespace ChickenDist.Forms
 					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+					itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					itemPending.BaseUnitName = baseUnit;
 					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
@@ -1794,6 +1866,7 @@ namespace ChickenDist.Forms
 					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+					comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					comboItem.BaseUnitName = baseUnit;
 					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
@@ -2057,12 +2130,12 @@ namespace ChickenDist.Forms
 
 		private string GetDefaultAllowedInvoiceType()
 		{
-			if (Session.Role == "Admin") return "Credit";
-			if (Session.CanSellCredit) return "Credit";
+			if (Session.Role == "Admin") return "Cash";
 			if (Session.CanSellCash) return "Cash";
+			if (Session.CanSellCredit) return "Credit";
 			if (Session.CanSellDriverLoad) return "DriverLoad";
 			if (Session.CanSellInstallment) return "Installment";
-			return "Credit"; // Fallback
+			return "Cash"; // Fallback
 		}
 
 		private void ApplyInvoiceTypePermissions()
@@ -2267,6 +2340,22 @@ namespace ChickenDist.Forms
 			{
 				_items.RemoveAt(e.RowIndex);
 				RefreshGrid();
+			}
+			else if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+			{
+				dgItems.CurrentCell = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex];
+				dgItems.BeginEdit(true);
+			}
+		}
+
+		private void DgItems_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
+		{
+			if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName")
+			{
+				if (e.Control is ComboBox comboBox)
+				{
+					comboBox.DroppedDown = true;
+				}
 			}
 		}
 
@@ -2871,9 +2960,21 @@ namespace ChickenDist.Forms
 
 			if (string.IsNullOrEmpty(selectedUnit))
 			{
-				selectedUnit = !string.IsNullOrEmpty(product.Unit1Name) ? product.Unit1Name
-				               : !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName
-				               : null;
+				string defUnit = product.DefaultSaleUnit;
+				if (string.IsNullOrEmpty(defUnit)) defUnit = "الكبرى";
+
+				if (defUnit == "الوسطى" && !string.IsNullOrEmpty(product.Unit2Name))
+				{
+					selectedUnit = product.Unit2Name;
+				}
+				else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(product.Unit1Name))
+				{
+					selectedUnit = product.Unit1Name;
+				}
+				else // "الكبرى" or default
+				{
+					selectedUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : product.Unit1Name;
+				}
 			}
 
 			decimal purchasePrice = product.PurchasePrice;
@@ -3573,6 +3674,11 @@ namespace ChickenDist.Forms
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			if (Session.CanOrderColumns("Sales"))
+			{
+				Session.SaveColumnOrder(dgItems, "Sales");
+			}
+
 			if (AppConfig.ScaleEnabled)
 			{
 				ScaleService.Instance.WeightChanged -= ScaleService_WeightChanged;
@@ -4043,7 +4149,7 @@ namespace ChickenDist.Forms
 						decimal qty   = Convert.ToDecimal(r["Quantity"]);
 						decimal price = Convert.ToDecimal(r["UnitPrice"]);
 						decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-						sb.AppendLine($"🛒 {name}");
+						sb.AppendLine($"🐥 {name}");
 						sb.AppendLine($"▪ الكمية : {qty:0.##}");
 						sb.AppendLine($"▪ السعر : {price:N2} ج");
 						sb.AppendLine($"▪ الإجمالي : {tot:N2} ج");
@@ -4343,9 +4449,9 @@ namespace ChickenDist.Forms
 
 					g.DrawString(AppConfig.CompanyName, fComp, bNavy, new RectangleF(0, y, w, 28), center);
 					
-					// رسم سلتين للتسوق كشعار
-					DrawShoppingCartIcon(g, 35, y - 20, 38);
-					DrawShoppingCartIcon(g, w - 73, y - 20, 38);
+					// رسم دجاجتين كشعار
+					DrawChickenSilhouette(g, 35, y - 25, 40);
+					DrawChickenSilhouette(g, w - 75, y - 25, 40);
 					y += 40;
 
 					// مربع البيانات الفوقية
@@ -4526,8 +4632,8 @@ namespace ChickenDist.Forms
 					g.DrawRectangle(pNavyThin, 20, y, w - 40, footerH);
 					g.DrawString("شكراً لتعاملكم معنا", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
 					
-					DrawShoppingCartIcon(g, 100, y + 10, 25);
-					DrawShoppingCartIcon(g, w - 125, y + 10, 25);
+					DrawChickenSilhouette(g, 100, y + 10, 25);
+					DrawChickenSilhouette(g, w - 125, y + 10, 25);
 
 					// الدعاية للبرنامج
 					var fPromo = new Font("Arial", 10f, FontStyle.Bold);
@@ -4549,38 +4655,37 @@ namespace ChickenDist.Forms
 			return bmp;
 		}
 
-		/// <summary>يرسم أيقونة سلة تسوق بشكل متجهي احترافي بديلاً عن رسم الدجاجة</summary>
-		private void DrawShoppingCartIcon(Graphics g, float x, float y, float size)
+		private void DrawChickenSilhouette(Graphics g, float x, float y, float size)
 		{
-			var cartColor = Color.FromArgb(0, 51, 153);
-			using (var brush = new SolidBrush(cartColor))
-			using (var pen = new Pen(cartColor, size * 0.1f))
-			using (var penThin = new Pen(cartColor, size * 0.07f))
+			using (var brush = new SolidBrush(Color.FromArgb(0, 51, 153)))
 			{
-				// Handle (bar at top left)
-				g.DrawLine(pen, x, y, x + size * 0.18f, y);
-				g.DrawLine(pen, x + size * 0.18f, y, x + size * 0.3f, y + size * 0.35f);
+				// Body (oval)
+				g.FillEllipse(brush, x, y + size * 0.3f, size, size * 0.7f);
+				// Head (circle)
+				g.FillEllipse(brush, x + size * 0.4f, y, size * 0.5f, size * 0.5f);
 				
-				// Cart basket (trapezoid)
-				var basketPts = new PointF[] {
-					new PointF(x + size * 0.25f, y + size * 0.3f),
-					new PointF(x + size * 1.02f, y + size * 0.3f),
-					new PointF(x + size * 0.9f,  y + size * 0.78f),
-					new PointF(x + size * 0.37f, y + size * 0.78f)
+				// Beak (triangle facing right)
+				var beakPoints = new PointF[] {
+					new PointF(x + size * 1.02f, y + size * 0.25f),
+					new PointF(x + size * 0.88f, y + size * 0.18f),
+					new PointF(x + size * 0.88f, y + size * 0.32f)
 				};
-				g.DrawPolygon(pen, basketPts);
+				g.FillPolygon(brush, beakPoints);
 				
-				// Vertical divider lines inside basket
-				g.DrawLine(penThin, x + size * 0.55f, y + size * 0.35f, x + size * 0.5f, y + size * 0.74f);
-				g.DrawLine(penThin, x + size * 0.75f, y + size * 0.35f, x + size * 0.72f, y + size * 0.74f);
+				// Tail (triangle facing left)
+				var tailPoints = new PointF[] {
+					new PointF(x, y + size * 0.4f),
+					new PointF(x - size * 0.2f, y + size * 0.1f),
+					new PointF(x + size * 0.2f, y + size * 0.5f)
+				};
+				g.FillPolygon(brush, tailPoints);
 				
-				// Left wheel
-				g.FillEllipse(brush, x + size * 0.38f, y + size * 0.84f, size * 0.17f, size * 0.17f);
-				g.FillEllipse(new SolidBrush(Color.White), x + size * 0.43f, y + size * 0.89f, size * 0.07f, size * 0.07f);
-				
-				// Right wheel
-				g.FillEllipse(brush, x + size * 0.75f, y + size * 0.84f, size * 0.17f, size * 0.17f);
-				g.FillEllipse(new SolidBrush(Color.White), x + size * 0.80f, y + size * 0.89f, size * 0.07f, size * 0.07f);
+				// Legs
+				using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))
+				{
+					g.DrawLine(pen, x + size * 0.4f, y + size * 0.9f, x + size * 0.35f, y + size * 1.2f);
+					g.DrawLine(pen, x + size * 0.6f, y + size * 0.9f, x + size * 0.65f, y + size * 1.2f);
+				}
 			}
 		}
 
@@ -4850,6 +4955,7 @@ namespace ChickenDist.Forms
 		public bool IsService { get; set; } = false;
 		public bool HasExpiry { get; set; } = false;
 		public int? DefaultExpiryDays { get; set; } = null;
+		public string DefaultSaleUnit { get; set; } = "";
 
 		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
 		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>

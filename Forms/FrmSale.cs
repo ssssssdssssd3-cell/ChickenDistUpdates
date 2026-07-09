@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
 
 		private Button btnTypeInstallment;
 
-		private string _invoiceType = "Credit";
+		private string _invoiceType = "Cash";
 
 		private Label lblClient;
 
@@ -2130,12 +2130,12 @@ namespace ChickenDist.Forms
 
 		private string GetDefaultAllowedInvoiceType()
 		{
-			if (Session.Role == "Admin") return "Credit";
-			if (Session.CanSellCredit) return "Credit";
+			if (Session.Role == "Admin") return "Cash";
 			if (Session.CanSellCash) return "Cash";
+			if (Session.CanSellCredit) return "Credit";
 			if (Session.CanSellDriverLoad) return "DriverLoad";
 			if (Session.CanSellInstallment) return "Installment";
-			return "Credit"; // Fallback
+			return "Cash"; // Fallback
 		}
 
 		private void ApplyInvoiceTypePermissions()
