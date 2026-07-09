@@ -12,6 +12,9 @@ CREATE DATABASE ChickenDist
     COLLATE Arabic_CI_AS
 GO
 
+ALTER DATABASE ChickenDist SET RECOVERY SIMPLE
+GO
+
 USE ChickenDist
 GO
 
