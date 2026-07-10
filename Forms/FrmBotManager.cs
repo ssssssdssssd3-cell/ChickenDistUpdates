@@ -513,6 +513,27 @@ pause
                         _qrSecondsLeft = 0;
                         tmrStatus.Interval = 20000; // Poll less frequently when online
                     }
+                    else if (statusVal == "PairingCode_Ready")
+                    {
+                        string code = "";
+                        var mCode = System.Text.RegularExpressions.Regex.Match(json, @"""pairingCode""\s*:\s*\{\s*""stringValue""\s*:\s*""([^""]+)""");
+                        if (mCode.Success)
+                        {
+                            code = mCode.Groups[1].Value;
+                        }
+
+                        lblStatus.Text = $"الحالة: كود الاقتران جاهز ({code}) 📲\n(أدخل الكود في تطبيق الواتساب بالهاتف للربط)";
+                        lblStatus.ForeColor = Color.FromArgb(155, 89, 182);
+                        btnToggle.Text = "إعادة تشغيل الجلسة";
+                        btnToggle.BackColor = Color.FromArgb(155, 89, 182);
+                        btnToggle.Enabled = true;
+
+                        DisplayPairingCode(code);
+
+                        tmrStatus.Interval = 3000;
+                        lblQrCountdown.Visible = false;
+                        tmrCountdown.Stop();
+                    }
                     else if (statusVal == "QR_Ready")
                     {
                         lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف 📲\n(السبب: لم يتم ربط الحساب بالهاتف)";
@@ -616,6 +637,61 @@ pause
             }
         }
 
+        private void DisplayPairingCode(string code)
+        {
+            try
+            {
+                Bitmap bmp = new Bitmap(pbQrCode.Width, pbQrCode.Height);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.FromArgb(245, 246, 250)); // matches theme background
+                    
+                    // Draw a nice rounded box for the code
+                    using (Pen borderPen = new Pen(Color.FromArgb(155, 89, 182), 3))
+                    {
+                        g.DrawRectangle(borderPen, 15, 40, pbQrCode.Width - 30, pbQrCode.Height - 80);
+                    }
+
+                    // Draw text labels
+                    using (Font titleFont = new Font("Segoe UI", 11F, FontStyle.Bold))
+                    using (Font codeFont = new Font("Consolas", 28F, FontStyle.Bold))
+                    using (Font descFont = new Font("Segoe UI", 8.5F, FontStyle.Regular))
+                    using (Brush textBrush = new SolidBrush(Color.FromArgb(44, 62, 80)))
+                    using (Brush codeBrush = new SolidBrush(Color.FromArgb(155, 89, 182)))
+                    {
+                        string titleText = "كود ربط الواتساب السريع";
+                        string descText1 = "أدخل هذا الكود في هاتف العميل";
+                        string descText2 = "من خيار (ربط برقم الهاتف)";
+
+                        // Measure and draw title
+                        SizeF titleSize = g.MeasureString(titleText, titleFont);
+                        g.DrawString(titleText, titleFont, textBrush, (pbQrCode.Width - titleSize.Width) / 2, 60);
+
+                        // Measure and draw code
+                        string formattedCode = code; 
+                        if (code.Length == 8)
+                        {
+                            formattedCode = code.Substring(0, 4) + " - " + code.Substring(4);
+                        }
+                        SizeF codeSize = g.MeasureString(formattedCode, codeFont);
+                        g.DrawString(formattedCode, codeFont, codeBrush, (pbQrCode.Width - codeSize.Width) / 2, 105);
+
+                        // Measure and draw descriptions
+                        SizeF descSize1 = g.MeasureString(descText1, descFont);
+                        g.DrawString(descText1, descFont, textBrush, (pbQrCode.Width - descSize1.Width) / 2, 175);
+                        
+                        SizeF descSize2 = g.MeasureString(descText2, descFont);
+                        g.DrawString(descText2, descFont, textBrush, (pbQrCode.Width - descSize2.Width) / 2, 195);
+                    }
+                }
+                pbQrCode.Image = bmp;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"خطأ في رسم كود الاقتران: {ex.Message}");
+            }
+        }
+
         private async void BtnClearSession_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
@@ -663,20 +739,127 @@ pause
         {
             try
             {
-                bool isRunning = lblStatus.Text.Contains("متصل بالواتساب") || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير");
+                bool isRunning = lblStatus.Text.Contains("متصل بالواتساب") || lblStatus.Text.Contains("يرجى") || lblStatus.Text.Contains("تحضير") || lblStatus.Text.Contains("كود");
                 string actionCmd = isRunning ? "stop_bot" : "start_bot";
+                string pairingPhone = null;
+
+                if (actionCmd == "start_bot")
+                {
+                    // Show a dialog to choose between QR and Phone Pairing Code
+                    using (Form inputDlg = new Form())
+                    {
+                        inputDlg.Text = "خيار ربط البوت بالواتساب";
+                        inputDlg.Size = new Size(400, 240);
+                        inputDlg.StartPosition = FormStartPosition.CenterParent;
+                        inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        inputDlg.MaximizeBox = false;
+                        inputDlg.MinimizeBox = false;
+                        inputDlg.RightToLeft = RightToLeft.Yes;
+                        inputDlg.RightToLeftLayout = true;
+                        inputDlg.BackColor = Color.FromArgb(245, 246, 250);
+
+                        Label lblInfo = new Label
+                        {
+                            Text = "اختر طريقة ربط واتساب:\n- لمسح الـ QR: اترك الحقل فارغاً واضغط موافق.\n- للربط برقم الهاتف (Pairing Code): اكتب الرقم واضغط موافق.",
+                            Location = new Point(15, 15),
+                            Size = new Size(360, 60),
+                            Font = new Font("Segoe UI", 9.5F),
+                            ForeColor = Color.FromArgb(44, 62, 80)
+                        };
+                        inputDlg.Controls.Add(lblInfo);
+
+                        Label lblPhone = new Label
+                        {
+                            Text = "رقم الموبايل (مثال: 01012345678):",
+                            Location = new Point(15, 85),
+                            Size = new Size(360, 20),
+                            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                            ForeColor = Color.FromArgb(44, 62, 80)
+                        };
+                        inputDlg.Controls.Add(lblPhone);
+
+                        TextBox txtPhone = new TextBox
+                        {
+                            Location = new Point(15, 110),
+                            Size = new Size(360, 28),
+                            Font = new Font("Segoe UI", 10.5F)
+                        };
+                        inputDlg.Controls.Add(txtPhone);
+
+                        Button btnOk = new Button
+                        {
+                            Text = "موافق 👍",
+                            DialogResult = DialogResult.OK,
+                            Location = new Point(265, 155),
+                            Size = new Size(110, 34),
+                            BackColor = Color.FromArgb(46, 204, 113),
+                            ForeColor = Color.White,
+                            FlatStyle = FlatStyle.Flat,
+                            Cursor = Cursors.Hand,
+                            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                        };
+                        btnOk.FlatAppearance.BorderSize = 0;
+                        inputDlg.Controls.Add(btnOk);
+
+                        Button btnCancel = new Button
+                        {
+                            Text = "إلغاء",
+                            DialogResult = DialogResult.Cancel,
+                            Location = new Point(145, 155),
+                            Size = new Size(110, 34),
+                            BackColor = Color.FromArgb(180, 180, 180),
+                            ForeColor = Color.White,
+                            FlatStyle = FlatStyle.Flat,
+                            Cursor = Cursors.Hand,
+                            Font = new Font("Segoe UI", 9.5F)
+                        };
+                        btnCancel.FlatAppearance.BorderSize = 0;
+                        inputDlg.Controls.Add(btnCancel);
+
+                        inputDlg.AcceptButton = btnOk;
+                        inputDlg.CancelButton = btnCancel;
+
+                        if (inputDlg.ShowDialog(this) == DialogResult.OK)
+                        {
+                            string phoneStr = txtPhone.Text.Trim();
+                            if (!string.IsNullOrEmpty(phoneStr))
+                            {
+                                pairingPhone = phoneStr;
+                            }
+                        }
+                        else
+                        {
+                            return; // Cancel clicked, do nothing
+                        }
+                    }
+                }
                 
                 LogMessage(isRunning ? "جاري إرسال أمر إيقاف البوت للسحابة..." : "جاري إرسال أمر تشغيل البوت للسحابة...");
                 
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                string json = "{" +
-                              "\"fields\": {" +
-                              "\"type\": {\"stringValue\": \"" + actionCmd + "\"}," +
-                              "\"status\": {\"stringValue\": \"pending\"}," +
-                              "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
-                              "}" +
-                              "}";
-                              
+                string json;
+                if (!string.IsNullOrEmpty(pairingPhone))
+                {
+                    json = "{" +
+                           "\"fields\": {" +
+                           "\"type\": {\"stringValue\": \"" + actionCmd + "\"}," +
+                           "\"status\": {\"stringValue\": \"pending\"}," +
+                           "\"pairingPhone\": {\"stringValue\": \"" + EscapeJsonString(pairingPhone) + "\"}," +
+                           "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
+                           "}" +
+                           "}";
+                }
+                else
+                {
+                    json = "{" +
+                           "\"fields\": {" +
+                           "\"type\": {\"stringValue\": \"" + actionCmd + "\"}," +
+                           "\"status\": {\"stringValue\": \"pending\"}," +
+                           "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
+                           "}" +
+                           "}";
+                }
+                               
                 string projectId = GetFirebaseProjectId();
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync($"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/commands", content);
