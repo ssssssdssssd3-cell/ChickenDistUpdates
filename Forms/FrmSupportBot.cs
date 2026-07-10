@@ -43,13 +43,13 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlTitle);
 
             // ── الحاوية السفلية لمنع تداخل أزرار الشرح ومربع الإدخال ──
+            // NOTE: يجب إضافة Bottom controls أولاً قبل Fill في WinForms
             pnlBottomContainer = new Panel
             {
                 Dock = DockStyle.Bottom,
                 Height = 150,
                 BackColor = Color.Transparent
             };
-            this.Controls.Add(pnlBottomContainer);
 
             // 3. Input Area inside Bottom Container
             pnlInputArea = new Panel
@@ -89,7 +89,7 @@ namespace ChickenDist.Forms
             };
             pnlBottomContainer.Controls.Add(pnlChips);
 
-            // 1. Chat History Panel
+            // 1. Chat History Panel — يُضاف بعد كل Bottom controls حتى يملأ المساحة المتبقية بشكل صحيح
             pnlChat = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -99,9 +99,11 @@ namespace ChickenDist.Forms
                 WrapContents = false,
                 Padding = new Padding(15)
             };
-            this.Controls.Add(pnlChat);
 
-            pnlChat.SendToBack();
+            // ترتيب الإضافة المهم: Bottom أولاً ثم Fill
+            this.Controls.Add(pnlBottomContainer);
+            this.Controls.Add(pnlChat);
+            pnlChat.BringToFront();
 
             // ── كروت شرح الشاشات بألوان مميزة وتفاعلية ──
             AddChip("🖥️ شرح شاشة البيع السريع", "شرح شاشة البيع السريع", Color.FromArgb(40, 167, 69)); // أخضر
