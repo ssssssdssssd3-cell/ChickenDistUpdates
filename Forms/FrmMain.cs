@@ -123,11 +123,11 @@ namespace ChickenDist.Forms
             {
                 Name = "pnlNavBar",
                 Dock = DockStyle.Top,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft, // RTL: أزرار تبدأ من اليمين
                 WrapContents = true,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                RightToLeft = RightToLeft.No, // Prevent double-reversal of FlowLayoutPanel child rendering in mirrored RTL forms
+                RightToLeft = RightToLeft.No, // منع عكس النص داخل الأزرار - فقط الترتيب من اليمين
                 BackColor = Theme.BgNavBar,
                 Padding = new Padding(10, 5, 10, 5),
                 AllowDrop = true
