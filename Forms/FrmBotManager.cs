@@ -384,7 +384,9 @@ echo   ✅ Done! Your website is now live online!
 echo ===================================================
 pause
 ";
-                    File.WriteAllText(batPath, batContent, Encoding.UTF8);
+                    // Write with UTF-8 without BOM to avoid cmd parse errors (∩╗┐@echo off)
+                    var utf8WithoutBom = new System.Text.UTF8Encoding(false);
+                    File.WriteAllText(batPath, batContent, utf8WithoutBom);
 
                     var startInfo = new System.Diagnostics.ProcessStartInfo
                     {
