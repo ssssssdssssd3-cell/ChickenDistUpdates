@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -442,14 +442,13 @@ namespace ChickenDist.Forms
                     ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
                 }),
 
-                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
-                    ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
-                    ("📊 كشف حساب مورد", "SupplierStatement", (Action)(() => OpenSupplierStatementSelector())),
-                    ("💸 صرف نقدي لمورد", "SupplierPayment", (Action)(() => OpenSupplierPaymentSelector())),
+                                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
+                    ("🤝 إدارة الموردين",        "Suppliers",          (Action)(() => NavigateTo(new FrmSuppliers()))),
+                    ("📊 كشف حساب مورد",     "SupplierStatement",  (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد",     "SupplierPayment",    (Action)(() => OpenSupplierPaymentSelector())),
                     ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
-                }),
-
-                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
+                    ("📊 تقارير الموردين",      "Reports,Suppliers",  (Action)(() => NavigateTo(new FrmReports("Suppliers")))),
+                }),                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
                     ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
                     ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
                     ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
@@ -463,6 +462,7 @@ namespace ChickenDist.Forms
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
+                    ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -471,7 +471,6 @@ namespace ChickenDist.Forms
                     ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
                     ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("📊 التقارير الشاملة", "Reports",              (Action)(() => NavigateTo(new FrmReports(null)))),
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
@@ -635,14 +634,13 @@ namespace ChickenDist.Forms
                     ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
                 }),
 
-                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
-                    ("🤝 إدارة الموردين", "Suppliers", (Action)(() => NavigateTo(new FrmSuppliers()))),
-                    ("📊 كشف حساب مورد", "SupplierStatement", (Action)(() => OpenSupplierStatementSelector())),
-                    ("💸 صرف نقدي لمورد", "SupplierPayment", (Action)(() => OpenSupplierPaymentSelector())),
+                                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
+                    ("🤝 إدارة الموردين",        "Suppliers",          (Action)(() => NavigateTo(new FrmSuppliers()))),
+                    ("📊 كشف حساب مورد",     "SupplierStatement",  (Action)(() => OpenSupplierStatementSelector())),
+                    ("💸 صرف نقدي لمورد",     "SupplierPayment",    (Action)(() => OpenSupplierPaymentSelector())),
                     ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
-                }),
-
-                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
+                    ("📊 تقارير الموردين",      "Reports,Suppliers",  (Action)(() => NavigateTo(new FrmReports("Suppliers")))),
+                }),                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
                     ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
                     ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
                     ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
@@ -656,6 +654,7 @@ namespace ChickenDist.Forms
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
+                    ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -664,7 +663,6 @@ namespace ChickenDist.Forms
                     ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
                     ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("📊 التقارير الشاملة", "Reports",              (Action)(() => NavigateTo(new FrmReports(null)))),
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
@@ -1809,9 +1807,7 @@ namespace ChickenDist.Forms
             if (Session.CanAccess("Clients")) 
                 AddActionTile(pnlActionsFlow, "👥", "كشف العملاء", () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193));
             
-            if (Session.CanAccess("Reports")) 
-                AddActionTile(pnlActionsFlow, "📊", "التقارير", () => NavigateMain(new FrmReports()), Color.FromArgb(220, 53, 69));
-
+            
             AddActionTile(pnlActionsFlow, "🤖", "الدعم الفني", () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
 
             lowerTbl.Controls.Add(pnlActions, 0, 0);
