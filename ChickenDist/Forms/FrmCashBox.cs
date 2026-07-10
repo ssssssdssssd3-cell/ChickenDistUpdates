@@ -17,6 +17,7 @@ namespace ChickenDist.Forms
         private DataGridView dgCash;
         private DateTimePicker dtpCashFrom, dtpCashTo;
         private ComboBox cboSafeFilter;
+        private ComboBox cboTransTypeFilter;
         private Button btnLoadCash;
         private Label lblCashBalance, lblCashIn, lblCashOut;
 
@@ -108,6 +109,21 @@ namespace ChickenDist.Forms
             };
             cboSafeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
             pnlF.Controls.Add(cboSafeFilter);
+
+            pnlF.Controls.Add(new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
+            cboTransTypeFilter = new ComboBox
+            {
+                Width = 115,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(10, 4, 0, 0)
+            };
+            cboTransTypeFilter.Items.AddRange(new object[] { "الكل", "وارد (توريد)", "صادر (صرف)" });
+            cboTransTypeFilter.SelectedIndex = 0;
+            cboTransTypeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
+            pnlF.Controls.Add(cboTransTypeFilter);
             
             btnLoadCash = Theme.MakeButton("عرض", Theme.Accent);
             btnLoadCash.Size = new Size(70, 32);
@@ -115,14 +131,14 @@ namespace ChickenDist.Forms
             btnLoadCash.Click += (s, e) => LoadCashBox();
             pnlF.Controls.Add(btnLoadCash);
 
-            var btnDeposit = Theme.MakeButton("➕ توريد", Color.FromArgb(40, 130, 80));
-            btnDeposit.Size = new Size(95, 32);
+            var btnDeposit = Theme.MakeButton("➕ توريد نقدي", Color.FromArgb(40, 130, 80));
+            btnDeposit.Size = new Size(110, 32);
             btnDeposit.Margin = new Padding(10, 0, 0, 0);
             btnDeposit.Click += BtnDeposit_Click;
             pnlF.Controls.Add(btnDeposit);
 
-            var btnWithdraw = Theme.MakeButton("➖ سحب", Color.FromArgb(170, 70, 70));
-            btnWithdraw.Size = new Size(95, 32);
+            var btnWithdraw = Theme.MakeButton("➖ صرف نقدي", Color.FromArgb(170, 70, 70));
+            btnWithdraw.Size = new Size(110, 32);
             btnWithdraw.Margin = new Padding(10, 0, 0, 0);
             btnWithdraw.Click += BtnWithdraw_Click;
             pnlF.Controls.Add(btnWithdraw);
@@ -496,13 +512,20 @@ namespace ChickenDist.Forms
             {
                 decimal inAmt = Convert.ToDecimal(r["AmountIn"]);
                 decimal outAmt = Convert.ToDecimal(r["AmountOut"]);
+
+                if (cboTransTypeFilter != null)
+                {
+                    if (cboTransTypeFilter.SelectedIndex == 1 && inAmt == 0) continue; // وارد (توريد) فقط
+                    if (cboTransTypeFilter.SelectedIndex == 2 && outAmt == 0) continue; // صادر (صرف) فقط
+                }
+
                 decimal net = inAmt - outAmt;
                 
                 string transType = r["TransType"].ToString();
                 string transTypeArabic = transType switch
                 {
-                    "Deposit" => "توريد نقدية",
-                    "Withdraw" => "سحب نقدية",
+                    "Deposit" => "توريد نقدي",
+                    "Withdraw" => "صرف نقدي",
                     "SaleIncome" => "بيع نقدي",
                     "ClientPayment" => "تحصيل من عميل",
                     "Expense" => "مصروفات",
@@ -531,12 +554,12 @@ namespace ChickenDist.Forms
 
         private void BtnDeposit_Click(object sender, EventArgs e)
         {
-            ShowCashActionDialog("توريد نقدية للحساب", "Deposit");
+            ShowCashActionDialog("توريد نقدي للحساب", "Deposit");
         }
 
         private void BtnWithdraw_Click(object sender, EventArgs e)
         {
-            ShowCashActionDialog("سحب نقدية من الحساب", "Withdraw");
+            ShowCashActionDialog("صرف نقدي من الحساب", "Withdraw");
         }
 
         private void BtnReconcile_Click(object sender, EventArgs e)
@@ -678,7 +701,7 @@ namespace ChickenDist.Forms
             var dlg = new Form
             {
                 Text = title,
-                Size = new Size(400, 350),
+                Size = new Size(400, 360),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -689,10 +712,8 @@ namespace ChickenDist.Forms
                 RightToLeftLayout = true
             };
 
-            var lblSafe = new Label { Text = "الحساب المالي المعني:", Location = new Point(30, 15), AutoSize = true, ForeColor = Theme.TextMain };
             var cboSafe = new ComboBox
             {
-                Location = new Point(30, 38),
                 Width = 320,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
@@ -732,15 +753,8 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            var lblAmt = new Label { 
-                Text = type == "Reconcile" ? "الرصيد الفعلي الحالي في الحساب:" : "المبلغ:", 
-                Location = new Point(30, 80), 
-                AutoSize = true, 
-                ForeColor = Theme.TextMain 
-            };
             var nudAmt = new NumericUpDown 
             { 
-                Location = new Point(30, 103), 
                 Width = 320, 
                 Minimum = 0.00m, 
                 Maximum = 9999999, 
@@ -764,10 +778,8 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var lblNotes = new Label { Text = "البيان / السبب:", Location = new Point(30, 145), AutoSize = true, ForeColor = Theme.TextMain };
             var txtNotes = new TextBox 
             { 
-                Location = new Point(30, 168), 
                 Width = 320, 
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -775,8 +787,79 @@ namespace ChickenDist.Forms
             };
 
             var btnSave = Theme.MakeButton("💾 حفظ الحركة", Theme.Accent);
-            btnSave.Location = new Point(30, 225);
             btnSave.Size = new Size(320, 38);
+
+            // Lay out controls dynamically
+            int currentY = 15;
+            
+            var lblSafe = new Label { Text = "الحساب المالي المعني:", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+            cboSafe.Location = new Point(30, currentY + 23);
+            dlg.Controls.Add(lblSafe);
+            dlg.Controls.Add(cboSafe);
+            
+            currentY += 60; // Y = 75
+            
+            Label lblClassification = null;
+            ComboBox cboClassification = null;
+            if (type == "Deposit" || type == "Withdraw")
+            {
+                lblClassification = new Label { Text = "التصنيف المحاسبي للمقابلة:", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+                cboClassification = new ComboBox
+                {
+                    Location = new Point(30, currentY + 23),
+                    Width = 320,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    FlatStyle = FlatStyle.Flat
+                };
+                
+                if (type == "Deposit")
+                {
+                    cboClassification.Items.Add(new ComboItem(-1, "تسوية نقدية / رصيد افتتاحي (Reconciliation)"));
+                    cboClassification.Items.Add(new ComboItem(1, "تمويل زيادة رأس المال (Capital)"));
+                    cboClassification.Items.Add(new ComboItem(2, "قروض مستلمة (ShortTermLoans)"));
+                    cboClassification.Items.Add(new ComboItem(3, "إيرادات أخرى متنوعة (OtherRevenues)"));
+                }
+                else // Withdraw
+                {
+                    cboClassification.Items.Add(new ComboItem(-1, "تسوية نقدية / عجز جرد (Reconciliation)"));
+                    cboClassification.Items.Add(new ComboItem(1, "مسحوبات شخصية للشركاء (Drawings)"));
+                    cboClassification.Items.Add(new ComboItem(2, "عهود وسلف الموظفين (CustodiesAdvances)"));
+                    cboClassification.Items.Add(new ComboItem(3, "سداد قروض مستحقة (ShortTermLoans)"));
+                }
+                cboClassification.SelectedIndex = 0;
+                
+                dlg.Controls.Add(lblClassification);
+                dlg.Controls.Add(cboClassification);
+                
+                currentY += 60; // Y = 135
+            }
+            
+            var lblAmt = new Label { 
+                Text = type == "Reconcile" ? "الرصيد الفعلي الحالي في الحساب:" : "المبلغ:", 
+                Location = new Point(30, currentY), 
+                AutoSize = true, 
+                ForeColor = Theme.TextMain 
+            };
+            nudAmt.Location = new Point(30, currentY + 23);
+            dlg.Controls.Add(lblAmt);
+            dlg.Controls.Add(nudAmt);
+            
+            currentY += 60; // Y = 195 (or 135 if Reconcile)
+            
+            var lblNotes = new Label { Text = "البيان المحاسبي التفصيلي (إجباري):", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+            txtNotes.Location = new Point(30, currentY + 23);
+            dlg.Controls.Add(lblNotes);
+            dlg.Controls.Add(txtNotes);
+            
+            currentY += 65; // Y = 260 (or 200 if Reconcile)
+            
+            btnSave.Location = new Point(30, currentY);
+            btnSave.Size = new Size(320, 38);
+            dlg.Controls.Add(btnSave);
+            
+            dlg.Size = new Size(400, currentY + 90);
 
             btnSave.Click += (s, ev) =>
             {
@@ -792,7 +875,7 @@ namespace ChickenDist.Forms
                 }
                 if (string.IsNullOrWhiteSpace(txtNotes.Text))
                 {
-                    MessageBox.Show("يرجى كتابة بيان أو سبب الحركة");
+                    MessageBox.Show("يرجى كتابة بيان محاسبي أو سبب تفصيلي للحركة");
                     return;
                 }
 
@@ -801,21 +884,67 @@ namespace ChickenDist.Forms
                 int targetSafeID = safeItem.ID;
                 decimal currentBalance = AccountDAL.GetCashBalance(targetSafeID);
 
+                // Get selected classification key
+                string classificationName = "";
+                string classificationKey = "";
+                if (cboClassification != null && cboClassification.SelectedItem is ComboItem classItem)
+                {
+                    classificationName = classItem.Text;
+                    if (type == "Deposit")
+                    {
+                        if (classItem.ID == 1) classificationKey = "Capital";
+                        else if (classItem.ID == 2) classificationKey = "ShortTermLoans";
+                        else if (classItem.ID == 3) classificationKey = "OtherRevenues";
+                    }
+                    else if (type == "Withdraw")
+                    {
+                        if (classItem.ID == 1) classificationKey = "Drawings";
+                        else if (classItem.ID == 2) classificationKey = "CustodiesAdvances";
+                        else if (classItem.ID == 3) classificationKey = "ShortTermLoans";
+                    }
+                }
+
+                // Format Notes to include classification
+                string formattedNotes = notes;
+                if (!string.IsNullOrEmpty(classificationName))
+                {
+                    int parenIdx = classificationName.IndexOf(" (");
+                    string cleanClassName = parenIdx > 0 ? classificationName.Substring(0, parenIdx) : classificationName;
+                    formattedNotes = $"[{cleanClassName}] {notes}";
+                }
+
                 if (type == "Deposit")
                 {
                     DbHelper.Execute("INSERT INTO CashBox(TransType, AmountIn, Notes, CreatedBy, AccountID) VALUES('Deposit', @amt, @n, @by, @accId)",
-                        DbHelper.P("@amt", amount), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+
+                    if (!string.IsNullOrEmpty(classificationKey))
+                    {
+                        DbHelper.Execute("UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
+                            DbHelper.P("@amt", amount), DbHelper.P("@key", classificationKey));
+                    }
                 }
                 else if (type == "Withdraw")
                 {
                     if (amount > currentBalance)
                     {
-                        MessageBox.Show($"رصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لسحب مبلغ ({amount:N2} ج)!");
+                        MessageBox.Show($"رصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لصرف مبلغ ({amount:N2} ج)!");
                         return;
                     }
 
                     DbHelper.Execute("INSERT INTO CashBox(TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES('Withdraw', @amt, @n, @by, @accId)",
-                        DbHelper.P("@amt", amount), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+
+                    if (!string.IsNullOrEmpty(classificationKey))
+                    {
+                        decimal adjustAmt = amount;
+                        if (classificationKey == "ShortTermLoans")
+                        {
+                            adjustAmt = -amount; // Repaying loan reduces the liability
+                        }
+                        DbHelper.Execute("UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
+                            DbHelper.P("@amt", adjustAmt), DbHelper.P("@key", classificationKey));
+                    }
                 }
                 else if (type == "Reconcile")
                 {
@@ -838,12 +967,11 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                MessageBox.Show("✅ تم تسجيل الحركة المالية بنجاح!");
+                MessageBox.Show("✅ تم تسجيل الحركة المالية بنجاح وتحديث الحسابات المقابلة!");
                 dlg.DialogResult = DialogResult.OK;
                 dlg.Close();
             };
 
-            dlg.Controls.AddRange(new Control[] { lblSafe, cboSafe, lblAmt, nudAmt, lblNotes, txtNotes, btnSave });
             Theme.ApplyRTL(dlg.Controls);
 
             if (dlg.ShowDialog() == DialogResult.OK)
