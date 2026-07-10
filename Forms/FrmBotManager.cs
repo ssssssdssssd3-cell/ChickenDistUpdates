@@ -864,19 +864,59 @@ namespace ChickenDist.Forms
                 {
                     string botDir = GetBotDirectory();
                     if (!Directory.Exists(botDir)) Directory.CreateDirectory(botDir);
+
+                    string configJson;
+                    string actualPid = pid;
+
+                    if (pid.StartsWith("{") || pid.Contains("apiKey"))
+                    {
+                        configJson = pid;
+                        var match = System.Text.RegularExpressions.Regex.Match(pid, @"""projectId""\s*:\s*""([^""]+)""");
+                        if (match.Success)
+                        {
+                            actualPid = match.Groups[1].Value;
+                        }
+                    }
+                    else
+                    {
+                        configJson = "{\n  \"projectId\": \"" + pid + "\"\n}";
+                    }
+
                     string configPath = Path.Combine(botDir, "firebase_config.json");
-                    string configJson = "{\n  \"projectId\": \"" + pid + "\"\n}";
                     File.WriteAllText(configPath, configJson, Encoding.UTF8);
 
+                    // Write .firebaserc to automatically link the local Firebase CLI project
+                    try
+                    {
+                        string rcPath = Path.Combine(botDir, ".firebaserc");
+                        string rcJson = "{\n  \"projects\": {\n    \"default\": \"" + actualPid + "\"\n  }\n}";
+                        File.WriteAllText(rcPath, rcJson, Encoding.UTF8);
+                    }
+                    catch { }
+
+                    // Kill existing node process to force server restart and load the new config
+                    try
+                    {
+                        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("node"))
+                        {
+                            try { proc.Kill(); } catch { }
+                        }
+                    }
+                    catch { }
+
                     // Update URLs in main form
-                    string newAccUrl = $"https://{pid}.web.app/admin.html";
-                    string newClientUrl = $"https://{pid}.web.app";
+                    string newAccUrl = $"https://{actualPid}.web.app/admin.html";
+                    string newClientUrl = $"https://{actualPid}.web.app";
                     if (txtAccUrl != null) txtAccUrl.Text = newAccUrl;
                     if (txtClientUrl != null) txtClientUrl.Text = newClientUrl;
 
-                    LogMessage($"✅ تم حفظ إعدادات Firebase: {pid}");
+                    LogMessage($"✅ تم حفظ إعدادات Firebase للمشروع: {actualPid}");
+
+                    // Restart local node server to load new configurations
+                    StartLocalNodeServer();
+
                     MessageBox.Show(
-                        $"✅ تم الحفظ بنجاح!\n\nProject ID: {pid}\nتم تحديث الروابط السحابية.",
+                        $"✅ تم الحفظ بنجاح!\n\nProject ID: {actualPid}\nتم تحديث الروابط وإعادة تشغيل خادم البوت بالقيم الجديدة.",
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.Close();
                 }
