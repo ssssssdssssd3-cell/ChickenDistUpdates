@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -12,6 +13,7 @@ namespace ChickenDist.Forms
         private Button btnSend;
         private Panel pnlInputArea;
         private FlowLayoutPanel pnlChips;
+        private Panel pnlBottomContainer;
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
         private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
@@ -19,17 +21,18 @@ namespace ChickenDist.Forms
         public FrmSupportBot()
         {
             InitUI();
-            AddBotMessage("أهلاً بك يا فندم في الدعم الفني الذكي للبرنامج! 🤖\nأنا هنا عشان أجاوبك بالبلدي وبأبسط طريقة على أي حاجة عاوز تعملها.\nتقدر تسألني عن (الخصم، الصيانة، مصفوفة الملابس، تتبع IMEI، الواتساب، الباركود) أو تضغط على الأسئلة السريعة تحت.");
+            AddBotMessage("أهلاً بك يا فندم في الدعم الفني الذكي للبرنامج! 🤖\nأنا هنا عشان أجاوبك بالبلدي وبأبسط طريقة على أي حاجة عاوز تعملها.\nتقدر تسألني عن (الخصم، الصيانة، مصفوفة الملابس، تتبع IMEI، الواتساب، الباركود، الحسابات) أو تضغط على الأسئلة السريعة تحت.");
         }
 
         private void InitUI()
         {
             this.Text = "🤖 مساعد الدعم الفني الذكي (أوفلاين)";
-            this.Size = new Size(580, 680);
+            this.Size = new Size(1024, 768);
+            this.WindowState = FormWindowState.Maximized;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
@@ -39,7 +42,16 @@ namespace ChickenDist.Forms
             pnlTitle.Dock = DockStyle.Top;
             this.Controls.Add(pnlTitle);
 
-            // 3. Input Area
+            // ── الحاوية السفلية لمنع تداخل أزرار الشرح ومربع الإدخال ──
+            pnlBottomContainer = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 150,
+                BackColor = Color.Transparent
+            };
+            this.Controls.Add(pnlBottomContainer);
+
+            // 3. Input Area inside Bottom Container
             pnlInputArea = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -47,7 +59,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent,
                 Padding = new Padding(10, 5, 10, 5)
             };
-            this.Controls.Add(pnlInputArea);
+            pnlBottomContainer.Controls.Add(pnlInputArea);
 
             btnSend = Theme.MakeButton("🚀 إرسال", Theme.Accent);
             btnSend.Width = 90;
@@ -66,17 +78,16 @@ namespace ChickenDist.Forms
             txtInput.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { SendUserMessage(); e.SuppressKeyPress = true; } };
             pnlInputArea.Controls.Add(txtInput);
 
-            // 2. Quick Action Chips
+            // 2. Quick Action Chips inside Bottom Container
             pnlChips = new FlowLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 100,
+                Dock = DockStyle.Fill,
                 BackColor = Color.Transparent,
                 FlowDirection = FlowDirection.RightToLeft,
                 Padding = new Padding(10, 5, 10, 5),
                 AutoScroll = true
             };
-            this.Controls.Add(pnlChips);
+            pnlBottomContainer.Controls.Add(pnlChips);
 
             // 1. Chat History Panel
             pnlChat = new FlowLayoutPanel
@@ -86,14 +97,11 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(26, 32, 44),
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(10)
+                Padding = new Padding(15)
             };
             this.Controls.Add(pnlChat);
 
             pnlChat.SendToBack();
-            pnlTitle.BringToFront();
-            pnlInputArea.BringToFront();
-            pnlChips.BringToFront();
 
             // ── كروت شرح الشاشات بألوان مميزة وتفاعلية ──
             AddChip("🖥️ شرح شاشة البيع السريع", "شرح شاشة البيع السريع", Color.FromArgb(40, 167, 69)); // أخضر
@@ -102,6 +110,7 @@ namespace ChickenDist.Forms
             AddChip("📊 شرح شاشة الموقف المالي", "شرح شاشة الموقف المالي", Color.FromArgb(23, 162, 184)); // سماوي
             AddChip("👥 شرح شاشة العملاء", "شرح شاشة العملاء", Color.FromArgb(111, 66, 193)); // بنفسجي
             AddChip("💰 شرح شاشة الخزنة والدرج", "شرح شاشة الخزنة والدرج", Color.FromArgb(220, 53, 69)); // أحمر
+            AddChip("⚖️ شرح مديول الحسابات والقوائم", "شرح مديول الحسابات والقوائم المالية", Color.FromArgb(230, 80, 80)); // لون أحمر طوبي للحسابات
 
             if (AppConfig.BusinessType == "Mobiles")
             {
@@ -123,6 +132,33 @@ namespace ChickenDist.Forms
             AddChip("📈 حساب متوسط التكلفة", "ازاي بيتم حساب التكلفة ومتوسط التكلفة للأصناف");
             AddChip("💵 تعديل سعر البيع", "ازاي اقدر اغير سعر البيع لصنف");
             AddChip("⌨️ اختصارات كيبورد السريعة", "اختصارات لوحة المفاتيح والزراير السريعة", Color.FromArgb(70, 80, 95));
+
+            // ── التعديل التلقائي لتوزيع فقاعات الدردشة عند تغيير حجم الشاشة أو التكبير ──
+            this.SizeChanged += (s, e) => {
+                int newWidth = pnlChat.ClientSize.Width - 30;
+                if (newWidth < 200) return;
+                pnlChat.SuspendLayout();
+                foreach (Control ctrl in pnlChat.Controls)
+                {
+                    if (ctrl is Panel pnl && pnl.Controls.Count > 0 && pnl.Controls[0] is Label lbl)
+                    {
+                        pnl.Width = newWidth;
+                        lbl.MaximumSize = new Size((int)(newWidth * 0.75), 0);
+                        pnl.Height = lbl.Height + 10;
+                        
+                        bool isUser = lbl.BackColor == Color.FromArgb(13, 110, 253);
+                        if (isUser)
+                        {
+                            lbl.Location = new Point(pnl.Width - lbl.Width - 10, 5);
+                        }
+                        else
+                        {
+                            lbl.Location = new Point(10, 5);
+                        }
+                    }
+                }
+                pnlChat.ResumeLayout();
+            };
         }
 
         private void AddChip(string text, string question, Color? bgColor = null)
@@ -141,7 +177,7 @@ namespace ChickenDist.Forms
             };
             btn.FlatAppearance.BorderSize = 0;
 
-            // Rounded corners on chips
+            btn.CreateControl();
             btn.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, btn.Width, btn.Height, 8, 8));
             btn.SizeChanged += (s, e) => {
                 btn.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, btn.Width, btn.Height, 8, 8));
@@ -173,41 +209,46 @@ namespace ChickenDist.Forms
 
         private void AddChatMessage(string text, FlowLayoutPanelRightToLeft rtl)
         {
-            var pnl = new FlowLayoutPanel
+            int chatWidth = pnlChat.ClientSize.Width - 30;
+            if (chatWidth < 200) chatWidth = 460;
+
+            var pnl = new Panel
             {
-                Width = 460,
-                AutoSize = true,
-                FlowDirection = FlowDirection.TopDown,
-                Margin = new Padding(5),
-                BackColor = Color.Transparent
+                Width = chatWidth,
+                Height = 60,
+                BackColor = Color.Transparent,
+                Margin = new Padding(3, 5, 3, 5)
             };
 
             var lbl = new Label
             {
                 Text = text,
                 AutoSize = true,
-                MaximumSize = new Size(380, 0),
+                MaximumSize = new Size((int)(chatWidth * 0.75), 0),
                 Font = Theme.FontNormal,
-                Padding = new Padding(10),
+                Padding = new Padding(12, 10, 12, 10),
                 BackColor = (rtl == FlowLayoutPanelRightToLeft.Yes) ? Color.FromArgb(13, 110, 253) : Color.FromArgb(45, 55, 72),
                 ForeColor = Color.White
             };
 
-            // Round corners style simulation
-            lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 10, 10));
+            lbl.CreateControl();
+            lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
             lbl.SizeChanged += (s, e) => {
-                lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 10, 10));
+                lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
             };
 
+            pnl.Height = lbl.Height + 10;
             pnl.Controls.Add(lbl);
 
             if (rtl == FlowLayoutPanelRightToLeft.Yes)
             {
-                pnl.FlowDirection = FlowDirection.RightToLeft;
+                lbl.Location = new Point(pnl.Width - lbl.Width - 10, 5);
+                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             }
             else
             {
-                pnl.FlowDirection = FlowDirection.LeftToRight;
+                lbl.Location = new Point(10, 5);
+                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             }
 
             pnlChat.Controls.Add(pnl);
@@ -258,6 +299,16 @@ namespace ChickenDist.Forms
                        "4. **صافي رأس المال الفعلي**: رأس مالك التشغيلي الحالي بالمعادلة المالية.";
             }
 
+            if (query.Contains("شرح الحسابات") || query.Contains("التقارير المالية") || query.Contains("القوائم المالية") || query.Contains("مديول الحسابات") || query.Contains("شرح مديول الحسابات"))
+            {
+                return "⚖️ **شاشة ضبط الحسابات والقوائم المالية العامة**:\n" +
+                       "هذا المديول يتيح لك إدارة كاملة للحسابات الدفترية وإصدار القوائم المالية:\n" +
+                       "1. **شاشة ضبط الحسابات الدفترية**: لتسجيل الحسابات الافتتاحية للمكان وتعديل الأرصدة يدوياً لضمان تطابق الدفاتر مع الواقع.\n" +
+                       "2. **قائمة الدخل والربحية**: تعرض لك بالتفصيل إجمالي المبيعات، وتكلفة البضاعة المباعة (COGS)، والخصومات، والمصروفات التشغيلية المفصلة، للوصول لـ 'صافي الربح قبل وبعد الضريبة' بدقة متناهية.\n" +
+                       "3. **الميزانية العمومية**: توضح الوضع المالي للمؤسسة مقسماً إلى (الأصول المتداولة والثابتة) في الجانب المدين، و(الخصوم وحقوق الملكية) في الجانب الدائن بشكل متوازن ومحترف.\n" +
+                       "4. **ملخص الموقف والمؤشرات**: لوحة قيادة تعرض لك ملخصات بيانية سريعة وإحصائيات دقيقة لرأس المال والتدفقات النقدية.";
+            }
+
             if (query.Contains("اختصارات") || query.Contains("كيبورد") || query.Contains("لوحة المفاتيح") || query.Contains("مفاتيح") || query.Contains("زرار") || query.Contains("أزرار") || query.Contains("سريعة"))
             {
                 return "⌨️ **اختصارات لوحة المفاتيح السريعة بالنظام**:\n\n" +
@@ -290,13 +341,13 @@ namespace ChickenDist.Forms
                        "3. يمكنك تسجيل الدفعات المقبوضة نقداً من العميل لتنزيلها من حسابه فوراً.";
             }
 
-            if (query.Contains("شرح شاشة الخزنة") || query.Contains("شاشة الخزنة") || query.Contains("شرح شاشة الحسابات") || query.Contains("الخزنة والدرج"))
+            if (query.Contains("شرح شاشة الخزنة") || query.Contains("شاشة الخزنة") || query.Contains("الخزنة والدرج"))
             {
                 return "💰 **شاشة الخزنة والدرج**:\n" +
                        "لمراقبة حركة الأموال النقدية والبنكية الواردة والصادرة:\n" +
                        "1. يعرض لك العمليات والمدفوعات والمقبوضات اليومية وتوقيتاتها ومن سجلها.\n" +
                        "2. عمليات البيع السريع وتذاكر الصيانة المستلمة تدخل تلقائياً كوارد في الدرج.\n" +
-                       "3. عمليات الشراء من الموردين ودفع المصاريف تسجل كصادر نقدية لضبط الرصيد الفعلي للدرج بالقرش.";
+                       "3. عمليات الشراء من המوردين ودفع المصاريف تسجل كصادر نقدية لضبط الرصيد الفعلي للدرج بالقرش.";
             }
 
             if (query.Contains("خصم") || query.Contains("تخفيض") || query.Contains("انزل") || query.Contains("اقلل") || query.Contains("ارخص"))
@@ -354,7 +405,7 @@ namespace ChickenDist.Forms
                 return "شاشات الملابس بتشمل:\n1. **مصفوفة الملابس**: شاشة سحرية بتنشئلك كل المقاسات والألوان لموديل معين بضغطة واحدة وبتطبع باركودات مستقلة لكل قطعة.\n2. **الاستبدال والاسترجاع**: مطبوعة تلقائياً في أسفل إيصالات البيع لتنظيم العمل مع الزباين.";
             }
 
-            if (query.Contains("شاشات التوزيع") || query.Contains("شرح التوزيع") || query.Contains("شرح الحمولات"))
+            if (query.Contains("شاشات التوزيع") || query.Contains("شرح التوزيع") || query.Contains("شرح الحمولات") || query.Contains("حركة الحمولات"))
             {
                 return "شاشات التوزيع بتشمل:\n1. **حركة السيارات**: لتسجيل حمولات المناديب، وجرد السيارات عند عودتهم.\n2. **جرد المخزن**: لعمل تسويات وجرد دوري للكميات الفعلية وحساب الفوارق.\n3. **تحصيل الخزنة**: لإثبات مبالغ التسليم والتحصيل اليومي.";
             }
