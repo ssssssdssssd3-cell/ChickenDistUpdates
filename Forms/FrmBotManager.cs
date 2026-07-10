@@ -16,6 +16,7 @@ namespace ChickenDist.Forms
         private Button btnToggle;
         private Button btnPushPrices;
         private Button btnClearSession;
+        private Button btnFirebaseSettings;
         private PictureBox pbQrCode;
         private Label lblStatus;
         private Label lblLastSync;
@@ -27,6 +28,7 @@ namespace ChickenDist.Forms
         private HttpClient _httpClient;
         private Process _nodeProcess;
         private TextBox txtAccUrl;
+        private TextBox txtClientUrl;
 
         public FrmBotManager()
         {
@@ -79,16 +81,41 @@ namespace ChickenDist.Forms
             };
             statusContainer.Controls.Add(lblStatus, 0, 0);
 
-            var btnCheckStatus = Theme.MakeButton("🔄 تحديث الحالة", Theme.Primary);
-            btnCheckStatus.Size = new Size(140, 36);
+            // Right-side buttons panel (refresh + firebase settings)
+            FlowLayoutPanel statusBtnsPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent,
+                WrapContents = false
+            };
+
+            var btnCheckStatus = Theme.MakeButton("🔄 تحديث", Theme.Primary);
+            btnCheckStatus.Size = new Size(100, 36);
             btnCheckStatus.Click += async (s, e) => {
                 btnCheckStatus.Enabled = false;
-                btnCheckStatus.Text = "⏳ جاري الفحص...";
+                btnCheckStatus.Text = "⏳...";
                 await CheckBotStatusAsync();
-                btnCheckStatus.Text = "🔄 تحديث الحالة";
+                btnCheckStatus.Text = "🔄 تحديث";
                 btnCheckStatus.Enabled = true;
             };
-            statusContainer.Controls.Add(btnCheckStatus, 1, 0);
+            statusBtnsPanel.Controls.Add(btnCheckStatus);
+
+            btnFirebaseSettings = new Button
+            {
+                Text = "⚙️ إعدادات Firebase",
+                BackColor = Color.FromArgb(255, 165, 0),
+                ForeColor = Color.White,
+                Size = new Size(155, 36),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            btnFirebaseSettings.FlatAppearance.BorderSize = 0;
+            btnFirebaseSettings.Click += BtnFirebaseSettings_Click;
+            statusBtnsPanel.Controls.Add(btnFirebaseSettings);
+
+            statusContainer.Controls.Add(statusBtnsPanel, 1, 0);
 
             mainLayout.Controls.Add(statusContainer, 0, 0);
             mainLayout.SetColumnSpan(statusContainer, 2);
@@ -267,7 +294,7 @@ namespace ChickenDist.Forms
 
             string clientUrl = $"https://{projectId}.web.app";
 
-            TextBox txtClientUrl = new TextBox
+            txtClientUrl = new TextBox
             {
                 Text = clientUrl,
                 ReadOnly = true,
@@ -721,6 +748,231 @@ namespace ChickenDist.Forms
             {
                 LogMessage($"خطأ أثناء المزامنة السحابية: {ex.Message}");
             }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Firebase Settings Dialog
+        // ─────────────────────────────────────────────────────────────────────────
+        private void BtnFirebaseSettings_Click(object sender, EventArgs e)
+        {
+            // Build a clean, professional dialog
+            Form dlg = new Form
+            {
+                Text = "⚙️ إعدادات Firebase",
+                Size = new Size(520, 320),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = Color.FromArgb(245, 246, 250),
+                Font = new Font("Segoe UI", 10F),
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true
+            };
+
+            // Title label
+            Label lblTitle = new Label
+            {
+                Text = "إعدادات ربط Firebase",
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(16, 14)
+            };
+            dlg.Controls.Add(lblTitle);
+
+            // Description
+            Label lblDesc = new Label
+            {
+                Text = "أدخل معرّف مشروع Firebase الخاص بك (Project ID).\nمثال: my-project-12345",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(100, 100, 100),
+                AutoSize = true,
+                Location = new Point(16, 46)
+            };
+            dlg.Controls.Add(lblDesc);
+
+            // Project ID label
+            Label lblProjectId = new Label
+            {
+                Text = "🔑 Firebase Project ID:",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(16, 88)
+            };
+            dlg.Controls.Add(lblProjectId);
+
+            // Project ID TextBox
+            TextBox txtProjectId = new TextBox
+            {
+                Text = GetFirebaseProjectId(),
+                Font = new Font("Courier New", 11F, FontStyle.Bold),
+                Location = new Point(16, 112),
+                Width = 470,
+                Height = 32,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(41, 128, 185),
+                RightToLeft = RightToLeft.No,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            dlg.Controls.Add(txtProjectId);
+
+            // Status label for test result
+            Label lblTestResult = new Label
+            {
+                Text = "",
+                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                Location = new Point(16, 152)
+            };
+            dlg.Controls.Add(lblTestResult);
+
+            // Buttons panel
+            FlowLayoutPanel btnPanel = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                Location = new Point(16, 220),
+                Size = new Size(470, 48),
+                BackColor = Color.Transparent,
+                WrapContents = false
+            };
+
+            // Save button
+            Button btnSave = new Button
+            {
+                Text = "💾 حفظ",
+                BackColor = Color.FromArgb(46, 204, 113),
+                ForeColor = Color.White,
+                Size = new Size(110, 38),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+            btnSave.FlatAppearance.BorderSize = 0;
+            btnSave.Click += (s2, e2) =>
+            {
+                string pid = txtProjectId.Text.Trim();
+                if (string.IsNullOrEmpty(pid))
+                {
+                    MessageBox.Show("يرجى إدخال Project ID!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                // Save to firebase_config.json
+                try
+                {
+                    string botDir = GetBotDirectory();
+                    if (!Directory.Exists(botDir)) Directory.CreateDirectory(botDir);
+                    string configPath = Path.Combine(botDir, "firebase_config.json");
+                    string configJson = "{\n  \"projectId\": \"" + pid + "\"\n}";
+                    File.WriteAllText(configPath, configJson, Encoding.UTF8);
+
+                    // Update URLs in main form
+                    string newAccUrl = $"https://{pid}.web.app/admin.html";
+                    string newClientUrl = $"https://{pid}.web.app";
+                    if (txtAccUrl != null) txtAccUrl.Text = newAccUrl;
+                    if (txtClientUrl != null) txtClientUrl.Text = newClientUrl;
+
+                    LogMessage($"✅ تم حفظ إعدادات Firebase: {pid}");
+                    MessageBox.Show(
+                        $"✅ تم الحفظ بنجاح!\n\nProject ID: {pid}\nتم تحديث الروابط السحابية.",
+                        "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"خطأ في الحفظ: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            btnPanel.Controls.Add(btnSave);
+
+            // Test connection button
+            Button btnTest = new Button
+            {
+                Text = "🔗 اختبار الاتصال",
+                BackColor = Color.FromArgb(52, 152, 219),
+                ForeColor = Color.White,
+                Size = new Size(150, 38),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+            btnTest.FlatAppearance.BorderSize = 0;
+            btnTest.Click += async (s2, e2) =>
+            {
+                string pid = txtProjectId.Text.Trim();
+                if (string.IsNullOrEmpty(pid))
+                {
+                    lblTestResult.Text = "⚠️ أدخل Project ID أولاً!";
+                    lblTestResult.ForeColor = Color.Orange;
+                    return;
+                }
+                btnTest.Enabled = false;
+                btnTest.Text = "⏳ جاري الاختبار...";
+                lblTestResult.Text = "جاري الاتصال بـ Firebase...";
+                lblTestResult.ForeColor = Color.Gray;
+                try
+                {
+                    var testClient = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+                    var resp = await testClient.GetAsync(
+                        $"https://firestore.googleapis.com/v1/projects/{pid}/databases/(default)/documents/metadata/status");
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        lblTestResult.Text = $"✅ الاتصال ناجح! المشروع '{pid}' متصل بـ Firestore.";
+                        lblTestResult.ForeColor = Color.FromArgb(46, 204, 113);
+                    }
+                    else if ((int)resp.StatusCode == 403)
+                    {
+                        lblTestResult.Text = $"✅ المشروع موجود، لكن Firestore مقيّد (يحتاج auth). Project ID صحيح!";
+                        lblTestResult.ForeColor = Color.FromArgb(230, 126, 34);
+                    }
+                    else if ((int)resp.StatusCode == 404)
+                    {
+                        lblTestResult.Text = $"❌ المشروع '{pid}' غير موجود في Firebase. تحقق من الـ Project ID!";
+                        lblTestResult.ForeColor = Color.Red;
+                    }
+                    else
+                    {
+                        lblTestResult.Text = $"⚠️ استجابة غير متوقعة: HTTP {(int)resp.StatusCode}";
+                        lblTestResult.ForeColor = Color.Orange;
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    lblTestResult.Text = "❌ انتهت مهلة الاتصال — تحقق من الإنترنت.";
+                    lblTestResult.ForeColor = Color.Red;
+                }
+                catch (Exception ex)
+                {
+                    lblTestResult.Text = $"❌ خطأ: {ex.Message}";
+                    lblTestResult.ForeColor = Color.Red;
+                }
+                finally
+                {
+                    btnTest.Text = "🔗 اختبار الاتصال";
+                    btnTest.Enabled = true;
+                }
+            };
+            btnPanel.Controls.Add(btnTest);
+
+            // Cancel button
+            Button btnCancel = new Button
+            {
+                Text = "إلغاء",
+                BackColor = Color.FromArgb(180, 180, 180),
+                ForeColor = Color.White,
+                Size = new Size(90, 38),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10F)
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += (s2, e2) => dlg.Close();
+            btnPanel.Controls.Add(btnCancel);
+
+            dlg.Controls.Add(btnPanel);
+            dlg.ShowDialog(this);
         }
 
         /// <summary>
