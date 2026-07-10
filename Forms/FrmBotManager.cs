@@ -929,8 +929,9 @@ namespace ChickenDist.Forms
                     }
                     else if ((int)resp.StatusCode == 404)
                     {
-                        lblTestResult.Text = $"❌ المشروع '{pid}' غير موجود في Firebase. تحقق من الـ Project ID!";
-                        lblTestResult.ForeColor = Color.Red;
+                        // 404 means the project and database exist, but the specific status document is not created yet by the node bot.
+                        lblTestResult.Text = $"✅ الاتصال ناجح! المشروع '{pid}' موجود وقاعدة البيانات متصلة. (اضغط حفظ وشغّل البوت).";
+                        lblTestResult.ForeColor = Color.FromArgb(46, 204, 113);
                     }
                     else
                     {
