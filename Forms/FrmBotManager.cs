@@ -1141,14 +1141,24 @@ pause
                     catch { }
 
                     // Kill existing node process to force server restart and load the new config
+                    LogMessage("⏳ جاري إيقاف خادم البوت القديم...");
                     try
                     {
                         foreach (var proc in System.Diagnostics.Process.GetProcessesByName("node"))
                         {
                             try { proc.Kill(); } catch { }
                         }
+                        // Also kill the tracked process if any
+                        if (_nodeProcess != null && !_nodeProcess.HasExited)
+                        {
+                            try { _nodeProcess.Kill(); } catch { }
+                        }
+                        _nodeProcess = null;
                     }
                     catch { }
+
+                    // Wait for node to fully die before restarting (blocking OK here since we're in a click handler)
+                    System.Threading.Thread.Sleep(2500);
 
                     // Update URLs in main form
                     string newAccUrl = $"https://{actualPid}.web.app/admin.html";
@@ -1158,8 +1168,8 @@ pause
 
                     LogMessage($"✅ تم حفظ إعدادات Firebase للمشروع: {actualPid}");
 
-                    // Restart local node server to load new configurations
-                    StartLocalNodeServer();
+                    // Restart local node server to load new configurations (force=true to bypass port check)
+                    StartLocalNodeServer(forceRestart: true);
 
                     MessageBox.Show(
                         $"✅ تم الحفظ بنجاح!\n\nProject ID: {actualPid}\nتم تحديث الروابط وإعادة تشغيل خادم البوت بالقيم الجديدة.",
@@ -1292,21 +1302,24 @@ pause
         }
 
 
-        private void StartLocalNodeServer()
+        private void StartLocalNodeServer(bool forceRestart = false)
         {
-            try
+            if (!forceRestart)
             {
-                var checkTask = _httpClient.GetAsync("http://localhost:5000/api/status");
-                checkTask.Wait(1000);
-                if (checkTask.IsCompleted && checkTask.Result.IsSuccessStatusCode)
+                try
                 {
-                    LogMessage("خادم البوت المحلي نشط ويعمل بالفعل.");
-                    return;
+                    var checkTask = _httpClient.GetAsync("http://localhost:5000/api/status");
+                    checkTask.Wait(1000);
+                    if (checkTask.IsCompleted && checkTask.Result.IsSuccessStatusCode)
+                    {
+                        LogMessage("خادم البوت المحلي نشط ويعمل بالفعل.");
+                        return;
+                    }
                 }
-            }
-            catch
-            {
-                // Port 5000 is not responding
+                catch
+                {
+                    // Port 5000 is not responding — proceed to start
+                }
             }
 
             try
