@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
 
         private void AddChatMessage(string text, FlowLayoutPanelRightToLeft rtl)
         {
-            int chatWidth = pnlChat.ClientSize.Width - 30;
+            int chatWidth = pnlChat.ClientSize.Width - 35;
             if (chatWidth < 200) chatWidth = 460;
 
             var pnl = new Panel
@@ -228,14 +228,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(12, 10, 12, 10),
                 BackColor = (rtl == FlowLayoutPanelRightToLeft.Yes) ? Color.FromArgb(13, 110, 253) : Color.FromArgb(45, 55, 72),
                 ForeColor = Color.White,
-                Dock = (rtl == FlowLayoutPanelRightToLeft.Yes) ? DockStyle.Right : DockStyle.Left
+                Location = new Point(10, 5)
             };
 
-            lbl.CreateControl();
             lbl.SizeChanged += (s, e) => {
                 if (lbl.Width > 0 && lbl.Height > 0)
                 {
                     lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
+                    if (rtl == FlowLayoutPanelRightToLeft.Yes)
+                    {
+                        lbl.Left = chatWidth - lbl.Width - 15;
+                    }
                 }
             };
 
