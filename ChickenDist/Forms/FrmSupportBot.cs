@@ -140,20 +140,15 @@ namespace ChickenDist.Forms
                 pnlChat.SuspendLayout();
                 foreach (Control ctrl in pnlChat.Controls)
                 {
-                    if (ctrl is Panel pnl && pnl.Controls.Count > 0 && pnl.Controls[0] is Label lbl)
+                    if (ctrl is Panel pnl)
                     {
                         pnl.Width = newWidth;
-                        lbl.MaximumSize = new Size((int)(newWidth * 0.75), 0);
-                        pnl.Height = lbl.Height + 10;
-                        
-                        bool isUser = lbl.BackColor == Color.FromArgb(13, 110, 253);
-                        if (isUser)
+                        foreach (Control child in pnl.Controls)
                         {
-                            lbl.Location = new Point(pnl.Width - lbl.Width - 10, 5);
-                        }
-                        else
-                        {
-                            lbl.Location = new Point(10, 5);
+                            if (child is Label lbl)
+                            {
+                                lbl.MaximumSize = new Size((int)(newWidth * 0.75), 0);
+                            }
                         }
                     }
                 }
@@ -215,9 +210,11 @@ namespace ChickenDist.Forms
             var pnl = new Panel
             {
                 Width = chatWidth,
-                Height = 60,
+                Height = 0,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.Transparent,
-                Margin = new Padding(3, 5, 3, 5)
+                Padding = new Padding(10, 5, 10, 5)
             };
 
             var lbl = new Label
@@ -228,29 +225,19 @@ namespace ChickenDist.Forms
                 Font = Theme.FontNormal,
                 Padding = new Padding(12, 10, 12, 10),
                 BackColor = (rtl == FlowLayoutPanelRightToLeft.Yes) ? Color.FromArgb(13, 110, 253) : Color.FromArgb(45, 55, 72),
-                ForeColor = Color.White
+                ForeColor = Color.White,
+                Dock = (rtl == FlowLayoutPanelRightToLeft.Yes) ? DockStyle.Right : DockStyle.Left
             };
 
             lbl.CreateControl();
-            lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
             lbl.SizeChanged += (s, e) => {
-                lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
+                if (lbl.Width > 0 && lbl.Height > 0)
+                {
+                    lbl.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, lbl.Width, lbl.Height, 12, 12));
+                }
             };
 
-            pnl.Height = lbl.Height + 10;
             pnl.Controls.Add(lbl);
-
-            if (rtl == FlowLayoutPanelRightToLeft.Yes)
-            {
-                lbl.Location = new Point(pnl.Width - lbl.Width - 10, 5);
-                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-            else
-            {
-                lbl.Location = new Point(10, 5);
-                lbl.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            }
-
             pnlChat.Controls.Add(pnl);
             pnlChat.ScrollControlIntoView(pnl);
         }
@@ -347,7 +334,7 @@ namespace ChickenDist.Forms
                        "لمراقبة حركة الأموال النقدية والبنكية الواردة والصادرة:\n" +
                        "1. يعرض لك العمليات والمدفوعات والمقبوضات اليومية وتوقيتاتها ومن سجلها.\n" +
                        "2. عمليات البيع السريع وتذاكر الصيانة المستلمة تدخل تلقائياً كوارد في الدرج.\n" +
-                       "3. عمليات الشراء من המوردين ودفع المصاريف تسجل كصادر نقدية لضبط الرصيد الفعلي للدرج بالقرش.";
+                       "3. عمليات الشراء من الموردين ودفع المصاريف تسجل كصادر نقدية لضبط الرصيد الفعلي للدرج بالقرش.";
             }
 
             if (query.Contains("خصم") || query.Contains("تخفيض") || query.Contains("انزل") || query.Contains("اقلل") || query.Contains("ارخص"))
