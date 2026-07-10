@@ -342,14 +342,75 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(btnOpenClientUrl);
 
-            // ─── 3. Tip Label ───
+            // ─── 3. Deploy Button ───
+            Button btnDeployHosting = new Button
+            {
+                Text = "⚡ رفع وتفعيل المنيو سحابياً",
+                BackColor = Color.FromArgb(155, 89, 182),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(210, 34),
+                Location = new Point(10, 130),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnDeployHosting.FlatAppearance.BorderSize = 0;
+            btnDeployHosting.Click += (s, e) =>
+            {
+                try
+                {
+                    string botDir = GetBotDirectory();
+                    string batPath = Path.Combine(botDir, "deploy_hosting.bat");
+                    
+                    string batContent = @"@echo off
+chcp 65001 > nul
+echo ===================================================
+echo   ⚡ Cloud Menu Deployer - ChickenDist ⚡
+echo ===================================================
+echo.
+echo [1/3] Checking Node.js and local packages...
+cd /d ""%~dp0""
+call npm install
+echo.
+echo [2/3] Checking Firebase login status...
+echo (If a browser window opens, please login with your Google account)
+call npx firebase login
+echo.
+echo [3/3] Deploying client menu and accountant portal to Firebase Hosting...
+call npx firebase deploy --only hosting
+echo.
+echo ===================================================
+echo   ✅ Done! Your website is now live online!
+echo ===================================================
+pause
+";
+                    File.WriteAllText(batPath, batContent, Encoding.UTF8);
+
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"{batPath}\"",
+                        WorkingDirectory = botDir,
+                        UseShellExecute = true,
+                        CreateNoWindow = false
+                    };
+                    System.Diagnostics.Process.Start(startInfo);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"خطأ في تشغيل الرفع التلقائي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            pnlAccountant.Controls.Add(btnDeployHosting);
+
+            // ─── 4. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 النصيحة: انشر رابط الويب سايت الأخضر لعملائك ليطلبوا منه، وافتح الرابط الأزرق في موبايل المحاسب لإدارتها.",
+                Text = "💡 النصيحة: انشر رابط الويب سايت الأخضر لعملائك ليطلبوا منه، وافتح الأزرق في موبايل المحاسب.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
-                Location = new Point(10, 135)
+                Location = new Point(230, 138)
             };
             pnlAccountant.Controls.Add(lblAccTip);
 
