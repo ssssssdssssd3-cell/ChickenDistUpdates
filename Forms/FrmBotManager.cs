@@ -1005,7 +1005,7 @@ pause
             Form dlg = new Form
             {
                 Text = "⚙️ إعدادات Firebase",
-                Size = new Size(520, 320),
+                Size = new Size(540, 440),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -1030,37 +1030,40 @@ pause
             // Description
             Label lblDesc = new Label
             {
-                Text = "أدخل معرّف مشروع Firebase الخاص بك (Project ID).\nمثال: my-project-12345",
+                Text = "الصق هنا أي من التالي:\n• Project ID فقط (مثال: my-project-12345)\n• كود Firebase الكامل من Firebase Console (const firebaseConfig = {...})\n• أو JSON object مباشرةً",
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(100, 100, 100),
-                AutoSize = true,
+                Size = new Size(490, 65),
                 Location = new Point(16, 46)
             };
             dlg.Controls.Add(lblDesc);
 
-            // Project ID label
+            // Input label
             Label lblProjectId = new Label
             {
-                Text = "🔑 Firebase Project ID:",
+                Text = "🔑 Firebase Config أو Project ID:",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
-                Location = new Point(16, 88)
+                Location = new Point(16, 118)
             };
             dlg.Controls.Add(lblProjectId);
 
-            // Project ID TextBox
+            // Multiline TextBox — accepts projectId, JSON, or full JS snippet
             TextBox txtProjectId = new TextBox
             {
                 Text = GetFirebaseProjectId(),
-                Font = new Font("Courier New", 11F, FontStyle.Bold),
-                Location = new Point(16, 112),
-                Width = 470,
-                Height = 32,
+                Font = new Font("Courier New", 9.5F),
+                Location = new Point(16, 142),
+                Width = 490,
+                Height = 140,
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(41, 128, 185),
                 RightToLeft = RightToLeft.No,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                AcceptsReturn = true
             };
             dlg.Controls.Add(txtProjectId);
 
@@ -1079,8 +1082,8 @@ pause
             FlowLayoutPanel btnPanel = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.RightToLeft,
-                Location = new Point(16, 220),
-                Size = new Size(470, 48),
+                Location = new Point(16, 295),
+                Size = new Size(490, 48),
                 BackColor = Color.Transparent,
                 WrapContents = false
             };
@@ -1114,18 +1117,12 @@ pause
                     string configJson;
                     string actualPid = pid;
 
-                    if (pid.StartsWith("{") || pid.Contains("apiKey"))
+                    // ── Smart Parser: handles JS snippet, JSON object, or plain project ID ──
+                    configJson = ParseFirebaseInput(pid, out actualPid);
+                    if (configJson == null)
                     {
-                        configJson = pid;
-                        var match = System.Text.RegularExpressions.Regex.Match(pid, @"""projectId""\s*:\s*""([^""]+)""");
-                        if (match.Success)
-                        {
-                            actualPid = match.Groups[1].Value;
-                        }
-                    }
-                    else
-                    {
-                        configJson = "{\n  \"projectId\": \"" + pid + "\"\n}";
+                        MessageBox.Show("لم يتم التعرف على الإدخال. يرجى لصق Project ID أو Firebase Config.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
 
                     string configPath = Path.Combine(botDir, "firebase_config.json");
@@ -1416,6 +1413,55 @@ pause
                 }
             }
             return botDir;
+        }
+        /// <summary>
+        /// Smart parser that accepts: plain Project ID, JSON object, or full JS Firebase snippet.
+        /// Returns the JSON string to save to firebase_config.json, and sets actualProjectId.
+        /// Returns null if parsing fails.
+        /// </summary>
+        private string ParseFirebaseInput(string input, out string actualProjectId)
+        {
+            actualProjectId = "";
+            if (string.IsNullOrWhiteSpace(input)) return null;
+
+            input = input.Trim();
+
+            // ── Case 1: Plain Project ID (no spaces, no brackets, no quotes) ──
+            if (!input.Contains("{") && !input.Contains("\"") && !input.Contains("\n") && !input.Contains(" ") && input.Length > 3)
+            {
+                actualProjectId = input;
+                return "{\n  \"projectId\": \"" + input + "\"\n}";
+            }
+
+            // ── Case 2: JS snippet or JSON — extract fields using Regex ──
+            var fields = new System.Collections.Generic.Dictionary<string, string>();
+            string[] keys = { "apiKey", "authDomain", "databaseURL", "projectId", "storageBucket", "messagingSenderId", "appId", "measurementId" };
+
+            foreach (var key in keys)
+            {
+                // Match: "key": "value"  OR  key: "value"
+                var m = System.Text.RegularExpressions.Regex.Match(input,
+                    "\"?" + key + "\"?\\s*:\\s*\"([^\"]+)\"");
+                if (m.Success)
+                    fields[key] = m.Groups[1].Value;
+            }
+
+            if (!fields.ContainsKey("projectId")) return null;
+
+            actualProjectId = fields["projectId"];
+
+            // Build clean JSON with all found fields
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("{");
+            int idx = 0;
+            foreach (var kv in fields)
+            {
+                idx++;
+                string comma = idx < fields.Count ? "," : "";
+                sb.AppendLine($"  \"{kv.Key}\": \"{kv.Value}\"{comma}");
+            }
+            sb.Append("}");
+            return sb.ToString();
         }
 
         private string GetFirebaseProjectId()

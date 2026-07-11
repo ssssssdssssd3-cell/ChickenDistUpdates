@@ -32,8 +32,25 @@ let firebaseConfig = {
 const configPath = path.join(__dirname, 'firebase_config.json');
 if (fs.existsSync(configPath)) {
     try {
-        firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        console.log('[Firebase]: Loaded dynamic configurations successfully.');
+        const loadedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        // If only projectId is provided, build the full config from projectId
+        if (loadedConfig.projectId && !loadedConfig.apiKey) {
+            const pid = loadedConfig.projectId;
+            firebaseConfig = {
+                apiKey: firebaseConfig.apiKey, // keep original apiKey (still needed for auth)
+                authDomain: `${pid}.firebaseapp.com`,
+                projectId: pid,
+                storageBucket: `${pid}.firebasestorage.app`,
+                messagingSenderId: firebaseConfig.messagingSenderId,
+                appId: firebaseConfig.appId,
+                measurementId: firebaseConfig.measurementId
+            };
+            console.log(`[Firebase]: Loaded projectId="${pid}" from firebase_config.json — built full config.`);
+        } else if (loadedConfig.apiKey) {
+            // Full config provided — use it as-is
+            firebaseConfig = loadedConfig;
+            console.log('[Firebase]: Loaded full config from firebase_config.json.');
+        }
     } catch (err) {
         console.error('[Firebase]: Failed to parse firebase_config.json, using default keys.', err);
     }
