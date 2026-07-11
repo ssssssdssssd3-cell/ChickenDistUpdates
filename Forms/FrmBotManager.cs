@@ -1140,25 +1140,40 @@ pause
                     }
                     catch { }
 
-                    // Kill existing node process to force server restart and load the new config
-                    LogMessage("⏳ جاري إيقاف خادم البوت القديم...");
+                    // ── RADICAL KILL: Use OS-level taskkill to force-close ALL node processes ──
+                    LogMessage("⏳ جاري إغلاق كل عمليات البوت القديمة بالقوة...");
                     try
                     {
-                        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("node"))
+                        // Use taskkill /F /T /IM node.exe — kills node and all its child processes
+                        var killProc = new System.Diagnostics.Process
                         {
-                            try { proc.Kill(); } catch { }
-                        }
-                        // Also kill the tracked process if any
+                            StartInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "taskkill",
+                                Arguments = "/F /T /IM node.exe",
+                                CreateNoWindow = true,
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true
+                            }
+                        };
+                        killProc.Start();
+                        killProc.WaitForExit(5000);
+                        LogMessage($"🔴 تم إغلاق العمليات القديمة (exit: {killProc.ExitCode})");
+                    }
+                    catch { }
+
+                    // Also kill tracked process reference
+                    try
+                    {
                         if (_nodeProcess != null && !_nodeProcess.HasExited)
-                        {
-                            try { _nodeProcess.Kill(); } catch { }
-                        }
+                            _nodeProcess.Kill();
                         _nodeProcess = null;
                     }
                     catch { }
 
-                    // Wait for node to fully die before restarting (blocking OK here since we're in a click handler)
-                    System.Threading.Thread.Sleep(2500);
+                    // Wait for OS to fully release the port before restarting
+                    System.Threading.Thread.Sleep(3000);
 
                     // Update URLs in main form
                     string newAccUrl = $"https://{actualPid}.web.app/admin.html";
