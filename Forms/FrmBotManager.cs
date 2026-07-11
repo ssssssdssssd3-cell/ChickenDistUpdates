@@ -41,7 +41,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(720, 680);
+            this.Size = new Size(760, 740);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -120,29 +120,38 @@ namespace ChickenDist.Forms
             mainLayout.Controls.Add(statusContainer, 0, 0);
             mainLayout.SetColumnSpan(statusContainer, 2);
 
-            // PictureBox for QR Code
+            // PictureBox & Countdown Panel to avoid overlap
+            FlowLayoutPanel qrPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 10, 0, 0)
+            };
+
             pbQrCode = new PictureBox 
             { 
-                Size = new Size(280, 280), 
+                Size = new Size(260, 260), 
                 SizeMode = PictureBoxSizeMode.Zoom, 
                 BorderStyle = BorderStyle.FixedSingle, 
                 BackColor = Color.White,
-                Anchor = AnchorStyles.None 
+                Margin = new Padding(20, 0, 20, 0)
             };
-            mainLayout.Controls.Add(pbQrCode, 0, 1);
+            qrPanel.Controls.Add(pbQrCode);
 
-            // QR countdown label
             lblQrCountdown = new Label
             {
                 Text = "",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(230, 126, 34),
-                Dock = DockStyle.Bottom,
-                Height = 22,
+                Size = new Size(260, 25),
                 TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(20, 5, 20, 0),
                 Visible = false
             };
-            mainLayout.Controls.Add(lblQrCountdown, 0, 1);
+            qrPanel.Controls.Add(lblQrCountdown);
+            mainLayout.Controls.Add(qrPanel, 0, 1);
 
             // ListBox for Logs
             lbLogs = new ListBox 
