@@ -325,22 +325,33 @@ namespace ChickenDist.Forms
             int rightW = Math.Max(300, (int)(w * 0.38));
             int leftW = w - rightW - 30;
 
+            // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
+            if (pnlClient != null) { pnlClient.Location = new Point(10, 85); pnlClient.Size = new Size(rightW, 55); }
+
+            if (pnlOrderType != null)
+            {
+                pnlOrderType.Location = new Point(10, 142);
+                pnlOrderType.Size = new Size(rightW, 40);
+                pnlQuick.Location = new Point(10, 184);
+                pnlQuick.Size = new Size(rightW, h - 394);
+            }
+            else
+            {
+                pnlQuick.Location = new Point(10, 150);
+                pnlQuick.Size = new Size(rightW, h - 360);
+            }
+
+            // ضبط موقع جدول الأصناف ليكون على اليسار (X = rightW + 20)
+            dgItems.Location = new Point(rightW + 20, 85);
             dgItems.Size = new Size(leftW, h - 290);
-            pnlQuick.Location = new Point(leftW + 20, 150);
-            pnlQuick.Size = new Size(rightW, h - 360);
+
             pnlTotals.Location = new Point(10, h - 210);
             pnlTotals.Size = new Size(w - 20, 200);
 
-            if (pnlClient != null) { pnlClient.Location = new Point(leftW + 20, 85); pnlClient.Size = new Size(rightW, 55); }
-
-            // لوحة نوع الطلب للمطعم تحت العميل مباشرة
-            if (pnlOrderType != null)
-            {
-                pnlOrderType.Location = new Point(leftW + 20, 142);
-                pnlOrderType.Size = new Size(rightW, 40);
-                pnlQuick.Location = new Point(leftW + 20, 184);
-                pnlQuick.Size = new Size(rightW, h - 394);
-            }
+            // ضبط مواقع عناصر الشريط العلوي لتكون على اليمين (لأن الـ Panel لا تعكس الاتجاه تلقائياً)
+            if (txtBarcode != null) txtBarcode.Location = new Point(w - 320, 35);
+            if (btnSearchProduct != null) btnSearchProduct.Location = new Point(w - 365, 35);
+            if (btnCustomizeCols != null) btnCustomizeCols.Location = new Point(w - 465, 35);
 
             // ── توزيع ديناميكي لعناصر لوحة الإجماليات ──────────
             int totW = pnlTotals.Width;
