@@ -31,6 +31,11 @@ namespace ChickenDist.Core
             set => Set("BusinessType", value);
         }
 
+        public static bool IsRestaurant
+        {
+            get => BusinessType == "Restaurant";
+        }
+
         public static string AppTheme
         {
             get => Get("AppTheme", "Dark");

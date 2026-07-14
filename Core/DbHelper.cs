@@ -2166,6 +2166,23 @@ namespace ChickenDist.Core
                     CREATE NONCLUSTERED INDEX IX_Purchases_SupplierID ON Purchases(SupplierID) INCLUDE (PurchaseDate, TotalAmount);
                 END");
 
+                // ── Restaurant System Migrations ──
+                SafeMigrate("Sales.RestaurantFields", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'OrderType')
+                BEGIN
+                    ALTER TABLE Sales ADD OrderType NVARCHAR(50) NULL;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Sales') AND name = 'TableNumber')
+                BEGIN
+                    ALTER TABLE Sales ADD TableNumber NVARCHAR(20) NULL;
+                END");
+
+                SafeMigrate("SaleItems.KitchenNotes", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'KitchenNotes')
+                BEGIN
+                    ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(200) NULL;
+                END");
+
                 // Save version number so we don't repeat inspection on next startup
                 try
                 {

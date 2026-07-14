@@ -942,7 +942,8 @@ namespace ChickenDist.Forms
                 "موبايلات وأجهزة ذكية (IMEI، اللون، شاشة صيانة)",
                 "ملابس وأحذية (المقاس، اللون، الخامة)",
                 "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
-                "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)"
+                "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)",
+                "مطعم وكافيه (طاولات، تحضير مطبخ، تيك أواي، توصيل)"
             });
             cboBusinessType.SelectedItem = AppConfig.BusinessType switch
             {
@@ -951,6 +952,7 @@ namespace ChickenDist.Forms
                 "Clothing"   => "ملابس وأحذية (المقاس، اللون، الخامة)",
                 "CarService" => "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)",
                 "General"    => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
+                "Restaurant" => "مطعم وكافيه (طاولات، تحضير مطبخ، تيك أواي، توصيل)",
                 _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
             this.Controls.Add(cboBusinessType);
@@ -974,6 +976,7 @@ namespace ChickenDist.Forms
                     3 => "Clothing",
                     5 => "CarService",
                     4 => "General",
+                    6 => "Restaurant",
                     _ => "Supermarket"
                 };
                 AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();

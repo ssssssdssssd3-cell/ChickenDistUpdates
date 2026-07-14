@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
@@ -85,7 +85,7 @@ namespace ChickenDist.DAL
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null)
         {
             int returnedSaleID = -1;
 
@@ -97,7 +97,7 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping,@ot,@tn)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -105,7 +105,9 @@ namespace ChickenDist.DAL
                     DbHelper.P("@discAmt", discountAmount), DbHelper.P("@discPct", discountPct),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
-                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge));
+                    DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge),
+                    DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
+                    DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -123,7 +125,7 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
@@ -131,7 +133,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@un", item.UnitName), DbHelper.P("@fac", item.Factor),
                         DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                         DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
-                        DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI));
+                        DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI),
+                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
 
                     // Deduct from ProductBatches table
                     if (!isDraft)
@@ -626,7 +629,7 @@ namespace ChickenDist.DAL
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null)
         {
             bool success = false;
 
@@ -734,7 +737,8 @@ namespace ChickenDist.DAL
                     @"UPDATE Sales 
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
-                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping
+                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping,
+                          OrderType=@ot, TableNumber=@tn
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
@@ -750,14 +754,16 @@ namespace ChickenDist.DAL
                     DbHelper.P("@co", cratesOut),
                     DbHelper.P("@ci", cratesIn),
                     DbHelper.P("@shipping", shippingCharge),
+                    DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
+                    DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
                     DbHelper.P("@id", saleID));
 
                 // 7. إدخال البنود الجديدة
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        @"INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier) 
-                          VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt)",
+                        @"INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes) 
+                          VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn)",
                         DbHelper.P("@sid", saleID), 
                         DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), 
@@ -765,7 +771,13 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp", item.TotalPrice), 
                         DbHelper.P("@dpct", item.DiscountPct),
                         DbHelper.P("@damt", item.DiscountAmt),
-                        DbHelper.P("@pt", item.PriceTier ?? priceTier));
+                        DbHelper.P("@pt", item.PriceTier ?? priceTier),
+                        DbHelper.P("@un", item.UnitName),
+                        DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
+                        DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
+                        DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI),
+                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
 
                     // check if price is different from product base price to log it in PriceChangesLog
                     if (!isDraft)
@@ -888,6 +900,7 @@ namespace ChickenDist.DAL
 
     public class SaleItemDTO
     {
+        public string KitchenNotes { get; set; } = "";
         public string IMEI { get; set; } = "";
         public int ProductID { get; set; }
         public string ProductName { get; set; }

@@ -28,6 +28,14 @@ namespace ChickenDist.Forms
         private Panel pnlTotals, pnlQuick, pnlTop;
         private CheckBox chkRedeemPoints;
 
+        // ── عناصر واجهة المطعم ─────────────────────────────────
+        private FlowLayoutPanel flowCategories;
+        private Panel pnlOrderType;
+        private RadioButton rbDineIn, rbTakeaway, rbDelivery;
+        private Label lblTableNum;
+        private TextBox txtTableNum;
+        private ComboBox cboDeliveryDriver;
+
         // ── البيانات ──────────────────────────────────────────
         private List<POSItem> _items = new List<POSItem>();
         private int _lastSaleID = 0;
@@ -44,6 +52,8 @@ namespace ChickenDist.Forms
         {
             InitUI();
             LoadQuickItems();
+            LoadCategories();
+            LoadDeliveryDrivers();
             LoadClients();
             LoadStockCache();
             this.Load += (s, e) => { this.ActiveControl = txtBarcode; txtBarcode.Focus(); };
@@ -135,6 +145,12 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add("Price", "السعر");
             dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
+            if (AppConfig.IsRestaurant)
+            {
+                dgItems.Columns.Add("KitchenNotes", "📝 ملاحظات المطبخ");
+                dgItems.Columns["KitchenNotes"].ReadOnly = false;
+                dgItems.Columns["KitchenNotes"].Width = 130;
+            }
             
             dgItems.Columns["Code"].ReadOnly = true;
             dgItems.Columns["Name"].ReadOnly = true;
@@ -171,12 +187,66 @@ namespace ChickenDist.Forms
             pnlClient.Controls.Add(chkRedeemPoints);
             this.Controls.Add(pnlClient);
 
+            // ── لوحة نوع الطلب (مطاعم فقط) ───────────────────
+            if (AppConfig.IsRestaurant)
+            {
+                pnlOrderType = new Panel
+                {
+                    BackColor = Color.FromArgb(30, 30, 46),
+                    BorderStyle = BorderStyle.None,
+                    Padding = new Padding(6)
+                };
+
+                rbDineIn = new RadioButton   { Text = "🍽️ صالة",    Checked = true, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+                rbTakeaway = new RadioButton { Text = "🛍️ تيك أواي", ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+                rbDelivery = new RadioButton { Text = "🛵 توصيل",   ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+
+                lblTableNum = new Label { Text = "رقم الطاولة:", ForeColor = Color.White, Font = new Font("Segoe UI", 9f), AutoSize = true };
+                txtTableNum = new TextBox { Width = 60, Font = new Font("Segoe UI", 10f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black };
+
+                var lblDriverRest = new Label { Text = "الطيار:", ForeColor = Color.White, Font = new Font("Segoe UI", 9f), AutoSize = true };
+                cboDeliveryDriver = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 9f), BackColor = Theme.BgInput };
+                cboDeliveryDriver.Visible = false;
+                lblDriverRest.Visible = false;
+
+                var toggleVisibility = new Action(() => {
+                    bool isDineIn = rbDineIn.Checked;
+                    bool isDelivery = rbDelivery.Checked;
+                    lblTableNum.Visible = isDineIn;
+                    txtTableNum.Visible = isDineIn;
+                    cboDeliveryDriver.Visible = isDelivery;
+                    lblDriverRest.Visible = isDelivery;
+                });
+                rbDineIn.CheckedChanged += (s, e) => toggleVisibility();
+                rbTakeaway.CheckedChanged += (s, e) => toggleVisibility();
+                rbDelivery.CheckedChanged += (s, e) => toggleVisibility();
+
+                var flowOT = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = true, AutoSize = true };
+                flowOT.Controls.AddRange(new Control[] { rbDineIn, rbTakeaway, rbDelivery, lblTableNum, txtTableNum, lblDriverRest, cboDeliveryDriver });
+                pnlOrderType.Controls.Add(flowOT);
+                this.Controls.Add(pnlOrderType);
+            }
+
             // ── لوحة الأصناف السريعة (يمين) ──────────────────
             pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Color.FromArgb(240, 242, 245), Padding = new Padding(4) };
             pnlQuick.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlQuick);
+
+            // شريط أقسام للمطاعم
+            flowCategories = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = AppConfig.IsRestaurant ? 36 : 0,
+                AutoScroll = false,
+                WrapContents = false,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.FromArgb(30, 30, 46),
+                Visible = AppConfig.IsRestaurant
+            };
+
             var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Top, Height = 28, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
             flowQuickItems = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Transparent, FlowDirection = FlowDirection.RightToLeft, RightToLeft = RightToLeft.Yes };
             pnlQuick.Controls.Add(flowQuickItems);
+            pnlQuick.Controls.Add(flowCategories);
             pnlQuick.Controls.Add(lQuick);
             this.Controls.Add(pnlQuick);
 
@@ -231,6 +301,16 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(_btnPrint);
             pnlTotals.Controls.Add(_btnWhatsApp);
             pnlTotals.Controls.Add(btnOpenDrawer);
+
+            if (AppConfig.IsRestaurant)
+            {
+                var btnKitchen = Theme.MakeButton("🍳 بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 130), new Size(95, 55));
+                btnKitchen.Name = "btnKitchenPrint";
+                btnKitchen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                btnKitchen.Click += (s, e) => { if (_lastSaleID > 0) try { new FrmKitchenPrint(_lastSaleID); } catch { } };
+                pnlTotals.Controls.Add(btnKitchen);
+            }
+
             this.Controls.Add(pnlTotals);
 
             this.FormClosing += FrmPOS_FormClosing;
@@ -253,6 +333,15 @@ namespace ChickenDist.Forms
 
             if (pnlClient != null) { pnlClient.Location = new Point(leftW + 20, 85); pnlClient.Size = new Size(rightW, 55); }
 
+            // لوحة نوع الطلب للمطعم تحت العميل مباشرة
+            if (pnlOrderType != null)
+            {
+                pnlOrderType.Location = new Point(leftW + 20, 142);
+                pnlOrderType.Size = new Size(rightW, 40);
+                pnlQuick.Location = new Point(leftW + 20, 184);
+                pnlQuick.Size = new Size(rightW, h - 394);
+            }
+
             // ── توزيع ديناميكي لعناصر لوحة الإجماليات ──────────
             int totW = pnlTotals.Width;
             // الإجمالي: أقصى اليمين
@@ -268,12 +357,16 @@ namespace ChickenDist.Forms
             lblChange.Location = new Point(20, 45);
             lblChange.Size     = new Size(Math.Max(100, midX - 130), 40);
             // الأزرار: توزيع من اليمين لليسار
-            if (_btnPrint != null) { _btnPrint.Location = new Point(totW - 135, 130); _btnPrint.Size = new Size(115, 55); }
-            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 250, 130); _btnWhatsApp.Size = new Size(110, 55); }
-            if (btnOpenDrawer != null) { btnOpenDrawer.Location = new Point(totW - 395, 130); btnOpenDrawer.Size = new Size(140, 55); }
-            if (btnCancel != null) { btnCancel.Location = new Point(totW - 575, 130); btnCancel.Size = new Size(175, 55); }
-            if (btnNew    != null) { btnNew.Location    = new Point(totW - 790, 130); btnNew.Size    = new Size(210, 55); }
-            if (btnPay    != null) { btnPay.Location    = new Point(20, 130);          btnPay.Size    = new Size(Math.Max(150, totW - 815), 55); }
+            // زر بون المطبخ (مطاعم فقط) يزيح الأزرار قليلاً
+            var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
+            int extraShift = btnKitchenCtrl != null ? 100 : 0;
+            if (_btnPrint    != null) { _btnPrint.Location    = new Point(totW - 135, 130);             _btnPrint.Size    = new Size(115, 55); }
+            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 250, 130);             _btnWhatsApp.Size = new Size(110, 55); }
+            if (btnOpenDrawer!= null) { btnOpenDrawer.Location= new Point(totW - 395, 130);             btnOpenDrawer.Size= new Size(140, 55); }
+            if (btnKitchenCtrl != null){ btnKitchenCtrl.Location = new Point(totW - 490, 130);          btnKitchenCtrl.Size = new Size(90, 55); extraShift = 95; }
+            if (btnCancel    != null) { btnCancel.Location    = new Point(totW - 575 - extraShift, 130);btnCancel.Size    = new Size(175, 55); }
+            if (btnNew       != null) { btnNew.Location       = new Point(totW - 790 - extraShift, 130);btnNew.Size       = new Size(210, 55); }
+            if (btnPay       != null) { btnPay.Location       = new Point(20, 130);                     btnPay.Size       = new Size(Math.Max(150, totW - 815 - extraShift), 55); }
         }
 
         // ── اختصارات لوحة المفاتيح ───────────────────────────
@@ -589,7 +682,14 @@ namespace ChickenDist.Forms
             foreach (var item in _items)
             {
                 item.Total = (item.Qty * item.Price) - item.DiscountAmt;
-                dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                if (AppConfig.IsRestaurant)
+                {
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
+                }
+                else
+                {
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                }
                 total += item.Total;
             }
 
@@ -668,11 +768,13 @@ namespace ChickenDist.Forms
         // ── تعديل الكمية من الجدول ────────────────────────────
         private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == 2 && e.RowIndex >= 0 && e.RowIndex < _items.Count) // Qty column
+            if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
+            var item = _items[e.RowIndex];
+
+            if (e.ColumnIndex == 2) // Qty column
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString(), out decimal newQty) && newQty > 0)
                 {
-                    var item = _items[e.RowIndex];
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
                         MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -681,13 +783,43 @@ namespace ChickenDist.Forms
                     }
 
                     item.Qty = newQty;
-                    item.Total = newQty * item.Price;
+                    item.Total = (newQty * item.Price) - item.DiscountAmt;
                     RefreshGrid();
                 }
                 else
                 {
-                    dgItems.Rows[e.RowIndex].Cells[2].Value = _items[e.RowIndex].Qty.ToString("G");
+                    dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
                 }
+            }
+            else if (e.ColumnIndex == 3) // Price column
+            {
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[3].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
+                {
+                    item.Price = newPrice;
+                    item.Total = (item.Qty * newPrice) - item.DiscountAmt;
+                    RefreshGrid();
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells[3].Value = item.Price.ToString("N2");
+                }
+            }
+            else if (e.ColumnIndex == 4) // Discount column
+            {
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[4].Value?.ToString(), out decimal newDisc) && newDisc >= 0)
+                {
+                    item.DiscountAmt = newDisc;
+                    item.Total = (item.Qty * item.Price) - newDisc;
+                    RefreshGrid();
+                }
+                else
+                {
+                    dgItems.Rows[e.RowIndex].Cells[4].Value = item.DiscountAmt.ToString("N2");
+                }
+            }
+            else if (AppConfig.IsRestaurant && e.ColumnIndex == 6) // Kitchen Notes column
+            {
+                item.KitchenNotes = dgItems.Rows[e.RowIndex].Cells[6].Value?.ToString() ?? "";
             }
         }
 
@@ -737,6 +869,20 @@ namespace ChickenDist.Forms
                 total -= loyaltyDiscount;
             }
 
+            // Extract restaurant fields if active
+            string orderType = null;
+            string tableNum = null;
+            int? selectedDriver = null;
+            if (AppConfig.IsRestaurant)
+            {
+                orderType = rbDineIn.Checked ? "DineIn" : rbDelivery.Checked ? "Delivery" : "Takeaway";
+                tableNum = rbDineIn.Checked ? txtTableNum.Text.Trim() : null;
+                if (rbDelivery.Checked && cboDeliveryDriver.SelectedItem is ComboItem driverItem && driverItem.ID > 0)
+                {
+                    selectedDriver = driverItem.ID;
+                }
+            }
+
             try
             {
                 DbHelper.RunInTransaction((con, trans) =>
@@ -750,13 +896,16 @@ namespace ChickenDist.Forms
                     decimal totalDisc = loyaltyDiscount + sumItemDiscounts;
 
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
-                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge)
-                          VALUES (@sc,GETDATE(),'Cash',@cid,NULL,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0)",
+                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge,OrderType,TableNumber)
+                          VALUES (@sc,GETDATE(),'Cash',@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0,@ot,@tn)",
                         DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                        DbHelper.P("@did", selectedDriver.HasValue ? (object)selectedDriver.Value : DBNull.Value),
                         DbHelper.P("@tot", total), DbHelper.P("@disc", totalDisc),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
-                        DbHelper.P("@paid", decimal.TryParse(txtPaid.Text.Replace(",",""), out decimal pd) ? pd : total));
+                        DbHelper.P("@paid", decimal.TryParse(txtPaid.Text.Replace(",",""), out decimal pd) ? pd : total),
+                        DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
+                        DbHelper.P("@tn", string.IsNullOrEmpty(tableNum) ? DBNull.Value : (object)tableNum));
 
                     if (saleID <= 0) throw new Exception("فشل حفظ الفاتورة.");
 
@@ -764,15 +913,16 @@ namespace ChickenDist.Forms
                     foreach (var item in _items)
                     {
                         DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid)",
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
                             DbHelper.P("@un", (object)item.UnitName ?? DBNull.Value),
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
-                            DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value));
+                            DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
+                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
 
                         // Deduct from ProductBatches table
                         if (item.BatchID.HasValue)
@@ -899,6 +1049,10 @@ namespace ChickenDist.Forms
 
                 // Auto-print
                 PrintReceipt(_lastSaleID);
+                if (AppConfig.IsRestaurant)
+                {
+                    try { new FrmKitchenPrint(_lastSaleID); } catch { }
+                }
                 NewInvoice();
             }
             catch (Exception ex)
@@ -914,6 +1068,12 @@ namespace ChickenDist.Forms
             txtPaid.Text = "0";
             txtBarcode.Clear();
             chkRedeemPoints.Checked = false;
+            if (AppConfig.IsRestaurant)
+            {
+                if (txtTableNum != null) txtTableNum.Clear();
+                if (rbDineIn != null) rbDineIn.Checked = true;
+                if (cboDeliveryDriver != null && cboDeliveryDriver.Items.Count > 0) cboDeliveryDriver.SelectedIndex = 0;
+            }
             txtBarcode.Focus();
         }
 
@@ -965,9 +1125,24 @@ namespace ChickenDist.Forms
         // ── Quick Items ──────────────────────────────────────
         private void LoadQuickItems()
         {
+            FilterQuickItems(null);
+        }
+
+        private void FilterQuickItems(int? categoryID)
+        {
             flowQuickItems.Controls.Clear();
-            var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND IsQuickItem=1 ORDER BY ProductName");
-            
+            string query = "SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND IsQuickItem=1";
+            var pList = new List<System.Data.SqlClient.SqlParameter>();
+
+            if (categoryID.HasValue)
+            {
+                query += " AND CategoryID=@catId";
+                pList.Add(DbHelper.P("@catId", categoryID.Value));
+            }
+
+            query += " ORDER BY ProductName";
+            DataTable dt = DbHelper.Query(query, pList.ToArray());
+
             var colors = new Color[] {
                 Color.FromArgb(13, 110, 253),  // Royal Blue
                 Color.FromArgb(253, 126, 20),  // Vibrant Orange
@@ -983,45 +1158,144 @@ namespace ChickenDist.Forms
                 int pid = Convert.ToInt32(row["ProductID"]);
                 string name = row["ProductName"].ToString();
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
-                
+
                 Color btnColor = colors[colorIndex++ % colors.Length];
                 var btn = new Button
                 {
                     Text = $"{name}\n\n{price:N2} ج",
-                    Size = new Size(90, 85), FlatStyle = FlatStyle.Flat,
+                    Size = new Size(95, 85), FlatStyle = FlatStyle.Flat,
                     BackColor = btnColor, ForeColor = Color.White,
                     Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
                     Cursor = Cursors.Hand, Margin = new Padding(4),
                     Tag = pid
                 };
                 btn.FlatAppearance.BorderSize = 0;
-                btn.Click += (s, e) =>
-                {
-                    var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", (int)((Button)s).Tag));
-                    if (dtP.Rows.Count > 0)
-                    {
-                        var row = dtP.Rows[0];
-                        int? bid = null;
-                        DateTime? exp = null;
-                        if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
-                        {
-                            var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])));
-                            if (batches.Rows.Count > 0)
-                            {
-                                bid = Convert.ToInt32(batches.Rows[0]["BatchID"]);
-                                exp = batches.Rows[0]["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(batches.Rows[0]["ExpiryDate"]) : (DateTime?)null;
-                            }
-                            else
-                            {
-                                MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                return;
-                            }
-                        }
-                        AddItemFromRow(row, 1, null, 1m, 0, bid, exp);
-                    }
-                };
+                btn.Click += QuickItemBtn_Click;
                 flowQuickItems.Controls.Add(btn);
             }
+        }
+
+        private void QuickItemBtn_Click(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            int pid = (int)btn.Tag;
+            var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", pid));
+            if (dtP.Rows.Count > 0)
+            {
+                var row = dtP.Rows[0];
+                int? bid = null;
+                DateTime? exp = null;
+                if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
+                {
+                    var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])));
+                    if (batches.Rows.Count > 0)
+                    {
+                        bid = Convert.ToInt32(batches.Rows[0]["BatchID"]);
+                        exp = batches.Rows[0]["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(batches.Rows[0]["ExpiryDate"]) : (DateTime?)null;
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+                AddItemFromRow(row, 1, null, 1m, 0, bid, exp);
+            }
+        }
+
+        private void LoadCategories()
+        {
+            if (!AppConfig.IsRestaurant) return;
+            flowCategories.Controls.Clear();
+
+            var btnAll = new Button
+            {
+                Text = "الكل",
+                Size = new Size(60, 28),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Primary,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(3, 4, 3, 4)
+            };
+            btnAll.FlatAppearance.BorderSize = 0;
+            btnAll.Click += (s, e) => {
+                FilterQuickItems(null);
+                HighlightCategoryButton((Button)s);
+            };
+            flowCategories.Controls.Add(btnAll);
+
+            var dt = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive=1 ORDER BY CategoryName");
+            foreach (DataRow row in dt.Rows)
+            {
+                int catId = Convert.ToInt32(row["CategoryID"]);
+                string catName = row["CategoryName"].ToString();
+
+                var btnCat = new Button
+                {
+                    Text = catName,
+                    Size = new Size(80, 28),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(60, 70, 85),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(3, 4, 3, 4),
+                    Tag = catId
+                };
+                btnCat.FlatAppearance.BorderSize = 0;
+                btnCat.Click += (s, e) => {
+                    FilterQuickItems((int)((Button)s).Tag);
+                    HighlightCategoryButton((Button)s);
+                };
+                flowCategories.Controls.Add(btnCat);
+            }
+        }
+
+        private void HighlightCategoryButton(Button selected)
+        {
+            foreach (Control ctrl in flowCategories.Controls)
+            {
+                if (ctrl is Button btn)
+                {
+                    if (btn == selected)
+                    {
+                        btn.BackColor = Theme.Primary;
+                        btn.ForeColor = Color.White;
+                    }
+                    else
+                    {
+                        btn.BackColor = Color.FromArgb(60, 70, 85);
+                        btn.ForeColor = Color.White;
+                    }
+                }
+            }
+        }
+
+        private void LoadDeliveryDrivers()
+        {
+            if (!AppConfig.IsRestaurant) return;
+            cboDeliveryDriver.BeginUpdate();
+            cboDeliveryDriver.Items.Clear();
+
+            List<ComboItem> driverItems = new List<ComboItem>();
+            driverItems.Add(new ComboItem(0, "-- اختر طيار --"));
+
+            try
+            {
+                DataTable drivers = EmployeeDAL.GetDrivers();
+                foreach (DataRow row in drivers.Rows)
+                {
+                    driverItems.Add(new ComboItem((int)row["EmpID"], row["EmpName"].ToString()));
+                }
+            }
+            catch { }
+
+            cboDeliveryDriver.Items.AddRange(driverItems.ToArray());
+            cboDeliveryDriver.DisplayMember = "Text";
+            cboDeliveryDriver.SelectedIndex = 0;
+            cboDeliveryDriver.EndUpdate();
         }
 
         private void LoadClients()
@@ -1124,6 +1398,7 @@ namespace ChickenDist.Forms
             public int? DefaultExpiryDays;
             public DateTime? ExpiryDate;
             public int? BatchID;
+            public string KitchenNotes = "";
         }
 
         public class ComboItem
