@@ -3345,6 +3345,9 @@ namespace ChickenDist.Forms
 				}
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
+			// ─── إضافة الشحن إلى الإجمالي ───
+			decimal shippingAtSave = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
+			net += shippingAtSave;
 			string priceTier = _selectedTier ?? "قطاعي";
 
 			// ─── إشعار الدفع النقدي ───
@@ -3408,12 +3411,11 @@ namespace ChickenDist.Forms
 					{
 						safeAccountID = safeItem.ID;
 					}
-					decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount,
-						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingVal);
+						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave);
 					if (updated)
 					{
 						_isDirty = false;
@@ -3471,14 +3473,13 @@ namespace ChickenDist.Forms
 				{
 					safeAccountID = safeItem.ID;
 				}
-				decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
 					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
 					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount,
-					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingVal);
+					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
