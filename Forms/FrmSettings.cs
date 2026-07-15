@@ -957,9 +957,10 @@ namespace ChickenDist.Forms
                 _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
             this.Controls.Add(cboBusinessType);
+            y += 38;
 
             // زر تغيير نوع النشاط بكلمة مرور
-            var btnUnlockBizType = Theme.MakeButton("🔒 تغيير النشاط", 530, y, 160, 36, Theme.Accent);
+            var btnUnlockBizType = Theme.MakeButton("🔒 تغيير النشاط", 20, y, 200, 36, Theme.Accent);
             btnUnlockBizType.Click += (s, e) =>
             {
                 using (var passForm = new Form())
