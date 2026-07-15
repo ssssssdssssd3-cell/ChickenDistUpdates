@@ -933,7 +933,8 @@ namespace ChickenDist.Forms
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextDark,
-                Font = new Font("Segoe UI", 11f)
+                Font = new Font("Segoe UI", 11f),
+                Enabled = false  // مقفول حتى يتم إدخال كلمة المرور
             };
             cboBusinessType.Items.AddRange(new object[]
             {
@@ -956,6 +957,45 @@ namespace ChickenDist.Forms
                 _            => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
             this.Controls.Add(cboBusinessType);
+
+            // زر تغيير نوع النشاط بكلمة مرور
+            var btnUnlockBizType = Theme.MakeButton("🔒 تغيير النشاط", 530, y, 160, 36, Theme.Accent);
+            btnUnlockBizType.Click += (s, e) =>
+            {
+                using (var passForm = new Form())
+                {
+                    passForm.Text = "كلمة المرور مطلوبة";
+                    passForm.Size = new Size(340, 155);
+                    passForm.StartPosition = FormStartPosition.CenterParent;
+                    passForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    passForm.MaximizeBox = false;
+                    passForm.MinimizeBox = false;
+                    passForm.RightToLeft = RightToLeft.Yes;
+                    passForm.RightToLeftLayout = true;
+                    var lbl = new Label { Text = "أدخل كلمة المرور للتعديل:", Dock = DockStyle.Top, Height = 30, TextAlign = System.Drawing.ContentAlignment.MiddleRight, Padding = new Padding(8, 5, 8, 0) };
+                    var txt = new TextBox { Dock = DockStyle.Top, PasswordChar = '*', Height = 28, Font = new Font("Segoe UI", 11f), RightToLeft = RightToLeft.Yes };
+                    var btnOk = new Button { Text = "موافق", DialogResult = DialogResult.OK, Dock = DockStyle.Bottom, Height = 36 };
+                    passForm.Controls.Add(btnOk);
+                    passForm.Controls.Add(txt);
+                    passForm.Controls.Add(lbl);
+                    passForm.AcceptButton = btnOk;
+                    if (passForm.ShowDialog(this) == DialogResult.OK)
+                    {
+                        if (txt.Text == "Pro@soft2026")
+                        {
+                            cboBusinessType.Enabled = true;
+                            btnUnlockBizType.Text = "🔓 مفتوح للتعديل";
+                            btnUnlockBizType.BackColor = Theme.Success;
+                            btnUnlockBizType.Enabled = false;
+                        }
+                        else
+                        {
+                            MessageBox.Show("كلمة المرور غير صحيحة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            };
+            this.Controls.Add(btnUnlockBizType);
             y += 45;
 
             // ── زر الحفظ الرئيسي ──────────────────────────────────

@@ -108,6 +108,7 @@ namespace ChickenDist.Forms
             var btnImportExcel = Theme.MakeButton("📥 استيراد إكسل", Theme.Primary);
             btnImportExcel.Width = 125;
             btnImportExcel.Click += (s, e) => {
+                if (!PromptImportPassword(this)) return;
                 if (new FrmImportProducts().ShowDialog() == DialogResult.OK)
                 {
                     LoadProducts();
@@ -281,6 +282,35 @@ namespace ChickenDist.Forms
             using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price, shelfLocation))
             {
                 dlg.ShowDialog(this);
+            }
+        }
+
+        internal static bool PromptImportPassword(Form owner)
+        {
+            using (var passForm = new Form())
+            {
+                passForm.Text = "كلمة المرور مطلوبة";
+                passForm.Size = new Size(340, 155);
+                passForm.StartPosition = FormStartPosition.CenterParent;
+                passForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                passForm.MaximizeBox = false;
+                passForm.MinimizeBox = false;
+                passForm.RightToLeft = RightToLeft.Yes;
+                passForm.RightToLeftLayout = true;
+                var lbl = new Label { Text = "أدخل كلمة المرور للاستيراد:", Dock = DockStyle.Top, Height = 30, TextAlign = System.Drawing.ContentAlignment.MiddleRight, Padding = new Padding(8, 5, 8, 0) };
+                var txt = new TextBox { Dock = DockStyle.Top, PasswordChar = '*', Height = 28, Font = new Font("Segoe UI", 11f), RightToLeft = RightToLeft.Yes };
+                var btnOk = new Button { Text = "موافق", DialogResult = DialogResult.OK, Dock = DockStyle.Bottom, Height = 36 };
+                passForm.Controls.Add(btnOk);
+                passForm.Controls.Add(txt);
+                passForm.Controls.Add(lbl);
+                passForm.AcceptButton = btnOk;
+                if (passForm.ShowDialog(owner) == DialogResult.OK)
+                {
+                    if (txt.Text == "Pro@soft2026")
+                        return true;
+                    MessageBox.Show("كلمة المرور غير صحيحة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                return false;
             }
         }
     }
