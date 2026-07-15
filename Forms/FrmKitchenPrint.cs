@@ -134,8 +134,8 @@ namespace ChickenDist.Forms
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
             y += 8;
 
-            g.DrawString("الصنف", fBodyBold, Brushes.Black, margin, y);
-            g.DrawString("الكمية", fBodyBold, Brushes.Black, usableWidth - 20, y, formatRight);
+            g.DrawString("الصنف", fBodyBold, Brushes.Black, new RectangleF(margin + 80, y, usableWidth - 80, 20), formatRight);
+            g.DrawString("الكمية", fBodyBold, Brushes.Black, margin, y, formatLeft);
             y += 22;
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
@@ -153,14 +153,14 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrEmpty(unit)) qtyStr += $" {unit}";
 
                 SizeF sizeName = g.MeasureString(name, fBody, (int)(usableWidth - 80));
-                g.DrawString(name, fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth - 80, sizeName.Height));
-                g.DrawString(qtyStr, fBodyBold, Brushes.Black, usableWidth, y, formatRight);
+                g.DrawString(name, fBodyBold, Brushes.Black, new RectangleF(margin + 80, y, usableWidth - 80, sizeName.Height), formatRight);
+                g.DrawString(qtyStr, fBodyBold, Brushes.Black, margin, y, formatLeft);
                 
                 y += sizeName.Height + 2;
 
                 if (!string.IsNullOrEmpty(note))
                 {
-                    g.DrawString($"** ملاحظة: {note}", fSmallItalic, Brushes.Red, margin + 15, y);
+                    g.DrawString($"** ملاحظة: {note}", fSmallItalic, Brushes.Red, new RectangleF(margin, y, usableWidth, 18), formatRight);
                     y += 18;
                 }
 

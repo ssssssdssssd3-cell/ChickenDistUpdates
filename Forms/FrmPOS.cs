@@ -162,6 +162,8 @@ namespace ChickenDist.Forms
             dgItems.Columns["Total"].ReadOnly = true;
 
             dgItems.Columns["Code"].Width = 80;
+            dgItems.Columns["Name"].Width = 250;
+            dgItems.Columns["Name"].MinimumWidth = 200;
             dgItems.Columns["Qty"].Width = 60;
             dgItems.Columns["Price"].Width = 80;
             dgItems.Columns["Discount"].Width = 60;

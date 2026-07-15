@@ -1316,7 +1316,50 @@ namespace ChickenDist.Forms
                     Height = 700,
                     Text = "معاينة الطباعة"
                 };
-                preview.ShowDialog();
+
+                Form owner = null;
+                try
+                {
+                    if (Application.OpenForms.Count > 0)
+                    {
+                        foreach (Form f in Application.OpenForms)
+                        {
+                            if (f.Visible && f.GetType().Name == "FrmPOS")
+                            {
+                                owner = f;
+                                break;
+                            }
+                        }
+                        if (owner == null)
+                        {
+                            for (int i = Application.OpenForms.Count - 1; i >= 0; i--)
+                            {
+                                Form f = Application.OpenForms[i];
+                                if (f.Visible)
+                                {
+                                    owner = f;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (owner != null)
+                {
+                    preview.ShowDialog(owner);
+                    try
+                    {
+                        owner.Activate();
+                        owner.Focus();
+                    }
+                    catch { }
+                }
+                else
+                {
+                    preview.ShowDialog();
+                }
             }
             else
             {
