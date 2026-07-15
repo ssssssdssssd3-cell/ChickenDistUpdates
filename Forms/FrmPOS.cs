@@ -643,7 +643,7 @@ namespace ChickenDist.Forms
             AddItemFromRow(row, 1, unitName, factor, price, batchID, expiryDate);
         }
 
-        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null)
+        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, bool focusQty = false)
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
@@ -713,6 +713,16 @@ namespace ChickenDist.Forms
                 existing.Qty = targetQty;
                 existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
+                if (focusQty)
+                {
+                    int rowIdx = _items.IndexOf(existing);
+                    if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                    {
+                        dgItems.ClearSelection();
+                        dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["Qty"];
+                        dgItems.BeginEdit(true);
+                    }
+                }
                 return;
             }
 
@@ -735,6 +745,18 @@ namespace ChickenDist.Forms
                 ExpiryDate = expiryDate
             });
             RefreshGrid();
+
+            // بعد الإضافة: انقل التركيز لخلية الكمية في آخر صف
+            if (focusQty && dgItems.Rows.Count > 0)
+            {
+                int lastRow = _items.Count - 1;
+                if (lastRow >= 0 && lastRow < dgItems.Rows.Count)
+                {
+                    dgItems.ClearSelection();
+                    dgItems.CurrentCell = dgItems.Rows[lastRow].Cells["Qty"];
+                    dgItems.BeginEdit(true);
+                }
+            }
         }
 
         private void RefreshGrid()
@@ -1184,7 +1206,7 @@ namespace ChickenDist.Forms
                                 factor = 1m;
                             }
                         }
-                        AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
+                        AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate, focusQty: true);
                     }
                 }
             }
@@ -1268,7 +1290,7 @@ namespace ChickenDist.Forms
                         return;
                     }
                 }
-                AddItemFromRow(row, 1, null, 1m, 0, bid, exp);
+                AddItemFromRow(row, 1, null, 1m, 0, bid, exp, focusQty: true);
             }
         }
 
