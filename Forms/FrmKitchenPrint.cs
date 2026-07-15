@@ -102,9 +102,9 @@ namespace ChickenDist.Forms
 
             string orderCode = _saleRow["SaleCode"]?.ToString() ?? _saleID.ToString();
             DateTime orderDate = Convert.ToDateTime(_saleRow["SaleDate"]);
-            g.DrawString($"طلب رقم: #{orderCode}", fBodyBold, Brushes.Black, margin, y);
+            g.DrawString($"طلب رقم: #{orderCode}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
             y += 20;
-            g.DrawString($"التاريخ: {orderDate:yyyy-MM-dd   hh:mm tt}", fSmall, Brushes.Black, margin, y);
+            g.DrawString($"التاريخ: {orderDate:yyyy-MM-dd   hh:mm tt}", fSmall, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
             y += 24;
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
@@ -114,7 +114,7 @@ namespace ChickenDist.Forms
             string tableNum = _saleRow["TableNumber"].ToString();
             string orderTypeAr = orderType == "DineIn" ? "صالة" : orderType == "Delivery" ? "توصيل" : "تيك اواي";
 
-            g.DrawString($"نوع الطلب: {orderTypeAr}", fHeader, Brushes.Black, margin, y);
+            g.DrawString($"نوع الطلب: {orderTypeAr}", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatRight);
             y += 22;
 
             if (orderType == "DineIn" && !string.IsNullOrEmpty(tableNum))
@@ -127,7 +127,7 @@ namespace ChickenDist.Forms
             else if (orderType == "Delivery")
             {
                 string driver = _saleRow["DriverName"].ToString();
-                g.DrawString($"الطيار: {driver}", fBodyBold, Brushes.Black, margin, y);
+                g.DrawString($"الطيار: {driver}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
                 y += 20;
             }
 
@@ -187,7 +187,7 @@ namespace ChickenDist.Forms
                 || generalNotes.StartsWith("POS", StringComparison.OrdinalIgnoreCase);
             if (!isInternalNote)
             {
-                g.DrawString($"ملاحظات: {generalNotes}", fSmall, Brushes.Black, margin, y);
+                g.DrawString($"ملاحظات: {generalNotes}", fSmall, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatRight);
                 y += 22;
             }
 
