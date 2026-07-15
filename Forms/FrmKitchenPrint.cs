@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
 
             string orderType = _saleRow["OrderType"].ToString();
             string tableNum = _saleRow["TableNumber"].ToString();
-            string orderTypeAr = orderType == "DineIn" ? "صالة 🍽️" : orderType == "Delivery" ? "توصيل 🛵" : "تيك أواي 🛍️";
+            string orderTypeAr = orderType == "DineIn" ? "صالة" : orderType == "Delivery" ? "توصيل" : "تيك اواي";
 
             g.DrawString($"نوع الطلب: {orderTypeAr}", fHeader, Brushes.Black, margin, y);
             y += 22;
@@ -160,7 +160,7 @@ namespace ChickenDist.Forms
 
                 if (!string.IsNullOrEmpty(note))
                 {
-                    g.DrawString($"⚠️ ملاحظة: {note}", fSmallItalic, Brushes.Red, margin + 15, y);
+                    g.DrawString($"** ملاحظة: {note}", fSmallItalic, Brushes.Red, margin + 15, y);
                     y += 18;
                 }
 
@@ -180,9 +180,14 @@ namespace ChickenDist.Forms
             y += 8;
 
             string generalNotes = _saleRow["Notes"]?.ToString() ?? "";
-            if (!string.IsNullOrEmpty(generalNotes) && generalNotes != "POS")
+            // تصفية النصوص الداخلية (POS / POS_DRAFT) من الطباعة
+            bool isInternalNote = string.IsNullOrWhiteSpace(generalNotes)
+                || generalNotes == "POS"
+                || generalNotes == "POS_DRAFT"
+                || generalNotes.StartsWith("POS", StringComparison.OrdinalIgnoreCase);
+            if (!isInternalNote)
             {
-                g.DrawString($"ملاحظات عامة: {generalNotes}", fSmall, Brushes.Black, margin, y);
+                g.DrawString($"ملاحظات: {generalNotes}", fSmall, Brushes.Black, margin, y);
                 y += 22;
             }
 
