@@ -746,17 +746,21 @@ namespace ChickenDist.Forms
 
         private void FocusQtyCell(POSItem item)
         {
-            try
+            // نستخدم BeginInvoke لتأجيل التحديد حتى بعد انتهاء معالجة حدث الضغط الحالي
+            // وبدون BeginEdit حتى لا يحتجز الجدول أحداث الضغط على أزرار الأصناف
+            this.BeginInvoke(new Action(() =>
             {
-                int rowIndex = _items.IndexOf(item);
-                if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
+                try
                 {
-                    dgItems.Focus();
-                    dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 is Qty
-                    dgItems.BeginEdit(true);
+                    int rowIndex = _items.IndexOf(item);
+                    if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
+                    {
+                        dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 = Qty
+                        // لا نستدعي BeginEdit هنا - المستخدم يبدأ الكتابة مباشرة
+                    }
                 }
-            }
-            catch { }
+                catch { }
+            }));
         }
 
         private void RefreshGrid()
