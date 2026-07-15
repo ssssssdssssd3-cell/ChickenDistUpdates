@@ -868,7 +868,7 @@ namespace ChickenDist.Forms
 
                     item.Qty = newQty;
                     item.Total = (newQty * item.Price) - item.DiscountAmt;
-                    RefreshGrid();
+                    this.BeginInvoke(new Action(RefreshGrid));
                 }
                 else
                 {
@@ -881,7 +881,7 @@ namespace ChickenDist.Forms
                 {
                     item.Price = newPrice;
                     item.Total = (item.Qty * newPrice) - item.DiscountAmt;
-                    RefreshGrid();
+                    this.BeginInvoke(new Action(RefreshGrid));
                 }
                 else
                 {
@@ -894,7 +894,7 @@ namespace ChickenDist.Forms
                 {
                     item.DiscountAmt = newDisc;
                     item.Total = (item.Qty * item.Price) - newDisc;
-                    RefreshGrid();
+                    this.BeginInvoke(new Action(RefreshGrid));
                 }
                 else
                 {
