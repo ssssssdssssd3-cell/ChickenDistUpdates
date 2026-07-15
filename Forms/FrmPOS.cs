@@ -643,7 +643,7 @@ namespace ChickenDist.Forms
             AddItemFromRow(row, 1, unitName, factor, price, batchID, expiryDate);
         }
 
-        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, bool focusQty = false)
+        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null)
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
@@ -713,16 +713,6 @@ namespace ChickenDist.Forms
                 existing.Qty = targetQty;
                 existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
-                if (focusQty)
-                {
-                    int rowIdx = _items.IndexOf(existing);
-                    if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
-                    {
-                        dgItems.ClearSelection();
-                        dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["Qty"];
-                        dgItems.BeginEdit(true);
-                    }
-                }
                 return;
             }
 
@@ -745,18 +735,6 @@ namespace ChickenDist.Forms
                 ExpiryDate = expiryDate
             });
             RefreshGrid();
-
-            // بعد الإضافة: انقل التركيز لخلية الكمية في آخر صف
-            if (focusQty && dgItems.Rows.Count > 0)
-            {
-                int lastRow = _items.Count - 1;
-                if (lastRow >= 0 && lastRow < dgItems.Rows.Count)
-                {
-                    dgItems.ClearSelection();
-                    dgItems.CurrentCell = dgItems.Rows[lastRow].Cells["Qty"];
-                    dgItems.BeginEdit(true);
-                }
-            }
         }
 
         private void RefreshGrid()
@@ -1206,7 +1184,7 @@ namespace ChickenDist.Forms
                                 factor = 1m;
                             }
                         }
-                        AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate, focusQty: true);
+                        AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
                     }
                 }
             }
@@ -1290,7 +1268,7 @@ namespace ChickenDist.Forms
                         return;
                     }
                 }
-                AddItemFromRow(row, 1, null, 1m, 0, bid, exp, focusQty: true);
+                AddItemFromRow(row, 1, null, 1m, 0, bid, exp);
             }
         }
 
@@ -1920,23 +1898,24 @@ namespace ChickenDist.Forms
             using (Form dlg = new Form())
             {
                 dlg.Text = "📋 الطلبات المعلقة والطاولات النشطة";
-                dlg.Size = new Size(700, 500);
+                dlg.Size = new Size(760, 520);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.RightToLeft = RightToLeft.Yes;
                 dlg.RightToLeftLayout = true;
                 dlg.Font = this.Font;
                 dlg.BackColor = Theme.BgMain;
 
-                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 50, Padding = new Padding(6) };
-                var txtSearch = new TextBox { Width = 250, Height = 28, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle };
-                var lblSearch = new Label { Text = "🔍 بحث سريع (طاولة/عميل):", Width = 160, Height = 25, TextAlign = ContentAlignment.MiddleLeft };
-                
-                var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-                flow.Controls.Add(txtSearch);
-                flow.Controls.Add(lblSearch);
-                pnlSearch.Controls.Add(flow);
-                dlg.Controls.Add(pnlSearch);
+                // ── شريط الأزرار السفلي ──────────────────────────── (يُضاف أولاً)
+                var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgHeader, Padding = new Padding(10, 12, 10, 10) };
+                var btnLoad = Theme.MakeButton("✅ استرجاع الطلب", Theme.Primary, new Point(10, 10), new Size(165, 42));
+                var btnDelete = Theme.MakeButton("❌ حذف المعلق", Theme.Danger, new Point(185, 10), new Size(145, 42));
+                var btnCancelDraft = Theme.MakeButton("رجوع", Color.FromArgb(70,70,70), new Point(340, 10), new Size(105, 42));
+                pnlButtons.Controls.Add(btnLoad);
+                pnlButtons.Controls.Add(btnDelete);
+                pnlButtons.Controls.Add(btnCancelDraft);
+                dlg.Controls.Add(pnlButtons);
 
+                // ── جدول الطلبات المعلقة ─────────────────────────── (يُضاف ثانياً - Fill)
                 var dg = new DataGridView
                 {
                     Dock = DockStyle.Fill,
@@ -1945,30 +1924,50 @@ namespace ChickenDist.Forms
                     RowHeadersVisible = false,
                     SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                     AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                    Font = new Font("Segoe UI", 10f),
-                    GridColor = Color.LightGray,
+                    Font = new Font("Segoe UI", 11f),
+                    GridColor = Color.FromArgb(210, 215, 220),
                     ReadOnly = true,
+                    BorderStyle = BorderStyle.None,
+                    CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
                     EnableHeadersVisualStyles = false,
-                    ColumnHeadersHeight = 35,
-                    RowTemplate = { Height = 30 }
-                };
-                dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle 
-                { 
-                    BackColor = Theme.Primary, 
-                    ForeColor = Color.White, 
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold) 
+                    ColumnHeadersHeight = 38,
+                    RowTemplate = { Height = 34 },
+                    ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = Theme.Primary,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                        Alignment = DataGridViewContentAlignment.MiddleCenter,
+                        Padding = new Padding(4)
+                    },
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = Color.White,
+                        ForeColor = Theme.TextMain,
+                        SelectionBackColor = Theme.Accent,
+                        SelectionForeColor = Color.White,
+                        Padding = new Padding(4),
+                        Alignment = DataGridViewContentAlignment.MiddleCenter
+                    },
+                    AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = Color.FromArgb(245, 247, 250),
+                        ForeColor = Theme.TextMain,
+                        SelectionBackColor = Theme.Accent,
+                        SelectionForeColor = Color.White
+                    }
                 };
                 dlg.Controls.Add(dg);
 
-                var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgHeader, Padding = new Padding(10) };
-                var btnLoad = Theme.MakeButton("✅ استرجاع الطلب", Theme.Primary, new Point(10, 10), new Size(160, 40));
-                var btnDelete = Theme.MakeButton("❌ حذف المعلق", Theme.Danger, new Point(180, 10), new Size(140, 40));
-                var btnCancelDraft = Theme.MakeButton("رجوع", Color.FromArgb(70,70,70), new Point(330, 10), new Size(100, 40));
-
-                pnlButtons.Controls.Add(btnLoad);
-                pnlButtons.Controls.Add(btnDelete);
-                pnlButtons.Controls.Add(btnCancelDraft);
-                dlg.Controls.Add(pnlButtons);
+                // ── شريط البحث العلوي ─────────────────────────────── (يُضاف أخيراً - Top)
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.BgCard, Padding = new Padding(10, 10, 10, 6) };
+                var txtSearch = new TextBox { Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.BgInput };
+                var lblSearch = new Label { Text = "🔍 بحث (طاولة / عميل):", Width = 165, Height = 28, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain };
+                var flowSearch = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
+                flowSearch.Controls.Add(txtSearch);
+                flowSearch.Controls.Add(lblSearch);
+                pnlSearch.Controls.Add(flowSearch);
+                dlg.Controls.Add(pnlSearch);
 
                 // Fetch Draft Sales
                 Action refreshDrafts = () =>
@@ -1986,7 +1985,7 @@ namespace ChickenDist.Forms
                                  s.TotalAmount AS [الإجمالي]
                           FROM Sales s
                           LEFT JOIN Clients c ON s.ClientID = c.ClientID
-                          WHERE s.IsPosted = 0
+                          WHERE s.IsPosted = 0 AND (s.Notes = 'POS_DRAFT' OR s.Notes = 'POS')
                           ORDER BY s.SaleDate DESC");
                     
                     dg.DataSource = dt;
