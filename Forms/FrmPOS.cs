@@ -1925,7 +1925,16 @@ namespace ChickenDist.Forms
                     AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                     Font = new Font("Segoe UI", 10f),
                     GridColor = Color.LightGray,
-                    ReadOnly = true
+                    ReadOnly = true,
+                    EnableHeadersVisualStyles = false,
+                    ColumnHeadersHeight = 35,
+                    RowTemplate = { Height = 30 }
+                };
+                dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    BackColor = Theme.Primary, 
+                    ForeColor = Color.White, 
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold) 
                 };
                 dlg.Controls.Add(dg);
 
@@ -1955,7 +1964,7 @@ namespace ChickenDist.Forms
                                  s.TotalAmount AS [الإجمالي]
                           FROM Sales s
                           LEFT JOIN Clients c ON s.ClientID = c.ClientID
-                          WHERE s.IsPosted = 0 AND (s.Notes = 'POS_DRAFT' OR s.Notes = 'POS')
+                          WHERE s.IsPosted = 0
                           ORDER BY s.SaleDate DESC");
                     
                     dg.DataSource = dt;
