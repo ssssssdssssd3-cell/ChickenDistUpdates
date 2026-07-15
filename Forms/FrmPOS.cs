@@ -162,12 +162,14 @@ namespace ChickenDist.Forms
             dgItems.Columns["Total"].ReadOnly = true;
 
             dgItems.Columns["Code"].Width = 80;
-            dgItems.Columns["Name"].Width = 250;
-            dgItems.Columns["Name"].MinimumWidth = 200;
+            dgItems.Columns["Name"].Width = 350;
+            dgItems.Columns["Name"].MinimumWidth = 250;
+            dgItems.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             dgItems.Columns["Qty"].Width = 60;
             dgItems.Columns["Price"].Width = 80;
             dgItems.Columns["Discount"].Width = 60;
             dgItems.Columns["Total"].Width = 90;
+            dgItems.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
 
             dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("POS");
             Session.LoadColumnOrder(dgItems, "POS");
@@ -715,10 +717,11 @@ namespace ChickenDist.Forms
                 existing.Qty = targetQty;
                 existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
+                FocusQtyCell(existing);
                 return;
             }
 
-            _items.Add(new POSItem
+            var newItem = new POSItem
             {
                 ProductID = productID,
                 Code = code,
@@ -735,8 +738,25 @@ namespace ChickenDist.Forms
                 DefaultExpiryDays = row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
                 BatchID = batchID,
                 ExpiryDate = expiryDate
-            });
+            };
+            _items.Add(newItem);
             RefreshGrid();
+            FocusQtyCell(newItem);
+        }
+
+        private void FocusQtyCell(POSItem item)
+        {
+            try
+            {
+                int rowIndex = _items.IndexOf(item);
+                if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
+                {
+                    dgItems.Focus();
+                    dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 is Qty
+                    dgItems.BeginEdit(true);
+                }
+            }
+            catch { }
         }
 
         private void RefreshGrid()
@@ -885,6 +905,12 @@ namespace ChickenDist.Forms
             {
                 item.KitchenNotes = dgItems.Rows[e.RowIndex].Cells[6].Value?.ToString() ?? "";
             }
+
+            // إعادة التركيز وتحديد خانة الباركود تلقائياً
+            this.BeginInvoke(new Action(() => {
+                txtBarcode.Focus();
+                txtBarcode.SelectAll();
+            }));
         }
 
         private void DgItems_KeyDown(object sender, KeyEventArgs e)
