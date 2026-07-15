@@ -161,14 +161,14 @@ namespace ChickenDist.Forms
             dgItems.Columns["Discount"].ReadOnly = false;
             dgItems.Columns["Total"].ReadOnly = true;
 
-            dgItems.Columns["Code"].Width = 80;
-            dgItems.Columns["Name"].Width = 350;
-            dgItems.Columns["Name"].MinimumWidth = 250;
+            dgItems.Columns["Code"].Width = 60;
+            dgItems.Columns["Name"].Width = 240;
+            dgItems.Columns["Name"].MinimumWidth = 180;
             dgItems.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-            dgItems.Columns["Qty"].Width = 60;
-            dgItems.Columns["Price"].Width = 80;
-            dgItems.Columns["Discount"].Width = 60;
-            dgItems.Columns["Total"].Width = 90;
+            dgItems.Columns["Qty"].Width = 50;
+            dgItems.Columns["Price"].Width = 70;
+            dgItems.Columns["Discount"].Width = 55;
+            dgItems.Columns["Total"].Width = 80;
             dgItems.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
 
             dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("POS");
