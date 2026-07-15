@@ -35,6 +35,8 @@ namespace ChickenDist.Forms
         private Label lblTableNum;
         private TextBox txtTableNum;
         private ComboBox cboDeliveryDriver;
+        private Button btnSuspend, btnRecall;
+        private int _loadedDraftSaleID = 0;
 
         // ── البيانات ──────────────────────────────────────────
         private List<POSItem> _items = new List<POSItem>();
@@ -309,6 +311,18 @@ namespace ChickenDist.Forms
                 btnKitchen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
                 btnKitchen.Click += (s, e) => { if (_lastSaleID > 0) try { new FrmKitchenPrint(_lastSaleID); } catch { } };
                 pnlTotals.Controls.Add(btnKitchen);
+
+                btnSuspend = Theme.MakeButton("⏳ تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
+                btnSuspend.Name = "btnSuspend";
+                btnSuspend.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+                btnSuspend.Click += (s, e) => SuspendCurrentOrder();
+                pnlTotals.Controls.Add(btnSuspend);
+
+                btnRecall = Theme.MakeButton("📋 الطلبات\nالمعلقة (F4)", Color.FromArgb(52, 152, 219), new Point(0, 130), new Size(140, 55));
+                btnRecall.Name = "btnRecall";
+                btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                btnRecall.Click += (s, e) => RecallDraftSale();
+                pnlTotals.Controls.Add(btnRecall);
             }
 
             this.Controls.Add(pnlTotals);
@@ -367,23 +381,60 @@ namespace ChickenDist.Forms
             // الباقي: أقصى اليسار
             lblChange.Location = new Point(20, 45);
             lblChange.Size     = new Size(Math.Max(100, midX - 130), 40);
-            // الأزرار: توزيع من اليمين لليسار
-            // زر بون المطبخ (مطاعم فقط) يزيح الأزرار قليلاً
+            // الأزرار: توزيع ديناميكي من اليمين ليسار لتفادي أي تداخل
             var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
-            int extraShift = btnKitchenCtrl != null ? 100 : 0;
+            var btnSuspendCtrl = pnlTotals.Controls["btnSuspend"];
+            var btnRecallCtrl = pnlTotals.Controls["btnRecall"];
+
             if (_btnPrint    != null) { _btnPrint.Location    = new Point(totW - 135, 130);             _btnPrint.Size    = new Size(115, 55); }
             if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 250, 130);             _btnWhatsApp.Size = new Size(110, 55); }
             if (btnOpenDrawer!= null) { btnOpenDrawer.Location= new Point(totW - 395, 130);             btnOpenDrawer.Size= new Size(140, 55); }
-            if (btnKitchenCtrl != null){ btnKitchenCtrl.Location = new Point(totW - 490, 130);          btnKitchenCtrl.Size = new Size(90, 55); extraShift = 95; }
-            if (btnCancel    != null) { btnCancel.Location    = new Point(totW - 575 - extraShift, 130);btnCancel.Size    = new Size(175, 55); }
-            if (btnNew       != null) { btnNew.Location       = new Point(totW - 790 - extraShift, 130);btnNew.Size       = new Size(210, 55); }
-            if (btnPay       != null) { btnPay.Location       = new Point(20, 130);                     btnPay.Size       = new Size(Math.Max(150, totW - 815 - extraShift), 55); }
+
+            int currentX = totW - 395;
+            if (btnKitchenCtrl != null)
+            {
+                currentX -= 95;
+                btnKitchenCtrl.Location = new Point(currentX, 130);
+                btnKitchenCtrl.Size = new Size(90, 55);
+            }
+            if (btnSuspendCtrl != null)
+            {
+                currentX -= 135;
+                btnSuspendCtrl.Location = new Point(currentX, 130);
+                btnSuspendCtrl.Size = new Size(130, 55);
+            }
+            if (btnRecallCtrl != null)
+            {
+                currentX -= 145;
+                btnRecallCtrl.Location = new Point(currentX, 130);
+                btnRecallCtrl.Size = new Size(140, 55);
+            }
+
+            if (btnCancel != null)
+            {
+                currentX -= 180;
+                btnCancel.Location = new Point(currentX, 130);
+                btnCancel.Size = new Size(175, 55);
+            }
+            if (btnNew != null)
+            {
+                currentX -= 215;
+                btnNew.Location = new Point(currentX, 130);
+                btnNew.Size = new Size(210, 55);
+            }
+            if (btnPay != null)
+            {
+                btnPay.Location = new Point(20, 130);
+                btnPay.Size = new Size(Math.Max(150, currentX - 30), 55);
+            }
         }
 
         // ── اختصارات لوحة المفاتيح ───────────────────────────
         private void FrmPOS_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F2) { NewInvoice(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F3 && AppConfig.IsRestaurant) { SuspendCurrentOrder(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F4 && AppConfig.IsRestaurant) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
             else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
@@ -898,6 +949,12 @@ namespace ChickenDist.Forms
             {
                 DbHelper.RunInTransaction((con, trans) =>
                 {
+                    if (_loadedDraftSaleID > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", _loadedDraftSaleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", _loadedDraftSaleID));
+                    }
+
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                     string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                     int warehouseID = 1;
@@ -1079,6 +1136,7 @@ namespace ChickenDist.Forms
             txtPaid.Text = "0";
             txtBarcode.Clear();
             chkRedeemPoints.Checked = false;
+            _loadedDraftSaleID = 0;
             if (AppConfig.IsRestaurant)
             {
                 if (txtTableNum != null) txtTableNum.Clear();
@@ -1752,6 +1810,259 @@ namespace ChickenDist.Forms
                 }
             }
             catch { }
+        }
+
+        private void SuspendCurrentOrder()
+        {
+            if (_items.Count == 0) { MessageBox.Show("لا يوجد أصناف في الفاتورة لتعليقها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
+            // Extract restaurant fields if active
+            string orderType = null;
+            string tableNum = null;
+            int? selectedDriver = null;
+            if (AppConfig.IsRestaurant)
+            {
+                orderType = rbDineIn.Checked ? "DineIn" : rbDelivery.Checked ? "Delivery" : "Takeaway";
+                tableNum = rbDineIn.Checked ? txtTableNum.Text.Trim() : null;
+                if (rbDelivery.Checked && cboDeliveryDriver.SelectedItem is ComboItem driverItem && driverItem.ID > 0)
+                {
+                    selectedDriver = driverItem.ID;
+                }
+            }
+            int clientID = 0;
+            if (cboClient.SelectedItem is ComboItem ci) clientID = ci.ID;
+
+            try
+            {
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    // If we are updating an existing draft, we can delete the old one first
+                    if (_loadedDraftSaleID > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", _loadedDraftSaleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", _loadedDraftSaleID));
+                    }
+
+                    var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
+                    string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
+                    int warehouseID = 1;
+                    decimal total = 0;
+                    foreach (var item in _items) total += item.Total;
+
+                    // Insert Sales as IsPosted = 0 (Draft)
+                    int saleID = DbHelper.ExecuteInsertTrans(trans,
+                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge,OrderType,TableNumber)
+                          VALUES (@sc,GETDATE(),'Cash',@cid,@did,@tot,0,0,'POS_DRAFT',@emp,0,@wid,N'قطاعي',@sid,0,0,@ot,@tn)",
+                        DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                        DbHelper.P("@did", selectedDriver.HasValue ? (object)selectedDriver.Value : DBNull.Value),
+                        DbHelper.P("@tot", total),
+                        DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
+                        DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
+                        DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
+                        DbHelper.P("@tn", string.IsNullOrEmpty(tableNum) ? DBNull.Value : (object)tableNum));
+
+                    if (saleID <= 0) throw new Exception("فشل حفظ تعليق الطلب.");
+
+                    foreach (var item in _items)
+                    {
+                        DbHelper.ExecuteInsertTrans(trans,
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn)",
+                            DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
+                            DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
+                            DbHelper.P("@discAmt", item.DiscountAmt),
+                            DbHelper.P("@un", (object)item.UnitName ?? DBNull.Value),
+                            DbHelper.P("@f", item.Factor),
+                            DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
+                            DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
+                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
+                    }
+                    _lastSaleID = saleID;
+                });
+
+                // Print kitchen boun
+                try { new FrmKitchenPrint(_lastSaleID); } catch { }
+
+                MessageBox.Show("تم تعليق الطلب وطباعة البون بنجاح.", "تم التعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                NewInvoice();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmPOS.SuspendCurrentOrder", ex);
+                MessageBox.Show("حدث خطأ أثناء تعليق الطلب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void RecallDraftSale()
+        {
+            using (Form dlg = new Form())
+            {
+                dlg.Text = "📋 الطلبات المعلقة والطاولات النشطة";
+                dlg.Size = new Size(700, 500);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.Font = this.Font;
+                dlg.BackColor = Theme.BgMain;
+
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 50, Padding = new Padding(6) };
+                var txtSearch = new TextBox { Width = 250, Height = 28, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle };
+                var lblSearch = new Label { Text = "🔍 بحث سريع (طاولة/عميل):", Width = 160, Height = 25, TextAlign = ContentAlignment.MiddleLeft };
+                
+                var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
+                flow.Controls.Add(txtSearch);
+                flow.Controls.Add(lblSearch);
+                pnlSearch.Controls.Add(flow);
+                dlg.Controls.Add(pnlSearch);
+
+                var dg = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = Color.White,
+                    AllowUserToAddRows = false,
+                    RowHeadersVisible = false,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    Font = new Font("Segoe UI", 10f),
+                    GridColor = Color.LightGray,
+                    ReadOnly = true
+                };
+                dlg.Controls.Add(dg);
+
+                var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgHeader, Padding = new Padding(10) };
+                var btnLoad = Theme.MakeButton("✅ استرجاع الطلب", Theme.Primary, new Point(10, 10), new Size(160, 40));
+                var btnDelete = Theme.MakeButton("❌ حذف المعلق", Theme.Danger, new Point(180, 10), new Size(140, 40));
+                var btnCancelDraft = Theme.MakeButton("رجوع", Color.FromArgb(70,70,70), new Point(330, 10), new Size(100, 40));
+
+                pnlButtons.Controls.Add(btnLoad);
+                pnlButtons.Controls.Add(btnDelete);
+                pnlButtons.Controls.Add(btnCancelDraft);
+                dlg.Controls.Add(pnlButtons);
+
+                // Fetch Draft Sales
+                Action refreshDrafts = () =>
+                {
+                    DataTable dt = DbHelper.Query(
+                        @"SELECT s.SaleID, s.SaleCode AS [رقم الفاتورة], 
+                                 s.SaleDate AS [التاريخ والوقت],
+                                 CASE s.OrderType 
+                                    WHEN 'DineIn' THEN N'🍽️ صالة (' + ISNULL(s.TableNumber,'') + ')'
+                                    WHEN 'Delivery' THEN N'🛵 توصيل'
+                                    ELSE N'🛍️ تيك أواي'
+                                 END AS [نوع الطلب],
+                                 ISNULL(s.TableNumber, '') AS [رقم الطاولة],
+                                 ISNULL(c.ClientName, N'---') AS [العميل],
+                                 s.TotalAmount AS [الإجمالي]
+                          FROM Sales s
+                          LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                          WHERE s.IsPosted = 0 AND (s.Notes = 'POS_DRAFT' OR s.Notes = 'POS')
+                          ORDER BY s.SaleDate DESC");
+                    
+                    dg.DataSource = dt;
+                    if (dg.Columns.Contains("SaleID")) dg.Columns["SaleID"].Visible = false;
+                    if (dg.Columns.Contains("رقم الطاولة")) dg.Columns["رقم الطاولة"].Visible = false;
+                };
+
+                txtSearch.TextChanged += (s, e) =>
+                {
+                    if (dg.DataSource is DataTable dt)
+                    {
+                        string val = txtSearch.Text.Trim().Replace("'", "''");
+                        dt.DefaultView.RowFilter = string.Format("[نوع الطلب] LIKE '%{0}%' OR [العميل] LIKE '%{0}%' OR [رقم الفاتورة] LIKE '%{0}%'", val);
+                    }
+                };
+
+                btnLoad.Click += (s, e) =>
+                {
+                    if (dg.SelectedRows.Count == 0) return;
+                    int saleId = Convert.ToInt32(dg.SelectedRows[0].Cells["SaleID"].Value);
+
+                    // Load client info, order type, table num, driver ID
+                    DataRow saleRow = DbHelper.Query("SELECT ClientID, OrderType, TableNumber, DriverID FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleId)).Rows[0];
+                    
+                    int clientId = saleRow["ClientID"] != DBNull.Value ? Convert.ToInt32(saleRow["ClientID"]) : 0;
+                    string ot = saleRow["OrderType"]?.ToString();
+                    string tn = saleRow["TableNumber"]?.ToString();
+                    int driverId = saleRow["DriverID"] != DBNull.Value ? Convert.ToInt32(saleRow["DriverID"]) : 0;
+
+                    // Set client
+                    if (cboClient != null)
+                    {
+                        cboClient.SelectedIndex = 0;
+                        for (int i = 0; i < cboClient.Items.Count; i++)
+                        {
+                            if (cboClient.Items[i] is ComboItem ci && ci.ID == clientId)
+                            {
+                                cboClient.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Set Order Type and Table Number
+                    if (AppConfig.IsRestaurant)
+                    {
+                        if (ot == "DineIn") { rbDineIn.Checked = true; txtTableNum.Text = tn; }
+                        else if (ot == "Delivery") { rbDelivery.Checked = true; }
+                        else { rbTakeaway.Checked = true; }
+
+                        if (cboDeliveryDriver != null)
+                        {
+                            cboDeliveryDriver.SelectedIndex = 0;
+                            for (int i = 0; i < cboDeliveryDriver.Items.Count; i++)
+                            {
+                                if (cboDeliveryDriver.Items[i] is ComboItem di && di.ID == driverId)
+                                {
+                                    cboDeliveryDriver.SelectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Load items
+                    var itemsDt = SaleDAL.GetItems(saleId);
+                    _items.Clear();
+                    foreach (DataRow iRow in itemsDt.Rows)
+                    {
+                        _items.Add(new POSItem
+                        {
+                            ProductID = Convert.ToInt32(iRow["ProductID"]),
+                            Code = iRow["PartNumber"]?.ToString() ?? iRow["ProductID"].ToString(),
+                            Name = iRow["ProductName"].ToString(),
+                            UnitName = iRow["UnitName"]?.ToString() ?? "",
+                            Factor = Convert.ToDecimal(iRow["Factor"]),
+                            Qty = Convert.ToDecimal(iRow["Quantity"]),
+                            Price = Convert.ToDecimal(iRow["UnitPrice"]),
+                            Total = Convert.ToDecimal(iRow["TotalPrice"]),
+                            DiscountAmt = Convert.ToDecimal(iRow["DiscountAmt"]),
+                            KitchenNotes = iRow.Table.Columns.Contains("KitchenNotes") && iRow["KitchenNotes"] != DBNull.Value ? iRow["KitchenNotes"].ToString() : ""
+                        });
+                    }
+
+                    _loadedDraftSaleID = saleId;
+                    RefreshGrid();
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+
+                btnDelete.Click += (s, e) =>
+                {
+                    if (dg.SelectedRows.Count == 0) return;
+                    if (MessageBox.Show("هل أنت متأكد من حذف هذا الطلب المعلق نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        int saleId = Convert.ToInt32(dg.SelectedRows[0].Cells["SaleID"].Value);
+                        SaleDAL.DeleteDraftSale(saleId);
+                        refreshDrafts();
+                    }
+                };
+
+                btnCancelDraft.Click += (s, e) => dlg.Close();
+                dg.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) btnLoad.PerformClick(); };
+
+                refreshDrafts();
+                dlg.ShowDialog();
+            }
         }
 
         private class ColEntry

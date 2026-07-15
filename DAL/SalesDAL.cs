@@ -76,7 +76,7 @@ namespace ChickenDist.DAL
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
                           p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation,
-                          si.UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI
+                          si.UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI, si.KitchenNotes
                   FROM SaleItems si JOIN Products p ON si.ProductID=p.ProductID
                   WHERE si.SaleID=@id",
                 DbHelper.P("@id", saleID));
