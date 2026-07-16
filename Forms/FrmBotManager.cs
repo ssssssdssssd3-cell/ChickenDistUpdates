@@ -25,6 +25,7 @@ namespace ChickenDist.Forms
         private Timer tmrStatus;
         private Timer tmrCountdown;
         private int _qrSecondsLeft = 0;
+        private string _lastQrBase64 = "";
         private HttpClient _httpClient;
         private Process _nodeProcess;
         private TextBox txtAccUrl;
@@ -520,6 +521,7 @@ pause
                         lblQrCountdown.Visible = false;
                         tmrCountdown.Stop();
                         _qrSecondsLeft = 0;
+                        _lastQrBase64 = "";
                         tmrStatus.Interval = 20000; // Poll less frequently when online
                     }
                     else if (statusVal == "PairingCode_Ready")
@@ -538,6 +540,7 @@ pause
                         btnToggle.Enabled = true;
 
                         DisplayPairingCode(code);
+                        _lastQrBase64 = "";
 
                         tmrStatus.Interval = 3000;
                         lblQrCountdown.Visible = false;
@@ -570,6 +573,7 @@ pause
                         btnToggle.BackColor = Color.FromArgb(52, 152, 219);
                         btnToggle.Enabled = false;
                         pbQrCode.Image = null;
+                        _lastQrBase64 = "";
                         tmrStatus.Interval = 5000; // Poll faster when connecting
                     }
                     else
@@ -580,6 +584,7 @@ pause
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
                         btnToggle.Enabled = true;
                         pbQrCode.Image = null;
+                        _lastQrBase64 = "";
                         tmrStatus.Interval = 10000; // Default offline polling
                     }
                 }
@@ -630,6 +635,12 @@ pause
                 string base64 = normalizedJson.Substring(base64Start, quoteEnd - base64Start).Trim();
                 // Remove any whitespace/newlines that may appear in large base64 blocks
                 base64 = base64.Replace(" ", "").Replace("\n", "").Replace("\r", "");
+
+                if (base64 == _lastQrBase64)
+                {
+                    return; // نفس الكود، تخطي الإعادة وتحديث السجلات
+                }
+                _lastQrBase64 = base64;
 
                 byte[] bytes = Convert.FromBase64String(base64);
                 using (MemoryStream ms = new MemoryStream(bytes))

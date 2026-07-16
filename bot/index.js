@@ -290,6 +290,27 @@ function listenForOrderActions() {
         });
 }
 
+// Helper to resolve the latest active WhatsApp Web version from community registry
+async function getLatestWppVersion() {
+    const fallback = '2.3000.1043280533-alpha';
+    try {
+        console.log('[WhatsApp]: Resolving latest Web version from wppconnect registry...');
+        const response = await fetch('https://raw.githubusercontent.com/wppconnect-team/wa-version/main/versions.json');
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.currentVersion) {
+                console.log(`[WhatsApp]: Dynamically resolved latest Web version: ${data.currentVersion}`);
+                return data.currentVersion;
+            }
+        } else {
+            console.warn(`[WhatsApp]: Non-ok response from registry: ${response.status}`);
+        }
+    } catch (err) {
+        console.warn(`[WhatsApp]: Failed to fetch latest web version, using fallback: ${fallback}. Error: ${err.message}`);
+    }
+    return fallback;
+}
+
 // -------------------------------------------------------------
 // 1. WhatsApp Bot Initializer
 // -------------------------------------------------------------
@@ -306,12 +327,16 @@ async function startBot(pairingPhone = null) {
     
     botStatus = 'Connecting';
     updateFirebaseStatus('Connecting');
+
+    const webVersion = await getLatestWppVersion();
+    const remotePath = `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${webVersion}.html`;
+    console.log(`[WhatsApp]: Initializing client with remotePath: ${remotePath}`);
     
     client = new Client({
         authStrategy: new LocalAuth(),
         webVersionCache: {
             type: 'remote',
-            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1039201455-alpha.html'
+            remotePath: remotePath
         },
         puppeteer: {
             headless: true,
