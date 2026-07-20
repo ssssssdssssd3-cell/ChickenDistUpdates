@@ -1223,8 +1223,8 @@ namespace ChickenDist.Forms
 			// 1. Income Statement (P&L)
 			dgPL.Columns.Clear();
 			dgPL.Rows.Clear();
-			dgPL.Columns.Add("Item", "البند التشغيلي");
-			dgPL.Columns.Add("Value", "القيمة (ج.م)");
+			dgPL.Columns.Add("Item", "إسم الحساب");
+			dgPL.Columns.Add("Value", "القيمة");
 
 			try
 			{
@@ -1234,7 +1234,21 @@ namespace ChickenDist.Forms
 					DataRow r = dt.Rows[0];
 					decimal grossSales = Convert.ToDecimal(r["GrossSales"]);
 					decimal returns = Convert.ToDecimal(r["SalesReturns"]);
-					decimal netSales = grossSales - returns;
+					decimal salesAfterReturns = grossSales - returns;
+
+					// جلب خصومات المبيعات للفترة
+					object discountsObj = DbHelper.Scalar(
+						@"SELECT ISNULL(SUM(DiscountAmount), 0) 
+						  FROM Sales 
+						  WHERE IsPosted = 1 
+							AND CAST(SaleDate AS DATE) BETWEEN @f AND @t 
+							AND (@wid IS NULL OR WarehouseID = @wid)", 
+						DbHelper.P("@f", dtpFrom.Value.Date), 
+						DbHelper.P("@t", dtpTo.Value.Date), 
+						DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+					decimal discounts = discountsObj != null ? Convert.ToDecimal(discountsObj) : 0m;
+
+					decimal netSales = salesAfterReturns - discounts;
 
 					decimal grossCOGS = Convert.ToDecimal(r["GrossCOGS"]);
 					decimal returnsCOGS = Convert.ToDecimal(r["ReturnsCOGS"]);
@@ -1242,23 +1256,52 @@ namespace ChickenDist.Forms
 
 					decimal grossProfit = netSales - netCOGS;
 
-					decimal expenses = Convert.ToDecimal(r["GeneralExpenses"]);
+					// إضافة البنود بالترتيب الدقيق المطلوب
+					AddPlRow(dgPL, "قيمة المبيعات الافتراضية", grossSales, false);
+					AddPlRow(dgPL, "قيمة المرتجعات", returns, true);
+					AddPlRow(dgPL, "قيمة المبيعات بعد المرتجع", salesAfterReturns, false, Color.FromArgb(45, 65, 90));
+					AddPlRow(dgPL, "خصم البيع", discounts, true);
+					AddPlRow(dgPL, "قيمة صافي المبيعات", netSales, false, Color.FromArgb(30, 45, 60));
+					AddPlRow(dgPL, "تكلفة المبيعات", netCOGS, true);
+					AddPlRow(dgPL, "الربح بعد التكلفة", grossProfit, grossProfit < 0, Color.FromArgb(50, 40, 70));
+
+					// تفصيل المصروفات التشغيلية
+					DataTable dtExps = DbHelper.Query(@"
+						SELECT ISNULL(e.ExpenseType, N'مصروفات متنوعة') AS TypeName, SUM(e.Amount) AS Total
+						FROM Expenses e
+						WHERE CAST(e.ExpenseDate AS DATE) BETWEEN @f AND @t
+						GROUP BY e.ExpenseType
+						ORDER BY SUM(e.Amount) DESC", 
+						DbHelper.P("@f", dtpFrom.Value.Date), 
+						DbHelper.P("@t", dtpTo.Value.Date));
+
+					decimal totalExpenses = 0m;
+					foreach (DataRow re in dtExps.Rows)
+					{
+						string expName = re["TypeName"].ToString();
+						decimal amt = Convert.ToDecimal(re["Total"]);
+						AddPlRow(dgPL, expName, amt, true);
+						totalExpenses += amt;
+					}
+
 					decimal whWastage = Convert.ToDecimal(r["WarehouseWastage"]);
 					decimal drWastage = Convert.ToDecimal(r["DriverWastage"]);
 
-					decimal netProfit = grossProfit - expenses - whWastage - drWastage;
+					if (whWastage > 0)
+					{
+						AddPlRow(dgPL, "هالك وتالف المستودعات", whWastage, true);
+						totalExpenses += whWastage;
+					}
+					if (drWastage > 0)
+					{
+						AddPlRow(dgPL, "هالك وتالف المناديب", drWastage, true);
+						totalExpenses += drWastage;
+					}
 
-					AddPlRow(dgPL, "🟢 إجمالي المبيعات", grossSales, false);
-					AddPlRow(dgPL, "🔴 مرتجعات المبيعات (-)", returns, true);
-					AddPlRow(dgPL, "⚖️ صافي الإيرادات", netSales, false, Color.FromArgb(30, 45, 60));
-					AddPlRow(dgPL, "🔴 تكلفة البضاعة المباعة (-)", grossCOGS, true);
-					AddPlRow(dgPL, "🟢 تكلفة مرتجع المبيعات (+)", returnsCOGS, false);
-					AddPlRow(dgPL, "⚖️ صافي تكلفة المبيعات", netCOGS, true, Color.FromArgb(45, 45, 30));
-					AddPlRow(dgPL, "💰 مجمل الأرباح التشغيلية", grossProfit, grossProfit < 0, Color.FromArgb(30, 30, 50));
-					AddPlRow(dgPL, "🔴 المصاريف التشغيلية والعمومية (-)", expenses, true);
-					AddPlRow(dgPL, "🔴 هالك وتالف المستودعات (-)", whWastage, true);
-					AddPlRow(dgPL, "🔴 هالك وتالف المناديب (-)", drWastage, true);
-					AddPlRow(dgPL, "🏆 صافي الربح / الخسارة النهائي", netProfit, netProfit < 0, Color.FromArgb(30, 60, 30));
+					decimal netProfit = grossProfit - totalExpenses;
+
+					AddPlRow(dgPL, "إجمالي المصروفات", totalExpenses, true, Color.FromArgb(70, 45, 45));
+					AddPlRow(dgPL, "صافي الربح", netProfit, netProfit < 0, Color.FromArgb(30, 60, 30));
 				}
 			}
 			catch (Exception ex)
