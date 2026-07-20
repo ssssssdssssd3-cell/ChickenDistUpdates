@@ -30,6 +30,10 @@ namespace ChickenDist.Forms
         private NumericUpDown nudUnit3Factor;
         private Button btnUnit1MultiBarcode, btnUnit2MultiBarcode;
         private Label lblUnit1Header, lblUnit2Header;
+        // flags لتتبع التعديل اليدوي على أسعار البيع الفرعية
+        private bool _unit1SaleOverride = false;
+        private bool _unit2SaleOverride = false;
+        private bool _inRecalc = false; // منع التداخل
 
         public FrmProductCard(int id = 0)
         {
@@ -195,6 +199,10 @@ namespace ChickenDist.Forms
 
                 AddNud(grpUnit2, "شراء الوسطى:", 10, 310, out nudUnit2PurchasePrice, 2);
                 AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, 345, out nudUnit2SalePrice, 2);
+                // زر إعادة حساب سعر الوسطى
+                var btnResetU2a = new Button { Text = "🔄", Location = new Point(200, 348), Width = 26, Height = 20, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(80, 160, 240), ForeColor = Color.White, Cursor = Cursors.Hand, Font = new Font("Segoe UI", 7f) };
+                btnResetU2a.Click += (s, e) => ResetUnit2SaleOverride();
+                grpUnit2.Controls.Add(btnResetU2a);
 
                 // Hide Expiry controls
                 chkHasExpiry = new CheckBox { Visible = false };
@@ -232,6 +240,10 @@ namespace ChickenDist.Forms
 
                 AddNud(grpUnit2, "شراء الوسطى:", 10, 160, out nudUnit2PurchasePrice, 2);
                 AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, 195, out nudUnit2SalePrice, 2);
+                // زر إعادة حساب سعر الوسطى
+                var btnResetU2b = new Button { Text = "🔄", Location = new Point(200, 198), Width = 26, Height = 20, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(80, 160, 240), ForeColor = Color.White, Cursor = Cursors.Hand, Font = new Font("Segoe UI", 7f) };
+                btnResetU2b.Click += (s, e) => ResetUnit2SaleOverride();
+                grpUnit2.Controls.Add(btnResetU2b);
 
                 // Hide Expiry controls
                 chkHasExpiry = new CheckBox { Visible = false };
@@ -273,6 +285,10 @@ namespace ChickenDist.Forms
 
                 AddNud(grpUnit2, "شراء الوسطى:", 10, 160, out nudUnit2PurchasePrice, 2);
                 AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, 195, out nudUnit2SalePrice, 2);
+                // زر إعادة حساب سعر الوسطى
+                var btnResetU2c = new Button { Text = "🔄", Location = new Point(200, 198), Width = 26, Height = 20, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(80, 160, 240), ForeColor = Color.White, Cursor = Cursors.Hand, Font = new Font("Segoe UI", 7f) };
+                btnResetU2c.Click += (s, e) => ResetUnit2SaleOverride();
+                grpUnit2.Controls.Add(btnResetU2c);
 
                 if (bizType == "General")
                 {
@@ -330,6 +346,10 @@ namespace ChickenDist.Forms
 
             AddNud(grpUnit1, "شراء الصغرى:", 10, 125, out nudUnit1PurchasePrice, 2);
             AddNud(grpUnit1, "بيع قطاعي الصغرى:", 10, 160, out nudUnit1SalePrice, 2);
+            // زر إعادة حساب سعر الصغرى
+            var btnResetU1 = new Button { Text = "🔄", Location = new Point(200, 163), Width = 26, Height = 20, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(80, 160, 240), ForeColor = Color.White, Cursor = Cursors.Hand, Font = new Font("Segoe UI", 7f) };
+            btnResetU1.Click += (s, e) => ResetUnit1SaleOverride();
+            grpUnit1.Controls.Add(btnResetU1);
 
             var lblRelationHeader = new Label { Text = "⚙️ علاقة الوحدة الكبرى بالوسطى/الصغرى:", Location = new Point(10, 205), Width = 280, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
             grpUnit1.Controls.Add(lblRelationHeader);
@@ -345,16 +365,22 @@ namespace ChickenDist.Forms
             cboDefaultSaleUnit.SelectedIndex = 0; // Default is الكبرى
             grpUnit1.Controls.AddRange(new Control[] { lblDefaultSaleUnit, cboDefaultSaleUnit });
 
-            // Make unit secondary prices read-only and distinctly styled so they are calculated-only
-            nudUnit2SalePrice.ReadOnly = true;
+            // أسعار الشراء: للقراءة فقط (محسوبة)
             nudUnit2PurchasePrice.ReadOnly = true;
-            nudUnit1SalePrice.ReadOnly = true;
             nudUnit1PurchasePrice.ReadOnly = true;
-
-            nudUnit2SalePrice.BackColor = SystemColors.Control;
             nudUnit2PurchasePrice.BackColor = SystemColors.Control;
-            nudUnit1SalePrice.BackColor = SystemColors.Control;
             nudUnit1PurchasePrice.BackColor = SystemColors.Control;
+
+            // أسعار البيع الفرعية: قابلة للتعديل، بخلفية مميزة
+            nudUnit2SalePrice.ReadOnly = false;
+            nudUnit1SalePrice.ReadOnly = false;
+            nudUnit2SalePrice.BackColor = Color.FromArgb(255, 255, 220); // أصفر فاتح = قابل للتعديل
+            nudUnit1SalePrice.BackColor = Color.FromArgb(255, 255, 220);
+
+            // إضافة tooltip يوضح أن القيمة قابلة للتعديل اليدوي
+            var toolTip = new ToolTip();
+            toolTip.SetToolTip(nudUnit2SalePrice, "يُحسب تلقائياً من سعر الكبرى - يمكنك تعديله يدوياً");
+            toolTip.SetToolTip(nudUnit1SalePrice, "يُحسب تلقائياً من سعر الكبرى - يمكنك تعديله يدوياً");
 
             // --- Footer Panel for Save / Cancel ---
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgCard };
@@ -372,6 +398,10 @@ namespace ChickenDist.Forms
             cboUnit2Name.TextChanged += (s, e) => UpdateUnitHeaders();
             cboUnit1Name.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
             cboUnit1Name.TextChanged += (s, e) => UpdateUnitHeaders();
+
+            // كشف تعديل يدوي على أسعار البيع الفرعية
+            nudUnit2SalePrice.ValueChanged += (s, e) => { if (!_inRecalc) { _unit2SaleOverride = true; nudUnit2SalePrice.BackColor = Color.FromArgb(200, 255, 200); } };
+            nudUnit1SalePrice.ValueChanged += (s, e) => { if (!_inRecalc) { _unit1SaleOverride = true; nudUnit1SalePrice.BackColor = Color.FromArgb(200, 255, 200); } };
 
             // Bind events for live calculation of prices
             nudPrice.ValueChanged += (s, e) => RecalculateSubUnitPrices();
@@ -392,48 +422,77 @@ namespace ChickenDist.Forms
         {
             try
             {
-                decimal largeSale = nudPrice.Value;
+                _inRecalc = true;
+
+                decimal largeSale     = nudPrice.Value;
                 decimal largePurchase = nudPurchasePrice.Value;
-                
+
                 string unit2 = cboUnit2Name.Text.Trim();
                 string unit1 = cboUnit1Name.Text.Trim();
-                
+
                 decimal u3f = nudUnit3Factor.Value; // عدد المتوسطة في الكبرى
                 if (u3f <= 0) u3f = 1;
-                
+
                 decimal u2f = nudUnit2Factor.Value; // عدد الصغرى في المتوسطة (أو في الكبرى مباشرة)
                 if (u2f <= 0) u2f = 1;
+
+                // ─────────────────────────────────────────────────────────────
+                // حساب أسعار الشراء دائماً (للقراءة فقط)
+                // حساب أسعار البيع فقط إذا لم يُعدّلها المستخدم يدوياً
+                // ─────────────────────────────────────────────────────────────
 
                 // 1. حالة وجود 3 وحدات (كبرى، متوسطة، صغرى)
                 if (!string.IsNullOrEmpty(unit2) && !string.IsNullOrEmpty(unit1))
                 {
-                    // سعر المتوسطة = سعر الكبرى / عدد المتوسطة في الكبرى
-                    nudUnit2SalePrice.Value = largeSale / u3f;
+                    decimal calcU2Sale = largeSale / u3f;
                     nudUnit2PurchasePrice.Value = largePurchase / u3f;
-                    
-                    // سعر الصغرى = سعر المتوسطة / عدد الصغرى في المتوسطة
-                    nudUnit1SalePrice.Value = nudUnit2SalePrice.Value / u2f;
+
+                    if (!_unit2SaleOverride)
+                        nudUnit2SalePrice.Value = calcU2Sale;
+
+                    decimal calcU1Sale = (!_unit2SaleOverride ? calcU2Sale : nudUnit2SalePrice.Value) / u2f;
                     nudUnit1PurchasePrice.Value = nudUnit2PurchasePrice.Value / u2f;
+
+                    if (!_unit1SaleOverride)
+                        nudUnit1SalePrice.Value = calcU1Sale;
                 }
                 // 2. حالة وجود وحدتين فقط (كبرى وصغرى) - بدون وحدة متوسطة
                 else if (string.IsNullOrEmpty(unit2) && !string.IsNullOrEmpty(unit1))
                 {
-                    nudUnit2SalePrice.Value = 0;
+                    nudUnit2SalePrice.Value     = 0;
                     nudUnit2PurchasePrice.Value = 0;
-                    
-                    // سعر الصغرى = سعر الكبرى / المعامل
-                    nudUnit1SalePrice.Value = largeSale / u2f;
+
                     nudUnit1PurchasePrice.Value = largePurchase / u2f;
+
+                    if (!_unit1SaleOverride)
+                        nudUnit1SalePrice.Value = largeSale / u2f;
                 }
                 else
                 {
-                    nudUnit2SalePrice.Value = 0;
+                    nudUnit2SalePrice.Value     = 0;
                     nudUnit2PurchasePrice.Value = 0;
-                    nudUnit1SalePrice.Value = 0;
+                    nudUnit1SalePrice.Value     = 0;
                     nudUnit1PurchasePrice.Value = 0;
                 }
             }
-            catch {}
+            catch { }
+            finally { _inRecalc = false; }
+        }
+
+        /// <summary>إعادة ضبط تعديل سعر بيع الوسطى للقيمة المحسوبة من الكبرى</summary>
+        private void ResetUnit2SaleOverride()
+        {
+            _unit2SaleOverride = false;
+            nudUnit2SalePrice.BackColor = Color.FromArgb(255, 255, 220);
+            RecalculateSubUnitPrices();
+        }
+
+        /// <summary>إعادة ضبط تعديل سعر بيع الصغرى للقيمة المحسوبة</summary>
+        private void ResetUnit1SaleOverride()
+        {
+            _unit1SaleOverride = false;
+            nudUnit1SalePrice.BackColor = Color.FromArgb(255, 255, 220);
+            RecalculateSubUnitPrices();
         }
 
         private void AddField(Control parent, string label, int x, int y, out TextBox txt)
