@@ -57,33 +57,37 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Top panel (Filters)
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 175, BackColor = Theme.BgCard, Padding = new Padding(12) };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 175, BackColor = Color.FromArgb(248, 250, 252), Padding = new Padding(12) };
             
+            Color labelColor = Color.FromArgb(30, 41, 59); // High contrast dark slate
+            Color inputBg = Color.White;
+            Color inputFg = Color.FromArgb(15, 23, 42);
+
             // Row 1: Search name/code & Category
-            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(480, 20), AutoSize = false, Width = 150, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleRight };
-            txtSearch = new TextBox { Location = new Point(70, 16), Width = 400, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11) };
+            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(480, 20), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtSearch = new TextBox { Location = new Point(70, 16), Width = 400, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;
             
-            var lblCat = new Label { Text = "التصنيف:", Location = new Point(480, 52), AutoSize = false, Width = 150, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleRight };
-            cboCategory = new ComboBox { Location = new Point(70, 48), Width = 400, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            var lblCat = new Label { Text = "التصنيف:", Location = new Point(480, 52), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            cboCategory = new ComboBox { Location = new Point(70, 48), Width = 400, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10) };
             cboCategory.SelectedIndexChanged += (s, e) => ApplyFilter();
 
             // Row 2: Brand & Company
-            var lblBrand = new Label { Text = "الماركة:", Location = new Point(480, 84), AutoSize = false, Width = 150, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleRight };
-            txtBrandFilter = new TextBox { Location = new Point(350, 80), Width = 120, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblBrand = new Label { Text = "الماركة:", Location = new Point(480, 84), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtBrandFilter = new TextBox { Location = new Point(350, 80), Width = 120, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtBrandFilter.TextChanged += (s, e) => ApplyFilter();
 
-            var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(230, 84), AutoSize = false, Width = 110, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleRight };
-            txtCompanyFilter = new TextBox { Location = new Point(70, 80), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(230, 84), AutoSize = false, Width = 110, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtCompanyFilter = new TextBox { Location = new Point(70, 80), Width = 150, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtCompanyFilter.TextChanged += (s, e) => ApplyFilter();
 
-            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(480, 116), AutoSize = false, Width = 150, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleRight };
-            txtPriceFrom = new TextBox { Location = new Point(320, 112), Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(480, 116), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtPriceFrom = new TextBox { Location = new Point(320, 112), Width = 150, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtPriceFrom.TextChanged += (s, e) => ApplyFilter();
 
-            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(250, 116), AutoSize = false, Width = 60, ForeColor = Theme.TextMain, TextAlign = ContentAlignment.MiddleCenter };
-            txtPriceTo = new TextBox { Location = new Point(70, 112), Width = 170, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(250, 116), AutoSize = false, Width = 60, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter };
+            txtPriceTo = new TextBox { Location = new Point(70, 112), Width = 170, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtPriceTo.TextChanged += (s, e) => ApplyFilter();
 
             // Row 3: Zero Stock checkbox
@@ -93,7 +97,8 @@ namespace ChickenDist.Forms
                 Location = new Point(70, 144),
                 Width = 400,
                 Height = 24,
-                ForeColor = Theme.TextMain,
+                ForeColor = labelColor,
+                Font = Theme.FontBold,
                 Checked = false
             };
             chkShowZeroStock.CheckedChanged += (s, e) => RefreshGrid();
@@ -110,7 +115,7 @@ namespace ChickenDist.Forms
             dgProducts = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -118,11 +123,11 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
+                GridColor = Color.FromArgb(226, 232, 240),
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Theme.BgCard,
-                    ForeColor = Theme.TextMain,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42),
                     SelectionBackColor = Theme.Primary,
                     SelectionForeColor = Color.White,
                     Font = Theme.FontMain
@@ -170,7 +175,7 @@ namespace ChickenDist.Forms
             dgUnits = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -178,7 +183,7 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
+                GridColor = Color.FromArgb(226, 232, 240),
                 DefaultCellStyle = dgProducts.DefaultCellStyle.Clone(),
                 ColumnHeadersDefaultCellStyle = dgProducts.ColumnHeadersDefaultCellStyle.Clone(),
                 EnableHeadersVisualStyles = false,
@@ -201,33 +206,37 @@ namespace ChickenDist.Forms
             pnlGrid.Controls.Add(dgProducts);
             pnlGrid.Controls.Add(pnlUnitsSection);
 
-            // Bottom Actions & Input Panel
-            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 105, BackColor = Theme.BgCard, Padding = new Padding(8, 4, 8, 4) };
+            // Bottom Actions & Input Panel (High Contrast Light Blue Panel)
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 108, BackColor = Color.FromArgb(241, 245, 249), Padding = new Padding(8, 4, 8, 4) };
 
-            var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(32, 40, 56), Padding = new Padding(6, 4, 6, 4) };
+            var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.FromArgb(226, 232, 240), Padding = new Padding(6, 5, 6, 5) };
 
-            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(780, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-            txtSelectedQty = new TextBox { Location = new Point(695, 10), Width = 80, Text = "1.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            Color labelDark = Color.FromArgb(15, 23, 42); // Ultra crisp dark blue/black
 
-            var lblPurchasePrice = new Label { Text = "💰 سعر الشراء:", Location = new Point(570, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-            txtSelectedPurchasePrice = new TextBox { Location = new Point(460, 10), Width = 105, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(780, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedQty = new TextBox { Location = new Point(695, 10), Width = 80, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            var lblSalePrice = new Label { Text = "🏷️ سعر البيع:", Location = new Point(345, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-            txtSelectedSalePrice = new TextBox { Location = new Point(235, 10), Width = 105, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblPurchasePrice = new Label { Text = "💰 سعر الشراء:", Location = new Point(570, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(460, 10), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(155, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-            txtSelectedDiscount = new TextBox { Location = new Point(65, 10), Width = 85, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblSalePrice = new Label { Text = "🏷️ سعر البيع:", Location = new Point(345, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedSalePrice = new TextBox { Location = new Point(235, 10), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(235, 30), AutoSize = true, ForeColor = Color.FromArgb(235, 100, 100), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(155, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedDiscount = new TextBox { Location = new Point(65, 10), Width = 85, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(235, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
             // فحص صلاحية تعديل السعر
             bool canEditPrice = Session.Role == "Admin" || Session.CanEditPrice("Purchases") || Session.CanEditPrice("Sales");
             if (!canEditPrice)
             {
                 txtSelectedPurchasePrice.ReadOnly = true;
-                txtSelectedPurchasePrice.BackColor = Color.FromArgb(45, 45, 55);
+                txtSelectedPurchasePrice.BackColor = Color.FromArgb(226, 232, 240);
+                txtSelectedPurchasePrice.ForeColor = Color.FromArgb(100, 116, 139);
                 txtSelectedSalePrice.ReadOnly = true;
-                txtSelectedSalePrice.BackColor = Color.FromArgb(45, 45, 55);
+                txtSelectedSalePrice.BackColor = Color.FromArgb(226, 232, 240);
+                txtSelectedSalePrice.ForeColor = Color.FromArgb(100, 116, 139);
                 lblPricePermissionNotice.Visible = true;
             }
             else
