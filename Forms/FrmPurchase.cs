@@ -574,7 +574,7 @@ namespace ChickenDist.Forms
             var tblTotals = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 2,
+                RowCount = 3,
                 ColumnCount = 6,
                 BackColor = Color.Transparent,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
@@ -586,8 +586,9 @@ namespace ChickenDist.Forms
             tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65));  // نوع خصم combo
             tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 45));  // قيمة label
             tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // قيمة textbox
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
 
             // صف 0: إجمالي الأصناف + خصم الفاتورة
             var lblItemsTotalLbl = new Label
@@ -718,8 +719,6 @@ namespace ChickenDist.Forms
             tblTotals.Controls.Add(lblItemCount, 5, 1);
 
             // صف 2: مصاريف الشحن ─────────────────────────────────────────────────
-            tblTotals.RowCount = 3;
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
 
             var lblShippingLbl = new Label
             {
