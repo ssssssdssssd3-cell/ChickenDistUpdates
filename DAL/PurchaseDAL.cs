@@ -50,7 +50,7 @@ namespace ChickenDist.DAL
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
-                @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
+                @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, N'---') AS SupplierName,
                          p.TotalAmount, p.Notes, p.SupplierID,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
@@ -68,12 +68,16 @@ namespace ChickenDist.DAL
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
                     AND (@supplierID IS NULL OR p.SupplierID = @supplierID)
-                    AND (@product IS NULL OR EXISTS (
-                        SELECT 1 FROM PurchaseItems pi2
-                        JOIN Products pr ON pi2.ProductID = pr.ProductID
-                        WHERE pi2.PurchaseID = p.PurchaseID
-                          AND (pr.ProductName LIKE N'%' + @product + N'%'
-                            OR pr.ProductCode LIKE N'%' + @product + N'%')
+                    AND (@product IS NULL OR (
+                        p.PurchaseCode LIKE N'%' + @product + N'%' OR
+                        p.SupplierInvoiceNo LIKE N'%' + @product + N'%' OR
+                        EXISTS (
+                            SELECT 1 FROM PurchaseItems pi2
+                            JOIN Products pr ON pi2.ProductID = pr.ProductID
+                            WHERE pi2.PurchaseID = p.PurchaseID
+                              AND (pr.ProductName LIKE N'%' + @product + N'%'
+                                OR pr.ProductCode LIKE N'%' + @product + N'%')
+                        )
                     ))
                   ORDER BY p.PurchaseDate DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
@@ -84,7 +88,7 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
         {
             return DbHelper.Query(
-                @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
+                @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, N'---') AS SupplierName,
                          p.TotalAmount, p.Notes, p.SupplierID,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
@@ -122,7 +126,7 @@ namespace ChickenDist.DAL
         public static DataTable GetDraftPurchases()
         {
             return DbHelper.Query(
-                @"SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType,
+                @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, N'---') AS SupplierName,
                          p.TotalAmount, p.Notes, p.SupplierID, p.WarehouseID,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
@@ -150,7 +154,8 @@ namespace ChickenDist.DAL
             List<PurchaseItemDTO> items,
             decimal discountAmount = 0m, decimal discountPct = 0m,
             decimal taxPct = 0m, decimal taxAmount = 0m,
-            bool isDraft = false, int? warehouseID = 1)
+            bool isDraft = false, int? warehouseID = 1,
+            string supplierInvoiceNo = "")
         {
             int returnedID = -1;
 
@@ -174,14 +179,15 @@ namespace ChickenDist.DAL
 
                 int purchaseID = DbHelper.ExecuteInsertTrans(trans,
                     @"INSERT INTO Purchases
-                        (PurchaseCode, PurchaseDate, PurchaseType, SupplierID,
+                        (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
                          Notes, CreatedBy, IsPosted, WarehouseID)
                       VALUES
-                        (@code, @dt, @typ, @sid,
+                        (@code, @sinv, @dt, @typ, @sid,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
                          @n, @by, @ip, @wid)",
                     DbHelper.P("@code",    code),
+                    DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                     DbHelper.P("@dt",      DateTime.Now),
                     DbHelper.P("@typ",     purchaseType),
                     DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -376,7 +382,7 @@ namespace ChickenDist.DAL
         }
 
         public static bool UpdatePurchase(int purchaseID, string purchaseType, int? supplierID, decimal total, string notes, List<PurchaseItemDTO> items,
-            decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID)
+            decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID, string supplierInvoiceNo = "")
         {
             try
             {
@@ -408,7 +414,7 @@ namespace ChickenDist.DAL
                         @"UPDATE Purchases 
                           SET PurchaseType=@typ, SupplierID=@sid, TotalAmount=@tot, Notes=@n, 
                               DiscountAmount=@discAmt, DiscountPct=@discPct, TaxPct=@taxPct, TaxAmount=@taxAmt,
-                              WarehouseID=@wid
+                              WarehouseID=@wid, SupplierInvoiceNo=@sinv
                           WHERE PurchaseID=@id",
                         DbHelper.P("@typ",     purchaseType),
                         DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -419,6 +425,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@taxPct",  taxPct),
                         DbHelper.P("@taxAmt",  taxAmt),
                         DbHelper.P("@wid",     wid),
+                        DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                         DbHelper.P("@id",      purchaseID));
 
                     foreach (var item in items)

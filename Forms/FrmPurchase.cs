@@ -18,7 +18,7 @@ namespace ChickenDist.Forms
         // ── حقول الرأس ─────────────────────────────────────────────────────────
         private ComboBox cboSupplier, cboProduct, cboWarehouse;
         private DateTimePicker dtpDate;
-        private TextBox txtNotes;
+        private TextBox txtNotes, txtSupplierInvoiceNo;
         private Label lblCashBalance;
         private Button btnSearchProduct;
 
@@ -268,7 +268,18 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(lblType,       4, 0);
             tbl.Controls.Add(pnlTypeBtns,   5, 0);
 
-            // ── صف 1: ملاحظات | الصنف | رصيد نقدي ───────────────────────────
+            // ── صف 1: رقم فاتورة المورد | ملاحظات | الصنف ───────────────────────────
+            var lblSupplierInv = MakeLabel("رقم فاتورة المورد:", 0, 0);
+            lblSupplierInv.Dock = DockStyle.Fill;
+            lblSupplierInv.TextAlign = ContentAlignment.MiddleRight;
+            lblSupplierInv.Margin = new Padding(2);
+            txtSupplierInvoiceNo = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Margin = new Padding(2, 3, 2, 3)
+            };
+
             var lblNotes = MakeLabel("ملاحظات:", 0, 0);
             lblNotes.Dock = DockStyle.Fill;
             lblNotes.TextAlign = ContentAlignment.MiddleRight;
@@ -313,11 +324,11 @@ namespace ChickenDist.Forms
             pnlProduct.Controls.Add(btnManualAdd);
 
             // إضافة — صف 1
-            tbl.Controls.Add(lblNotes,    0, 1);
-            tbl.Controls.Add(txtNotes,    1, 1);
-            tbl.Controls.Add(lblProd,     2, 1);
-            tbl.Controls.Add(pnlProduct,  3, 1);
-            tbl.Controls.Add(lblCashBalance, 4, 1);
+            tbl.Controls.Add(lblSupplierInv,       0, 1);
+            tbl.Controls.Add(txtSupplierInvoiceNo, 1, 1);
+            tbl.Controls.Add(lblNotes,             2, 1);
+            tbl.Controls.Add(txtNotes,             3, 1);
+            tbl.Controls.Add(lblCashBalance,       4, 1);
             tbl.SetColumnSpan(lblCashBalance, 2);
 
             cboProduct.KeyDown += CboProduct_KeyDown;
@@ -1725,6 +1736,7 @@ namespace ChickenDist.Forms
             if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
             if (cboProduct.Items.Count  > 0) cboProduct.SelectedIndex  = 0;
             txtNotes.Clear();
+            if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Clear();
             txtInvoiceDiscount.Text = "0";
             nudTaxPct.Value  = 0;
             txtNotes.Text    = "";
@@ -1767,7 +1779,8 @@ namespace ChickenDist.Forms
             {
                 int draftID = PurchaseDAL.SavePurchase(
                     _purchaseType, supplierID, net, txtNotes.Text, _items,
-                    discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID);
+                    discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID,
+                    supplierInvoiceNo: txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "");
 
                 if (draftID > 0)
                 {
@@ -2062,17 +2075,18 @@ namespace ChickenDist.Forms
                 if (cboWarehouse.SelectedItem is ComboItem wci2) warehouseID = wci2.ID;
 
                 int id = 0;
+                string suppInvNo = txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "";
                 if (_editPurchaseID > 0)
                 {
                     bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
-                        discAmt, discPct, taxPct, taxAmt, warehouseID);
+                        discAmt, discPct, taxPct, taxAmt, warehouseID, supplierInvoiceNo: suppInvNo);
                     if (ok) id = _editPurchaseID;
                 }
                 else
                 {
                     id = PurchaseDAL.SavePurchase(
                         _purchaseType, supplierID, net, txtNotes.Text, _items,
-                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID);
+                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo);
                 }
 
                 if (id > 0)
@@ -2497,8 +2511,10 @@ namespace ChickenDist.Forms
                         { cboSupplier.SelectedIndex = i; break; }
             }
 
-            // ملاحظات
+            // ملاحظات ورقم فاتورة المورد
             txtNotes.Text = row["Notes"].ToString();
+            if (txtSupplierInvoiceNo != null && row.Table.Columns.Contains("SupplierInvoiceNo"))
+                txtSupplierInvoiceNo.Text = row["SupplierInvoiceNo"].ToString();
 
             // الخصم
             decimal dAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;

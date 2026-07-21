@@ -727,7 +727,14 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlProductsPrintBarcodeField);
 
-                // 5. إضافة معرف المخزن WarehouseID لجداول الحركات وربطه
+                // 5. إضافة معرف المخزن WarehouseID ورقم فاتورة المورد لجداول الحركات
+                string sqlAddSupplierInvoiceNo = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'SupplierInvoiceNo')
+                BEGIN
+                    ALTER TABLE Purchases ADD SupplierInvoiceNo NVARCHAR(100) NULL;
+                END";
+                Execute(sqlAddSupplierInvoiceNo);
+
                 string sqlAddWarehouseID = @"
                 -- Purchases
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'WarehouseID')

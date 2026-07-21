@@ -139,15 +139,16 @@ namespace ChickenDist.Forms
 			// الصف 0: جريد الفواتير
 			dgPurchases = MakeGrid();
 			dgPurchases.Margin = new Padding(10, 6, 10, 4);
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseID",   Visible = false });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseCode", HeaderText = "رقم الفاتورة",   FillWeight = 60f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate", HeaderText = "التاريخ والوقت", FillWeight = 80f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType", HeaderText = "نوع الفاتورة",   FillWeight = 50f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "المورد",         FillWeight = 120f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",  HeaderText = "قيمة الفاتورة", FillWeight = 60f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", HeaderText = "المرتجع ↩",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",    HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",        HeaderText = "الملاحظات",      FillWeight = 130f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseID",        Visible = false });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseCode",      HeaderText = "رقم الفاتورة",   FillWeight = 55f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierInvoiceNo", HeaderText = "رقم فاتورة المورد", FillWeight = 75f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate",      HeaderText = "التاريخ والوقت", FillWeight = 80f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType",      HeaderText = "نوع الفاتورة",   FillWeight = 45f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName",      HeaderText = "المورد",         FillWeight = 110f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",       HeaderText = "قيمة الفاتورة", FillWeight = 60f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount",      HeaderText = "المرتجع ↩",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",             HeaderText = "الملاحظات",      FillWeight = 110f });
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
 
 			// الصف 1: تفاصيل الأصناف
@@ -268,6 +269,7 @@ namespace ChickenDist.Forms
 			foreach (DataRow row in _allPurchasesDt.Rows)
 			{
 				string code = row["PurchaseCode"].ToString().ToLower();
+				string supplierInvNo = row.Table.Columns.Contains("SupplierInvoiceNo") ? row["SupplierInvoiceNo"].ToString().ToLower() : "";
 				string supplier = row["SupplierName"].ToString();
 				string pType = row["PurchaseType"].ToString();
 				string notes = row["Notes"].ToString().ToLower();
@@ -280,7 +282,7 @@ namespace ChickenDist.Forms
 
 				if (!string.IsNullOrEmpty(query))
 				{
-					if (!code.Contains(query) && !supplier.ToLower().Contains(query) && !notes.Contains(query))
+					if (!code.Contains(query) && !supplierInvNo.Contains(query) && !supplier.ToLower().Contains(query) && !notes.Contains(query))
 						continue;
 				}
 
@@ -299,6 +301,7 @@ namespace ChickenDist.Forms
 				dgPurchases.Rows.Add(
 					row["PurchaseID"],
 					row["PurchaseCode"],
+					row.Table.Columns.Contains("SupplierInvoiceNo") ? row["SupplierInvoiceNo"].ToString() : "",
 					Convert.ToDateTime(row["PurchaseDate"]).ToString("dd/MM/yyyy HH:mm"),
 					displayType,
 					supplier,
