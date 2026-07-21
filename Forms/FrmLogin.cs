@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
             // Logo/Header panel
-            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary };
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary, Padding = new Padding(15, 10, 15, 5) };
             
             PictureBox pbLogo = null;
             Label lblLogo = null;
@@ -63,8 +63,8 @@ namespace ChickenDist.Forms
                 {
                     Image = logoImg,
                     SizeMode = PictureBoxSizeMode.Zoom,
-                    Size = new Size(130, 80),
-                    Location = new Point((480 - 130) / 2, 10),
+                    Size = new Size(440, 105), // Spans full width of the login window
+                    Location = new Point(20, 8),
                     BackColor = Color.Transparent
                 };
             }
@@ -85,22 +85,22 @@ namespace ChickenDist.Forms
             var lblTitle = new Label
             {
                 Text = AppConfig.CompanyName,
-                Font = new Font("Segoe UI", 18f, FontStyle.Bold),
-                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(243, 198, 35), // Gold
                 AutoSize = false,
-                Size = new Size(480, 40),
+                Size = new Size(480, 32),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Top = 100
+                Top = 118
             };
             var lblSub = new Label
             {
-                Text = "نظام المبيعات والتوزيع",
-                Font = new Font("Segoe UI", 10f),
-                ForeColor = Color.FromArgb(180, 220, 255),
+                Text = "نظام المبيعات والتوزيع المالي المتكامل",
+                Font = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.FromArgb(200, 225, 255),
                 AutoSize = false,
-                Size = new Size(480, 28),
+                Size = new Size(480, 24),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Top = 144
+                Top = 150
             };
 
             if (pbLogo != null)

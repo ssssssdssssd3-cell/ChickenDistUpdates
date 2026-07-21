@@ -1633,7 +1633,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.Primary,
                 ForeColor = Color.White,
                 Cursor = Cursors.Hand,
-                Location = new Point(pnlShowcase.Width - 240, 15)
+                Location = new Point(pnlShowcase.Width - 240, 12)
             };
             btnQuickDetails.FlatAppearance.BorderSize = 0;
             btnQuickDetails.Click += (s, e) =>
@@ -1644,52 +1644,35 @@ namespace ChickenDist.Forms
 
             pnlShowcase.Controls.Add(btnQuickDetails);
 
-            // Sleek Logo Emblem Frame Card (blends the logo image beautifully without harsh black screens)
-            var cardLogoFrame = new Panel
-            {
-                BackColor = Color.FromArgb(15, 20, 30), // Rich midnight card for the emblem
-                Padding = new Padding(12)
-            };
-            cardLogoFrame.Paint += (s, e) =>
-            {
-                var g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(243, 198, 35), 2.5f)) // Gold border frame
-                {
-                    g.DrawRectangle(pen, 1, 1, cardLogoFrame.Width - 3, cardLogoFrame.Height - 3);
-                }
-            };
-
+            // Full-Width Hero Logo (Spans wide across full screen width!)
             Image logoLarge = Theme.GetCompanyLogo();
-            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(360);
+            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(450);
 
             var pbMainLogo = new PictureBox
             {
-                Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 Image = logoLarge,
                 BackColor = Color.Transparent
             };
-            cardLogoFrame.Controls.Add(pbMainLogo);
 
             var lblMainCompany = new Label
             {
                 Text = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي لإدارة المبيعات والتوزيع" : AppConfig.CompanyName,
-                Font = new Font("Segoe UI", 22f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 24f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(20, 38, 74), // Deep Executive Navy Blue
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 45
+                Height = 48
             };
 
             var lblMainTagline = new Label
             {
-                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.116",
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.118",
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(80, 95, 120), // Soft Slate
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 28
+                Height = 30
             };
 
             // Bottom session badges
@@ -1723,31 +1706,31 @@ namespace ChickenDist.Forms
             addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#4B5563");
             addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#047857");
 
-            // Dynamic layout calculations on resize (100% visible, ZERO bottom cutoff!)
+            // Dynamic layout calculations: Logo spans wide across full screen width!
             pnlShowcase.SizeChanged += (s, e) =>
             {
                 int w = pnlShowcase.Width;
                 int h = pnlShowcase.Height;
 
-                btnQuickDetails.Location = new Point(w - 240, 15);
+                btnQuickDetails.Location = new Point(w - 240, 12);
 
-                // Calculate logo dimensions to leave ample space for title, tagline and badges (no bottom cutoff)
-                int logoDim = Math.Min(w - 60, Math.Min(h - 180, 360));
-                if (logoDim < 180) logoDim = 180;
+                int logoW = Math.Max(300, w - 40); // Spans full width of the main screen
+                int logoH = Math.Min(h - 170, 430);
+                if (logoH < 180) logoH = 180;
 
-                cardLogoFrame.Size = new Size(logoDim, logoDim);
-                cardLogoFrame.Location = new Point((w - logoDim) / 2, Math.Max(15, (h - logoDim - 130) / 2));
+                pbMainLogo.Size = new Size(logoW, logoH);
+                pbMainLogo.Location = new Point(20, Math.Max(15, (h - logoH - 125) / 2));
 
-                lblMainCompany.Size = new Size(w - 20, 45);
-                lblMainCompany.Location = new Point(10, cardLogoFrame.Bottom + 8);
+                lblMainCompany.Size = new Size(w - 20, 48);
+                lblMainCompany.Location = new Point(10, pbMainLogo.Bottom + 4);
 
-                lblMainTagline.Size = new Size(w - 20, 28);
+                lblMainTagline.Size = new Size(w - 20, 30);
                 lblMainTagline.Location = new Point(10, lblMainCompany.Bottom + 2);
 
                 flowBadges.Location = new Point((w - flowBadges.Width) / 2, lblMainTagline.Bottom + 6);
             };
 
-            pnlShowcase.Controls.Add(cardLogoFrame);
+            pnlShowcase.Controls.Add(pbMainLogo);
             pnlShowcase.Controls.Add(lblMainCompany);
             pnlShowcase.Controls.Add(lblMainTagline);
             pnlShowcase.Controls.Add(flowBadges);
