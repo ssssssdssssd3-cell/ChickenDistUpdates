@@ -181,7 +181,7 @@ namespace ChickenDist.Forms
             // Left panel for close button
             var pnlHeaderLeft = new Panel
             {
-                Dock = DockStyle.Right, // Docking Right mirrors to the visual Left side under RTL layout
+                Dock = DockStyle.Left, // Close button on visual Left
                 Width = 160,
                 BackColor = Color.Transparent
             };
@@ -212,11 +212,11 @@ namespace ChickenDist.Forms
             // Right panel for Open screens dropdown and Quick-access icons
             pnlHeaderRight = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill, // Docking Fill mirrors to the visual Right side under RTL layout
-                FlowDirection = FlowDirection.LeftToRight, // LeftToRight flows from mirrored 0 (visual Right) to visual Left
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft, // Menu icons start from visual Right
                 WrapContents = false,
                 AutoScroll = false,
-                RightToLeft = RightToLeft.No, // Prevent double-reversal of FlowLayoutPanel child rendering in mirrored RTL forms
+                RightToLeft = RightToLeft.Yes,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0),
                 Margin = Padding.Empty
@@ -585,9 +585,6 @@ namespace ChickenDist.Forms
         {
             pnlHeaderRight.Controls.Clear();
 
-            // Add the "Open Screens" button first (so it sits on the right-most side)
-            pnlHeaderRight.Controls.Add(_btnOpenPages);
-
             var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
@@ -740,6 +737,8 @@ namespace ChickenDist.Forms
 
                 pnlHeaderRight.Controls.Add(btn);
             }
+
+            pnlHeaderRight.Controls.Add(_btnOpenPages);
         }
 
         private class MenuColorTable : ProfessionalColorTable
