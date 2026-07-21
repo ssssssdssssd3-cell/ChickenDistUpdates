@@ -484,6 +484,27 @@ namespace ChickenDist.Forms
             dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
             dgItems.EditingControlShowing += DgItems_EditingControlShowing;
 
+            dgItems.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                {
+                    string colName = dgItems.Columns[e.ColumnIndex].Name;
+                    if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "SuggestedSalePrice" || colName == "UnitName" || colName == "ExpiryDate" || colName == "Delete")
+                    {
+                        return; // السماح بتعديل الخانات التفاعلية أو حذف السطر مباشرة
+                    }
+                }
+                btnSearchProduct.PerformClick();
+            };
+
+            dgItems.DoubleClick += (s, e) =>
+            {
+                if (dgItems.SelectedCells.Count == 0 || (dgItems.CurrentCell != null && dgItems.CurrentCell.ReadOnly))
+                {
+                    btnSearchProduct.PerformClick();
+                }
+            };
+
             // سهم لأسفل في آخر سطر → سطر كود جديد | Insert = نفس الشيء
             dgItems.KeyDown += (s, ke) =>
             {

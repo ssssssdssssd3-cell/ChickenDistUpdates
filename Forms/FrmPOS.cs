@@ -178,6 +178,27 @@ namespace ChickenDist.Forms
             Session.LoadColumnOrder(dgItems, "POS");
             LoadColumnSettings();
 
+            dgItems.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                {
+                    string colName = dgItems.Columns[e.ColumnIndex].Name;
+                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes")
+                    {
+                        return; // السماح بتعديل الخانات التفاعلية مباشرة
+                    }
+                }
+                OpenProductSearch();
+            };
+
+            dgItems.DoubleClick += (s, e) =>
+            {
+                if (dgItems.SelectedCells.Count == 0 || (dgItems.CurrentCell != null && dgItems.CurrentCell.ReadOnly))
+                {
+                    OpenProductSearch();
+                }
+            };
+
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
             this.Controls.Add(dgItems);

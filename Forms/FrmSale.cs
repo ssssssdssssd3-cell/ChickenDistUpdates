@@ -938,6 +938,27 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(delCol);
 			Theme.AdjustGridHeaders(dgItems);
 
+			dgItems.CellDoubleClick += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+				{
+					string colName = dgItems.Columns[e.ColumnIndex].Name;
+					if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "DiscountAmt" || colName == "UnitName" || colName == "IMEI")
+					{
+						return; // السماح بتعديل الخانات التفاعلية مباشرة
+					}
+				}
+				BtnSearchProduct_Click(s, e);
+			};
+
+			dgItems.DoubleClick += (s, e) =>
+			{
+				if (dgItems.SelectedCells.Count == 0 || (dgItems.CurrentCell != null && dgItems.CurrentCell.ReadOnly))
+				{
+					BtnSearchProduct_Click(s, e);
+				}
+			};
+
 			foreach (DataGridViewColumn col in dgItems.Columns)
 			{
 				col.MinimumWidth = 95;
