@@ -27,13 +27,13 @@ namespace ChickenDist.Forms
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
-            this.BackColor = Theme.Primary;
+            this.BackColor = Color.FromArgb(15, 22, 35); // Sleek modern dark container
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Icon extract failed: " + ex.Message); }
 
-            // Logo/Header panel
-            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Theme.Primary, Padding = new Padding(15, 10, 15, 5) };
+            // Logo/Header panel (Matches exact logo background #0A0A0A so square box vanishes seamlessly!)
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Color.FromArgb(10, 10, 10), Padding = new Padding(10, 5, 10, 5) };
             
             PictureBox pbLogo = null;
             Label lblLogo = null;
@@ -63,8 +63,8 @@ namespace ChickenDist.Forms
                 {
                     Image = logoImg,
                     SizeMode = PictureBoxSizeMode.Zoom,
-                    Size = new Size(440, 105), // Spans full width of the login window
-                    Location = new Point(20, 8),
+                    Size = new Size(440, 115), // Spans full width of the login window seamlessly
+                    Location = new Point(20, 5),
                     BackColor = Color.Transparent
                 };
             }
@@ -88,19 +88,19 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 15f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35), // Gold
                 AutoSize = false,
-                Size = new Size(480, 32),
+                Size = new Size(480, 30),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Top = 118
+                Top = 122
             };
             var lblSub = new Label
             {
                 Text = "نظام المبيعات والتوزيع المالي المتكامل",
                 Font = new Font("Segoe UI", 9.5f),
-                ForeColor = Color.FromArgb(200, 225, 255),
+                ForeColor = Color.FromArgb(180, 200, 225),
                 AutoSize = false,
                 Size = new Size(480, 24),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Top = 150
+                Top = 152
             };
 
             if (pbLogo != null)

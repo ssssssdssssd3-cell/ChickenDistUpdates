@@ -1614,11 +1614,11 @@ namespace ChickenDist.Forms
         {
             this.Controls.Clear();
 
-            // Main full screen container panel with eye-comforting soft executive background
+            // Main full screen container panel (Matches exact logo background #0A0A0A so logo blends 100% seamlessly across full screen)
             var pnlShowcase = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(236, 241, 248), // Soft, eye-soothing executive slate blue-grey
+                BackColor = Color.FromArgb(10, 10, 10), // Rich midnight matching logo file background
                 Padding = new Padding(20)
             };
 
@@ -1659,7 +1659,7 @@ namespace ChickenDist.Forms
             {
                 Text = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي لإدارة المبيعات والتوزيع" : AppConfig.CompanyName,
                 Font = new Font("Segoe UI", 24f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(20, 38, 74), // Deep Executive Navy Blue
+                ForeColor = Color.FromArgb(243, 198, 35), // Rich Gold
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
                 Height = 48
@@ -1667,9 +1667,9 @@ namespace ChickenDist.Forms
 
             var lblMainTagline = new Label
             {
-                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.118",
+                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.119",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(80, 95, 120), // Soft Slate
+                ForeColor = Color.FromArgb(180, 195, 215), // Soft Silver
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
                 Height = 30
