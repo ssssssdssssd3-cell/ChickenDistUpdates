@@ -57,6 +57,8 @@ namespace ChickenDist.DAL
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
                          COALESCE(p.TaxAmount,     0) AS TaxAmount,
+                         COALESCE(p.ShippingCost,  0) AS ShippingCost,
+                         ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
                          ISNULL((
                              SELECT SUM(pri.Quantity * pri.UnitPrice)
                              FROM PurchaseReturnItems pri
@@ -95,6 +97,8 @@ namespace ChickenDist.DAL
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
                          COALESCE(p.TaxAmount,     0) AS TaxAmount,
+                         COALESCE(p.ShippingCost,  0) AS ShippingCost,
+                         ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
                          w.WarehouseName
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
@@ -132,7 +136,9 @@ namespace ChickenDist.DAL
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
-                         COALESCE(p.TaxAmount,     0) AS TaxAmount
+                         COALESCE(p.TaxAmount,     0) AS TaxAmount,
+                         COALESCE(p.ShippingCost,  0) AS ShippingCost,
+                         ISNULL(p.ShippingOn, N'Company') AS ShippingOn
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   WHERE p.IsPosted = 0
@@ -155,7 +161,8 @@ namespace ChickenDist.DAL
             decimal discountAmount = 0m, decimal discountPct = 0m,
             decimal taxPct = 0m, decimal taxAmount = 0m,
             bool isDraft = false, int? warehouseID = 1,
-            string supplierInvoiceNo = "")
+            string supplierInvoiceNo = "",
+            decimal shippingCost = 0m, string shippingOn = "Company")
         {
             int returnedID = -1;
 
@@ -181,11 +188,11 @@ namespace ChickenDist.DAL
                     @"INSERT INTO Purchases
                         (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
-                         Notes, CreatedBy, IsPosted, WarehouseID)
+                         Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn)
                       VALUES
                         (@code, @sinv, @dt, @typ, @sid,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
-                         @n, @by, @ip, @wid)",
+                         @n, @by, @ip, @wid, @shdost, @shon)",
                     DbHelper.P("@code",    code),
                     DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                     DbHelper.P("@dt",      DateTime.Now),
@@ -199,7 +206,9 @@ namespace ChickenDist.DAL
                     DbHelper.P("@n",       notes),
                     DbHelper.P("@by",      Session.EmpID),
                     DbHelper.P("@ip",      isDraft ? 0 : 1),
-                    DbHelper.P("@wid",     warehouseID.HasValue ? (object)warehouseID.Value : 1));
+                    DbHelper.P("@wid",     warehouseID.HasValue ? (object)warehouseID.Value : 1),
+                    DbHelper.P("@shdost",  shippingCost),
+                    DbHelper.P("@shon",    shippingOn ?? "Company"));
 
                 if (purchaseID <= 0)
                     throw new Exception("فشل في استخراج رقم فاتورة المشتريات الجديدة.");
@@ -382,7 +391,8 @@ namespace ChickenDist.DAL
         }
 
         public static bool UpdatePurchase(int purchaseID, string purchaseType, int? supplierID, decimal total, string notes, List<PurchaseItemDTO> items,
-            decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID, string supplierInvoiceNo = "")
+            decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID, string supplierInvoiceNo = "",
+            decimal shippingCost = 0m, string shippingOn = "Company")
         {
             try
             {
@@ -414,7 +424,8 @@ namespace ChickenDist.DAL
                         @"UPDATE Purchases 
                           SET PurchaseType=@typ, SupplierID=@sid, TotalAmount=@tot, Notes=@n, 
                               DiscountAmount=@discAmt, DiscountPct=@discPct, TaxPct=@taxPct, TaxAmount=@taxAmt,
-                              WarehouseID=@wid, SupplierInvoiceNo=@sinv
+                              WarehouseID=@wid, SupplierInvoiceNo=@sinv,
+                              ShippingCost=@shdost, ShippingOn=@shon
                           WHERE PurchaseID=@id",
                         DbHelper.P("@typ",     purchaseType),
                         DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -426,6 +437,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@taxAmt",  taxAmt),
                         DbHelper.P("@wid",     wid),
                         DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
+                        DbHelper.P("@shdost",  shippingCost),
+                        DbHelper.P("@shon",    shippingOn ?? "Company"),
                         DbHelper.P("@id",      purchaseID));
 
                     foreach (var item in items)

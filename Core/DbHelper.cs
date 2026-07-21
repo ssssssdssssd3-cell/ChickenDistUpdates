@@ -735,6 +735,17 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlAddSupplierInvoiceNo);
 
+                string sqlAddShipping = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'ShippingCost')
+                BEGIN
+                    ALTER TABLE Purchases ADD ShippingCost DECIMAL(18,2) NULL CONSTRAINT DF_Purchases_ShippingCost DEFAULT 0;
+                END
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'ShippingOn')
+                BEGIN
+                    ALTER TABLE Purchases ADD ShippingOn NVARCHAR(20) NULL CONSTRAINT DF_Purchases_ShippingOn DEFAULT 'Company';
+                END";
+                Execute(sqlAddShipping);
+
                 string sqlAddWarehouseID = @"
                 -- Purchases
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'WarehouseID')

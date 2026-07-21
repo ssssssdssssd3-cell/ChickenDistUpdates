@@ -35,9 +35,12 @@ namespace ChickenDist.Forms
         private TextBox txtInvoiceDiscount;
         private ComboBox cboInvoiceDiscountType;
 
-        // ── الذيل — ضريبة الشراء (جديد) ───────────────────────────────────────
+        // ── الذيل — ضريبة الشراء ومصاريف الشحن ──────────────────────────────────
         private NumericUpDown nudTaxPct;
         private Label lblTaxAmt;
+        private TextBox txtShippingCost;
+        private ComboBox cboShippingOn;
+        private Label lblShippingDisplay;
 
         // ── أزرار الذيل ────────────────────────────────────────────────────────
         private Button btnSave, btnNew, btnPrint, btnHold, btnLoadHold;
@@ -713,6 +716,61 @@ namespace ChickenDist.Forms
             tblTotals.Controls.Add(lblNetTitle, 3, 1);
             tblTotals.Controls.Add(lblNetVal,   4, 1);
             tblTotals.Controls.Add(lblItemCount, 5, 1);
+
+            // صف 2: مصاريف الشحن ─────────────────────────────────────────────────
+            tblTotals.RowCount = 3;
+            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+
+            var lblShippingLbl = new Label
+            {
+                Text = "🚚 مصاريف الشحن:",
+                ForeColor = Theme.TextSub,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(2)
+            };
+            txtShippingCost = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "0",
+                Margin = new Padding(2, 4, 2, 4)
+            };
+            txtShippingCost.TextChanged += (s, e) => RecalcTotals();
+
+            var lblShippingOnLbl = new Label
+            {
+                Text = "على:",
+                ForeColor = Theme.TextSub,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(2)
+            };
+            cboShippingOn = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 4, 2, 4)
+            };
+            cboShippingOn.Items.AddRange(new object[] { "الشركة", "المورد" });
+            cboShippingOn.SelectedIndex = 0; // الافتراضي: على الشركة
+            cboShippingOn.SelectedIndexChanged += (s, e) => RecalcTotals();
+
+            lblShippingDisplay = new Label
+            {
+                Text = "0.00 ج",
+                ForeColor = Color.FromArgb(52, 152, 219),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(2)
+            };
+
+            tblTotals.Controls.Add(lblShippingLbl,    0, 2);
+            tblTotals.Controls.Add(txtShippingCost,   1, 2);
+            tblTotals.Controls.Add(lblShippingOnLbl,  2, 2);
+            tblTotals.Controls.Add(cboShippingOn,     3, 2);
+            tblTotals.Controls.Add(lblShippingDisplay, 4, 2);
 
             pnlTotals.Controls.Add(tblTotals);
 
@@ -1717,8 +1775,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // حساب الإجماليات (أصناف + خصم الفاتورة + ضريبة = الصافي)
+        // حساب الإجماليات (أصناف + خصم + ضريبة + شحن = الصافي)
         private void RecalcTotals()
         {
             decimal itemsTotal = 0m;
@@ -1738,8 +1795,16 @@ namespace ChickenDist.Forms
             decimal taxAmt = Math.Round(afterDisc * taxPct / 100m, 2);
             lblTaxAmt.Text = taxAmt.ToString("N2") + " ج";
 
+            // مصاريف الشحن
+            decimal shippingCost = 0m;
+            decimal.TryParse(txtShippingCost?.Text, out shippingCost);
+            bool onCompany = cboShippingOn == null || cboShippingOn.SelectedIndex == 0;
+            decimal shippingEffect = onCompany ? shippingCost : -shippingCost;
+            if (lblShippingDisplay != null)
+                lblShippingDisplay.Text = (onCompany ? "+" : "-") + shippingCost.ToString("N2") + " ج";
+
             // الصافي النهائي
-            decimal net = afterDisc + taxAmt;
+            decimal net = afterDisc + taxAmt + shippingEffect;
             lblNetVal.Text = net.ToString("N2") + " ج";
 
             if (lblItemCount != null)
@@ -1758,6 +1823,8 @@ namespace ChickenDist.Forms
             if (cboProduct.Items.Count  > 0) cboProduct.SelectedIndex  = 0;
             txtNotes.Clear();
             if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Clear();
+            if (txtShippingCost != null) txtShippingCost.Text = "0";
+            if (cboShippingOn != null) cboShippingOn.SelectedIndex = 0;
             txtInvoiceDiscount.Text = "0";
             nudTaxPct.Value  = 0;
             txtNotes.Text    = "";
@@ -1790,8 +1857,9 @@ namespace ChickenDist.Forms
             }
 
             int? supplierID = GetSelectedSupplier();
-            decimal gross, discAmt, discPct, net, taxPct, taxAmt;
-            CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt);
+            decimal gross, discAmt, discPct, net, taxPct, taxAmt, shippingCost;
+            string shippingOn;
+            CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt, out shippingCost, out shippingOn);
 
             int? warehouseID = null;
             if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
@@ -1801,7 +1869,8 @@ namespace ChickenDist.Forms
                 int draftID = PurchaseDAL.SavePurchase(
                     _purchaseType, supplierID, net, txtNotes.Text, _items,
                     discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID,
-                    supplierInvoiceNo: txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "");
+                    supplierInvoiceNo: txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "",
+                    shippingCost: shippingCost, shippingOn: shippingOn);
 
                 if (draftID > 0)
                 {
@@ -1957,6 +2026,18 @@ namespace ChickenDist.Forms
                 decimal tPct = Convert.ToDecimal(row["TaxPct"]);
                 nudTaxPct.Value = tPct > 100 ? 100 : tPct;
 
+                // مصاريف الشحن
+                if (txtShippingCost != null)
+                {
+                    decimal sCost = row.Row.Table.Columns.Contains("ShippingCost") && row["ShippingCost"] != DBNull.Value ? Convert.ToDecimal(row["ShippingCost"]) : 0m;
+                    txtShippingCost.Text = sCost.ToString("G29");
+                }
+                if (cboShippingOn != null)
+                {
+                    string sOn = row.Row.Table.Columns.Contains("ShippingOn") && row["ShippingOn"] != DBNull.Value ? row["ShippingOn"].ToString() : "Company";
+                    cboShippingOn.SelectedIndex = (sOn == "Supplier") ? 1 : 0;
+                }
+
                 // الأصناف
                 var itemsDt = PurchaseDAL.GetItems(pid);
                 _items.Clear();
@@ -2043,8 +2124,9 @@ namespace ChickenDist.Forms
                 }
             }
 
-            decimal gross, discAmt, discPct, net, taxPct, taxAmt;
-            CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt);
+            decimal gross, discAmt, discPct, net, taxPct, taxAmt, shippingCost;
+            string shippingOn;
+            CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt, out shippingCost, out shippingOn);
 
             // 1. تحقق من تعديل أسعار البيع المقترحة للأصناف
             var changedPricesList = new List<string>();
@@ -2100,14 +2182,16 @@ namespace ChickenDist.Forms
                 if (_editPurchaseID > 0)
                 {
                     bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
-                        discAmt, discPct, taxPct, taxAmt, warehouseID, supplierInvoiceNo: suppInvNo);
+                        discAmt, discPct, taxPct, taxAmt, warehouseID, supplierInvoiceNo: suppInvNo,
+                        shippingCost: shippingCost, shippingOn: shippingOn);
                     if (ok) id = _editPurchaseID;
                 }
                 else
                 {
                     id = PurchaseDAL.SavePurchase(
                         _purchaseType, supplierID, net, txtNotes.Text, _items,
-                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo);
+                        discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo,
+                        shippingCost: shippingCost, shippingOn: shippingOn);
                 }
 
                 if (id > 0)
@@ -2187,7 +2271,8 @@ namespace ChickenDist.Forms
 
         private void CalcAmounts(
             out decimal gross, out decimal discAmt, out decimal discPct,
-            out decimal net,   out decimal taxPct,  out decimal taxAmt)
+            out decimal net,   out decimal taxPct,  out decimal taxAmt,
+            out decimal shippingCost, out string shippingOn)
         {
             gross = 0m;
             foreach (var item in _items) gross += item.TotalPrice;
@@ -2211,7 +2296,12 @@ namespace ChickenDist.Forms
             taxPct = nudTaxPct.Value;
             taxAmt = Math.Round(afterDisc * taxPct / 100m, 2);
 
-            net = afterDisc + taxAmt;
+            shippingCost = 0m;
+            decimal.TryParse(txtShippingCost?.Text, out shippingCost);
+            shippingOn = (cboShippingOn != null && cboShippingOn.SelectedIndex == 1) ? "Supplier" : "Company";
+            decimal shippingEffect = (shippingOn == "Company") ? shippingCost : -shippingCost;
+
+            net = afterDisc + taxAmt + shippingEffect;
         }
 
         private void SetupSearchableCombo(ComboBox cbo)
@@ -2554,6 +2644,18 @@ namespace ChickenDist.Forms
             // الضريبة
             decimal tPct = Convert.ToDecimal(row["TaxPct"]);
             nudTaxPct.Value = tPct > 100 ? 100 : tPct;
+
+            // مصاريف الشحن
+            if (txtShippingCost != null)
+            {
+                decimal sCost = row.Table.Columns.Contains("ShippingCost") && row["ShippingCost"] != DBNull.Value ? Convert.ToDecimal(row["ShippingCost"]) : 0m;
+                txtShippingCost.Text = sCost.ToString("G29");
+            }
+            if (cboShippingOn != null)
+            {
+                string sOn = row.Table.Columns.Contains("ShippingOn") && row["ShippingOn"] != DBNull.Value ? row["ShippingOn"].ToString() : "Company";
+                cboShippingOn.SelectedIndex = (sOn == "Supplier") ? 1 : 0;
+            }
 
             // الأصناف
             var itemsDt = PurchaseDAL.GetItems(purchaseID);
