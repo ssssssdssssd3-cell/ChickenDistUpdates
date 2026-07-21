@@ -1623,15 +1623,15 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 135f)); // Header + Top Actions Ribbon
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 88f));  // Top Actions Ribbon ONLY
             mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Full Screen Logo Showcase
 
-            // 1. Top Panel: Header + Quick Actions Ribbon
+            // 1. Top Panel: Quick Action Ribbon
             var pnlTopContainer = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 8, 15, 6)
+                Padding = new Padding(12, 5, 12, 5)
             };
 
             // Gradient line at bottom of top container
@@ -1653,10 +1653,10 @@ namespace ChickenDist.Forms
                 RowCount = 2,
                 BackColor = Color.Transparent
             };
-            tblHeaderRows.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            tblHeaderRows.RowStyles.Add(new RowStyle(SizeType.Absolute, 35f));
             tblHeaderRows.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            // Row 1 Container: Greeting + Quick Details Button
+            // Row 1 Container: Title + Quick Details Button
             var pnlRow1 = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
             Image logoSmall = Theme.GetCompanyLogo();
@@ -1664,8 +1664,8 @@ namespace ChickenDist.Forms
             {
                 var pbLogoSmall = new PictureBox
                 {
-                    Size = new Size(32, 32),
-                    Location = new Point(5, 4),
+                    Size = new Size(26, 26),
+                    Location = new Point(5, 3),
                     SizeMode = PictureBoxSizeMode.Zoom,
                     Image = logoSmall,
                     BackColor = Color.Transparent
@@ -1676,28 +1676,18 @@ namespace ChickenDist.Forms
             var lblTitle = new Label
             {
                 Text = (string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي" : AppConfig.CompanyName),
-                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35), // Gold
                 AutoSize = true,
-                Location = new Point(logoSmall != null ? 42 : 5, 7),
-                BackColor = Color.Transparent
-            };
-
-            var lblSubtitle = new Label
-            {
-                Text = $"أهلاً بك {Session.EmpName}  |  {DateTime.Today:dd MMMM yyyy}  🚀",
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = Theme.TextSub,
-                AutoSize = true,
-                Location = new Point(logoSmall != null ? 220 : 180, 10),
+                Location = new Point(logoSmall != null ? 36 : 5, 4),
                 BackColor = Color.Transparent
             };
 
             var btnQuickDetails = new Button
             {
                 Text = "📊 التفاصيل والإحصائيات السريعة",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Size = new Size(215, 34),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Size = new Size(205, 29),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Primary,
@@ -1705,7 +1695,7 @@ namespace ChickenDist.Forms
                 Cursor = Cursors.Hand
             };
             btnQuickDetails.FlatAppearance.BorderSize = 0;
-            btnQuickDetails.Location = new Point(pnlRow1.Width - 225, 3);
+            btnQuickDetails.Location = new Point(pnlRow1.Width - 210, 2);
             btnQuickDetails.Click += (s, e) =>
             {
                 var frmDetails = new FrmQuickDetails((frm) => NavigateMain(frm));
@@ -1714,11 +1704,10 @@ namespace ChickenDist.Forms
 
             pnlRow1.SizeChanged += (s, e) =>
             {
-                btnQuickDetails.Location = new Point(pnlRow1.Width - 225, 3);
+                btnQuickDetails.Location = new Point(pnlRow1.Width - 210, 2);
             };
 
             pnlRow1.Controls.Add(lblTitle);
-            pnlRow1.Controls.Add(lblSubtitle);
             pnlRow1.Controls.Add(btnQuickDetails);
             tblHeaderRows.Controls.Add(pnlRow1, 0, 0);
 
@@ -1731,7 +1720,7 @@ namespace ChickenDist.Forms
                 AutoScroll = true,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 3, 0, 0)
+                Padding = new Padding(0, 2, 0, 0)
             };
 
             // Add top ribbon quick action buttons
@@ -1798,41 +1787,12 @@ namespace ChickenDist.Forms
                 Padding = new Padding(20)
             };
 
-            // Main center card panel
-            var cardCenter = new Panel
-            {
-                Size = new Size(740, 460),
-                BackColor = Theme.BgCard,
-                Anchor = AnchorStyles.None
-            };
-            cardCenter.Paint += (s, e) =>
-            {
-                var g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Theme.BorderColor, 2f))
-                {
-                    g.DrawRectangle(pen, 0, 0, cardCenter.Width - 1, cardCenter.Height - 1);
-                }
-                using (var brush = new LinearGradientBrush(new Point(0, 0), new Point(cardCenter.Width, 0), Theme.Accent, Theme.Primary))
-                {
-                    g.FillRectangle(brush, 0, 0, cardCenter.Width, 6);
-                }
-            };
-
-            pnlShowcase.SizeChanged += (s, e) =>
-            {
-                cardCenter.Location = new Point((pnlShowcase.Width - cardCenter.Width) / 2, Math.Max(15, (pnlShowcase.Height - cardCenter.Height) / 2));
-            };
-            cardCenter.Location = new Point((pnlShowcase.Width - cardCenter.Width) / 2, Math.Max(15, (pnlShowcase.Height - cardCenter.Height) / 2));
-
-            // Large full logo in center
+            // Large full logo in center taking full screen space
             Image logoLarge = Theme.GetCompanyLogo();
-            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(240);
+            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(380);
 
             var pbMainLogo = new PictureBox
             {
-                Size = new Size(220, 220),
-                Location = new Point((cardCenter.Width - 220) / 2, 30),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 Image = logoLarge,
                 BackColor = Color.Transparent
@@ -1841,30 +1801,28 @@ namespace ChickenDist.Forms
             var lblMainCompany = new Label
             {
                 Text = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي لإدارة المبيعات والتوزيع" : AppConfig.CompanyName,
-                Font = new Font("Segoe UI", 18f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 21f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35), // Gold
-                Size = new Size(720, 45),
-                Location = new Point(10, 265),
                 TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Height = 48
             };
 
             var lblMainTagline = new Label
             {
-                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.111",
-                Font = new Font("Segoe UI", 10.5f),
+                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.113",
+                Font = new Font("Segoe UI", 11f),
                 ForeColor = Theme.TextSub,
-                Size = new Size(720, 30),
-                Location = new Point(10, 312),
                 TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Height = 32
             };
 
             // Bottom session badges
             var flowBadges = new FlowLayoutPanel
             {
-                Size = new Size(720, 45),
-                Location = new Point(10, 375),
+                Height = 45,
+                AutoSize = true,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 BackColor = Color.Transparent,
@@ -1876,12 +1834,12 @@ namespace ChickenDist.Forms
                 var lblBadge = new Label
                 {
                     Text = iconText,
-                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = ColorTranslator.FromHtml(bgHex),
                     AutoSize = true,
-                    Padding = new Padding(10, 6, 10, 6),
-                    Margin = new Padding(4)
+                    Padding = new Padding(12, 6, 12, 6),
+                    Margin = new Padding(5)
                 };
                 flowBadges.Controls.Add(lblBadge);
             };
@@ -1889,14 +1847,34 @@ namespace ChickenDist.Forms
             addBadge($"👤 المستخدم: {Session.EmpName}", "#3B82F6");
             addBadge($"🏢 النشاط: {(string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "عام" : AppConfig.BusinessType)}", "#10B981");
             addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#6B7280");
-            addBadge($"🟢 الحالة: قاعدة البيانات تعمل بنجاح", "#059669");
+            addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#059669");
 
-            cardCenter.Controls.Add(pbMainLogo);
-            cardCenter.Controls.Add(lblMainCompany);
-            cardCenter.Controls.Add(lblMainTagline);
-            cardCenter.Controls.Add(flowBadges);
+            // Dynamic layout calculations on resize
+            pnlShowcase.SizeChanged += (s, e) =>
+            {
+                int w = pnlShowcase.Width;
+                int h = pnlShowcase.Height;
 
-            pnlShowcase.Controls.Add(cardCenter);
+                int logoDim = Math.Min(w - 60, Math.Min(h - 150, 420));
+                if (logoDim < 200) logoDim = 200;
+
+                pbMainLogo.Size = new Size(logoDim, logoDim);
+                pbMainLogo.Location = new Point((w - logoDim) / 2, Math.Max(15, (h - logoDim - 130) / 2));
+
+                lblMainCompany.Size = new Size(w - 20, 48);
+                lblMainCompany.Location = new Point(10, pbMainLogo.Bottom + 8);
+
+                lblMainTagline.Size = new Size(w - 20, 32);
+                lblMainTagline.Location = new Point(10, lblMainCompany.Bottom + 4);
+
+                flowBadges.Location = new Point((w - flowBadges.Width) / 2, lblMainTagline.Bottom + 10);
+            };
+
+            pnlShowcase.Controls.Add(pbMainLogo);
+            pnlShowcase.Controls.Add(lblMainCompany);
+            pnlShowcase.Controls.Add(lblMainTagline);
+            pnlShowcase.Controls.Add(flowBadges);
+
             mainTbl.Controls.Add(pnlShowcase, 0, 1);
             this.Controls.Add(mainTbl);
         }
