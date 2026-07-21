@@ -12,6 +12,8 @@ namespace ChickenDist.Forms
     public class FrmProductSearch : Form
     {
         private TextBox txtSearch, txtBrandFilter, txtCompanyFilter, txtPriceFrom, txtPriceTo;
+        private TextBox txtSelectedQty, txtSelectedPurchasePrice, txtSelectedSalePrice, txtSelectedDiscount;
+        private Label lblPricePermissionNotice;
         private ComboBox cboCategory;
         private CheckBox chkShowZeroStock;
         private DataGridView dgProducts, dgUnits;
@@ -28,6 +30,11 @@ namespace ChickenDist.Forms
         public int? SelectedBatchID { get; private set; } = null;
         public DateTime? SelectedExpiryDate { get; private set; } = null;
 
+        public decimal SelectedQuantity { get; private set; } = 1m;
+        public decimal SelectedPurchasePrice { get; private set; } = 0m;
+        public decimal SelectedSalePrice { get; private set; } = 0m;
+        public decimal SelectedDiscount { get; private set; } = 0m;
+
         public FrmProductSearch(int? warehouseID = null)
         {
             _warehouseID = warehouseID;
@@ -38,8 +45,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔍 بحث متقدم عن صنف";
-            this.Size = new Size(820, 680);
+            this.Text = "🔍 بحث متقدم عن صنف وإدخال الكميات والأسعار";
+            this.Size = new Size(860, 710);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -146,15 +153,15 @@ namespace ChickenDist.Forms
             var pnlUnitsSection = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 180,
-                Padding = new Padding(0, 8, 0, 0)
+                Height = 150,
+                Padding = new Padding(0, 4, 0, 0)
             };
 
             var lblUnitsTitle = new Label
             {
                 Text = "📋 الوحدات والأسعار المتاحة للصنف المحدد :",
                 Dock = DockStyle.Top,
-                Height = 25,
+                Height = 22,
                 Font = new Font(Theme.FontMain, FontStyle.Bold),
                 ForeColor = Theme.Accent
             };
@@ -187,20 +194,65 @@ namespace ChickenDist.Forms
 
             dgUnits.DoubleClick += (s, e) => SelectAndClose();
             dgUnits.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { SelectAndClose(); e.Handled = true; } };
+            dgUnits.SelectionChanged += (s, e) => UpdateSelectedInputFields();
 
             pnlUnitsSection.Controls.Add(dgUnits);
 
             pnlGrid.Controls.Add(dgProducts);
             pnlGrid.Controls.Add(pnlUnitsSection);
 
-            // Bottom panel (Actions)
-            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-            btnSelect = Theme.MakeButton("✅ اختيار", 470, 10, 100, 32, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 360, 10, 100, 32, Color.FromArgb(120, 40, 40));
+            // Bottom Actions & Input Panel
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 105, BackColor = Theme.BgCard, Padding = new Padding(8, 4, 8, 4) };
+
+            var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(32, 40, 56), Padding = new Padding(6, 4, 6, 4) };
+
+            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(780, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            txtSelectedQty = new TextBox { Location = new Point(695, 10), Width = 80, Text = "1.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            var lblPurchasePrice = new Label { Text = "💰 سعر الشراء:", Location = new Point(570, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(460, 10), Width = 105, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            var lblSalePrice = new Label { Text = "🏷️ سعر البيع:", Location = new Point(345, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            txtSelectedSalePrice = new TextBox { Location = new Point(235, 10), Width = 105, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(155, 14), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            txtSelectedDiscount = new TextBox { Location = new Point(65, 10), Width = 85, Text = "0.00", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(235, 30), AutoSize = true, ForeColor = Color.FromArgb(235, 100, 100), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+
+            // فحص صلاحية تعديل السعر
+            bool canEditPrice = Session.Role == "Admin" || Session.CanEditPrice("Purchases") || Session.CanEditPrice("Sales");
+            if (!canEditPrice)
+            {
+                txtSelectedPurchasePrice.ReadOnly = true;
+                txtSelectedPurchasePrice.BackColor = Color.FromArgb(45, 45, 55);
+                txtSelectedSalePrice.ReadOnly = true;
+                txtSelectedSalePrice.BackColor = Color.FromArgb(45, 45, 55);
+                lblPricePermissionNotice.Visible = true;
+            }
+            else
+            {
+                lblPricePermissionNotice.Visible = false;
+            }
+
+            pnlEditInputs.Controls.AddRange(new Control[] {
+                lblQty, txtSelectedQty,
+                lblPurchasePrice, txtSelectedPurchasePrice,
+                lblSalePrice, txtSelectedSalePrice,
+                lblDiscount, txtSelectedDiscount,
+                lblPricePermissionNotice
+            });
+
+            var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Color.Transparent };
+            btnSelect = Theme.MakeButton("✅ اختيار وانزال الصنف للفاتورة", 420, 8, 220, 34, Theme.Accent);
+            btnCancel = Theme.MakeButton("❌ إلغاء", 260, 8, 120, 34, Color.FromArgb(120, 40, 40));
             
             btnSelect.Click += BtnSelect_Click;
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
-            pnlActions.Controls.AddRange(new Control[] { btnSelect, btnCancel });
+            pnlButtons.Controls.AddRange(new Control[] { btnSelect, btnCancel });
+
+            pnlActions.Controls.Add(pnlButtons);
+            pnlActions.Controls.Add(pnlEditInputs);
 
             // Add in docking Z-order
             this.Controls.Add(pnlGrid);      // Fill
@@ -440,6 +492,47 @@ namespace ChickenDist.Forms
         private void DgProducts_SelectionChanged(object sender, EventArgs e)
         {
             UpdateUnitsGrid();
+            UpdateSelectedInputFields();
+        }
+
+        private void UpdateSelectedInputFields()
+        {
+            if (txtSelectedPurchasePrice == null || txtSelectedSalePrice == null) return;
+
+            decimal sp = 0m;
+            decimal pp = 0m;
+
+            if (dgUnits != null && dgUnits.SelectedRows.Count > 0)
+            {
+                var row = dgUnits.SelectedRows[0];
+                if (row.Cells["SalePrice"].Value != null)
+                    decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
+                if (row.Cells["PurchasePrice"].Value != null)
+                    decimal.TryParse(row.Cells["PurchasePrice"].Value.ToString(), out pp);
+            }
+            else if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
+            {
+                var row = dgProducts.SelectedRows[0];
+                if (row.Cells["SalePrice"].Value != null)
+                    decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
+
+                int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                if (_dvProducts != null)
+                {
+                    foreach (DataRowView drv in _dvProducts)
+                    {
+                        if (Convert.ToInt32(drv.Row["ProductID"]) == pid)
+                        {
+                            if (drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
+                                pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            txtSelectedPurchasePrice.Text = pp.ToString("F2");
+            txtSelectedSalePrice.Text = sp.ToString("F2");
         }
 
         private void UpdateUnitsGrid()
@@ -590,6 +683,27 @@ namespace ChickenDist.Forms
                 SelectedPrice = Convert.ToDecimal(dgProducts.SelectedRows[0].Cells["SalePrice"].Value);
                 SelectedUnitName = dgProducts.SelectedRows[0].Cells["Unit"].Value?.ToString() ?? "";
             }
+
+            // Parse Qty, Prices, Discount entered by user
+            if (txtSelectedQty != null && decimal.TryParse(txtSelectedQty.Text.Trim(), out decimal q) && q > 0)
+                SelectedQuantity = q;
+            else
+                SelectedQuantity = 1m;
+
+            if (txtSelectedPurchasePrice != null && decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal ppVal))
+                SelectedPurchasePrice = ppVal;
+            else
+                SelectedPurchasePrice = SelectedPrice;
+
+            if (txtSelectedSalePrice != null && decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal spVal))
+                SelectedSalePrice = spVal;
+            else
+                SelectedSalePrice = SelectedPrice;
+
+            if (txtSelectedDiscount != null && decimal.TryParse(txtSelectedDiscount.Text.Trim(), out decimal dVal))
+                SelectedDiscount = dVal;
+            else
+                SelectedDiscount = 0m;
 
             this.DialogResult = DialogResult.OK;
             this.Close();

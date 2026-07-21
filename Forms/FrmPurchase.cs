@@ -364,6 +364,35 @@ namespace ChickenDist.Forms
                                 break;
                             }
                         }
+
+                        ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
+                        string prodCode = prodItem?.ProductCode ?? "";
+                        string prodName = prodItem?.Text ?? "";
+
+                        decimal qty = dlgSearch.SelectedQuantity > 0 ? dlgSearch.SelectedQuantity : 1m;
+                        decimal purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : dlgSearch.SelectedPrice;
+                        decimal salePrice = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : dlgSearch.SelectedPrice;
+                        decimal discount = dlgSearch.SelectedDiscount;
+
+                        AddProductToGrid(
+                            dlgSearch.SelectedProductID,
+                            prodCode,
+                            prodName,
+                            qty,
+                            purchasePrice,
+                            discount,
+                            salePrice
+                        );
+
+                        if (!string.IsNullOrEmpty(dlgSearch.SelectedUnitName) && _items.Count > 0)
+                        {
+                            var lastItem = _items.FindLast(i => i.ProductID == dlgSearch.SelectedProductID);
+                            if (lastItem != null)
+                            {
+                                lastItem.UnitName = dlgSearch.SelectedUnitName;
+                                RefreshGrid();
+                            }
+                        }
                     }
                 }
             };

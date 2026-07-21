@@ -2244,7 +2244,9 @@ namespace ChickenDist.Forms
 
 					if (frmProductSearch.DialogResult == DialogResult.OK)
 					{
-						AddOrUpdateProduct(frmProductSearch.SelectedProductID, 1.00m, frmProductSearch.SelectedPrice, false, frmProductSearch.SelectedUnitName);
+						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
+						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
+						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName);
 						if (frmProductSearch.SelectedBatchID.HasValue)
 						{
 							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
