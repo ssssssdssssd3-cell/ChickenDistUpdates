@@ -109,6 +109,7 @@ namespace ChickenDist.Forms
 		private Label lblSafeAccount;
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
 		private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
+		private bool _searchSessionActive = false; // جلسة البحث السريع
 		private Label lblCratesOut;
 		private NumericUpDown nudCratesOut;
 		private Label lblCratesIn;
@@ -2233,31 +2234,56 @@ namespace ChickenDist.Forms
 			int? warehouseID = null;
 			if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
 
-			using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID);
-			if (frmProductSearch.ShowDialog() == DialogResult.OK)
+			try
 			{
-				AddOrUpdateProduct(frmProductSearch.SelectedProductID, 1.00m, frmProductSearch.SelectedPrice, false, frmProductSearch.SelectedUnitName);
-				if (frmProductSearch.SelectedBatchID.HasValue)
+				_searchSessionActive = true;
+				while (true)
 				{
-					if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID);
+					frmProductSearch.ShowDialog();
+
+					if (frmProductSearch.DialogResult == DialogResult.OK)
 					{
-						MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-						var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-						if (lastItem != null)
+						AddOrUpdateProduct(frmProductSearch.SelectedProductID, 1.00m, frmProductSearch.SelectedPrice, false, frmProductSearch.SelectedUnitName);
+						if (frmProductSearch.SelectedBatchID.HasValue)
 						{
-							_items.Remove(lastItem);
-							RefreshGrid();
+							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+							{
+								MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+								var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+								if (lastItem != null)
+								{
+									_items.Remove(lastItem);
+									RefreshGrid();
+								}
+							}
+							else
+							{
+								var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+								if (lastItem2 != null)
+								{
+									lastItem2.BatchID = frmProductSearch.SelectedBatchID;
+									lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
+									RefreshGrid();
+								}
+							}
 						}
-						return;
+						// فتح الشاشة مرة أخرى لاختيار صنف تاني
+						continue;
 					}
-					var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-					if (lastItem2 != null)
+					else
 					{
-						lastItem2.BatchID = frmProductSearch.SelectedBatchID;
-						lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
-						RefreshGrid();
+						// المستخدم ضغط إلغاء → نخرج من الحلقة
+						break;
 					}
 				}
+			}
+			catch { }
+			finally
+			{
+				_searchSessionActive = false;
+				// إرجاع الفوكس للكومبو أو الجدول
+				this.BeginInvoke((MethodInvoker)delegate { cboProduct.Focus(); });
 			}
 		}
 
