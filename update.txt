@@ -1,5 +1,5 @@
 version=2.0.122
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=936FA537B890A28A7F37F65C88C470CA7A549B38D4524BAAC5E52F3696278EF1
-changelog=v2.0.122 - 2026-07-22: اضافة مصاريف الشحن لفواتير المشتريات مع اختيار من يتحمل الشحن (المورد / الشركة)
+sha256=DE8A8D29F233BFDA943C18B515DCC33861D2B04A1F7BF4AA0642A06C2115F29B
+changelog=v2.0.122 - 2026-07-22: Bug fixes and UI improvements
