@@ -747,7 +747,6 @@ namespace ChickenDist.Forms
         private void FocusQtyCell(POSItem item)
         {
             // نستخدم BeginInvoke لتأجيل التحديد حتى بعد انتهاء معالجة حدث الضغط الحالي
-            // وبدون BeginEdit حتى لا يحتجز الجدول أحداث الضغط على أزرار الأصناف
             this.BeginInvoke(new Action(() =>
             {
                 try
@@ -756,7 +755,9 @@ namespace ChickenDist.Forms
                     if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
                     {
                         dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 = Qty
-                        // لا نستدعي BeginEdit هنا - المستخدم يبدأ الكتابة مباشرة
+                        // نمسح محتوى خانة الكمية ونبدأ التعديل مباشرة
+                        dgItems.Rows[rowIndex].Cells[2].Value = "";
+                        dgItems.BeginEdit(true); // يدخل وضع التعديل فوراً
                     }
                 }
                 catch { }
@@ -861,7 +862,46 @@ namespace ChickenDist.Forms
 
             if (e.ColumnIndex == 2) // Qty column
             {
-                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString(), out decimal newQty) && newQty > 0)
+                string cellText = dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString()?.Trim() ?? "";
+
+                // ── كشف سكانر: لو ما كُتب في خانة الكمية يطابق كود/باركود منتج ──
+                if (cellText.Length >= 3)
+                {
+                    try
+                    {
+                        string trimmedC = cellText.TrimStart('0');
+                        if (string.IsNullOrEmpty(trimmedC)) trimmedC = "0";
+                        string paddedC = cellText;
+                        if (int.TryParse(cellText, out int cv)) paddedC = cv.ToString("D8");
+
+                        var dtScan = DbHelper.Query(
+                            @"SELECT TOP 1 ProductID FROM Products
+                              WHERE IsActive=1 AND (
+                                  ProductCode=@c OR ProductCode=@tr OR ProductCode=@pd
+                                  OR InternationalCode=@c
+                                  OR Unit1Barcode=@c OR Unit2Barcode=@c)",
+                            DbHelper.P("@c", cellText),
+                            DbHelper.P("@tr", trimmedC),
+                            DbHelper.P("@pd", paddedC));
+
+                        if (dtScan.Rows.Count > 0)
+                        {
+                            // ← كود منتج تم مسحه بالسكانر في خانة الكمية
+                            // → نعيد الكمية الأصلية ونضيف الصنف كسطر جديد
+                            dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                            string scannedCode = cellText;
+                            this.BeginInvoke(new Action(() =>
+                            {
+                                AddProductByCode(scannedCode);
+                            }));
+                            return;
+                        }
+                    }
+                    catch { }
+                }
+
+                // ── كمية عادية ──
+                if (decimal.TryParse(cellText, out decimal newQty) && newQty > 0)
                 {
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
@@ -869,7 +909,6 @@ namespace ChickenDist.Forms
                         dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
                         return;
                     }
-
                     item.Qty = newQty;
                     item.Total = (newQty * item.Price) - item.DiscountAmt;
                     this.BeginInvoke(new Action(RefreshGrid));
