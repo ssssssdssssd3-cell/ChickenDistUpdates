@@ -50,6 +50,9 @@ namespace ChickenDist.Forms
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
 
+        // جلسة البحث السريع - لمنع تدخل FocusQtyCell أثناء تكرار شاشة البحث
+        private bool _searchSessionActive = false;
+
         public FrmPOS()
         {
             InitUI();
@@ -746,6 +749,9 @@ namespace ChickenDist.Forms
 
         private void FocusQtyCell(POSItem item)
         {
+            // لو في جلسة بحث مفتوحة: نضيف الصنف بس ومنفتحش التعديل حتى لا نعطل إعادة فتح شاشة البحث
+            if (_searchSessionActive) return;
+
             // نستخدم BeginInvoke لتأجيل التحديد حتى بعد انتهاء معالجة حدث الضغط الحالي
             this.BeginInvoke(new Action(() =>
             {
@@ -1231,6 +1237,7 @@ namespace ChickenDist.Forms
             {
                 // تظل الشاشة تُعاد فتحها بعد كل اختيار
                 // حتى يضغط المستخدم إلغاء أو يُغلق الشاشة
+                _searchSessionActive = true;
                 while (true)
                 {
                     var frm = new FrmProductSearch();
@@ -1272,11 +1279,14 @@ namespace ChickenDist.Forms
                         break;
                     }
                 }
-
+            }
+            catch { }
+            finally
+            {
+                _searchSessionActive = false;
                 // إرجاع الفوكس لخانة الباركود
                 this.BeginInvoke((Action)(() => txtBarcode.Focus()));
             }
-            catch { }
         }
 
         // ── Quick Items ──────────────────────────────────────
