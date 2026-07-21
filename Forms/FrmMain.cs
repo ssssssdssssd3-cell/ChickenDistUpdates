@@ -213,7 +213,7 @@ namespace ChickenDist.Forms
             pnlHeaderRight = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft, // Menu icons start from visual Right
+                FlowDirection = FlowDirection.LeftToRight, // LeftToRight under RTL starts 1st added control (الرئيسية) on visual Far Right
                 WrapContents = false,
                 AutoScroll = false,
                 RightToLeft = RightToLeft.Yes,
@@ -1733,7 +1733,7 @@ namespace ChickenDist.Forms
             var flowShortcuts = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight, // LeftToRight under RTL starts 1st tile (POS) on visual Far Right
                 WrapContents = true,
                 BackColor = Color.Transparent,
                 AutoScroll = true,
