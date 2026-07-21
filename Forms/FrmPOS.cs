@@ -1190,40 +1190,51 @@ namespace ChickenDist.Forms
         {
             try
             {
-                var frm = new FrmProductSearch();
-                frm.ShowDialog();
-
-                if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
+                // تظل الشاشة تُعاد فتحها بعد كل اختيار
+                // حتى يضغط المستخدم إلغاء أو يُغلق الشاشة
+                while (true)
                 {
-                    var dt = DbHelper.Query(@"
-                        SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                               p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
-                               p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
-                               p.Unit3Factor, p.DefaultSaleUnit,
-                               COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
-                        FROM Products p 
-                        WHERE p.ProductID = @id", DbHelper.P("@id", frm.SelectedProductID));
-                    if (dt.Rows.Count > 0)
+                    var frm = new FrmProductSearch();
+                    frm.ShowDialog();
+
+                    if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
                     {
-                        var row = dt.Rows[0];
-                        decimal factor = 1m;
-                        if (!string.IsNullOrEmpty(frm.SelectedUnitName))
+                        var dt = DbHelper.Query(@"
+                            SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
+                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                                   p.Unit3Factor, p.DefaultSaleUnit,
+                                   COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
+                            FROM Products p 
+                            WHERE p.ProductID = @id", DbHelper.P("@id", frm.SelectedProductID));
+                        if (dt.Rows.Count > 0)
                         {
-                            if (row["Unit2Name"] != DBNull.Value && frm.SelectedUnitName == row["Unit2Name"].ToString())
+                            var row = dt.Rows[0];
+                            decimal factor = 1m;
+                            if (!string.IsNullOrEmpty(frm.SelectedUnitName))
                             {
-                                if (row["Unit2Factor"] != DBNull.Value) factor = Convert.ToDecimal(row["Unit2Factor"]);
+                                if (row["Unit2Name"] != DBNull.Value && frm.SelectedUnitName == row["Unit2Name"].ToString())
+                                {
+                                    if (row["Unit2Factor"] != DBNull.Value) factor = Convert.ToDecimal(row["Unit2Factor"]);
+                                }
+                                else if (row["Unit1Name"] != DBNull.Value && frm.SelectedUnitName == row["Unit1Name"].ToString())
+                                {
+                                    factor = 1m;
+                                }
                             }
-                            else if (row["Unit1Name"] != DBNull.Value && frm.SelectedUnitName == row["Unit1Name"].ToString())
-                            {
-                                factor = 1m;
-                            }
+                            AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
                         }
-                        AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
+                        // فتح الشاشة مرة أخرى لاختيار صنف تاني
+                        continue;
+                    }
+                    else
+                    {
+                        // المستخدم ضغط إلغاء أو أغلق الشاشة → نخرج من الحلقة
+                        break;
                     }
                 }
 
-                // إرجاع الفوكس لخانة الباركود بعد إغلاق شاشة البحث
-                // لمنع رجوع الفوكس لزر البحث وإعادة فتح الشاشة تلقائياً
+                // إرجاع الفوكس لخانة الباركود
                 this.BeginInvoke((Action)(() => txtBarcode.Focus()));
             }
             catch { }
