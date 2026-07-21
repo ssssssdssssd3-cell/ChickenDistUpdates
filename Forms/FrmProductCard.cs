@@ -149,7 +149,7 @@ namespace ChickenDist.Forms
             grpBasic.Controls.Add(chkIsService);
             ry += 30;
 
-            chkIsQuickItem = new CheckBox { Text = "⭐ صنف سريع (مبيعات)", Location = new Point(20, ry), ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = true, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (يظهر في شاشة البيع السريع)", Location = new Point(20, ry), ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = true, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             grpBasic.Controls.Add(chkIsQuickItem);
             ry += 30;
 

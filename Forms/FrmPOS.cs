@@ -240,16 +240,29 @@ namespace ChickenDist.Forms
             pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Color.FromArgb(240, 242, 245), Padding = new Padding(4) };
             pnlQuick.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlQuick);
 
-            // شريط أقسام للمطاعم
+            // شريط الأقسام التفاعلي
             flowCategories = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = AppConfig.IsRestaurant ? 36 : 0,
-                AutoScroll = false,
+                Height = 50,
+                AutoScroll = true,
                 WrapContents = false,
                 FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
                 BackColor = Color.FromArgb(30, 30, 46),
-                Visible = AppConfig.IsRestaurant
+                Visible = true
+            };
+            flowCategories.MouseWheel += (s, e) =>
+            {
+                try
+                {
+                    int scrollAmount = 60;
+                    int newVal = flowCategories.HorizontalScroll.Value - (e.Delta > 0 ? scrollAmount : -scrollAmount);
+                    if (newVal < flowCategories.HorizontalScroll.Minimum) newVal = flowCategories.HorizontalScroll.Minimum;
+                    if (newVal > flowCategories.HorizontalScroll.Maximum) newVal = flowCategories.HorizontalScroll.Maximum;
+                    flowCategories.HorizontalScroll.Value = newVal;
+                }
+                catch { }
             };
 
             var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Top, Height = 28, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
@@ -1298,7 +1311,7 @@ namespace ChickenDist.Forms
         private void FilterQuickItems(int? categoryID)
         {
             flowQuickItems.Controls.Clear();
-            string query = "SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND IsQuickItem=1";
+            string query = "SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND ISNULL(IsQuickItem, 0)=1";
             var pList = new List<System.Data.SqlClient.SqlParameter>();
 
             if (categoryID.HasValue)
@@ -1372,8 +1385,17 @@ namespace ChickenDist.Forms
 
         private void LoadCategories()
         {
-            if (!AppConfig.IsRestaurant) return;
             flowCategories.Controls.Clear();
+
+            var dt = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive=1 ORDER BY CategoryName");
+            if (dt.Rows.Count == 0)
+            {
+                flowCategories.Visible = false;
+                return;
+            }
+            flowCategories.Visible = true;
+
+            Font catFont = new Font("Segoe UI", 9f, FontStyle.Bold);
 
             var btnAll = new Button
             {
@@ -1382,7 +1404,7 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Primary,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = catFont,
                 Cursor = Cursors.Hand,
                 Margin = new Padding(3, 4, 3, 4)
             };
@@ -1393,20 +1415,21 @@ namespace ChickenDist.Forms
             };
             flowCategories.Controls.Add(btnAll);
 
-            var dt = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive=1 ORDER BY CategoryName");
             foreach (DataRow row in dt.Rows)
             {
                 int catId = Convert.ToInt32(row["CategoryID"]);
                 string catName = row["CategoryName"].ToString();
 
+                int btnWidth = Math.Max(75, TextRenderer.MeasureText(catName, catFont).Width + 18);
+
                 var btnCat = new Button
                 {
                     Text = catName,
-                    Size = new Size(80, 28),
+                    Size = new Size(btnWidth, 28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(60, 70, 85),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Font = catFont,
                     Cursor = Cursors.Hand,
                     Margin = new Padding(3, 4, 3, 4),
                     Tag = catId
