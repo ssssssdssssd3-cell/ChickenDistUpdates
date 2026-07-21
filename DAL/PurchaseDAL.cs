@@ -40,6 +40,15 @@ namespace ChickenDist.DAL
 
     public static class PurchaseDAL
     {
+        static PurchaseDAL()
+        {
+            try
+            {
+                DbHelper.EnsurePurchaseColumnsExist();
+            }
+            catch { }
+        }
+
         // ─── قراءة الفواتير المؤكدة ──────────────────────────────────────────────
         public static DataTable GetAll(DateTime from, DateTime to)
         {

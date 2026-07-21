@@ -169,21 +169,46 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 26;
+        private const int CurrentSchemaVersion = 27;
+
+        public static void EnsurePurchaseColumnsExist()
+        {
+            SafeMigrate("Purchases.SupplierInvoiceNo", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'SupplierInvoiceNo')
+            BEGIN
+                ALTER TABLE Purchases ADD SupplierInvoiceNo NVARCHAR(100) NULL;
+            END");
+
+            SafeMigrate("Purchases.ShippingCost", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'ShippingCost')
+            BEGIN
+                ALTER TABLE Purchases ADD ShippingCost DECIMAL(18,2) NULL CONSTRAINT DF_Purchases_ShippingCost DEFAULT 0;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'ShippingOn')
+            BEGIN
+                ALTER TABLE Purchases ADD ShippingOn NVARCHAR(20) NULL CONSTRAINT DF_Purchases_ShippingOn DEFAULT 'Company';
+            END");
+        }
 
         public static void EnsureDatabaseSchema()
         {
+            EnsurePurchaseColumnsExist();
+
             try
             {
                 // Bypass heavy schema inspection if already initialized to the latest version
                 string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
                 if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
                 {
-                    // Double check a critical column to handle database restore cases
+                    // Double check critical columns to handle database restore cases
                     try
                     {
                         var colExists = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
-                        if (colExists != null && colExists != DBNull.Value)
+                        var sinvExists = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
+                        var shipExists = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
+                        if (colExists != null && colExists != DBNull.Value &&
+                            sinvExists != null && sinvExists != DBNull.Value &&
+                            shipExists != null && shipExists != DBNull.Value)
                         {
                             return;
                         }
