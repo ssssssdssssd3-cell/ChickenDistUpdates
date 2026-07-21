@@ -1620,19 +1620,18 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3,
+                RowCount = 2,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f)); // Header
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 135f)); // Cards
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Dynamic content split
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 95f)); // Header
+            mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Shortcuts Panel
 
-            // 1. Header with greeting and Logo
+            // 1. Header with greeting, Logo and Quick Details button
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
+                Height = 95,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(20, 10, 20, 10)
             };
@@ -1642,8 +1641,8 @@ namespace ChickenDist.Forms
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var brush = new LinearGradientBrush(new Point(0, pnlHeader.Height - 3), new Point(pnlHeader.Width, pnlHeader.Height - 3), Theme.Accent, Theme.Primary))
-                using (var pen = new Pen(brush, 2.5f))
+                using (var brush = new LinearGradientBrush(new Point(0, pnlHeader.Height - 4), new Point(pnlHeader.Width, pnlHeader.Height - 4), Theme.Accent, Theme.Primary))
+                using (var pen = new Pen(brush, 3f))
                 {
                     g.DrawLine(pen, 0, pnlHeader.Height - 2, pnlHeader.Width, pnlHeader.Height - 2);
                 }
@@ -1654,7 +1653,7 @@ namespace ChickenDist.Forms
             {
                 var pbLogo = new PictureBox
                 {
-                    Size = new Size(65, 65),
+                    Size = new Size(70, 70),
                     Location = new Point(15, 10),
                     SizeMode = PictureBoxSizeMode.Zoom,
                     Image = dashboardLogo,
@@ -1665,329 +1664,226 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = AppConfig.CompanyName + " - لوحة قيادة النظام",
+                Text = (string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي" : AppConfig.CompanyName) + " - الشاشة الرئيسية",
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35), // Beautiful gold
                 AutoSize = true,
-                Location = new Point(dashboardLogo != null ? 90 : 20, 15),
+                Location = new Point(dashboardLogo != null ? 95 : 20, 15),
                 BackColor = Color.Transparent
             };
 
             var lblSubtitle = new Label
             {
-                Text = $"أهلاً بك {Session.EmpName}  |  {DateTime.Today:dd MMMM yyyy}  |  النظام يعمل بأعلى كفاءة 🚀",
+                Text = $"أهلاً بك {Session.EmpName}  |  {DateTime.Today:dd MMMM yyyy}  |  برنامج إدارة المبيعات والمخازن المتكامل 🚀",
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Theme.TextSub,
                 AutoSize = true,
-                Location = new Point(dashboardLogo != null ? 90 : 20, 48),
+                Location = new Point(dashboardLogo != null ? 95 : 20, 52),
                 BackColor = Color.Transparent
+            };
+
+            // زر التفاصيل والإحصائيات السريعة في الهيدر
+            var btnQuickDetails = new Button
+            {
+                Text = "📊 التفاصيل والإحصائيات السريعة",
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Size = new Size(230, 44),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Primary,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnQuickDetails.FlatAppearance.BorderSize = 0;
+            btnQuickDetails.Location = new Point(pnlHeader.Width - 250, 24);
+            btnQuickDetails.Click += (s, e) =>
+            {
+                var frmDetails = new FrmQuickDetails((frm) => NavigateMain(frm));
+                frmDetails.ShowDialog(this);
+            };
+
+            pnlHeader.SizeChanged += (s, e) =>
+            {
+                btnQuickDetails.Location = new Point(pnlHeader.Width - 250, 24);
             };
 
             pnlHeader.Controls.Add(lblTitle);
             pnlHeader.Controls.Add(lblSubtitle);
+            pnlHeader.Controls.Add(btnQuickDetails);
             mainTbl.Controls.Add(pnlHeader, 0, 0);
 
-            // 2. Cards (FlowLayout)
-            var pnlCards = new FlowLayoutPanel
+            // 2. Main Grid Panel (Quick Shortcuts)
+            var pnlShortcutsGroup = new Panel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = true,
                 BackColor = Theme.BgMain,
-                Padding = new Padding(10, 5, 10, 5)
+                Padding = new Padding(25),
+                Margin = new Padding(0)
             };
 
-            try
+            var lblGroupTitle = new Label
             {
-                if (Session.CanAccess("DashTreasury"))
-                {
-                    decimal cashBal = AccountDAL.GetCashBalance();
-                    pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
-                }
+                Text = "⚡ اختصارات الشاشات والعمليات السريعة",
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                ForeColor = Theme.Accent,
+                Dock = DockStyle.Top,
+                Height = 35,
+                Padding = new Padding(5, 0, 0, 0)
+            };
 
-                if (Session.CanAccess("DashSales"))
-                {
-                    var salesDt = ReportDAL.SalesByDay(DateTime.Today, DateTime.Today);
-                    decimal todaySales = salesDt.Rows.Count > 0 ? Convert.ToDecimal(salesDt.Rows[0]["Total"]) : 0;
-                    pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
-                }
-
-                if (Session.CanAccess("DashLoads"))
-                {
-                    var openLoads = DriverDAL.GetOpenLoads();
-                    pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoads.Rows.Count + " حمولة", Color.FromArgb(52, 152, 219)));
-                }
-
-                if (Session.CanAccess("DashBelowMin"))
-                {
-                    int belowMinCount = InventoryDAL.GetBelowMinStockCount();
-                    var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
-                    cardBelowMin.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                    foreach (Control child in cardBelowMin.Controls)
-                    {
-                        child.Click += (s, e) => NavigateMain(new FrmInventory(true));
-                        child.Cursor = Cursors.Hand;
-                    }
-                    pnlCards.Controls.Add(cardBelowMin);
-                }
-            }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load dashboard cards failed: " + ex.Message); }
-            mainTbl.Controls.Add(pnlCards, 0, 1);
-
-            // 3. Lower Split (Quick Actions & Recent Invoices)
-            var lowerTbl = new TableLayoutPanel
+            var flowShortcuts = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-                RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain
-            };
-            lowerTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f)); // Quick Actions (40%)
-            lowerTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60f)); // Recent Invoices & Chart (60%)
-            lowerTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-
-            // 3a. Left Column: Quick Actions
-            var pnlActions = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(15),
-                Margin = new Padding(15, 0, 8, 15)
-            };
-            var lblActTitle = new Label { Text = "⚡ إجراءات سريعة واختصارات", Font = Theme.FontHeader, ForeColor = Theme.Accent, Location = new Point(15, 15), AutoSize = true };
-            pnlActions.Controls.Add(lblActTitle);
-
-            var pnlActionsFlow = new FlowLayoutPanel
-            {
-                Location = new Point(10, 50),
-                Size = new Size(pnlActions.Width - 20, pnlActions.Height - 70),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true,
                 BackColor = Color.Transparent,
-                AutoScroll = true
+                AutoScroll = true,
+                Padding = new Padding(5)
             };
-            pnlActions.Controls.Add(pnlActionsFlow);
 
-            // Add action tiles dynamically
+            pnlShortcutsGroup.Controls.Add(flowShortcuts);
+            pnlShortcutsGroup.Controls.Add(lblGroupTitle);
+
+            // إضافة جميع كروت الاختصارات السريعة فوراً وبدون استعلامات معطلة
             if (Session.CanAccess("POS")) 
-                AddActionTile(pnlActionsFlow, "💻", "نقطة البيع POS", () => { var f = new FrmPOS(); f.ShowDialog(); }, Theme.Accent);
+                AddLargeActionTile(flowShortcuts, "💻", "نقطة البيع POS", "كاشير ومبيعات سريعة", () => { var f = new FrmPOS(); f.ShowDialog(); }, Theme.Accent);
             
             if (Session.CanAccess("Sales")) 
-                AddActionTile(pnlActionsFlow, "🛒", "مبيعات تفصيلية", () => NavigateMain(new FrmSale()), Theme.Primary);
+                AddLargeActionTile(flowShortcuts, "🛒", "فاتورة مبيعات", "إدخال ومتابعة الفواتير", () => NavigateMain(new FrmSale()), Theme.Primary);
+
+            if (Session.CanAccess("Purchases"))
+                AddLargeActionTile(flowShortcuts, "📥", "فواتير الشراء", "إدخال وتوريد المشتريات", () => NavigateMain(new FrmPurchase()), Color.FromArgb(25, 135, 84));
+
+            if (Session.CanAccess("Products"))
+                AddLargeActionTile(flowShortcuts, "📦", "الأصناف والمخزون", "إدارة كروت الأصناف والجرد", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
+
+            if (Session.CanAccess("CashBox")) 
+                AddLargeActionTile(flowShortcuts, "💰", "الخزنة والنقدية", "توريد وصرف وحركة النقدية", () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69));
+
+            if (Session.CanAccess("Clients")) 
+                AddLargeActionTile(flowShortcuts, "👥", "كشف حسابات العملاء", "متابعة ديون وحسابات العملاء", () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193));
+
+            if (Session.CanAccess("Suppliers")) 
+                AddLargeActionTile(flowShortcuts, "🏭", "حسابات الموردين", "متابعة فواتير ودفعات الموردين", () => NavigateMain(new FrmSuppliers()), Color.FromArgb(253, 126, 20));
 
             if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "CarService")
             {
                 string mTitle = AppConfig.BusinessType == "CarService" ? "صيانة سيارات" : "صيانة أجهزة";
                 if (Session.CanAccess("Maintenance"))
-                    AddActionTile(pnlActionsFlow, "🔧", mTitle, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69));
-                if (Session.CanAccess("Products"))
-                    AddActionTile(pnlActionsFlow, "📦", "إدارة المنتجات", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
+                    AddLargeActionTile(flowShortcuts, "🔧", mTitle, "كروت ورشة الصيانة والقطع", () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69));
             }
             else if (AppConfig.BusinessType == "Clothing")
             {
                 if (Session.CanAccess("Sales"))
-                    AddActionTile(pnlActionsFlow, "👕", "مصفوفة ملابس", () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253));
-                if (Session.CanAccess("Products"))
-                    AddActionTile(pnlActionsFlow, "🏷️", "طباعة باركود", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
+                    AddLargeActionTile(flowShortcuts, "👕", "مصفوفة ملابس", "مقاسات وألوان الأصناف", () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253));
             }
             else
             {
                 if (Session.CanAccess("Vehicles")) 
-                    AddActionTile(pnlActionsFlow, "🚗", "حركة السيارات", () => NavigateMain(new FrmVehicles()), Color.FromArgb(59, 130, 246));
+                    AddLargeActionTile(flowShortcuts, "🚗", "حركة السيارات", "حمولة وتتبع سيارات التوزيع", () => NavigateMain(new FrmVehicles()), Color.FromArgb(59, 130, 246));
                 if (Session.CanAccess("DriverHandover")) 
-                    AddActionTile(pnlActionsFlow, "🚚", "تسليم مندوب", () => NavigateMain(new FrmDriverHandover()), Color.FromArgb(108, 117, 125));
-                if (Session.CanAccess("CashBox")) 
-                    AddActionTile(pnlActionsFlow, "💰", "تحصيل نقدي", () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69));
-                if (Session.CanAccess("Inventory")) 
-                    AddActionTile(pnlActionsFlow, "📦", "جرد وتعديل أسعار", () => NavigateMain(new FrmInventory()), Color.FromArgb(253, 126, 20));
+                    AddLargeActionTile(flowShortcuts, "🚚", "تسليم مندوب", "تصفية عهدة ومبيعات المناديب", () => NavigateMain(new FrmDriverHandover()), Color.FromArgb(108, 117, 125));
             }
 
-            if (Session.CanAccess("Clients")) 
-                AddActionTile(pnlActionsFlow, "👥", "كشف العملاء", () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193));
-            
-            
-            AddActionTile(pnlActionsFlow, "🤖", "الدعم الفني", () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
+            if (Session.CanAccess("Reports"))
+                AddLargeActionTile(flowShortcuts, "📈", "التقارير المالية", "قائمة الدخل والربحية والأرباح", () => NavigateMain(new FrmReports()), Color.FromArgb(70, 50, 150));
 
-            lowerTbl.Controls.Add(pnlActions, 0, 0);
+            if (Session.CanAccess("Products"))
+                AddLargeActionTile(flowShortcuts, "🏷️", "طباعة الباركود", "تصميم وطباعة ملصقات الباركود", () => NavigateMain(new FrmBulkPrintBarcodes()), Color.FromArgb(20, 140, 160));
 
-            // 3b. Right Column: Recent Sales Invoices & Sales Trend Chart
-            var pnlRecent = new Panel
+            if (Session.CanAccess("Settings"))
+                AddLargeActionTile(flowShortcuts, "⚙️", "إعدادات النظام", "الخيارات والنسخ الاحتياطي", () => NavigateMain(new FrmSettings()), Color.FromArgb(100, 110, 120));
+
+            AddLargeActionTile(flowShortcuts, "🤖", "المساعد الذكي", "الدعم الفني الذكي والتفاعلي", () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
+
+            mainTbl.Controls.Add(pnlShortcutsGroup, 0, 1);
+            this.Controls.Add(mainTbl);
+        }
+
+        private void AddLargeActionTile(FlowLayoutPanel p, string emoji, string title, string subTitle, Action onClick, Color color)
+        {
+            var tile = new Panel
             {
-                Dock = DockStyle.Fill,
+                Size = new Size(200, 125),
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15),
-                Margin = new Padding(8, 0, 15, 15)
-            };
-            var lblRecTitle = new Label { Text = "📋 لوحة مراقبة وتحليلات النشاط", Font = Theme.FontHeader, ForeColor = Theme.TextMain, Location = new Point(15, 15), AutoSize = true };
-            pnlRecent.Controls.Add(lblRecTitle);
-
-            var dgRecent = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White, Font = Theme.FontMain },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) },
-                EnableHeadersVisualStyles = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", HeaderText = "كود الفاتورة", FillWeight = 40 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", HeaderText = "النوع", FillWeight = 30 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "العميل / المندوب", FillWeight = 50 });
-            dgRecent.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "المبلغ الإجمالي", FillWeight = 35 });
-
-            try
-            {
-                var dtSales = SaleDAL.GetAll(DateTime.Today, DateTime.Today);
-                int limit = 0;
-                foreach (DataRow r in dtSales.Rows)
-                {
-                    if (limit++ >= 5) break; // Display last 5 sales
-                    string clientOrDriver = r["SaleType"].ToString() == "DriverLoad" ? r["DriverName"].ToString() : r["ClientName"].ToString();
-                    string typeArabic = r["SaleType"].ToString() == "Cash" ? "نقدي" : r["SaleType"].ToString() == "Credit" ? "آجل" : "تحميل مندوب";
-                    dgRecent.Rows.Add(r["SaleCode"], typeArabic, clientOrDriver, Convert.ToDecimal(r["TotalAmount"]).ToString("N2") + " ج");
-                }
-            }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Load recent sales failed: " + ex.Message); }
-
-            // Create Sales Trend Chart using GDI+
-            var pnlChart = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
-                Margin = new Padding(0)
+                Margin = new Padding(12),
+                Cursor = Cursors.Hand
             };
 
-            // Prepare chart data for the last 7 days
-            var chartDays = new string[7];
-            var chartValues = new decimal[7];
-            var dayNames = new[] { "الأحد", "الأثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" };
-
-            try
+            var lblEmoji = new Label
             {
-                DataTable salesDt = ReportDAL.SalesByDay(DateTime.Today.AddDays(-6), DateTime.Today);
-                for (int i = 0; i < 7; i++)
-                {
-                    DateTime d = DateTime.Today.AddDays(-6 + i);
-                    chartDays[i] = dayNames[(int)d.DayOfWeek];
-                    decimal val = 0;
-                    if (salesDt != null)
-                    {
-                        foreach (DataRow row in salesDt.Rows)
-                        {
-                            if (Convert.ToDateTime(row["SaleDay"]).Date == d.Date)
-                            {
-                                val = Convert.ToDecimal(row["Total"]);
-                                break;
-                            }
-                        }
-                    }
-                    chartValues[i] = val;
-                }
-            }
-            catch { }
+                Text = emoji,
+                Font = new Font("Segoe UI Emoji", 24f),
+                Size = new Size(200, 50),
+                Location = new Point(0, 10),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
+            };
 
-            pnlChart.Paint += (s, e) =>
+            var lblTitle = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Size = new Size(200, 26),
+                Location = new Point(0, 62),
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Theme.TextMain,
+                BackColor = Color.Transparent
+            };
+
+            var lblSub = new Label
+            {
+                Text = subTitle,
+                Font = new Font("Segoe UI", 8.5f),
+                Size = new Size(200, 24),
+                Location = new Point(0, 88),
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Theme.TextSub,
+                BackColor = Color.Transparent
+            };
+
+            tile.Controls.Add(lblEmoji);
+            tile.Controls.Add(lblTitle);
+            tile.Controls.Add(lblSub);
+
+            tile.Paint += (s, e) =>
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                
-                int padLeft = 40;
-                int padRight = 20;
-                int padTop = 30;
-                int padBottom = 25;
-                
-                int w = pnlChart.Width;
-                int h = pnlChart.Height;
-                if (w < 100 || h < 50) return;
-                
-                int chartW = w - padLeft - padRight;
-                int chartH = h - padTop - padBottom;
-                
-                g.DrawString("📈 مؤشر حركة المبيعات اليومية لآخر 7 أيام", new Font("Segoe UI", 9.5f, FontStyle.Bold), new SolidBrush(Theme.TextMain), 15, 5);
-                
-                decimal maxVal = 1000;
-                foreach (var val in chartValues)
+                using (var pen = new Pen(Theme.BorderColor, 1.5f))
                 {
-                    if (val > maxVal) maxVal = val;
+                    g.DrawRectangle(pen, 0, 0, tile.Width - 1, tile.Height - 1);
                 }
-                float maxF = (float)maxVal * 1.15f;
-                
-                using (var gridPen = new Pen(Color.FromArgb(40, Theme.BorderColor), 1f))
-                using (var textBrush = new SolidBrush(Theme.TextSub))
-                using (var linePen = new Pen(Theme.BorderColor, 1.5f))
+                using (var brush = new SolidBrush(color))
                 {
-                    for (int j = 0; j <= 3; j++)
-                    {
-                        float yVal = padTop + (chartH / 3f) * j;
-                        g.DrawLine(gridPen, padLeft, yVal, w - padRight, yVal);
-                        
-                        decimal gridVal = (decimal)(maxF - (maxF / 3f) * j);
-                        g.DrawString(gridVal.ToString("N0"), new Font("Segoe UI", 7.5f), textBrush, 5, yVal - 7);
-                    }
-                    g.DrawLine(linePen, padLeft, h - padBottom, w - padRight, h - padBottom);
-                }
-                
-                float colWidth = chartW / 7f;
-                float barWidth = colWidth * 0.45f;
-                
-                for (int i = 0; i < 7; i++)
-                {
-                    float barX = padLeft + (colWidth * i) + (colWidth - barWidth) / 2f;
-                    float valRatio = maxF > 0 ? (float)chartValues[i] / maxF : 0f;
-                    float barHeight = chartH * valRatio;
-                    float barY = h - padBottom - barHeight;
-                    
-                    if (barHeight > 0)
-                    {
-                        var rect = new RectangleF(barX, barY, barWidth, barHeight);
-                        using (var brush = new LinearGradientBrush(new PointF(barX, barY), new PointF(barX, barY + barHeight), Color.FromArgb(243, 198, 35), Theme.Primary))
-                        {
-                            g.FillRectangle(brush, rect);
-                        }
-                        
-                        using (var valBrush = new SolidBrush(Theme.TextMain))
-                        {
-                            g.DrawString(chartValues[i].ToString("N0"), new Font("Segoe UI", 7.5f, FontStyle.Bold), valBrush, barX - 5, barY - 15);
-                        }
-                    }
-                    
-                    using (var labelBrush = new SolidBrush(Theme.TextMain))
-                    {
-                        g.DrawString(chartDays[i], new Font("Segoe UI", 7.5f), labelBrush, barX - 5, h - padBottom + 5);
-                    }
+                    g.FillRectangle(brush, 0, tile.Height - 5, tile.Width, 5);
                 }
             };
 
-            // Layout Table inside pnlRecent
-            var recentContainer = new TableLayoutPanel
+            Action applyHover = () =>
             {
-                Location = new Point(15, 55),
-                Size = new Size(pnlRecent.Width - 30, pnlRecent.Height - 70),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
-                ColumnCount = 1,
-                RowCount = 2,
-                BackColor = Color.Transparent
+                tile.BackColor = Color.FromArgb(20, color);
+                lblTitle.ForeColor = color;
             };
-            recentContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-            recentContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-            
-            recentContainer.Controls.Add(dgRecent, 0, 0);
-            recentContainer.Controls.Add(pnlChart, 0, 1);
-            
-            pnlRecent.Controls.Add(recentContainer);
-            lowerTbl.Controls.Add(pnlRecent, 1, 0);
+            Action applyLeave = () =>
+            {
+                tile.BackColor = Theme.BgCard;
+                lblTitle.ForeColor = Theme.TextMain;
+            };
 
-            mainTbl.Controls.Add(lowerTbl, 0, 2);
-            this.Controls.Add(mainTbl);
+            tile.MouseEnter += (s, e) => applyHover();
+            tile.MouseLeave += (s, e) => applyLeave();
+
+            foreach (Control ctrl in tile.Controls)
+            {
+                ctrl.Cursor = Cursors.Hand;
+                ctrl.MouseEnter += (s, e) => applyHover();
+                ctrl.MouseLeave += (s, e) => applyLeave();
+                ctrl.Click += (s, e) => onClick?.Invoke();
+            }
+            tile.Click += (s, e) => onClick?.Invoke();
+
+            p.Controls.Add(tile);
         }
 
         private Panel MakeCard(string title, string value, Color color)

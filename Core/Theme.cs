@@ -12,6 +12,13 @@ namespace ChickenDist.Core
         {
             try
             {
+                if (!string.IsNullOrWhiteSpace(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                {
+                    using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                    {
+                        return new Bitmap(img);
+                    }
+                }
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                 using (var stream = assembly.GetManifestResourceStream("ChickenDist.pro_soft_logo.png"))
                 {
@@ -25,7 +32,42 @@ namespace ChickenDist.Core
                 }
             }
             catch { }
-            return null;
+            return CreateDefaultLogoBitmap(128);
+        }
+
+        public static Bitmap CreateDefaultLogoBitmap(int size = 128)
+        {
+            Bitmap bmp = new Bitmap(size, size);
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                Rectangle rect = new Rectangle(4, 4, size - 8, size - 8);
+                using (LinearGradientBrush bgBrush = new LinearGradientBrush(rect, Color.FromArgb(20, 30, 55), Color.FromArgb(13, 110, 253), 45f))
+                {
+                    g.FillEllipse(bgBrush, rect);
+                }
+
+                using (Pen goldPen = new Pen(Color.FromArgb(243, 198, 35), 3.5f))
+                {
+                    g.DrawEllipse(goldPen, rect);
+                }
+
+                Rectangle innerRect = new Rectangle(14, 14, size - 28, size - 28);
+                using (Pen innerPen = new Pen(Color.FromArgb(100, 255, 255, 255), 1.5f))
+                {
+                    g.DrawEllipse(innerPen, innerRect);
+                }
+
+                using (Font fontEmoji = new Font("Segoe UI Emoji", size * 0.42f, FontStyle.Bold))
+                using (Brush goldBrush = new SolidBrush(Color.FromArgb(243, 198, 35)))
+                {
+                    StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString("⚡", fontEmoji, goldBrush, new RectangleF(0, -size * 0.02f, size, size), sf);
+                }
+            }
+            return bmp;
         }
         // الألوان الرئيسية - زاهية وواضحة جداً وعالية التباين (Vibrant & High-Contrast Modern Palette)
         public static Color Primary    = Color.FromArgb(13, 110, 253);   // Royal Blue زرقاء زاهية
