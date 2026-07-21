@@ -1614,182 +1614,39 @@ namespace ChickenDist.Forms
         {
             this.Controls.Clear();
 
-            // Main Table Layout (full screen)
-            var mainTbl = new TableLayoutPanel
+            // Main full screen container panel for the logo showcase
+            var pnlShowcase = new Panel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain
-            };
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 88f));  // Top Actions Ribbon ONLY
-            mainTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Full Screen Logo Showcase
-
-            // 1. Top Panel: Quick Action Ribbon
-            var pnlTopContainer = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(12, 5, 12, 5)
+                BackColor = Color.FromArgb(10, 14, 22), // Deep dark matching the ProSoft logo background perfectly
+                Padding = new Padding(20)
             };
 
-            // Gradient line at bottom of top container
-            pnlTopContainer.Paint += (s, e) =>
-            {
-                var g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var brush = new LinearGradientBrush(new Point(0, pnlTopContainer.Height - 3), new Point(pnlTopContainer.Width, pnlTopContainer.Height - 3), Theme.Accent, Theme.Primary))
-                using (var pen = new Pen(brush, 3f))
-                {
-                    g.DrawLine(pen, 0, pnlTopContainer.Height - 2, pnlTopContainer.Width, pnlTopContainer.Height - 2);
-                }
-            };
-
-            var tblHeaderRows = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                BackColor = Color.Transparent
-            };
-            tblHeaderRows.RowStyles.Add(new RowStyle(SizeType.Absolute, 35f));
-            tblHeaderRows.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-
-            // Row 1 Container: Title + Quick Details Button
-            var pnlRow1 = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-
-            Image logoSmall = Theme.GetCompanyLogo();
-            if (logoSmall != null)
-            {
-                var pbLogoSmall = new PictureBox
-                {
-                    Size = new Size(26, 26),
-                    Location = new Point(5, 3),
-                    SizeMode = PictureBoxSizeMode.Zoom,
-                    Image = logoSmall,
-                    BackColor = Color.Transparent
-                };
-                pnlRow1.Controls.Add(pbLogoSmall);
-            }
-
-            var lblTitle = new Label
-            {
-                Text = (string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي" : AppConfig.CompanyName),
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(243, 198, 35), // Gold
-                AutoSize = true,
-                Location = new Point(logoSmall != null ? 36 : 5, 4),
-                BackColor = Color.Transparent
-            };
-
+            // Top Right Quick Details Button
             var btnQuickDetails = new Button
             {
                 Text = "📊 التفاصيل والإحصائيات السريعة",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(205, 29),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Size = new Size(220, 36),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Primary,
                 ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Location = new Point(pnlShowcase.Width - 240, 15)
             };
             btnQuickDetails.FlatAppearance.BorderSize = 0;
-            btnQuickDetails.Location = new Point(pnlRow1.Width - 210, 2);
             btnQuickDetails.Click += (s, e) =>
             {
                 var frmDetails = new FrmQuickDetails((frm) => NavigateMain(frm));
                 frmDetails.ShowDialog(this);
             };
 
-            pnlRow1.SizeChanged += (s, e) =>
-            {
-                btnQuickDetails.Location = new Point(pnlRow1.Width - 210, 2);
-            };
-
-            pnlRow1.Controls.Add(lblTitle);
-            pnlRow1.Controls.Add(btnQuickDetails);
-            tblHeaderRows.Controls.Add(pnlRow1, 0, 0);
-
-            // Row 2 Container (Quick Action Ribbon Panel)
-            var flowHeaderActions = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight, // LeftToRight under WinForms RTL starts 1st button on visual Far Right
-                WrapContents = false,
-                AutoScroll = true,
-                RightToLeft = RightToLeft.Yes,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0, 2, 0, 0)
-            };
-
-            // Add top ribbon quick action buttons
-            if (Session.CanAccess("POS")) 
-                AddCompactHeaderTile(flowHeaderActions, "💻", "نقطة البيع POS", () => { var f = new FrmPOS(); f.ShowDialog(); }, Theme.Accent);
-            
-            if (Session.CanAccess("Sales")) 
-                AddCompactHeaderTile(flowHeaderActions, "🛒", "فاتورة مبيعات", () => NavigateMain(new FrmSale()), Theme.Primary);
-
-            if (Session.CanAccess("Purchases"))
-                AddCompactHeaderTile(flowHeaderActions, "📥", "فواتير الشراء", () => NavigateMain(new FrmPurchase()), Color.FromArgb(25, 135, 84));
-
-            if (Session.CanAccess("Products"))
-                AddCompactHeaderTile(flowHeaderActions, "📦", "الأصناف والمخزون", () => NavigateMain(new FrmProducts()), Color.FromArgb(23, 162, 184));
-
-            if (Session.CanAccess("CashBox")) 
-                AddCompactHeaderTile(flowHeaderActions, "💰", "الخزنة والنقدية", () => NavigateMain(new FrmCashBox()), Color.FromArgb(40, 167, 69));
-
-            if (Session.CanAccess("Clients")) 
-                AddCompactHeaderTile(flowHeaderActions, "👥", "حسابات العملاء", () => NavigateMain(new FrmClients()), Color.FromArgb(111, 66, 193));
-
-            if (Session.CanAccess("Suppliers")) 
-                AddCompactHeaderTile(flowHeaderActions, "🏭", "حسابات الموردين", () => NavigateMain(new FrmSuppliers()), Color.FromArgb(253, 126, 20));
-
-            if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "CarService")
-            {
-                string mTitle = AppConfig.BusinessType == "CarService" ? "الصيانة" : "تذاكر الصيانة";
-                if (Session.CanAccess("Maintenance"))
-                    AddCompactHeaderTile(flowHeaderActions, "🔧", mTitle, () => NavigateMain(new FrmMaintenance()), Color.FromArgb(40, 167, 69));
-            }
-            else if (AppConfig.BusinessType == "Clothing")
-            {
-                if (Session.CanAccess("Sales"))
-                    AddCompactHeaderTile(flowHeaderActions, "👕", "مصفوفة الملابس", () => { var f = new FrmClothingMatrix(); f.ShowDialog(); }, Color.FromArgb(224, 86, 253));
-            }
-            else
-            {
-                if (Session.CanAccess("Vehicles")) 
-                    AddCompactHeaderTile(flowHeaderActions, "🚗", "حركة السيارات", () => NavigateMain(new FrmVehicles()), Color.FromArgb(59, 130, 246));
-                if (Session.CanAccess("DriverHandover")) 
-                    AddCompactHeaderTile(flowHeaderActions, "🚚", "تسليم مندوب", () => NavigateMain(new FrmDriverHandover()), Color.FromArgb(108, 117, 125));
-            }
-
-            if (Session.CanAccess("Reports"))
-                AddCompactHeaderTile(flowHeaderActions, "📈", "التقارير المالية", () => NavigateMain(new FrmReports()), Color.FromArgb(70, 50, 150));
-
-            if (Session.CanAccess("Products"))
-                AddCompactHeaderTile(flowHeaderActions, "🏷️", "طباعة الباركود", () => NavigateMain(new FrmBulkPrintBarcodes()), Color.FromArgb(20, 140, 160));
-
-            if (Session.CanAccess("Settings"))
-                AddCompactHeaderTile(flowHeaderActions, "⚙️", "الإعدادات", () => NavigateMain(new FrmSettings()), Color.FromArgb(100, 110, 120));
-
-            AddCompactHeaderTile(flowHeaderActions, "🤖", "المساعد الذكي", () => new FrmSupportBot().ShowDialog(), Color.FromArgb(140, 50, 180));
-
-            tblHeaderRows.Controls.Add(flowHeaderActions, 0, 1);
-            pnlTopContainer.Controls.Add(tblHeaderRows);
-            mainTbl.Controls.Add(pnlTopContainer, 0, 0);
-
-            // 2. Full Screen Showcase Body (Center Logo & Program Title)
-            var pnlShowcase = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(20)
-            };
+            pnlShowcase.Controls.Add(btnQuickDetails);
 
             // Large full logo in center taking full screen space
             Image logoLarge = Theme.GetCompanyLogo();
-            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(380);
+            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(480);
 
             var pbMainLogo = new PictureBox
             {
@@ -1801,21 +1658,21 @@ namespace ChickenDist.Forms
             var lblMainCompany = new Label
             {
                 Text = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي لإدارة المبيعات والتوزيع" : AppConfig.CompanyName,
-                Font = new Font("Segoe UI", 21f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 24f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35), // Gold
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 48
+                Height = 55
             };
 
             var lblMainTagline = new Label
             {
-                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.113",
-                Font = new Font("Segoe UI", 11f),
-                ForeColor = Theme.TextSub,
+                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.114",
+                Font = new Font("Segoe UI", 11.5f),
+                ForeColor = Color.FromArgb(180, 190, 210),
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 32
+                Height = 35
             };
 
             // Bottom session badges
@@ -1834,20 +1691,20 @@ namespace ChickenDist.Forms
                 var lblBadge = new Label
                 {
                     Text = iconText,
-                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = ColorTranslator.FromHtml(bgHex),
                     AutoSize = true,
-                    Padding = new Padding(12, 6, 12, 6),
-                    Margin = new Padding(5)
+                    Padding = new Padding(14, 7, 14, 7),
+                    Margin = new Padding(6)
                 };
                 flowBadges.Controls.Add(lblBadge);
             };
 
-            addBadge($"👤 المستخدم: {Session.EmpName}", "#3B82F6");
-            addBadge($"🏢 النشاط: {(string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "عام" : AppConfig.BusinessType)}", "#10B981");
-            addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#6B7280");
-            addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#059669");
+            addBadge($"👤 المستخدم: {Session.EmpName}", "#2563EB");
+            addBadge($"🏢 النشاط: {(string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "عام" : AppConfig.BusinessType)}", "#059669");
+            addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#4B5563");
+            addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#047857");
 
             // Dynamic layout calculations on resize
             pnlShowcase.SizeChanged += (s, e) =>
@@ -1855,16 +1712,18 @@ namespace ChickenDist.Forms
                 int w = pnlShowcase.Width;
                 int h = pnlShowcase.Height;
 
-                int logoDim = Math.Min(w - 60, Math.Min(h - 150, 420));
-                if (logoDim < 200) logoDim = 200;
+                btnQuickDetails.Location = new Point(w - 240, 15);
+
+                int logoDim = Math.Min(w - 60, Math.Min(h - 160, 520));
+                if (logoDim < 240) logoDim = 240;
 
                 pbMainLogo.Size = new Size(logoDim, logoDim);
-                pbMainLogo.Location = new Point((w - logoDim) / 2, Math.Max(15, (h - logoDim - 130) / 2));
+                pbMainLogo.Location = new Point((w - logoDim) / 2, Math.Max(20, (h - logoDim - 140) / 2));
 
-                lblMainCompany.Size = new Size(w - 20, 48);
-                lblMainCompany.Location = new Point(10, pbMainLogo.Bottom + 8);
+                lblMainCompany.Size = new Size(w - 20, 55);
+                lblMainCompany.Location = new Point(10, pbMainLogo.Bottom + 10);
 
-                lblMainTagline.Size = new Size(w - 20, 32);
+                lblMainTagline.Size = new Size(w - 20, 35);
                 lblMainTagline.Location = new Point(10, lblMainCompany.Bottom + 4);
 
                 flowBadges.Location = new Point((w - flowBadges.Width) / 2, lblMainTagline.Bottom + 10);
@@ -1875,8 +1734,7 @@ namespace ChickenDist.Forms
             pnlShowcase.Controls.Add(lblMainTagline);
             pnlShowcase.Controls.Add(flowBadges);
 
-            mainTbl.Controls.Add(pnlShowcase, 0, 1);
-            this.Controls.Add(mainTbl);
+            this.Controls.Add(pnlShowcase);
         }
 
         private void AddCompactHeaderTile(FlowLayoutPanel p, string emoji, string title, Action onClick, Color color)
