@@ -1614,11 +1614,11 @@ namespace ChickenDist.Forms
         {
             this.Controls.Clear();
 
-            // Main full screen container panel for the logo showcase
+            // Main full screen container panel with eye-comforting soft executive background
             var pnlShowcase = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(10, 14, 22), // Deep dark matching the ProSoft logo background perfectly
+                BackColor = Color.FromArgb(236, 241, 248), // Soft, eye-soothing executive slate blue-grey
                 Padding = new Padding(20)
             };
 
@@ -1644,46 +1644,63 @@ namespace ChickenDist.Forms
 
             pnlShowcase.Controls.Add(btnQuickDetails);
 
-            // Large full logo in center taking full screen space
+            // Sleek Logo Emblem Frame Card (blends the logo image beautifully without harsh black screens)
+            var cardLogoFrame = new Panel
+            {
+                BackColor = Color.FromArgb(15, 20, 30), // Rich midnight card for the emblem
+                Padding = new Padding(12)
+            };
+            cardLogoFrame.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var pen = new Pen(Color.FromArgb(243, 198, 35), 2.5f)) // Gold border frame
+                {
+                    g.DrawRectangle(pen, 1, 1, cardLogoFrame.Width - 3, cardLogoFrame.Height - 3);
+                }
+            };
+
             Image logoLarge = Theme.GetCompanyLogo();
-            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(480);
+            if (logoLarge == null) logoLarge = Theme.CreateDefaultLogoBitmap(360);
 
             var pbMainLogo = new PictureBox
             {
+                Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 Image = logoLarge,
                 BackColor = Color.Transparent
             };
+            cardLogoFrame.Controls.Add(pbMainLogo);
 
             var lblMainCompany = new Label
             {
                 Text = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "نظام المحترفين المالي لإدارة المبيعات والتوزيع" : AppConfig.CompanyName,
-                Font = new Font("Segoe UI", 24f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(243, 198, 35), // Gold
+                Font = new Font("Segoe UI", 22f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(20, 38, 74), // Deep Executive Navy Blue
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 55
+                Height = 45
             };
 
             var lblMainTagline = new Label
             {
-                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.114",
-                Font = new Font("Segoe UI", 11.5f),
-                ForeColor = Color.FromArgb(180, 190, 210),
+                Text = "برنامج متكامل لإدارة المبيعات، المخازن، الحسابات والشاحنات 🚀  |  الإصدار الرسمي v2.0.116",
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(80, 95, 120), // Soft Slate
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent,
-                Height = 35
+                Height = 28
             };
 
             // Bottom session badges
             var flowBadges = new FlowLayoutPanel
             {
-                Height = 45,
+                Height = 40,
                 AutoSize = true,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 BackColor = Color.Transparent,
-                Padding = new Padding(10, 0, 10, 0)
+                Padding = new Padding(5, 0, 5, 0)
             };
 
             Action<string, string> addBadge = (iconText, bgHex) =>
@@ -1691,12 +1708,12 @@ namespace ChickenDist.Forms
                 var lblBadge = new Label
                 {
                     Text = iconText,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = ColorTranslator.FromHtml(bgHex),
                     AutoSize = true,
-                    Padding = new Padding(14, 7, 14, 7),
-                    Margin = new Padding(6)
+                    Padding = new Padding(12, 6, 12, 6),
+                    Margin = new Padding(4)
                 };
                 flowBadges.Controls.Add(lblBadge);
             };
@@ -1706,7 +1723,7 @@ namespace ChickenDist.Forms
             addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#4B5563");
             addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#047857");
 
-            // Dynamic layout calculations on resize
+            // Dynamic layout calculations on resize (100% visible, ZERO bottom cutoff!)
             pnlShowcase.SizeChanged += (s, e) =>
             {
                 int w = pnlShowcase.Width;
@@ -1714,22 +1731,23 @@ namespace ChickenDist.Forms
 
                 btnQuickDetails.Location = new Point(w - 240, 15);
 
-                int logoDim = Math.Min(w - 60, Math.Min(h - 160, 520));
-                if (logoDim < 240) logoDim = 240;
+                // Calculate logo dimensions to leave ample space for title, tagline and badges (no bottom cutoff)
+                int logoDim = Math.Min(w - 60, Math.Min(h - 180, 360));
+                if (logoDim < 180) logoDim = 180;
 
-                pbMainLogo.Size = new Size(logoDim, logoDim);
-                pbMainLogo.Location = new Point((w - logoDim) / 2, Math.Max(20, (h - logoDim - 140) / 2));
+                cardLogoFrame.Size = new Size(logoDim, logoDim);
+                cardLogoFrame.Location = new Point((w - logoDim) / 2, Math.Max(15, (h - logoDim - 130) / 2));
 
-                lblMainCompany.Size = new Size(w - 20, 55);
-                lblMainCompany.Location = new Point(10, pbMainLogo.Bottom + 10);
+                lblMainCompany.Size = new Size(w - 20, 45);
+                lblMainCompany.Location = new Point(10, cardLogoFrame.Bottom + 8);
 
-                lblMainTagline.Size = new Size(w - 20, 35);
-                lblMainTagline.Location = new Point(10, lblMainCompany.Bottom + 4);
+                lblMainTagline.Size = new Size(w - 20, 28);
+                lblMainTagline.Location = new Point(10, lblMainCompany.Bottom + 2);
 
-                flowBadges.Location = new Point((w - flowBadges.Width) / 2, lblMainTagline.Bottom + 10);
+                flowBadges.Location = new Point((w - flowBadges.Width) / 2, lblMainTagline.Bottom + 6);
             };
 
-            pnlShowcase.Controls.Add(pbMainLogo);
+            pnlShowcase.Controls.Add(cardLogoFrame);
             pnlShowcase.Controls.Add(lblMainCompany);
             pnlShowcase.Controls.Add(lblMainTagline);
             pnlShowcase.Controls.Add(flowBadges);
