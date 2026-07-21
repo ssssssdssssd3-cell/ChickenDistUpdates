@@ -1191,7 +1191,9 @@ namespace ChickenDist.Forms
             try
             {
                 var frm = new FrmProductSearch();
-                if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
+                frm.ShowDialog();
+
+                if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
                 {
                     var dt = DbHelper.Query(@"
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
@@ -1219,6 +1221,10 @@ namespace ChickenDist.Forms
                         AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
                     }
                 }
+
+                // إرجاع الفوكس لخانة الباركود بعد إغلاق شاشة البحث
+                // لمنع رجوع الفوكس لزر البحث وإعادة فتح الشاشة تلقائياً
+                this.BeginInvoke((Action)(() => txtBarcode.Focus()));
             }
             catch { }
         }
