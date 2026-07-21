@@ -350,8 +350,8 @@ namespace ChickenDist.Forms
             btnSearchProduct.FlatAppearance.BorderSize = 0;
             btnSearchProduct.Click += (s, e) =>
             {
-                // فتح نافذة بحث الأصناف
-                using (var dlgSearch = new FrmProductSearch())
+                // فتح نافذة بحث الأصناف (وضع الشراء)
+                using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true))
                 {
                     if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                     {

@@ -21,6 +21,7 @@ namespace ChickenDist.Forms
         private DataTable _dtProducts;
         private DataView _dvProducts;
         private int? _warehouseID;
+        private bool _isPurchaseMode = false;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
 
@@ -35,9 +36,10 @@ namespace ChickenDist.Forms
         public decimal SelectedSalePrice { get; private set; } = 0m;
         public decimal SelectedDiscount { get; private set; } = 0m;
 
-        public FrmProductSearch(int? warehouseID = null)
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false)
         {
             _warehouseID = warehouseID;
+            _isPurchaseMode = isPurchaseMode;
             InitUI();
             LoadCategories();
             LoadProducts();
@@ -45,7 +47,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔍 بحث متقدم عن صنف وإدخال الكميات والأسعار";
+            this.Text = _isPurchaseMode ? "🔍 بحث متقدم عن صنف - فواتير الشراء والتوريد" : "🔍 بحث متقدم عن صنف - مبيعات ونقطة البيع";
             this.Size = new Size(860, 710);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -214,21 +216,31 @@ namespace ChickenDist.Forms
             Color labelDark = Color.FromArgb(15, 23, 42); // Ultra crisp dark blue/black
 
             var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(780, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedQty = new TextBox { Location = new Point(695, 10), Width = 80, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedQty = new TextBox { Location = new Point(680, 10), Width = 95, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            var lblPurchasePrice = new Label { Text = "💰 سعر الشراء:", Location = new Point(570, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedPurchasePrice = new TextBox { Location = new Point(460, 10), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblPurchasePrice = new Label { Text = "💰 سعر الشراء:", Location = new Point(570, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = _isPurchaseMode };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(460, 10), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = _isPurchaseMode };
 
-            var lblSalePrice = new Label { Text = "🏷️ سعر البيع:", Location = new Point(345, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedSalePrice = new TextBox { Location = new Point(235, 10), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            int salePriceLabelX = _isPurchaseMode ? 345 : 540;
+            int salePriceTxtX = _isPurchaseMode ? 235 : 425;
 
-            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(155, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedDiscount = new TextBox { Location = new Point(65, 10), Width = 85, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblSalePrice = new Label { Text = "🏷️ سعر البيع:", Location = new Point(salePriceLabelX, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 10), Width = 110, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(235, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+            int discLabelX = _isPurchaseMode ? 155 : 290;
+            int discTxtX = _isPurchaseMode ? 65 : 180;
 
-            // فحص صلاحية تعديل السعر
-            bool canEditPrice = Session.Role == "Admin" || Session.CanEditPrice("Purchases") || Session.CanEditPrice("Sales");
+            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(discLabelX, 14), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 10), Width = 100, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            int permNoticeX = _isPurchaseMode ? 235 : 425;
+            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+
+            // فحص صلاحية تعديل السعر حسب وضع الشاشة (شراء أم بيع)
+            bool canEditPrice = _isPurchaseMode 
+                ? (Session.Role == "Admin" || Session.CanEditPrice("Purchases"))
+                : (Session.Role == "Admin" || Session.CanEditPrice("Sales"));
+
             if (!canEditPrice)
             {
                 txtSelectedPurchasePrice.ReadOnly = true;
