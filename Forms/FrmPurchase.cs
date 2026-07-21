@@ -87,7 +87,18 @@ namespace ChickenDist.Forms
             {
                 ScaleService.Instance.WeightChanged += ScaleService_WeightChanged;
             }
-            this.Load += (s, e) => { this.ActiveControl = cboProduct; cboProduct.Focus(); };
+            this.Load += (s, e) =>
+            {
+                try
+                {
+                    if (cboProduct != null && cboProduct.Visible && cboProduct.Enabled)
+                    {
+                        this.ActiveControl = cboProduct;
+                        cboProduct.Focus();
+                    }
+                }
+                catch { /* تجاهل أخطاء التركيز عند فتح الشاشة */ }
+            };
         }
 
         private void ScaleService_WeightChanged(decimal weight, bool isStable)
