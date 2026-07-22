@@ -1,3 +1,7 @@
+v2.0.136 - 2026-07-22
+- Employee Permissions: Fixed column headers visibility completely by correcting the docking Z-order of pnlTabHeader so it is placed on top correctly without overlapping the grid column headers.
+- Purchase Invoice: Added a KeyUp handler to the tax NumericUpDown input box so typed changes in the tax percentage update the net total immediately on keystroke instead of only after focus loss.
+
 v2.0.135 - 2026-07-22
 - Purchase Invoice: Expanded footer panel height from 82px to 125px to prevent the shipping/freight expenses row (🚚 مصاريف الشحن) from being cut off and invisible. Adjusted wrap container height appropriately to fit the changes.
 

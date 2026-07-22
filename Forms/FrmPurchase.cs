@@ -659,6 +659,14 @@ namespace ChickenDist.Forms
                 Margin = new Padding(2, 4, 2, 4)
             };
             nudTaxPct.ValueChanged += (s, e) => RecalcTotals();
+            nudTaxPct.KeyUp += (s, e) =>
+            {
+                if (decimal.TryParse(nudTaxPct.Text, out decimal v))
+                {
+                    if (v >= 0 && v <= 100) nudTaxPct.Value = v;
+                }
+                RecalcTotals();
+            };
 
             lblTaxAmt = new Label
             {

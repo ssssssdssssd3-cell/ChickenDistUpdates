@@ -665,13 +665,14 @@ namespace ChickenDist.Forms
             pnlTabHeader.Controls.Add(btnSelectTab);
             pnlTabHeader.Controls.Add(btnClearTab);
             pnlTabHeader.Controls.Add(lblHint);
-
             grid = CreatePermissionsGrid();
 
             tp.Controls.Add(grid);
             tp.Controls.Add(pnlTabHeader);
 
-            grid.BringToFront();
+            pnlTabHeader.BringToFront();
+            grid.SendToBack();
+
             return tp;
         }
 
