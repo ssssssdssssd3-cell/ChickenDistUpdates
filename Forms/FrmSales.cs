@@ -386,7 +386,8 @@ namespace ChickenDist.Forms
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10, 5, 10, 5)
+				Padding = new Padding(10, 5, 10, 5),
+				Visible = Session.CanViewSalesTotals("SalesList")
 			};
 			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
 			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));

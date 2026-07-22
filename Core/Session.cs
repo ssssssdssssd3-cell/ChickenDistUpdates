@@ -35,12 +35,12 @@ namespace ChickenDist.Core
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true };
+                    _perms[s] = new PermInfo { CanAccess = true, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true };
                 return;
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, COALESCE(CanAdd, 1) AS CanAdd, COALESCE(CanEdit, 1) AS CanEdit, COALESCE(CanDelete, 1) AS CanDelete, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns, COALESCE(CanViewDetails, 1) AS CanViewDetails, COALESCE(CanViewBalance, 1) AS CanViewBalance, COALESCE(CanChangeSafe, 1) AS CanChangeSafe FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, COALESCE(CanAdd, 1) AS CanAdd, COALESCE(CanEdit, 1) AS CanEdit, COALESCE(CanDelete, 1) AS CanDelete, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns, COALESCE(CanViewDetails, 1) AS CanViewDetails, COALESCE(CanViewBalance, 1) AS CanViewBalance, COALESCE(CanChangeSafe, 1) AS CanChangeSafe, COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
@@ -61,7 +61,8 @@ namespace ChickenDist.Core
                         CanOrderColumns = row.Table.Columns.Contains("CanOrderColumns") && row["CanOrderColumns"] != DBNull.Value && Convert.ToBoolean(row["CanOrderColumns"]),
                         CanViewDetails = row.Table.Columns.Contains("CanViewDetails") && row["CanViewDetails"] != DBNull.Value ? Convert.ToBoolean(row["CanViewDetails"]) : true,
                         CanViewBalance = row.Table.Columns.Contains("CanViewBalance") && row["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(row["CanViewBalance"]) : true,
-                        CanChangeSafe = row.Table.Columns.Contains("CanChangeSafe") && row["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(row["CanChangeSafe"]) : true
+                        CanChangeSafe = row.Table.Columns.Contains("CanChangeSafe") && row["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(row["CanChangeSafe"]) : true,
+                        CanViewSalesTotals = row.Table.Columns.Contains("CanViewSalesTotals") && row["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(row["CanViewSalesTotals"]) : true
                     };
                 }
                 catch (Exception ex)
@@ -148,6 +149,12 @@ namespace ChickenDist.Core
         {
             if (Role == "Admin") return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanOrderColumns;
+        }
+
+        public static bool CanViewSalesTotals(string screen = "SalesList")
+        {
+            if (Role == "Admin") return true;
+            return _perms.ContainsKey(screen) && _perms[screen].CanViewSalesTotals;
         }
 
         public static void SaveColumnOrder(System.Windows.Forms.DataGridView dgv, string gridKey)
@@ -249,5 +256,6 @@ namespace ChickenDist.Core
         public bool CanViewDetails { get; set; } = true;
         public bool CanViewBalance { get; set; } = true;
         public bool CanChangeSafe { get; set; } = true;
+        public bool CanViewSalesTotals { get; set; } = true;
     }
 }

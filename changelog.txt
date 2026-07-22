@@ -1,3 +1,7 @@
+v2.0.140 - 2026-07-22
+- Sales List: Controlled visibility of the bottom totals summary bar based on the new employee permission "CanViewSalesTotals".
+- Permissions System: Added a database migration for the "CanViewSalesTotals" column inside the Permissions table and created a corresponding UI checkbox column "📊 إجماليات السجل" in the employee permissions grid (applicable only to the SalesList screen).
+
 v2.0.139 - 2026-07-22
 - Employee Permissions: Fixed controls overlap layout bug where the main TabControl (tcPerms) docked fill overlapped the top panels in the background. Re-arranged the controls Z-order docking sequence correctly so the TabControl properly fills only the remaining screen area, making the tab headers, action panel buttons, and grid headers completely visible.
 

@@ -2288,6 +2288,8 @@ namespace ChickenDist.Core
                         ALTER TABLE Permissions ADD CanViewBalance BIT DEFAULT 1;
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanChangeSafe')
                         ALTER TABLE Permissions ADD CanChangeSafe BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewSalesTotals')
+                        ALTER TABLE Permissions ADD CanViewSalesTotals BIT DEFAULT 1;
                 ");
             }
             catch (Exception ex)

@@ -729,6 +729,7 @@ namespace ChickenDist.Forms
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 80 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 80 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 100 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 115 });
 
             // Live updates for counter
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
@@ -932,7 +933,7 @@ namespace ChickenDist.Forms
             {
                 bool access = false, canAdd = true, canEdit = true, canDelete = true;
                 bool editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
-                bool viewDetails = true, viewBalance = true, changeSafe = true;
+                bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true;
 
                 foreach (DataRow r in dt.Rows)
                 {
@@ -951,6 +952,7 @@ namespace ChickenDist.Forms
                         viewDetails = r.Table.Columns.Contains("CanViewDetails") && r["CanViewDetails"] != DBNull.Value ? Convert.ToBoolean(r["CanViewDetails"]) : true;
                         viewBalance = r.Table.Columns.Contains("CanViewBalance") && r["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(r["CanViewBalance"]) : true;
                         changeSafe = r.Table.Columns.Contains("CanChangeSafe") && r["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(r["CanChangeSafe"]) : true;
+                        viewSalesTotals = r.Table.Columns.Contains("CanViewSalesTotals") && r["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(r["CanViewSalesTotals"]) : true;
                         break;
                     }
                 }
@@ -978,7 +980,8 @@ namespace ChickenDist.Forms
                         orderColumns, 
                         viewDetails, 
                         viewBalance, 
-                        changeSafe
+                        changeSafe,
+                        viewSalesTotals
                     );
                     
                     var key = screen.Key;
@@ -1068,6 +1071,12 @@ namespace ChickenDist.Forms
                     {
                         DisableGridCell(targetGrid.Rows[ri], 14); // ChangeSafe
                     }
+
+                    bool isSalesListScreen = string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase);
+                    if (!isSalesListScreen)
+                    {
+                        DisableGridCell(targetGrid.Rows[ri], 15); // CanViewSalesTotals
+                    }
                 }
             }
 
@@ -1115,12 +1124,18 @@ namespace ChickenDist.Forms
                     bool viewDetails  = ToBool(row.Cells["CanViewDetails"].Value);
                     bool viewBalance  = ToBool(row.Cells["CanViewBalance"].Value);
                     bool changeSafe   = ToBool(row.Cells["CanChangeSafe"].Value);
+                    bool viewSalesTotals = ToBool(row.Cells["CanViewSalesTotals"].Value);
 
-                    EmployeeDAL.SavePermissions(_empID, screen, access, add, edit, delete, editP, editI, deleteI, copyI, viewC, orderC, viewDetails, viewBalance, changeSafe);
+                    EmployeeDAL.SavePermissions(_empID, screen, access, add, edit, delete, editP, editI, deleteI, copyI, viewC, orderC, viewDetails, viewBalance, changeSafe, viewSalesTotals);
                 }
             }
             MessageBox.Show($"✅ تم حفظ صلاحيات الموظف ({_empName}) بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
+        }
+
+        private static bool rowCheckColContains(string colName, DataColumnCollection cols)
+        {
+            return cols.Contains(colName);
         }
     }
 
