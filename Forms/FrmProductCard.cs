@@ -313,6 +313,12 @@ namespace ChickenDist.Forms
             cboUnit1Name.SelectedIndexChanged += (s, e) => RecalculateSubUnitPrices();
             cboUnit1Name.TextChanged += (s, e) => RecalculateSubUnitPrices();
 
+            // Hidden Fallback Controls (OEM, CarModel) to guarantee non-null references across all business types
+            var pnlHidden = new Panel { Visible = false };
+            if (txtPartNumber == null) AddField(pnlHidden, "رقم OEM:", 0, 0, out txtPartNumber);
+            if (txtCarModel == null) AddLookupComboField(pnlHidden, "الموديل المتوافق:", 0, 0, out txtCarModel, out btnAddCarModel);
+            this.Controls.Add(pnlHidden);
+
             UpdateUnitHeaders();
 
             Theme.ApplyFormRTL(this);
@@ -528,96 +534,103 @@ namespace ChickenDist.Forms
 
         private void LoadProductDetails()
         {
-            var dr = ProductDAL.GetByID(_selectedID);
-            if (dr == null) return;
-
-            txtCode.Text = dr["ProductCode"].ToString();
-            txtName.Text = dr["ProductName"].ToString();
-            txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
-            txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
-            txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
-            txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
-            txtProducerCompany.Text = dr.Table.Columns.Contains("ProducerCompany") && dr["ProducerCompany"] != DBNull.Value ? dr["ProducerCompany"].ToString() : "";
-            txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
-            cboUnit.Text = dr["Unit"].ToString();
-            nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
-            nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
-            nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
-            nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
-            nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
-            txtDescription.Text = dr["Description"].ToString();
-            chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
-            chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : false;
-            chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
-            chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
-            _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
-            chkHasExpiry.Checked = _originalHasExpiry;
-            nudDefaultExpiryDays.Value = dr.Table.Columns.Contains("DefaultExpiryDays") && dr["DefaultExpiryDays"] != DBNull.Value ? Convert.ToDecimal(dr["DefaultExpiryDays"]) : 0m;
-            nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
-
-            if (chkPrintLocalBarcode.Checked)
+            try
             {
-                if (int.TryParse(txtCode.Text, out int codeVal))
+                var dr = ProductDAL.GetByID(_selectedID);
+                if (dr == null) return;
+
+                txtCode.Text = dr["ProductCode"].ToString();
+                txtName.Text = dr["ProductName"].ToString();
+                if (txtPartNumber != null) txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
+                txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
+                if (txtCarModel != null) txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
+                if (txtBrand != null) txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
+                if (txtProducerCompany != null) txtProducerCompany.Text = dr.Table.Columns.Contains("ProducerCompany") && dr["ProducerCompany"] != DBNull.Value ? dr["ProducerCompany"].ToString() : "";
+                if (txtShelfLocation != null) txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
+                cboUnit.Text = dr["Unit"].ToString();
+                nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
+                nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
+                nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
+                nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
+                nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
+                txtDescription.Text = dr["Description"].ToString();
+                chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
+                chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : false;
+                chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
+                chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
+                _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
+                chkHasExpiry.Checked = _originalHasExpiry;
+                nudDefaultExpiryDays.Value = dr.Table.Columns.Contains("DefaultExpiryDays") && dr["DefaultExpiryDays"] != DBNull.Value ? Convert.ToDecimal(dr["DefaultExpiryDays"]) : 0m;
+                nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
+
+                if (chkPrintLocalBarcode.Checked)
                 {
-                    txtCode.Text = codeVal.ToString("D8");
-                }
-            }
-
-            // Multi-Unit Details
-            cboUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
-            txtUnit1Barcode.Text = dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value ? dr["Unit1Barcode"].ToString() : "";
-            nudUnit1SalePrice.Value = dr.Table.Columns.Contains("Unit1SalePrice") && dr["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1SalePrice"]) : 0m;
-            nudUnit1PurchasePrice.Value = dr.Table.Columns.Contains("Unit1PurchasePrice") && dr["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1PurchasePrice"]) : 0m;
-
-            cboUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
-            txtUnit2Barcode.Text = dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value ? dr["Unit2Barcode"].ToString() : "";
-            nudUnit2Factor.Value = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
-            nudUnit2SalePrice.Value = dr.Table.Columns.Contains("Unit2SalePrice") && dr["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2SalePrice"]) : 0m;
-            nudUnit2PurchasePrice.Value = dr.Table.Columns.Contains("Unit2PurchasePrice") && dr["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2PurchasePrice"]) : 0m;
-
-            nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
-
-            // Default sale unit loading
-            string dsu = dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value ? dr["DefaultSaleUnit"].ToString() : "";
-            if (cboDefaultSaleUnit != null)
-            {
-                if (dsu == "الوسطى") cboDefaultSaleUnit.SelectedIndex = 1;
-                else if (dsu == "الصغرى") cboDefaultSaleUnit.SelectedIndex = 2;
-                else cboDefaultSaleUnit.SelectedIndex = 0;
-            }
-
-            // تحديد التصنيف في الـ ComboBox
-            if (dr["CategoryID"] != DBNull.Value)
-            {
-                int catID = Convert.ToInt32(dr["CategoryID"]);
-                for (int i = 0; i < cboCategory.Items.Count; i++)
-                {
-                    if (cboCategory.Items[i] is ComboItem item && item.ID == catID)
+                    if (int.TryParse(txtCode.Text, out int codeVal))
                     {
-                        cboCategory.SelectedIndex = i;
-                        break;
+                        txtCode.Text = codeVal.ToString("D8");
                     }
                 }
+
+                // Multi-Unit Details
+                cboUnit1Name.Text = dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value ? dr["Unit1Name"].ToString() : "";
+                txtUnit1Barcode.Text = dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value ? dr["Unit1Barcode"].ToString() : "";
+                nudUnit1SalePrice.Value = dr.Table.Columns.Contains("Unit1SalePrice") && dr["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1SalePrice"]) : 0m;
+                nudUnit1PurchasePrice.Value = dr.Table.Columns.Contains("Unit1PurchasePrice") && dr["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit1PurchasePrice"]) : 0m;
+
+                cboUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
+                txtUnit2Barcode.Text = dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value ? dr["Unit2Barcode"].ToString() : "";
+                nudUnit2Factor.Value = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
+                nudUnit2SalePrice.Value = dr.Table.Columns.Contains("Unit2SalePrice") && dr["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2SalePrice"]) : 0m;
+                nudUnit2PurchasePrice.Value = dr.Table.Columns.Contains("Unit2PurchasePrice") && dr["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2PurchasePrice"]) : 0m;
+
+                nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
+
+                // Default sale unit loading
+                string dsu = dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value ? dr["DefaultSaleUnit"].ToString() : "";
+                if (cboDefaultSaleUnit != null)
+                {
+                    if (dsu == "الوسطى") cboDefaultSaleUnit.SelectedIndex = 1;
+                    else if (dsu == "الصغرى") cboDefaultSaleUnit.SelectedIndex = 2;
+                    else cboDefaultSaleUnit.SelectedIndex = 0;
+                }
+
+                // تحديد التصنيف في الـ ComboBox
+                if (dr["CategoryID"] != DBNull.Value)
+                {
+                    int catID = Convert.ToInt32(dr["CategoryID"]);
+                    for (int i = 0; i < cboCategory.Items.Count; i++)
+                    {
+                        if (cboCategory.Items[i] is ComboItem item && item.ID == catID)
+                        {
+                            cboCategory.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    cboCategory.SelectedIndex = 0;
+                }
+                
+                RecalculateSubUnitPrices();
+                UpdateUnitHeaders();
             }
-            else
+            catch (Exception ex)
             {
-                cboCategory.SelectedIndex = 0;
+                AppLogger.Error("LoadProductDetails failed", ex);
             }
-            
-            RecalculateSubUnitPrices();
-            UpdateUnitHeaders();
         }
 
         private void ClearDetail()
         {
             txtCode.Text = ProductDAL.GetNextProductCode();
             txtName.Clear();
-            txtPartNumber.Clear();
+            if (txtPartNumber != null) txtPartNumber.Clear();
             txtInternationalCode.Clear();
-            txtCarModel.Text = "";
-            txtBrand.Text = "";
-            txtProducerCompany.Text = "";
-            txtShelfLocation.Text = "";
+            if (txtCarModel != null) txtCarModel.Text = "";
+            if (txtBrand != null) txtBrand.Text = "";
+            if (txtProducerCompany != null) txtProducerCompany.Text = "";
+            if (txtShelfLocation != null) txtShelfLocation.Text = "";
             if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
             cboUnit.Text = "كرتونة";
             nudPurchasePrice.Value = 0;
@@ -737,13 +750,13 @@ namespace ChickenDist.Forms
             }
 
             // Auto-save lookup values if new
-            if (!string.IsNullOrWhiteSpace(txtBrand.Text.Trim()))
+            if (txtBrand != null && !string.IsNullOrWhiteSpace(txtBrand.Text.Trim()))
                 LookupDAL.Save("Brands", "BrandID", "BrandCode", "BrandName", "BRD", 0, txtBrand.Text.Trim());
-            if (!string.IsNullOrWhiteSpace(txtCarModel.Text.Trim()))
+            if (txtCarModel != null && !string.IsNullOrWhiteSpace(txtCarModel.Text.Trim()))
                 LookupDAL.Save("CarModels", "CarModelID", "CarModelCode", "CarModelName", "MDL", 0, txtCarModel.Text.Trim());
-            if (!string.IsNullOrWhiteSpace(txtShelfLocation.Text.Trim()))
+            if (txtShelfLocation != null && !string.IsNullOrWhiteSpace(txtShelfLocation.Text.Trim()))
                 LookupDAL.Save("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", 0, txtShelfLocation.Text.Trim());
-            if (!string.IsNullOrWhiteSpace(txtProducerCompany.Text.Trim()))
+            if (txtProducerCompany != null && !string.IsNullOrWhiteSpace(txtProducerCompany.Text.Trim()))
                 LookupDAL.Save("ProducerCompanies", "ProducerID", "ProducerCode", "ProducerName", "PRD", 0, txtProducerCompany.Text.Trim());
 
             // Reload combos
@@ -761,15 +774,21 @@ namespace ChickenDist.Forms
                 }
             }
 
+            string partNumberVal = txtPartNumber != null ? txtPartNumber.Text.Trim() : "";
+            string carModelVal = txtCarModel != null ? txtCarModel.Text.Trim() : "";
+            string brandVal = txtBrand != null ? txtBrand.Text.Trim() : "";
+            string shelfVal = txtShelfLocation != null ? txtShelfLocation.Text.Trim() : "";
+            string producerVal = txtProducerCompany != null ? txtProducerCompany.Text.Trim() : "";
+
             // الحفظ في قاعدة البيانات
             int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                 nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
-                txtPartNumber.Text.Trim(), categoryID, txtCarModel.Text.Trim(), txtBrand.Text.Trim(), txtShelfLocation.Text.Trim(),
+                partNumberVal, categoryID, carModelVal, brandVal, shelfVal,
                 nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
                 chkIsService.Checked,
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
-                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, txtProducerCompany.Text.Trim(),
+                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
                 chkHasExpiry.Checked, chkHasExpiry.Checked ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text);
 
             if (id > 0)

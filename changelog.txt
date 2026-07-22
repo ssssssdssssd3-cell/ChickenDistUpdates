@@ -1,3 +1,6 @@
+v2.0.131 - 2026-07-22
+- Product Card: Fixed NullReferenceException when opening FrmProductCard on double-clicking products grid rows by guaranteeing initialization of OEM part number (txtPartNumber) and compatible car model (txtCarModel) fallback controls across all retail business types with full null-checks.
+
 v2.0.130 - 2026-07-22
 - Employee Permissions: Fixed footer panel Z-order overlap to ensure Save button (حفظ الصلاحيات) is fully visible and accessible. Removed AutoSize column squeezing, expanded column widths, enabled horizontal scrolling, pinned screen name column on scroll, and displayed complete unclipped Arabic header titles.
 
