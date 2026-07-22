@@ -262,9 +262,15 @@ namespace ChickenDist.Core
                 else if (c is TabControl tc)
                 {
                     tc.RightToLeft = RightToLeft.Yes;
+                    tc.DrawMode = TabDrawMode.OwnerDrawFixed;
+                    tc.SizeMode = TabSizeMode.Fixed;
+                    tc.ItemSize = new Size(165, 32);
+                    tc.DrawItem -= TabControl_DrawItem;
+                    tc.DrawItem += TabControl_DrawItem;
                     foreach (TabPage tp in tc.TabPages)
                     {
                         tp.RightToLeft = RightToLeft.Yes;
+                        tp.BackColor = BgCard;
                         ApplyRTL(tp.Controls);
                     }
                 }
@@ -548,6 +554,65 @@ namespace ChickenDist.Core
                     };
                 }
             }
+        }
+
+        private static void TabControl_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            try
+            {
+                if (sender is TabControl tc && e.Index >= 0 && e.Index < tc.TabPages.Count)
+                {
+                    TabPage tp = tc.TabPages[e.Index];
+                    Rectangle tabRect = tc.GetTabRect(e.Index);
+                    bool isSelected = tc.SelectedIndex == e.Index;
+
+                    Color backColor = isSelected ? Primary : Color.FromArgb(55, 65, 81);
+                    if (AppConfig.AppTheme == "Light")
+                    {
+                        backColor = isSelected ? Primary : Color.FromArgb(230, 235, 245);
+                    }
+                    else if (AppConfig.AppTheme == "Slate")
+                    {
+                        backColor = isSelected ? Accent : Color.FromArgb(203, 213, 225);
+                    }
+
+                    Color foreColor = isSelected ? Color.White : TextSub;
+                    if (!isSelected && AppConfig.AppTheme == "Light")
+                    {
+                        foreColor = Color.FromArgb(70, 80, 95);
+                    }
+
+                    using (var brush = new SolidBrush(backColor))
+                    {
+                        e.Graphics.FillRectangle(brush, tabRect);
+                    }
+
+                    if (isSelected)
+                    {
+                        using (var pen = new Pen(Accent, 3f))
+                        {
+                            e.Graphics.DrawLine(pen, tabRect.Left, tabRect.Bottom - 1, tabRect.Right, tabRect.Bottom - 1);
+                        }
+                    }
+                    else
+                    {
+                        using (var pen = new Pen(BorderColor, 1f))
+                        {
+                            e.Graphics.DrawRectangle(pen, tabRect.X, tabRect.Y, tabRect.Width - 1, tabRect.Height - 1);
+                        }
+                    }
+
+                    TextRenderer.DrawText(
+                        e.Graphics,
+                        tp.Text,
+                        new Font(FontMain.FontFamily, 9.5f, FontStyle.Bold),
+                        tabRect,
+                        foreColor,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis
+                    );
+                }
+            }
+            catch { }
         }
     }
 }

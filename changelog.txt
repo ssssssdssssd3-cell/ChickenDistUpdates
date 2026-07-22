@@ -1,3 +1,6 @@
+v2.0.137 - 2026-07-22
+- Global Styling: Applied custom flat owner-draw styling to all TabControls (TabPages) throughout the entire application. The selected tab header is now prominently highlighted with high-contrast, modern background colors and a bottom accent indicator line, making it immediately visible to the eye.
+
 v2.0.136 - 2026-07-22
 - Employee Permissions: Fixed column headers visibility completely by correcting the docking Z-order of pnlTabHeader so it is placed on top correctly without overlapping the grid column headers.
 - Purchase Invoice: Added a KeyUp handler to the tax NumericUpDown input box so typed changes in the tax percentage update the net total immediately on keystroke instead of only after focus loss.
