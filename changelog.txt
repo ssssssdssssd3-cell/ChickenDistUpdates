@@ -1,3 +1,6 @@
+v2.0.141 - 2026-07-22
+- Permissions Grid: Fixed column headers visibility in permissions tables by setting ColumnHeadersHeight *after* ColumnHeadersHeightSizeMode to prevent WinForms from resetting the header height back to default.
+
 v2.0.140 - 2026-07-22
 - Sales List: Controlled visibility of the bottom totals summary bar based on the new employee permission "CanViewSalesTotals".
 - Permissions System: Added a database migration for the "CanViewSalesTotals" column inside the Permissions table and created a corresponding UI checkbox column "📊 إجماليات السجل" in the employee permissions grid (applicable only to the SalesList screen).

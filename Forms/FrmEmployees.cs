@@ -706,13 +706,15 @@ namespace ChickenDist.Forms
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Color.FromArgb(41, 128, 185), SelectionForeColor = Color.White },
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
-                ColumnHeadersHeight = 42,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 42,
                 EnableHeadersVisualStyles = false,
                 RowTemplate = { Height = 34 },
                 ScrollBars = ScrollBars.Both,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
             };
+
+            dg.ColumnHeadersHeight = 42;
 
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 240 });
