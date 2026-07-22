@@ -540,7 +540,7 @@ namespace ChickenDist.Forms
             tcPerms = new TabControl
             {
                 Dock = DockStyle.Fill,
-                RightToLeftLayout = true,
+                RightToLeftLayout = false,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Padding = new Point(12, 6)
             };

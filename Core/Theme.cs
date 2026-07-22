@@ -564,26 +564,20 @@ namespace ChickenDist.Core
                 {
                     TabPage tp = tc.TabPages[e.Index];
                     Rectangle tabRect = tc.GetTabRect(e.Index);
-                    if (tc.RightToLeft == RightToLeft.Yes && tc.RightToLeftLayout)
-                    {
-                        tabRect.X = tc.ClientRectangle.Width - tabRect.Right;
-                    }
                     bool isSelected = tc.SelectedIndex == e.Index;
 
                     Color backColor = isSelected ? Primary : Color.FromArgb(55, 65, 81);
+                    Color foreColor = isSelected ? Color.White : Color.FromArgb(200, 205, 215);
+
                     if (AppConfig.AppTheme == "Light")
                     {
                         backColor = isSelected ? Primary : Color.FromArgb(230, 235, 245);
+                        foreColor = isSelected ? Color.White : Color.FromArgb(70, 80, 95);
                     }
                     else if (AppConfig.AppTheme == "Slate")
                     {
                         backColor = isSelected ? Accent : Color.FromArgb(203, 213, 225);
-                    }
-
-                    Color foreColor = isSelected ? Color.White : TextSub;
-                    if (!isSelected && AppConfig.AppTheme == "Light")
-                    {
-                        foreColor = Color.FromArgb(70, 80, 95);
+                        foreColor = isSelected ? Color.White : Color.FromArgb(50, 60, 75);
                     }
 
                     using (var brush = new SolidBrush(backColor))
