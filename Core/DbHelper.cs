@@ -862,6 +862,36 @@ namespace ChickenDist.Core
                 BEGIN
                     ALTER TABLE Permissions ADD CanOrderColumns BIT DEFAULT 0;
                 END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanAdd')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanAdd BIT DEFAULT 1;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanEdit')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanEdit BIT DEFAULT 1;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanDelete')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanDelete BIT DEFAULT 1;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewDetails')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanViewDetails BIT DEFAULT 1;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewBalance')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanViewBalance BIT DEFAULT 1;
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanChangeSafe')
+                BEGIN
+                    ALTER TABLE Permissions ADD CanChangeSafe BIT DEFAULT 1;
+                END
                 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'WholesalePrice')
                 BEGIN

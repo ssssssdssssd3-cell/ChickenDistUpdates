@@ -472,6 +472,11 @@ namespace ChickenDist.Forms
                             }
                         }
                     }
+
+                    if (!Session.CanChangeSafe("CashBox"))
+                    {
+                        cboSafeFilter.Enabled = false;
+                    }
                 }
 
                 if (cboExpSafeAccount != null)
@@ -488,6 +493,10 @@ namespace ChickenDist.Forms
                                 break;
                             }
                         }
+                    }
+                    if (!Session.CanChangeSafe("CashBox"))
+                    {
+                        cboExpSafeAccount.Enabled = false;
                     }
                 }
             }
@@ -544,12 +553,20 @@ namespace ChickenDist.Forms
                 if (outAmt > 0) dgCash.Rows[ri].DefaultCellStyle.ForeColor = Color.OrangeRed;
                 totIn += inAmt; totOut += outAmt;
             }
-            lblCashIn.Text = "إجمالي وارد: " + totIn.ToString("N2") + " ج";
-            lblCashOut.Text = "إجمالي صادر: " + totOut.ToString("N2") + " ج";
-
-            string balanceLabel = "رصيد الحساب المختار: ";
-            if (selectedAccountID == null) balanceLabel = "رصيد كافة الحسابات: ";
-            lblCashBalance.Text = balanceLabel + AccountDAL.GetCashBalance(selectedAccountID).ToString("N2") + " ج";
+            bool canViewBalance = Session.CanViewBalance("CashBox");
+            if (canViewBalance)
+            {
+                lblCashIn.Text = "إجمالي وارد: " + totIn.ToString("N2") + " ج";
+                lblCashOut.Text = "إجمالي صادر: " + totOut.ToString("N2") + " ج";
+                string balanceLabel = selectedAccountID == null ? "رصيد كافة الحسابات: " : "رصيد الحساب المختار: ";
+                lblCashBalance.Text = balanceLabel + AccountDAL.GetCashBalance(selectedAccountID).ToString("N2") + " ج";
+            }
+            else
+            {
+                lblCashIn.Text = "إجمالي وارد: *** 🔒";
+                lblCashOut.Text = "إجمالي صادر: *** 🔒";
+                lblCashBalance.Text = "رصيد الخزنة/الدرج: *** 🔒 (محجوب)";
+            }
         }
 
         private void BtnDeposit_Click(object sender, EventArgs e)

@@ -221,6 +221,16 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedID == 0 && !Session.CanAdd("Suppliers"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة موردين جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_selectedID > 0 && !Session.CanEdit("Suppliers"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم المورد"); return; }
 
             // ─── فحص تكرار الاسم ───
@@ -253,6 +263,11 @@ namespace ChickenDist.Forms
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (!Session.CanDelete("Suppliers"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف وإيقاف الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (_selectedID == 0) return;
             if (MessageBox.Show("إيقاف تفعيل المورد؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {

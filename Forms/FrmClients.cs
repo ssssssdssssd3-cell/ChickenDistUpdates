@@ -312,6 +312,16 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedID == 0 && !Session.CanAdd("Clients"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة عملاء جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_selectedID > 0 && !Session.CanEdit("Clients"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم العميل"); return; }
 
             // ─── فحص تكرار الاسم ───
@@ -348,6 +358,11 @@ namespace ChickenDist.Forms
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (!Session.CanDelete("Clients"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف وإيقاف العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (_selectedID == 0) return;
             if (MessageBox.Show("إيقاف تفعيل العميل؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {

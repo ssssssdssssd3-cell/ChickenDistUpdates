@@ -82,6 +82,11 @@ namespace ChickenDist.Forms
             btnNew = Theme.MakeButton("➕ إضافة صنف جديد", Theme.Success);
             btnNew.Width = 145;
             btnNew.Click += (s, e) => {
+                if (!Session.CanAdd("Products"))
+                {
+                    MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة أصناف جديدة!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 if (new FrmProductCard(0).ShowDialog() == DialogResult.OK)
                 {
                     LoadProducts();
@@ -238,6 +243,11 @@ namespace ChickenDist.Forms
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
+            if (!Session.CanEdit("Products"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (_selectedID == 0)
             {
                 MessageBox.Show("يرجى اختيار صنف أولاً لتعديله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -251,6 +261,11 @@ namespace ChickenDist.Forms
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (!Session.CanDelete("Products"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف وإيقاف الأصناف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (_selectedID == 0)
             {
                 MessageBox.Show("يرجى اختيار صنف أولاً لإيقافه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);

@@ -170,13 +170,17 @@ namespace ChickenDist.Forms
 
                 _summary = new ShiftSummary { TotalSales=ts, CashSales=cs, CreditSales=cr, OtherSales=os, TotalReturns=tr, OpeningCash=oc, Expected=exp };
 
-                lblTotalSales.Text   = ts.ToString("N2")  + " ج";
-                lblCashSales.Text    = cs.ToString("N2")  + " ج";
-                lblVisaSales.Text    = cr.ToString("N2")  + " ج";
-                lblOtherSales.Text   = os.ToString("N2")  + " ج";
-                lblTotalReturns.Text = tr.ToString("N2")  + " ج";
-                lblExpected.Text     = exp.ToString("N2") + " ج";
-                txtActualCash.Text   = exp.ToString("N2");
+                bool canViewDetails = Session.CanViewDetails("ShiftClose");
+
+                lblTotalSales.Text   = canViewDetails ? ts.ToString("N2")  + " ج" : "*** 🔒";
+                lblCashSales.Text    = canViewDetails ? cs.ToString("N2")  + " ج" : "*** 🔒";
+                lblVisaSales.Text    = canViewDetails ? cr.ToString("N2")  + " ج" : "*** 🔒";
+                lblOtherSales.Text   = canViewDetails ? os.ToString("N2")  + " ج" : "*** 🔒";
+                lblTotalReturns.Text = canViewDetails ? tr.ToString("N2")  + " ج" : "*** 🔒";
+                lblExpected.Text     = canViewDetails ? exp.ToString("N2") + " ج" : "*** 🔒";
+                if (!canViewDetails) txtActualCash.Text = "0.00";
+                else txtActualCash.Text = exp.ToString("N2");
+
                 RecalcDiff();
             }
             catch (Exception ex) { AppLogger.Error("FrmShiftClose.LoadShiftSummary", ex); }
