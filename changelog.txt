@@ -1,3 +1,6 @@
+v2.0.129 - 2026-07-22
+- Product Card: Redesigned FrmProductCard into a wide 4-column organized dialog, fixed multi-unit ratio factor placements and labels, added explicit CheckBox for quick sale items (IsQuickItem), added prominent buttons for automatic unit price recalculation, and prevented digit clipping in all input fields.
+
 v2.0.63 - 2026-07-09
 - Sales & Purchases: Added shortcut (➕) buttons to add new clients in FrmSale and new suppliers in FrmPurchase directly, automatically reloading the list and selecting the newly created contact.
 
