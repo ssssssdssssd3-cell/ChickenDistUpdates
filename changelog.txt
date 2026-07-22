@@ -1,3 +1,6 @@
+v2.0.138 - 2026-07-22
+- Purchase Invoice: Expanded and improved the footer calculations panel (tblTotals) column spacing and alignment, widening the totals panel width to 780px. This organizes all items (Totals, Tax, Shipping, Discount, Item Count) neatly next to each other, preventing truncation and overlaps.
+
 v2.0.137 - 2026-07-22
 - Global Styling: Applied custom flat owner-draw styling to all TabControls (TabPages) throughout the entire application. The selected tab header is now prominently highlighted with high-contrast, modern background colors and a bottom accent indicator line, making it immediately visible to the eye.
 

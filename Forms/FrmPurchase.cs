@@ -562,7 +562,7 @@ namespace ChickenDist.Forms
 
             var pnlTotals = new Panel
             {
-                Width = 650,
+                Width = 780,
                 Dock  = DockStyle.Right,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0)
@@ -577,12 +577,12 @@ namespace ChickenDist.Forms
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
                 Padding = new Padding(4)
             };
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));  // label
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // value
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 55));  // خصم label
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65));  // نوع خصم combo
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 45));  // قيمة label
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // قيمة textbox
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // Col 0: إجمالي الأصناف / ضريبة / مصاريف الشحن
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // Col 1: قيمتها أو صندوق الإدخال الأول
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));  // Col 2: خصم / قيمة الضريبة / على
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // Col 3: نوع خصم combo / صافي الفاتورة lbl / جهة الشحن combo
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));  // Col 4: قيمة الخصم lbl / صافي الفاتورة val / قيمة الشحن display
+            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // Col 5: الباقي (صندوق قيمة الخصم / عدد الأصناف)
             tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
             tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
             tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
