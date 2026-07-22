@@ -559,9 +559,12 @@ namespace ChickenDist.Forms
                 chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
                 chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
                 _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
-                chkHasExpiry.Checked = _originalHasExpiry;
-                nudDefaultExpiryDays.Value = dr.Table.Columns.Contains("DefaultExpiryDays") && dr["DefaultExpiryDays"] != DBNull.Value ? Convert.ToDecimal(dr["DefaultExpiryDays"]) : 0m;
-                nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
+                if (chkHasExpiry != null) chkHasExpiry.Checked = _originalHasExpiry;
+                if (nudDefaultExpiryDays != null)
+                {
+                    nudDefaultExpiryDays.Value = dr.Table.Columns.Contains("DefaultExpiryDays") && dr["DefaultExpiryDays"] != DBNull.Value ? Convert.ToDecimal(dr["DefaultExpiryDays"]) : 0m;
+                    nudDefaultExpiryDays.Enabled = _originalHasExpiry;
+                }
 
                 if (chkPrintLocalBarcode.Checked)
                 {
@@ -643,9 +646,8 @@ namespace ChickenDist.Forms
             chkPrintLocalBarcode.Checked = false;
             chkIsService.Checked = false;
             chkIsQuickItem.Checked = false;
-            chkHasExpiry.Checked = false;
-            nudDefaultExpiryDays.Value = 0;
-            nudDefaultExpiryDays.Enabled = false;
+            if (chkHasExpiry != null) chkHasExpiry.Checked = false;
+            if (nudDefaultExpiryDays != null) { nudDefaultExpiryDays.Value = 0; nudDefaultExpiryDays.Enabled = false; }
 
             // Multi-Unit default
             cboUnit1Name.Text = "القطعة";
@@ -670,7 +672,7 @@ namespace ChickenDist.Forms
         {
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
 
-            if (chkHasExpiry.Checked && !_originalHasExpiry && _selectedID > 0)
+            if (chkHasExpiry != null && chkHasExpiry.Checked && !_originalHasExpiry && _selectedID > 0)
             {
                 decimal totalQty = GetProductTotalStock(_selectedID);
                 if (totalQty > 0)
@@ -789,7 +791,7 @@ namespace ChickenDist.Forms
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                chkHasExpiry.Checked, chkHasExpiry.Checked ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text);
+                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text);
 
             if (id > 0)
             {

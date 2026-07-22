@@ -1,5 +1,5 @@
-v2.0.132 - 2026-07-22
-- Employee Permissions: Fixed DataGridView InvalidOperationException (frozen column sequence order) by freezing ScreenName after adding all columns to the grid collection.
+v2.0.133 - 2026-07-22
+- Product Card: Fixed NullReferenceException on Save/New button clicks caused by chkHasExpiry and nudDefaultExpiryDays being conditionally created per business type (not created for Chicken/Retail types). Added null checks in BtnSave_Click, LoadProductDetails, and ClearDetail for all conditional controls.
 
 v2.0.131 - 2026-07-22
 - Product Card: Fixed NullReferenceException when opening FrmProductCard on double-clicking products grid rows by guaranteeing initialization of OEM part number (txtPartNumber) and compatible car model (txtCarModel) fallback controls across all retail business types with full null-checks.

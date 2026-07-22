@@ -715,7 +715,7 @@ namespace ChickenDist.Forms
             };
 
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260, Frozen = true });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول الشاشة", Width = 120 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة جديد", Width = 120 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل كارت", Width = 120 });
@@ -729,9 +729,6 @@ namespace ChickenDist.Forms
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 تفاصيل التقفيل", Width = 130 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 رصيد الخزنة", Width = 120 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير الخزنة", Width = 120 });
-
-            // Freeze ScreenName column after all columns are added to prevent InvalidOperationException
-            dg.Columns["ScreenName"].Frozen = true;
 
             // Live updates for counter
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
