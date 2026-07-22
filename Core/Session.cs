@@ -153,7 +153,7 @@ namespace ChickenDist.Core
 
         public static bool CanViewSalesTotals(string screen = "SalesList")
         {
-            if (Role == "Admin") return true;
+            if (Role == "Admin" || (Role != null && (Role.Contains("مدير") || Role.Contains("Admin")))) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanViewSalesTotals;
         }
 

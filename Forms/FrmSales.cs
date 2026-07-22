@@ -134,10 +134,12 @@ namespace ChickenDist.Forms
 			// العميل
 			cboClientFilter = new ComboBox
 			{
-				DropDownStyle = ComboBoxStyle.DropDownList,
+				DropDownStyle = ComboBoxStyle.DropDown,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+				AutoCompleteSource = AutoCompleteSource.ListItems
 			};
 			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
@@ -145,7 +147,11 @@ namespace ChickenDist.Forms
 			cboClientFilter.DisplayMember = "Text";
 			cboClientFilter.SelectedIndex = 0;
 			cboClientFilter.SelectedIndexChanged += delegate { LoadSales(); };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 130));
+			cboClientFilter.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Enter) { LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
+			};
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 160));
 
 			// بحث صنف
 			txtProductSearch = new TextBox
@@ -406,9 +412,13 @@ namespace ChickenDist.Forms
 			lblShippingSummary = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:",         "0.00 ج", Color.FromArgb(243, 156, 18), 6);
 
 			// ترتيب صحيح للرسو والـ Z-Order
-			base.Controls.Add(tblContent);
-			base.Controls.Add(tableLayoutPanel);
 			base.Controls.Add(flowLayoutPanel);
+			base.Controls.Add(tableLayoutPanel);
+			base.Controls.Add(tblContent);
+
+			flowLayoutPanel.SendToBack();
+			tableLayoutPanel.SendToBack();
+			tblContent.BringToFront();
 
 			Theme.ApplyFormRTL(this);
 		}
@@ -485,9 +495,25 @@ namespace ChickenDist.Forms
 			dgSales.Rows.Clear();
 			dgItems.Rows.Clear();
 			int? clientID = null;
-			if (cboClientFilter != null && cboClientFilter.SelectedItem is ComboItem ci && ci.ID > 0)
+			if (cboClientFilter != null)
 			{
-				clientID = ci.ID;
+				if (cboClientFilter.SelectedItem is ComboItem ci && ci.ID > 0)
+				{
+					clientID = ci.ID;
+				}
+				else if (!string.IsNullOrWhiteSpace(cboClientFilter.Text) && cboClientFilter.Text.Trim() != "الكل")
+				{
+					string searchText = cboClientFilter.Text.Trim();
+					foreach (var item in cboClientFilter.Items)
+					{
+						if (item is ComboItem ci2 && ci2.Text.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+						{
+							clientID = ci2.ID;
+							cboClientFilter.SelectedItem = ci2;
+							break;
+						}
+					}
+				}
 			}
 			string productSearch = (txtProductSearch != null && !string.IsNullOrWhiteSpace(txtProductSearch.Text)) ? txtProductSearch.Text.Trim() : null;
 			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch);

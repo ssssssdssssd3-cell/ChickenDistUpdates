@@ -1,3 +1,7 @@
+v2.0.142 - 2026-07-22
+- Sales List Search: Converted client search dropdown to a typed searchable autocomplete ComboBox matching the sales invoice style. Added support for typing client name and pressing Enter.
+- Sales List Totals Bar: Fixed layout Z-order docking conflict where the main fill panel obscured the bottom summary totals panel, and bypassed permission checks for Manager roles.
+
 v2.0.141 - 2026-07-22
 - Permissions Grid: Fixed column headers visibility in permissions tables by setting ColumnHeadersHeight *after* ColumnHeadersHeightSizeMode to prevent WinForms from resetting the header height back to default.
 
