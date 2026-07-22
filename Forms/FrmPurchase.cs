@@ -552,18 +552,14 @@ namespace ChickenDist.Forms
             // تحميل إعدادات الأعمدة المحفوظة
             LoadColumnSettings();
 
-            // ══════════════════════════════════════════════════════════════════
-            // ── الذيل — تخطيط منظم: إجماليات يمين + أزرار يسار ───────────────
-            // ══════════════════════════════════════════════════════════════════
             pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 82,
+                Height = 125,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 4, 8, 4)
             };
 
-            // ── قسم الإجماليات (يمين) ─────────────────────────────────────────
             var pnlTotals = new Panel
             {
                 Width = 650,
@@ -829,7 +825,7 @@ namespace ChickenDist.Forms
             var pnlFormContent = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 630,
+                Height = 680,
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes // تفعيل الـ RTL على المحتوى الداخلي لتنسيق الحقول والجدول باللغة العربية
             };
@@ -859,7 +855,7 @@ namespace ChickenDist.Forms
             // تعديل ارتفاع المحتوى ديناميكياً للتجاوب مع تكبير حجم الشاشة أو تصغيرها
             pnlScrollWrapper.Resize += (s, e) =>
             {
-                pnlFormContent.Height = Math.Max(630, pnlScrollWrapper.Height - 2);
+                pnlFormContent.Height = Math.Max(680, pnlScrollWrapper.Height - 2);
             };
 
             ToggleType();

@@ -1,3 +1,6 @@
+v2.0.135 - 2026-07-22
+- Purchase Invoice: Expanded footer panel height from 82px to 125px to prevent the shipping/freight expenses row (🚚 مصاريف الشحن) from being cut off and invisible. Adjusted wrap container height appropriately to fit the changes.
+
 v2.0.134 - 2026-07-22
 - Employee Permissions: Fixed a layout issue where column headers vanished in RTL due to Frozen column property. Pinned footer panel buttons via custom layout anchoring (btnSave, btnCancel, lblCounter) instead of FlowLayoutPanel to completely resolve clipping and overlap issues in Right-To-Left display.
 
