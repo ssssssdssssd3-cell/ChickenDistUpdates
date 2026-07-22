@@ -1,3 +1,6 @@
+v2.0.132 - 2026-07-22
+- Employee Permissions: Fixed DataGridView InvalidOperationException (frozen column sequence order) by freezing ScreenName after adding all columns to the grid collection.
+
 v2.0.131 - 2026-07-22
 - Product Card: Fixed NullReferenceException when opening FrmProductCard on double-clicking products grid rows by guaranteeing initialization of OEM part number (txtPartNumber) and compatible car model (txtCarModel) fallback controls across all retail business types with full null-checks.
 
