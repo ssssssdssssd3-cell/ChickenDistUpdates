@@ -236,10 +236,10 @@ namespace ChickenDist.Forms
             int permNoticeX = _isPurchaseMode ? 235 : 425;
             lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
-            // فحص صلاحية تعديل السعر حسب وضع الشاشة (شراء أم بيع)
+            // فحص صلاحية تعديل السعر حسب وضع الشاشة (شراء أم بيع) أو صلاحية ProductSearch المباشرة
             bool canEditPrice = _isPurchaseMode 
-                ? (Session.Role == "Admin" || Session.CanEditPrice("Purchases"))
-                : (Session.Role == "Admin" || Session.CanEditPrice("Sales"));
+                ? (Session.Role == "Admin" || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Purchases"))
+                : (Session.Role == "Admin" || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Sales"));
 
             if (!canEditPrice)
             {
@@ -711,13 +711,19 @@ namespace ChickenDist.Forms
             else
                 SelectedQuantity = 1m;
 
-            if (txtSelectedPurchasePrice != null && decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal ppVal))
+            if (txtSelectedPurchasePrice != null && decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal ppVal) && ppVal >= 0)
+            {
                 SelectedPurchasePrice = ppVal;
+                if (_isPurchaseMode) SelectedPrice = ppVal;
+            }
             else
                 SelectedPurchasePrice = SelectedPrice;
 
-            if (txtSelectedSalePrice != null && decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal spVal))
+            if (txtSelectedSalePrice != null && decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal spVal) && spVal >= 0)
+            {
                 SelectedSalePrice = spVal;
+                if (!_isPurchaseMode) SelectedPrice = spVal;
+            }
             else
                 SelectedSalePrice = SelectedPrice;
 

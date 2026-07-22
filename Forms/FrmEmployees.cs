@@ -364,6 +364,7 @@ namespace ChickenDist.Forms
             // Tab 0: Sales & Clients
             new ScreenInfo("Sales", "🛒 شاشة المبيعات الرئيسية", 0),
             new ScreenInfo("POS", "⚡ نقطة البيع السريعة POS", 0),
+            new ScreenInfo("ProductSearch", "🔍 شاشة بحث الأصناف وتعديل الأسعار", 0),
             new ScreenInfo("Returns", "↩️ مرتجع المبيعات", 0),
             new ScreenInfo("Installments", "📜 عقود التقسيط الشرعي", 0),
             new ScreenInfo("SalesList", "📋 سجل الفواتير والمبيعات", 0),
@@ -935,7 +936,8 @@ namespace ChickenDist.Forms
                         DisableGridCell(targetGrid.Rows[ri], 3); // EditPrice not for purchases
                         DisableGridCell(targetGrid.Rows[ri], 7); // ViewCost not for purchases
                     }
-                    else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(screen.Key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(screen.Key, "ProductSearch", StringComparison.OrdinalIgnoreCase))
                     {
                         for (int colIdx = 4; colIdx <= 7; colIdx++)
                         {

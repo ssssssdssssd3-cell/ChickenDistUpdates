@@ -1302,7 +1302,9 @@ namespace ChickenDist.Forms
                                     factor = 1m;
                                 }
                             }
-                            AddItemFromRow(row, 1, frm.SelectedUnitName, factor, frm.SelectedPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
+                            decimal posPrice = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
+                            decimal posQty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
+                            AddItemFromRow(row, posQty, frm.SelectedUnitName, factor, posPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
                         }
                         // فتح الشاشة مرة أخرى لاختيار صنف تاني
                         continue;

@@ -380,16 +380,6 @@ namespace ChickenDist.Forms
                 {
                     if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                     {
-                        // تحديد الصنف في الكومبو
-                        for (int si = 0; si < cboProduct.Items.Count; si++)
-                        {
-                            if (cboProduct.Items[si] is ComboItem ci && ci.ID == dlgSearch.SelectedProductID)
-                            {
-                                cboProduct.SelectedIndex = si;
-                                break;
-                            }
-                        }
-
                         ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
                         string prodCode = prodItem?.ProductCode ?? "";
                         string prodName = prodItem?.Text ?? "";
@@ -1186,15 +1176,15 @@ namespace ChickenDist.Forms
                 {
                     defaultUnit = product.Unit1Name;
                     defaultFactor = 1m;
-                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
-                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                    defaultPrice = price > 0 ? price : (product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price);
+                    defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice);
                 }
                 else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
                 {
                     defaultUnit = product.Unit2Name;
                     defaultFactor = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
-                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : price;
-                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice : salePrice;
+                    defaultPrice = price > 0 ? price : (product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : price);
+                    defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit2SalePrice > 0 ? product.Unit2SalePrice : salePrice);
                 }
                 else if (matchedUnit == 3)
                 {
@@ -1202,16 +1192,16 @@ namespace ChickenDist.Forms
                     {
                         defaultUnit = product.BaseUnitName;
                         defaultFactor = (product.Unit3Factor > 0 ? product.Unit3Factor : 1m) * (product.Unit2Factor > 0 ? product.Unit2Factor : 1m);
-                        defaultPrice = product.PurchasePrice > 0 ? product.PurchasePrice : price;
-                        defaultSalePrice = product.Price > 0 ? product.Price : salePrice;
+                        defaultPrice = price > 0 ? price : (product.PurchasePrice > 0 ? product.PurchasePrice : price);
+                        defaultSalePrice = salePrice > 0 ? salePrice : (product.Price > 0 ? product.Price : salePrice);
                     }
                 }
                 else
                 {
                     if (!string.IsNullOrEmpty(product.Unit1Name))
                     {
-                        defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price;
-                        defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice;
+                        defaultPrice = price > 0 ? price : (product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price);
+                        defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice);
                     }
                 }
             }
@@ -1219,9 +1209,11 @@ namespace ChickenDist.Forms
             // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة
             foreach (var item in _items)
             {
-                if (item.ProductID == prodId && item.UnitName == defaultUnit)
+                if (item.ProductID == prodId && (string.IsNullOrEmpty(defaultUnit) || item.UnitName == defaultUnit))
                 {
                     item.Quantity += qty;
+                    if (price > 0) item.UnitPrice = defaultPrice;
+                    if (salePrice > 0) item.SuggestedSalePrice = defaultSalePrice;
                     RefreshGrid();
                     SelectQuantityCell(prodId);
                     return;
