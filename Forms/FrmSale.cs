@@ -2815,10 +2815,12 @@ namespace ChickenDist.Forms
 
 			if (product.HasExpiry)
 			{
+				decimal targetPrice = manualPrice ?? product.Price;
 				SaleItemDTO existingRow = null;
 				foreach (var item in _items)
 				{
 					if (item.ProductID == productID && 
+						item.UnitPrice == targetPrice &&
 						item.BatchID == batchID && 
 						(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
 					{
@@ -2826,8 +2828,6 @@ namespace ChickenDist.Forms
 						break;
 					}
 				}
-
-				decimal targetPrice = manualPrice ?? product.Price;
 				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
@@ -2861,17 +2861,18 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
+				decimal targetPrice = manualPrice ?? product.Price;
 				SaleItemDTO existingRow = null;
 				foreach (var item in _items)
 				{
-					if (item.ProductID == productID && (unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
+					if (item.ProductID == productID && 
+						item.UnitPrice == targetPrice &&
+						(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
 					{
 						existingRow = item;
 						break;
 					}
 				}
-
-				decimal targetPrice = manualPrice ?? product.Price;
 				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);

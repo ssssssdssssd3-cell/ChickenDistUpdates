@@ -1206,10 +1206,10 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة
+            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم
             foreach (var item in _items)
             {
-                if (item.ProductID == prodId && (string.IsNullOrEmpty(defaultUnit) || item.UnitName == defaultUnit))
+                if (item.ProductID == prodId && item.UnitPrice == defaultPrice && item.DiscountPct == disc && (string.IsNullOrEmpty(defaultUnit) || item.UnitName == defaultUnit))
                 {
                     item.Quantity += qty;
                     if (price > 0) item.UnitPrice = defaultPrice;
@@ -1541,9 +1541,9 @@ namespace ChickenDist.Forms
             dgItems.Rows.Clear();
             foreach (var item in _items)
             {
-                decimal buy = item.UnitPrice;
+                decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
                 decimal sell = item.SuggestedSalePrice ?? 0m;
-                decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
+                decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
 
                 int rIdx = dgItems.Rows.Add(
                     item.ProductID,
@@ -1691,8 +1691,9 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(cellVal, out decimal p) && p > 0)
                 {
                     item.UnitPrice = p;
+                    decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
                     decimal sell = item.SuggestedSalePrice ?? 0m;
-                    decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
+                    decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
                 else
@@ -1713,8 +1714,8 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                 {
                     item.SuggestedSalePrice = s;
-                    decimal buy = item.UnitPrice;
-                    decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
+                    decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
+                    decimal margin = netBuy > 0 ? (s - netBuy) / netBuy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
                 else

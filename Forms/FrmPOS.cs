@@ -732,8 +732,9 @@ namespace ChickenDist.Forms
 
             bool hasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]);
 
-            // Check if item already in list (same product + unit + same batch if hasExpiry)
+            // Check if item already in list (same product + unit + price + same batch if hasExpiry)
             var existing = _items.Find(i => i.ProductID == productID && 
+                                            i.Price == price &&
                                             i.UnitName == unitName && 
                                             (!hasExpiry || (i.BatchID == batchID && i.ExpiryDate == expiryDate)));
 

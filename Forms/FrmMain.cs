@@ -247,6 +247,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
             this.Controls.Add(pnlNavBar);
+            this.pnlTopBar.Visible = false;
             this.Controls.Add(pnlTopBar);
 
             pnlTopBar.SendToBack();
