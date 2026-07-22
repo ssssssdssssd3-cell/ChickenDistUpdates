@@ -670,8 +670,8 @@ namespace ChickenDist.Forms
             tp.Controls.Add(grid);
             tp.Controls.Add(pnlTabHeader);
 
-            pnlTabHeader.BringToFront();
-            grid.SendToBack();
+            pnlTabHeader.SendToBack();
+            grid.BringToFront();
 
             return tp;
         }

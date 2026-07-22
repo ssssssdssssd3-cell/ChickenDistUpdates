@@ -1,3 +1,6 @@
+v2.0.143 - 2026-07-22
+- Permissions Screen Layout: Corrected the control docking order inside BuildTabPage. Sent the top tab header panel to back and brought the DataGridView grid to front so the grid is docked last. This completely resolves the overlapping issue where the action bar header panel drew directly on top of and obscured the DataGridView column headers.
+
 v2.0.142 - 2026-07-22
 - Sales List Search: Converted client search dropdown to a typed searchable autocomplete ComboBox matching the sales invoice style. Added support for typing client name and pressing Enter.
 - Sales List Totals Bar: Fixed layout Z-order docking conflict where the main fill panel obscured the bottom summary totals panel, and bypassed permission checks for Manager roles.
