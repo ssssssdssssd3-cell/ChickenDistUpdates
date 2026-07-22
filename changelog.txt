@@ -1,3 +1,6 @@
+v2.0.134 - 2026-07-22
+- Employee Permissions: Fixed a layout issue where column headers vanished in RTL due to Frozen column property. Pinned footer panel buttons via custom layout anchoring (btnSave, btnCancel, lblCounter) instead of FlowLayoutPanel to completely resolve clipping and overlap issues in Right-To-Left display.
+
 v2.0.133 - 2026-07-22
 - Product Card: Fixed NullReferenceException on Save/New button clicks caused by chkHasExpiry and nudDefaultExpiryDays being conditionally created per business type (not created for Chicken/Retail types). Added null checks in BtnSave_Click, LoadProductDetails, and ClearDetail for all conditional controls.
 

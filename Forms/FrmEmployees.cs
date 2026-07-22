@@ -570,30 +570,29 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(46, 204, 113),
                 AutoSize = true,
-                Location = new Point(15, 18)
+                Anchor = AnchorStyles.Right | AnchorStyles.Top
             };
+            lblCounter.Left = pnlFooter.Width - lblCounter.Width - 20;
+            lblCounter.Top = 15;
 
-            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات [F5]", 0, 0, 210, 42, Theme.Accent);
-            btnSave.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات [F5]", 15, 10, 215, 40, Theme.Accent);
+            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnSave.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             btnSave.Click += BtnSave_Click;
 
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 0, 0, 110, 42, Color.FromArgb(100, 110, 120));
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 240, 10, 110, 40, Color.FromArgb(100, 110, 120));
+            btnCancel.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             btnCancel.Click += (s, e) => this.Close();
 
-            var pnlLeftButtons = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Padding = new Padding(10, 8, 0, 0)
-            };
-            pnlLeftButtons.Controls.Add(btnSave);
-            pnlLeftButtons.Controls.Add(btnCancel);
-
+            pnlFooter.Controls.Add(btnSave);
+            pnlFooter.Controls.Add(btnCancel);
             pnlFooter.Controls.Add(lblCounter);
-            pnlFooter.Controls.Add(pnlLeftButtons);
+
+            pnlFooter.Resize += (s, e) =>
+            {
+                lblCounter.Left = pnlFooter.Width - lblCounter.Width - 20;
+                lblCounter.Top = (pnlFooter.Height - lblCounter.Height) / 2;
+            };
 
             // Dock Order Assembly
             this.Controls.Add(tcPerms);
@@ -715,20 +714,20 @@ namespace ChickenDist.Forms
             };
 
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260, Frozen = true });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول الشاشة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة جديد", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل كارت", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف عنصر", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ تعديل السعر", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل الفاتورة", Width = 130 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف الفاتورة", Width = 130 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ / طباعة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 رؤية التكلفة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب الأعمدة", Width = 125 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 تفاصيل التقفيل", Width = 130 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 رصيد الخزنة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير الخزنة", Width = 120 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 240 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 70 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة", Width = 75 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 75 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 65 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 70 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل فاتورة", Width = 110 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 105 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 100 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 80 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 75 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 80 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 80 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 100 });
 
             // Live updates for counter
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
