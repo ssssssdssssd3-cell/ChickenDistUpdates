@@ -2271,6 +2271,31 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void EnsurePermissionsColumns()
+        {
+            try
+            {
+                Execute(@"
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanAdd')
+                        ALTER TABLE Permissions ADD CanAdd BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanEdit')
+                        ALTER TABLE Permissions ADD CanEdit BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanDelete')
+                        ALTER TABLE Permissions ADD CanDelete BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewDetails')
+                        ALTER TABLE Permissions ADD CanViewDetails BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewBalance')
+                        ALTER TABLE Permissions ADD CanViewBalance BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanChangeSafe')
+                        ALTER TABLE Permissions ADD CanChangeSafe BIT DEFAULT 1;
+                ");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("EnsurePermissionsColumns failed", ex);
+            }
+        }
+
         public static SqlConnection GetConnection()
         {
             return new SqlConnection(_connStr);

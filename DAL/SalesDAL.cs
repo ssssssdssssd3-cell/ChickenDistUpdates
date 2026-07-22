@@ -420,7 +420,7 @@ namespace ChickenDist.DAL
             try
             {
                 DbHelper.Execute("DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", saleID));
-                AppLogger.Audit("حذف مسودة فاتورة", $"SaleID: {saleID}");
+                AppLogger.Audit("حذف مسودة فاتورة", $"مسودة فاتورة رقم (#{saleID})");
                 return true;
             }
             catch (Exception ex)
@@ -1118,7 +1118,7 @@ namespace ChickenDist.DAL
             });
             // ===== نهاية Transaction الأساسي =====
 
-            AppLogger.Audit("تقفيل حمولة مندوب", $"LoadID: {loadID}, DriverID: {driverID}, HandoverID: {hvID}, كاش محصل: {cashCollected:N2}, تسوية العجز: {settlementType}");
+            AppLogger.Audit("تقفيل حمولة مندوب", $"حمولة رقم (#{loadID}) | مندوب رقم ({driverID}) | تسليم عهدة (#{hvID}) | المبلغ المحصل: {cashCollected:N2} ج | نوع تسوية العجز: {settlementType}");
 
             return hvID;
         }
@@ -1259,7 +1259,7 @@ namespace ChickenDist.DAL
                 }
             });
 
-            AppLogger.Audit("تسوية عجز حمولة", $"DriverID:{driverID} LoadID:{loadID} Value:{deficitValue:N2} Type:{settlementType}");
+            AppLogger.Audit("تسوية عجز حمولة", $"مندوب رقم ({driverID}) | حمولة رقم (#{loadID}) | قيمة العجز: {deficitValue:N2} ج | طريقة التسوية: {settlementType}");
         }
 
         /// <summary>كشف التحصيل اليومي للمندوب — قائمة عملاء بديونهم لإرسالها عبر واتساب</summary>

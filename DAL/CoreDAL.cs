@@ -129,21 +129,44 @@ namespace ChickenDist.DAL
         // Permissions
         public static DataTable GetPermissions(int empID)
         {
-            return DbHelper.Query(@"
-                SELECT ScreenName, CanAccess, 
-                       COALESCE(CanAdd, 1) AS CanAdd, 
-                       COALESCE(CanEdit, 1) AS CanEdit, 
-                       COALESCE(CanDelete, 1) AS CanDelete, 
-                       CanEditPrice, 
-                       COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, 
-                       COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, 
-                       COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, 
-                       COALESCE(CanViewCost, 0) AS CanViewCost, 
-                       COALESCE(CanOrderColumns, 0) AS CanOrderColumns,
-                       COALESCE(CanViewDetails, 1) AS CanViewDetails,
-                       COALESCE(CanViewBalance, 1) AS CanViewBalance,
-                       COALESCE(CanChangeSafe, 1) AS CanChangeSafe
-                FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            DbHelper.EnsurePermissionsColumns();
+            try
+            {
+                return DbHelper.Query(@"
+                    SELECT ScreenName, CanAccess, 
+                           COALESCE(CanAdd, 1) AS CanAdd, 
+                           COALESCE(CanEdit, 1) AS CanEdit, 
+                           COALESCE(CanDelete, 1) AS CanDelete, 
+                           CanEditPrice, 
+                           COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, 
+                           COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, 
+                           COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, 
+                           COALESCE(CanViewCost, 0) AS CanViewCost, 
+                           COALESCE(CanOrderColumns, 0) AS CanOrderColumns,
+                           COALESCE(CanViewDetails, 1) AS CanViewDetails,
+                           COALESCE(CanViewBalance, 1) AS CanViewBalance,
+                           COALESCE(CanChangeSafe, 1) AS CanChangeSafe
+                    FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            }
+            catch
+            {
+                DbHelper.EnsurePermissionsColumns();
+                return DbHelper.Query(@"
+                    SELECT ScreenName, CanAccess, 
+                           COALESCE(CanAdd, 1) AS CanAdd, 
+                           COALESCE(CanEdit, 1) AS CanEdit, 
+                           COALESCE(CanDelete, 1) AS CanDelete, 
+                           CanEditPrice, 
+                           COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, 
+                           COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, 
+                           COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, 
+                           COALESCE(CanViewCost, 0) AS CanViewCost, 
+                           COALESCE(CanOrderColumns, 0) AS CanOrderColumns,
+                           COALESCE(CanViewDetails, 1) AS CanViewDetails,
+                           COALESCE(CanViewBalance, 1) AS CanViewBalance,
+                           COALESCE(CanChangeSafe, 1) AS CanChangeSafe
+                    FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
+            }
         }
 
         public static void SavePermissions(int empID, string screen, 
@@ -152,6 +175,7 @@ namespace ChickenDist.DAL
             bool canCopySalesInvoice, bool canViewCost, bool canOrderColumns,
             bool canViewDetails, bool canViewBalance, bool canChangeSafe)
         {
+            DbHelper.EnsurePermissionsColumns();
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
                 DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             if (Convert.ToInt32(exists) > 0)
@@ -541,7 +565,7 @@ namespace ChickenDist.DAL
             }
 
             AppLogger.Audit("تحديث سعر الصنف",
-                $"ProductID:{productID} NewPrice:{pendingPrice:N3} Cost:{costPrice:N3} ApplyNow:{applyNow}");
+                $"صنف رقم ({productID}) | السعر الجديد: {pendingPrice:N2} ج | التكلفة: {costPrice:N2} ج | التفعيل فوري: {(applyNow ? "نعم" : "معلق لحين نفاذ الكمية")}");
         }
 
         /// <summary>
@@ -573,7 +597,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@pid", productID), DbHelper.P("@old", oldPrice), DbHelper.P("@new", newPrice),
                     DbHelper.P("@ref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", notes));
 
-                AppLogger.Audit("تفعيل سعر معلق", $"ProductID:{productID} Price:{newPrice}");
+                AppLogger.Audit("تفعيل سعر معلق", $"صنف رقم ({productID}) | السعر الجديد المفعل: {newPrice:N2} ج");
             }
         }
 
@@ -600,7 +624,7 @@ namespace ChickenDist.DAL
             {
                 ActivatePendingPrice(productID);
                 AppLogger.Audit("تفعيل سعر معلق تلقائي",
-                    $"ProductID:{productID} Stock:{currentStock:N2} Threshold:{threshold:N2}");
+                    $"صنف رقم ({productID}) | المخزون المتبقي: {currentStock:N2} | الحد المطلوب للتفعيل: {threshold:N2}");
             }
         }
 
