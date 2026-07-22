@@ -564,6 +564,10 @@ namespace ChickenDist.Core
                 {
                     TabPage tp = tc.TabPages[e.Index];
                     Rectangle tabRect = tc.GetTabRect(e.Index);
+                    if (tc.RightToLeft == RightToLeft.Yes && tc.RightToLeftLayout)
+                    {
+                        tabRect.X = tc.ClientRectangle.Width - tabRect.Right;
+                    }
                     bool isSelected = tc.SelectedIndex == e.Index;
 
                     Color backColor = isSelected ? Primary : Color.FromArgb(55, 65, 81);

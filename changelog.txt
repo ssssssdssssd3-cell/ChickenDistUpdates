@@ -1,3 +1,7 @@
+v2.0.144 - 2026-07-22
+- TabControl Custom Drawing: Fixed TabControl OwnerDraw bug in RTLLayout by mirroring the GetTabRect X coordinates, correcting the wrong selection background highlight color offsets.
+- Permissions Table: Increased columns width in the permissions DataGridView to ensure all action and permission titles display in full without clipping or truncation.
+
 v2.0.143 - 2026-07-22
 - Permissions Screen Layout: Corrected the control docking order inside BuildTabPage. Sent the top tab header panel to back and brought the DataGridView grid to front so the grid is docked last. This completely resolves the overlapping issue where the action bar header panel drew directly on top of and obscured the DataGridView column headers.
 
