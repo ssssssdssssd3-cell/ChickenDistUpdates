@@ -600,10 +600,10 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlControlBar);
             this.Controls.Add(pnlTop);
 
-            pnlTop.BringToFront();
-            pnlControlBar.BringToFront();
-            pnlFooter.BringToFront();
-            tcPerms.SendToBack();
+            pnlTop.SendToBack();
+            pnlControlBar.SendToBack();
+            pnlFooter.SendToBack();
+            tcPerms.BringToFront();
 
             this.KeyPreview = true;
             this.KeyDown += (s, e) =>

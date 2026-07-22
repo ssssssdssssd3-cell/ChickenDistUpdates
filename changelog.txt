@@ -1,3 +1,6 @@
+v2.0.139 - 2026-07-22
+- Employee Permissions: Fixed controls overlap layout bug where the main TabControl (tcPerms) docked fill overlapped the top panels in the background. Re-arranged the controls Z-order docking sequence correctly so the TabControl properly fills only the remaining screen area, making the tab headers, action panel buttons, and grid headers completely visible.
+
 v2.0.138 - 2026-07-22
 - Purchase Invoice: Expanded and improved the footer calculations panel (tblTotals) column spacing and alignment, widening the totals panel width to 780px. This organizes all items (Totals, Tax, Shipping, Discount, Item Count) neatly next to each other, preventing truncation and overlaps.
 
