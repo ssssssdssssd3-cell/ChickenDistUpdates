@@ -559,8 +559,8 @@ namespace ChickenDist.Forms
             var pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 55,
-                BackColor = Theme.BgCard,
+                Height = 60,
+                BackColor = Color.FromArgb(24, 32, 47),
                 Padding = new Padding(15, 8, 15, 8)
             };
 
@@ -570,23 +570,27 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(46, 204, 113),
                 AutoSize = true,
-                Location = new Point(20, 15)
+                Location = new Point(15, 18)
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات [F5]", 0, 0, 180, 40, Theme.Accent);
-            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnSave.Dock = DockStyle.Left;
+            btnSave = Theme.MakeButton("💾 حفظ الصلاحيات [F5]", 0, 0, 210, 42, Theme.Accent);
+            btnSave.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
 
-            var btnCancel = Theme.MakeButton("إلغاء", 0, 0, 100, 40, Color.FromArgb(100, 110, 120));
-            btnCancel.Dock = DockStyle.Left;
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 0, 0, 110, 42, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => this.Close();
 
-            var pnlLeftButtons = new Panel { Dock = DockStyle.Left, Width = 300, BackColor = Color.Transparent };
+            var pnlLeftButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(10, 8, 0, 0)
+            };
             pnlLeftButtons.Controls.Add(btnSave);
             pnlLeftButtons.Controls.Add(btnCancel);
-            btnSave.Location = new Point(0, 0);
-            btnCancel.Location = new Point(190, 0);
 
             pnlFooter.Controls.Add(lblCounter);
             pnlFooter.Controls.Add(pnlLeftButtons);
@@ -598,9 +602,9 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlTop);
 
             pnlTop.BringToFront();
-            pnlControlBar.SendToBack();
-            pnlFooter.SendToBack();
-            tcPerms.BringToFront();
+            pnlControlBar.BringToFront();
+            pnlFooter.BringToFront();
+            tcPerms.SendToBack();
 
             this.KeyPreview = true;
             this.KeyDown += (s, e) =>
@@ -701,28 +705,30 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Color.FromArgb(41, 128, 185), SelectionForeColor = Color.White },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
+                ColumnHeadersHeight = 42,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 EnableHeadersVisualStyles = false,
-                RowTemplate = { Height = 32 }
+                RowTemplate = { Height = 34 },
+                ScrollBars = ScrollBars.Both,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
             };
 
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, FillWeight = 60 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول ورؤية", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة جديد", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل كارت", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف عنصر", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ تعديل السعر", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل الفاتورة", FillWeight = 20 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف الفاتورة", FillWeight = 20 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 رؤية التكلفة", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب الأعمدة", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 تفاصيل التقفيل", FillWeight = 20 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 رصيد الخزنة", FillWeight = 18 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير الخزنة", FillWeight = 18 });
-
-            dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260, Frozen = true });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول الشاشة", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة جديد", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل كارت", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف عنصر", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ تعديل السعر", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل الفاتورة", Width = 130 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف الفاتورة", Width = 130 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ / طباعة", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 رؤية التكلفة", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب الأعمدة", Width = 125 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 تفاصيل التقفيل", Width = 130 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 رصيد الخزنة", Width = 120 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير الخزنة", Width = 120 });
 
             // Live updates for counter
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
