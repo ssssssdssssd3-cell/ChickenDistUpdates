@@ -204,6 +204,20 @@ namespace ChickenDist.Core
             BEGIN
                 ALTER TABLE Products ADD ProductSize NVARCHAR(100) NULL;
             END");
+
+            SafeMigrate("Products.OfferColumns", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OriginalPrice')
+            BEGIN
+                ALTER TABLE Products ADD OriginalPrice DECIMAL(18,2) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'DiscountPct')
+            BEGIN
+                ALTER TABLE Products ADD DiscountPct DECIMAL(5,2) NULL CONSTRAINT DF_Products_DiscountPct DEFAULT 0;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'IsOffer')
+            BEGIN
+                ALTER TABLE Products ADD IsOffer BIT NULL CONSTRAINT DF_Products_IsOffer DEFAULT 0;
+            END");
         }
 
         public static void EnsureDatabaseSchema()

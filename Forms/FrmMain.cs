@@ -288,6 +288,7 @@ namespace ChickenDist.Forms
                 case "FrmSalesAuditList":
                 case "FrmAccountantPortal":
                 case "FrmReservations":
+                case "FrmClearanceOffers":
                     targetGroup = "المبيعات";
                     break;
                 case "FrmPurchase":
@@ -408,6 +409,7 @@ namespace ChickenDist.Forms
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
+                    ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
@@ -418,6 +420,7 @@ namespace ChickenDist.Forms
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
+                    ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
