@@ -1,3 +1,6 @@
+v2.0.159 - 2026-07-24
+- Fix Invalid Column Name Quantity SQL Exception in Model Lookup (FrmModelLookup.cs): Removed non-existent Quantity column from Products SQL query and dynamically fetched exact product stock using InventoryDAL.GetProductStock.
+
 v2.0.158 - 2026-07-23
 - Global System Audit & Header Rendering Fix Across All Screens (Theme.cs, FrmClientStatement.cs, FrmSupplierStatement.cs): Applied centralized custom DataGridView header painting with gradient background and bold white text in Theme.ApplyRTL. Fixed Z-order docking in Client and Supplier account statements to prevent footer totals from being obscured by grid rows.
 

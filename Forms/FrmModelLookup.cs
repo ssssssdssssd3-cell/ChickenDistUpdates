@@ -143,7 +143,7 @@ namespace ChickenDist.Forms
             if (string.IsNullOrWhiteSpace(q)) return;
 
             string querySql = @"
-                SELECT ProductID, ProductName, ProductCode, SalePrice, Quantity, COALESCE(ShelfLocation, '') AS ShelfLocation
+                SELECT ProductID, ProductName, ProductCode, SalePrice, COALESCE(ShelfLocation, '') AS ShelfLocation
                 FROM Products
                 WHERE IsActive = 1 
                   AND (ProductName LIKE @q OR ProductCode LIKE @q OR InternationalCode LIKE @q OR ShelfLocation LIKE @q)
@@ -152,7 +152,8 @@ namespace ChickenDist.Forms
             var dt = DbHelper.Query(querySql, DbHelper.P("@q", "%" + q + "%"));
             foreach (DataRow r in dt.Rows)
             {
-                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                int pid = Convert.ToInt32(r["ProductID"]);
+                decimal qty = InventoryDAL.GetProductStock(pid);
                 int ri = dgVariants.Rows.Add(
                     r["ProductID"],
                     r["ProductName"],
