@@ -274,9 +274,49 @@ namespace ChickenDist.Core
                         ApplyRTL(tp.Controls);
                     }
                 }
+                else if (c is DataGridView dgv)
+                {
+                    StyleGridHeader(dgv);
+                }
 
                 if (c.HasChildren)
                     ApplyRTL(c.Controls);
+            }
+        }
+
+        public static void StyleGridHeader(DataGridView grid)
+        {
+            if (grid == null) return;
+            grid.ColumnHeadersVisible = true;
+            grid.EnableHeadersVisualStyles = false;
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            if (grid.ColumnHeadersHeight < 36) grid.ColumnHeadersHeight = 36;
+            grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            grid.CellPainting -= HeaderCellPainting;
+            grid.CellPainting += HeaderCellPainting;
+        }
+
+        private static void HeaderCellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex == -1 && e.ColumnIndex >= 0 && sender is DataGridView grid)
+            {
+                e.PaintBackground(e.CellBounds, true);
+                using (var b = new LinearGradientBrush(e.CellBounds, Color.FromArgb(41, 60, 88), Color.FromArgb(24, 38, 60), 90f))
+                {
+                    e.Graphics.FillRectangle(b, e.CellBounds);
+                }
+                using (var pen = new Pen(Color.FromArgb(70, 90, 120)))
+                {
+                    e.Graphics.DrawRectangle(pen, e.CellBounds.X, e.CellBounds.Y, e.CellBounds.Width - 1, e.CellBounds.Height - 1);
+                }
+                string headerText = grid.Columns[e.ColumnIndex].HeaderText;
+                TextRenderer.DrawText(e.Graphics, headerText, new Font("Segoe UI", 10f, FontStyle.Bold),
+                    e.CellBounds, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak);
+                e.Handled = true;
             }
         }
 

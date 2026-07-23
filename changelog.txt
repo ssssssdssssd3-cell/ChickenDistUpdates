@@ -1,3 +1,6 @@
+v2.0.158 - 2026-07-23
+- Global System Audit & Header Rendering Fix Across All Screens (Theme.cs, FrmClientStatement.cs, FrmSupplierStatement.cs): Applied centralized custom DataGridView header painting with gradient background and bold white text in Theme.ApplyRTL. Fixed Z-order docking in Client and Supplier account statements to prevent footer totals from being obscured by grid rows.
+
 v2.0.157 - 2026-07-23
 - Fix WinForms Z-Order Docking Overlap (FrmSales.cs & FrmPurchasesList.cs): Ensured main content container tblContent is brought to front (index 0) so WinForms layout engine docks top filter panel and bottom summary cards first, leaving middle area for grid and column headers without any overlapping.
 

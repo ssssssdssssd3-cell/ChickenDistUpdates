@@ -112,14 +112,19 @@ namespace ChickenDist.Forms
                 }
             };
 
-            this.Controls.Add(dgStatement);
-
             var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 46, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
             lblBalance = new Label { Text = "الصافي: 0", ForeColor = Theme.Accent, Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
             lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.OrangeRed, Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
+
+            this.Controls.Clear();
+            this.Controls.Add(dgStatement);
             this.Controls.Add(pnlFoot);
+            this.Controls.Add(pnlFilter);
+
+            pnlFilter.SendToBack();
+            pnlFoot.SendToBack();
             dgStatement.BringToFront();
             Theme.ApplyFormRTL(this);
         }

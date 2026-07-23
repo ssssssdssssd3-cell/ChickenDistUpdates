@@ -159,8 +159,14 @@ namespace ChickenDist.Forms
             };
 
             pnlFoot.Controls.AddRange(new Control[] { lblPurchases, lblPayments, lblBalance });
+            
+            this.Controls.Clear();
+            this.Controls.Add(dgStatement);
             this.Controls.Add(pnlFoot);
+            this.Controls.Add(pnlFilter);
 
+            pnlFilter.SendToBack();
+            pnlFoot.SendToBack();
             dgStatement.BringToFront();
             Theme.ApplyFormRTL(this);
         }
