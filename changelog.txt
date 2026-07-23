@@ -1,3 +1,6 @@
+v2.0.151 - 2026-07-23
+- Shift Close Redesign & Blind Close Permissions (FrmShiftClose.cs): Added Blind Shift Close security mode (hides figures for cashiers without details permission), interactive 6 KPI Cards, Shift Movements Grid, and Admin Details Toggle button.
+
 v2.0.150 - 2026-07-23
 - Fixed Totals Summary Bar Docking & Z-Order in Sales History (FrmSales.cs): Summary cards now permanently float at the bottom of the screen.
 - Enhanced Search UX in Sales History: Added interactive search dialog buttons (🔍) for both Clients and Products and real-time live typing filter for smooth search matching.

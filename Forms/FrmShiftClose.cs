@@ -9,18 +9,42 @@ using ChickenDist.DAL;
 namespace ChickenDist.Forms
 {
     /// <summary>
-    /// شاشة إدارة الوردية — فتح وإغلاق وطباعة تقرير الوردية
+    /// شاشة إدارة وإغلاق الوردية المتقدمة — مع دعم الإغلاق الأعمى وصلاحيات الكشف عن التفاصيل
     /// </summary>
     public class FrmShiftClose : Form
     {
         private DataRow _openShift = null;
         private ShiftSummary _summary = null;
-        private Panel   pnlStatus, pnlSummary, pnlBottom;
-        private Label   lblShiftStatus, lblShiftInfo;
-        private Label   lblTotalSales, lblCashSales, lblVisaSales, lblOtherSales;
-        private Label   lblTotalReturns, lblExpected, lblDiff;
-        private TextBox txtActualCash, txtNotes, txtOpeningCash;
-        private Button  btnOpenShift, btnCloseShift, btnPrintReport, btnRefresh;
+        
+        private Panel pnlHeader;
+        private Panel pnlStatus;
+        private Panel pnlKpiContainer;
+        private Panel pnlActualContainer;
+        private Panel pnlBottom;
+        
+        private Label lblShiftStatus;
+        private Label lblShiftInfo;
+        
+        private Label lblOpeningCashVal;
+        private Label lblCashSalesVal;
+        private Label lblCreditSalesVal;
+        private Label lblReturnsVal;
+        private Label lblExpensesVal;
+        private Label lblExpectedVal;
+        private Label lblDiffVal;
+
+        private TextBox txtActualCash;
+        private TextBox txtNotes;
+        private TextBox txtOpeningCash;
+        
+        private Button btnOpenShift;
+        private Button btnCloseShift;
+        private Button btnPrintReport;
+        private Button btnRefresh;
+        private Button btnToggleDetails;
+
+        private DataGridView dgMovements;
+        private bool _forceShowDetails = false;
 
         public FrmShiftClose()
         {
@@ -30,78 +54,319 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text            = "إدارة الوردية";
-            this.Size            = new Size(860, 680);
-            this.StartPosition   = FormStartPosition.CenterScreen;
-            this.BackColor       = Theme.BgMain;
-            this.Font            = Theme.FontMain;
-            this.RightToLeft     = RightToLeft.Yes;
+            this.Text = "إدارة وإغلاق الوردية";
+            this.Size = new Size(1000, 750);
+            this.MinimumSize = new Size(950, 700);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = Theme.BgMain;
+            this.Font = Theme.FontMain;
+            this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            var pnlTop = Theme.MakeTitleBar("🔄 إدارة الوردية", "فتح وإغلاق وطباعة تقرير وردية الكاشير");
-            this.Controls.Add(pnlTop);
+            // ── 1. رأس الشاشة ──────────────────────────────────────────
+            pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 65,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15, 10, 15, 10)
+            };
 
-            pnlStatus = new Panel { Location = new Point(20, 90), Size = new Size(810, 90), BackColor = Theme.BgCard };
+            var lblTitle = new Label
+            {
+                Text = "🔄 إدارة وإغلاق وردية الكاشير",
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                AutoSize = true,
+                Location = new Point(15, 10)
+            };
+
+            var lblSub = new Label
+            {
+                Text = "متابعة حركة الخزنة والمبيعات وإغلاق الحسابات بمرونة وأمان",
+                Font = new Font("Segoe UI", 9.5f),
+                ForeColor = Theme.TextSub,
+                AutoSize = true,
+                Location = new Point(15, 36)
+            };
+
+            btnToggleDetails = new Button
+            {
+                Text = "👁️ إظهار/إخفاء التفاصيل",
+                Size = new Size(160, 36),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Location = new Point(20, 12),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(70, 80, 95),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnToggleDetails.FlatAppearance.BorderSize = 0;
+            btnToggleDetails.Click += (s, e) =>
+            {
+                if (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose"))
+                {
+                    _forceShowDetails = !_forceShowDetails;
+                    if (_openShift != null)
+                    {
+                        int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
+                        LoadShiftSummary(shiftID);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("🔒 ليس لديك صلاحية لعرض التفاصيل المباشرة للوردية (الإغلاق الأعمى).", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            pnlHeader.Controls.Add(lblTitle);
+            pnlHeader.Controls.Add(lblSub);
+            pnlHeader.Controls.Add(btnToggleDetails);
+            this.Controls.Add(pnlHeader);
+
+            // ── 2. المحتوى الرئيسي ──────────────────────────────────────
+            TableLayoutPanel tblMain = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4,
+                Padding = new Padding(15, 10, 15, 10),
+                RightToLeft = RightToLeft.Yes
+            };
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 75f));  // كارت حالة الوردية
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 115f)); // كروت المؤشرات KPI
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 95f));  // كارت العد الفعلي والفرق
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // جدول حركات الوردية
+
+            // أ) كارت حالة الوردية
+            pnlStatus = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Margin = new Padding(0, 0, 0, 8) };
             pnlStatus.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlStatus);
 
-            lblShiftStatus = new Label { Font = new Font("Segoe UI", 14f, FontStyle.Bold), Location = new Point(10, 10), Size = new Size(790, 35), TextAlign = ContentAlignment.MiddleCenter };
-            lblShiftInfo   = new Label { Font = Theme.FontMain, ForeColor = Theme.TextSub, Location = new Point(10, 50), Size = new Size(790, 25), TextAlign = ContentAlignment.MiddleCenter };
+            lblShiftStatus = new Label
+            {
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Location = new Point(15, 10),
+                Size = new Size(400, 30),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            lblShiftInfo = new Label
+            {
+                Font = Theme.FontMain,
+                ForeColor = Theme.TextSub,
+                Location = new Point(15, 42),
+                Size = new Size(600, 24),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            var lblOpeningTitle = new Label
+            {
+                Text = "رصيد فتح الوردية:",
+                Font = Theme.FontBold,
+                ForeColor = Theme.TextMain,
+                Size = new Size(120, 25),
+                Location = new Point(810, 25),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            txtOpeningCash = new TextBox
+            {
+                Size = new Size(110, 28),
+                Location = new Point(695, 24),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle,
+                Text = "0"
+            };
+
             pnlStatus.Controls.Add(lblShiftStatus);
             pnlStatus.Controls.Add(lblShiftInfo);
-            this.Controls.Add(pnlStatus);
+            pnlStatus.Controls.Add(lblOpeningTitle);
+            pnlStatus.Controls.Add(txtOpeningCash);
+            tblMain.Controls.Add(pnlStatus, 0, 0);
 
-            pnlSummary = new Panel { Location = new Point(20, 195), Size = new Size(810, 360), BackColor = Theme.BgCard };
-            pnlSummary.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlSummary);
-
-            int y = 15;
-            void AddLabelRow(string lText, ref Label valLbl, Color col)
+            // ب) كروت المؤشرات KPI (6 كروت)
+            pnlKpiContainer = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 8) };
+            TableLayoutPanel tblKpi = new TableLayoutPanel
             {
-                var l = new Label { Text = lText, Location = new Point(20, y), Size = new Size(210, 28), ForeColor = Theme.TextMain, Font = Theme.FontMain, TextAlign = ContentAlignment.MiddleRight };
-                valLbl = new Label { Text = "---", Location = new Point(240, y), Size = new Size(200, 28), ForeColor = col, Font = new Font("Segoe UI", 11f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft };
-                pnlSummary.Controls.Add(l); pnlSummary.Controls.Add(valLbl); y += 38;
-            }
+                Dock = DockStyle.Fill,
+                ColumnCount = 6,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes
+            };
+            for (int i = 0; i < 6; i++) tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
 
-            AddLabelRow("إجمالي المبيعات:", ref lblTotalSales, Theme.Success);
-            AddLabelRow("منها نقدي:", ref lblCashSales, Theme.TextMain);
-            AddLabelRow("منها فيزا/بطاقة:", ref lblVisaSales, Theme.TextMain);
-            AddLabelRow("منها آجل/أخرى:", ref lblOtherSales, Theme.TextMain);
-            AddLabelRow("إجمالي المرتجعات:", ref lblTotalReturns, Theme.Danger);
-            AddLabelRow("المتوقع في الخزنة:", ref lblExpected, Theme.Accent);
+            lblOpeningCashVal = MakeKpiCard(tblKpi, "💵 رصيد البداية", "0.00 ج", Theme.TextMain, 0);
+            lblCashSalesVal   = MakeKpiCard(tblKpi, "🛒 مبيعات كاش", "0.00 ج", Theme.Success, 1);
+            lblCreditSalesVal = MakeKpiCard(tblKpi, "💳 مبيعات آجل/فيزا", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
+            lblReturnsVal     = MakeKpiCard(tblKpi, "↩ مرتجعات", "0.00 ج", Theme.Danger, 3);
+            lblExpensesVal    = MakeKpiCard(tblKpi, "💸 مصروفات/خارج", "0.00 ج", Color.FromArgb(230, 126, 34), 4);
+            lblExpectedVal    = MakeKpiCard(tblKpi, "💰 المتوقع بالخزنة", "0.00 ج", Theme.Accent, 5);
 
-            var lAct = new Label { Text = "الفعلي في الخزنة:", Location = new Point(20, y), Size = new Size(210, 28), ForeColor = Theme.TextMain, Font = Theme.FontMain, TextAlign = ContentAlignment.MiddleRight };
-            txtActualCash = new TextBox { Location = new Point(240, y), Size = new Size(160, 28), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle, Text = "0" };
+            pnlKpiContainer.Controls.Add(tblKpi);
+            tblMain.Controls.Add(pnlKpiContainer, 0, 1);
+
+            // ج) لوحة العد الفعلي والفرق والملحوظات
+            pnlActualContainer = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Margin = new Padding(0, 0, 0, 8) };
+            pnlActualContainer.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlActualContainer);
+
+            TableLayoutPanel tblActual = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 4,
+                RowCount = 1,
+                Padding = new Padding(10, 8, 10, 8),
+                RightToLeft = RightToLeft.Yes
+            };
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f)); // الفعلي
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f)); // الفرق
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // الملاحظات
+
+            // حقل الفعلي
+            Panel pnlAct = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
+            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي الموجود بالخزنة:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            txtActualCash = new TextBox { Dock = DockStyle.Bottom, Height = 32, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0" };
             txtActualCash.TextChanged += (s, e) => RecalcDiff();
-            pnlSummary.Controls.Add(lAct); pnlSummary.Controls.Add(txtActualCash); y += 38;
+            pnlAct.Controls.Add(txtActualCash);
+            pnlAct.Controls.Add(lblActTitle);
+            tblActual.Controls.Add(pnlAct, 0, 0);
 
-            AddLabelRow("الفرق (عجز/زيادة):", ref lblDiff, Theme.Accent);
+            // حقل الفرق
+            Panel pnlDiff = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
+            var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Bottom, Height = 32, Font = new Font("Segoe UI", 13f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
+            pnlDiff.Controls.Add(lblDiffVal);
+            pnlDiff.Controls.Add(lblDiffTitle);
+            tblActual.Controls.Add(pnlDiff, 1, 0);
 
-            var lNotes = new Label { Text = "ملاحظات:", Location = new Point(20, y), Size = new Size(210, 28), ForeColor = Theme.TextMain, Font = Theme.FontMain, TextAlign = ContentAlignment.MiddleRight };
-            txtNotes = new TextBox { Location = new Point(240, y), Size = new Size(360, 28), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlSummary.Controls.Add(lNotes); pnlSummary.Controls.Add(txtNotes);
+            // حقل الملاحظات
+            Panel pnlNotes = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
+            var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontMain, ForeColor = Theme.TextMain };
+            txtNotes = new TextBox { Dock = DockStyle.Bottom, Height = 32, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlNotes.Controls.Add(txtNotes);
+            pnlNotes.Controls.Add(lblNotesTitle);
+            tblActual.Controls.Add(pnlNotes, 2, 0);
 
-            var lOpen = new Label { Text = "رصيد الفتح:", Location = new Point(460, 15), Size = new Size(150, 28), ForeColor = Theme.TextMain, Font = Theme.FontMain, TextAlign = ContentAlignment.MiddleRight };
-            txtOpeningCash = new TextBox { Location = new Point(620, 15), Size = new Size(130, 28), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle, Text = "0" };
-            pnlSummary.Controls.Add(lOpen); pnlSummary.Controls.Add(txtOpeningCash);
+            pnlActualContainer.Controls.Add(tblActual);
+            tblMain.Controls.Add(pnlActualContainer, 0, 2);
 
-            this.Controls.Add(pnlSummary);
+            // د) جدول حركات الوردية
+            dgMovements = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                RightToLeft = RightToLeft.Yes,
+                GridColor = Theme.BorderColor,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Theme.BgCard,
+                    ForeColor = Theme.TextMain,
+                    SelectionBackColor = Theme.Primary,
+                    SelectionForeColor = Color.White,
+                    Font = Theme.FontMain
+                },
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 35,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Theme.Primary,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                },
+                EnableHeadersVisualStyles = false
+            };
+            dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "نوع الحركة", FillWeight = 60f });
+            dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefCode", HeaderText = "رقم المرجع", FillWeight = 60f });
+            dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTime", HeaderText = "الوقت", FillWeight = 70f });
+            dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "Details", HeaderText = "البيان / العميل", FillWeight = 140f });
+            dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "Amount", HeaderText = "المبلغ النقدي (ج)", FillWeight = 70f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 
-            pnlBottom = new Panel { Location = new Point(20, 570), Size = new Size(810, 60), BackColor = Color.Transparent };
+            tblMain.Controls.Add(dgMovements, 0, 3);
+            this.Controls.Add(tblMain);
 
-            btnOpenShift   = Theme.MakeButton("✅ فتح وردية جديدة", Theme.Success,                    new Point(0,   10), new Size(190, 40));
-            btnCloseShift  = Theme.MakeButton("🔒 إغلاق الوردية",   Theme.Danger,                     new Point(200, 10), new Size(190, 40));
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير",   Theme.Primary,                    new Point(400, 10), new Size(180, 40));
-            btnRefresh     = Theme.MakeButton("🔄 تحديث",            Color.FromArgb(60, 70, 85),       new Point(590, 10), new Size(120, 40));
+            // ── 3. شريط التحكم السفلي ──────────────────────────────────
+            pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 65,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15, 10, 15, 10)
+            };
+
+            btnOpenShift   = Theme.MakeButton("✅ فتح وردية جديدة", Theme.Success, new Point(0, 0), new Size(180, 42));
+            btnCloseShift  = Theme.MakeButton("🔒 إغلاق الوردية",   Theme.Danger,  new Point(0, 0), new Size(180, 42));
+            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير",   Theme.Primary, new Point(0, 0), new Size(170, 42));
+            btnRefresh     = Theme.MakeButton("🔄 تحديث", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(110, 42));
+
+            FlowLayoutPanel flowBottom = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent
+            };
+            btnOpenShift.Margin   = new Padding(6, 0, 0, 0);
+            btnCloseShift.Margin  = new Padding(6, 0, 0, 0);
+            btnPrintReport.Margin = new Padding(6, 0, 0, 0);
+            btnRefresh.Margin     = new Padding(6, 0, 0, 0);
 
             btnOpenShift.Click   += BtnOpenShift_Click;
             btnCloseShift.Click  += BtnCloseShift_Click;
             btnPrintReport.Click += BtnPrintReport_Click;
             btnRefresh.Click     += (s, e) => LoadCurrentShift();
 
-            pnlBottom.Controls.Add(btnOpenShift);
-            pnlBottom.Controls.Add(btnCloseShift);
-            pnlBottom.Controls.Add(btnPrintReport);
-            pnlBottom.Controls.Add(btnRefresh);
+            flowBottom.Controls.Add(btnOpenShift);
+            flowBottom.Controls.Add(btnCloseShift);
+            flowBottom.Controls.Add(btnPrintReport);
+            flowBottom.Controls.Add(btnRefresh);
+
+            pnlBottom.Controls.Add(flowBottom);
             this.Controls.Add(pnlBottom);
+        }
+
+        private Label MakeKpiCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIdx)
+        {
+            Panel pnl = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Margin = new Padding(3),
+                Padding = new Padding(6)
+            };
+            pnl.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnl);
+
+            Label lblT = new Label
+            {
+                Text = title,
+                Dock = DockStyle.Top,
+                Height = 22,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Theme.TextSub,
+                TextAlign = ContentAlignment.TopRight
+            };
+
+            Label lblV = new Label
+            {
+                Text = val,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                ForeColor = valColor,
+                TextAlign = ContentAlignment.BottomRight
+            };
+
+            pnl.Controls.Add(lblV);
+            pnl.Controls.Add(lblT);
+            parent.Controls.Add(pnl, colIdx, 0);
+            return lblV;
         }
 
         private void LoadCurrentShift()
@@ -115,22 +380,35 @@ namespace ChickenDist.Forms
                 {
                     _openShift = dt.Rows[0];
                     int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
-                    Session.CurrentShiftID  = shiftID;
-                    lblShiftStatus.Text     = "🟢  وردية مفتوحة";
+                    Session.CurrentShiftID = shiftID;
+                    
+                    DateTime openTime = Convert.ToDateTime(_openShift["OpenTime"]);
+                    TimeSpan duration = DateTime.Now - openTime;
+                    string durationStr = $"{(int)duration.TotalHours} ساعة و {duration.Minutes} دقيقة";
+
+                    lblShiftStatus.Text = $"🟢  وردية مفتوحة #{shiftID}";
                     lblShiftStatus.ForeColor = Theme.Success;
-                    lblShiftInfo.Text       = $"فُتحت بواسطة: {_openShift["OpenedByName"]}   |   الوقت: {Convert.ToDateTime(_openShift["OpenTime"]):yyyy-MM-dd HH:mm}";
+                    lblShiftInfo.Text = $"الكاشير: {_openShift["OpenedByName"]}   |   تاريخ الفتح: {openTime:yyyy-MM-dd HH:mm}   |   المدة: {durationStr}";
+                    
+                    txtOpeningCash.Text = Convert.ToDecimal(_openShift["OpeningCash"]).ToString("N2");
+                    txtOpeningCash.Enabled = false;
+
                     LoadShiftSummary(shiftID);
+                    LoadShiftMovements(shiftID, openTime);
+
                     btnOpenShift.Enabled   = false;
                     btnCloseShift.Enabled  = true;
                     btnPrintReport.Enabled = true;
                 }
                 else
                 {
-                    _openShift             = null;
+                    _openShift = null;
                     Session.CurrentShiftID = null;
-                    lblShiftStatus.Text    = "🔴  لا توجد وردية مفتوحة";
+                    lblShiftStatus.Text = "🔴  لا توجد وردية مفتوحة حالياً";
                     lblShiftStatus.ForeColor = Theme.Danger;
-                    lblShiftInfo.Text      = "اضغط فتح وردية جديدة لبدء يوم العمل";
+                    lblShiftInfo.Text = "اضغط على (فتح وردية جديدة) لبدء يوم عمل جديد وتسجيل النقدية.";
+                    txtOpeningCash.Enabled = true;
+
                     ClearSummary();
                     btnOpenShift.Enabled   = true;
                     btnCloseShift.Enabled  = false;
@@ -160,126 +438,271 @@ namespace ChickenDist.Forms
                     WHERE s.ShiftID = @sid",
                     DbHelper.P("@sid", shiftID));
 
+                DateTime openTime = _openShift != null ? Convert.ToDateTime(_openShift["OpenTime"]) : DateTime.Today;
+
+                var dtExp = DbHelper.Query(@"
+                    SELECT 
+                        ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
+                        ISNULL(SUM(AmountIn), 0) AS TotalCashIn
+                    FROM CashBox 
+                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleReturn')",
+                    DbHelper.P("@dt", openTime));
+
                 decimal ts  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["TotalSales"])   : 0;
                 decimal cs  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["CashSales"])    : 0;
                 decimal cr  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["CreditSales"])  : 0;
                 decimal os  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["OtherSales"])   : 0;
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]): 0;
+                decimal ex  = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalExpenses"]) : 0;
+                decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]) : 0;
                 decimal oc  = _openShift != null ? Convert.ToDecimal(_openShift["OpeningCash"])   : 0;
-                decimal exp = oc + cs - tr;
+                
+                decimal exp = oc + cs + cin - tr - ex;
 
-                _summary = new ShiftSummary { TotalSales=ts, CashSales=cs, CreditSales=cr, OtherSales=os, TotalReturns=tr, OpeningCash=oc, Expected=exp };
+                _summary = new ShiftSummary { TotalSales = ts, CashSales = cs, CreditSales = cr, OtherSales = os, TotalReturns = tr, Expenses = ex, OpeningCash = oc, Expected = exp };
 
-                bool canViewDetails = Session.CanViewDetails("ShiftClose");
+                bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
 
-                lblTotalSales.Text   = canViewDetails ? ts.ToString("N2")  + " ج" : "*** 🔒";
-                lblCashSales.Text    = canViewDetails ? cs.ToString("N2")  + " ج" : "*** 🔒";
-                lblVisaSales.Text    = canViewDetails ? cr.ToString("N2")  + " ج" : "*** 🔒";
-                lblOtherSales.Text   = canViewDetails ? os.ToString("N2")  + " ج" : "*** 🔒";
-                lblTotalReturns.Text = canViewDetails ? tr.ToString("N2")  + " ج" : "*** 🔒";
-                lblExpected.Text     = canViewDetails ? exp.ToString("N2") + " ج" : "*** 🔒";
-                if (!canViewDetails) txtActualCash.Text = "0.00";
-                else txtActualCash.Text = exp.ToString("N2");
+                if (canViewDetails)
+                {
+                    lblOpeningCashVal.Text = oc.ToString("N2")  + " ج";
+                    lblCashSalesVal.Text   = cs.ToString("N2")  + " ج";
+                    lblCreditSalesVal.Text = cr.ToString("N2")  + " ج";
+                    lblReturnsVal.Text     = tr.ToString("N2")  + " ج";
+                    lblExpensesVal.Text    = ex.ToString("N2")  + " ج";
+                    lblExpectedVal.Text    = exp.ToString("N2") + " ج";
+                    txtActualCash.Text     = exp.ToString("N2");
+                }
+                else
+                {
+                    // الإغلاق الأعمى — إخفاء الأرقام المتوقعة من الكاشير
+                    lblOpeningCashVal.Text = "🔒 مخفي";
+                    lblCashSalesVal.Text   = "🔒 مخفي";
+                    lblCreditSalesVal.Text = "🔒 مخفي";
+                    lblReturnsVal.Text     = "🔒 مخفي";
+                    lblExpensesVal.Text    = "🔒 مخفي";
+                    lblExpectedVal.Text    = "🔒 مخفي (أعمى)";
+                    txtActualCash.Text     = "0.00";
+                }
 
                 RecalcDiff();
             }
             catch (Exception ex) { AppLogger.Error("FrmShiftClose.LoadShiftSummary", ex); }
         }
 
+        private void LoadShiftMovements(int shiftID, DateTime openTime)
+        {
+            dgMovements.Rows.Clear();
+            bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
+            if (!canViewDetails)
+            {
+                dgMovements.Visible = false;
+                return;
+            }
+
+            dgMovements.Visible = true;
+            try
+            {
+                var dtSales = DbHelper.Query(@"
+                    SELECT 'مبيعات' AS TransType, SaleCode AS RefCode, SaleDate AS TransTime, ClientName AS Details, TotalAmount AS Amount
+                    FROM Sales WHERE ShiftID=@sid AND IsPosted=1
+                    UNION ALL
+                    SELECT 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, sr.ReturnDate AS TransTime, 'مرتجع فاتورة' AS Details, sr.TotalAmount AS Amount
+                    FROM SalesReturns sr JOIN Sales s ON sr.SaleID=s.SaleID WHERE s.ShiftID=@sid
+                    UNION ALL
+                    SELECT 'مصروف/حركة' AS TransType, CAST(CashID AS NVARCHAR) AS RefCode, TransDate AS TransTime, Notes AS Details, (AmountOut - AmountIn) AS Amount
+                    FROM CashBox WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleReturn')
+                    ORDER BY TransTime DESC",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+
+                foreach (DataRow r in dtSales.Rows)
+                {
+                    dgMovements.Rows.Add(
+                        r["TransType"],
+                        r["RefCode"],
+                        Convert.ToDateTime(r["TransTime"]).ToString("HH:mm:ss"),
+                        r["Details"],
+                        Convert.ToDecimal(r["Amount"]).ToString("N2"));
+                }
+            }
+            catch { }
+        }
+
         private void RecalcDiff()
         {
             if (_summary == null) return;
+            bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
+
             if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual)) return;
+
+            if (!canViewDetails)
+            {
+                lblDiffVal.Text = "🔒 (إغلاق أعمى)";
+                lblDiffVal.ForeColor = Theme.TextSub;
+                return;
+            }
+
             decimal diff = actual - _summary.Expected;
-            lblDiff.Text      = diff.ToString("N2") + " ج";
-            lblDiff.ForeColor = diff < 0 ? Theme.Danger : diff > 0 ? Theme.Success : Theme.TextMain;
+            if (diff == 0)
+            {
+                lblDiffVal.Text = "0.00 ج (مطابق ✔)";
+                lblDiffVal.ForeColor = Theme.Success;
+            }
+            else if (diff < 0)
+            {
+                lblDiffVal.Text = $"{diff:N2} ج (عجز 🔴)";
+                lblDiffVal.ForeColor = Theme.Danger;
+            }
+            else
+            {
+                lblDiffVal.Text = $"+{diff:N2} ج (زيادة 🔵)";
+                lblDiffVal.ForeColor = Color.FromArgb(52, 152, 219);
+            }
         }
 
         private void ClearSummary()
         {
             _summary = null;
-            lblTotalSales.Text = lblCashSales.Text = lblVisaSales.Text = lblOtherSales.Text =
-            lblTotalReturns.Text = lblExpected.Text = lblDiff.Text = "---";
+            lblOpeningCashVal.Text = lblCashSalesVal.Text = lblCreditSalesVal.Text =
+            lblReturnsVal.Text = lblExpensesVal.Text = lblExpectedVal.Text = lblDiffVal.Text = "---";
+            dgMovements.Rows.Clear();
         }
 
         private void BtnOpenShift_Click(object sender, EventArgs e)
         {
             if (!decimal.TryParse(txtOpeningCash.Text, out decimal opening)) opening = 0;
-            if (MessageBox.Show($"فتح وردية جديدة برصيد فتح {opening:N2} ج؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (MessageBox.Show($"تأكيد فتح وردية جديدة برصيد فتح قدره {opening:N2} ج؟", "تأكيد فتح الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
                 int shiftID = DbHelper.ExecuteInsert(
                     "INSERT INTO Shifts (ShiftDate,OpenTime,OpenedBy,OpeningCash,Status) VALUES (CAST(GETDATE() AS DATE),GETDATE(),@emp,@cash,'Open')",
                     DbHelper.P("@emp", Session.EmpID), DbHelper.P("@cash", opening));
-                if (shiftID > 0) { Session.CurrentShiftID = shiftID; MessageBox.Show("✅ تم فتح الوردية!", "فتح الوردية", MessageBoxButtons.OK, MessageBoxIcon.Information); LoadCurrentShift(); }
+                if (shiftID > 0)
+                {
+                    Session.CurrentShiftID = shiftID;
+                    MessageBox.Show("✅ تم فتح الوردية بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadCurrentShift();
+                }
             }
-            catch (Exception ex) { MessageBox.Show("خطأ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show("خطأ أثناء فتح الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         private void BtnCloseShift_Click(object sender, EventArgs e)
         {
             if (_openShift == null) return;
-            if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual)) { MessageBox.Show("أدخل المبلغ الفعلي أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (MessageBox.Show("تأكيد إغلاق الوردية؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual))
+            {
+                MessageBox.Show("الرجاء إدخال المبلغ الفعلي الموجود بالخزنة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("هل أنت تأكد من إغلاق الوردية الحالية وتسوية الحسابات؟", "تأكيد إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+
             try
             {
                 int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
                 decimal diff = actual - (_summary?.Expected ?? 0);
-                DbHelper.Execute(@"UPDATE Shifts SET CloseTime=GETDATE(),ClosedBy=@emp,TotalSales=@ts,CashSales=@cs,OtherSales=@os,TotalReturns=@tr,ExpectedCash=@exp,ActualCash=@act,Difference=@diff,Notes=@n,Status='Closed' WHERE ShiftID=@sid",
-                    DbHelper.P("@emp",Session.EmpID), DbHelper.P("@ts",_summary?.TotalSales??0), DbHelper.P("@cs",_summary?.CashSales??0),
-                    DbHelper.P("@os",_summary?.OtherSales??0), DbHelper.P("@tr",_summary?.TotalReturns??0), DbHelper.P("@exp",_summary?.Expected??0),
-                    DbHelper.P("@act",actual), DbHelper.P("@diff",diff), DbHelper.P("@n",txtNotes.Text.Trim()), DbHelper.P("@sid",shiftID));
+
+                DbHelper.Execute(@"
+                    UPDATE Shifts SET 
+                        CloseTime = GETDATE(),
+                        ClosedBy = @emp,
+                        TotalSales = @ts,
+                        CashSales = @cs,
+                        OtherSales = @os,
+                        TotalReturns = @tr,
+                        ExpectedCash = @exp,
+                        ActualCash = @act,
+                        Difference = @diff,
+                        Notes = @n,
+                        Status = 'Closed' 
+                    WHERE ShiftID = @sid",
+                    DbHelper.P("@emp", Session.EmpID),
+                    DbHelper.P("@ts", _summary?.TotalSales ?? 0),
+                    DbHelper.P("@cs", _summary?.CashSales ?? 0),
+                    DbHelper.P("@os", _summary?.OtherSales ?? 0),
+                    DbHelper.P("@tr", _summary?.TotalReturns ?? 0),
+                    DbHelper.P("@exp", _summary?.Expected ?? 0),
+                    DbHelper.P("@act", actual),
+                    DbHelper.P("@diff", diff),
+                    DbHelper.P("@n", txtNotes.Text.Trim()),
+                    DbHelper.P("@sid", shiftID));
+
                 Session.CurrentShiftID = null;
-                if (MessageBox.Show("طباعة تقرير الوردية؟", "طباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+
+                if (MessageBox.Show("✅ تم إغلاق الوردية بنجاح!\nهل تريد طباعة تقرير إغلاق الوردية الآن؟", "إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                {
                     PrintShiftReport(shiftID, actual, diff);
-                MessageBox.Show("✅ تم إغلاق الوردية!", "إغلاق الوردية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
                 LoadCurrentShift();
             }
-            catch (Exception ex) { MessageBox.Show("خطأ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show("خطأ عند إغلاق الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         private void BtnPrintReport_Click(object sender, EventArgs e)
         {
             if (_openShift == null) return;
-            decimal.TryParse(txtActualCash.Text.Replace(",",""), out decimal actual);
+            decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual);
             PrintShiftReport(Convert.ToInt32(_openShift["ShiftID"]), actual, actual - (_summary?.Expected ?? 0));
         }
 
         private void PrintShiftReport(int shiftID, decimal actual, decimal diff)
         {
             var pd = new PrintDocument();
-            if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName)) AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+            if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName))
+                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+
             pd.PrintPage += (s2, e2) =>
             {
-                var g = e2.Graphics; var fnt = new Font("Courier New", 9f); var fntB = new Font("Courier New", 10f, FontStyle.Bold);
-                int px = 10, py = 10; int pw = (int)e2.PageBounds.Width - 20;
-                void Ln(string t, bool bold=false, bool center=false) { var sf=new System.Drawing.StringFormat(); if(center) sf.Alignment=StringAlignment.Center; g.DrawString(t, bold?fntB:fnt, Brushes.Black, center?new RectangleF(px,py,pw,16):new RectangleF(px,py,pw,16),sf); py+=18; }
-                void Sep() { g.DrawLine(Pens.Black, px, py, px+pw, py); py+=6; }
+                var g = e2.Graphics;
+                var fnt = new Font("Courier New", 9f);
+                var fntB = new Font("Courier New", 10f, FontStyle.Bold);
+                int px = 10, py = 10;
+                int pw = (int)e2.PageBounds.Width - 20;
+
+                void Ln(string t, bool bold = false, bool center = false)
+                {
+                    var sf = new System.Drawing.StringFormat();
+                    if (center) sf.Alignment = StringAlignment.Center;
+                    g.DrawString(t, bold ? fntB : fnt, Brushes.Black, center ? new RectangleF(px, py, pw, 16) : new RectangleF(px, py, pw, 16), sf);
+                    py += 18;
+                }
+                void Sep() { g.DrawLine(Pens.Black, px, py, px + pw, py); py += 6; }
+
                 Ln(AppConfig.CompanyName, true, true);
-                Ln($"تقرير الوردية #{shiftID}", true, true);
+                Ln($"تقرير إغلاق الوردية #{shiftID}", true, true);
                 Sep();
-                if (_openShift != null) { Ln($"بداية: {Convert.ToDateTime(_openShift["OpenTime"]):yyyy-MM-dd HH:mm}"); Ln($"الكاشير: {_openShift["OpenedByName"]}"); }
-                Ln($"انتهاء: {DateTime.Now:yyyy-MM-dd HH:mm}");
+                if (_openShift != null)
+                {
+                    Ln($"وقت الفتح: {Convert.ToDateTime(_openShift["OpenTime"]):yyyy-MM-dd HH:mm}");
+                    Ln($"الكاشير: {_openShift["OpenedByName"]}");
+                }
+                Ln($"وقت الإغلاق: {DateTime.Now:yyyy-MM-dd HH:mm}");
                 Sep();
-                Ln($"رصيد الفتح:        {(_summary?.OpeningCash??0),10:N2} ج");
-                Ln($"إجمالي المبيعات:   {(_summary?.TotalSales??0),10:N2} ج");
-                Ln($"  نقدي:            {(_summary?.CashSales??0),10:N2} ج");
-                Ln($"  آجل/أخرى:        {(_summary?.OtherSales??0),10:N2} ج");
-                Ln($"إجمالي المرتجعات:  {(_summary?.TotalReturns??0),10:N2} ج");
+                Ln($"رصيد الفتح:        {(_summary?.OpeningCash ?? 0),10:N2} ج");
+                Ln($"إجمالي المبيعات:   {(_summary?.TotalSales ?? 0),10:N2} ج");
+                Ln($"  نقدي:            {(_summary?.CashSales ?? 0),10:N2} ج");
+                Ln($"  آجل/بطاقات:      {(_summary?.CreditSales + _summary?.OtherSales ?? 0),10:N2} ج");
+                Ln($"إجمالي المرتجعات:  {(_summary?.TotalReturns ?? 0),10:N2} ج");
+                Ln($"المصروفات والسحب:  {(_summary?.Expenses ?? 0),10:N2} ج");
                 Sep();
-                Ln($"المتوقع:           {(_summary?.Expected??0),10:N2} ج");
-                Ln($"الفعلي:            {actual,10:N2} ج");
-                Ln($"الفرق:             {diff,10:N2} ج");
+                Ln($"المتوقع بالخزنة:   {(_summary?.Expected ?? 0),10:N2} ج");
+                Ln($"الفعلي بالخزنة:    {actual,10:N2} ج");
+                Ln($"الفرق (عجز/زيادة): {diff,10:N2} ج");
                 Sep();
-                if (!string.IsNullOrEmpty(txtNotes?.Text?.Trim())) Ln($"ملاحظات: {txtNotes.Text.Trim()}");
-                Ln($"طُبع: {DateTime.Now:yyyy-MM-dd HH:mm}", false, true);
+                if (!string.IsNullOrEmpty(txtNotes?.Text?.Trim()))
+                    Ln($"ملاحظات: {txtNotes.Text.Trim()}");
+                Ln($"طُبع بتاريخ: {DateTime.Now:yyyy-MM-dd HH:mm}", false, true);
             };
-            try { pd.Print(); } catch (Exception ex) { MessageBox.Show("فشل الطباعة:\n"+ex.Message,"خطأ",MessageBoxButtons.OK,MessageBoxIcon.Error); }
+
+            try { pd.Print(); }
+            catch (Exception ex) { MessageBox.Show("فشل إرسال التقرير للطابعة:\n" + ex.Message, "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         private class ShiftSummary
         {
-            public decimal TotalSales, CashSales, CreditSales, OtherSales, TotalReturns, OpeningCash, Expected;
+            public decimal TotalSales, CashSales, CreditSales, OtherSales, TotalReturns, Expenses, OpeningCash, Expected;
         }
     }
 }
