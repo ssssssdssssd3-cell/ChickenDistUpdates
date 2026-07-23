@@ -1,3 +1,6 @@
+v2.0.153 - 2026-07-23
+- Product Search Improvements (FrmProductSearch.cs): Enabled "إظهار الأصناف ذات الرصيد الصفري" by default so all items show automatically without manual selection. Added "➕ إضافة صنف جديد" button directly inside product search to allow on-the-fly item creation during purchase entry.
+
 v2.0.152 - 2026-07-23
 - Independent Unit Sale Price Comparison in Purchases (FrmPurchase.cs): Buying in Unit 1 (الصغرى) or Unit 2 (الوسطى) now compares against and updates each unit's independent sale price (Unit1SalePrice / Unit2SalePrice) instead of forcing main unit (SalePrice) comparison.
 - Mandatory Manual Supplier Invoice Number: Made Supplier Invoice Number compulsory before saving purchase invoices, with clear distinction between official supplier invoice number and system internal serial number.

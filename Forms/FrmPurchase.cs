@@ -381,6 +381,11 @@ namespace ChickenDist.Forms
                     if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                     {
                         ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
+                        if (prodItem == null)
+                        {
+                            LoadCombos();
+                            prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
+                        }
                         string prodCode = prodItem?.ProductCode ?? "";
                         string prodName = prodItem?.Text ?? "";
 

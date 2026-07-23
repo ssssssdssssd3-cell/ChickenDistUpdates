@@ -101,7 +101,7 @@ namespace ChickenDist.Forms
                 Height = 24,
                 ForeColor = labelColor,
                 Font = Theme.FontBold,
-                Checked = false
+                Checked = true
             };
             chkShowZeroStock.CheckedChanged += (s, e) => RefreshGrid();
             
@@ -266,11 +266,20 @@ namespace ChickenDist.Forms
 
             var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Color.Transparent };
             btnSelect = Theme.MakeButton("✅ اختيار وانزال الصنف للفاتورة", 420, 8, 220, 34, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 260, 8, 120, 34, Color.FromArgb(120, 40, 40));
+            var btnAddNewProduct = Theme.MakeButton("➕ إضافة صنف جديد", 240, 8, 165, 34, Theme.Success);
+            btnAddNewProduct.Click += (s, e) =>
+            {
+                using (var frm = new FrmProducts())
+                {
+                    frm.ShowDialog(this);
+                }
+                LoadProducts();
+            };
+            btnCancel = Theme.MakeButton("❌ إلغاء", 100, 8, 125, 34, Color.FromArgb(120, 40, 40));
             
             btnSelect.Click += BtnSelect_Click;
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
-            pnlButtons.Controls.AddRange(new Control[] { btnSelect, btnCancel });
+            pnlButtons.Controls.AddRange(new Control[] { btnSelect, btnAddNewProduct, btnCancel });
 
             pnlActions.Controls.Add(pnlButtons);
             pnlActions.Controls.Add(pnlEditInputs);
