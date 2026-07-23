@@ -154,7 +154,8 @@ namespace ChickenDist.Core
         public static bool CanViewSalesTotals(string screen = "SalesList")
         {
             if (Role == "Admin" || (Role != null && (Role.Contains("مدير") || Role.Contains("Admin")))) return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanViewSalesTotals;
+            if (_perms.ContainsKey(screen)) return _perms[screen].CanViewSalesTotals;
+            return true;
         }
 
         public static void SaveColumnOrder(System.Windows.Forms.DataGridView dgv, string gridKey)

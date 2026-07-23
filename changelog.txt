@@ -1,3 +1,6 @@
+v2.0.154 - 2026-07-23
+- Product Search Dropdown & Header Rendering Fix (FrmSales.cs & FrmPurchasesList.cs): Converted product search from a plain text box to a searchable Dropdown ComboBox (cboProductFilter) with auto-complete. Ensured totals summary bar displays for all users and added custom CellPainting for DataGridView column headers to guarantee bold white header text on dark blue background.
+
 v2.0.153 - 2026-07-23
 - Product Search Improvements (FrmProductSearch.cs): Enabled "إظهار الأصناف ذات الرصيد الصفري" by default so all items show automatically without manual selection. Added "➕ إضافة صنف جديد" button directly inside product search to allow on-the-fly item creation during purchase entry.
 

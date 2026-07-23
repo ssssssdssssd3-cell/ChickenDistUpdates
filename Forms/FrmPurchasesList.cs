@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
 
 		private DataGridView MakeGrid()
 		{
-			return new DataGridView
+			var grid = new DataGridView
 			{
 				Dock = DockStyle.Fill,
 				BackgroundColor = Theme.BgCard,
@@ -227,17 +227,40 @@ namespace ChickenDist.Forms
 					SelectionForeColor = Color.White,
 					Font = Theme.FontMain
 				},
+				ColumnHeadersVisible = true,
 				ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-				ColumnHeadersHeight = 40,
+				ColumnHeadersHeight = 36,
 				ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
 				{
-					BackColor = Theme.Primary,
+					BackColor = Color.FromArgb(30, 41, 59),
 					ForeColor = Color.White,
 					Font = new Font("Segoe UI", 10f, FontStyle.Bold),
 					Alignment = DataGridViewContentAlignment.MiddleCenter
 				},
 				EnableHeadersVisualStyles = false
 			};
+
+			grid.CellPainting += (s, e) =>
+			{
+				if (e.RowIndex == -1 && e.ColumnIndex >= 0)
+				{
+					e.PaintBackground(e.CellBounds, true);
+					using (var b = new System.Drawing.Drawing2D.LinearGradientBrush(e.CellBounds, Color.FromArgb(41, 60, 88), Color.FromArgb(24, 38, 60), 90f))
+					{
+						e.Graphics.FillRectangle(b, e.CellBounds);
+					}
+					using (var pen = new Pen(Color.FromArgb(70, 90, 120)))
+					{
+						e.Graphics.DrawRectangle(pen, e.CellBounds.X, e.CellBounds.Y, e.CellBounds.Width - 1, e.CellBounds.Height - 1);
+					}
+					string headerText = grid.Columns[e.ColumnIndex].HeaderText;
+					TextRenderer.DrawText(e.Graphics, headerText, new Font("Segoe UI", 10f, FontStyle.Bold),
+						e.CellBounds, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak);
+					e.Handled = true;
+				}
+			};
+
+			return grid;
 		}
 
 		private void LoadPurchases()

@@ -38,7 +38,7 @@ namespace ChickenDist.Forms
 		private Label lblShippingSummary;
 		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
-		private TextBox txtProductSearch;
+		private ComboBox cboProductFilter;
 		private DataTable _allSalesDt;
 
 		public FrmSalesList()
@@ -195,27 +195,25 @@ namespace ChickenDist.Forms
 			};
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 140, btnClientSearchDlg));
 
-			// بحث صنف + زر البحث المباشر + فلترة تلقائية
-			txtProductSearch = new TextBox
+			// ─── قائمة منسدلة للصنف + زر البحث الشامل ───
+			cboProductFilter = new ComboBox
 			{
+				DropDownStyle = ComboBoxStyle.DropDown,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+				AutoCompleteSource = AutoCompleteSource.ListItems
 			};
-			Timer tmrProductSearch = new Timer { Interval = 350 };
-			tmrProductSearch.Tick += (s, e) =>
+			cboProductFilter.Items.Add(new ComboItem(0, "الكل"));
+			foreach (DataRow row in ProductDAL.GetAll(true).Rows)
+				cboProductFilter.Items.Add(new ComboItem((int)row["ProductID"], row["ProductName"].ToString()));
+			cboProductFilter.DisplayMember = "Text";
+			cboProductFilter.SelectedIndex = 0;
+			cboProductFilter.SelectedIndexChanged += delegate { LoadSales(); };
+			cboProductFilter.KeyDown += (s, e) =>
 			{
-				tmrProductSearch.Stop();
-				LoadSales();
-			};
-			txtProductSearch.TextChanged += (s, e) =>
-			{
-				tmrProductSearch.Stop();
-				tmrProductSearch.Start();
-			};
-			txtProductSearch.KeyDown += (s, e) =>
-			{
-				if (e.KeyCode == Keys.Enter) { tmrProductSearch.Stop(); LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
+				if (e.KeyCode == Keys.Enter) { LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
 			};
 
 			Button btnProductSearchDlg = new Button
@@ -236,16 +234,20 @@ namespace ChickenDist.Forms
 				{
 					if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
 					{
-						var pName = DbHelper.Scalar("SELECT ProductName FROM Products WHERE ProductID=@id", DbHelper.P("@id", frm.SelectedProductID));
-						if (pName != null && pName != DBNull.Value)
+						int pid = frm.SelectedProductID;
+						for (int i = 0; i < cboProductFilter.Items.Count; i++)
 						{
-							txtProductSearch.Text = pName.ToString();
+							if (cboProductFilter.Items[i] is ComboItem ci && ci.ID == pid)
+							{
+								cboProductFilter.SelectedIndex = i;
+								break;
+							}
 						}
 						LoadSales();
 					}
 				}
 			};
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", txtProductSearch, 120, btnProductSearchDlg));
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", cboProductFilter, 140, btnProductSearchDlg));
 
 			// بحث سريع (فلترة محلية)
 			txtSearch = new TextBox
@@ -537,7 +539,7 @@ namespace ChickenDist.Forms
 
 		private DataGridView MakeGrid()
 		{
-			return new DataGridView
+			var grid = new DataGridView
 			{
 				Dock = DockStyle.Fill,
 				BackgroundColor = Theme.BgCard,
@@ -569,6 +571,28 @@ namespace ChickenDist.Forms
 				},
 				EnableHeadersVisualStyles = false
 			};
+
+			grid.CellPainting += (s, e) =>
+			{
+				if (e.RowIndex == -1 && e.ColumnIndex >= 0)
+				{
+					e.PaintBackground(e.CellBounds, true);
+					using (var b = new System.Drawing.Drawing2D.LinearGradientBrush(e.CellBounds, Color.FromArgb(41, 60, 88), Color.FromArgb(24, 38, 60), 90f))
+					{
+						e.Graphics.FillRectangle(b, e.CellBounds);
+					}
+					using (var pen = new Pen(Color.FromArgb(70, 90, 120)))
+					{
+						e.Graphics.DrawRectangle(pen, e.CellBounds.X, e.CellBounds.Y, e.CellBounds.Width - 1, e.CellBounds.Height - 1);
+					}
+					string headerText = grid.Columns[e.ColumnIndex].HeaderText;
+					TextRenderer.DrawText(e.Graphics, headerText, new Font("Segoe UI", 10f, FontStyle.Bold),
+						e.CellBounds, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak);
+					e.Handled = true;
+				}
+			};
+
+			return grid;
 		}
 
 		private void LoadSales()
@@ -596,7 +620,18 @@ namespace ChickenDist.Forms
 					}
 				}
 			}
-			string productSearch = (txtProductSearch != null && !string.IsNullOrWhiteSpace(txtProductSearch.Text)) ? txtProductSearch.Text.Trim() : null;
+			string productSearch = null;
+			if (cboProductFilter != null)
+			{
+				if (cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
+				{
+					productSearch = pci.Text;
+				}
+				else if (!string.IsNullOrWhiteSpace(cboProductFilter.Text) && cboProductFilter.Text.Trim() != "الكل")
+				{
+					productSearch = cboProductFilter.Text.Trim();
+				}
+			}
 			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch);
 			FilterData();
 		}
