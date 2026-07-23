@@ -1,3 +1,6 @@
+v2.0.160 - 2026-07-24
+- Added Product Size (المقاس) Dropdown Field & Registered Auto-lookup in Product Card (FrmProductCard.cs): Added Size field with reusable ProductSizes lookup table, auto-saving new sizes and populating dropdown list for future selection. Enabled Client Reservations (حجوزات العملاء) in Sales menu across all activity modes in FrmMain.cs.
+
 v2.0.159 - 2026-07-24
 - Fix Invalid Column Name Quantity SQL Exception in Model Lookup (FrmModelLookup.cs): Removed non-existent Quantity column from Products SQL query and dynamically fetched exact product stock using InventoryDAL.GetProductStock.
 

@@ -10,9 +10,9 @@ namespace ChickenDist.Forms
     public class FrmProductCard : Form
     {
         private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtInternationalCode;
-        private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation;
+        private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtProductSize;
         private ComboBox cboCategory, cboUnit;
-        private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany;
+        private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry;
         private NumericUpDown nudDefaultExpiryDays;
@@ -171,6 +171,10 @@ namespace ChickenDist.Forms
 
             AddLookupComboField(grpPrice, "موقع الرف:", 10, py, out txtShelfLocation, out btnAddShelfLocation);
             btnAddShelfLocation.Click += (s, e) => { new FrmLookupManager("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", "أماكن الرفوف").ShowDialog(); LoadLookupCombos(); };
+            py += 38;
+
+            AddLookupComboField(grpPrice, "المقاس:", 10, py, out txtProductSize, out btnAddProductSize);
+            btnAddProductSize.Click += (s, e) => { new FrmLookupManager("ProductSizes", "SizeID", "SizeCode", "SizeName", "SIZ", "المقاسات").ShowDialog(); LoadLookupCombos(); };
             py += 38;
 
             grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(165, py + 3), Width = 135, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
@@ -467,6 +471,16 @@ namespace ChickenDist.Forms
                     foreach (DataRow r in dtProducers.Rows) txtProducerCompany.Items.Add(r["ProducerName"].ToString());
                     txtProducerCompany.Text = producerVal;
                 }
+
+                // ProductSizes
+                string sizeVal = txtProductSize != null ? txtProductSize.Text : "";
+                if (txtProductSize != null)
+                {
+                    txtProductSize.Items.Clear();
+                    var dtSizes = LookupDAL.GetAll("ProductSizes", "SizeName");
+                    foreach (DataRow r in dtSizes.Rows) txtProductSize.Items.Add(r["SizeName"].ToString());
+                    txtProductSize.Text = sizeVal;
+                }
             }
             catch (Exception ex)
             {
@@ -547,6 +561,7 @@ namespace ChickenDist.Forms
                 if (txtBrand != null) txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
                 if (txtProducerCompany != null) txtProducerCompany.Text = dr.Table.Columns.Contains("ProducerCompany") && dr["ProducerCompany"] != DBNull.Value ? dr["ProducerCompany"].ToString() : "";
                 if (txtShelfLocation != null) txtShelfLocation.Text = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
+                if (txtProductSize != null) txtProductSize.Text = dr.Table.Columns.Contains("ProductSize") && dr["ProductSize"] != DBNull.Value ? dr["ProductSize"].ToString() : "";
                 cboUnit.Text = dr["Unit"].ToString();
                 nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
                 nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
@@ -634,6 +649,7 @@ namespace ChickenDist.Forms
             if (txtBrand != null) txtBrand.Text = "";
             if (txtProducerCompany != null) txtProducerCompany.Text = "";
             if (txtShelfLocation != null) txtShelfLocation.Text = "";
+            if (txtProductSize != null) txtProductSize.Text = "";
             if (cboCategory.Items.Count > 0) cboCategory.SelectedIndex = 0;
             cboUnit.Text = "كرتونة";
             nudPurchasePrice.Value = 0;
@@ -760,6 +776,8 @@ namespace ChickenDist.Forms
                 LookupDAL.Save("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", 0, txtShelfLocation.Text.Trim());
             if (txtProducerCompany != null && !string.IsNullOrWhiteSpace(txtProducerCompany.Text.Trim()))
                 LookupDAL.Save("ProducerCompanies", "ProducerID", "ProducerCode", "ProducerName", "PRD", 0, txtProducerCompany.Text.Trim());
+            if (txtProductSize != null && !string.IsNullOrWhiteSpace(txtProductSize.Text.Trim()))
+                LookupDAL.Save("ProductSizes", "SizeID", "SizeCode", "SizeName", "SIZ", 0, txtProductSize.Text.Trim());
 
             // Reload combos
             LoadLookupCombos();
@@ -781,6 +799,7 @@ namespace ChickenDist.Forms
             string brandVal = txtBrand != null ? txtBrand.Text.Trim() : "";
             string shelfVal = txtShelfLocation != null ? txtShelfLocation.Text.Trim() : "";
             string producerVal = txtProducerCompany != null ? txtProducerCompany.Text.Trim() : "";
+            string sizeValStr = txtProductSize != null ? txtProductSize.Text.Trim() : "";
 
             // الحفظ في قاعدة البيانات
             int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
@@ -791,7 +810,7 @@ namespace ChickenDist.Forms
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text);
+                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr);
 
             if (id > 0)
             {

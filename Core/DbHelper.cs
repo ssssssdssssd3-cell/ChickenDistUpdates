@@ -188,6 +188,22 @@ namespace ChickenDist.Core
             BEGIN
                 ALTER TABLE Purchases ADD ShippingOn NVARCHAR(20) NULL CONSTRAINT DF_Purchases_ShippingOn DEFAULT 'Company';
             END");
+
+            SafeMigrate("ProductSizes.Table", @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductSizes')
+            BEGIN
+                CREATE TABLE ProductSizes (
+                    SizeID   INT IDENTITY(1,1) PRIMARY KEY,
+                    SizeCode NVARCHAR(20),
+                    SizeName NVARCHAR(100) NOT NULL
+                );
+            END");
+
+            SafeMigrate("Products.ProductSize", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ProductSize')
+            BEGIN
+                ALTER TABLE Products ADD ProductSize NVARCHAR(100) NULL;
+            END");
         }
 
         public static void EnsureDatabaseSchema()
