@@ -169,7 +169,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 27;
+        private const int CurrentSchemaVersion = 28;
 
         public static void EnsurePurchaseColumnsExist()
         {
@@ -226,6 +226,32 @@ namespace ChickenDist.Core
                 BEGIN
                     INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
                     VALUES (N'درج تلقائي', N'Safe', N'Auto-Drawer', 0.00, 1)
+                END");
+
+                SafeMigrate("CustomerReservations", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'CustomerReservations')
+                BEGIN
+                    CREATE TABLE CustomerReservations (
+                        ReservationID INT IDENTITY(1,1) PRIMARY KEY,
+                        ReservationNumber NVARCHAR(50) NOT NULL,
+                        ClientID INT NULL REFERENCES Clients(ClientID),
+                        ClientName NVARCHAR(150) NOT NULL,
+                        ClientPhone NVARCHAR(50) NULL,
+                        ProductID INT NULL REFERENCES Products(ProductID),
+                        ProductName NVARCHAR(200) NOT NULL,
+                        ProductCode NVARCHAR(100) NULL,
+                        Quantity DECIMAL(18,2) DEFAULT 1,
+                        UnitPrice DECIMAL(18,2) DEFAULT 0,
+                        TotalAmount DECIMAL(18,2) DEFAULT 0,
+                        DepositAmount DECIMAL(18,2) DEFAULT 0,
+                        RemainingAmount DECIMAL(18,2) DEFAULT 0,
+                        ReservationDate DATETIME DEFAULT GETDATE(),
+                        ExpectedDate DATETIME NULL,
+                        Status NVARCHAR(50) DEFAULT N'قيد الانتظار',
+                        Notes NVARCHAR(500) NULL,
+                        CreatedBy NVARCHAR(100) NULL,
+                        SaleID INT NULL REFERENCES Sales(SaleID)
+                    );
                 END");
 
                 SafeMigrate("StockAdjustments", @"

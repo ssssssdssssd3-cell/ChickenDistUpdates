@@ -1,3 +1,6 @@
+v2.0.147 - 2026-07-23
+- Customer Reservations & Pre-Orders: Implemented complete CustomerReservations module, FrmAddReservation, and FrmReservations management screen with deposit accounting and sales invoice conversion.
+
 v2.0.146 - 2026-07-23
 - Double-Column Barcode Printing: Added support for 2-Up double roll sticker sizes (38x26_double, 50x25_double) in both Settings and Bulk Barcode Print screen.
 - Clothing Model Variant Lookup: Created FrmModelLookup and added quick shortcut F3 / button to POS to search all colors, sizes, and stock quantities of a model instantly.
