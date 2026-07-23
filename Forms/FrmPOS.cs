@@ -333,11 +333,14 @@ namespace ChickenDist.Forms
             btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
-            btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات\n(F3)", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(150, 55));
-            btnModelLookup.Name = "btnModelLookup";
-            btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnModelLookup.Click += (s, e) => OpenModelLookup();
-            pnlTotals.Controls.Add(btnModelLookup);
+            if (!AppConfig.IsRestaurant)
+            {
+                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات\n(F3)", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(150, 55));
+                btnModelLookup.Name = "btnModelLookup";
+                btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                btnModelLookup.Click += (s, e) => OpenModelLookup();
+                pnlTotals.Controls.Add(btnModelLookup);
+            }
 
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);

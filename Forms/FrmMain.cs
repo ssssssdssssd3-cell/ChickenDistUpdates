@@ -404,7 +404,16 @@ namespace ChickenDist.Forms
                     ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
                 }),
 
-                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
+                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), AppConfig.IsRestaurant ? new[] {
+                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
+                    ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
+                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
+                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
+                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
+                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
+                } : new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),

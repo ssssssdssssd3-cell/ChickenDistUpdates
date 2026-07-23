@@ -1,3 +1,6 @@
+v2.0.149 - 2026-07-23
+- Strict Business Activity Scoping: Hid clothing-specific buttons (Model Lookup F3 in POS) and menu items (Customer Reservations) when Restaurant mode is active so Restaurant UI remains 100% clean and uncluttered.
+
 v2.0.148 - 2026-07-23
 - CashBox Deposit Integration: Ensured reservation deposits directly post to CashBox cash income ledger and display as "عربون حجز صنف".
 
