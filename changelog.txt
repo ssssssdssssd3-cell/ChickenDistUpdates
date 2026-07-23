@@ -1,3 +1,6 @@
+v2.0.155 - 2026-07-23
+- Fix Top Filter Bar Overlapping Sales/Purchases Grid (FrmSales.cs & FrmPurchasesList.cs): Enabled AutoSize on top FlowLayoutPanels so that wrapped filter controls dynamically calculate height without overlapping or obscuring top invoice rows and column headers.
+
 v2.0.154 - 2026-07-23
 - Product Search Dropdown & Header Rendering Fix (FrmSales.cs & FrmPurchasesList.cs): Converted product search from a plain text box to a searchable Dropdown ComboBox (cboProductFilter) with auto-complete. Ensured totals summary bar displays for all users and added custom CellPainting for DataGridView column headers to guarantee bold white header text on dark blue background.
 

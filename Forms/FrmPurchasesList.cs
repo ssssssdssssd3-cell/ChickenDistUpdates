@@ -46,11 +46,12 @@ namespace ChickenDist.Forms
 			FlowLayoutPanel filterPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 50,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				FlowDirection = FlowDirection.LeftToRight,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10, 10, 10, 10),
-				WrapContents = false
+				Padding = new Padding(8, 8, 8, 8),
+				WrapContents = true
 			};
 
 			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };

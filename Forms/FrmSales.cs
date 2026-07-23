@@ -67,10 +67,11 @@ namespace ChickenDist.Forms
 			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = ScreenHelper.IsSmallScreen ? 90 : 52,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(6, 8, 8, 4),
+				Padding = new Padding(6, 6, 6, 6),
 				WrapContents = true
 			};
 
