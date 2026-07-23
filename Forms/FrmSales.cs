@@ -495,14 +495,15 @@ namespace ChickenDist.Forms
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
 			lblShippingSummary = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:",         "0.00 ج", Color.FromArgb(243, 156, 18), 6);
 
-			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون بأسفل Z-order حتى لا يغطي DockStyle.Bottom)
+			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون في مقدمة Z-order حتى يحسب التخطيط بعد الفلتر وشريط الإجمالي)
+			base.Controls.Clear();
 			base.Controls.Add(tblContent);
 			base.Controls.Add(tableLayoutPanel);
 			base.Controls.Add(flowLayoutPanel);
 
-			tblContent.SendToBack();
-			tableLayoutPanel.BringToFront();
-			flowLayoutPanel.BringToFront();
+			flowLayoutPanel.SendToBack();
+			tableLayoutPanel.SendToBack();
+			tblContent.BringToFront();
 
 			Theme.ApplyFormRTL(this);
 		}

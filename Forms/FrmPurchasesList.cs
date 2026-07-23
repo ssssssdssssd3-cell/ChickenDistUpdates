@@ -189,9 +189,14 @@ namespace ChickenDist.Forms
 			tblContent.Controls.Add(dgPurchases, 0, 0);
 			tblContent.Controls.Add(tblDetail, 0, 1);
 
+			base.Controls.Clear();
 			base.Controls.Add(tblContent);
 			base.Controls.Add(summaryTbl);
 			base.Controls.Add(filterPanel);
+
+			filterPanel.SendToBack();
+			summaryTbl.SendToBack();
+			tblContent.BringToFront();
 		}
 
 		private Label AddDashboardCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIndex)
