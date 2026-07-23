@@ -1,3 +1,7 @@
+v2.0.152 - 2026-07-23
+- Independent Unit Sale Price Comparison in Purchases (FrmPurchase.cs): Buying in Unit 1 (الصغرى) or Unit 2 (الوسطى) now compares against and updates each unit's independent sale price (Unit1SalePrice / Unit2SalePrice) instead of forcing main unit (SalePrice) comparison.
+- Mandatory Manual Supplier Invoice Number: Made Supplier Invoice Number compulsory before saving purchase invoices, with clear distinction between official supplier invoice number and system internal serial number.
+
 v2.0.151 - 2026-07-23
 - Shift Close Redesign & Blind Close Permissions (FrmShiftClose.cs): Added Blind Shift Close security mode (hides figures for cashiers without details permission), interactive 6 KPI Cards, Shift Movements Grid, and Admin Details Toggle button.
 

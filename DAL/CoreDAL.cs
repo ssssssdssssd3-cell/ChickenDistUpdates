@@ -495,17 +495,34 @@ namespace ChickenDist.DAL
         /// <param name="pendingPrice">السعر الجديد المقترح</param>
         /// <param name="costPrice">تكلفة الشراء الجديدة</param>
         /// <param name="applyNow">true = طبّق فوراً | false = علّق حتى نفاد المخزون القديم</param>
-        public static void SetPendingPrice(int productID, decimal pendingPrice, decimal costPrice, bool applyNow, int? purchaseID = null)
+        public static void SetPendingPrice(int productID, decimal pendingPrice, decimal costPrice, bool applyNow = true, int? purchaseID = null, string unitName = null)
         {
-            var val = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            var dtProd = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2SalePrice, SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            string saleCol = "SalePrice";
+            if (dtProd.Rows.Count > 0)
+            {
+                var row = dtProd.Rows[0];
+                string u1Name = row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : "";
+                string u2Name = row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : "";
+                if (!string.IsNullOrEmpty(unitName) && unitName == u2Name)
+                {
+                    saleCol = "Unit2SalePrice";
+                }
+                else if (!string.IsNullOrEmpty(unitName) && unitName == u1Name)
+                {
+                    saleCol = "Unit1SalePrice";
+                }
+            }
+
+            var val = DbHelper.Scalar($"SELECT {saleCol} FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
             decimal currentSalePrice = val != DBNull.Value && val != null ? Convert.ToDecimal(val) : 0m;
 
             if (applyNow)
             {
                 // طبّق فوراً على الكل — امسح أي سعر معلق سابق
                 DbHelper.Execute(
-                    @"UPDATE Products
-                      SET SalePrice            = @sp,
+                    $@"UPDATE Products
+                      SET {saleCol}            = @sp,
                           CostPrice            = @cp,
                           PurchasePrice        = @cp,
                           PendingSalePrice     = NULL,
@@ -550,12 +567,12 @@ namespace ChickenDist.DAL
                 if (oldStock <= 0m)
                 {
                     // إذا لم يكن هناك مخزون قديم، نطبق السعر الجديد فوراً للكل
-                    SetPendingPrice(productID, pendingPrice, costPrice, applyNow: true, purchaseID: purchaseID);
+                    SetPendingPrice(productID, pendingPrice, costPrice, applyNow: true, purchaseID: purchaseID, unitName: unitName);
                     return;
                 }
 
                 DbHelper.Execute(
-                    @"UPDATE Products
+                    $@"UPDATE Products
                       SET CostPrice            = @cp,
                           PurchasePrice        = @cp,
                           PendingSalePrice     = @psp,
@@ -570,7 +587,7 @@ namespace ChickenDist.DAL
             }
 
             AppLogger.Audit("تحديث سعر الصنف",
-                $"صنف رقم ({productID}) | السعر الجديد: {pendingPrice:N2} ج | التكلفة: {costPrice:N2} ج | التفعيل فوري: {(applyNow ? "نعم" : "معلق لحين نفاذ الكمية")}");
+                $"صنف رقم ({productID}) | العمود: {saleCol} | السعر الجديد: {pendingPrice:N2} ج | التكلفة: {costPrice:N2} ج | التفعيل فوري: {(applyNow ? "نعم" : "معلق لحين نفاذ الكمية")}");
         }
 
         /// <summary>

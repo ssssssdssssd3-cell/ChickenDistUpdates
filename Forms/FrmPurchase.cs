@@ -283,7 +283,7 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(pnlTypeBtns,   5, 0);
 
             // ── صف 1: رقم فاتورة المورد | ملاحظات | الصنف ───────────────────────────
-            var lblSupplierInv = MakeLabel("رقم فاتورة المورد:", 0, 0);
+            var lblSupplierInv = MakeLabel("* رقم فاتورة المورد:", 0, 0, Theme.Danger);
             lblSupplierInv.Dock = DockStyle.Fill;
             lblSupplierInv.TextAlign = ContentAlignment.MiddleRight;
             lblSupplierInv.Margin = new Padding(2);
@@ -2135,7 +2135,15 @@ namespace ChickenDist.Forms
             string shippingOn;
             CalcAmounts(out gross, out discAmt, out discPct, out net, out taxPct, out taxAmt, out shippingCost, out shippingOn);
 
-            // 1. تحقق من تعديل أسعار البيع المقترحة للأصناف
+            string suppInvNoVal = txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "";
+            if (string.IsNullOrWhiteSpace(suppInvNoVal))
+            {
+                MessageBox.Show("❌ إجباري: يرجى إدخال رقم فاتورة الشراء اليدوي (رقم فاتورة المورد) قبل حفظ الفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Focus();
+                return;
+            }
+
+            // 1. تحقق من تعديل أسعار البيع المقترحة للأصناف مع ربط كل وحدة بسعرها المستقل
             var changedPricesList = new List<string>();
             var itemsToUpdate = new List<PurchaseItemDTO>();
             
@@ -2143,12 +2151,34 @@ namespace ChickenDist.Forms
             {
                 if (item.SuggestedSalePrice.HasValue)
                 {
-                    var currentPriceObj = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
-                    decimal currentPrice = currentPriceObj != null ? Convert.ToDecimal(currentPriceObj) : 0m;
-                    
-                    if (item.SuggestedSalePrice.Value != currentPrice)
+                    ComboItem prod = GetProductComboItem(item.ProductID);
+                    string targetCol = "SalePrice";
+                    string unitLabel = "الكبرى";
+
+                    if (prod != null)
                     {
-                        changedPricesList.Add($"• {item.ProductName}: السعر الحالي {currentPrice:N2} ج -> المقترح {item.SuggestedSalePrice.Value:N2} ج");
+                        if (!string.IsNullOrEmpty(prod.Unit2Name) && item.UnitName == prod.Unit2Name)
+                        {
+                            targetCol = "Unit2SalePrice";
+                            unitLabel = $"الوسطى ({prod.Unit2Name})";
+                        }
+                        else if (!string.IsNullOrEmpty(prod.Unit1Name) && item.UnitName == prod.Unit1Name)
+                        {
+                            targetCol = "Unit1SalePrice";
+                            unitLabel = $"الصغرى ({prod.Unit1Name})";
+                        }
+                        else if (!string.IsNullOrEmpty(prod.BaseUnitName))
+                        {
+                            unitLabel = $"الكبرى ({prod.BaseUnitName})";
+                        }
+                    }
+
+                    var currentPriceObj = DbHelper.Scalar($"SELECT {targetCol} FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
+                    decimal currentPrice = currentPriceObj != null && currentPriceObj != DBNull.Value ? Convert.ToDecimal(currentPriceObj) : 0m;
+                    
+                    if (Math.Abs(item.SuggestedSalePrice.Value - currentPrice) > 0.005m)
+                    {
+                        changedPricesList.Add($"• {item.ProductName} [{unitLabel}]: السعر الحالي {currentPrice:N2} ج -> المقترح {item.SuggestedSalePrice.Value:N2} ج");
                         itemsToUpdate.Add(item);
                     }
                 }
@@ -2203,19 +2233,19 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
-                    // تطبيق قرار تعديل أسعار البيع
+                    // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف
                     if (priceDecision == "ApplyNow")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true, purchaseID: id);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true, purchaseID: id, unitName: item.UnitName);
                         }
                     }
                     else if (priceDecision == "Pending")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false, purchaseID: id);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false, purchaseID: id, unitName: item.UnitName);
                         }
                     }
                     else
