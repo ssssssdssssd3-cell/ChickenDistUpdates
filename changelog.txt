@@ -1,3 +1,7 @@
+v2.0.150 - 2026-07-23
+- Fixed Totals Summary Bar Docking & Z-Order in Sales History (FrmSales.cs): Summary cards now permanently float at the bottom of the screen.
+- Enhanced Search UX in Sales History: Added interactive search dialog buttons (🔍) for both Clients and Products and real-time live typing filter for smooth search matching.
+
 v2.0.149 - 2026-07-23
 - Strict Business Activity Scoping: Hid clothing-specific buttons (Model Lookup F3 in POS) and menu items (Customer Reservations) when Restaurant mode is active so Restaurant UI remains 100% clean and uncluttered.
 

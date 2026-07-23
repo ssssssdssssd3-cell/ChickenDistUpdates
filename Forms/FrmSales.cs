@@ -74,8 +74,8 @@ namespace ChickenDist.Forms
 				WrapContents = true
 			};
 
-			// دالة مساعدة لإنشاء حاوية (label + control) بشكل صحيح
-			Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 115)
+			// دالة مساعدة لإنشاء حاوية (label + control + optional button) بشكل صحيح
+			Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 115, Button extraBtn = null)
 			{
 				inputCtrl.Width = inputWidth;
 				inputCtrl.Height = 26;
@@ -96,11 +96,21 @@ namespace ChickenDist.Forms
 					Margin = new Padding(4, 0, 0, 0),
 					Padding = new Padding(0)
 				};
-				// في اللوحة العادية (LTR): لصق التسمية يسار الحقل، ثم الحقل
+
+				int extraW = extraBtn != null ? extraBtn.Width + 2 : 0;
 				int lblW = TextRenderer.MeasureText(labelText, Theme.FontMain).Width + 4;
-				lbl.Location = new Point(inputWidth + 4, 5);
-				inputCtrl.Location = new Point(0, 4);
-				pnl.Width = inputWidth + lblW + 4;
+				int totalW = inputWidth + extraW + lblW + 6;
+
+				lbl.Location = new Point(inputWidth + extraW + 4, 5);
+				inputCtrl.Location = new Point(extraW, 4);
+
+				if (extraBtn != null)
+				{
+					extraBtn.Location = new Point(0, 4);
+					pnl.Controls.Add(extraBtn);
+				}
+
+				pnl.Width = totalW;
 				pnl.Controls.Add(inputCtrl);
 				pnl.Controls.Add(lbl);
 				return pnl;
@@ -131,7 +141,7 @@ namespace ChickenDist.Forms
 			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("نوع الفاتورة:", cboTypeFilter, 115));
 
-			// العميل
+			// العميل + زر البحث المباشر
 			cboClientFilter = new ComboBox
 			{
 				DropDownStyle = ComboBoxStyle.DropDown,
@@ -151,20 +161,91 @@ namespace ChickenDist.Forms
 			{
 				if (e.KeyCode == Keys.Enter) { LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
 			};
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 160));
 
-			// بحث صنف
+			Button btnClientSearchDlg = new Button
+			{
+				Text = "🔍",
+				Width = 32,
+				Height = 26,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(70, 80, 95),
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand
+			};
+			btnClientSearchDlg.FlatAppearance.BorderSize = 0;
+			btnClientSearchDlg.Click += (s, e) =>
+			{
+				using (var frm = new FrmClientSearch())
+				{
+					if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+					{
+						int cid = frm.SelectedClientID;
+						for (int i = 0; i < cboClientFilter.Items.Count; i++)
+						{
+							if (cboClientFilter.Items[i] is ComboItem ci && ci.ID == cid)
+							{
+								cboClientFilter.SelectedIndex = i;
+								break;
+							}
+						}
+						LoadSales();
+					}
+				}
+			};
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم العميل:", cboClientFilter, 140, btnClientSearchDlg));
+
+			// بحث صنف + زر البحث المباشر + فلترة تلقائية
 			txtProductSearch = new TextBox
 			{
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				RightToLeft = RightToLeft.Yes
 			};
+			Timer tmrProductSearch = new Timer { Interval = 350 };
+			tmrProductSearch.Tick += (s, e) =>
+			{
+				tmrProductSearch.Stop();
+				LoadSales();
+			};
+			txtProductSearch.TextChanged += (s, e) =>
+			{
+				tmrProductSearch.Stop();
+				tmrProductSearch.Start();
+			};
 			txtProductSearch.KeyDown += (s, e) =>
 			{
-				if (e.KeyCode == Keys.Enter) { LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
+				if (e.KeyCode == Keys.Enter) { tmrProductSearch.Stop(); LoadSales(); e.Handled = true; e.SuppressKeyPress = true; }
 			};
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", txtProductSearch, 120));
+
+			Button btnProductSearchDlg = new Button
+			{
+				Text = "🔍",
+				Width = 32,
+				Height = 26,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(70, 80, 95),
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand
+			};
+			btnProductSearchDlg.FlatAppearance.BorderSize = 0;
+			btnProductSearchDlg.Click += (s, e) =>
+			{
+				using (var frm = new FrmProductSearch())
+				{
+					if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
+					{
+						var pName = DbHelper.Scalar("SELECT ProductName FROM Products WHERE ProductID=@id", DbHelper.P("@id", frm.SelectedProductID));
+						if (pName != null && pName != DBNull.Value)
+						{
+							txtProductSearch.Text = pName.ToString();
+						}
+						LoadSales();
+					}
+				}
+			};
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", txtProductSearch, 120, btnProductSearchDlg));
 
 			// بحث سريع (فلترة محلية)
 			txtSearch = new TextBox
@@ -174,7 +255,7 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 			txtSearch.TextChanged += delegate { FilterData(); };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("🔍 بحث سريع:", txtSearch, 120));
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("🔍 بحث سريع:", txtSearch, 110));
 
 			chkOnlyShipping = new CheckBox
 			{
@@ -411,14 +492,14 @@ namespace ChickenDist.Forms
 			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
 			lblShippingSummary = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:",         "0.00 ج", Color.FromArgb(243, 156, 18), 6);
 
-			// ترتيب صحيح للرسو والـ Z-Order
-			base.Controls.Add(flowLayoutPanel);
-			base.Controls.Add(tableLayoutPanel);
+			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون بأسفل Z-order حتى لا يغطي DockStyle.Bottom)
 			base.Controls.Add(tblContent);
+			base.Controls.Add(tableLayoutPanel);
+			base.Controls.Add(flowLayoutPanel);
 
-			flowLayoutPanel.SendToBack();
-			tableLayoutPanel.SendToBack();
-			tblContent.BringToFront();
+			tblContent.SendToBack();
+			tableLayoutPanel.BringToFront();
+			flowLayoutPanel.BringToFront();
 
 			Theme.ApplyFormRTL(this);
 		}
