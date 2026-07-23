@@ -504,8 +504,10 @@ namespace ChickenDist.Forms
             try
             {
                 var dtSales = DbHelper.Query(@"
-                    SELECT 'مبيعات' AS TransType, SaleCode AS RefCode, SaleDate AS TransTime, ClientName AS Details, TotalAmount AS Amount
-                    FROM Sales WHERE ShiftID=@sid AND IsPosted=1
+                    SELECT 'مبيعات' AS TransType, s.SaleCode AS RefCode, s.SaleDate AS TransTime, ISNULL(c.ClientName, N'عميل نقدي') AS Details, s.TotalAmount AS Amount
+                    FROM Sales s
+                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    WHERE s.ShiftID=@sid AND s.IsPosted=1
                     UNION ALL
                     SELECT 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, sr.ReturnDate AS TransTime, 'مرتجع فاتورة' AS Details, sr.TotalAmount AS Amount
                     FROM SalesReturns sr JOIN Sales s ON sr.SaleID=s.SaleID WHERE s.ShiftID=@sid

@@ -1,3 +1,6 @@
+v2.0.156 - 2026-07-23
+- Fix Invalid Column Name ClientName Error in Shift Close (FrmShiftClose.cs): Joined Clients table on Sales query in shift movements grid to retrieve client names correctly and prevent SQL exception.
+
 v2.0.155 - 2026-07-23
 - Fix Top Filter Bar Overlapping Sales/Purchases Grid (FrmSales.cs & FrmPurchasesList.cs): Enabled AutoSize on top FlowLayoutPanels so that wrapped filter controls dynamically calculate height without overlapping or obscuring top invoice rows and column headers.
 
