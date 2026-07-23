@@ -1,3 +1,7 @@
+v2.0.146 - 2026-07-23
+- Double-Column Barcode Printing: Added support for 2-Up double roll sticker sizes (38x26_double, 50x25_double) in both Settings and Bulk Barcode Print screen.
+- Clothing Model Variant Lookup: Created FrmModelLookup and added quick shortcut F3 / button to POS to search all colors, sizes, and stock quantities of a model instantly.
+
 v2.0.145 - 2026-07-22
 - Permissions TabControl: Disabled RightToLeftLayout to resolve the drawing mismatch and overlapping tab headers completely, and updated unselected tab text colors to have high readability contrast in all themes.
 

@@ -476,9 +476,11 @@ namespace ChickenDist.Forms
             {
                 "50x30 مم (عمود واحد - كامل)",
                 "38x26 مم (عمود واحد - صغير)",
-                "38x26 مم (عمودين - صغير مزدوج)"
+                "38x26 مم (عمودين - صغير مزدوج)",
+                "50x25 مم (عمودين - مزدوج ملابس)"
             });
-            cboBarcodeStickerSize.SelectedIndex = AppConfig.BarcodeStickerSize == "38x26_double" ? 2
+            cboBarcodeStickerSize.SelectedIndex = AppConfig.BarcodeStickerSize == "50x25_double" ? 3
+                                                : AppConfig.BarcodeStickerSize == "38x26_double" ? 2
                                                 : AppConfig.BarcodeStickerSize == "38x26" ? 1
                                                 : 0;
             this.Controls.Add(cboBarcodeStickerSize);
@@ -1028,7 +1030,8 @@ namespace ChickenDist.Forms
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();
-                AppConfig.BarcodeStickerSize = cboBarcodeStickerSize.SelectedIndex == 2 ? "38x26_double"
+                AppConfig.BarcodeStickerSize = cboBarcodeStickerSize.SelectedIndex == 3 ? "50x25_double"
+                                             : cboBarcodeStickerSize.SelectedIndex == 2 ? "38x26_double"
                                              : cboBarcodeStickerSize.SelectedIndex == 1 ? "38x26"
                                              : "50x30";
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";

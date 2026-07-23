@@ -196,11 +196,12 @@ namespace ChickenDist.Core
             try
             {
                 bool is38x26 = (sizeKey == "38x26" || sizeKey == "38x26_double");
-                int targetWidth = is38x26 ? 150 : 200;
-                int targetHeight = is38x26 ? 102 : 120;
+                bool is50x25 = (sizeKey == "50x25" || sizeKey == "50x25_double");
+                int targetWidth = is38x26 ? 150 : is50x25 ? 200 : 200;
+                int targetHeight = is38x26 ? 102 : is50x25 ? 98 : 120;
 
                 string part1 = is38x26 ? "38" : "50";
-                string part2 = is38x26 ? "26" : "30";
+                string part2 = is38x26 ? "26" : is50x25 ? "25" : "30";
 
                 System.Drawing.Printing.PaperSize matchedSize = null;
 

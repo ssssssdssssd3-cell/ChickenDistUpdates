@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
         private Label lblTableNum;
         private TextBox txtTableNum;
         private ComboBox cboDeliveryDriver;
-        private Button btnSuspend, btnRecall;
+        private Button btnSuspend, btnRecall, btnModelLookup;
         private int _loadedDraftSaleID = 0;
 
         // ── البيانات ──────────────────────────────────────────
@@ -333,6 +333,12 @@ namespace ChickenDist.Forms
             btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
+            btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات\n(F3)", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(150, 55));
+            btnModelLookup.Name = "btnModelLookup";
+            btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnModelLookup.Click += (s, e) => OpenModelLookup();
+            pnlTotals.Controls.Add(btnModelLookup);
+
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);
             pnlTotals.Controls.Add(_lPaid);
@@ -451,6 +457,14 @@ namespace ChickenDist.Forms
                 btnRecallCtrl.Size = new Size(140, 55);
             }
 
+            var btnModelLookupCtrl = pnlTotals.Controls["btnModelLookup"];
+            if (btnModelLookupCtrl != null)
+            {
+                currentX -= 155;
+                btnModelLookupCtrl.Location = new Point(currentX, 130);
+                btnModelLookupCtrl.Size = new Size(150, 55);
+            }
+
             if (btnCancel != null)
             {
                 currentX -= 180;
@@ -474,7 +488,12 @@ namespace ChickenDist.Forms
         private void FrmPOS_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F2) { NewInvoice(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F3 && AppConfig.IsRestaurant) { SuspendCurrentOrder(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F3)
+            {
+                if (AppConfig.IsRestaurant) SuspendCurrentOrder();
+                else OpenModelLookup();
+                e.Handled = true;
+            }
             else if (e.KeyCode == Keys.F4 && AppConfig.IsRestaurant) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
             else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); e.Handled = true; }
@@ -507,6 +526,21 @@ namespace ChickenDist.Forms
                         dgItems.CurrentCell = dgItems.Rows[0].Cells[0];
                     }
                     e.Handled = true;
+                }
+            }
+        }
+
+        private void OpenModelLookup()
+        {
+            using (var dlg = new FrmModelLookup())
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    var dt = DbHelper.Query("SELECT ProductCode FROM Products WHERE ProductID=@id", DbHelper.P("@id", dlg.SelectedProductID));
+                    if (dt.Rows.Count > 0)
+                    {
+                        AddProductByCode(dt.Rows[0]["ProductCode"].ToString());
+                    }
                 }
             }
         }
