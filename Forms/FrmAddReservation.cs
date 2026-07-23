@@ -393,16 +393,29 @@ namespace ChickenDist.Forms
                 );
 
                 // تسويق العربون في الخزينة وحساب العميل إذا وُجد عربون
-                if (deposit > 0 && clientID.HasValue && clientID.Value > 0)
+                if (deposit > 0)
                 {
+                    // 1. تسجيل تحصيل العربون بالخزينة
                     DbHelper.Execute(@"
-                        INSERT INTO ClientTransactions (ClientID, TransDate, TransType, Debit, Credit, Notes, CreatedBy)
-                        VALUES (@cid, GETDATE(), N'عربون حجز', 0, @deposit, @notes, @by)",
-                        DbHelper.P("@cid", clientID.Value),
-                        DbHelper.P("@deposit", deposit),
-                        DbHelper.P("@notes", $"عربون حجز صنف: {productName} (حجز #{resNo})"),
+                        INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, Notes, CreatedBy)
+                        VALUES (GETDATE(), N'ReservationDeposit', @amt, 0, @notes, @by)",
+                        DbHelper.P("@amt", deposit),
+                        DbHelper.P("@notes", $"عربون حجز صنف: {productName} للعميل ({clientName}) (حجز #{resNo})"),
                         DbHelper.P("@by", Session.EmpID)
                     );
+
+                    // 2. تسجيل كـ دائن في حساب العميل إذا كان مسجلاً
+                    if (clientID.HasValue && clientID.Value > 0)
+                    {
+                        DbHelper.Execute(@"
+                            INSERT INTO ClientTransactions (ClientID, TransDate, TransType, Debit, Credit, Notes, CreatedBy)
+                            VALUES (@cid, GETDATE(), N'عربون حجز', 0, @deposit, @notes, @by)",
+                            DbHelper.P("@cid", clientID.Value),
+                            DbHelper.P("@deposit", deposit),
+                            DbHelper.P("@notes", $"عربون حجز صنف: {productName} (حجز #{resNo})"),
+                            DbHelper.P("@by", Session.EmpID)
+                        );
+                    }
                 }
 
                 MessageBox.Show($"تم تسجيل وتأكيد الحجز بنجاح برقم [{resNo}].", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);

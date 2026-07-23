@@ -537,6 +537,7 @@ namespace ChickenDist.Forms
                     "Withdraw" => "صرف نقدي",
                     "SaleIncome" => "بيع نقدي",
                     "ClientPayment" => "تحصيل من عميل",
+                    "ReservationDeposit" => "عربون حجز صنف",
                     "Expense" => "مصروفات",
                     "Transfer" => "تحويل بين الحسابات",
                     _ => transType
