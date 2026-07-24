@@ -1,3 +1,6 @@
+v2.0.165 - 2026-07-24
+- Redesigned Cashier Shift Management Screen Layout (FrmShiftClose.cs): Completely eliminated layout overlapping across headers, actual cash/notes inputs, and grid header. Enhanced shift info card to prominently display Cashier Name (اسم الموظف كاشير), Opening Date & Time (تاريخ وساعة فتح الوردية), Shift Duration, and Shift ID.
+
 v2.0.164 - 2026-07-24
 - Fix Rescheduling Notes Column & Transaction Deadlock Error (FrmInstallments.cs, InstallmentDAL.cs, DbHelper.cs): Added Notes column migration to InstallmentSchedules table, and switched inline query calls inside RunInTransaction to QueryTrans to eliminate SQL connection lock timeout and rollback errors.
 
