@@ -297,17 +297,22 @@ namespace ChickenDist.Forms
                     // 1. إنشاء فاتورة مبيعات
                     string saleCode = "SAL-" + DateTime.Now.ToString("yyMMddHHmmss");
                     int saleID = DbHelper.ExecuteInsert(@"
-                        INSERT INTO Sales(SaleCode, SaleDate, SaleType, ClientID, TotalAmount, DiscountAmount, NetAmount, PaidAmount, Notes, CreatedBy, IsPosted)
-                        VALUES(@code, GETDATE(), N'Cash', @cid, @tot, @disc, @net, @paid, @notes, @by, 1)",
+                        INSERT INTO Sales(SaleCode, SaleDate, SaleType, ClientID, TotalAmount, DiscountAmount, CashPaid, Notes, CreatedBy, IsPosted)
+                        VALUES(@code, GETDATE(), N'Cash', @cid, @tot, @disc, @paid, @notes, @by, 1)",
                         DbHelper.P("@code", saleCode),
                         DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                         DbHelper.P("@tot", total),
                         DbHelper.P("@disc", deposit),
-                        DbHelper.P("@net", remaining),
                         DbHelper.P("@paid", remaining),
                         DbHelper.P("@notes", $"تسليم حجز رقم ({resNo}) - صنف: {productName}"),
                         DbHelper.P("@by", Session.EmpID)
                     );
+
+                    if (saleID <= 0)
+                    {
+                        MessageBox.Show("❌ حدث خطأ أثناء إنشاء فاتورة المبيعات الخاصة بالحجز.", "خطأ في عملية البيع", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
 
                     if (productID.HasValue && productID.Value > 0)
                     {

@@ -1,3 +1,6 @@
+v2.0.163 - 2026-07-24
+- Fix Reservation Delivery FK Constraint & Column Names Error (FrmReservations.cs): Corrected SQL query column names (CashPaid instead of invalid NetAmount/PaidAmount) and verified generated SaleID > 0 before updating CustomerReservations status.
+
 v2.0.162 - 2026-07-24
 - Separated Color and Size into Dedicated Grid Columns in Model Lookup (FrmModelLookup.cs): Split the combined 'Size & Color / Barcode' column into individual dedicated columns for Brand/Color (اللون / الماركة), Size (المقاس), and Barcode (الباركود / الكود).
 
