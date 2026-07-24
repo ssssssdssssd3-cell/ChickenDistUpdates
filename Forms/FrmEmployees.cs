@@ -367,6 +367,8 @@ namespace ChickenDist.Forms
             new ScreenInfo("ProductSearch", "🔍 شاشة بحث الأصناف وتعديل الأسعار", 0),
             new ScreenInfo("Returns", "↩️ مرتجع المبيعات", 0),
             new ScreenInfo("Installments", "📜 عقود التقسيط الشرعي", 0),
+            new ScreenInfo("Reservations", "📋 حجوزات العملاء", 0),
+            new ScreenInfo("ClearanceOffers", "🏷️ الأوكازيون والعروض", 0),
             new ScreenInfo("SalesList", "📋 سجل الفواتير والمبيعات", 0),
             new ScreenInfo("SalesAudit", "🔍 سجل تعديلات وحذف الفواتير", 0),
             new ScreenInfo("AccountantPortal", "🌐 بوابة المحاسبة الميدانية", 0),
@@ -828,7 +830,7 @@ namespace ChickenDist.Forms
         {
             ToggleAllPermissions(false);
 
-            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "Returns", "Installments", "SalesList", "Clients", "Vehicles", "Maintenance", "DashSales" };
+            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "Clients", "Vehicles", "Maintenance", "DashSales" };
             var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
             var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "Categories", "Warehouses", "Inventory", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "BulkPrintBarcodes", "DashBelowMin" };
             var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "DailyClosing", "ShiftClose", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };

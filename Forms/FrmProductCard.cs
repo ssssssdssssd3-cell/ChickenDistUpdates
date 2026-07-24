@@ -116,6 +116,7 @@ namespace ChickenDist.Forms
             int ry = 25;
             AddField(grpBasic, "كود الصنف:", 10, ry, out txtCode);
             txtCode.ReadOnly = true;
+            txtCode.TabStop = false;
             ry += 38;
 
             AddField(grpBasic, "اسم الصنف:", 10, ry, out txtName);

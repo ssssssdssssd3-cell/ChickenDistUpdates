@@ -13,6 +13,23 @@ namespace ChickenDist.Core
         public static bool IsDriver { get; set; }
 
         public static int? DefaultSafeID { get; set; }
+        public static int GetDefaultSafeID()
+        {
+            if (DefaultSafeID.HasValue && DefaultSafeID.Value > 0)
+                return DefaultSafeID.Value;
+
+            try
+            {
+                object safeIdObj = DbHelper.Scalar("SELECT TOP 1 AccountID FROM SafeAccounts WHERE AccountName = N'درج نقدي' OR IsActive = 1 ORDER BY AccountID");
+                if (safeIdObj != null && safeIdObj != DBNull.Value)
+                {
+                    return Convert.ToInt32(safeIdObj);
+                }
+            }
+            catch { }
+            return 1;
+        }
+
         public static string AllowedSafeIDs { get; set; }
         public static bool CanSellCash { get; set; }
         public static bool CanSellCredit { get; set; }
@@ -228,7 +245,7 @@ namespace ChickenDist.Core
 
 
         public static readonly string[] AllScreens = {
-            "Sales", "Returns", "Installments", "SalesList", "SalesAudit", "AccountantPortal",
+            "Sales", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal",
             "Clients", "InactiveClients", "Vehicles",
             "Purchases", "PurchaseReturn", "PurchasesList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",

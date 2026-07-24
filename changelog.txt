@@ -1,3 +1,6 @@
+v2.0.166 - 2026-07-24
+- Default Cash Safe & Non-Editable Auto-Sequential Codes & Reservations Permissions (DbHelper.cs, Session.cs, FrmEmployees.cs, FrmProductCard.cs, FrmClients.cs, FrmSuppliers.cs): Set default safe account name to 'درج نقدي' (AccountID = 1) across all screens and user roles. Disabled focus/tabstop on all auto-generated code fields. Added 'Reservations' (حجوزات العملاء) and 'ClearanceOffers' (الأوكازيون والعروض) to employee permissions screen for granular non-admin employee access assignment.
+
 v2.0.165 - 2026-07-24
 - Redesigned Cashier Shift Management Screen Layout (FrmShiftClose.cs): Completely eliminated layout overlapping across headers, actual cash/notes inputs, and grid header. Enhanced shift info card to prominently display Cashier Name (اسم الموظف كاشير), Opening Date & Time (تاريخ وساعة فتح الوردية), Shift Duration, and Shift ID.
 

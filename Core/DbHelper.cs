@@ -258,10 +258,14 @@ namespace ChickenDist.Core
             try
             {
                 SafeMigrate("SafeAccounts.DefaultDrawer", @"
-                IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountName = N'درج تلقائي')
+                IF EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountID = 1 AND AccountName = N'الخزينة الرئيسية')
+                BEGIN
+                    UPDATE SafeAccounts SET AccountName = N'درج نقدي' WHERE AccountID = 1;
+                END
+                IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountName = N'درج نقدي')
                 BEGIN
                     INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
-                    VALUES (N'درج تلقائي', N'Safe', N'Auto-Drawer', 0.00, 1)
+                    VALUES (N'درج نقدي', N'Safe', N'Auto-Drawer', 0.00, 1);
                 END");
 
                 SafeMigrate("CustomerReservations", @"

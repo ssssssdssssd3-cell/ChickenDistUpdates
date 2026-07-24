@@ -136,6 +136,7 @@ namespace ChickenDist.Forms
             int y = 10;
             pnlDetails.Controls.Add(MakeField("كود العميل:", ref y, out txtCode));
             txtCode.ReadOnly = true;
+            txtCode.TabStop = false;
             pnlDetails.Controls.Add(MakeField("اسم العميل:", ref y, out txtName));
             pnlDetails.Controls.Add(MakeField("الهاتف:", ref y, out txtPhone));
             pnlDetails.Controls.Add(MakeField("هاتف إضافي:", ref y, out txtPhone2));
