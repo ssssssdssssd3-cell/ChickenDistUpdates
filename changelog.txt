@@ -1,3 +1,6 @@
+v2.0.162 - 2026-07-24
+- Separated Color and Size into Dedicated Grid Columns in Model Lookup (FrmModelLookup.cs): Split the combined 'Size & Color / Barcode' column into individual dedicated columns for Brand/Color (اللون / الماركة), Size (المقاس), and Barcode (الباركود / الكود).
+
 v2.0.161 - 2026-07-24
 - Created Dedicated Clearance & Offers Management Screen (FrmClearanceOffers.cs): Built interactive form allowing bulk or per-item discount percentage and price reduction applications, real-time offer price calculation, and 1-click offer reset restoring original prices. Registered Clearance & Offers under Sales menu in FrmMain.cs.
 

@@ -97,11 +97,13 @@ namespace ChickenDist.Forms
             };
             dgVariants.Dock = DockStyle.Fill;
             dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الموديل / القطعة", FillWeight = 140 });
-            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "المقاس واللون / الباركود", FillWeight = 110 });
-            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "السعر", FillWeight = 70 });
-            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المتاحة", FillWeight = 80 });
-            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "مكان العرض", FillWeight = 80 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الموديل / القطعة", FillWeight = 130 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "اللون / الماركة", FillWeight = 85 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", FillWeight = 75 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود / الكود", FillWeight = 90 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "السعر", FillWeight = 65 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المتاحة", FillWeight = 75 });
+            dgVariants.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "مكان العرض", FillWeight = 75 });
 
             dgVariants.DoubleClick += (s, e) => SelectAndClose();
 
@@ -143,10 +145,10 @@ namespace ChickenDist.Forms
             if (string.IsNullOrWhiteSpace(q)) return;
 
             string querySql = @"
-                SELECT ProductID, ProductName, ProductCode, SalePrice, COALESCE(ShelfLocation, '') AS ShelfLocation
+                SELECT ProductID, ProductName, COALESCE(Brand, '') AS Brand, COALESCE(ProductSize, '') AS ProductSize, ProductCode, SalePrice, COALESCE(ShelfLocation, '') AS ShelfLocation
                 FROM Products
                 WHERE IsActive = 1 
-                  AND (ProductName LIKE @q OR ProductCode LIKE @q OR InternationalCode LIKE @q OR ShelfLocation LIKE @q)
+                  AND (ProductName LIKE @q OR ProductCode LIKE @q OR InternationalCode LIKE @q OR Brand LIKE @q OR ProductSize LIKE @q OR ShelfLocation LIKE @q)
                 ORDER BY ProductName, ProductCode";
 
             var dt = DbHelper.Query(querySql, DbHelper.P("@q", "%" + q + "%"));
@@ -157,6 +159,8 @@ namespace ChickenDist.Forms
                 int ri = dgVariants.Rows.Add(
                     r["ProductID"],
                     r["ProductName"],
+                    r["Brand"],
+                    r["ProductSize"],
                     r["ProductCode"],
                     Convert.ToDecimal(r["SalePrice"]).ToString("N2") + " ج",
                     qty.ToString("N2"),
