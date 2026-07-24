@@ -218,6 +218,12 @@ namespace ChickenDist.Core
             BEGIN
                 ALTER TABLE Products ADD IsOffer BIT NULL CONSTRAINT DF_Products_IsOffer DEFAULT 0;
             END");
+
+            SafeMigrate("InstallmentSchedules.Notes", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('InstallmentSchedules') AND name = 'Notes')
+            BEGIN
+                ALTER TABLE InstallmentSchedules ADD Notes NVARCHAR(500) NULL;
+            END");
         }
 
         public static void EnsureDatabaseSchema()

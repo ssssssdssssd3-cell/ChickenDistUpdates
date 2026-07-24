@@ -332,7 +332,7 @@ namespace ChickenDist.DAL
             DbHelper.RunInTransaction((con, trans) =>
             {
                 // استرجاع العميل والفاتورة
-                var dt = DbHelper.Query("SELECT CustomerID, InvoiceID, ContractAmount, DownPayment, Status FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
+                var dt = DbHelper.QueryTrans(trans, "SELECT CustomerID, InvoiceID, ContractAmount, DownPayment, Status FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
                 if (dt.Rows.Count == 0) throw new Exception("العقد غير موجود.");
 
                 int customerID = Convert.ToInt32(dt.Rows[0]["CustomerID"]);

@@ -751,11 +751,11 @@ namespace ChickenDist.Forms
                                 // نستدعي السداد المجمع داخل نفس الترانزأكشن
                                 // سنقوم بتمرير التحصيل
                                 // بما أننا في ترانزأكشن حالية، يمكن كتابة كود التحصيل مباشرة لتجنب تكرار فتح الترانزأكشن
-                                var dtContract = DbHelper.Query("SELECT CustomerID, ContractCode FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", _selectedContractID));
+                                var dtContract = DbHelper.QueryTrans(trans, "SELECT CustomerID, ContractCode FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", _selectedContractID));
                                 int customerID = Convert.ToInt32(dtContract.Rows[0]["CustomerID"]);
                                 string contractCode = dtContract.Rows[0]["ContractCode"].ToString();
 
-                                var dtSchedule = DbHelper.Query(
+                                var dtSchedule = DbHelper.QueryTrans(trans,
                                     "SELECT ScheduleID, InstallmentNo, RemainingAmount, PaidAmount FROM InstallmentSchedules WHERE ContractID=@cid AND Status <> 'Paid' ORDER BY InstallmentNo",
                                     DbHelper.P("@cid", _selectedContractID));
 

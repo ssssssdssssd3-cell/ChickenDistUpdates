@@ -1,3 +1,6 @@
+v2.0.164 - 2026-07-24
+- Fix Rescheduling Notes Column & Transaction Deadlock Error (FrmInstallments.cs, InstallmentDAL.cs, DbHelper.cs): Added Notes column migration to InstallmentSchedules table, and switched inline query calls inside RunInTransaction to QueryTrans to eliminate SQL connection lock timeout and rollback errors.
+
 v2.0.163 - 2026-07-24
 - Fix Reservation Delivery FK Constraint & Column Names Error (FrmReservations.cs): Corrected SQL query column names (CashPaid instead of invalid NetAmount/PaidAmount) and verified generated SaleID > 0 before updating CustomerReservations status.
 
