@@ -199,6 +199,15 @@ namespace ChickenDist.Forms
                 }
             };
 
+            dgItems.EditingControlShowing += (s, e) =>
+            {
+                if (e.Control is TextBox tb)
+                {
+                    tb.ForeColor = Color.Black;
+                    tb.BackColor = Color.FromArgb(255, 255, 200); // High contrast soft yellow
+                    tb.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                }
+            };
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
             this.Controls.Add(dgItems);

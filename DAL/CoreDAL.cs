@@ -327,7 +327,7 @@ namespace ChickenDist.DAL
         {
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.InternationalCode,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
                            COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
@@ -337,7 +337,7 @@ namespace ChickenDist.DAL
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.IsActive, p.InternationalCode,
+                           p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.IsActive, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
                            COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
@@ -363,14 +363,14 @@ namespace ChickenDist.DAL
             string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0, string internationalCode = null, bool printLocalBarcode = true, bool isService = false,
             string unit1Name = null, string unit1Barcode = null, decimal? unit1SalePrice = null, decimal? unit1PurchasePrice = null,
             string unit2Name = null, decimal? unit2Factor = null, string unit2Barcode = null, decimal? unit2SalePrice = null, decimal? unit2PurchasePrice = null,
-            decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null)
+            decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null)
         {
             if (id == 0)
                 return DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,
-                                           Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize) 
+                                           Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize,Color) 
                       VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv,@qi,
-                             @u1n,@u1b,@u1sp,@u1pp,@u2n,@u2f,@u2b,@u2sp,@u2pp,@u3f,@comp,@hexp,@expd,@dsu,@psize)",
+                             @u1n,@u1b,@u1sp,@u1pp,@u2n,@u2f,@u2b,@u2sp,@u2pp,@u3f,@comp,@hexp,@expd,@dsu,@psize,@clr)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
@@ -386,7 +386,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@hexp", hasExpiry),
                     DbHelper.P("@expd", defaultExpiryDays.HasValue ? (object)defaultExpiryDays.Value : DBNull.Value),
                     DbHelper.P("@dsu", string.IsNullOrEmpty(defaultSaleUnit) ? (object)DBNull.Value : defaultSaleUnit),
-                    DbHelper.P("@psize", string.IsNullOrEmpty(productSize) ? (object)DBNull.Value : productSize));
+                    DbHelper.P("@psize", string.IsNullOrEmpty(productSize) ? (object)DBNull.Value : productSize),
+                    DbHelper.P("@clr", string.IsNullOrEmpty(color) ? (object)DBNull.Value : color));
             else
             {
                 decimal oldPrice = 0m;
@@ -402,7 +403,7 @@ namespace ChickenDist.DAL
                           PartNumber=@pn,CategoryID=@cat,CarModel=@cm,Brand=@b,ShelfLocation=@sl,WholesalePrice=@wp,SemiWholesalePrice=@swp,InternationalCode=@ic,PrintLocalBarcode=@plb,IsService=@srv,IsQuickItem=@qi,
                           Unit1Name=@u1n,Unit1Barcode=@u1b,Unit1SalePrice=@u1sp,Unit1PurchasePrice=@u1pp,
                           Unit2Name=@u2n,Unit2Factor=@u2f,Unit2Barcode=@u2b,Unit2SalePrice=@u2sp,Unit2PurchasePrice=@u2pp,
-                          Unit3Factor=@u3f,ProducerCompany=@comp,HasExpiry=@hexp,DefaultExpiryDays=@expd,DefaultSaleUnit=@dsu,ProductSize=@psize 
+                          Unit3Factor=@u3f,ProducerCompany=@comp,HasExpiry=@hexp,DefaultExpiryDays=@expd,DefaultSaleUnit=@dsu,ProductSize=@psize,Color=@clr 
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
@@ -420,6 +421,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@expd", defaultExpiryDays.HasValue ? (object)defaultExpiryDays.Value : DBNull.Value),
                     DbHelper.P("@dsu", string.IsNullOrEmpty(defaultSaleUnit) ? (object)DBNull.Value : defaultSaleUnit),
                     DbHelper.P("@psize", string.IsNullOrEmpty(productSize) ? (object)DBNull.Value : productSize),
+                    DbHelper.P("@clr", string.IsNullOrEmpty(color) ? (object)DBNull.Value : color),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)

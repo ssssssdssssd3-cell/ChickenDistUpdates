@@ -27,7 +27,7 @@ namespace ChickenDist.Forms
         private void InitializeComponentCustom(string initialSearch)
         {
             this.Text = "👗 فحص ألوان ومقاسات الموديل (الرصيد المتاح)";
-            this.Size = new Size(780, 520);
+            this.Size = new Size(840, 550);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;

@@ -205,6 +205,12 @@ namespace ChickenDist.Core
                 ALTER TABLE Products ADD ProductSize NVARCHAR(100) NULL;
             END");
 
+            SafeMigrate("Products.Color", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Color')
+            BEGIN
+                ALTER TABLE Products ADD Color NVARCHAR(100) NULL;
+            END");
+
             SafeMigrate("Products.OfferColumns", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OriginalPrice')
             BEGIN

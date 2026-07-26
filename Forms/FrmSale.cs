@@ -911,10 +911,12 @@ namespace ChickenDist.Forms
 			
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CodeEntry", HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 35f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", ReadOnly = true, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CarModel", HeaderText = "الموديل", ReadOnly = true, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الماركة", ReadOnly = true, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "الرف", ReadOnly = true, FillWeight = 30f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "مكان العرض", ReadOnly = true, FillWeight = 30f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", ReadOnly = true, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
@@ -1882,6 +1884,8 @@ namespace ChickenDist.Forms
 					comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
 					comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
 					comboItem.Brand = row3["Brand"]?.ToString() ?? "";
+					comboItem.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString() : "";
+					comboItem.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString() : "";
 					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
@@ -2644,6 +2648,8 @@ namespace ChickenDist.Forms
 				int rIndex = dgItems.Rows.Add(
 					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
 					item.ProductName,
+					item.ProductSize,
+					item.Color,
 					item.PartNumber,
 					item.CarModel,
 					item.Brand,
@@ -3059,6 +3065,8 @@ namespace ChickenDist.Forms
 				PartNumber = product.PartNumber,
 				CarModel = product.CarModel,
 				Brand = product.Brand,
+				ProductSize = product.ProductSize,
+				Color = product.Color,
 				ShelfLocation = product.ShelfLocation,
 				ProductCode = product.ProductCode,
 				IsService = product.IsService,
@@ -4997,6 +5005,8 @@ namespace ChickenDist.Forms
 		public string PartNumber { get; set; } = "";
 		public string CarModel { get; set; } = "";
 		public string Brand { get; set; } = "";
+		public string ProductSize { get; set; } = "";
+		public string Color { get; set; } = "";
 		public string ShelfLocation { get; set; } = "";
 		public decimal PendingSalePrice { get; set; } = 0m;
 		public decimal PendingQtyThreshold { get; set; } = 0m;

@@ -1,3 +1,6 @@
+v2.0.167 - 2026-07-26
+- Clothing & Fashion Improvements & POS Contrast & Menu Fixes (FrmMain.cs, FrmSale.cs, FrmProductCard.cs, FrmProductSearch.cs, FrmPOS.cs, FrmModelLookup.cs, CoreDAL.cs, SalesDAL.cs): Added Reservations and Clearance Offers to top navigation bar dropdown. Displayed Product Size and Color columns in Sales grid. Fixed cell editing text contrast in POS. Separated Brand and Color in product card. Updated search label to 'الشركة المنتجة / الخامة' and added Color search filter with default unchecked zero stock checkbox.
+
 v2.0.166 - 2026-07-24
 - Default Cash Safe & Non-Editable Auto-Sequential Codes & Reservations Permissions (DbHelper.cs, Session.cs, FrmEmployees.cs, FrmProductCard.cs, FrmClients.cs, FrmSuppliers.cs): Set default safe account name to 'درج نقدي' (AccountID = 1) across all screens and user roles. Disabled focus/tabstop on all auto-generated code fields. Added 'Reservations' (حجوزات العملاء) and 'ClearanceOffers' (الأوكازيون والعروض) to employee permissions screen for granular non-admin employee access assignment.
 

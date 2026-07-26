@@ -914,6 +914,8 @@ namespace ChickenDist.DAL
         public string PartNumber { get; set; } = "";
         public string CarModel { get; set; } = "";
         public string Brand { get; set; } = "";
+        public string ProductSize { get; set; } = "";
+        public string Color { get; set; } = "";
         public string ShelfLocation { get; set; } = "";
         public string ProductCode { get; set; } = "";
         /// <summary>صنف خدمة — يُباع بالسالب بدون فحص المخزون</summary>

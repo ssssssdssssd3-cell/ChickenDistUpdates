@@ -11,7 +11,7 @@ namespace ChickenDist.Forms
     /// <summary>شاشة بحث متقدم عن الأصناف</summary>
     public class FrmProductSearch : Form
     {
-        private TextBox txtSearch, txtBrandFilter, txtCompanyFilter, txtPriceFrom, txtPriceTo;
+        private TextBox txtSearch, txtBrandFilter, txtColorFilter, txtCompanyFilter, txtPriceFrom, txtPriceTo;
         private TextBox txtSelectedQty, txtSelectedPurchasePrice, txtSelectedSalePrice, txtSelectedDiscount;
         private Label lblPricePermissionNotice;
         private ComboBox cboCategory;
@@ -48,7 +48,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _isPurchaseMode ? "🔍 بحث متقدم عن صنف - فواتير الشراء والتوريد" : "🔍 بحث متقدم عن صنف - مبيعات ونقطة البيع";
-            this.Size = new Size(860, 710);
+            this.Size = new Size(960, 720);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -66,48 +66,52 @@ namespace ChickenDist.Forms
             Color inputFg = Color.FromArgb(15, 23, 42);
 
             // Row 1: Search name/code & Category
-            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(480, 20), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtSearch = new TextBox { Location = new Point(70, 16), Width = 400, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(580, 18), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtSearch = new TextBox { Location = new Point(70, 14), Width = 500, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;
             
-            var lblCat = new Label { Text = "التصنيف:", Location = new Point(480, 52), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            cboCategory = new ComboBox { Location = new Point(70, 48), Width = 400, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10) };
+            var lblCat = new Label { Text = "التصنيف:", Location = new Point(580, 50), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            cboCategory = new ComboBox { Location = new Point(70, 46), Width = 500, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10) };
             cboCategory.SelectedIndexChanged += (s, e) => ApplyFilter();
 
-            // Row 2: Brand & Company
-            var lblBrand = new Label { Text = "الماركة:", Location = new Point(480, 84), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtBrandFilter = new TextBox { Location = new Point(350, 80), Width = 120, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            // Row 2: Brand, Color & Company
+            var lblBrand = new Label { Text = "الماركة:", Location = new Point(580, 80), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtBrandFilter = new TextBox { Location = new Point(470, 78), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtBrandFilter.TextChanged += (s, e) => ApplyFilter();
 
-            var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(230, 84), AutoSize = false, Width = 110, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtCompanyFilter = new TextBox { Location = new Point(70, 80), Width = 150, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblColor = new Label { Text = "اللون:", Location = new Point(410, 80), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtColorFilter = new TextBox { Location = new Point(310, 78), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            txtColorFilter.TextChanged += (s, e) => ApplyFilter();
+
+            var lblCompany = new Label { Text = "الشركة المنتجة / الخامة:", Location = new Point(160, 80), AutoSize = false, Width = 145, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtCompanyFilter = new TextBox { Location = new Point(10, 78), Width = 145, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtCompanyFilter.TextChanged += (s, e) => ApplyFilter();
 
-            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(480, 116), AutoSize = false, Width = 150, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtPriceFrom = new TextBox { Location = new Point(320, 112), Width = 150, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            // Row 3: Price range & Zero Stock checkbox
+            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(580, 112), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
+            txtPriceFrom = new TextBox { Location = new Point(470, 110), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtPriceFrom.TextChanged += (s, e) => ApplyFilter();
 
-            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(250, 116), AutoSize = false, Width = 60, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter };
-            txtPriceTo = new TextBox { Location = new Point(70, 112), Width = 170, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
+            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(410, 112), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter };
+            txtPriceTo = new TextBox { Location = new Point(310, 110), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10) };
             txtPriceTo.TextChanged += (s, e) => ApplyFilter();
 
-            // Row 3: Zero Stock checkbox
             chkShowZeroStock = new CheckBox
             {
                 Text = "إظهار الأصناف ذات الرصيد الصفري",
-                Location = new Point(70, 144),
-                Width = 400,
+                Location = new Point(10, 140),
+                Width = 290,
                 Height = 24,
                 ForeColor = labelColor,
                 Font = Theme.FontBold,
-                Checked = true
+                Checked = false
             };
             chkShowZeroStock.CheckedChanged += (s, e) => RefreshGrid();
             
             pnlSearch.Controls.AddRange(new Control[] { 
                 lblSearch, txtSearch, lblCat, cboCategory, 
-                lblBrand, txtBrandFilter, lblCompany, txtCompanyFilter, lblPriceRange, txtPriceFrom, lblPriceTo, txtPriceTo, 
+                lblBrand, txtBrandFilter, lblColor, txtColorFilter, lblCompany, txtCompanyFilter, lblPriceRange, txtPriceFrom, lblPriceTo, txtPriceTo, 
                 chkShowZeroStock 
             });
 
@@ -147,8 +151,10 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 25 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 50 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", FillWeight = 20 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", FillWeight = 20 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 18 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 28 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 25 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", FillWeight = 27 });
             
@@ -362,6 +368,8 @@ namespace ChickenDist.Forms
                 decimal pendingPrice = row["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row["PendingSalePrice"]) : 0m;
                 decimal threshold = row["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row["PendingQtyThreshold"]) : 0m;
                 string catName = row.Table.Columns.Contains("CategoryName") && row["CategoryName"] != DBNull.Value ? row["CategoryName"].ToString() : "";
+                string pSize = row.Table.Columns.Contains("ProductSize") && row["ProductSize"] != DBNull.Value ? row["ProductSize"].ToString() : "";
+                string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString() : "";
 
                 if (pendingPrice > 0m && threshold > 0m)
                 {
@@ -375,6 +383,8 @@ namespace ChickenDist.Forms
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"].ToString() + " (السعر الحالي)", 
+                            pSize,
+                            pColor,
                             row["Unit"],
                             catName,
                             price.ToString("F2"), 
@@ -387,6 +397,8 @@ namespace ChickenDist.Forms
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"].ToString() + " (السعر المعلق)", 
+                            pSize,
+                            pColor,
                             row["Unit"],
                             catName,
                             pendingPrice.ToString("F2"), 
@@ -403,6 +415,8 @@ namespace ChickenDist.Forms
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"], 
+                            pSize,
+                            pColor,
                             row["Unit"],
                             catName,
                             price.ToString("F2"), 
@@ -432,6 +446,7 @@ namespace ChickenDist.Forms
         {
             string term = txtSearch.Text.Trim().Replace("'", "''");
             string brandTerm = txtBrandFilter.Text.Trim().Replace("'", "''");
+            string colorTerm = txtColorFilter != null ? txtColorFilter.Text.Trim().Replace("'", "''") : "";
             string companyTerm = txtCompanyFilter.Text.Trim().Replace("'", "''");
             int catID = 0;
             if (cboCategory.SelectedItem is ComboItem ci)
@@ -448,6 +463,13 @@ namespace ChickenDist.Forms
                 string brandFilter = $"(Brand LIKE '%{brandTerm}%' OR CarModel LIKE '%{brandTerm}%')";
                 if (!string.IsNullOrEmpty(filter)) filter = $"({filter}) AND ({brandFilter})";
                 else filter = brandFilter;
+            }
+
+            if (!string.IsNullOrEmpty(colorTerm))
+            {
+                string colorFilter = $"(Color LIKE '%{colorTerm}%')";
+                if (!string.IsNullOrEmpty(filter)) filter = $"({filter}) AND ({colorFilter})";
+                else filter = colorFilter;
             }
 
             if (!string.IsNullOrEmpty(companyTerm))
