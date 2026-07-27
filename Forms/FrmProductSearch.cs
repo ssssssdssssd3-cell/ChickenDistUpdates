@@ -138,11 +138,15 @@ namespace ChickenDist.Forms
                     SelectionForeColor = Color.White,
                     Font = Theme.FontMain
                 },
+                ColumnHeadersHeight = 42,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.Primary,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    WrapMode = DataGridViewTriState.False
                 },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
@@ -273,6 +277,8 @@ namespace ChickenDist.Forms
             var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Color.Transparent };
             btnSelect = Theme.MakeButton("✅ اختيار وانزال الصنف للفاتورة", 420, 8, 220, 34, Theme.Accent);
             var btnAddNewProduct = Theme.MakeButton("➕ إضافة صنف جديد", 240, 8, 165, 34, Theme.Success);
+            // إخفاء زر إضافة صنف جديد في شاشة المبيعات — يظهر فقط في شاشة الشراء
+            btnAddNewProduct.Visible = _isPurchaseMode;
             btnAddNewProduct.Click += (s, e) =>
             {
                 using (var frm = new FrmProducts())
