@@ -594,6 +594,20 @@ namespace ChickenDist.Core
                     };
                 }
             }
+
+            // ضبط الأعمدة المخصصة لكل نشاط لتجنب التكرار
+            bool isClothing = AppConfig.BusinessType == "Clothing";
+
+            // في نشاط الملابس: أخفِ CarModel/Brand (كانا يعرضان المقاس/اللون القديم)
+            // وأظهر ProductSize/Color الجديدين المنفصلين
+            if (grid.Columns.Contains("CarModel"))
+                grid.Columns["CarModel"].Visible = !isClothing;
+            if (grid.Columns.Contains("Brand"))
+                grid.Columns["Brand"].Visible = !isClothing;
+            if (grid.Columns.Contains("ProductSize"))
+                grid.Columns["ProductSize"].Visible = isClothing;
+            if (grid.Columns.Contains("Color"))
+                grid.Columns["Color"].Visible = isClothing;
         }
 
         private static void TabControl_DrawItem(object sender, DrawItemEventArgs e)
