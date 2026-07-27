@@ -1,3 +1,6 @@
+v2.0.171 - 2026-07-28
+- Fix: رؤوس جدول الوحدات (dgUnits) في شاشة البحث لم تكن تظهر (FrmProductSearch.cs) — تم تحديد ارتفاع 42px وإصلاح تعريف ColumnHeadersDefaultCellStyle مستقلاً بدلاً من استنساخه من dgProducts.
+
 v2.0.170 - 2026-07-28
 - Fix: إصلاح تكرار أعمدة المقاس واللون في شاشة المبيعات (Theme.cs / AdjustGridHeaders): في نشاط الملابس يُخفى عمودا CarModel وBrand القديمان ويظهر عمودا ProductSize وColor الجديدان. في باقي الأنشطة العكس.
 
