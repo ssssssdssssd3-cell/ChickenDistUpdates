@@ -211,6 +211,16 @@ namespace ChickenDist.Core
                 ALTER TABLE Products ADD Color NVARCHAR(100) NULL;
             END");
 
+            SafeMigrate("Colors.Table", @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Colors')
+            BEGIN
+                CREATE TABLE Colors (
+                    ColorID   INT IDENTITY(1,1) PRIMARY KEY,
+                    ColorCode NVARCHAR(20),
+                    ColorName NVARCHAR(100) NOT NULL
+                );
+            END");
+
             SafeMigrate("Products.OfferColumns", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OriginalPrice')
             BEGIN

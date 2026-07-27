@@ -1,3 +1,6 @@
+v2.0.168 - 2026-07-27
+- Hotfix: إنشاء جدول Colors تلقائياً عند بدء التشغيل (DbHelper.cs) — كان يتسبب في خطأ "Invalid object name 'Colors'" عند فتح كارت الصنف في نشاط الملابس.
+
 v2.0.167 - 2026-07-26
 - Clothing & Fashion Improvements & POS Contrast & Menu Fixes (FrmMain.cs, FrmSale.cs, FrmProductCard.cs, FrmProductSearch.cs, FrmPOS.cs, FrmModelLookup.cs, CoreDAL.cs, SalesDAL.cs): Added Reservations and Clearance Offers to top navigation bar dropdown. Displayed Product Size and Color columns in Sales grid. Fixed cell editing text contrast in POS. Separated Brand and Color in product card. Updated search label to 'الشركة المنتجة / الخامة' and added Color search filter with default unchecked zero stock checkbox.
 
