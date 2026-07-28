@@ -1006,51 +1006,46 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 120,
+				Height = 84,
 				Width = 1024,
 				BackColor = Theme.BgCard
 			};
 
-			var tblSummary = new TableLayoutPanel
+			var pnlSummaryFlow = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 68,
-				RowCount = 2,
-				ColumnCount = 8,
+				Height = 34,
+				FlowDirection = FlowDirection.RightToLeft,
+				WrapContents = false,
 				BackColor = Color.Transparent,
-				Padding = new Padding(10, 2, 10, 2)
+				Padding = new Padding(5, 2, 5, 2),
+				RightToLeft = RightToLeft.Yes,
+				AutoScroll = false
 			};
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-			tblSummary.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
 
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // Col 0: Total Label
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 1: Total Val
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Disc Type Label
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 3: Disc Type
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // Col 4: Disc Amt Label
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 5: Disc Amt
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f)); // Col 6: Net Label
-			tblSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));   // Col 7: Net Val
-
-			// Row 0
+			// 1. إجمالي الأصناف
 			Label lblTotalTitle = MakeLabel("إجمالي الأصناف:", 0, 0);
-			lblTotalTitle.Dock = DockStyle.Fill;
-			lblTotalTitle.TextAlign = ContentAlignment.MiddleRight;
+			lblTotalTitle.AutoSize = true;
 			lblTotalTitle.ForeColor = Theme.TextSub;
+			lblTotalTitle.Margin = new Padding(2, 6, 0, 0);
 
 			lblTotalVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft
+				AutoSize = true,
+				Margin = new Padding(2, 5, 12, 0)
 			};
 
-			Label lblDiscType = MakeLabel("نوع الخصم:", 0, 0);
-			lblDiscType.Dock = DockStyle.Fill;
-			lblDiscType.TextAlign = ContentAlignment.MiddleRight;
+			pnlSummaryFlow.Controls.Add(lblTotalTitle);
+			pnlSummaryFlow.Controls.Add(lblTotalVal);
+
+			// 2. الخصم
+			Label lblDiscType = MakeLabel("الخصم:", 0, 0);
+			lblDiscType.AutoSize = true;
 			lblDiscType.ForeColor = Theme.TextSub;
+			lblDiscType.Margin = new Padding(2, 6, 0, 0);
 
 			cboInvoiceDiscountType = new ComboBox
 			{
@@ -1059,17 +1054,12 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Width = 90,
-				Anchor = AnchorStyles.Left
+				Width = 65,
+				Margin = new Padding(2, 3, 2, 0)
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
 			cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => CalculateNet();
-
-			Label lblDiscVal = MakeLabel("خصم الفاتورة:", 0, 0);
-			lblDiscVal.Dock = DockStyle.Fill;
-			lblDiscVal.TextAlign = ContentAlignment.MiddleRight;
-			lblDiscVal.ForeColor = Theme.TextSub;
 
 			txtInvoiceDiscount = new TextBox
 			{
@@ -1078,75 +1068,20 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Width = 90,
-				Anchor = AnchorStyles.Left
+				Width = 65,
+				Margin = new Padding(2, 3, 12, 0)
 			};
 			txtInvoiceDiscount.TextChanged += (s, e) => CalculateNet();
 
-			Label lblNetTitle = MakeLabel("صافي الفاتورة:", 0, 0);
-			lblNetTitle.Dock = DockStyle.Fill;
-			lblNetTitle.TextAlign = ContentAlignment.MiddleRight;
-			lblNetTitle.ForeColor = Theme.TextSub;
+			pnlSummaryFlow.Controls.Add(lblDiscType);
+			pnlSummaryFlow.Controls.Add(cboInvoiceDiscountType);
+			pnlSummaryFlow.Controls.Add(txtInvoiceDiscount);
 
-			lblNetVal = new Label
-			{
-				Text = "0.00 ج",
-				ForeColor = Theme.Accent,
-				Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-				Dock = DockStyle.Fill,
-				TextAlign = ContentAlignment.MiddleLeft
-			};
-
-			tblSummary.Controls.Add(lblTotalTitle, 0, 0);
-			tblSummary.Controls.Add(lblTotalVal, 1, 0);
-			tblSummary.Controls.Add(lblDiscType, 2, 0);
-			tblSummary.Controls.Add(cboInvoiceDiscountType, 3, 0);
-			tblSummary.Controls.Add(lblDiscVal, 4, 0);
-			tblSummary.Controls.Add(txtInvoiceDiscount, 5, 0);
-			tblSummary.Controls.Add(lblNetTitle, 6, 0);
-			tblSummary.Controls.Add(lblNetVal, 7, 0);
-
-			// Row 1 (if cost shown)
-			if (Session.CanViewCost("Sales"))
-			{
-				lblCostTitle = MakeLabel("إجمالي التكلفة:", 0, 0);
-				lblCostTitle.Dock = DockStyle.Fill;
-				lblCostTitle.TextAlign = ContentAlignment.MiddleRight;
-				lblCostTitle.ForeColor = Theme.TextSub;
-
-				lblCostVal = new Label
-				{
-					Text = "0.00 ج",
-					ForeColor = Theme.TextMain,
-					Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-					Dock = DockStyle.Fill,
-					TextAlign = ContentAlignment.MiddleLeft
-				};
-
-				lblProfitTitle = MakeLabel("صافي الربح:", 0, 0);
-				lblProfitTitle.Dock = DockStyle.Fill;
-				lblProfitTitle.TextAlign = ContentAlignment.MiddleRight;
-				lblProfitTitle.ForeColor = Theme.TextSub;
-
-				lblProfitVal = new Label
-				{
-					Text = "0.00 ج",
-					ForeColor = Theme.Success,
-					Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-					Dock = DockStyle.Fill,
-					TextAlign = ContentAlignment.MiddleLeft
-				};
-
-				tblSummary.Controls.Add(lblCostTitle, 0, 1);
-				tblSummary.Controls.Add(lblCostVal, 1, 1);
-				tblSummary.Controls.Add(lblProfitTitle, 2, 1);
-				tblSummary.Controls.Add(lblProfitVal, 3, 1);
-			}
-
-			lblShippingChargeTitle = MakeLabel("شحن / تحميل:", 0, 0);
-			lblShippingChargeTitle.Dock = DockStyle.Fill;
-			lblShippingChargeTitle.TextAlign = ContentAlignment.MiddleRight;
+			// 3. شحن / تحميل
+			lblShippingChargeTitle = MakeLabel("شحن:", 0, 0);
+			lblShippingChargeTitle.AutoSize = true;
 			lblShippingChargeTitle.ForeColor = Theme.TextSub;
+			lblShippingChargeTitle.Margin = new Padding(2, 6, 0, 0);
 
 			nudShippingCharge = new NumericUpDown
 			{
@@ -1158,27 +1093,83 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Width = 90,
-				Anchor = AnchorStyles.Left
+				Width = 70,
+				Margin = new Padding(2, 3, 12, 0)
 			};
 			nudShippingCharge.ValueChanged += (s, e) => CalculateNet();
 
-			tblSummary.Controls.Add(lblShippingChargeTitle, 4, 1);
-			tblSummary.Controls.Add(nudShippingCharge, 5, 1);
+			pnlSummaryFlow.Controls.Add(lblShippingChargeTitle);
+			pnlSummaryFlow.Controls.Add(nudShippingCharge);
 
-			lblItemCountTitle = MakeLabel("عدد الأصناف:", 0, 0);
-			lblItemCountTitle.Dock = DockStyle.Fill;
-			lblItemCountTitle.TextAlign = ContentAlignment.MiddleRight;
+			// 4. التكلفة والربح (إن وجدت الصلاحية)
+			if (Session.CanViewCost("Sales"))
+			{
+				lblCostTitle = MakeLabel("التكلفة:", 0, 0);
+				lblCostTitle.AutoSize = true;
+				lblCostTitle.ForeColor = Theme.TextSub;
+				lblCostTitle.Margin = new Padding(2, 6, 0, 0);
+
+				lblCostVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Theme.TextMain,
+					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+					AutoSize = true,
+					Margin = new Padding(2, 5, 10, 0)
+				};
+
+				lblProfitTitle = MakeLabel("الربح:", 0, 0);
+				lblProfitTitle.AutoSize = true;
+				lblProfitTitle.ForeColor = Theme.TextSub;
+				lblProfitTitle.Margin = new Padding(2, 6, 0, 0);
+
+				lblProfitVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Theme.Success,
+					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+					AutoSize = true,
+					Margin = new Padding(2, 5, 12, 0)
+				};
+
+				pnlSummaryFlow.Controls.Add(lblCostTitle);
+				pnlSummaryFlow.Controls.Add(lblCostVal);
+				pnlSummaryFlow.Controls.Add(lblProfitTitle);
+				pnlSummaryFlow.Controls.Add(lblProfitVal);
+			}
+
+			// 5. عدد الأصناف
+			lblItemCountTitle = MakeLabel("الأصناف:", 0, 0);
+			lblItemCountTitle.AutoSize = true;
 			lblItemCountTitle.ForeColor = Theme.TextSub;
+			lblItemCountTitle.Margin = new Padding(2, 6, 0, 0);
 
 			lblItemCountVal = MakeLabel("0", 0, 0);
-			lblItemCountVal.Dock = DockStyle.Fill;
-			lblItemCountVal.TextAlign = ContentAlignment.MiddleLeft;
+			lblItemCountVal.AutoSize = true;
 			lblItemCountVal.ForeColor = Theme.Accent;
 			lblItemCountVal.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+			lblItemCountVal.Margin = new Padding(2, 5, 15, 0);
 
-			tblSummary.Controls.Add(lblItemCountTitle, 6, 1);
-			tblSummary.Controls.Add(lblItemCountVal, 7, 1);
+			pnlSummaryFlow.Controls.Add(lblItemCountTitle);
+			pnlSummaryFlow.Controls.Add(lblItemCountVal);
+
+			// 6. صافي الفاتورة
+			Label lblNetTitle = MakeLabel("صافي الفاتورة:", 0, 0);
+			lblNetTitle.AutoSize = true;
+			lblNetTitle.ForeColor = Theme.TextSub;
+			lblNetTitle.Margin = new Padding(2, 6, 0, 0);
+
+			lblNetVal = new Label
+			{
+				Text = "0.00 ج",
+				ForeColor = Theme.Accent,
+				Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+				AutoSize = true,
+				Margin = new Padding(2, 3, 0, 0)
+			};
+
+			pnlSummaryFlow.Controls.Add(lblNetTitle);
+			pnlSummaryFlow.Controls.Add(lblNetVal);
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ", 0, 0, 90, 26, Theme.Accent);
@@ -1252,7 +1243,7 @@ namespace ChickenDist.Forms
 			};
 			pnlStatus.Controls.Add(lblHotkeys);
 
-			pnlFooter.Controls.Add(tblSummary);
+			pnlFooter.Controls.Add(pnlSummaryFlow);
 			pnlFooter.Controls.Add(pnlFooterButtons);
 			pnlFooter.Controls.Add(pnlStatus);
 
