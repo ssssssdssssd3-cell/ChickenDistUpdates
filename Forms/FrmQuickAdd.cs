@@ -13,6 +13,7 @@ namespace ChickenDist.Forms
     {
         private TextBox txtName, txtCode;
         private NumericUpDown nudPurchasePrice, nudPrice;
+        private CheckBox chkIsService, chkIsQuickItem;
         private Button btnSave, btnClose;
         private Label lblStatus;
         private Timer statusTimer;
@@ -32,7 +33,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "⚡ الإدخال السريع للأصناف";
-            this.Size = new Size(500, 420);
+            this.Size = new Size(500, 485);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -48,7 +49,7 @@ namespace ChickenDist.Forms
             var pnlForm = new Panel
             {
                 Location = new Point(20, 80),
-                Size = new Size(445, 220),
+                Size = new Size(445, 275),
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15)
             };
@@ -77,6 +78,40 @@ namespace ChickenDist.Forms
             pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(310, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
             nudPrice = new NumericUpDown { Location = new Point(20, y), Width = 280, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(nudPrice);
+            y += 40;
+
+            // صنف بيع سريع
+            chkIsQuickItem = new CheckBox
+            {
+                Text = "📌 صنف بيع سريع (شاشة POS)",
+                Location = new Point(20, y),
+                Width = 280,
+                Height = 26,
+                ForeColor = Color.FromArgb(0, 120, 180),
+                Checked = false,
+                AutoSize = false,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font(Theme.FontMain, FontStyle.Bold)
+            };
+            pnlForm.Controls.Add(chkIsQuickItem);
+            y += 32;
+
+            // صنف يباع بالسالب
+            chkIsService = new CheckBox
+            {
+                Text = "⚡ صنف يباع بالسالب (خدمات / مصروفات)",
+                Location = new Point(20, y),
+                Width = 280,
+                Height = 26,
+                ForeColor = Color.FromArgb(180, 120, 0),
+                Checked = false,
+                AutoSize = false,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font(Theme.FontMain, FontStyle.Bold)
+            };
+            pnlForm.Controls.Add(chkIsService);
 
             this.Controls.Add(pnlForm);
 
@@ -84,7 +119,7 @@ namespace ChickenDist.Forms
             lblStatus = new Label
             {
                 Text = "",
-                Location = new Point(20, 310),
+                Location = new Point(20, 365),
                 Size = new Size(445, 25),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -93,12 +128,12 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblStatus);
 
             // الأزرار
-            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 340, 215, 36, Theme.Success);
+            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 395, 215, 36, Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnClose = Theme.MakeButton("إغلاق ↩", 20, 340, 220, 36, Color.FromArgb(70, 80, 95));
+            btnClose = Theme.MakeButton("إغلاق ↩", 20, 395, 220, 36, Color.FromArgb(70, 80, 95));
             btnClose.Click += (s, e) => {
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -150,6 +185,8 @@ namespace ChickenDist.Forms
             txtName.Clear();
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
+            chkIsQuickItem.Checked = false;
+            chkIsService.Checked = false;
             txtCode.Focus();
             txtCode.SelectAll();
         }
@@ -201,8 +238,15 @@ namespace ChickenDist.Forms
             // حفظ الصنف
             try
             {
-                int id = ProductDAL.Save(0, code, name, "قطعة", nudPrice.Value, true,
-                    nudPurchasePrice.Value, 0, "", "", null, "", "", "", 0, 0);
+                int id = ProductDAL.Save(
+                    0, code, name, "قطعة", nudPrice.Value, true,
+                    nudPurchasePrice.Value, 0, "", "", null, "", "", "", 
+                    0, 0, null, true,
+                    chkIsService.Checked,
+                    null, null, null, null,
+                    null, null, null, null, null,
+                    null, chkIsQuickItem.Checked
+                );
 
                 if (id > 0)
                 {
