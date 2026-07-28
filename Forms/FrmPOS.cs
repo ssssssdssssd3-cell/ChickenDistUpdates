@@ -156,6 +156,18 @@ namespace ChickenDist.Forms
                 dgItems.Columns["KitchenNotes"].ReadOnly = false;
                 dgItems.Columns["KitchenNotes"].Width = 130;
             }
+            var delCol = new DataGridViewButtonColumn
+            {
+                Name = "Delete",
+                HeaderText = "حذف",
+                Text = "🗑",
+                UseColumnTextForButtonValue = true,
+                Width = 45,
+                FlatStyle = FlatStyle.Flat
+            };
+            delCol.DefaultCellStyle.ForeColor = Color.Red;
+            delCol.DefaultCellStyle.SelectionForeColor = Color.Red;
+            dgItems.Columns.Add(delCol);
             
             dgItems.Columns["Code"].ReadOnly = true;
             dgItems.Columns["Name"].ReadOnly = true;
@@ -178,12 +190,27 @@ namespace ChickenDist.Forms
             Session.LoadColumnOrder(dgItems, "POS");
             LoadColumnSettings();
 
+            dgItems.CellClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && e.ColumnIndex < dgItems.Columns.Count)
+                {
+                    if (dgItems.Columns[e.ColumnIndex].Name == "Delete")
+                    {
+                        if (e.RowIndex < _items.Count)
+                        {
+                            _items.RemoveAt(e.RowIndex);
+                            RefreshGrid();
+                        }
+                    }
+                }
+            };
+
             dgItems.CellDoubleClick += (s, e) =>
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
                     string colName = dgItems.Columns[e.ColumnIndex].Name;
-                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes")
+                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete")
                     {
                         return; // السماح بتعديل الخانات التفاعلية مباشرة
                     }
