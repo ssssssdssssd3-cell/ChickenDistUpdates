@@ -197,15 +197,15 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Color.FromArgb(226, 232, 240),
                 DefaultCellStyle = dgProducts.DefaultCellStyle.Clone(),
-                ColumnHeadersHeight = 42,
+                ColumnHeadersHeight = 50,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.Primary,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
-                    WrapMode = DataGridViewTriState.False
+                    WrapMode = DataGridViewTriState.True
                 },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
