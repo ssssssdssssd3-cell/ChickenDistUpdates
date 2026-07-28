@@ -560,7 +560,7 @@ namespace ChickenDist.Forms
             pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 125,
+                Height = 84,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 4, 8, 4)
             };
@@ -573,59 +573,51 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0)
             };
 
-            var tblTotals = new TableLayoutPanel
+            var tblTotals = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 3,
-                ColumnCount = 6,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
                 BackColor = Color.Transparent,
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
-                Padding = new Padding(4)
+                Padding = new Padding(4, 4, 4, 4),
+                RightToLeft = RightToLeft.Yes,
+                AutoScroll = false
             };
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // Col 0: إجمالي الأصناف / ضريبة / مصاريف الشحن
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // Col 1: قيمتها أو صندوق الإدخال الأول
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));  // Col 2: خصم / قيمة الضريبة / على
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));  // Col 3: نوع خصم combo / صافي الفاتورة lbl / جهة الشحن combo
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));  // Col 4: قيمة الخصم lbl / صافي الفاتورة val / قيمة الشحن display
-            tblTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // Col 5: الباقي (صندوق قيمة الخصم / عدد الأصناف)
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
-            tblTotals.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
 
-            // صف 0: إجمالي الأصناف + خصم الفاتورة
+            // 1. إجمالي الأصناف
             var lblItemsTotalLbl = new Label
             {
                 Text = "إجمالي الأصناف:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
-            // ── قسم الإجماليات: صف 0 (إجمالي + خصم) ────────────────────────
             lblTotalVal = new Label
             {
                 Text = "0.00 ج",
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 5, 10, 0)
             };
 
+            tblTotals.Controls.Add(lblItemsTotalLbl);
+            tblTotals.Controls.Add(lblTotalVal);
+
+            // 2. خصم الفاتورة
             lblDiscType = new Label
             {
                 Text = "خصم:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
             cboInvoiceDiscountType = new ComboBox
             {
-                Dock = DockStyle.Fill,
+                Width = 55,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 3, 2, 0)
             };
             cboInvoiceDiscountType.Items.AddRange(new object[] { "مبلغ", "%" });
             cboInvoiceDiscountType.SelectedIndex = 0;
@@ -635,33 +627,36 @@ namespace ChickenDist.Forms
             {
                 Text = "قيمة:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
             txtInvoiceDiscount = new TextBox
             {
-                Dock = DockStyle.Fill,
+                Width = 60,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "0",
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 3, 10, 0)
             };
             txtInvoiceDiscount.TextChanged += (s, e) => RecalcTotals();
 
-            // صف 1: ضريبة + صافي الفاتورة ────────────────────────────────────
+            tblTotals.Controls.Add(lblDiscType);
+            tblTotals.Controls.Add(cboInvoiceDiscountType);
+            tblTotals.Controls.Add(lblDiscVal);
+            tblTotals.Controls.Add(txtInvoiceDiscount);
+
+            // 3. ضريبة الشراء
             var lblTaxLbl = new Label
             {
                 Text = "ضريبة %:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
             nudTaxPct = new NumericUpDown
             {
-                Dock = DockStyle.Fill,
+                Width = 55,
                 DecimalPlaces = 2, Minimum = 0, Maximum = 100,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 3, 2, 0)
             };
             nudTaxPct.ValueChanged += (s, e) => RecalcTotals();
             nudTaxPct.KeyUp += (s, e) =>
@@ -678,71 +673,27 @@ namespace ChickenDist.Forms
                 Text = "0.00 ج",
                 ForeColor = Color.FromArgb(230, 162, 60),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 5, 10, 0)
             };
 
-            var lblNetTitle = new Label
-            {
-                Text = "📦 الصافي:",
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
-            };
-            lblNetVal = new Label
-            {
-                Text = "0.00 ج",
-                ForeColor = Color.FromArgb(46, 204, 113),
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(2)
-            };
+            tblTotals.Controls.Add(lblTaxLbl);
+            tblTotals.Controls.Add(nudTaxPct);
+            tblTotals.Controls.Add(lblTaxAmt);
 
-            // ── ملء جدول الإجماليات ───────────────────────────────────────────
-            // صف 0: [إجمالي lbl][إجمالي val][خصم lbl][نوع combo][قيمة lbl][قيمة txt]
-            tblTotals.Controls.Add(lblItemsTotalLbl,         0, 0);
-            tblTotals.Controls.Add(lblTotalVal,              1, 0);
-            tblTotals.Controls.Add(lblDiscType,              2, 0);
-            tblTotals.Controls.Add(cboInvoiceDiscountType,   3, 0);
-            tblTotals.Controls.Add(lblDiscVal,               4, 0);
-            tblTotals.Controls.Add(txtInvoiceDiscount,       5, 0);
-            lblItemCount = new Label
-            {
-                Text = "📦 عدد الأصناف: 0",
-                ForeColor = Theme.TextSub,
-                Font = Theme.FontMain,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(2)
-            };
-
-            // صف 1: [ضريبة% lbl][nudTax][قيمة الضريبة][صافي lbl][صافي val][عدد الأصناف]
-            tblTotals.Controls.Add(lblTaxLbl,   0, 1);
-            tblTotals.Controls.Add(nudTaxPct,   1, 1);
-            tblTotals.Controls.Add(lblTaxAmt,   2, 1);
-            tblTotals.Controls.Add(lblNetTitle, 3, 1);
-            tblTotals.Controls.Add(lblNetVal,   4, 1);
-            tblTotals.Controls.Add(lblItemCount, 5, 1);
-
-            // صف 2: مصاريف الشحن ─────────────────────────────────────────────────
-
+            // 4. مصاريف الشحن
             var lblShippingLbl = new Label
             {
-                Text = "🚚 مصاريف الشحن:",
+                Text = "🚚 شحن:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
             txtShippingCost = new TextBox
             {
-                Dock = DockStyle.Fill,
+                Width = 55,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "0",
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 3, 2, 0)
             };
             txtShippingCost.TextChanged += (s, e) => RecalcTotals();
 
@@ -750,19 +701,18 @@ namespace ChickenDist.Forms
             {
                 Text = "على:",
                 ForeColor = Theme.TextSub,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
             };
             cboShippingOn = new ComboBox
             {
-                Dock = DockStyle.Fill,
+                Width = 65,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 4, 2, 4)
+                Margin = new Padding(2, 3, 2, 0)
             };
             cboShippingOn.Items.AddRange(new object[] { "الشركة", "المورد" });
-            cboShippingOn.SelectedIndex = 0; // الافتراضي: على الشركة
+            cboShippingOn.SelectedIndex = 0;
             cboShippingOn.SelectedIndexChanged += (s, e) => RecalcTotals();
 
             lblShippingDisplay = new Label
@@ -770,16 +720,47 @@ namespace ChickenDist.Forms
                 Text = "0.00 ج",
                 ForeColor = Color.FromArgb(52, 152, 219),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(2)
+                AutoSize = true,
+                Margin = new Padding(2, 5, 10, 0)
             };
 
-            tblTotals.Controls.Add(lblShippingLbl,    0, 2);
-            tblTotals.Controls.Add(txtShippingCost,   1, 2);
-            tblTotals.Controls.Add(lblShippingOnLbl,  2, 2);
-            tblTotals.Controls.Add(cboShippingOn,     3, 2);
-            tblTotals.Controls.Add(lblShippingDisplay, 4, 2);
+            tblTotals.Controls.Add(lblShippingLbl);
+            tblTotals.Controls.Add(txtShippingCost);
+            tblTotals.Controls.Add(lblShippingOnLbl);
+            tblTotals.Controls.Add(cboShippingOn);
+            tblTotals.Controls.Add(lblShippingDisplay);
+
+            // 5. عدد الأصناف
+            lblItemCount = new Label
+            {
+                Text = "📦 الأصناف: 0",
+                ForeColor = Theme.TextSub,
+                Font = Theme.FontMain,
+                AutoSize = true,
+                Margin = new Padding(2, 6, 12, 0)
+            };
+            tblTotals.Controls.Add(lblItemCount);
+
+            // 6. الصافي النهائي
+            var lblNetTitle = new Label
+            {
+                Text = "📦 الصافي:",
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(2, 6, 0, 0)
+            };
+            lblNetVal = new Label
+            {
+                Text = "0.00 ج",
+                ForeColor = Color.FromArgb(46, 204, 113),
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(2, 3, 0, 0)
+            };
+
+            tblTotals.Controls.Add(lblNetTitle);
+            tblTotals.Controls.Add(lblNetVal);
 
             pnlTotals.Controls.Add(tblTotals);
 
