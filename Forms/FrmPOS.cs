@@ -331,7 +331,7 @@ namespace ChickenDist.Forms
 
             _btnPrint = Theme.MakeButton("🖨️ طباعة (F6)", Theme.Primary, new Point(680, 130), new Size(110, 55));
             _btnPrint.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
-            _btnPrint.Click += (s, e) => { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); };
+            _btnPrint.Click += (s, e) => { if (_lastSaleID > 0) PrintReceipt(_lastSaleID, askFirst: true); };
 
             _btnWhatsApp = Theme.MakeButton("💬 واتساب", Color.FromArgb(37, 211, 102), new Point(795, 130), new Size(95, 55));
             _btnWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -368,7 +368,15 @@ namespace ChickenDist.Forms
                 var btnKitchen = Theme.MakeButton("🍳 بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 130), new Size(95, 55));
                 btnKitchen.Name = "btnKitchenPrint";
                 btnKitchen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-                btnKitchen.Click += (s, e) => { if (_lastSaleID > 0) try { new FrmKitchenPrint(_lastSaleID); } catch { } };
+                btnKitchen.Click += (s, e) =>
+                {
+                    if (_lastSaleID <= 0) return;
+                    var ans = MessageBox.Show("هل تريد طباعة بون التحضير؟", "طباعة",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    if (ans == DialogResult.Yes)
+                        try { new FrmKitchenPrint(_lastSaleID); } catch { }
+                };
                 pnlTotals.Controls.Add(btnKitchen);
 
                 btnSuspend = Theme.MakeButton("⏳ تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
@@ -508,7 +516,7 @@ namespace ChickenDist.Forms
             }
             else if (e.KeyCode == Keys.F4 && AppConfig.IsRestaurant) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
-            else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID); e.Handled = true; }
+            else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID, askFirst: true); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
             else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
             else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
@@ -1273,8 +1281,8 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                // Auto-print
-                PrintReceipt(_lastSaleID);
+                // طباعة تلقائية بعد الدفع — مباشرة بدون معاينة
+                PrintReceipt(_lastSaleID, askFirst: false);
                 if (AppConfig.IsRestaurant)
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }
@@ -1305,9 +1313,20 @@ namespace ChickenDist.Forms
         }
 
         // ── طباعة الإيصال ─────────────────────────────────────
-        private void PrintReceipt(int saleID)
+        private void PrintReceipt(int saleID, bool askFirst = false)
         {
-            try { new FrmPrintSale(saleID, "Receipt", true); }
+            try
+            {
+                if (askFirst)
+                {
+                    var ans = MessageBox.Show("هل تريد طباعة الإيصال؟", "طباعة",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    if (ans != DialogResult.Yes) return;
+                }
+                // طباعة مباشرة بدون معاينة
+                new FrmPrintSale(saleID, "Receipt", false);
+            }
             catch (Exception ex) { AppLogger.Error("FrmPOS.PrintReceipt", ex); }
         }
 
