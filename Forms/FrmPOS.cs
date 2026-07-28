@@ -369,9 +369,19 @@ namespace ChickenDist.Forms
             btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
+            btnSuspend = Theme.MakeButton("⏳ تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
+            btnSuspend.Name = "btnSuspend";
+            btnSuspend.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            btnSuspend.Click += (s, e) => SuspendCurrentOrder();
+
+            btnRecall = Theme.MakeButton("📋 الطلبات\nالمعلقة (F4)", Color.FromArgb(52, 152, 219), new Point(0, 130), new Size(140, 55));
+            btnRecall.Name = "btnRecall";
+            btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnRecall.Click += (s, e) => RecallDraftSale();
+
             if (!AppConfig.IsRestaurant)
             {
-                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات\n(F3)", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(150, 55));
+                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(140, 55));
                 btnModelLookup.Name = "btnModelLookup";
                 btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                 btnModelLookup.Click += (s, e) => OpenModelLookup();
@@ -386,9 +396,10 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnPay);
             pnlTotals.Controls.Add(btnNew);
             pnlTotals.Controls.Add(btnCancel);
-            pnlTotals.Controls.Add(_btnPrint);
             pnlTotals.Controls.Add(_btnWhatsApp);
             pnlTotals.Controls.Add(btnOpenDrawer);
+            pnlTotals.Controls.Add(btnSuspend);
+            pnlTotals.Controls.Add(btnRecall);
 
             if (AppConfig.IsRestaurant)
             {
@@ -405,18 +416,6 @@ namespace ChickenDist.Forms
                         try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 };
                 pnlTotals.Controls.Add(btnKitchen);
-
-                btnSuspend = Theme.MakeButton("⏳ تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
-                btnSuspend.Name = "btnSuspend";
-                btnSuspend.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
-                btnSuspend.Click += (s, e) => SuspendCurrentOrder();
-                pnlTotals.Controls.Add(btnSuspend);
-
-                btnRecall = Theme.MakeButton("📋 الطلبات\nالمعلقة (F4)", Color.FromArgb(52, 152, 219), new Point(0, 130), new Size(140, 55));
-                btnRecall.Name = "btnRecall";
-                btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-                btnRecall.Click += (s, e) => RecallDraftSale();
-                pnlTotals.Controls.Add(btnRecall);
             }
 
             this.Controls.Add(pnlTotals);
@@ -480,11 +479,10 @@ namespace ChickenDist.Forms
             var btnSuspendCtrl = pnlTotals.Controls["btnSuspend"];
             var btnRecallCtrl = pnlTotals.Controls["btnRecall"];
 
-            if (_btnPrint    != null) { _btnPrint.Location    = new Point(totW - 135, 130);             _btnPrint.Size    = new Size(115, 55); }
-            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 250, 130);             _btnWhatsApp.Size = new Size(110, 55); }
-            if (btnOpenDrawer!= null) { btnOpenDrawer.Location= new Point(totW - 395, 130);             btnOpenDrawer.Size= new Size(140, 55); }
+            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 125, 130);             _btnWhatsApp.Size = new Size(110, 55); }
+            if (btnOpenDrawer!= null) { btnOpenDrawer.Location= new Point(totW - 275, 130);             btnOpenDrawer.Size= new Size(145, 55); }
 
-            int currentX = totW - 395;
+            int currentX = totW - 275;
             if (btnKitchenCtrl != null)
             {
                 currentX -= 95;
@@ -507,9 +505,9 @@ namespace ChickenDist.Forms
             var btnModelLookupCtrl = pnlTotals.Controls["btnModelLookup"];
             if (btnModelLookupCtrl != null)
             {
-                currentX -= 155;
+                currentX -= 145;
                 btnModelLookupCtrl.Location = new Point(currentX, 130);
-                btnModelLookupCtrl.Size = new Size(150, 55);
+                btnModelLookupCtrl.Size = new Size(140, 55);
             }
 
             if (btnCancel != null)
@@ -535,15 +533,9 @@ namespace ChickenDist.Forms
         private void FrmPOS_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F2) { NewInvoice(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F3)
-            {
-                if (AppConfig.IsRestaurant) SuspendCurrentOrder();
-                else OpenModelLookup();
-                e.Handled = true;
-            }
-            else if (e.KeyCode == Keys.F4 && AppConfig.IsRestaurant) { RecallDraftSale(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F3) { SuspendCurrentOrder(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F4) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
-            else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID, askFirst: true); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
             else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
             else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
@@ -2117,10 +2109,12 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                // Print kitchen boun
-                try { new FrmKitchenPrint(_lastSaleID); } catch { }
+                if (AppConfig.IsRestaurant)
+                {
+                    try { new FrmKitchenPrint(_lastSaleID); } catch { }
+                }
 
-                MessageBox.Show("تم تعليق الطلب وطباعة البون بنجاح.", "تم التعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم تعليق الطلب بنجاح.", "تم التعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 NewInvoice();
             }
             catch (Exception ex)
