@@ -26,6 +26,12 @@ namespace ChickenDist.Forms
         private Button btnPrint;
         private Button btnPreview;
         private Button btnCancel;
+        private Button btnClearAll;
+
+        private Label lblTotalProductsCount;
+        private Label lblTotalLabelsCount;
+
+        private bool _isSelectingCombo = false;
 
         // Print state tracking
         private List<BarcodePrintItem> _printList;
@@ -36,128 +42,218 @@ namespace ChickenDist.Forms
         {
             InitializeComponent();
             LoadProducts();
+            UpdateSummaryBadges();
         }
 
         private void InitializeComponent()
         {
             this.Text = "🏷️ طباعة باركود الأصناف (مجمع)";
-            this.Size = new Size(780, 600);
+            this.Size = new Size(1020, 680);
+            this.MinimumSize = new Size(900, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
+            this.KeyPreview = true;
+            this.KeyDown += FrmBulkPrintBarcodes_KeyDown;
 
-            // Title Bar
+            // ── 1. Title Header ──────────────────────────────────────────────
             var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
             this.Controls.Add(pnlTop);
 
-            // Product Selection Panel
-            var lblSelect = new Label { Text = "اختر الصنف:", Location = new Point(20, 84), AutoSize = true, ForeColor = Theme.TextMain };
-            this.Controls.Add(lblSelect);
+            // ── 2. Top Selection Panel (Search & Add) ────────────────────────
+            var pnlSelection = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 65,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(12, 10, 12, 10)
+            };
+
+            var lblSelect = new Label
+            {
+                Text = "اختر الصنف:",
+                Location = new Point(915, 18),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = Theme.FontBold
+            };
 
             cboProduct = new ComboBox
             {
-                Location = new Point(100, 80),
-                Width = 300,
+                Location = new Point(480, 14),
+                Width = 430,
                 DropDownStyle = ComboBoxStyle.DropDown,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10.5f)
             };
-            this.Controls.Add(cboProduct);
+            cboProduct.SelectedIndexChanged += CboProduct_SelectedIndexChanged;
 
             btnSearchProduct = new Button
             {
-                Text = "🔍 بحث صنف",
-                Location = new Point(410, 79),
-                Width = 90,
-                Height = 28,
+                Text = "🔍 بحث متقدم (F3)",
+                Location = new Point(310, 13),
+                Width = 160,
+                Height = 34,
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Font = Theme.FontBold
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
-            this.Controls.Add(btnSearchProduct);
+            btnSearchProduct.Click += BtnSearchProduct_Click;
 
-            var lblQty = new Label { Text = "الكمية:", Location = new Point(515, 84), AutoSize = true, ForeColor = Theme.TextMain };
-            this.Controls.Add(lblQty);
+            var lblQty = new Label
+            {
+                Text = "الكمية:",
+                Location = new Point(255, 18),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = Theme.FontBold
+            };
 
             nudQty = new NumericUpDown
             {
-                Location = new Point(560, 80),
-                Width = 70,
+                Location = new Point(175, 14),
+                Width = 75,
                 Minimum = 1,
                 Maximum = 1000,
                 Value = 1,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                TextAlign = HorizontalAlignment.Center
             };
-            this.Controls.Add(nudQty);
+            nudQty.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    BtnAdd_Click(null, null);
+                    e.Handled = true;
+                }
+            };
 
             btnAdd = new Button
             {
                 Text = "➕ إضافة",
-                Location = new Point(650, 79),
-                Width = 90,
-                Height = 28,
+                Location = new Point(50, 13),
+                Width = 115,
+                Height = 34,
                 BackColor = Theme.Success,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Font = Theme.FontBold
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
             };
             btnAdd.FlatAppearance.BorderSize = 0;
-            this.Controls.Add(btnAdd);
+            btnAdd.Click += BtnAdd_Click;
 
-            // DataGridView Items Table
+            pnlSelection.Controls.AddRange(new Control[] {
+                lblSelect, cboProduct, btnSearchProduct, lblQty, nudQty, btnAdd
+            });
+
+            // ── 3. Grid Header & Badge Bar ───────────────────────────────────
+            var pnlGridHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(241, 245, 249),
+                Padding = new Padding(12, 6, 12, 6)
+            };
+
+            lblTotalProductsCount = new Label
+            {
+                Text = "📦 الأصناف المضافة: 0",
+                Location = new Point(810, 8),
+                AutoSize = true,
+                ForeColor = Theme.Primary,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+
+            lblTotalLabelsCount = new Label
+            {
+                Text = "🏷️ إجمالي الملصقات: 0 ملصق",
+                Location = new Point(580, 8),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(217, 119, 6),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+
+            btnClearAll = new Button
+            {
+                Text = "🗑️ مسح الكل",
+                Location = new Point(12, 4),
+                Width = 110,
+                Height = 28,
+                BackColor = Color.FromArgb(239, 68, 68),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnClearAll.FlatAppearance.BorderSize = 0;
+            btnClearAll.Click += (s, e) =>
+            {
+                if (dgItems.Rows.Count > 0 && MessageBox.Show("هل تريد مسح جميع الأصناف من القائمة؟", "تأكيد المسح", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    dgItems.Rows.Clear();
+                    UpdateSummaryBadges();
+                }
+            };
+
+            pnlGridHeader.Controls.AddRange(new Control[] { lblTotalProductsCount, lblTotalLabelsCount, btnClearAll });
+
+            // ── 4. Main Items DataGridView ────────────────────────────────────
             dgItems = new DataGridView
             {
-                Location = new Point(20, 125),
-                Size = new Size(720, 240),
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
+                Dock = DockStyle.Fill,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
+                GridColor = Color.FromArgb(226, 232, 240),
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Theme.BgCard,
-                    ForeColor = Theme.TextMain,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42),
                     SelectionBackColor = Theme.Primary,
                     SelectionForeColor = Color.White,
                     Font = Theme.FontMain
                 },
-                ColumnHeadersHeight = 35,
+                ColumnHeadersHeight = 36,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.Primary,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter
                 },
                 EnableHeadersVisualStyles = false
             };
+            Theme.EnableDoubleBuffer(dgItems);
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 160 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود", ReadOnly = true, FillWeight = 90 });
-            
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود / الكود", ReadOnly = true, FillWeight = 90 });
+
             var colPrice = new DataGridViewTextBoxColumn
             {
                 Name = "Price",
                 HeaderText = "سعر البيع المطبوع",
-                FillWeight = 80
+                FillWeight = 85
             };
-            colPrice.DefaultCellStyle.BackColor = Theme.BgInput;
-            colPrice.DefaultCellStyle.ForeColor = Theme.TextMain;
+            colPrice.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+            colPrice.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            colPrice.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgItems.Columns.Add(colPrice);
 
@@ -165,11 +261,11 @@ namespace ChickenDist.Forms
             {
                 Name = "PrintQty",
                 HeaderText = "عدد الملصقات",
-                FillWeight = 80
+                FillWeight = 85
             };
-            colPrintQty.DefaultCellStyle.BackColor = Theme.BgInput;
-            colPrintQty.DefaultCellStyle.ForeColor = Theme.Accent;
-            colPrintQty.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            colPrintQty.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+            colPrintQty.DefaultCellStyle.ForeColor = Color.FromArgb(180, 83, 9);
+            colPrintQty.DefaultCellStyle.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             colPrintQty.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgItems.Columns.Add(colPrintQty);
 
@@ -181,26 +277,45 @@ namespace ChickenDist.Forms
                 HeaderText = "حذف",
                 Text = "❌",
                 UseColumnTextForButtonValue = true,
-                FillWeight = 40
+                FillWeight = 35
             };
             dgItems.Columns.Add(colDelete);
 
-            this.Controls.Add(dgItems);
+            dgItems.CellClick += DgItems_CellClick;
+            dgItems.CellValueChanged += (s, e) => UpdateSummaryBadges();
 
-            // Printer settings panel (y = 385)
-            int y = 385;
+            var pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 4, 12, 4) };
+            pnlGridContainer.Controls.Add(dgItems);
 
-            var lblPrinter = new Label { Text = "اختر طابعة الملصقات:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
-            this.Controls.Add(lblPrinter);
+            // ── 5. Bottom Settings & Action Panel ─────────────────────────────
+            var pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 150,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(12, 8, 12, 8)
+            };
 
+            var pnlSettings = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 85,
+                BackColor = Color.FromArgb(241, 245, 249),
+                Padding = new Padding(10, 8, 10, 8)
+            };
+
+            Color labelDark = Color.FromArgb(30, 41, 59);
+
+            var lblPrinter = new Label { Text = "🖨️ طابعة الملصقات:", Location = new Point(840, 12), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
             cboPrinters = new ComboBox
             {
-                Location = new Point(160, y),
-                Width = 240,
+                Location = new Point(570, 8),
+                Width = 265,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = labelDark,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f)
             };
             try
             {
@@ -214,30 +329,37 @@ namespace ChickenDist.Forms
                     cboPrinters.SelectedIndex = 0;
             }
             catch { }
-            this.Controls.Add(cboPrinters);
 
             chkPrintPrice = new CheckBox
             {
                 Text = "طباعة السعر على الملصق",
-                Location = new Point(430, y + 2),
+                Location = new Point(340, 10),
                 AutoSize = true,
-                ForeColor = Theme.TextMain,
+                ForeColor = labelDark,
+                Font = Theme.FontBold,
                 Checked = true
             };
-            this.Controls.Add(chkPrintPrice);
-            y += 35;
 
-            var lblTemplate = new Label { Text = "شكل ملصق الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
-            this.Controls.Add(lblTemplate);
+            chkPrintCompanyName = new CheckBox
+            {
+                Text = "طباعة اسم المؤسسة",
+                Location = new Point(140, 10),
+                AutoSize = true,
+                ForeColor = labelDark,
+                Font = Theme.FontBold,
+                Checked = true
+            };
 
+            var lblTemplate = new Label { Text = "📐 شكل الملصق:", Location = new Point(840, 48), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
             cboBarcodeTemplate = new ComboBox
             {
-                Location = new Point(160, y),
-                Width = 240,
+                Location = new Point(570, 44),
+                Width = 265,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = labelDark,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f)
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
@@ -251,30 +373,17 @@ namespace ChickenDist.Forms
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
-            this.Controls.Add(cboBarcodeTemplate);
 
-            chkPrintCompanyName = new CheckBox
-            {
-                Text = "طباعة اسم المؤسسة",
-                Location = new Point(430, y + 2),
-                AutoSize = true,
-                ForeColor = Theme.TextMain,
-                Checked = true
-            };
-            this.Controls.Add(chkPrintCompanyName);
-            y += 35;
-
-            var lblEncoding = new Label { Text = "نوع تشفير الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain };
-            this.Controls.Add(lblEncoding);
-
+            var lblEncoding = new Label { Text = "🔒 التشفير:", Location = new Point(445, 48), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
             cboBarcodeEncoding = new ComboBox
             {
-                Location = new Point(160, y),
-                Width = 240,
+                Location = new Point(140, 44),
+                Width = 300,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = labelDark,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f)
             };
             cboBarcodeEncoding.Items.AddRange(new object[]
             {
@@ -282,28 +391,57 @@ namespace ChickenDist.Forms
                 "Code 39 (أحادي عريض)"
             });
             cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
-            this.Controls.Add(cboBarcodeEncoding);
-            y += 45;
 
-            // Action Buttons
-            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة", 20, y, 160, 38, Theme.Success);
+            pnlSettings.Controls.AddRange(new Control[] {
+                lblPrinter, cboPrinters, chkPrintPrice, chkPrintCompanyName,
+                lblTemplate, cboBarcodeTemplate, lblEncoding, cboBarcodeEncoding
+            });
+
+            // Action Buttons Bar
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Color.Transparent };
+            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة (Ctrl+P)", 370, 8, 220, 40, Theme.Success);
+            btnPrint.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnPrint.Click += (s, e) => StartPrintJob(false);
-            this.Controls.Add(btnPrint);
 
-            btnPreview = Theme.MakeButton("معاينة 👁️", 195, y, 110, 38, Theme.Accent);
+            btnPreview = Theme.MakeButton("معاينة 👁️", 230, 8, 125, 40, Theme.Accent);
+            btnPreview.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPreview.Click += (s, e) => StartPrintJob(true);
-            this.Controls.Add(btnPreview);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 320, y, 110, 38, Color.FromArgb(70, 80, 95));
+            btnCancel = Theme.MakeButton("إلغاء ↩", 90, 8, 125, 40, Color.FromArgb(70, 80, 95));
+            btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnCancel.Click += (s, e) => CloseOrNavigateBack();
-            this.Controls.Add(btnCancel);
 
-            // Event Handlers
-            btnSearchProduct.Click += BtnSearchProduct_Click;
-            btnAdd.Click += BtnAdd_Click;
-            dgItems.CellClick += DgItems_CellClick;
+            pnlActions.Controls.AddRange(new Control[] { btnPrint, btnPreview, btnCancel });
+
+            pnlBottom.Controls.Add(pnlActions);
+            pnlBottom.Controls.Add(pnlSettings);
+
+            // Add Control Tree
+            this.Controls.Add(pnlGridContainer);  // Fill
+            this.Controls.Add(pnlGridHeader);     // Top (Under Selection)
+            this.Controls.Add(pnlSelection);      // Top
+            this.Controls.Add(pnlBottom);         // Bottom
 
             Theme.ApplyFormRTL(this);
+        }
+
+        private void FrmBulkPrintBarcodes_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F3)
+            {
+                BtnSearchProduct_Click(null, null);
+                e.Handled = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.P)
+            {
+                StartPrintJob(false);
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                CloseOrNavigateBack();
+                e.Handled = true;
+            }
         }
 
         private void LoadProducts()
@@ -327,7 +465,6 @@ namespace ChickenDist.Forms
                 }
                 cboProduct.DisplayMember = "Text";
                 cboProduct.SelectedIndex = 0;
-                SetupSearchableCombo(cboProduct);
             }
             catch (Exception ex)
             {
@@ -335,60 +472,80 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void SetupSearchableCombo(ComboBox cbo)
+        private void CboProduct_SelectedIndexChanged(object sender, EventArgs e)
         {
-            cbo.AutoCompleteMode = AutoCompleteMode.None;
-            cbo.TextUpdate += delegate
+            if (_isSelectingCombo) return;
+            if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
             {
-                if (cbo.Tag == null)
-                {
-                    List<ComboItem> list = new List<ComboItem>();
-                    foreach (ComboItem item in cbo.Items)
-                    {
-                        list.Add(item);
-                    }
-                    cbo.Tag = list;
-                }
-                List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
-                string text = cbo.Text;
-                cbo.BeginUpdate();
-                cbo.Items.Clear();
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    ComboBox.ObjectCollection items = cbo.Items;
-                    object[] items2 = list2.ToArray();
-                    items.AddRange(items2);
-                }
-                else
-                {
-                    foreach (ComboItem item2 in list2)
-                    {
-                        if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            cbo.Items.Add(item2);
-                        }
-                    }
-                }
-                cbo.EndUpdate();
-                cbo.SelectionStart = text.Length;
-                cbo.SelectionLength = 0;
-                cbo.DroppedDown = true;
-            };
+                _isSelectingCombo = true;
+                int qty = (int)nudQty.Value;
+                string codeToUse = string.IsNullOrWhiteSpace(ci.InternationalCode) ? ci.ProductCode : ci.InternationalCode;
+                AddProductToGrid(ci.ID, ci.Text, codeToUse, ci.Price, qty, ci.ShelfLocation);
+
+                cboProduct.SelectedIndex = 0;
+                nudQty.Value = 1;
+                _isSelectingCombo = false;
+            }
         }
 
         private void BtnSearchProduct_Click(object sender, EventArgs e)
         {
-            using (var dlgSearch = new FrmProductSearch())
+            // Continuous search loop: opens search window repeatedly until user cancels or closes
+            while (true)
             {
-                if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
+                using (var dlgSearch = new FrmProductSearch())
                 {
-                    for (int si = 0; si < cboProduct.Items.Count; si++)
+                    if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                     {
-                        if (cboProduct.Items[si] is ComboItem ci && ci.ID == dlgSearch.SelectedProductID)
+                        int qty = (int)Math.Max(1, dlgSearch.SelectedQuantity);
+                        decimal priceToUse = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : dlgSearch.SelectedPrice;
+
+                        string prodName = "";
+                        string codeToUse = "";
+                        string shelfLocation = "";
+
+                        // 1. Try finding in loaded cboProduct
+                        foreach (var item in cboProduct.Items)
                         {
-                            cboProduct.SelectedIndex = si;
-                            break;
+                            if (item is ComboItem ci && ci.ID == dlgSearch.SelectedProductID)
+                            {
+                                prodName = ci.Text;
+                                codeToUse = string.IsNullOrWhiteSpace(ci.InternationalCode) ? ci.ProductCode : ci.InternationalCode;
+                                shelfLocation = ci.ShelfLocation;
+                                if (priceToUse <= 0) priceToUse = ci.Price;
+                                break;
+                            }
                         }
+
+                        // 2. Fetch directly from DB if not in cboProduct
+                        if (string.IsNullOrEmpty(prodName))
+                        {
+                            try
+                            {
+                                var dtProd = DbHelper.Query("SELECT ProductName, ProductCode, InternationalCode, SalePrice, ShelfLocation FROM Products WHERE ProductID=@id", DbHelper.P("@id", dlgSearch.SelectedProductID));
+                                if (dtProd.Rows.Count > 0)
+                                {
+                                    var r = dtProd.Rows[0];
+                                    prodName = r["ProductName"].ToString();
+                                    string pCode = r["ProductCode"]?.ToString() ?? "";
+                                    string intCode = r["InternationalCode"]?.ToString() ?? "";
+                                    codeToUse = string.IsNullOrWhiteSpace(intCode) ? pCode : intCode;
+                                    shelfLocation = r["ShelfLocation"]?.ToString() ?? "";
+                                    if (priceToUse <= 0 && r["SalePrice"] != DBNull.Value) priceToUse = Convert.ToDecimal(r["SalePrice"]);
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (!string.IsNullOrEmpty(prodName))
+                        {
+                            AddProductToGrid(dlgSearch.SelectedProductID, prodName, codeToUse, priceToUse, qty, shelfLocation);
+                        }
+                    }
+                    else
+                    {
+                        // User closed or cancelled search window -> break loop
+                        break;
                     }
                 }
             }
@@ -402,26 +559,26 @@ namespace ChickenDist.Forms
                 string codeToUse = string.IsNullOrWhiteSpace(ci.InternationalCode) ? ci.ProductCode : ci.InternationalCode;
                 AddProductToGrid(ci.ID, ci.Text, codeToUse, ci.Price, qty, ci.ShelfLocation);
 
-                // Reset selection
                 cboProduct.SelectedIndex = 0;
                 nudQty.Value = 1;
                 cboProduct.Focus();
             }
             else
             {
-                MessageBox.Show("يرجى اختيار صنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BtnSearchProduct_Click(null, null);
             }
         }
 
         private void AddProductToGrid(int productID, string name, string code, decimal price, int qty, string shelfLocation)
         {
-            // Check if product already exists in grid
             foreach (DataGridViewRow row in dgItems.Rows)
             {
                 if (Convert.ToInt32(row.Cells["ProductID"].Value) == productID)
                 {
                     int curQty = Convert.ToInt32(row.Cells["PrintQty"].Value);
                     row.Cells["PrintQty"].Value = curQty + qty;
+                    if (price > 0) row.Cells["Price"].Value = price.ToString("F2");
+                    UpdateSummaryBadges();
                     return;
                 }
             }
@@ -434,6 +591,23 @@ namespace ChickenDist.Forms
                 qty,
                 shelfLocation
             );
+            UpdateSummaryBadges();
+        }
+
+        private void UpdateSummaryBadges()
+        {
+            if (dgItems == null || lblTotalProductsCount == null || lblTotalLabelsCount == null) return;
+            int totalProducts = dgItems.Rows.Count;
+            int totalLabels = 0;
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                if (row.Cells["PrintQty"].Value != null && int.TryParse(row.Cells["PrintQty"].Value.ToString(), out int q))
+                {
+                    totalLabels += q;
+                }
+            }
+            lblTotalProductsCount.Text = $"📦 الأصناف المضافة: {totalProducts}";
+            lblTotalLabelsCount.Text = $"🏷️ إجمالي الملصقات: {totalLabels} ملصق";
         }
 
         private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -441,6 +615,7 @@ namespace ChickenDist.Forms
             if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "Delete")
             {
                 dgItems.Rows.RemoveAt(e.RowIndex);
+                UpdateSummaryBadges();
             }
         }
 
@@ -502,8 +677,8 @@ namespace ChickenDist.Forms
                     var prev = new PrintPreviewDialog
                     {
                         Document = pd,
-                        Width = 450,
-                        Height = 400,
+                        Width = 550,
+                        Height = 500,
                         Text = "معاينة ملصقات الباركود"
                     };
                     prev.ShowDialog(this);
@@ -559,8 +734,6 @@ namespace ChickenDist.Forms
                 isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
             }
 
-
-
             var fCompany  = new Font("Arial", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
             var fName     = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
             var fPrice    = new Font("Arial", isSmallSticker ? 7.5f : 8.5f, FontStyle.Bold);
@@ -575,7 +748,6 @@ namespace ChickenDist.Forms
             var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
             var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
 
-            // Print labels on the current page row
             for (int itemIndex = 0; itemIndex < labelsPerRow; itemIndex++)
             {
                 if (_currentItemIndex >= _printList.Count)
@@ -589,7 +761,6 @@ namespace ChickenDist.Forms
                 float startX = leftMargin + (currentColumn * labelWidth);
                 float startY = topMargin + (currentRow * labelHeight);
 
-                // Use local variables bounded to the label
                 float x = startX;
                 float y = startY;
                 float w = labelWidth - (leftMargin * 2);
@@ -701,180 +872,149 @@ namespace ChickenDist.Forms
             e.HasMorePages = (_currentItemIndex < _printList.Count);
         }
 
-        private static readonly string[] Code128Patterns = new string[]
+        private void DrawCode128(Graphics g, string text, float x, float y, float width, float height)
         {
-            "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
-            "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
-            "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211",
-            "212123", "212321", "232121", "111323", "131123", "131321", "112313", "132113", "132311", "211313",
-            "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331",
-            "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111",
-            "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214",
-            "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111",
-            "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141",
-            "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141",
-            "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
-        };
+            if (string.IsNullOrEmpty(text)) return;
+            List<int> pattern = EncodeCode128B(text);
+            if (pattern == null || pattern.Count == 0) return;
 
-        private static void DrawCode128(Graphics g, string code, float x, float y, float width, float height)
-        {
-            try
+            int totalModules = 0;
+            foreach (int m in pattern) totalModules += m;
+
+            float moduleWidth = width / totalModules;
+            if (moduleWidth < 0.5f) moduleWidth = 0.5f;
+
+            float curX = x + (width - (totalModules * moduleWidth)) / 2;
+            bool bar = true;
+
+            foreach (int m in pattern)
             {
-                code = code.Trim();
-                if (string.IsNullOrEmpty(code)) return;
-
-                // Set GDI+ options for crisp, aliased rendering (perfect for barcodes)
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
-
-                int sum = 104;
-                var symbolIndices = new List<int>();
-                symbolIndices.Add(104);
-
-                for (int i = 0; i < code.Length; i++)
+                float w = m * moduleWidth;
+                if (bar)
                 {
-                    int val = code[i] - 32;
-                    if (val < 0 || val > 102) val = 0;
-                    symbolIndices.Add(val);
-                    sum += val * (i + 1);
+                    g.FillRectangle(Brushes.Black, curX, y, w, height);
                 }
-
-                int checksum = sum % 103;
-                symbolIndices.Add(checksum);
-                symbolIndices.Add(106);
-
-                int totalModules = 0;
-                foreach (int index in symbolIndices)
-                {
-                    string pattern = Code128Patterns[index];
-                    foreach (char c in pattern)
-                    {
-                        totalModules += (c - '0');
-                    }
-                }
-
-                float moduleWidth = width / totalModules;
-                
-                // Cap module width to prevent extremely fat bleeding bars for short codes
-                float maxModuleWidth = (width < 140f) ? 1.5f : 2.0f; 
-                if (moduleWidth > maxModuleWidth)
-                {
-                    moduleWidth = maxModuleWidth;
-                }
-                if (moduleWidth < 1.0f) moduleWidth = 1.0f;
-
-                // Center the barcode
-                float actualBarcodeWidth = totalModules * moduleWidth;
-                float curX = x + (width - actualBarcodeWidth) / 2;
-
-                using (var brush = new SolidBrush(Color.Black))
-                {
-                    foreach (int index in symbolIndices)
-                    {
-                        string pattern = Code128Patterns[index];
-                        for (int i = 0; i < pattern.Length; i++)
-                        {
-                            bool isBar = (i % 2 == 0);
-                            float elementWidth = (pattern[i] - '0') * moduleWidth;
-                            float nextX = curX + elementWidth;
-
-                            if (isBar)
-                            {
-                                int rectX = (int)Math.Round(curX);
-                                int rectW = (int)Math.Round(nextX) - rectX;
-                                g.FillRectangle(brush, rectX, y, rectW, height);
-                            }
-                            curX = nextX;
-                        }
-                    }
-                }
+                curX += w;
+                bar = !bar;
             }
-            catch { }
         }
 
-        private static void DrawCode39(Graphics g, string code, float x, float y, float width, float height)
+        private List<int> EncodeCode128B(string text)
         {
-            try
+            var pattern = new List<int>();
+            int[][] codeTable = GetCode128Table();
+
+            int checksum = 104;
+            pattern.AddRange(codeTable[104]);
+
+            for (int i = 0; i < text.Length; i++)
             {
-                string textToEncode = "*" + code.ToUpper().Trim() + "*";
+                char c = text[i];
+                int val = c - 32;
+                if (val < 0 || val > 94) val = 0;
+                checksum += val * (i + 1);
+                pattern.AddRange(codeTable[val]);
+            }
 
-                // Set GDI+ options for crisp, aliased rendering (perfect for barcodes)
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
+            checksum %= 103;
+            pattern.AddRange(codeTable[checksum]);
 
-                var map = new Dictionary<char, string>
+            pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 });
+            return pattern;
+        }
+
+        private int[][] GetCode128Table()
+        {
+            return new int[][]
+            {
+                new int[] {2,1,2,2,2,2}, new int[] {2,2,2,1,2,2}, new int[] {2,2,2,2,2,1}, new int[] {1,2,1,2,2,3}, new int[] {1,2,1,3,2,2},
+                new int[] {1,3,1,2,2,2}, new int[] {1,2,2,2,1,3}, new int[] {1,2,2,3,1,2}, new int[] {1,3,2,2,1,2}, new int[] {2,2,1,2,1,3},
+                new int[] {2,2,1,3,1,2}, new int[] {2,3,1,2,1,2}, new int[] {1,1,2,2,3,2}, new int[] {1,2,2,1,3,2}, new int[] {1,2,2,2,3,1},
+                new int[] {1,1,3,2,2,2}, new int[] {1,2,3,1,2,2}, new int[] {1,2,3,2,2,1}, new int[] {2,2,3,2,1,1}, new int[] {2,2,1,1,3,2},
+                new int[] {2,2,1,2,3,1}, new int[] {2,1,3,2,1,2}, new int[] {2,2,3,1,1,2}, new int[] {3,1,2,1,3,1}, new int[] {3,1,1,2,2,2},
+                new int[] {3,2,1,1,2,2}, new int[] {3,2,1,2,2,1}, new int[] {3,1,2,2,1,2}, new int[] {3,2,2,1,1,2}, new int[] {3,2,2,2,1,1},
+                new int[] {2,1,2,1,2,3}, new int[] {2,1,2,3,2,1}, new int[] {2,3,2,1,2,1}, new int[] {1,1,1,3,2,3}, new int[] {1,3,1,1,2,3},
+                new int[] {1,3,1,3,2,1}, new int[] {1,1,2,3,1,3}, new int[] {1,3,2,1,1,3}, new int[] {1,3,2,3,1,1}, new int[] {2,1,1,3,1,3},
+                new int[] {2,3,1,1,1,3}, new int[] {2,3,1,3,1,1}, new int[] {1,1,2,1,3,3}, new int[] {1,1,2,3,3,1}, new int[] {1,3,2,1,3,1},
+                new int[] {1,1,3,1,2,3}, new int[] {1,1,3,3,2,1}, new int[] {1,3,3,1,2,1}, new int[] {3,1,3,1,2,1}, new int[] {2,1,1,3,3,1},
+                new int[] {2,3,1,1,3,1}, new int[] {2,1,3,1,1,3}, new int[] {2,1,3,3,1,1}, new int[] {2,1,3,1,3,1}, new int[] {3,1,1,1,2,3},
+                new int[] {3,1,1,3,2,1}, new int[] {3,3,1,1,2,1}, new int[] {3,1,2,1,1,3}, new int[] {3,1,2,3,1,1}, new int[] {3,3,2,1,1,1},
+                new int[] {3,1,4,1,1,1}, new int[] {2,2,1,4,1,1}, new int[] {4,3,1,1,1,1}, new int[] {1,1,1,2,2,4}, new int[] {1,1,1,4,2,2},
+                new int[] {1,2,1,1,2,4}, new int[] {1,2,1,4,2,1}, new int[] {1,4,1,1,2,2}, new int[] {1,4,1,2,2,1}, new int[] {1,1,2,2,1,4},
+                new int[] {1,1,2,4,1,2}, new int[] {1,2,2,1,1,4}, new int[] {1,2,2,4,1,1}, new int[] {1,4,2,1,1,2}, new int[] {1,4,2,2,1,1},
+                new int[] {2,4,1,2,1,1}, new int[] {2,2,1,1,1,4}, new int[] {4,1,1,1,1,2}, new int[] {1,3,4,1,1,1}, new int[] {1,1,1,2,4,2},
+                new int[] {1,2,1,1,4,2}, new int[] {1,2,1,2,4,1}, new int[] {1,1,4,2,1,2}, new int[] {1,2,4,1,1,2}, new int[] {1,2,4,2,1,1},
+                new int[] {4,1,1,2,1,2}, new int[] {4,2,1,1,1,2}, new int[] {4,2,1,2,1,1}, new int[] {2,1,2,1,4,1}, new int[] {2,1,4,1,2,1},
+                new int[] {4,1,2,1,2,1}, new int[] {1,1,1,1,4,3}, new int[] {1,1,1,3,4,1}, new int[] {1,3,1,1,4,1}, new int[] {1,1,4,1,1,3},
+                new int[] {1,1,4,3,1,1}, new int[] {4,1,1,1,3,1}, new int[] {2,1,1,4,1,2}, new int[] {2,1,1,2,1,4}, new int[] {2,1,1,2,3,2},
+                new int[] {2,3,3,1,1,1,2}, new int[] {2,1,1,2,2,2}, new int[] {2,1,2,2,1,2}, new int[] {2,2,1,1,2,2}, new int[] {2,1,2,2,2,1}
+            };
+        }
+
+        private void DrawCode39(Graphics g, string text, float x, float y, float width, float height)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            string code = "*" + text.ToUpper() + "*";
+            var patterns = GetCode39Patterns();
+
+            int totalWidthModules = 0;
+            foreach (char c in code)
+            {
+                if (patterns.ContainsKey(c))
                 {
-                    {'0', "000110100"}, {'1', "100010001"}, {'2', "001010001"}, {'3', "101000001"},
-                    {'4', "000010101"}, {'5', "100000101"}, {'6', "001000101"}, {'7', "000000111"},
-                    {'8', "100000110"}, {'9', "001000110"}, {'A', "100010010"}, {'B', "001010010"},
-                    {'C', "101010000"}, {'D', "000010011"}, {'E', "100000011"}, {'F', "001000011"},
-                    {'G', "000000110"}, {'H', "100000110"}, {'I', "001000110"}, {'J', "000000110"},
-                    {'K', "100000001"}, {'L', "001000001"}, {'M', "101000000"}, {'N', "000010001"},
-                    {'O', "100010000"}, {'P', "001010000"}, {'Q', "000000011"}, {'R', "100000011"},
-                    {'S', "001000011"}, {'T', "000010010"}, {'U', "110000001"}, {'V', "011000001"},
-                    {'W', "111000000"}, {'X', "010010001"}, {'Y', "110010000"}, {'Z', "011010000"},
-                    {'-', "010000101"}, {'.', "110000100"}, {' ', "011000100"}, {'*', "010010100"}
-                };
-
-                float totalUnits = textToEncode.Length * 16;
-                float moduleWidth = width / totalUnits;
-                
-                // Cap module width to prevent extremely fat bleeding bars for short codes
-                float maxModuleWidth = (width < 140f) ? 1.5f : 2.0f; 
-                if (moduleWidth > maxModuleWidth)
-                {
-                    moduleWidth = maxModuleWidth;
-                }
-                if (moduleWidth < 1.0f) moduleWidth = 1.0f;
-
-                // Center the barcode
-                float actualBarcodeWidth = totalUnits * moduleWidth;
-                float curX = x + (width - actualBarcodeWidth) / 2;
-
-                using (var brush = new SolidBrush(Color.Black))
-                {
-                    foreach (char c in textToEncode)
-                    {
-                        string pattern;
-                        if (!map.TryGetValue(c, out pattern))
-                            pattern = map['*'];
-
-                        for (int i = 0; i < 9; i++)
-                        {
-                            bool isBar = (i % 2 == 0);
-                            bool isWide = (pattern[i] == '1');
-                            float elementWidth = isWide ? (moduleWidth * 3) : moduleWidth;
-                            float nextX = curX + elementWidth;
-
-                            if (isBar)
-                            {
-                                int rectX = (int)Math.Round(curX);
-                                int rectW = (int)Math.Round(nextX) - rectX;
-                                g.FillRectangle(brush, rectX, y, rectW, height);
-                            }
-
-                            curX = nextX;
-                        }
-
-                        curX += moduleWidth;
-                    }
+                    foreach (char bit in patterns[c])
+                        totalWidthModules += (bit == 'W' || bit == 'w') ? 3 : 1;
+                    totalWidthModules += 1;
                 }
             }
-            catch { }
+
+            float moduleWidth = width / totalWidthModules;
+            if (moduleWidth < 0.5f) moduleWidth = 0.5f;
+
+            float curX = x + (width - (totalWidthModules * moduleWidth)) / 2;
+
+            foreach (char c in code)
+            {
+                if (!patterns.ContainsKey(c)) continue;
+                string pat = patterns[c];
+                bool bar = true;
+                foreach (char bit in pat)
+                {
+                    int wMod = (bit == 'W' || bit == 'w') ? 3 : 1;
+                    float w = wMod * moduleWidth;
+                    if (bar) g.FillRectangle(Brushes.Black, curX, y, w, height);
+                    curX += w;
+                    bar = !bar;
+                }
+                curX += moduleWidth;
+            }
+        }
+
+        private Dictionary<char, string> GetCode39Patterns()
+        {
+            return new Dictionary<char, string>
+            {
+                {'0', "n n w w n n n w n"}, {'1', "w n n n n w n n w"}, {'2', "n n w n n w n n w"},
+                {'3', "w n w n n n n n w"}, {'4', "n n n n w w n n w"}, {'5', "w n n n w n n n w"},
+                {'6', "n n w n w n n n w"}, {'7', "n n n n n w w n w"}, {'8', "w n n n n w w n n"},
+                {'9', "n n w n n w w n n"}, {'A', "w n n n n n n w w"}, {'B', "n n w n n n n w w"},
+                {'C', "w n w n n n n w n"}, {'D', "n n n n w n n w w"}, {'E', "w n n n w n n w n"},
+                {'F', "n n w n w n n w n"}, {'G', "n n n n n n w w w"}, {'H', "w n n n n n w w n"},
+                {'I', "n n w n n n w w n"}, {'J', "n n n n w n w w n"}, {'K', "w n n n n n n n w"},
+                {'L', "n n w n n n n n w"}, {'M', "w n w n n n n n n"}, {'N', "n n n n w n n n w"},
+                {'O', "w n n n w n n n n"}, {'P', "n n w n w n n n n"}, {'Q', "n n n n n n w n w"},
+                {'R', "w n n n n n w n n"}, {'S', "n n w n n n w n n"}, {'T', "n n n n w n w n n"},
+                {'U', "w w n n n n n n w"}, {'V', "n w w n n n n n w"}, {'W', "w w w n n n n n n"},
+                {'X', "n w n n w n n n w"}, {'Y', "w w n n w n n n n"}, {'Z', "n w w n w n n n n"},
+                {'-', "n w n n n n w n w"}, {'.', "w w n n n n w n n"}, {' ', "n w w n n n w n n"},
+                {'*', "n w n n w n w n n"}, {'$', "n w n w n w n n n"}, {'/', "n w n w n n n w n"},
+                {'+', "n w n n n w n w n"}, {'%', "n n n w n w n w n"}
+            };
         }
 
         private void CloseOrNavigateBack()
         {
-            if (this.ParentForm is FrmMain mainForm)
-            {
-                mainForm.NavigateTo(new FrmDashboard());
-            }
-            else
-            {
-                this.Close();
-            }
+            this.Close();
         }
     }
 }
