@@ -512,28 +512,8 @@ namespace ChickenDist.Forms
                 }
                 if (!hasAnyAccess) continue;
 
-                // Build context menu dropdown
-                var menu = new ContextMenuStrip();
-                menu.BackColor  = Theme.BgCard;
-                menu.ForeColor  = Theme.TextMain;
-                menu.Font       = new Font("Segoe UI", 9.5f);
-                menu.ShowImageMargin = false;
-                menu.Renderer   = new ToolStripProfessionalRenderer(new MenuColorTable());
-
-                foreach (var item in group.items)
-                {
-                    if (!UserCanAccess(item.screen)) continue;
-                    
-                    var menuItem = new ToolStripMenuItem(item.text)
-                    {
-                        ForeColor = Theme.TextMain,
-                        BackColor = Theme.BgCard,
-                        Padding   = new Padding(8, 6, 8, 6)
-                    };
-                    var act = item.action;
-                    menuItem.Click += (s, e) => act();
-                    menu.Items.Add(menuItem);
-                }
+                // Build context menu dropdown with group-specific color theme
+                var menu = CreateCategoryMenu(group.icon, group.label, group.color, group.items);
 
                 // Main navigation button
                 var btn = new Button
@@ -703,28 +683,8 @@ namespace ChickenDist.Forms
                 }
                 if (!hasAnyAccess) continue;
 
-                // Build context menu dropdown
-                var menu = new ContextMenuStrip();
-                menu.BackColor  = Theme.BgCard;
-                menu.ForeColor  = Theme.TextMain;
-                menu.Font       = new Font("Segoe UI", 9.5f);
-                menu.ShowImageMargin = false;
-                menu.Renderer   = new ToolStripProfessionalRenderer(new MenuColorTable());
-
-                foreach (var item in group.items)
-                {
-                    if (!UserCanAccess(item.screen)) continue;
-                    
-                    var menuItem = new ToolStripMenuItem(item.text)
-                    {
-                        ForeColor = Theme.TextMain,
-                        BackColor = Theme.BgCard,
-                        Padding   = new Padding(8, 6, 8, 6)
-                    };
-                    var act = item.action;
-                    menuItem.Click += (s, e) => act();
-                    menu.Items.Add(menuItem);
-                }
+                // Build context menu dropdown with group-specific color theme
+                var menu = CreateCategoryMenu(group.icon, group.label, group.color, group.items);
 
                 // Add small top navigation button
                 var btn = new Button
@@ -759,15 +719,118 @@ namespace ChickenDist.Forms
             pnlHeaderRight.Controls.Add(_btnOpenPages);
         }
 
-        private class MenuColorTable : ProfessionalColorTable
+        private ContextMenuStrip CreateCategoryMenu(string icon, string label, Color groupColor, (string text, string screen, Action action)[] items)
         {
-            public override Color MenuItemSelected         => Theme.BgLight;
-            public override Color MenuItemBorder           => Theme.BorderColor;
-            public override Color MenuBorder               => Theme.BorderColor;
-            public override Color ToolStripDropDownBackground => Theme.BgCard;
-            public override Color ImageMarginGradientBegin => Theme.BgCard;
-            public override Color ImageMarginGradientMiddle => Theme.BgCard;
-            public override Color ImageMarginGradientEnd   => Theme.BgCard;
+            var menu = new ContextMenuStrip();
+            menu.BackColor = Color.FromArgb(24, 28, 38);
+            menu.ForeColor = Color.White;
+            menu.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            menu.ShowImageMargin = false;
+            menu.RightToLeft = RightToLeft.Yes;
+            menu.Renderer = new CategoryToolStripRenderer(groupColor);
+
+            // Colored Category Header Banner
+            var headerItem = new ToolStripMenuItem($"{icon}  قائمة {label}")
+            {
+                Enabled = false,
+                BackColor = groupColor,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Padding = new Padding(10, 8, 10, 8)
+            };
+            menu.Items.Add(headerItem);
+
+            foreach (var item in items)
+            {
+                if (!UserCanAccess(item.screen)) continue;
+
+                var menuItem = new ToolStripMenuItem(item.text)
+                {
+                    ForeColor = Color.FromArgb(241, 245, 249),
+                    BackColor = Color.FromArgb(28, 33, 44),
+                    Font = new Font("Segoe UI", 9.8f, FontStyle.Bold),
+                    Padding = new Padding(12, 8, 12, 8)
+                };
+                var act = item.action;
+                menuItem.Click += (s, e) => act();
+                menu.Items.Add(menuItem);
+            }
+
+            return menu;
+        }
+
+        private class CustomCategoryMenuColorTable : ProfessionalColorTable
+        {
+            private readonly Color _categoryColor;
+
+            public CustomCategoryMenuColorTable(Color categoryColor)
+            {
+                _categoryColor = categoryColor;
+            }
+
+            public override Color MenuItemSelected => _categoryColor;
+            public override Color MenuItemSelectedGradientBegin => _categoryColor;
+            public override Color MenuItemSelectedGradientEnd => _categoryColor;
+            public override Color MenuItemPressedGradientBegin => ControlPaint.Dark(_categoryColor, 0.15f);
+            public override Color MenuItemPressedGradientEnd => ControlPaint.Dark(_categoryColor, 0.15f);
+            public override Color MenuItemBorder => _categoryColor;
+            public override Color MenuBorder => _categoryColor;
+            public override Color ToolStripDropDownBackground => Color.FromArgb(28, 33, 44);
+            public override Color ImageMarginGradientBegin => Color.FromArgb(28, 33, 44);
+            public override Color ImageMarginGradientMiddle => Color.FromArgb(28, 33, 44);
+            public override Color ImageMarginGradientEnd => Color.FromArgb(28, 33, 44);
+        }
+
+        private class CategoryToolStripRenderer : ToolStripProfessionalRenderer
+        {
+            private readonly Color _categoryColor;
+
+            public CategoryToolStripRenderer(Color categoryColor) : base(new CustomCategoryMenuColorTable(categoryColor))
+            {
+                _categoryColor = categoryColor;
+            }
+
+            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+            {
+                if (!e.Item.Enabled)
+                {
+                    Rectangle headerRect = new Rectangle(Point.Empty, e.Item.Size);
+                    using (var brush = new SolidBrush(_categoryColor))
+                    {
+                        e.Graphics.FillRectangle(brush, headerRect);
+                    }
+                    e.Item.ForeColor = Color.White;
+                    return;
+                }
+
+                if (e.Item.Selected)
+                {
+                    Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
+                    using (var brush = new SolidBrush(_categoryColor))
+                    {
+                        e.Graphics.FillRectangle(brush, rect);
+                    }
+                    e.Item.ForeColor = Color.White;
+                }
+                else
+                {
+                    Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
+                    using (var brush = new SolidBrush(Color.FromArgb(28, 33, 44)))
+                    {
+                        e.Graphics.FillRectangle(brush, rect);
+                    }
+                    e.Item.ForeColor = Color.FromArgb(241, 245, 249);
+                }
+            }
+
+            protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+            {
+                Rectangle rect = new Rectangle(0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
+                using (var pen = new Pen(_categoryColor, 2))
+                {
+                    e.Graphics.DrawRectangle(pen, rect);
+                }
+            }
         }
 
         // ─── Dropdown list of Open Screens (Max 6 + More...) ───────────────
