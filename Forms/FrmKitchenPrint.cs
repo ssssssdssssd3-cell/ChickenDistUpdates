@@ -56,8 +56,9 @@ namespace ChickenDist.Forms
             try
             {
                 var pd = new PrintDocument();
-                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
-                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                // 8 سم = 315 وحدة (1/100 إنش) — تصحيح عرض الورق
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 315, 1200);
+                pd.DefaultPageSettings.Margins = new Margins(5, 5, 10, 10);
                 
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
 
@@ -79,50 +80,50 @@ namespace ChickenDist.Forms
         private void Pd_PrintPage(object sender, PrintPageEventArgs e)
         {
             Graphics g = e.Graphics;
-            float y = 10;
-            float margin = 10;
-            float usableWidth = 280;
+            float y = 8;
+            float margin = 5;
+            float usableWidth = 305; // 315 - 5 - 5
 
-            Font fTitle = new Font("Segoe UI", 16f, FontStyle.Bold);
-            Font fHeader = new Font("Segoe UI", 12f, FontStyle.Bold);
-            Font fBody = new Font("Segoe UI", 10f);
-            Font fBodyBold = new Font("Segoe UI", 10f, FontStyle.Bold);
-            Font fSmall = new Font("Segoe UI", 9f);
-            Font fSmallItalic = new Font("Segoe UI", 9f, FontStyle.Italic);
+            Font fTitle = new Font("Segoe UI", 15f, FontStyle.Bold);
+            Font fHeader = new Font("Segoe UI", 11f, FontStyle.Bold);
+            Font fBody = new Font("Segoe UI", 9.5f);
+            Font fBodyBold = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            Font fSmall = new Font("Segoe UI", 8.5f);
+            Font fSmallItalic = new Font("Segoe UI", 8.5f, FontStyle.Italic);
 
             StringFormat formatCenter = new StringFormat { Alignment = StringAlignment.Center };
             StringFormat formatRight = new StringFormat { Alignment = StringAlignment.Far };
             StringFormat formatLeft = new StringFormat { Alignment = StringAlignment.Near };
 
-            g.DrawString("⚡ بون تحضير المطبخ ⚡", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 25), formatCenter);
-            y += 28;
+            g.DrawString("⚡ بون تحضير المطبخ ⚡", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 24), formatCenter);
+            y += 26;
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
-            y += 8;
+            y += 7;
 
             string orderCode = _saleRow["SaleCode"]?.ToString() ?? _saleID.ToString();
             DateTime orderDate = Convert.ToDateTime(_saleRow["SaleDate"]);
             g.DrawString($"طلب رقم: #{orderCode}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
             y += 20;
-            g.DrawString($"التاريخ: {orderDate:yyyy-MM-dd   hh:mm tt}", fSmall, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
-            y += 24;
+            g.DrawString($"التاريخ: {orderDate:dd-MM-yyyy  hh:mm tt}", fSmall, Brushes.Black, new RectangleF(margin, y, usableWidth, 18), formatRight);
+            y += 22;
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
-            y += 8;
+            y += 7;
 
             string orderType = _saleRow["OrderType"].ToString();
             string tableNum = _saleRow["TableNumber"].ToString();
             string orderTypeAr = orderType == "DineIn" ? "صالة" : orderType == "Delivery" ? "توصيل" : "تيك اواي";
 
-            g.DrawString($"نوع الطلب: {orderTypeAr}", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatRight);
+            g.DrawString($"نوع الطلبة: {orderTypeAr}", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatRight);
             y += 22;
 
             if (orderType == "DineIn" && !string.IsNullOrEmpty(tableNum))
             {
-                g.FillRectangle(Brushes.LightGray, margin, y, usableWidth, 40);
-                g.DrawRectangle(Pens.Black, margin, y, usableWidth, 40);
-                g.DrawString($"طاولة رقم [ {tableNum} ]", fTitle, Brushes.Black, new RectangleF(margin, y + 4, usableWidth, 32), formatCenter);
-                y += 48;
+                g.FillRectangle(Brushes.LightGray, margin, y, usableWidth, 38);
+                g.DrawRectangle(Pens.Black, margin, y, usableWidth, 38);
+                g.DrawString($"طاولة رقم [ {tableNum} ]", fTitle, Brushes.Black, new RectangleF(margin, y + 4, usableWidth, 30), formatCenter);
+                y += 46;
             }
             else if (orderType == "Delivery")
             {
@@ -132,14 +133,17 @@ namespace ChickenDist.Forms
             }
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
-            y += 8;
+            y += 7;
 
-            g.DrawString("الصنف", fBodyBold, Brushes.Black, new RectangleF(margin + 80, y, usableWidth - 80, 20), formatRight);
-            g.DrawString("الكمية", fBodyBold, Brushes.Black, margin, y, formatLeft);
+            // رؤوس أعمدة جدول الأصناف — عمود الكمية على اليسار وعمود الصنف على اليمين
+            float colQtyWidth = 90f;  // عرض عمود الكمية
+            float colNameWidth = usableWidth - colQtyWidth - 4;
+            g.DrawString("الصنف", fBodyBold, Brushes.Black, new RectangleF(margin + colQtyWidth + 4, y, colNameWidth, 20), formatRight);
+            g.DrawString("الكمية", fBodyBold, Brushes.Black, new RectangleF(margin, y, colQtyWidth, 20), formatLeft);
             y += 22;
 
             g.DrawLine(Pens.Black, margin, y, usableWidth + margin, y);
-            y += 6;
+            y += 5;
 
             while (_printItemIndex < _items.Rows.Count)
             {
@@ -152,11 +156,13 @@ namespace ChickenDist.Forms
                 string qtyStr = qty.ToString("G");
                 if (!string.IsNullOrEmpty(unit)) qtyStr += $" {unit}";
 
-                SizeF sizeName = g.MeasureString(name, fBody, (int)(usableWidth - 80));
-                g.DrawString(name, fBodyBold, Brushes.Black, new RectangleF(margin + 80, y, usableWidth - 80, sizeName.Height), formatRight);
-                g.DrawString(qtyStr, fBodyBold, Brushes.Black, margin, y, formatLeft);
+                SizeF sizeName = g.MeasureString(name, fBodyBold, (int)colNameWidth);
+                float rowHeight = Math.Max(sizeName.Height, 18f);
+
+                g.DrawString(name, fBodyBold, Brushes.Black, new RectangleF(margin + colQtyWidth + 4, y, colNameWidth, sizeName.Height), formatRight);
+                g.DrawString(qtyStr, fBodyBold, Brushes.Black, new RectangleF(margin, y, colQtyWidth, rowHeight), formatLeft);
                 
-                y += sizeName.Height + 2;
+                y += rowHeight + 2;
 
                 if (!string.IsNullOrEmpty(note))
                 {
@@ -164,7 +170,7 @@ namespace ChickenDist.Forms
                     y += 18;
                 }
 
-                y += 6;
+                y += 5;
                 _printItemIndex++;
 
                 if (y > e.MarginBounds.Bottom - 50)

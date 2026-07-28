@@ -2757,7 +2757,14 @@ namespace ChickenDist.Forms
 			if (product == null) return;
 
 			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
-			if (stock <= 0 && !product.IsService)
+			// التحقق من IsService مباشرة من DB لضمان دقة القيمة
+			bool isServiceDB = product.IsService;
+			if (!isServiceDB)
+			{
+				var isServiceVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", productID));
+				isServiceDB = isServiceVal != null && isServiceVal != DBNull.Value && Convert.ToBoolean(isServiceVal);
+			}
+			if (stock <= 0 && !isServiceDB)
 			{
 				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
