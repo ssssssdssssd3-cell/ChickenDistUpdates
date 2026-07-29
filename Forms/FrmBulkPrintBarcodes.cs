@@ -60,7 +60,6 @@ namespace ChickenDist.Forms
 
             // ── 1. Title Header ──────────────────────────────────────────────
             var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
-            this.Controls.Add(pnlTop);
 
             // ── 2. Top Selection Panel (Search & Add) ────────────────────────
             var pnlSelection = new Panel
@@ -416,11 +415,12 @@ namespace ChickenDist.Forms
             pnlBottom.Controls.Add(pnlActions);
             pnlBottom.Controls.Add(pnlSettings);
 
-            // Add Control Tree
+            // Add Control Tree in correct Z-Order for WinForms Top-to-Bottom Docking
             this.Controls.Add(pnlGridContainer);  // Fill
-            this.Controls.Add(pnlGridHeader);     // Top (Under Selection)
-            this.Controls.Add(pnlSelection);      // Top
             this.Controls.Add(pnlBottom);         // Bottom
+            this.Controls.Add(pnlGridHeader);     // Top (3rd from top)
+            this.Controls.Add(pnlSelection);      // Top (2nd from top)
+            this.Controls.Add(pnlTop);            // Top (1st at top)
 
             Theme.ApplyFormRTL(this);
         }
