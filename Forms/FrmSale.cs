@@ -4506,9 +4506,9 @@ namespace ChickenDist.Forms
 
 					g.DrawString(AppConfig.CompanyName, fComp, bNavy, new RectangleF(0, y, w, 28), center);
 					
-					// رسم دجاجتين كشعار
-					DrawChickenSilhouette(g, 35, y - 25, 40);
-					DrawChickenSilhouette(g, w - 75, y - 25, 40);
+					// رسم سلتين مشتريات كشعار
+					DrawShoppingCartSilhouette(g, 35, y - 25, 40);
+					DrawShoppingCartSilhouette(g, w - 75, y - 25, 40);
 					y += 40;
 
 					// مربع البيانات الفوقية
@@ -4689,8 +4689,8 @@ namespace ChickenDist.Forms
 					g.DrawRectangle(pNavyThin, 20, y, w - 40, footerH);
 					g.DrawString("شكراً لتعاملكم معنا", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
 					
-					DrawChickenSilhouette(g, 100, y + 10, 25);
-					DrawChickenSilhouette(g, w - 125, y + 10, 25);
+					DrawShoppingCartSilhouette(g, 100, y + 10, 25);
+					DrawShoppingCartSilhouette(g, w - 125, y + 10, 25);
 
 					// الدعاية للبرنامج
 					var fPromo = new Font("Arial", 10f, FontStyle.Bold);
@@ -4712,37 +4712,40 @@ namespace ChickenDist.Forms
 			return bmp;
 		}
 
-		private void DrawChickenSilhouette(Graphics g, float x, float y, float size)
+		private void DrawShoppingCartSilhouette(Graphics g, float x, float y, float size)
 		{
 			using (var brush = new SolidBrush(Color.FromArgb(0, 51, 153)))
+			using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))
 			{
-				// Body (oval)
-				g.FillEllipse(brush, x, y + size * 0.3f, size, size * 0.7f);
-				// Head (circle)
-				g.FillEllipse(brush, x + size * 0.4f, y, size * 0.5f, size * 0.5f);
-				
-				// Beak (triangle facing right)
-				var beakPoints = new PointF[] {
-					new PointF(x + size * 1.02f, y + size * 0.25f),
-					new PointF(x + size * 0.88f, y + size * 0.18f),
-					new PointF(x + size * 0.88f, y + size * 0.32f)
-				};
-				g.FillPolygon(brush, beakPoints);
-				
-				// Tail (triangle facing left)
-				var tailPoints = new PointF[] {
-					new PointF(x, y + size * 0.4f),
-					new PointF(x - size * 0.2f, y + size * 0.1f),
-					new PointF(x + size * 0.2f, y + size * 0.5f)
-				};
-				g.FillPolygon(brush, tailPoints);
-				
-				// Legs
-				using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))
+				pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+				pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+				pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+
+				// Handle and frame line
+				PointF pHandle = new PointF(x, y + size * 0.15f);
+				PointF pTopBack = new PointF(x + size * 0.22f, y + size * 0.15f);
+				PointF pBottomBack = new PointF(x + size * 0.30f, y + size * 0.68f);
+				PointF pBottomFront = new PointF(x + size * 0.85f, y + size * 0.68f);
+
+				// Draw frame & handle line
+				g.DrawLine(pen, pHandle, pTopBack);
+				g.DrawLine(pen, pTopBack, pBottomBack);
+				g.DrawLine(pen, pBottomBack, pBottomFront);
+
+				// Cart Basket (Solid Polygon)
+				PointF[] basket = new PointF[]
 				{
-					g.DrawLine(pen, x + size * 0.4f, y + size * 0.9f, x + size * 0.35f, y + size * 1.2f);
-					g.DrawLine(pen, x + size * 0.6f, y + size * 0.9f, x + size * 0.65f, y + size * 1.2f);
-				}
+					pTopBack,
+					new PointF(x + size * 0.95f, y + size * 0.22f),
+					new PointF(x + size * 0.82f, y + size * 0.62f),
+					new PointF(x + size * 0.30f, y + size * 0.62f)
+				};
+				g.FillPolygon(brush, basket);
+
+				// Cart Wheels
+				float wheelRadius = size * 0.11f;
+				g.FillEllipse(brush, x + size * 0.35f - wheelRadius, y + size * 0.78f, wheelRadius * 2, wheelRadius * 2);
+				g.FillEllipse(brush, x + size * 0.75f - wheelRadius, y + size * 0.78f, wheelRadius * 2, wheelRadius * 2);
 			}
 		}
 
