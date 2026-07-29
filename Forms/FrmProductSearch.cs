@@ -24,6 +24,7 @@ namespace ChickenDist.Forms
         private bool _isPurchaseMode = false;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
+        private Timer _searchTimer;
 
         public int SelectedProductID { get; private set; } = 0;
         public decimal SelectedPrice { get; private set; } = 0m;
@@ -56,6 +57,8 @@ namespace ChickenDist.Forms
         {
             _warehouseID = warehouseID;
             _isPurchaseMode = isPurchaseMode;
+            _searchTimer = new Timer { Interval = 220 };
+            _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
             LoadCategories();
             LoadProducts();
@@ -84,7 +87,7 @@ namespace ChickenDist.Forms
             // Row 1: Search name/code & Category
             var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(620, 16), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             txtSearch = new TextBox { Location = new Point(120, 12), Width = 490, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-            txtSearch.TextChanged += (s, e) => ApplyFilter();
+            txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += TxtSearch_KeyDown;
             
             var lblCat = new Label { Text = "التصنيف:", Location = new Point(620, 48), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
@@ -94,24 +97,24 @@ namespace ChickenDist.Forms
             // Row 2: Brand, Color & Company
             var lblBrand = new Label { Text = "الماركة:", Location = new Point(620, 78), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             txtBrandFilter = new TextBox { Location = new Point(510, 76), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
-            txtBrandFilter.TextChanged += (s, e) => ApplyFilter();
+            txtBrandFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             var lblColor = new Label { Text = "اللون:", Location = new Point(445, 78), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             txtColorFilter = new TextBox { Location = new Point(345, 76), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
-            txtColorFilter.TextChanged += (s, e) => ApplyFilter();
+            txtColorFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(220, 78), AutoSize = false, Width = 120, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             txtCompanyFilter = new TextBox { Location = new Point(10, 76), Width = 205, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
-            txtCompanyFilter.TextChanged += (s, e) => ApplyFilter();
+            txtCompanyFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             // Row 3: Price range & Zero Stock checkbox
             var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(620, 110), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             txtPriceFrom = new TextBox { Location = new Point(510, 108), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
-            txtPriceFrom.TextChanged += (s, e) => ApplyFilter();
+            txtPriceFrom.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             var lblPriceTo = new Label { Text = "إلى:", Location = new Point(445, 110), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter };
             txtPriceTo = new TextBox { Location = new Point(345, 108), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
-            txtPriceTo.TextChanged += (s, e) => ApplyFilter();
+            txtPriceTo.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             chkShowZeroStock = new CheckBox
             {
@@ -345,8 +348,12 @@ namespace ChickenDist.Forms
             dgProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
 
             dgProducts.Rows.Clear();
+            int displayedCount = 0;
+            int maxDisplay = 300;
+
             foreach (DataRowView drv in _dvProducts)
             {
+                if (displayedCount >= maxDisplay) break;
                 var row = drv.Row;
                 int pid = Convert.ToInt32(row["ProductID"]);
                 decimal totalStock = _stockCache.TryGetValue(pid, out var cached) ? cached : 0m;
@@ -365,6 +372,7 @@ namespace ChickenDist.Forms
 
                     if (chkShowZeroStock.Checked || totalStock > 0m)
                     {
+                        displayedCount++;
                         int rowIdx = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
@@ -396,6 +404,7 @@ namespace ChickenDist.Forms
                 {
                     if (chkShowZeroStock.Checked || totalStock > 0m)
                     {
+                        displayedCount++;
                         int rowIdx = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 

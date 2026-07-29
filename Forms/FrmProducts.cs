@@ -16,9 +16,12 @@ namespace ChickenDist.Forms
         private Button btnNew, btnEdit, btnDelete;
         private int _selectedID = 0;
         private DataTable _dtProducts;
+        private Timer _searchTimer;
 
         public FrmProducts()
         {
+            _searchTimer = new Timer { Interval = 220 };
+            _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); FilterProducts(); };
             InitUI();
             LoadProducts();
         }
@@ -62,7 +65,7 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = Theme.FontNormal
             };
-            txtSearch.TextChanged += (s, e) => FilterProducts();
+            txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             lblCat = new Label 
             { 
@@ -293,7 +296,6 @@ namespace ChickenDist.Forms
         {
             if (_dtProducts == null) return;
 
-            dgProducts.Rows.Clear();
             string query = txtSearch.Text?.Trim().ToLower() ?? "";
 
             int selectedCatID = 0;
@@ -304,11 +306,18 @@ namespace ChickenDist.Forms
 
             int selectedStatus = cboStatus.SelectedIndex; // 0 = الكل, 1 = النشطة, 2 = المعطلة
 
-            int count = 0;
+            int matchedCount = 0;
+            int displayedCount = 0;
+            int maxDisplay = string.IsNullOrEmpty(query) && selectedCatID == 0 && selectedStatus == 0 ? 300 : 500;
 
             dgProducts.SuspendLayout();
+            var prevMode = dgProducts.AutoSizeColumnsMode;
+            dgProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             try
             {
+                dgProducts.Rows.Clear();
+
                 foreach (DataRow r in _dtProducts.Rows)
                 {
                     bool active = Convert.ToBoolean(r["IsActive"]);
@@ -328,6 +337,7 @@ namespace ChickenDist.Forms
                     string barcode = r.Table.Columns.Contains("InternationalCode") && r["InternationalCode"] != DBNull.Value ? r["InternationalCode"].ToString() : "";
                     string brand = r.Table.Columns.Contains("Brand") && r["Brand"] != DBNull.Value ? r["Brand"].ToString() : "";
                     string model = r.Table.Columns.Contains("CarModel") && r["CarModel"] != DBNull.Value ? r["CarModel"].ToString() : "";
+                    string enName = r.Table.Columns.Contains("EnglishName") && r["EnglishName"] != DBNull.Value ? r["EnglishName"].ToString() : "";
 
                     if (string.IsNullOrEmpty(query) || 
                         name.ToLower().Contains(query) || 
@@ -335,24 +345,33 @@ namespace ChickenDist.Forms
                         partNum.ToLower().Contains(query) || 
                         barcode.ToLower().Contains(query) ||
                         brand.ToLower().Contains(query) ||
-                        model.ToLower().Contains(query))
+                        model.ToLower().Contains(query) ||
+                        enName.ToLower().Contains(query))
                     {
-                        count++;
-                        var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
-                            r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
-                            r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
-                        if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+                        matchedCount++;
+                        if (displayedCount < maxDisplay)
+                        {
+                            displayedCount++;
+                            var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
+                                r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
+                                r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
+                            if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+                        }
                     }
                 }
             }
             finally
             {
+                dgProducts.AutoSizeColumnsMode = prevMode;
                 dgProducts.ResumeLayout();
             }
 
             if (lblItemCount != null)
             {
-                lblItemCount.Text = $"عدد الأصناف: {count}";
+                if (matchedCount > displayedCount)
+                    lblItemCount.Text = $"عدد الأصناف: {matchedCount} (معروض أول {displayedCount} صنف - اكتب في البحث)";
+                else
+                    lblItemCount.Text = $"عدد الأصناف: {matchedCount}";
             }
         }
 

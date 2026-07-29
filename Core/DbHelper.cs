@@ -245,6 +245,16 @@ namespace ChickenDist.Core
             BEGIN
                 ALTER TABLE InstallmentSchedules ADD Notes NVARCHAR(500) NULL;
             END");
+
+            SafeMigrate("Products.Indexes", @"
+            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
+            BEGIN
+                CREATE INDEX IX_Products_Search ON Products(IsActive, CategoryID) INCLUDE (ProductID, ProductCode, ProductName, SalePrice);
+            END
+            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_IntlCode' AND object_id = OBJECT_ID('Products'))
+            BEGIN
+                CREATE INDEX IX_Products_IntlCode ON Products(InternationalCode);
+            END");
         }
 
         public static void EnsureDatabaseSchema()
