@@ -1,3 +1,9 @@
+v2.0.198 - 2026-07-29
+- Scalability Overhaul for 20,000+ Products (FrmProductSearch.cs, FrmInventory.cs, InventoryDAL.cs):
+  1. إضافة دالة InventoryDAL.GetStockSummary فائقة السرعة لجلب ملخص الأرصدة بدون استعلامات فرعية مكررة.
+  2. تسريع اختيار واختيار الأصناف من شاشة البحث للفاتورة فورياً (0 ثانية) وإلغاء حلقات الفحص الخطي O(N).
+  3. تسريع شاشة الجرد وتحديد سقف الاستعلام بـ TOP 300 على مستوى SQL لتفتح فورياً بدون انتهاء مهلة أو بطء حتى مع 20,000 صنف.
+
 v2.0.197 - 2026-07-29
 - LAN Network & Multi-PC Performance Overhaul (ClientCache.cs, SupplierCache.cs, DbHelper.cs):
   1. تحسين إعدادات اتصال قاعدة البيانات بالشبكة (Packet Size=32KB, MARS, Connection Pooling) لتسريع نقل البيانات بين الجهاز الرئيسي والفرعي بمقدار 4 أضعاف.

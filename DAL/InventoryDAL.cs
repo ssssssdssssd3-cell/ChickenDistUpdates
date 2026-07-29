@@ -9,10 +9,12 @@ namespace ChickenDist.DAL
     public static class InventoryDAL
     {
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null)
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300)
         {
             string filter = "";
             List<SqlParameter> prms = new List<SqlParameter>();
+            prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 300 : maxRows));
+
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 filter = " AND (t.ProductName LIKE @term OR t.ProductCode LIKE @term OR t.PartNumber LIKE @term) ";
@@ -30,7 +32,7 @@ namespace ChickenDist.DAL
             }
 
             string sql = $@"
-                SELECT * FROM (
+                SELECT TOP (@maxRows) * FROM (
                     -- Part 1: Products without expiry (HasExpiry = 0)
                     SELECT 
                         p.ProductID,
@@ -204,6 +206,108 @@ namespace ChickenDist.DAL
 
             var val = DbHelper.Scalar(sql, prms.ToArray());
             return val == null || val == DBNull.Value ? 0 : Convert.ToDecimal(val);
+        }
+
+        /// <summary>جلب ملخص أرصدة كل الأصناف دفعة واحدة بسرعة فائقة بدون استعلامات فرعية مكررة</summary>
+        public static Dictionary<int, decimal> GetStockSummary(int? warehouseID = null)
+        {
+            var dict = new Dictionary<int, decimal>();
+            List<SqlParameter> prms = new List<SqlParameter>();
+            if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
+
+            string sql = @"
+                SELECT ProductID, SUM(NetQty) AS TotalQty
+                FROM (
+                    SELECT sa.ProductID, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
+                    FROM StockAdjustments sa
+                    INNER JOIN (
+                        SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
+                        FROM StockAdjustments
+                        " + (warehouseID.HasValue ? "WHERE WarehouseID = @wid" : "") + @"
+                        GROUP BY ProductID, WarehouseID
+                    ) latest ON sa.ProductID = latest.ProductID AND sa.WarehouseID = latest.WarehouseID AND sa.AdjDate = latest.MaxDate
+                    " + (warehouseID.HasValue ? "WHERE sa.WarehouseID = @wid" : "") + @"
+
+                    UNION ALL
+
+                    SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
+                    FROM PurchaseItems pi
+                    JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    WHERE pu.IsPosted = 1 " + (warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "") + @"
+                    GROUP BY pi.ProductID
+
+                    UNION ALL
+
+                    SELECT ri.ProductID, SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) AS NetQty
+                    FROM ReturnItems ri
+                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    " + (warehouseID.HasValue ? "WHERE sr.WarehouseID = @wid" : "") + @"
+                    GROUP BY ri.ProductID
+
+                    UNION ALL
+
+                    SELECT hi.ProductID, SUM(hi.ReturnedQty * COALESCE(hi.Factor, 1.0)) AS NetQty
+                    FROM HandoverItems hi
+                    JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                    JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                    " + (warehouseID.HasValue ? "WHERE dl.WarehouseID = @wid" : "") + @"
+                    GROUP BY hi.ProductID
+
+                    UNION ALL
+
+                    SELECT ti.ProductID, SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
+                    FROM WarehouseTransferItems ti
+                    JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    WHERE t.IsPosted = 1 " + (warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "") + @"
+                    GROUP BY ti.ProductID
+
+                    UNION ALL
+
+                    SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    WHERE s.IsPosted = 1 " + (warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "") + @"
+                    GROUP BY si.ProductID
+
+                    UNION ALL
+
+                    SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
+                    FROM PurchaseReturnItems pri
+                    JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    " + (warehouseID.HasValue ? "WHERE pr.WarehouseID = @wid" : "") + @"
+                    GROUP BY pri.ProductID
+
+                    UNION ALL
+
+                    SELECT ti.ProductID, -SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
+                    FROM WarehouseTransferItems ti
+                    JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    WHERE t.IsPosted = 1 " + (warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "") + @"
+                    GROUP BY ti.ProductID
+
+                    UNION ALL
+
+                    SELECT wli.ProductID, -SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) AS NetQty
+                    FROM WastageLossItems wli
+                    JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                    " + (warehouseID.HasValue ? "WHERE wl.WarehouseID = @wid" : "") + @"
+                    GROUP BY wli.ProductID
+                ) StockUnion
+                GROUP BY ProductID";
+
+            try
+            {
+                DataTable dt = DbHelper.Query(sql, prms.ToArray());
+                foreach (DataRow r in dt.Rows)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal qty = r["TotalQty"] != DBNull.Value ? Convert.ToDecimal(r["TotalQty"]) : 0m;
+                    dict[pid] = qty;
+                }
+            }
+            catch { }
+
+            return dict;
         }
 
         /// <summary>حفظ تسوية جردية لصنف في مخزن محدد</summary>

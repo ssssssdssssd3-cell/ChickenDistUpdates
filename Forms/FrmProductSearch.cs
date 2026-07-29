@@ -321,21 +321,8 @@ namespace ChickenDist.Forms
             _globalStockCache.Clear();
             try
             {
-                DataTable dtStock = InventoryDAL.GetStock(_warehouseID);
-                foreach (DataRow r in dtStock.Rows)
-                {
-                    int pid = Convert.ToInt32(r["ProductID"]);
-                    decimal qty = r["BookQty"] != DBNull.Value ? Convert.ToDecimal(r["BookQty"]) : 0m;
-                    _stockCache[pid] = qty;
-                }
-
-                DataTable dtGlobal = InventoryDAL.GetStock(null);
-                foreach (DataRow r in dtGlobal.Rows)
-                {
-                    int pid = Convert.ToInt32(r["ProductID"]);
-                    decimal qty = r["BookQty"] != DBNull.Value ? Convert.ToDecimal(r["BookQty"]) : 0m;
-                    _globalStockCache[pid] = qty;
-                }
+                _stockCache = InventoryDAL.GetStockSummary(_warehouseID);
+                _globalStockCache = InventoryDAL.GetStockSummary(null);
             }
             catch { }
         }
@@ -553,13 +540,16 @@ namespace ChickenDist.Forms
             var selectedRow = dgProducts.SelectedRows[0];
             int productID = Convert.ToInt32(selectedRow.Cells["ProductID"].Value);
 
-            DataRow prodRow = null;
-            foreach (DataRowView drv in _dvProducts)
+            DataRow prodRow = (selectedRow.DataBoundItem is DataRowView drv) ? drv.Row : null;
+            if (prodRow == null)
             {
-                if (Convert.ToInt32(drv.Row["ProductID"]) == productID)
+                foreach (DataRowView dr in _dvProducts)
                 {
-                    prodRow = drv.Row;
-                    break;
+                    if (Convert.ToInt32(dr.Row["ProductID"]) == productID)
+                    {
+                        prodRow = dr.Row;
+                        break;
+                    }
                 }
             }
             if (prodRow == null) return;
@@ -708,17 +698,9 @@ namespace ChickenDist.Forms
                     decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
 
                 int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                if (_dvProducts != null)
+                if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
                 {
-                    foreach (DataRowView drv in _dvProducts)
-                    {
-                        if (Convert.ToInt32(drv.Row["ProductID"]) == pid)
-                        {
-                            if (drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
-                                pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
-                            break;
-                        }
-                    }
+                    pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
                 }
             }
 
