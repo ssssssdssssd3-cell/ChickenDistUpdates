@@ -9,7 +9,7 @@ namespace ChickenDist.Forms
 {
     public class FrmProductCard : Form
     {
-        private TextBox txtCode, txtName, txtDescription, txtPartNumber, txtInternationalCode;
+        private TextBox txtCode, txtName, txtEnglishName, txtDescription, txtPartNumber, txtInternationalCode;
         private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtProductSize, txtColor;
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor;
@@ -113,54 +113,60 @@ namespace ChickenDist.Forms
             this.Controls.Add(grpUnit1);
 
             // --- GroupBox 1 Content ---
-            int ry = 25;
+            int ry = 22;
             AddField(grpBasic, "كود الصنف:", 10, ry, out txtCode);
             txtCode.ReadOnly = true;
             txtCode.TabStop = false;
-            ry += 38;
+            ry += 32;
 
-            AddField(grpBasic, "اسم الصنف:", 10, ry, out txtName);
-            ry += 38;
+            AddField(grpBasic, "الاسم العربي:", 10, ry, out txtName);
+            txtName.Multiline = true;
+            txtName.Height = 42;
+            txtName.ScrollBars = ScrollBars.Vertical;
+            ry += 46;
+
+            AddField(grpBasic, "الاسم الأجنبي:", 10, ry, out txtEnglishName);
+            ry += 32;
 
             AddLookupComboField(grpBasic, "التصنيف:", 10, ry, out cboCategory, out var btnAddCat);
             cboCategory.DropDownStyle = ComboBoxStyle.DropDownList;
             btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
-            ry += 38;
+            ry += 32;
 
             AddLookupComboField(grpBasic, "الماركة:", 10, ry, out txtBrand, out btnAddBrand);
             btnAddBrand.Click += (s, e) => { new FrmLookupManager("Brands", "BrandID", "BrandCode", "BrandName", "BRD", "الماركات").ShowDialog(); LoadLookupCombos(); };
-            ry += 38;
+            ry += 32;
 
             AddLookupComboField(grpBasic, "اللون:", 10, ry, out txtColor, out btnAddColor);
             btnAddColor.Click += (s, e) => { new FrmLookupManager("Colors", "ColorID", "ColorCode", "ColorName", "CLR", "الألوان").ShowDialog(); LoadLookupCombos(); };
-            ry += 38;
+            ry += 32;
 
-            AddLookupComboField(grpBasic, "الشركة المنتجة / الخامة:", 10, ry, out txtProducerCompany, out btnAddProducerCompany);
+            AddLookupComboField(grpBasic, "الشركة المنتجة:", 10, ry, out txtProducerCompany, out btnAddProducerCompany);
             btnAddProducerCompany.Click += (s, e) => { new FrmLookupManager("ProducerCompanies", "ProducerID", "ProducerCode", "ProducerName", "PRD", "الشركات المنتجة").ShowDialog(); LoadLookupCombos(); };
-            ry += 38;
+            ry += 32;
 
             AddUnitComboField(grpBasic, "الوحدة الكبرى:", 10, ry, out cboUnit, out btnAddUnit);
             btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
-            ry += 38;
-
-            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-            grpBasic.Controls.Add(chkActive);
-            ry += 28;
-
-            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-            grpBasic.Controls.Add(chkPrintLocalBarcode);
-            ry += 28;
-
-            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            grpBasic.Controls.Add(chkIsService);
-            ry += 28;
-
-            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(5, ry), Width = 285, Height = 26, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            grpBasic.Controls.Add(chkIsQuickItem);
             ry += 32;
 
+            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            grpBasic.Controls.Add(chkActive);
+            ry += 24;
+
+            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            grpBasic.Controls.Add(chkPrintLocalBarcode);
+            ry += 24;
+
+            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            grpBasic.Controls.Add(chkIsService);
+            ry += 24;
+
+            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            grpBasic.Controls.Add(chkIsQuickItem);
+            ry += 28;
+
             var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 55, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
 
 
@@ -570,6 +576,7 @@ namespace ChickenDist.Forms
 
                 txtCode.Text = dr["ProductCode"].ToString();
                 txtName.Text = dr["ProductName"].ToString();
+                if (txtEnglishName != null) txtEnglishName.Text = dr.Table.Columns.Contains("EnglishName") && dr["EnglishName"] != DBNull.Value ? dr["EnglishName"].ToString() : "";
                 if (txtPartNumber != null) txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
                 txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
                 if (txtCarModel != null) txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
@@ -659,6 +666,7 @@ namespace ChickenDist.Forms
         {
             txtCode.Text = ProductDAL.GetNextProductCode();
             txtName.Clear();
+            if (txtEnglishName != null) txtEnglishName.Clear();
             if (txtPartNumber != null) txtPartNumber.Clear();
             txtInternationalCode.Clear();
             if (txtCarModel != null) txtCarModel.Text = "";
@@ -819,6 +827,7 @@ namespace ChickenDist.Forms
             string producerVal = txtProducerCompany != null ? txtProducerCompany.Text.Trim() : "";
             string sizeValStr = txtProductSize != null ? txtProductSize.Text.Trim() : "";
             string colorValStr = txtColor != null ? txtColor.Text.Trim() : "";
+            string enNameVal = txtEnglishName != null ? txtEnglishName.Text.Trim() : "";
 
             // الحفظ في قاعدة البيانات
             int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
@@ -829,7 +838,7 @@ namespace ChickenDist.Forms
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr);
+                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal);
 
             if (id > 0)
             {

@@ -169,10 +169,15 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 28;
+        private const int CurrentSchemaVersion = 29;
 
         public static void EnsurePurchaseColumnsExist()
         {
+            SafeMigrate("Products.EnglishName", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'EnglishName')
+            BEGIN
+                ALTER TABLE Products ADD EnglishName NVARCHAR(200) NULL;
+            END");
             SafeMigrate("Purchases.SupplierInvoiceNo", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Purchases') AND name = 'SupplierInvoiceNo')
             BEGIN
