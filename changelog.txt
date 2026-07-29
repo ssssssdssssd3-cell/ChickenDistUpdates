@@ -1,3 +1,6 @@
+v2.0.195 - 2026-07-29
+- Fix (FrmProductSearch.cs): إصلاح خلل عدم تهيئة مؤقت البحث (_searchTimer) في شاشة البحث المتقدم مما كان قد يسبب crash عند الكتابة في مربعات البحث.
+
 v2.0.194 - 2026-07-29
 - Perf Optimization (FrmProducts.cs, FrmProductSearch.cs, DbHelper.cs): حل شامل وجذري لبطء وتجميد البرنامج عند وجود أعداد ضخمة من الأصناف (7,000+ صنف):
   1. إنشاء أدلة وفهارس SQL (Indexes) جديدة على جدول الأصناف (IsActive, CategoryID, InternationalCode).
