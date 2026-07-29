@@ -2471,10 +2471,12 @@ namespace ChickenDist.Forms
                 RightToLeft     = RightToLeft.Yes
             };
 
-            // ملء القائمة بالأعمدة (ما عدا عمود الحذف)
+            // ملء القائمة بالأعمدة (ما عدا عمود الحذف والأعمدة المعطلة لنوع النشاط)
+            bool isClothingMode = AppConfig.BusinessType == "Clothing";
             foreach (DataGridViewColumn col in dgItems.Columns)
             {
                 if (col.Name == "Delete") continue;
+                if (isClothingMode && (col.Name == "CarModel" || col.Name == "Brand")) continue;
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 

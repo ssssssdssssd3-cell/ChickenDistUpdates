@@ -554,7 +554,6 @@ namespace ChickenDist.Core
                     col.HeaderText = AppConfig.BusinessType switch
                     {
                         "Mobiles"   => "التوافق",
-                        "Clothing"  => "المقاس",
                         _           => "الموديل"
                     };
                 }
@@ -563,7 +562,6 @@ namespace ChickenDist.Core
                     col.HeaderText = AppConfig.BusinessType switch
                     {
                         "Mobiles"   => "الماركة",
-                        "Clothing"  => "اللون",
                         _           => "الماركة"
                     };
                 }
