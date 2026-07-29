@@ -257,7 +257,7 @@ namespace ChickenDist.Forms
 
             int id = SupplierDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text,
                 txtAddress.Text, nudOpening.Value, chkActive.Checked);
-            if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadSuppliers(); }
+            if (id > 0) { SupplierCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadSuppliers(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
 
@@ -273,6 +273,7 @@ namespace ChickenDist.Forms
             if (MessageBox.Show("إيقاف تفعيل المورد؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 SupplierDAL.Delete(_selectedID);
+                SupplierCache.Refresh();
                 LoadSuppliers();
                 ClearDetail();
             }

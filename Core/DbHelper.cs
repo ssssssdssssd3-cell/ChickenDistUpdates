@@ -74,7 +74,12 @@ namespace ChickenDist.Core
                     InitialCatalog = db,
                     IntegratedSecurity = intSec.Equals("True", StringComparison.OrdinalIgnoreCase),
                     TrustServerCertificate = true,
-                    ConnectTimeout = 30
+                    ConnectTimeout = 30,
+                    PacketSize = 32768,
+                    MultipleActiveResultSets = true,
+                    Pooling = true,
+                    MinPoolSize = 5,
+                    MaxPoolSize = 200
                 };
 
                 if (!builder.IntegratedSecurity)
@@ -87,7 +92,7 @@ namespace ChickenDist.Core
             }
             catch
             {
-                return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;";
+                return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
             }
         }
 

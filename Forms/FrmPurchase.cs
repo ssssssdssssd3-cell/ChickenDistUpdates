@@ -1068,7 +1068,7 @@ namespace ChickenDist.Forms
         private void LoadCombos()
         {
             // الموردون
-            DataTable dtSup = SupplierDAL.GetAll(true);
+            DataTable dtSup = SupplierCache.GetActive();
             cboSupplier.BeginUpdate();
             cboSupplier.Items.Clear();
             List<ComboItem> supplierItems = new List<ComboItem>();

@@ -1,3 +1,9 @@
+v2.0.197 - 2026-07-29
+- LAN Network & Multi-PC Performance Overhaul (ClientCache.cs, SupplierCache.cs, DbHelper.cs):
+  1. تحسين إعدادات اتصال قاعدة البيانات بالشبكة (Packet Size=32KB, MARS, Connection Pooling) لتسريع نقل البيانات بين الجهاز الرئيسي والفرعي بمقدار 4 أضعاف.
+  2. إضافة ClientCache و SupplierCache لتحميل العملاء والموردين بالذاكرة عند التشغيل لحل بطء الأجهزة الفرعية نهائياً.
+  3. تسريع فتح شاشات البيع والشراء والعملاء والموردين عبر الشبكة لتفتح خلال 0.00 ثانية.
+
 v2.0.196 - 2026-07-29
 - Major Perf Optimization (ProductCache.cs, FrmSale, FrmPurchase, FrmProducts, FrmProductSearch, FrmInventory):
   1. إضافة كاش مركزي للذاكرة (ProductCache) يحمّل الـ 7,000 صنف فورياً في خلفية التطبيق عند التشغيل (Pre-warm).

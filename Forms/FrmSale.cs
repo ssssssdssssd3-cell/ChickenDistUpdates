@@ -1697,7 +1697,7 @@ namespace ChickenDist.Forms
 			foreach (DataRow sRow in stockTable.Rows)
 				_stockCache[(int)sRow["ProductID"]] = sRow["BookQty"] == DBNull.Value ? 0m : Convert.ToDecimal(sRow["BookQty"]);
 			
-			DataTable all = ClientDAL.GetAll(activeOnly: true);
+			DataTable all = ClientCache.GetActive();
 			cboClient.BeginUpdate();
 			cboClient.Items.Clear();
 			List<ComboItem> clientItems = new List<ComboItem>();

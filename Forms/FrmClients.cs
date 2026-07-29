@@ -352,7 +352,7 @@ namespace ChickenDist.Forms
 
             int id = ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
                 txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value);
-            if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
+            if (id > 0) { ClientCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
 
