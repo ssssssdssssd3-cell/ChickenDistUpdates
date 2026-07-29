@@ -143,24 +143,24 @@ namespace ChickenDist.Forms
             btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             ry += 38;
 
-            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(10, ry), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
             grpBasic.Controls.Add(chkActive);
             ry += 28;
 
-            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(10, ry), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
             grpBasic.Controls.Add(chkPrintLocalBarcode);
             ry += 28;
 
-            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(10, ry), Width = 280, Height = 24, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             grpBasic.Controls.Add(chkIsService);
             ry += 28;
 
-            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(10, ry), Width = 280, Height = 26, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(5, ry), Width = 285, Height = 26, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             grpBasic.Controls.Add(chkIsQuickItem);
             ry += 32;
 
-            var lblDesc = new Label { Text = "الوصف:", Location = new Point(165, ry + 3), Width = 135, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            txtDescription = new TextBox { Location = new Point(10, ry), Width = 145, Height = 55, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 55, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
 
 
@@ -412,24 +412,24 @@ namespace ChickenDist.Forms
 
         private void AddField(Control parent, string label, int x, int y, out TextBox txt)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 155, y + 3), Width = 135, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txt = new TextBox { Location = new Point(x + 10, y), Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 195, y + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txt = new TextBox { Location = new Point(x + 5, y), Width = 188, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             parent.Controls.Add(txt);
         }
 
         private void AddUnitComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 155, y + 3), Width = 135, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 45, y), Width = 105, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 10, y), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 175, y + 3), Width = 115, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            cbo = new ComboBox { Location = new Point(x + 36, y), Width = 136, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            btnAdd = new Button { Text = "➕", Location = new Point(x + 5, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             parent.Controls.AddRange(new Control[] { cbo, btnAdd });
         }
 
         private void AddLookupComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 155, y + 3), Width = 135, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 45, y), Width = 105, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 10, y), Width = 30, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 175, y + 3), Width = 115, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            cbo = new ComboBox { Location = new Point(x + 36, y), Width = 136, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            btnAdd = new Button { Text = "➕", Location = new Point(x + 5, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             parent.Controls.AddRange(new Control[] { cbo, btnAdd });
         }
 

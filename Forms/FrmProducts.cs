@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
         private DataGridView dgProducts;
         private TextBox txtSearch;
         private ComboBox cboCategory, cboStatus;
-        private Label lblItemCount;
+        private Label lblItemCount, lblSearch, lblCat, lblStatus;
         private Button btnNew, btnEdit, btnDelete;
         private int _selectedID = 0;
         private DataTable _dtProducts;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
             var titleBar = Theme.MakeTitleBar("إدارة الأصناف", "قائمة عرض وبحث الأصناف والأسعار وتعديلها عبر كارت الصنف");
             this.Controls.Add(titleBar);
 
-            // Search Panel (Top) - Full width responsive flow layout
+            // Search Panel (Top) - Right-aligned controls for RTL
             var pnlHeader = new Panel 
             { 
                 Dock = DockStyle.Top, 
@@ -45,75 +45,60 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8)
             };
-            
-            var flowHeader = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0)
-            };
 
-            var lblSearch = new Label 
+            lblSearch = new Label 
             { 
                 Text = "🔍 بحث سريع:", 
                 AutoSize = true, 
                 ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold,
-                Margin = new Padding(0, 8, 4, 0)
+                Font = Theme.FontBold
             };
             
             txtSearch = new TextBox 
             { 
-                Width = 260, 
+                Width = 230, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
-                Font = Theme.FontNormal,
-                Margin = new Padding(0, 5, 18, 0)
+                Font = Theme.FontNormal
             };
             txtSearch.TextChanged += (s, e) => FilterProducts();
 
-            var lblCat = new Label 
+            lblCat = new Label 
             { 
                 Text = "📂 التصنيف:", 
                 AutoSize = true, 
                 ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold,
-                Margin = new Padding(0, 8, 4, 0)
+                Font = Theme.FontBold
             };
 
             cboCategory = new ComboBox
             {
-                Width = 180,
+                Width = 170,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
-                Font = Theme.FontNormal,
-                Margin = new Padding(0, 5, 18, 0)
+                Font = Theme.FontNormal
             };
             LoadCategoriesCombo();
 
-            var lblStatus = new Label 
+            lblStatus = new Label 
             { 
                 Text = "⚡ الحالة:", 
                 AutoSize = true, 
                 ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold,
-                Margin = new Padding(0, 8, 4, 0)
+                Font = Theme.FontBold
             };
 
             cboStatus = new ComboBox
             {
-                Width = 130,
+                Width = 120,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
-                Font = Theme.FontNormal,
-                Margin = new Padding(0, 5, 20, 0)
+                Font = Theme.FontNormal
             };
             cboStatus.Items.AddRange(new object[] { "جميع الأصناف", "النشطة فقط", "المعطلة فقط" });
             cboStatus.SelectedIndex = 0;
@@ -124,19 +109,38 @@ namespace ChickenDist.Forms
                 Text = "عدد الأصناف: 0",
                 AutoSize = true,
                 ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Margin = new Padding(0, 8, 0, 0)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
 
-            flowHeader.Controls.Add(lblSearch);
-            flowHeader.Controls.Add(txtSearch);
-            flowHeader.Controls.Add(lblCat);
-            flowHeader.Controls.Add(cboCategory);
-            flowHeader.Controls.Add(lblStatus);
-            flowHeader.Controls.Add(cboStatus);
-            flowHeader.Controls.Add(lblItemCount);
+            pnlHeader.Controls.AddRange(new Control[] { lblSearch, txtSearch, lblCat, cboCategory, lblStatus, cboStatus, lblItemCount });
 
-            pnlHeader.Controls.Add(flowHeader);
+            Action layoutHeader = () =>
+            {
+                if (pnlHeader.ClientSize.Width <= 0) return;
+                int currentX = pnlHeader.ClientSize.Width - 15;
+
+                lblSearch.Location = new Point(currentX - lblSearch.PreferredWidth, 18);
+                currentX -= (lblSearch.PreferredWidth + 6);
+
+                txtSearch.Location = new Point(currentX - txtSearch.Width, 14);
+                currentX -= (txtSearch.Width + 22);
+
+                lblCat.Location = new Point(currentX - lblCat.PreferredWidth, 18);
+                currentX -= (lblCat.PreferredWidth + 6);
+
+                cboCategory.Location = new Point(currentX - cboCategory.Width, 14);
+                currentX -= (cboCategory.Width + 22);
+
+                lblStatus.Location = new Point(currentX - lblStatus.PreferredWidth, 18);
+                currentX -= (lblStatus.PreferredWidth + 6);
+
+                cboStatus.Location = new Point(currentX - cboStatus.Width, 14);
+
+                lblItemCount.Location = new Point(15, 18);
+            };
+
+            pnlHeader.Resize += (s, e) => layoutHeader();
+            pnlHeader.HandleCreated += (s, e) => layoutHeader();
             this.Controls.Add(pnlHeader);
 
             // Footer Panel (Bottom FlowLayoutPanel)
@@ -229,13 +233,13 @@ namespace ChickenDist.Forms
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 45 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 220 }); // مضاعفة المساحة لإظهار اسم الصنف كاملاً
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 45 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 35 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 20 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 320 }); // زيادة مساحة اسم الصنف لتأخذ معظم عرض الجدول
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 40 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 25 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 30 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 18 });
             
             Theme.AdjustGridHeaders(dgProducts);
 
