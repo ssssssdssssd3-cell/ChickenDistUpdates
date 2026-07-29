@@ -11,6 +11,8 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgProducts;
         private TextBox txtSearch;
+        private ComboBox cboCategory, cboStatus;
+        private Label lblItemCount;
         private Button btnNew, btnEdit, btnDelete;
         private int _selectedID = 0;
         private DataTable _dtProducts;
@@ -24,7 +26,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "إدارة الأصناف";
-            this.Size = new Size(1100, 680);
+            this.Size = new Size(1150, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -35,37 +37,106 @@ namespace ChickenDist.Forms
             var titleBar = Theme.MakeTitleBar("إدارة الأصناف", "قائمة عرض وبحث الأصناف والأسعار وتعديلها عبر كارت الصنف");
             this.Controls.Add(titleBar);
 
-            // Search Panel (Top)
+            // Search Panel (Top) - Full width responsive flow layout
             var pnlHeader = new Panel 
             { 
                 Dock = DockStyle.Top, 
-                Height = 55, 
+                Height = 58, 
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10)
+                Padding = new Padding(10, 8, 10, 8)
             };
             
+            var flowHeader = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+
             var lblSearch = new Label 
             { 
                 Text = "🔍 بحث سريع:", 
-                Location = new Point(1020, 18), 
                 AutoSize = true, 
                 ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold 
+                Font = Theme.FontBold,
+                Margin = new Padding(0, 8, 4, 0)
             };
             
             txtSearch = new TextBox 
             { 
-                Location = new Point(600, 14), 
-                Width = 400, 
+                Width = 260, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
                 BorderStyle = BorderStyle.FixedSingle, 
-                Font = Theme.FontNormal 
+                Font = Theme.FontNormal,
+                Margin = new Padding(0, 5, 18, 0)
             };
-            txtSearch.TextChanged += TxtSearch_TextChanged;
-            
-            pnlHeader.Controls.Add(lblSearch);
-            pnlHeader.Controls.Add(txtSearch);
+            txtSearch.TextChanged += (s, e) => FilterProducts();
+
+            var lblCat = new Label 
+            { 
+                Text = "📂 التصنيف:", 
+                AutoSize = true, 
+                ForeColor = Theme.TextMain, 
+                Font = Theme.FontBold,
+                Margin = new Padding(0, 8, 4, 0)
+            };
+
+            cboCategory = new ComboBox
+            {
+                Width = 180,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontNormal,
+                Margin = new Padding(0, 5, 18, 0)
+            };
+            LoadCategoriesCombo();
+
+            var lblStatus = new Label 
+            { 
+                Text = "⚡ الحالة:", 
+                AutoSize = true, 
+                ForeColor = Theme.TextMain, 
+                Font = Theme.FontBold,
+                Margin = new Padding(0, 8, 4, 0)
+            };
+
+            cboStatus = new ComboBox
+            {
+                Width = 130,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontNormal,
+                Margin = new Padding(0, 5, 20, 0)
+            };
+            cboStatus.Items.AddRange(new object[] { "جميع الأصناف", "النشطة فقط", "المعطلة فقط" });
+            cboStatus.SelectedIndex = 0;
+            cboStatus.SelectedIndexChanged += (s, e) => FilterProducts();
+
+            lblItemCount = new Label
+            {
+                Text = "عدد الأصناف: 0",
+                AutoSize = true,
+                ForeColor = Theme.Accent,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Margin = new Padding(0, 8, 0, 0)
+            };
+
+            flowHeader.Controls.Add(lblSearch);
+            flowHeader.Controls.Add(txtSearch);
+            flowHeader.Controls.Add(lblCat);
+            flowHeader.Controls.Add(cboCategory);
+            flowHeader.Controls.Add(lblStatus);
+            flowHeader.Controls.Add(cboStatus);
+            flowHeader.Controls.Add(lblItemCount);
+
+            pnlHeader.Controls.Add(flowHeader);
             this.Controls.Add(pnlHeader);
 
             // Footer Panel (Bottom FlowLayoutPanel)
@@ -158,14 +229,16 @@ namespace ChickenDist.Forms
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 40 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 60 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 110 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 50 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 35 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", FillWeight = 45 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 220 }); // مضاعفة المساحة لإظهار اسم الصنف كاملاً
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 45 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 40 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 35 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 20 });
             
+            Theme.AdjustGridHeaders(dgProducts);
+
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             dgProducts.CellDoubleClick += (s, e) => {
                 if (dgProducts.SelectedRows.Count > 0)
@@ -187,11 +260,23 @@ namespace ChickenDist.Forms
             dgProducts.BringToFront();
 
             Theme.ApplyFormRTL(this);
+        }
 
-            this.SizeChanged += (s, e) => {
-                lblSearch.Left = this.ClientSize.Width - lblSearch.Width - 20;
-                txtSearch.Left = lblSearch.Left - txtSearch.Width - 10;
-            };
+        private void LoadCategoriesCombo()
+        {
+            cboCategory.Items.Clear();
+            cboCategory.Items.Add(new ComboItem(0, "جميع التصنيفات"));
+            try
+            {
+                DataTable dtCat = CategoryDAL.GetAll(true);
+                foreach (DataRow r in dtCat.Rows)
+                {
+                    cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+                }
+            }
+            catch { }
+            cboCategory.SelectedIndex = 0;
+            cboCategory.SelectedIndexChanged += (s, e) => FilterProducts();
         }
 
         private void LoadProducts()
@@ -202,27 +287,68 @@ namespace ChickenDist.Forms
 
         private void FilterProducts()
         {
+            if (_dtProducts == null) return;
+
             dgProducts.Rows.Clear();
             string query = txtSearch.Text?.Trim().ToLower() ?? "";
-            foreach (DataRow r in _dtProducts.Rows)
+
+            int selectedCatID = 0;
+            if (cboCategory.SelectedItem is ComboItem ciCat)
             {
-                string name = r["ProductName"]?.ToString() ?? "";
-                string code = r["ProductCode"]?.ToString() ?? "";
-                string partNum = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
-                string barcode = r.Table.Columns.Contains("InternationalCode") && r["InternationalCode"] != DBNull.Value ? r["InternationalCode"].ToString() : "";
-                
-                if (string.IsNullOrEmpty(query) || 
-                    name.ToLower().Contains(query) || 
-                    code.ToLower().Contains(query) || 
-                    partNum.ToLower().Contains(query) || 
-                    barcode.ToLower().Contains(query))
+                selectedCatID = ciCat.ID;
+            }
+
+            int selectedStatus = cboStatus.SelectedIndex; // 0 = الكل, 1 = النشطة, 2 = المعطلة
+
+            int count = 0;
+
+            dgProducts.SuspendLayout();
+            try
+            {
+                foreach (DataRow r in _dtProducts.Rows)
                 {
                     bool active = Convert.ToBoolean(r["IsActive"]);
-                    var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
-                        r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
-                        r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
-                    if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+
+                    if (selectedStatus == 1 && !active) continue;
+                    if (selectedStatus == 2 && active) continue;
+
+                    if (selectedCatID > 0)
+                    {
+                        int catId = r["CategoryID"] != DBNull.Value ? Convert.ToInt32(r["CategoryID"]) : 0;
+                        if (catId != selectedCatID) continue;
+                    }
+
+                    string name = r["ProductName"]?.ToString() ?? "";
+                    string code = r["ProductCode"]?.ToString() ?? "";
+                    string partNum = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
+                    string barcode = r.Table.Columns.Contains("InternationalCode") && r["InternationalCode"] != DBNull.Value ? r["InternationalCode"].ToString() : "";
+                    string brand = r.Table.Columns.Contains("Brand") && r["Brand"] != DBNull.Value ? r["Brand"].ToString() : "";
+                    string model = r.Table.Columns.Contains("CarModel") && r["CarModel"] != DBNull.Value ? r["CarModel"].ToString() : "";
+
+                    if (string.IsNullOrEmpty(query) || 
+                        name.ToLower().Contains(query) || 
+                        code.ToLower().Contains(query) || 
+                        partNum.ToLower().Contains(query) || 
+                        barcode.ToLower().Contains(query) ||
+                        brand.ToLower().Contains(query) ||
+                        model.ToLower().Contains(query))
+                    {
+                        count++;
+                        var ri = dgProducts.Rows.Add(r["ProductID"], r["ProductCode"], r["PartNumber"], r["ProductName"],
+                            r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "---",
+                            r["Unit"], Convert.ToDecimal(r["SalePrice"]).ToString("N2"), active ? "✓" : "✗");
+                        if (!active) dgProducts.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+                    }
                 }
+            }
+            finally
+            {
+                dgProducts.ResumeLayout();
+            }
+
+            if (lblItemCount != null)
+            {
+                lblItemCount.Text = $"عدد الأصناف: {count}";
             }
         }
 
