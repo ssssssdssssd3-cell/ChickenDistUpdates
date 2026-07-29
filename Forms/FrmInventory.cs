@@ -20,6 +20,7 @@ namespace ChickenDist.Forms
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
         private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
         private ComboBox cboCategory;
+        private Label lblCount, lblTotalCost, lblTotalSale;
 
         private Button btnSaveAdj, btnClearAdj;
         private int _selectedProductID = 0;
@@ -219,8 +220,47 @@ namespace ChickenDist.Forms
             pnlF.Controls.Add(btnSaveAdj);
             pnlF.Controls.Add(btnClearAdj);
 
-            pnlLeft.Controls.Add(dgStock); // Fill
-            pnlLeft.Controls.Add(pnlF);    // Top
+            var pnlSummary = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                BackColor = Color.FromArgb(235, 240, 246),
+                Padding = new Padding(10, 5, 10, 5),
+                FlowDirection = FlowDirection.RightToLeft
+            };
+
+            lblCount = new Label
+            {
+                Text = "📦 الأصناف المعروضة: 0 صنف",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Margin = new Padding(5, 2, 25, 0)
+            };
+
+            lblTotalCost = new Label
+            {
+                Text = "💰 إجمالي التكلفة (الشراء): 0.00 ج",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 50, 0),
+                Margin = new Padding(5, 2, 25, 0)
+            };
+
+            lblTotalSale = new Label
+            {
+                Text = "🏷️ إجمالي قيمة البيع: 0.00 ج",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 100, 180),
+                Margin = new Padding(5, 2, 10, 0)
+            };
+
+            pnlSummary.Controls.AddRange(new Control[] { lblCount, lblTotalCost, lblTotalSale });
+
+            pnlLeft.Controls.Add(dgStock);    // Fill
+            pnlLeft.Controls.Add(pnlSummary); // Top (below pnlF)
+            pnlLeft.Controls.Add(pnlF);       // Top (filters)
 
             tabStock.Controls.Add(pnlLeft);
         }
@@ -301,12 +341,19 @@ namespace ChickenDist.Forms
 
             int displayedCount = 0;
             int maxDisplay = 300;
+            decimal totalCost = 0m;
+            decimal totalSale = 0m;
 
             foreach (DataRow r in dt.Rows)
             {
                 if (displayedCount >= maxDisplay) break;
                 displayedCount++;
                 decimal bookQty = Convert.ToDecimal(r["BookQty"]);
+                decimal pp = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                decimal sp = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+
+                totalCost += (bookQty * pp);
+                totalSale += (bookQty * sp);
                 int pid = Convert.ToInt32(r["ProductID"]);
 
                 string actualVal = "";
@@ -339,16 +386,16 @@ namespace ChickenDist.Forms
                     r["ProductName"],
                     expiryVal,
                     displayUnit,
-                    Convert.ToDecimal(r["PurchasePrice"]).ToString("N2"),
-                    Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
+                    pp.ToString("N2"),
+                    sp.ToString("N2"),
                     bookQty.ToString("N3"),
                     actualVal,
                     diffVal,
                     "" // Notes
                 );
 
-                dgStock.Rows[ri].Cells["PurchasePrice"].Tag = Convert.ToDecimal(r["PurchasePrice"]);
-                dgStock.Rows[ri].Cells["SalePrice"].Tag = Convert.ToDecimal(r["SalePrice"]);
+                dgStock.Rows[ri].Cells["PurchasePrice"].Tag = pp;
+                dgStock.Rows[ri].Cells["SalePrice"].Tag = sp;
 
                 dgStock.Rows[ri].Cells["BaseUnit"].Value          = r["Unit"];
                 dgStock.Rows[ri].Cells["Unit1Name"].Value         = r["Unit1Name"];
@@ -364,6 +411,11 @@ namespace ChickenDist.Forms
                     dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = diff2 > 0 ? Color.DarkGreen : Color.OrangeRed;
                 }
             }
+
+            if (lblCount != null) lblCount.Text = $"📦 الأصناف المعروضة: {displayedCount:N0} صنف";
+            if (lblTotalCost != null) lblTotalCost.Text = $"💰 إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
+            if (lblTotalSale != null) lblTotalSale.Text = $"🏷️ إجمالي قيمة البيع: {totalSale:N2} ج";
+
             dgStock.AutoSizeColumnsMode = oldMode;
             dgStock.ResumeLayout();
             ClearAdjustmentForm();

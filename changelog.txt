@@ -1,3 +1,7 @@
+v2.0.201 - 2026-07-29
+- Inventory Summary Bar (FrmInventory.cs):
+  1. إضافة شريط ملخص أعلى شاشة الجرد يعرض عدد الأصناف المعروضة في الشاشة، وإجمالي قيمة التكلفة (سعر الشراء × الرصيد)، وإجمالي قيمة البيع فورياً.
+
 v2.0.200 - 2026-07-29
 - Ultimate Performance & Timeout Fix (InventoryDAL.cs):
   1. القضاء التام على خطأ مهلة التنفيذ (SqlException Command Timeout) عند استعلام الجرد والأصناف.
