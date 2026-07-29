@@ -845,7 +845,8 @@ namespace ChickenDist.Forms
 				Width = 210,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(5),
-				BorderStyle = BorderStyle.FixedSingle
+				BorderStyle = BorderStyle.FixedSingle,
+				Visible = Session.CanViewQuickItems("Sales")
 			};
 
 			var lblQuickTitle = new Label

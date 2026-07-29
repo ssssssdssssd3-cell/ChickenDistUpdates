@@ -294,7 +294,7 @@ namespace ChickenDist.Forms
             }
 
             // ── لوحة الأصناف السريعة (يمين) ──────────────────
-            pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Color.FromArgb(240, 242, 245), Padding = new Padding(4) };
+            pnlQuick = new Panel { Location = new Point(660, 150), Size = new Size(420, 335), BackColor = Color.FromArgb(240, 242, 245), Padding = new Padding(4), Visible = Session.CanViewQuickItems("POS") };
             pnlQuick.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlQuick);
 
             // شريط الأقسام التفاعلي

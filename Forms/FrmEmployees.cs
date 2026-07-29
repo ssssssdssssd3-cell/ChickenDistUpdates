@@ -734,6 +734,7 @@ namespace ChickenDist.Forms
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 });
             dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 });
+            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
 
             // Live updates for counter
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
@@ -937,7 +938,7 @@ namespace ChickenDist.Forms
             {
                 bool access = false, canAdd = true, canEdit = true, canDelete = true;
                 bool editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
-                bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true;
+                bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true, viewQuickItems = true;
 
                 foreach (DataRow r in dt.Rows)
                 {
@@ -957,6 +958,7 @@ namespace ChickenDist.Forms
                         viewBalance = r.Table.Columns.Contains("CanViewBalance") && r["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(r["CanViewBalance"]) : true;
                         changeSafe = r.Table.Columns.Contains("CanChangeSafe") && r["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(r["CanChangeSafe"]) : true;
                         viewSalesTotals = r.Table.Columns.Contains("CanViewSalesTotals") && r["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(r["CanViewSalesTotals"]) : true;
+                        viewQuickItems = r.Table.Columns.Contains("CanViewQuickItems") && r["CanViewQuickItems"] != DBNull.Value ? Convert.ToBoolean(r["CanViewQuickItems"]) : true;
                         break;
                     }
                 }
@@ -985,7 +987,8 @@ namespace ChickenDist.Forms
                         viewDetails, 
                         viewBalance, 
                         changeSafe,
-                        viewSalesTotals
+                        viewSalesTotals,
+                        viewQuickItems
                     );
                     
                     var key = screen.Key;
@@ -1081,6 +1084,13 @@ namespace ChickenDist.Forms
                     {
                         DisableGridCell(targetGrid.Rows[ri], 15); // CanViewSalesTotals
                     }
+
+                    bool isQuickItemsScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                              string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase);
+                    if (!isQuickItemsScreen)
+                    {
+                        DisableGridCell(targetGrid.Rows[ri], 16); // CanViewQuickItems
+                    }
                 }
             }
 
@@ -1129,8 +1139,9 @@ namespace ChickenDist.Forms
                     bool viewBalance  = ToBool(row.Cells["CanViewBalance"].Value);
                     bool changeSafe   = ToBool(row.Cells["CanChangeSafe"].Value);
                     bool viewSalesTotals = ToBool(row.Cells["CanViewSalesTotals"].Value);
+                    bool viewQuickItems = ToBool(row.Cells["CanViewQuickItems"].Value);
 
-                    EmployeeDAL.SavePermissions(_empID, screen, access, add, edit, delete, editP, editI, deleteI, copyI, viewC, orderC, viewDetails, viewBalance, changeSafe, viewSalesTotals);
+                    EmployeeDAL.SavePermissions(_empID, screen, access, add, edit, delete, editP, editI, deleteI, copyI, viewC, orderC, viewDetails, viewBalance, changeSafe, viewSalesTotals, viewQuickItems);
                 }
             }
             MessageBox.Show($"✅ تم حفظ صلاحيات الموظف ({_empName}) بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);

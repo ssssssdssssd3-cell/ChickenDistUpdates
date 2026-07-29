@@ -175,7 +175,8 @@ namespace ChickenDist.DAL
             bool canAccess, bool canAdd, bool canEdit, bool canDelete,
             bool canEditPrice, bool canEditSalesInvoice, bool canDeleteSalesInvoice, 
             bool canCopySalesInvoice, bool canViewCost, bool canOrderColumns,
-            bool canViewDetails, bool canViewBalance, bool canChangeSafe, bool canViewSalesTotals)
+            bool canViewDetails, bool canViewBalance, bool canChangeSafe, bool canViewSalesTotals,
+            bool canViewQuickItems = true)
         {
             DbHelper.EnsurePermissionsColumns();
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
@@ -187,23 +188,23 @@ namespace ChickenDist.DAL
                         CanEditPrice=@ep, CanEditSalesInvoice=@cesi, CanDeleteSalesInvoice=@cdsi, 
                         CanCopySalesInvoice=@ccsi, CanViewCost=@cvc, CanOrderColumns=@coc,
                         CanViewDetails=@cvd, CanViewBalance=@cvb, CanChangeSafe=@ccs,
-                        CanViewSalesTotals=@cvst
+                        CanViewSalesTotals=@cvst, CanViewQuickItems=@cvqi
                     WHERE EmpID=@e AND ScreenName=@s",
                     DbHelper.P("@a", canAccess), DbHelper.P("@add", canAdd), DbHelper.P("@ed", canEdit), DbHelper.P("@del", canDelete),
                     DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), 
                     DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns),
                     DbHelper.P("@cvd", canViewDetails), DbHelper.P("@cvb", canViewBalance), DbHelper.P("@ccs", canChangeSafe),
-                    DbHelper.P("@cvst", canViewSalesTotals),
+                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems),
                     DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
                 DbHelper.Execute(@"
-                    INSERT INTO Permissions(EmpID, ScreenName, CanAccess, CanAdd, CanEdit, CanDelete, CanEditPrice, CanEditSalesInvoice, CanDeleteSalesInvoice, CanCopySalesInvoice, CanViewCost, CanOrderColumns, CanViewDetails, CanViewBalance, CanChangeSafe, CanViewSalesTotals) 
-                    VALUES(@e, @s, @a, @add, @ed, @del, @ep, @cesi, @cdsi, @ccsi, @cvc, @coc, @cvd, @cvb, @ccs, @cvst)",
+                    INSERT INTO Permissions(EmpID, ScreenName, CanAccess, CanAdd, CanEdit, CanDelete, CanEditPrice, CanEditSalesInvoice, CanDeleteSalesInvoice, CanCopySalesInvoice, CanViewCost, CanOrderColumns, CanViewDetails, CanViewBalance, CanChangeSafe, CanViewSalesTotals, CanViewQuickItems) 
+                    VALUES(@e, @s, @a, @add, @ed, @del, @ep, @cesi, @cdsi, @ccsi, @cvc, @coc, @cvd, @cvb, @ccs, @cvst, @cvqi)",
                     DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@add", canAdd), DbHelper.P("@ed", canEdit), DbHelper.P("@del", canDelete),
                     DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), 
                     DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns),
                     DbHelper.P("@cvd", canViewDetails), DbHelper.P("@cvb", canViewBalance), DbHelper.P("@ccs", canChangeSafe),
-                    DbHelper.P("@cvst", canViewSalesTotals));
+                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems));
         }
 
         public static DataTable GetTransactions(int empID, DateTime from, DateTime to, string typeFilter)
