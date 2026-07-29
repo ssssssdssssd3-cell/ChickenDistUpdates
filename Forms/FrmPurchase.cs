@@ -798,11 +798,7 @@ namespace ChickenDist.Forms
 
                 if (suppId > 0)
                 {
-                    using (var cashBox = new FrmCashBox(suppId, suppName))
-                    {
-                        cashBox.ShowDialog(this);
-                    }
-                    ToggleType();
+                    ShowSupplierPaymentDialog(suppId, suppName);
                 }
                 else
                 {
@@ -2427,6 +2423,200 @@ namespace ChickenDist.Forms
                     Cursor.Current = Cursors.Default;
                 }
             };
+        }
+
+        private void ShowSupplierPaymentDialog(int suppId, string suppName)
+        {
+            decimal currentSuppBalance = 0m;
+            try
+            {
+                currentSuppBalance = SupplierDAL.GetPreviousBalance(suppId, DateTime.Today.AddDays(1));
+            }
+            catch { }
+
+            decimal currentCashBalance = 0m;
+            try
+            {
+                var cashResult = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
+                if (cashResult != null) currentCashBalance = Convert.ToDecimal(cashResult);
+            }
+            catch { }
+
+            decimal netVal = 0m;
+            if (lblNetVal != null)
+            {
+                string textStr = lblNetVal.Text.Replace("ج", "").Replace(",", "").Trim();
+                decimal.TryParse(textStr, out netVal);
+            }
+
+            var dlg = new Form
+            {
+                Text = "💵 سند صرف نقدية لمورد",
+                Size = new Size(440, 390),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Color.FromArgb(30, 32, 45),
+                Font = Theme.FontMain
+            };
+
+            var pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 90,
+                BackColor = Color.FromArgb(42, 45, 62),
+                Padding = new Padding(12)
+            };
+
+            var lblTitle = new Label
+            {
+                Text = $"المورد: {suppName}",
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 200, 255),
+                Dock = DockStyle.Top,
+                Height = 26
+            };
+
+            var lblSuppBal = new Label
+            {
+                Text = $"رصيد المورد المستحق: {currentSuppBalance:N2} ج.م",
+                Font = Theme.FontMain,
+                ForeColor = Color.White,
+                Dock = DockStyle.Top,
+                Height = 22
+            };
+
+            var lblCashBal = new Label
+            {
+                Text = $"رصيد الخزنة المتاح: {currentCashBalance:N2} ج.م",
+                Font = Theme.FontMain,
+                ForeColor = currentCashBalance > 0 ? Color.FromArgb(46, 204, 113) : Color.FromArgb(231, 76, 60),
+                Dock = DockStyle.Top,
+                Height = 22
+            };
+
+            pnlHeader.Controls.Add(lblCashBal);
+            pnlHeader.Controls.Add(lblSuppBal);
+            pnlHeader.Controls.Add(lblTitle);
+
+            var pnlBody = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(20, 15, 20, 15)
+            };
+
+            var lblAmt = new Label
+            {
+                Text = "المبلغ المصروف (ج.م) :",
+                Font = Theme.FontBold,
+                ForeColor = Color.White,
+                Location = new Point(20, 15),
+                AutoSize = true
+            };
+
+            var nudAmt = new NumericUpDown
+            {
+                Location = new Point(20, 42),
+                Width = 380,
+                Height = 32,
+                DecimalPlaces = 2,
+                Maximum = 9999999m,
+                Value = netVal > 0 ? netVal : (currentSuppBalance > 0 ? currentSuppBalance : 0m),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                BackColor = Color.FromArgb(45, 50, 70),
+                ForeColor = Color.LightGreen
+            };
+
+            var lblNotes = new Label
+            {
+                Text = "البيان / ملاحظات الصرف :",
+                Font = Theme.FontMain,
+                ForeColor = Color.White,
+                Location = new Point(20, 85),
+                AutoSize = true
+            };
+
+            var txtNotes = new TextBox
+            {
+                Location = new Point(20, 110),
+                Width = 380,
+                Height = 55,
+                Multiline = true,
+                Text = _editPurchaseID > 0 ? $"سداد فاتورة مشتريات #{_editPurchaseID}" : "سداد نقدية لمورد",
+                Font = Theme.FontMain,
+                BackColor = Color.FromArgb(45, 50, 70),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            var btnConfirm = new Button
+            {
+                Text = "✅ إتمام الصرف وترحيل السند",
+                Location = new Point(20, 185),
+                Width = 240,
+                Height = 38,
+                BackColor = Color.FromArgb(46, 204, 113),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontBold,
+                Cursor = Cursors.Hand
+            };
+            btnConfirm.FlatAppearance.BorderSize = 0;
+
+            var btnCancel = new Button
+            {
+                Text = "❌ إلغاء",
+                Location = new Point(275, 185),
+                Width = 125,
+                Height = 38,
+                BackColor = Color.FromArgb(200, 50, 50),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontMain,
+                Cursor = Cursors.Hand
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+
+            btnConfirm.Click += (s, e) =>
+            {
+                if (nudAmt.Value <= 0)
+                {
+                    MessageBox.Show("يرجى إدخال مبلغ أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (nudAmt.Value > currentCashBalance)
+                {
+                    MessageBox.Show($"رصيد الخزنة المتاح ({currentCashBalance:N2} ج) لا يكفي لإتمام عملية الصرف ({nudAmt.Value:N2} ج).", "رصيد الخزنة غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                try
+                {
+                    string code = SupplierDAL.AddSupplierPayment(suppId, nudAmt.Value, txtNotes.Text.Trim());
+                    MessageBox.Show($"✅ تم تسجيل سند الصرف للمورد بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج.م\nالمورد: {suppName}", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("❌ حدث خطأ أثناء إجراء الصرف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            btnCancel.Click += (s, e) => dlg.Close();
+
+            pnlBody.Controls.AddRange(new Control[] { lblAmt, nudAmt, lblNotes, txtNotes, btnConfirm, btnCancel });
+            dlg.Controls.Add(pnlBody);
+            dlg.Controls.Add(pnlHeader);
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                ToggleType();
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════

@@ -47,8 +47,7 @@ namespace ChickenDist.Forms
 
         public FrmCashBox(int supplierID, string supplierName) : this()
         {
-            tabMain.SelectedTab = tabExpenses;
-            cboExpType.Focus();
+            tabMain.SelectedTab = tabCash;
         }
 
         private void InitUI()
