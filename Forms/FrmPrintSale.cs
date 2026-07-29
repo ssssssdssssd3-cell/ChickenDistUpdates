@@ -517,11 +517,15 @@ namespace ChickenDist.Forms
                         // توزيع العرض (من اليسار إلى اليمين RTL):
                         // [  الإجمالي ] [ خصم  ] [ سعر  ] [ كمية ] [    اسم الصنف     ]
                         //    55px       40px     50px     35px        (remainder)
+                        // ─── جدول رأس الأعمدة ──────────────────────────────────────
+                        // توزيع العرض (من اليسار إلى اليمين RTL):
+                        // [  الإجمالي ] [ خصم  ] [ سعر  ] [ كمية ] [    اسم الصنف     ]
+                        //    52px       35px     46px     30px        (remainder)
                         bool showDisc = AppConfig.ReceiptShowDiscount;
-                        int wTot    = 55;
-                        int wDisc   = showDisc ? 40 : 0;
-                        int wPrice  = 50;
-                        int wQty    = 35;
+                        int wTot    = 52;
+                        int wDisc   = showDisc ? 35 : 0;
+                        int wPrice  = 46;
+                        int wQty    = 30;
                         int wName   = printableW - wTot - wDisc - wPrice - wQty;
 
                         int colTot   = lMargin;
@@ -558,12 +562,6 @@ namespace ChickenDist.Forms
                         {
                             while (_printItemIndex < _items.Rows.Count)
                             {
-                                if (y + 40 > e.PageBounds.Height)
-                                {
-                                    e.HasMorePages = true;
-                                    return;
-                                }
-
                                 DataRow r = _items.Rows[_printItemIndex];
                                 string prodName = r["ProductName"].ToString();
                                 decimal qty   = Convert.ToDecimal(r["Quantity"]);
@@ -572,23 +570,34 @@ namespace ChickenDist.Forms
                                 decimal itemDisc    = r.Table.Columns.Contains("DiscountAmt")  && r["DiscountAmt"]  != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"])  : 0m;
                                 decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct")  && r["DiscountPct"]  != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"])  : 0m;
 
-                                int itemY = y - 2;
+                                // حساب ارتفاع السطر ديناميكياً بناءً على عدد أسطر اسم الصنف
+                                SizeF nameSize = g.MeasureString(prodName, small, (int)(wName - 4));
+                                int rowHeight = Math.Max(18, (int)Math.Ceiling(nameSize.Height) + 4);
 
-                                // رسم الاسم (RTL — يمتد من اليمين)
-                                g.DrawString(prodName, small, Brushes.Black, new RectangleF(colName, y, wName - 4, 16), right);
+                                if (y + rowHeight + 20 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                int itemY = y - 2;
+                                float textY = y + (rowHeight - 14) / 2f;
+
+                                // رسم الاسم (RTL — يمتد ديناميكياً حسـب عدد الأسطر)
+                                g.DrawString(prodName, small, Brushes.Black, new RectangleF(colName, y, wName - 4, rowHeight), right);
                                 // كمية
-                                g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQty, y, wQty, 16), hdr);
+                                g.DrawString(qty.ToString("0.##"), small, Brushes.Black, new RectangleF(colQty, textY, wQty, 14), hdr);
                                 // سعر الوحدة
-                                g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPrice, y, wPrice, 16), hdr);
+                                g.DrawString(price.ToString("N2"), small, Brushes.Black, new RectangleF(colPrice, textY, wPrice, 14), hdr);
                                 // خصم
                                 if (showDisc)
                                 {
                                     string discTxt = itemDiscPct > 0 ? $"{itemDiscPct:0.#}%" : (itemDisc > 0 ? itemDisc.ToString("0.##") : "-");
-                                    g.DrawString(discTxt, small, Brushes.DimGray, new RectangleF(colDisc, y, wDisc, 16), hdr);
+                                    g.DrawString(discTxt, small, Brushes.DimGray, new RectangleF(colDisc, textY, wDisc, 14), hdr);
                                 }
                                 // إجمالي
-                                g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTot, y, wTot, 16), hdr);
-                                y += 18;
+                                g.DrawString(tot.ToString("N2"), small, Brushes.Black, new RectangleF(colTot, textY, wTot, 14), hdr);
+                                y += rowHeight;
 
                                 // Draw item row borders
                                 g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); // bottom line
