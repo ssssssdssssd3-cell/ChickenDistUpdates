@@ -1,3 +1,7 @@
+v2.0.199 - 2026-07-29
+- UI & Contrast Fixes (FrmInventory.cs):
+  1. تعديل ألوان خطوط خانات التصفية (حد الطلب، بدون رصيد صفري، صلاحية فقط) إلى ألوان داكنة عالية التباين والوضوح لسهولة القراءة.
+
 v2.0.198 - 2026-07-29
 - Scalability Overhaul for 20,000+ Products (FrmProductSearch.cs, FrmInventory.cs, InventoryDAL.cs):
   1. إضافة دالة InventoryDAL.GetStockSummary فائقة السرعة لجلب ملخص الأرصدة بدون استعلامات فرعية مكررة.

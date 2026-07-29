@@ -124,7 +124,7 @@ namespace ChickenDist.Forms
             chkBelowMin = new CheckBox
             {
                 Text = "⚠️ حد الطلب",
-                ForeColor = Color.Yellow,
+                ForeColor = Color.FromArgb(180, 90, 0),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 AutoSize = true,
                 Margin = new Padding(15, 6, 5, 0),
@@ -135,7 +135,7 @@ namespace ChickenDist.Forms
             chkHideZeroStock = new CheckBox
             {
                 Text = "🚫 بدون رصيد صفري",
-                ForeColor = Color.LightSkyBlue,
+                ForeColor = Color.FromArgb(0, 102, 204),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 AutoSize = true,
                 Margin = new Padding(15, 6, 5, 0),
@@ -146,8 +146,8 @@ namespace ChickenDist.Forms
 
             chkExpiryOnly = new CheckBox
             {
-                Text = "📅 صلاحية فقط",
-                ForeColor = Color.LightGreen,
+                Text = "📗 صلاحية فقط",
+                ForeColor = Color.FromArgb(0, 130, 50),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 AutoSize = true,
                 Margin = new Padding(15, 6, 5, 0),
