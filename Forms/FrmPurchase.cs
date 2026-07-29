@@ -765,28 +765,73 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(tblTotals);
 
             // ── قسم الأزرار (في الجانب الأيسر) ───────────────────────────────
+            // ── قسم الأزرار (في الجانب الأيسر) ───────────────────────────────
             var pnlSideButtons = new Panel
             {
                 Dock = DockStyle.Left,
                 Width = 140,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 15, 8, 15)
+                Padding = new Padding(8, 10, 8, 10)
             };
 
-            btnSave     = Theme.MakeButton("💾 حفظ [F5]",    0, 0, 120, 40, Theme.Accent);
-            btnHold     = Theme.MakeButton("⏸️ تعليق [F7]",  0, 0, 120, 40, Color.FromArgb(200, 140, 50));
-            btnLoadHold = Theme.MakeButton("📂 معلقات [F8]", 0, 0, 120, 40, Color.FromArgb(100, 100, 160));
-            Button btnSarf = Theme.MakeButton("💵 صرف", 0, 0, 120, 40, Theme.Success);
-            btnNew      = Theme.MakeButton("🆕 جديد [F2]",   0, 0, 120, 40, Color.FromArgb(60, 100, 60));
-            btnPrint    = Theme.MakeButton("🖨️ طباعة",       0, 0, 120, 40, Color.FromArgb(80, 80, 80));
-            Button btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 120, 40, Color.FromArgb(37, 211, 102));
+            btnSave     = Theme.MakeButton("💾 حفظ [F5]",    0, 0, 124, 36, Theme.Accent);
+            btnHold     = Theme.MakeButton("⏸️ تعليق [F7]",  0, 0, 124, 36, Color.FromArgb(200, 140, 50));
+            btnLoadHold = Theme.MakeButton("📂 معلقات [F8]", 0, 0, 124, 36, Color.FromArgb(100, 100, 160));
+            Button btnSarf = Theme.MakeButton("💵 صرف",       0, 0, 124, 36, Theme.Success);
+            btnNew      = Theme.MakeButton("🆕 جديد [F2]",   0, 0, 124, 36, Color.FromArgb(60, 100, 60));
+            btnPrint    = Theme.MakeButton("🖨️ طباعة",       0, 0, 124, 36, Color.FromArgb(80, 80, 80));
 
             btnSave.Click     += BtnSave_Click;
             btnHold.Click     += BtnHold_Click;
             btnLoadHold.Click += BtnLoadHold_Click;
-            btnSarf.Click     += (s, e) => MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
             btnNew.Click      += (s, e) => ClearInvoice();
-            btnWhatsApp.Click += (s, e) => MessageBox.Show("تحت التطوير", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            btnSarf.Click += (s, e) =>
+            {
+                int suppId = 0;
+                string suppName = "";
+                if (cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    suppId = ci.ID;
+                    suppName = ci.Text;
+                }
+
+                if (suppId > 0)
+                {
+                    using (var cashBox = new FrmCashBox(suppId, suppName))
+                    {
+                        cashBox.ShowDialog(this);
+                    }
+                    ToggleType();
+                }
+                else
+                {
+                    MessageBox.Show("يرجى اختيار المورد أولاً لإجراء عملية الصرف له.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            btnPrint.Click += (s, e) =>
+            {
+                int targetId = _editPurchaseID > 0 ? _editPurchaseID : _lastPurchaseID;
+                if (targetId > 0)
+                {
+                    try
+                    {
+                        using (var printDlg = new FrmPrintPurchaseBarcodes(targetId, targetId.ToString()))
+                        {
+                            printDlg.ShowDialog(this);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل فتح شاشة الطباعة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("يرجى حفظ الفاتورة أولاً لتمكين طباعة ملصقات الفاتورة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
 
             var flowBtns = new FlowLayoutPanel
             {
@@ -796,9 +841,9 @@ namespace ChickenDist.Forms
                 WrapContents = false,
                 Padding = new Padding(0)
             };
-            foreach (var b in new[] { btnSave, btnHold, btnLoadHold, btnSarf, btnNew, btnPrint, btnWhatsApp })
+            foreach (var b in new[] { btnSave, btnHold, btnLoadHold, btnSarf, btnNew, btnPrint })
             {
-                b.Margin = new Padding(0, 0, 0, 8);
+                b.Margin = new Padding(0, 0, 0, 5);
                 flowBtns.Controls.Add(b);
             }
 
