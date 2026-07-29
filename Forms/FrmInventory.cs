@@ -38,9 +38,12 @@ namespace ChickenDist.Forms
         private TextBox txtSearchLog;
         private ComboBox cboLogWarehouse;
         private Button btnLoadLogs, btnPrintLogs;
+        private Timer _searchTimer;
 
         public FrmInventory(bool belowMinOnly = false)
         {
+            _searchTimer = new Timer { Interval = 220 };
+            _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); LoadStock(); };
             InitUI();
             LoadWarehouses();
             LoadLogWarehouses();
@@ -110,7 +113,8 @@ namespace ChickenDist.Forms
 
             var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
             txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(5, 4, 5, 0) };
-            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadStock(); };
+            txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
+            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { _searchTimer.Stop(); LoadStock(); } };
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
             btnSearch.Size = new Size(70, 26);
@@ -295,8 +299,13 @@ namespace ChickenDist.Forms
             var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId);
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
+            int displayedCount = 0;
+            int maxDisplay = 300;
+
             foreach (DataRow r in dt.Rows)
             {
+                if (displayedCount >= maxDisplay) break;
+                displayedCount++;
                 decimal bookQty = Convert.ToDecimal(r["BookQty"]);
                 int pid = Convert.ToInt32(r["ProductID"]);
 

@@ -25,6 +25,9 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // Pre-warm product cache asynchronously so opening screens is instant
+            ChickenDist.Core.ProductCache.PreWarm();
+
             // التحقق من تفعيل ترخيص البرنامج
             if (!ChickenDist.Core.LicenseManager.CheckLicense())
             {

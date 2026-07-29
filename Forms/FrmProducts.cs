@@ -288,7 +288,7 @@ namespace ChickenDist.Forms
 
         private void LoadProducts()
         {
-            _dtProducts = ProductDAL.GetAll();
+            _dtProducts = ProductCache.GetAll();
             FilterProducts();
         }
 
@@ -404,6 +404,7 @@ namespace ChickenDist.Forms
             }
             if (new FrmProductCard(_selectedID).ShowDialog() == DialogResult.OK)
             {
+                ProductCache.Refresh();
                 LoadProducts();
             }
         }
@@ -423,6 +424,7 @@ namespace ChickenDist.Forms
             if (MessageBox.Show("هل أنت متأكد من إيقاف هذا الصنف؟", "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 ProductDAL.Delete(_selectedID);
+                ProductCache.Refresh();
                 LoadProducts();
             }
         }

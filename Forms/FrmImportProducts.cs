@@ -756,6 +756,7 @@ namespace ChickenDist.Forms
                 });
 
                 this.Cursor = Cursors.Default;
+                ChickenDist.Core.ProductCache.Refresh();
                 MessageBox.Show($"✅ اكتمل الاستيراد بنجاح!\nالأصناف المستوردة/المحدثة بنجاح: {success}\nالأصناف التي فشلت: {failed}",
                     "تم الاستيراد", MessageBoxButtons.OK, MessageBoxIcon.Information, 
                     MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);

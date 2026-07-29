@@ -309,7 +309,7 @@ namespace ChickenDist.Forms
 
         private void LoadProducts()
         {
-            _dtProducts = ProductDAL.GetAll(true);
+            _dtProducts = ProductCache.GetActive();
             _dvProducts = new DataView(_dtProducts);
             LoadStockCache();
             RefreshGrid();

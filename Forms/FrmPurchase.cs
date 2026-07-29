@@ -1082,7 +1082,7 @@ namespace ChickenDist.Forms
             cboSupplier.EndUpdate();
 
             // الأصناف
-            DataTable dtProd = ProductDAL.GetAll(true);
+            DataTable dtProd = ProductCache.GetActive();
             cboProduct.BeginUpdate();
             cboProduct.Items.Clear();
             List<ComboItem> productItems = new List<ComboItem>();

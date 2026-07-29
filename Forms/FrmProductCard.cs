@@ -842,6 +842,7 @@ namespace ChickenDist.Forms
 
             if (id > 0)
             {
+                ChickenDist.Core.ProductCache.Refresh();
                 MessageBox.Show("✅ تم الحفظ");
                 this.DialogResult = DialogResult.OK;
                 this.Close();

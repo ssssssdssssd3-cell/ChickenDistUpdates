@@ -1779,7 +1779,7 @@ namespace ChickenDist.Forms
 			cboDriver.SelectedIndex = 0;
 			cboDriver.EndUpdate();
 			
-			DataTable all2 = ProductDAL.GetAll(activeOnly: true);
+			DataTable all2 = ProductCache.GetActive();
 			cboProduct.BeginUpdate();
 			cboProduct.Items.Clear();
 			List<ComboItem> productItems = new List<ComboItem>();
