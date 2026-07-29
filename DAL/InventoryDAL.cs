@@ -11,150 +11,75 @@ namespace ChickenDist.DAL
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
         public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300)
         {
-            string filter = "";
+            var stockDict = GetStockSummary(warehouseID);
+
             List<SqlParameter> prms = new List<SqlParameter>();
             prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 300 : maxRows));
 
+            string whereClause = " WHERE p.IsActive = 1 ";
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                filter = " AND (t.ProductName LIKE @term OR t.ProductCode LIKE @term OR t.PartNumber LIKE @term) ";
+                whereClause += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term) ";
                 prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
-            }
-
-            if (warehouseID.HasValue)
-            {
-                prms.Add(DbHelper.P("@wid", warehouseID.Value));
             }
 
             if (categoryID.HasValue)
             {
+                whereClause += " AND p.CategoryID = @catid ";
                 prms.Add(DbHelper.P("@catid", categoryID.Value));
             }
 
+            if (expiryOnly)
+            {
+                whereClause += " AND COALESCE(p.HasExpiry, 0) = 1 ";
+            }
+
             string sql = $@"
-                SELECT TOP (@maxRows) * FROM (
-                    -- Part 1: Products without expiry (HasExpiry = 0)
-                    SELECT 
-                        p.ProductID,
-                        p.ProductCode,
-                        p.PartNumber,
-                        p.ProductName,
-                        p.Unit,
-                        p.SalePrice,
-                        p.PurchasePrice,
-                        p.MinStockLimit,
-                        p.ShelfLocation,
-                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
-                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                        p.Unit3Factor, 
-                        0 AS HasExpiry, 
-                        p.DefaultExpiryDays, 
-                        p.CategoryID,
-                        ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)), 0) + 
-                        -- Incoming since adjustment: Sales Returns
-                        ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming since adjustment: Driver Handover Returns
-                        ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming since adjustment: Purchases
-                        ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming since adjustment: Warehouse Transfers
-                        ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
-                        COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
-                        -- Outgoing since adjustment: Purchase Returns
-                        - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                        -- Outgoing since adjustment: Warehouse Sales & Driver Loads
-                        - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                        -- Outgoing since adjustment: Warehouse Transfers
-                        - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                        -- Outgoing since adjustment: Wastage & Loss
-                        - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
-                        - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty,
-                        p.IsActive,
-                        NULL AS BatchID,
-                        CAST(NULL AS DATE) AS ExpiryDate
-                    FROM Products p
-                    OUTER APPLY (
-                        SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
-                        FROM StockAdjustments sa 
-                        WHERE sa.ProductID = p.ProductID 
-                          {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
-                        ORDER BY sa.AdjDate DESC
-                    ) adj
-                    WHERE COALESCE(p.HasExpiry, 0) = 0
+                SELECT TOP (@maxRows) 
+                    p.ProductID,
+                    p.ProductCode,
+                    p.PartNumber,
+                    p.ProductName,
+                    p.Unit,
+                    p.SalePrice,
+                    p.PurchasePrice,
+                    p.MinStockLimit,
+                    p.ShelfLocation,
+                    p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                    p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
+                    p.Unit3Factor, 
+                    COALESCE(p.HasExpiry, 0) AS HasExpiry, 
+                    p.DefaultExpiryDays, 
+                    p.CategoryID,
+                    CAST(0.000 AS DECIMAL(18,3)) AS BookQty,
+                    p.IsActive,
+                    CAST(NULL AS INT) AS BatchID,
+                    CAST(NULL AS DATE) AS ExpiryDate
+                FROM Products p
+                {whereClause}
+                ORDER BY p.ProductName";
 
-                    UNION ALL
+            DataTable dt = DbHelper.Query(sql, prms.ToArray());
+            DataTable result = dt.Clone();
 
-                    -- Part 2: Products with expiry (HasExpiry = 1) that have batches in ProductBatches
-                    SELECT 
-                        p.ProductID,
-                        p.ProductCode,
-                        p.PartNumber,
-                        p.ProductName,
-                        p.Unit,
-                        p.SalePrice,
-                        p.PurchasePrice,
-                        p.MinStockLimit,
-                        p.ShelfLocation,
-                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
-                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                        p.Unit3Factor, 
-                        1 AS HasExpiry, 
-                        p.DefaultExpiryDays, 
-                        p.CategoryID,
-                        pb.Quantity AS BookQty,
-                        p.IsActive,
-                        pb.BatchID,
-                        pb.ExpiryDate
-                    FROM Products p
-                    JOIN ProductBatches pb ON p.ProductID = pb.ProductID
-                    WHERE COALESCE(p.HasExpiry, 0) = 1
-                      {(warehouseID.HasValue ? "AND pb.WarehouseID = @wid" : "")}
+            foreach (DataRow r in dt.Rows)
+            {
+                int pid = Convert.ToInt32(r["ProductID"]);
+                decimal bq = stockDict.TryGetValue(pid, out decimal val) ? val : 0m;
+                r["BookQty"] = bq;
 
-                    UNION ALL
+                if (belowMinOnly)
+                {
+                    decimal minLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
+                    if (minLimit <= 0 || bq > minLimit) continue;
+                }
 
-                    -- Part 3: Products with expiry (HasExpiry = 1) that do NOT have any batches in ProductBatches
-                    SELECT 
-                        p.ProductID,
-                        p.ProductCode,
-                        p.PartNumber,
-                        p.ProductName,
-                        p.Unit,
-                        p.SalePrice,
-                        p.PurchasePrice,
-                        p.MinStockLimit,
-                        p.ShelfLocation,
-                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
-                        p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                        p.Unit3Factor, 
-                        1 AS HasExpiry, 
-                        p.DefaultExpiryDays, 
-                        p.CategoryID,
-                        0.000 AS BookQty,
-                        p.IsActive,
-                        NULL AS BatchID,
-                        CAST(NULL AS DATE) AS ExpiryDate
-                    FROM Products p
-                    WHERE COALESCE(p.HasExpiry, 0) = 1
-                      AND NOT EXISTS (
-                          SELECT 1 FROM ProductBatches pb 
-                          WHERE pb.ProductID = p.ProductID 
-                            {(warehouseID.HasValue ? "AND pb.WarehouseID = @wid" : "")}
-                      )
-                ) AS t
-                WHERE t.IsActive = 1 {filter}
-                {(belowMinOnly ? " AND t.MinStockLimit > 0 AND t.BookQty <= t.MinStockLimit" : "")}
-                {(hideZeroStock ? " AND t.BookQty <> 0" : "")}
-                {(expiryOnly ? " AND t.HasExpiry = 1" : "")}
-                {(categoryID.HasValue ? " AND t.CategoryID = @catid" : "")}
-                ORDER BY t.ProductName, t.ExpiryDate ASC";
+                if (hideZeroStock && bq == 0m) continue;
 
-            return DbHelper.Query(sql, prms.ToArray());
+                result.ImportRow(r);
+            }
+
+            return result;
         }
 
 
