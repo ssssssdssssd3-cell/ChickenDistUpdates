@@ -8,7 +8,7 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة التحويل المخزني بين المستودعات</summary>
+    /// <summary>شاشة التحويل المخزني بين المخازن</summary>
     public class FrmWarehouseTransfer : Form
     {
         private ComboBox cboFromWarehouse, cboToWarehouse, cboProduct;
@@ -28,7 +28,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "تحويل مخزني بين المستودعات";
+            this.Text = "تحويل مخزني بين المخازن";
             this.Size = new Size(1000, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -217,8 +217,8 @@ namespace ChickenDist.Forms
             var dt = WarehouseDAL.GetAll(true);
             cboFromWarehouse.Items.Clear();
             cboToWarehouse.Items.Clear();
-            cboFromWarehouse.Items.Add(new ComboItem(0, "-- اختر المستودع --"));
-            cboToWarehouse.Items.Add(new ComboItem(0, "-- اختر المستودع --"));
+            cboFromWarehouse.Items.Add(new ComboItem(0, "-- اختر المخزن --"));
+            cboToWarehouse.Items.Add(new ComboItem(0, "-- اختر المخزن --"));
             foreach (DataRow r in dt.Rows)
             {
                 var ci = new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString());

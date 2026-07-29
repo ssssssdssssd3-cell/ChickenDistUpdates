@@ -270,7 +270,7 @@ namespace ChickenDist.Forms
 				Width = 40,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
-				BackColor = Color.FromArgb(70, 80, 95),
+				BackColor = Theme.Accent,
 				ForeColor = Color.White,
 				Cursor = Cursors.Hand,
 				Dock = DockStyle.Left,
@@ -787,7 +787,7 @@ namespace ChickenDist.Forms
 			{
 				Text = "➕ إضافة",
 				Dock = DockStyle.Fill,
-				BackColor = Color.FromArgb(40, 167, 69),
+				BackColor = Theme.Success,
 				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
 				Cursor = Cursors.Hand,

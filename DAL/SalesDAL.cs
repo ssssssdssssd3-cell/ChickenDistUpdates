@@ -426,9 +426,6 @@ namespace ChickenDist.DAL
             catch (Exception ex)
             {
                 AppLogger.Error($"فشل حذف مسودة الفاتورة رقم {saleID} — الفاتورة قد تظل معلقة في قاعدة البيانات", ex, "SaleDAL.DeleteDraftSale");
-                System.Windows.Forms.MessageBox.Show(
-                    $"فشل حذف المسودة:\n{ex.Message}\nيرجى مراجعة سجل الأخطاء.",
-                    "خطأ في الحذف", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 return false;
             }
         }

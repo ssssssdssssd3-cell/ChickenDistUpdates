@@ -187,12 +187,12 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
 
             btnSave = Theme.MakeButton("💾 حفظ", 210, y, 90, 32, Theme.Accent);
-            btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Color.FromArgb(60, 100, 60));
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 44;
-            btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Color.FromArgb(80, 100, 60));
-            btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Color.FromArgb(120, 80, 140));
+            btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Theme.Success);
+            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Theme.Danger); y += 44;
+            btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Theme.Success);
+            btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Theme.Secondary);
             btnStatement = Theme.MakeButton("📄 كشف", 10, y, 95, 32, Theme.Primary); y += 44;
-            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 290, 32, Color.FromArgb(70, 130, 180)); y += 44;
+            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 290, 32, Theme.Accent); y += 44;
  
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;

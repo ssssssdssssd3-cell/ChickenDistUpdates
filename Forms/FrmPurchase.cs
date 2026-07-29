@@ -179,7 +179,7 @@ namespace ChickenDist.Forms
             // ── صف 0: نوع الفاتورة | المورد | التاريخ ────────────────────────
             // أزرار نوع الفاتورة (col5 صف 0)
             btnTypeCredit = Theme.MakeButton("📋 آجل",  0, 0, 95, 30, Theme.Primary);
-            btnTypeCash   = Theme.MakeButton("💵 نقدي", 0, 0, 95, 30, Color.FromArgb(60, 60, 60));
+            btnTypeCash   = Theme.MakeButton("💵 نقدي", 0, 0, 95, 30, Theme.BgCard);
             btnTypeCredit.Margin = new Padding(2);
             btnTypeCash.Margin   = new Padding(2);
             btnTypeCredit.Click += (s, e) => { _purchaseType = "Credit"; ToggleType(); };

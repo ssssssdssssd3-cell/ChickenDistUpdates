@@ -129,20 +129,20 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
 
             btnSave = Theme.MakeButton("💾 حفظ", 210, y, 90, 32, Theme.Accent);
-            btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Color.FromArgb(60, 100, 60));
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Color.FromArgb(140, 40, 40));
+            btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Theme.Success);
+            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Theme.Danger);
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
 
-            var btnExpense = Theme.MakeButton("💸 صرف", 205, y + 40, 95, 32, Color.FromArgb(80, 80, 140));
+            var btnExpense = Theme.MakeButton("💸 صرف", 205, y + 40, 95, 32, Theme.Primary);
             btnExpense.Click += BtnExpense_Click;
 
-            var btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y + 40, 90, 32, Color.FromArgb(120, 80, 140));
+            var btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y + 40, 90, 32, Theme.Secondary);
             btnAdjustment.Click += BtnAdjustment_Click;
 
-            btnStatement = Theme.MakeButton("📋 كشف", 10, y + 40, 95, 32, Color.FromArgb(50, 100, 150));
+            btnStatement = Theme.MakeButton("📋 كشف", 10, y + 40, 95, 32, Theme.Accent);
             btnStatement.Click += (s, e) =>
             {
                 if (_selectedID == 0) { MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }

@@ -126,7 +126,10 @@ namespace ChickenDist.Core
                     }
                 }
             }
-            catch {}
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ReadIniDirect warning: {ex.Message}");
+            }
             return defaultValue;
         }
 
@@ -168,7 +171,10 @@ namespace ChickenDist.Core
                     System.IO.File.AppendAllText(logPath,
                         $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] STEP={stepName} | {ex.Message}{Environment.NewLine}");
                 }
-                catch { }
+                catch (Exception logEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Schema error log write failed: {logEx.Message}");
+                }
                 // لا نعيد الرمي — الخطوة الفاشلة معزولة ولا تؤثر على ما بعدها
             }
         }

@@ -71,6 +71,7 @@ namespace ChickenDist.Core
         }
         // الألوان الرئيسية - زاهية وواضحة جداً وعالية التباين (Vibrant & High-Contrast Modern Palette)
         public static Color Primary    = Color.FromArgb(13, 110, 253);   // Royal Blue زرقاء زاهية
+        public static Color Secondary  = Color.FromArgb(108, 117, 125);  // Slate Gray رمادي متناسق
         public static Color Accent     = Color.FromArgb(253, 126, 20);   // Vibrant Orange برتقالي زاهي
         public static Color AccentDark = Color.FromArgb(217, 83, 79);
         public static Color Success    = Color.FromArgb(25, 135, 84);    // Green خضراء زاهية
@@ -663,6 +664,12 @@ namespace ChickenDist.Core
                 }
             }
             catch { }
+        }
+
+        /// <summary>إظهار رسائل تنبيه بتنسيق RTL ومحاذاة عربية صحيحة دائماً</summary>
+        public static DialogResult ShowMsg(string text, string title = "تنبيه", MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information)
+        {
+            return MessageBox.Show(text, title, buttons, icon, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
         }
     }
 }
