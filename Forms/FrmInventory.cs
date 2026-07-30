@@ -19,7 +19,7 @@ namespace ChickenDist.Forms
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
         private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
-        private ComboBox cboCategory;
+        private ComboBox cboCategory, cboMaxRows;
         private Label lblCount, lblTotalCost, lblTotalSale;
 
         private Button btnSaveAdj, btnClearAdj;
@@ -32,6 +32,10 @@ namespace ChickenDist.Forms
         // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل
         private readonly System.Collections.Generic.Dictionary<int, decimal> _enteredActualQty
             = new System.Collections.Generic.Dictionary<int, decimal>();
+
+        // قائمة الأصناف التي تم إخفاؤها مؤقتاً بالزر الأيمن لربطها بالجرد لاحقاً
+        private readonly System.Collections.Generic.HashSet<int> _hiddenProductIDs
+            = new System.Collections.Generic.HashSet<int>();
 
         // ── دورة الجرد الحالية ──────────────────────────────
         private Button btnStartInventory;
@@ -209,7 +213,13 @@ namespace ChickenDist.Forms
             };
             chkUninventoriedOnly.CheckedChanged += (s, e) => LoadStock();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnStartInventory, lblInventoryStart, chkUninventoriedOnly, btnMovement, btnPrintStock, btnAddExpiryRow });
+            var lblLimit = new Label { Text = "عدد العرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
+            cboMaxRows = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
+            cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
+            cboMaxRows.SelectedIndex = 0;
+            cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, lblLimit, cboMaxRows, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnStartInventory, lblInventoryStart, chkUninventoriedOnly, btnMovement, btnPrintStock, btnAddExpiryRow });
 
 
             // ── شبكة الجرد ─────────────────────────────────
@@ -242,6 +252,31 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",         Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",  Visible = false });
             Theme.AdjustGridHeaders(dgStock);
+
+            // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
+            var ctxStock = new ContextMenuStrip();
+
+            var itemMark = new ToolStripMenuItem("✅ تمييز تم جرده (مطابق للدفتري)");
+            itemMark.Click += (s, e) => MarkSelectedRowAsInventoried();
+
+            var itemHide = new ToolStripMenuItem("🗑️ إخفاء الصنف من العرض لجرده لاحقاً");
+            itemHide.Click += (s, e) => HideSelectedRowForLater();
+
+            var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
+            itemCard.Click += (s, e) => OpenSelectedProductCard();
+
+            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, new ToolStripSeparator(), itemCard });
+            dgStock.ContextMenuStrip = ctxStock;
+
+            dgStock.CellMouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.RowIndex < dgStock.Rows.Count)
+                {
+                    dgStock.ClearSelection();
+                    dgStock.Rows[e.RowIndex].Selected = true;
+                }
+            };
+
             dgStock.CellEndEdit += DgStock_CellEndEdit;
             dgStock.SelectionChanged += DgStock_SelectionChanged;
             dgStock.CellClick += DgStock_CellClick;
@@ -404,6 +439,16 @@ namespace ChickenDist.Forms
 
             int displayedCount = 0;
             int maxDisplay = 300;
+            if (cboMaxRows != null)
+            {
+                string sel = cboMaxRows.SelectedItem?.ToString() ?? "";
+                if (sel.Contains("5000")) maxDisplay = 5000;
+                else if (sel.Contains("1000")) maxDisplay = 1000;
+                else if (sel.Contains("500")) maxDisplay = 500;
+                else if (sel.Contains("الكل") || sel.Contains("الجميع")) maxDisplay = int.MaxValue;
+                else maxDisplay = 300;
+            }
+
             decimal totalCost = 0m;
             decimal totalSale = 0m;
 
@@ -411,6 +456,8 @@ namespace ChickenDist.Forms
             {
                 if (displayedCount >= maxDisplay) break;
                 int pidCheck = Convert.ToInt32(r["ProductID"]);
+                // استبعاد الأصناف المخفية مؤقتاً للجرد لاحقاً
+                if (_hiddenProductIDs.Contains(pidCheck)) continue;
                 // تطبيق فلتر الأصناف التي لم تُجرد بعد
                 if (showUninventoriedOnly && _inventoriedProductIDs.Contains(pidCheck)) continue;
                 displayedCount++;
@@ -1055,12 +1102,70 @@ namespace ChickenDist.Forms
             frm.ShowDialog();
         }
 
+        private void MarkSelectedRowAsInventoried()
+        {
+            if (dgStock.SelectedRows.Count == 0) return;
+            var r = dgStock.SelectedRows[0];
+            if (r.Cells["ProductID"].Value == null) return;
+
+            int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            string bookQtyStr = r.Cells["BookQty"].Value?.ToString() ?? "0";
+            r.Cells["ActualQty"].Value = bookQtyStr;
+            r.Cells["DiffQty"].Value = "0.000";
+            r.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            if (decimal.TryParse(bookQtyStr, System.Globalization.NumberStyles.Any, inv, out decimal bq))
+            {
+                _enteredActualQty[pid] = bq;
+                _inventoriedProductIDs.Add(pid);
+            }
+            dgStock.InvalidateRow(r.Index);
+        }
+
+        private void HideSelectedRowForLater()
+        {
+            if (dgStock.SelectedRows.Count == 0) return;
+            var r = dgStock.SelectedRows[0];
+            if (r.Cells["ProductID"].Value == null) return;
+
+            int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
+            _hiddenProductIDs.Add(pid);
+            dgStock.Rows.Remove(r);
+
+            if (lblCount != null)
+                lblCount.Text = $"الأصناف المعروضة: {dgStock.Rows.Count:N0}";
+
+            Theme.ShowMsg($"تم إخفاء الصنف ({pName}) من العرض لجرده بوقت لاحق بنجاح.", "إخفاء صنف");
+        }
+
+        private void OpenSelectedProductCard()
+        {
+            if (dgStock.SelectedRows.Count == 0) return;
+            var r = dgStock.SelectedRows[0];
+            if (r.Cells["ProductID"].Value == null) return;
+
+            int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            try
+            {
+                new FrmProductCard(pid).ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("تعذر فتح كارت الصنف:\n" + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private int _printStockRowIndex = 0;
+
         private void PrintStocktakeReport()
         {
+            _printStockRowIndex = 0;
             var pd = new PrintDocument();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
-            
+
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
@@ -1068,7 +1173,6 @@ namespace ChickenDist.Forms
                 var bold = new Font("Arial", 10, FontStyle.Bold);
                 var normal = new Font("Arial", 9);
                 var center = new StringFormat { Alignment = StringAlignment.Center };
-                var right = new StringFormat { Alignment = StringAlignment.Far };
 
                 int y = 30;
                 int pageW = 800;
@@ -1083,7 +1187,7 @@ namespace ChickenDist.Forms
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 10;
 
                 // Columns: Code, Name, Unit, Book Qty, Actual Qty (Blank line for writing)
-                int[] xCols = { 20, 150, 420, 520, 670 };
+                int[] xCols = { 20, 140, 430, 530, 670 };
                 string[] headers = { "الكود", "اسم الصنف", "الوحدة", "الرصيد الدفتري", "الرصيد الفعلي (يدوي)" };
 
                 for (int i = 0; i < headers.Length; i++)
@@ -1091,45 +1195,62 @@ namespace ChickenDist.Forms
                 y += 22;
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 8;
 
-                foreach (DataGridViewRow row in dgStock.Rows)
+                int maxY = 1080; // A4 height limit
+
+                while (_printStockRowIndex < dgStock.Rows.Count)
                 {
+                    var row = dgStock.Rows[_printStockRowIndex];
                     string code = row.Cells["ProductCode"].Value?.ToString();
                     string name = row.Cells["ProductName"].Value?.ToString();
-                    string unit = row.Cells["Unit"].Value?.ToString();
+                    string unit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "");
                     string bookQty = row.Cells["BookQty"].Value?.ToString();
 
                     g.DrawString(code, normal, Brushes.Black, xCols[0], y);
                     g.DrawString(name, normal, Brushes.Black, xCols[1], y);
                     g.DrawString(unit, normal, Brushes.Black, xCols[2], y);
                     g.DrawString(bookQty, bold, Brushes.Black, xCols[3], y);
-                    
-                    // Draw a dashed line or underline for manual writing
+
+                    // Draw a dotted line for manual writing
                     g.DrawLine(new Pen(Color.Black, 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }, xCols[4], y + 14, xCols[4] + 110, y + 14);
 
                     y += 28;
+                    _printStockRowIndex++;
+
+                    if (y >= maxY && _printStockRowIndex < dgStock.Rows.Count)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
                 }
 
-                y += 20;
-                g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y); y += 8;
-                g.DrawString("المسؤول عن الجرد: .......................................         التوقيع: .......................................", bold, Brushes.Black, 20, y);
+                e.HasMorePages = false;
+                y += 15;
+                if (y < maxY)
+                {
+                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y); y += 8;
+                    g.DrawString("المسؤول عن الجرد: .......................................         التوقيع: .......................................", bold, Brushes.Black, 20, y);
+                }
             };
 
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
-                Width = 850,
-                Height = 750,
-                Text = "طباعة ورقة الجرد المخزني"
+                Width = 900,
+                Height = 800,
+                Text = "طباعة ورقة الجرد المخزني (صفحات A4)"
             };
             preview.ShowDialog();
         }
 
+        private int _printLogIndex = 0;
+
         private void PrintAdjustmentsLog()
         {
+            _printLogIndex = 0;
             var pd = new PrintDocument();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
-            
+
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
@@ -1137,7 +1258,6 @@ namespace ChickenDist.Forms
                 var bold = new Font("Arial", 10, FontStyle.Bold);
                 var normal = new Font("Arial", 9);
                 var center = new StringFormat { Alignment = StringAlignment.Center };
-                var right = new StringFormat { Alignment = StringAlignment.Far };
 
                 int y = 30;
                 int pageW = 800;
@@ -1160,8 +1280,11 @@ namespace ChickenDist.Forms
                 y += 22;
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 8;
 
-                foreach (DataGridViewRow row in dgLogs.Rows)
+                int maxY = 1080;
+
+                while (_printLogIndex < dgLogs.Rows.Count)
                 {
+                    var row = dgLogs.Rows[_printLogIndex];
                     string date = row.Cells["AdjDate"].Value?.ToString();
                     string name = row.Cells["ProductName"].Value?.ToString();
                     string book = row.Cells["BookQty"].Value?.ToString();
@@ -1177,18 +1300,29 @@ namespace ChickenDist.Forms
                     g.DrawString(user, normal, Brushes.Black, xCols[5], y);
 
                     y += 22;
+                    _printLogIndex++;
+
+                    if (y >= maxY && _printLogIndex < dgLogs.Rows.Count)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
                 }
 
+                e.HasMorePages = false;
                 y += 15;
-                g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y);
+                if (y < maxY)
+                {
+                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y);
+                }
             };
 
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
-                Width = 850,
-                Height = 750,
-                Text = "طباعة سجل التسويات الجردية"
+                Width = 900,
+                Height = 800,
+                Text = "طباعة سجل التسويات الجردية (صفحات A4)"
             };
             preview.ShowDialog();
         }
