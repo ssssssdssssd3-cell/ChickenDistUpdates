@@ -532,59 +532,33 @@ namespace ChickenDist.DAL
         public static void SetInventoryStartDate(int? warehouseID, DateTime startDate)
         {
             string key = "InventoryStartDate_" + (warehouseID.HasValue ? warehouseID.Value.ToString() : "ALL");
-            try
-            {
-                // استخدام جدول AppSettings البسيط لحفظ الإعداد
-                DbHelper.Execute(@"
-                    IF EXISTS (SELECT 1 FROM AppSettings WHERE SettingKey = @key)
-                        UPDATE AppSettings SET SettingValue = @val WHERE SettingKey = @key
-                    ELSE
-                        INSERT INTO AppSettings (SettingKey, SettingValue) VALUES (@key, @val)",
-                    DbHelper.P("@key", key),
-                    DbHelper.P("@val", startDate.ToString("yyyy-MM-dd HH:mm:ss")));
-            }
-            catch
-            {
-                // fallback: حفظ في ملف محلي
-                try
-                {
-                    string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "inventory_session.ini");
-                    System.IO.File.WriteAllText(path, key + "=" + startDate.ToString("yyyy-MM-dd HH:mm:ss"));
-                }
-                catch { }
-            }
+            DbHelper.SetAppSetting(key, startDate.ToString("yyyy-MM-dd HH:mm:ss"));
         }
 
         /// <summary>جلب تاريخ بداية عملية الجرد الحالية (حسب المخزن أو إجمالي)</summary>
         public static DateTime? GetInventoryStartDate(int? warehouseID)
         {
             string key = "InventoryStartDate_" + (warehouseID.HasValue ? warehouseID.Value.ToString() : "ALL");
+            string val = DbHelper.GetAppSetting(key, null);
+            if (!string.IsNullOrEmpty(val) && DateTime.TryParse(val, out DateTime dt))
+                return dt;
+
+            // fallback: قراءة من ملف محلي
             try
             {
-                object val = DbHelper.Scalar("SELECT SettingValue FROM AppSettings WHERE SettingKey = @key",
-                    DbHelper.P("@key", key));
-                if (val != null && val != DBNull.Value && DateTime.TryParse(val.ToString(), out DateTime dt))
-                    return dt;
-            }
-            catch
-            {
-                // fallback: قراءة من ملف محلي
-                try
+                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "inventory_session.ini");
+                if (System.IO.File.Exists(path))
                 {
-                    string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "inventory_session.ini");
-                    if (System.IO.File.Exists(path))
+                    string content = System.IO.File.ReadAllText(path);
+                    if (content.StartsWith(key + "="))
                     {
-                        string content = System.IO.File.ReadAllText(path);
-                        if (content.StartsWith(key + "="))
-                        {
-                            string dateStr = content.Substring(key.Length + 1).Trim();
-                            if (DateTime.TryParse(dateStr, out DateTime dt))
-                                return dt;
-                        }
+                        string dateStr = content.Substring(key.Length + 1).Trim();
+                        if (DateTime.TryParse(dateStr, out DateTime dtFile))
+                            return dtFile;
                     }
                 }
-                catch { }
             }
+            catch { }
             return null;
         }
 

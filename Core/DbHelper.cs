@@ -182,8 +182,61 @@ namespace ChickenDist.Core
         private const string SchemaVersionKey = "SchemaVersion";
         private const int CurrentSchemaVersion = 29;
 
+        public static void EnsureAppSettingsTable()
+        {
+            SafeMigrate("AppSettings.Table", @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AppSettings')
+            BEGIN
+                CREATE TABLE AppSettings (
+                    SettingKey NVARCHAR(100) NOT NULL PRIMARY KEY,
+                    SettingValue NVARCHAR(500) NULL
+                );
+            END");
+        }
+
+        public static string GetAppSetting(string key, string defaultValue = null)
+        {
+            try
+            {
+                EnsureAppSettingsTable();
+                using (var con = GetConnection())
+                using (var cmd = new SqlCommand("SELECT SettingValue FROM AppSettings WHERE SettingKey = @key", con))
+                {
+                    cmd.Parameters.AddWithValue("@key", key);
+                    con.Open();
+                    object val = cmd.ExecuteScalar();
+                    if (val != null && val != DBNull.Value) return val.ToString();
+                }
+            }
+            catch { }
+            return defaultValue;
+        }
+
+        public static void SetAppSetting(string key, string value)
+        {
+            try
+            {
+                EnsureAppSettingsTable();
+                using (var con = GetConnection())
+                using (var cmd = new SqlCommand(@"
+                    IF EXISTS (SELECT 1 FROM AppSettings WHERE SettingKey = @key)
+                        UPDATE AppSettings SET SettingValue = @val WHERE SettingKey = @key
+                    ELSE
+                        INSERT INTO AppSettings (SettingKey, SettingValue) VALUES (@key, @val)", con))
+                {
+                    cmd.Parameters.AddWithValue("@key", key);
+                    cmd.Parameters.AddWithValue("@val", value ?? "");
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch { }
+        }
+
         public static void EnsurePurchaseColumnsExist()
         {
+            EnsureAppSettingsTable();
+
             SafeMigrate("Products.EnglishName", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'EnglishName')
             BEGIN

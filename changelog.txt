@@ -1,3 +1,8 @@
+v2.0.206 - 2026-07-30
+- Ensure AppSettings table is guaranteed upon launch (DbHelper.cs & InventoryDAL.cs):
+  1. إنشاء جدول AppSettings فوراً في أسرع خطوة تهيئة (EnsurePurchaseColumnsExist) لمنع ظهور أي استثناءات Missing Table.
+  2. إضافة دالتي DbHelper.GetAppSetting و DbHelper.SetAppSetting مع معالجة حذرية لمنع أخطاء التسجيل وإجراء الحفظ والقراءة بسلاسة.
+
 v2.0.205 - 2026-07-30
 - Multi-page Printing, Display Limit & Right-Click Context Menu (FrmInventory.cs):
   1. طباعة ورقة الجرد وسجل التسويات على صفحات A4 متعددة وتلقائية مع حساب الهوامش لمنع قص أي أصناف.
