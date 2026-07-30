@@ -527,5 +527,94 @@ namespace ChickenDist.DAL
                 return 0;
             }
         }
+
+        /// <summary>حفظ تاريخ بداية عملية الجرد الحالية (حسب المخزن أو إجمالي)</summary>
+        public static void SetInventoryStartDate(int? warehouseID, DateTime startDate)
+        {
+            string key = "InventoryStartDate_" + (warehouseID.HasValue ? warehouseID.Value.ToString() : "ALL");
+            try
+            {
+                // استخدام جدول AppSettings البسيط لحفظ الإعداد
+                DbHelper.Execute(@"
+                    IF EXISTS (SELECT 1 FROM AppSettings WHERE SettingKey = @key)
+                        UPDATE AppSettings SET SettingValue = @val WHERE SettingKey = @key
+                    ELSE
+                        INSERT INTO AppSettings (SettingKey, SettingValue) VALUES (@key, @val)",
+                    DbHelper.P("@key", key),
+                    DbHelper.P("@val", startDate.ToString("yyyy-MM-dd HH:mm:ss")));
+            }
+            catch
+            {
+                // fallback: حفظ في ملف محلي
+                try
+                {
+                    string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "inventory_session.ini");
+                    System.IO.File.WriteAllText(path, key + "=" + startDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>جلب تاريخ بداية عملية الجرد الحالية (حسب المخزن أو إجمالي)</summary>
+        public static DateTime? GetInventoryStartDate(int? warehouseID)
+        {
+            string key = "InventoryStartDate_" + (warehouseID.HasValue ? warehouseID.Value.ToString() : "ALL");
+            try
+            {
+                object val = DbHelper.Scalar("SELECT SettingValue FROM AppSettings WHERE SettingKey = @key",
+                    DbHelper.P("@key", key));
+                if (val != null && val != DBNull.Value && DateTime.TryParse(val.ToString(), out DateTime dt))
+                    return dt;
+            }
+            catch
+            {
+                // fallback: قراءة من ملف محلي
+                try
+                {
+                    string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "inventory_session.ini");
+                    if (System.IO.File.Exists(path))
+                    {
+                        string content = System.IO.File.ReadAllText(path);
+                        if (content.StartsWith(key + "="))
+                        {
+                            string dateStr = content.Substring(key.Length + 1).Trim();
+                            if (DateTime.TryParse(dateStr, out DateTime dt))
+                                return dt;
+                        }
+                    }
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        /// <summary>جلب قائمة أرقام الأصناف التي تم جردها (لها تسوية) بعد تاريخ معين في مخزن محدد</summary>
+        public static HashSet<int> GetInventoriedProductIDs(DateTime sinceDate, int? warehouseID)
+        {
+            var set = new HashSet<int>();
+            try
+            {
+                var prms = new List<SqlParameter> { DbHelper.P("@since", sinceDate) };
+                string whFilter = "";
+                if (warehouseID.HasValue)
+                {
+                    whFilter = " AND sa.WarehouseID = @wid";
+                    prms.Add(DbHelper.P("@wid", warehouseID.Value));
+                }
+
+                string sql = $@"
+                    SELECT DISTINCT sa.ProductID
+                    FROM StockAdjustments sa
+                    WHERE sa.AdjDate >= @since {whFilter}";
+
+                DataTable dt = DbHelper.Query(sql, prms.ToArray());
+                foreach (DataRow r in dt.Rows)
+                {
+                    set.Add(Convert.ToInt32(r["ProductID"]));
+                }
+            }
+            catch { }
+            return set;
+        }
     }
 }

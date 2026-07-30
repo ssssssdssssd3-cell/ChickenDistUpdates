@@ -2364,6 +2364,15 @@ namespace ChickenDist.Core
                     ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(200) NULL;
                 END");
 
+                SafeMigrate("AppSettings.Table", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AppSettings')
+                BEGIN
+                    CREATE TABLE AppSettings (
+                        SettingKey NVARCHAR(100) NOT NULL PRIMARY KEY,
+                        SettingValue NVARCHAR(500) NULL
+                    );
+                END");
+
                 // Save version number so we don't repeat inspection on next startup
                 try
                 {
