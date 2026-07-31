@@ -474,7 +474,7 @@ namespace ChickenDist.Forms
             try
             {
                 string search = txtProductSearch?.Text?.Trim() ?? "";
-                var dt = InventoryDAL.GetStock(_currentWarehouseID, search);
+                var dt = InventoryDAL.GetStock(_currentWarehouseID, search, maxRows: int.MaxValue);
 
                 dgStock.Rows.Clear();
                 decimal totalValue    = 0m;
