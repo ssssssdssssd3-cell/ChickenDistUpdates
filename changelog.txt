@@ -1,3 +1,8 @@
+v2.0.208 - 2026-07-31
+- Fix DataGridView FillWeight Exception on Large Column Reports (FrmInventoryVarianceReport.cs, FrmReports.cs):
+  1. معالجة خطأ FillWeight (لا يمكن أن يزيد مجموع قيم FillWeight عن 65535) في تقارير الجرد الشاملة ذات الأعمدة الكثيرة.
+  2. ضبط نمط عرض الأعمدة على AutoSizeColumnsMode.None و DisplayedCells مع تحديد العروض المناسبة لكل عمود بوضوح وتجنب تضخم الأوزان التلقائية.
+
 v2.0.207 - 2026-07-30
 - Inventory Variance & Financial Valuation Report (FrmInventoryVarianceReport.cs, InventoryDAL.cs, FrmInventory.cs, FrmReports.cs):
   1. شاشة تقرير شمولية ومستقلة لفروق الجرد والعجز والزيادة مع حساب القيمة المالية بالتقييم الشرائي والبيعي.

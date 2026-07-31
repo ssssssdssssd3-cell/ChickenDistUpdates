@@ -1519,6 +1519,7 @@ namespace ChickenDist.Forms
 
 		private void SetupGrid((string field, string header)[] cols, DataGridView dg)
 		{
+			dg.Columns.Clear();
 			if (cols.Length > 6)
 			{
 				dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
@@ -1534,7 +1535,8 @@ namespace ChickenDist.Forms
 				var col = new DataGridViewTextBoxColumn
 				{
 					Name = name,
-					HeaderText = headerText
+					HeaderText = headerText,
+					FillWeight = 100f
 				};
 				if (name == "Notes" || name == "Address")
 				{

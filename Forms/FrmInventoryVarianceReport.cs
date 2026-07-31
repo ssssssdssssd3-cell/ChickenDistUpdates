@@ -140,25 +140,25 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RowHeadersVisible = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
             };
             Theme.ApplyGridTheme(dgGrid);
 
-            dgGrid.Columns.Add("AdjDate", "التاريخ والوقت");
-            dgGrid.Columns.Add("WarehouseName", "المخزن");
-            dgGrid.Columns.Add("ProductCode", "كود الصنف");
-            dgGrid.Columns.Add("ProductName", "اسم الصنف");
-            dgGrid.Columns.Add("Unit", "الوحدة");
-            dgGrid.Columns.Add("BookQty", "الدفتري");
-            dgGrid.Columns.Add("ActualQty", "الفعلي");
-            dgGrid.Columns.Add("DiffQty", "فارق الكمية");
-            dgGrid.Columns.Add("DiffType", "نوع الفارق");
-            dgGrid.Columns.Add("PurchasePrice", "سعر الشراء");
-            dgGrid.Columns.Add("SalePrice", "سعر البيع");
-            dgGrid.Columns.Add("ShortageLoss", "خسارة العجز (ج)");
-            dgGrid.Columns.Add("SurplusGain", "زيادة التكلفة (ج)");
-            dgGrid.Columns.Add("CreatedBy", "المسؤول");
-            dgGrid.Columns.Add("Notes", "ملاحظات");
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdjDate",       HeaderText = "التاريخ والوقت",  Width = 130 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarehouseName", HeaderText = "المخزن",         Width = 110 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",   HeaderText = "كود الصنف",      Width = 95 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",   HeaderText = "اسم الصنف",      Width = 180 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة",         Width = 70 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",       HeaderText = "الدفتري",        Width = 75 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",     HeaderText = "الفعلي",         Width = 75 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",       HeaderText = "فارق الكمية",    Width = 85 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffType",      HeaderText = "نوع الفارق",     Width = 85 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء",    Width = 85 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",     HeaderText = "سعر البيع",      Width = 85 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageLoss",   HeaderText = "خسارة العجز (ج)", Width = 110 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SurplusGain",    HeaderText = "زيادة التكلفة (ج)", Width = 110 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy",     HeaderText = "المسؤول",        Width = 90 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",         HeaderText = "ملاحظات",        Width = 150 });
 
             Controls.Add(dgGrid);
             Controls.Add(pnlCards);
