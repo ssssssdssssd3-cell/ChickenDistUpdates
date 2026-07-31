@@ -8,8 +8,8 @@ namespace ChickenDist.DAL
 {
     public static class InventoryDAL
     {
-        /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300)
+        /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع والمكان/الرف</summary>
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300, string location = null)
         {
             List<SqlParameter> prms = new List<SqlParameter>();
             prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 300 : maxRows));
@@ -25,6 +25,13 @@ namespace ChickenDist.DAL
             {
                 whereClause += " AND p.CategoryID = @catid ";
                 prms.Add(DbHelper.P("@catid", categoryID.Value));
+            }
+
+            if (!string.IsNullOrEmpty(location) && location != "--- كل الأماكن / الرفوف ---")
+            {
+                whereClause += " AND (p.ShelfLocation = @loc OR p.ShelfLocation LIKE @locTerm) ";
+                prms.Add(DbHelper.P("@loc", location));
+                prms.Add(DbHelper.P("@locTerm", "%" + location + "%"));
             }
 
             if (expiryOnly)
@@ -752,6 +759,24 @@ namespace ChickenDist.DAL
             }
             catch { }
             return set;
+        }
+
+        /// <summary>جلب جميع أماكن/رفوف الأصناف المتاحة في قاعدة البيانات</summary>
+        public static List<string> GetAllLocations()
+        {
+            var list = new List<string>();
+            try
+            {
+                DataTable dt = DbHelper.Query("SELECT DISTINCT ShelfLocation FROM Products WHERE ShelfLocation IS NOT NULL AND RTRIM(LTRIM(ShelfLocation)) <> '' ORDER BY ShelfLocation");
+                foreach (DataRow r in dt.Rows)
+                {
+                    string loc = r["ShelfLocation"]?.ToString()?.Trim();
+                    if (!string.IsNullOrEmpty(loc) && !list.Contains(loc))
+                        list.Add(loc);
+                }
+            }
+            catch { }
+            return list;
         }
     }
 }

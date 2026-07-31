@@ -222,11 +222,19 @@ namespace ChickenDist.Forms
                         r["Notes"]
                     );
 
-                    // Color code rows for readability
+                    // Color code rows for readability with strong contrast
                     if (qtyIn > 0)
-                        dgMovement.Rows[rowIndex].Cells["QtyIn"].Style.ForeColor = Color.LightGreen;
+                    {
+                        var cellIn = dgMovement.Rows[rowIndex].Cells["QtyIn"];
+                        cellIn.Style.ForeColor = Color.FromArgb(0, 130, 50);
+                        cellIn.Style.Font = new Font(Theme.FontMain, FontStyle.Bold);
+                    }
                     if (qtyOut > 0)
-                        dgMovement.Rows[rowIndex].Cells["QtyOut"].Style.ForeColor = Color.OrangeRed;
+                    {
+                        var cellOut = dgMovement.Rows[rowIndex].Cells["QtyOut"];
+                        cellOut.Style.ForeColor = Color.FromArgb(198, 40, 40);
+                        cellOut.Style.Font = new Font(Theme.FontMain, FontStyle.Bold);
+                    }
                 }
             }
         }
@@ -299,8 +307,8 @@ namespace ChickenDist.Forms
                     if (party.Length > 20) party = party.Substring(0, 18) + "..";
                     g.DrawString(party, normal, Brushes.Black, xCols[3], y);
                     
-                    g.DrawString(qtyIn, normal, Brushes.LightGreen, xCols[4], y);
-                    g.DrawString(qtyOut, normal, Brushes.OrangeRed, xCols[5], y);
+                    g.DrawString(qtyIn, bold, Brushes.DarkGreen, xCols[4], y);
+                    g.DrawString(qtyOut, bold, Brushes.DarkRed, xCols[5], y);
                     g.DrawString(balance, bold, Brushes.Black, xCols[6], y);
 
                     y += 20;

@@ -41,6 +41,7 @@ namespace ChickenDist.Forms
         private Button btnStartInventory;
         private Label lblInventoryStart;
         private CheckBox chkUninventoriedOnly;
+        private ComboBox cboLocation;
         private DateTime? _inventoryStartDate = null;
         private System.Collections.Generic.HashSet<int> _inventoriedProductIDs
             = new System.Collections.Generic.HashSet<int>();
@@ -59,6 +60,7 @@ namespace ChickenDist.Forms
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); LoadStock(); };
             InitUI();
             LoadWarehouses();
+            LoadLocations();
             LoadLogWarehouses();
             if (belowMinOnly && chkBelowMin != null)
             {
@@ -108,7 +110,8 @@ namespace ChickenDist.Forms
                 Height = 42,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(6, 6, 6, 2),
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 AutoScroll = true
             };
@@ -119,7 +122,8 @@ namespace ChickenDist.Forms
                 Height = 44,
                 BackColor = Color.FromArgb(240, 244, 248),
                 Padding = new Padding(6, 6, 6, 2),
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 AutoScroll = true
             };
@@ -142,6 +146,10 @@ namespace ChickenDist.Forms
             }
             catch { }
             cboCategory.SelectedIndexChanged += (s, e) => LoadStock();
+
+            var lblLoc = new Label { Text = "📍 المكان/الرف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            cboLocation = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboLocation.SelectedIndexChanged += (s, e) => LoadStock();
 
             var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
             txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 3, 2, 0) };
@@ -210,6 +218,7 @@ namespace ChickenDist.Forms
             pnlRow1.Controls.AddRange(new Control[] {
                 lblWh, cboWarehouse,
                 lblCat, cboCategory,
+                lblLoc, cboLocation,
                 lblSch, txtSearch, btnSearch,
                 lblLimit, cboMaxRows,
                 chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkUninventoriedOnly
@@ -277,12 +286,13 @@ namespace ChickenDist.Forms
             dgStock = MakeGrid();
             Theme.EnableDoubleBuffer(dgStock);
             dgStock.ReadOnly = false;
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",  Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID",     Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", ReadOnly = true,  FillWeight = 40 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",  HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",        HeaderText = "الوحدة 🔽", ReadOnly = true,  FillWeight = 42 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID",       Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",   HeaderText = "كود الصنف", ReadOnly = true,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",   HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "المكان/الرف", ReadOnly = true,  FillWeight = 45 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",    HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة 🔽", ReadOnly = true,  FillWeight = 42 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", ReadOnly = false, FillWeight = 40 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = false,  FillWeight = 40 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
@@ -340,7 +350,8 @@ namespace ChickenDist.Forms
                 Height = 34,
                 BackColor = Color.FromArgb(235, 240, 246),
                 Padding = new Padding(10, 5, 10, 5),
-                FlowDirection = FlowDirection.RightToLeft
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight
             };
 
             lblCount = new Label
@@ -387,7 +398,8 @@ namespace ChickenDist.Forms
                 Height = 55, 
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10, 10, 10, 10),
-                FlowDirection = FlowDirection.RightToLeft
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight
             };
             
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
@@ -517,7 +529,8 @@ namespace ChickenDist.Forms
             }
 
             int queryMaxRows = (maxDisplay == int.MaxValue) ? 100000 : maxDisplay;
-            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId, maxRows: queryMaxRows);
+            string selectedLocation = (cboLocation != null && cboLocation.SelectedIndex > 0) ? cboLocation.SelectedItem.ToString() : null;
+            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId, maxRows: queryMaxRows, location: selectedLocation);
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
             int displayedCount = 0;
@@ -587,11 +600,14 @@ namespace ChickenDist.Forms
                     ? r["BatchID"]
                     : (object)DBNull.Value;
 
+                string shelfLoc = (dt.Columns.Contains("ShelfLocation") && r["ShelfLocation"] != DBNull.Value) ? r["ShelfLocation"].ToString() : "---";
+
                 int ri = dgStock.Rows.Add(
                     r["ProductID"],
                     batchIdVal,
                     r["ProductCode"],
                     r["ProductName"],
+                    shelfLoc,
                     expiryVal,
                     unitCellText,
                     displayedPP.ToString("N2"),
@@ -1451,6 +1467,26 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("فشل تحميل قائمة المخازن في السجل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadLocations()
+        {
+            try
+            {
+                if (cboLocation == null) return;
+                cboLocation.Items.Clear();
+                cboLocation.Items.Add("--- كل الأماكن ---");
+                var locations = InventoryDAL.GetAllLocations();
+                foreach (var loc in locations)
+                {
+                    cboLocation.Items.Add(loc);
+                }
+                cboLocation.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadLocations", ex);
             }
         }
 

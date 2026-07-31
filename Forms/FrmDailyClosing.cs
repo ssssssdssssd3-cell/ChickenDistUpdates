@@ -232,9 +232,10 @@ namespace ChickenDist.Forms
                 // Column: client name (fixed, wide)
                 _dg.Columns.Add(new DataGridViewTextBoxColumn
                 {
-                    Name       = "ClientName",
-                    HeaderText = "اسم العميل",
+                    Name         = "ClientName",
+                    HeaderText   = "اسم العميل",
                     MinimumWidth = 140,
+                    FillWeight   = 1,
                     DefaultCellStyle = new DataGridViewCellStyle
                     {
                         Alignment = DataGridViewContentAlignment.MiddleRight,
@@ -251,16 +252,17 @@ namespace ChickenDist.Forms
                         Name         = "P_" + pr["ProductID"],
                         HeaderText   = pr["ProductName"].ToString(),
                         MinimumWidth = 68,
+                        FillWeight   = 1,
                         Tag          = pr
                     });
                 }
 
                 // Extra columns
-                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalInvoice", HeaderText = "إجمالي الفاتورة", MinimumWidth = 100,
+                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalInvoice", HeaderText = "إجمالي الفاتورة", MinimumWidth = 100, FillWeight = 1,
                     DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Accent, Alignment = DataGridViewContentAlignment.MiddleCenter } });
-                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastPayment",  HeaderText = "آخر توريد",       MinimumWidth = 100,
+                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastPayment",  HeaderText = "آخر توريد",       MinimumWidth = 100, FillWeight = 1,
                     DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Success, Alignment = DataGridViewContentAlignment.MiddleCenter } });
-                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance",      HeaderText = "المديونية",        MinimumWidth = 100,
+                _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance",      HeaderText = "المديونية",        MinimumWidth = 100, FillWeight = 1,
                     DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
 
                 int totalCols = _dg.Columns.Count;
