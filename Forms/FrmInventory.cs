@@ -100,28 +100,43 @@ namespace ChickenDist.Forms
             var pnlHeaderContainer = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 88,
+                Height = 122,
                 BackColor = Theme.BgCard
             };
 
+            // الصف 1: فلاتر البحث الرئيسية
             var pnlRow1 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 42,
+                Height = 40,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(6, 6, 6, 2),
+                Padding = new Padding(6, 5, 6, 2),
                 RightToLeft = RightToLeft.Yes,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 AutoScroll = true
             };
 
+            // الصف 2: الخيارات والمرشحات الإضافية
             var pnlRow2 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 44,
+                Height = 38,
                 BackColor = Color.FromArgb(240, 244, 248),
-                Padding = new Padding(6, 6, 6, 2),
+                Padding = new Padding(6, 4, 6, 2),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = true
+            };
+
+            // الصف 3: أزرار العمليات
+            var pnlRow3 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                BackColor = Color.FromArgb(230, 236, 244),
+                Padding = new Padding(6, 5, 6, 2),
                 RightToLeft = RightToLeft.Yes,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
@@ -215,16 +230,22 @@ namespace ChickenDist.Forms
             };
             chkUninventoriedOnly.CheckedChanged += (s, e) => LoadStock();
 
+            // الصف 1: المخزن، التصنيف، المكان، البحث
             pnlRow1.Controls.AddRange(new Control[] {
                 lblWh, cboWarehouse,
                 lblCat, cboCategory,
                 lblLoc, cboLocation,
-                lblSch, txtSearch, btnSearch,
-                lblLimit, cboMaxRows,
+                lblSch, txtSearch, btnSearch
+            });
+
+            // ── الصف 2: عدد العرض + خيارات التصفية ──────────────────────────────
+            var lblLimit2 = new Label { Text = "عرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            pnlRow2.Controls.AddRange(new Control[] {
+                lblLimit2, cboMaxRows,
                 chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkUninventoriedOnly
             });
 
-            // ── أدوات وتصرفات الجرد (السطر الثاني) ─────────────────────────────
+            // ── الصف 3: أزرار العمليات ─────────────────────────────────────────
             btnStartInventory = Theme.MakeButton("🚀 بدء جرد جديد", Color.FromArgb(140, 80, 20));
             btnStartInventory.Size = new Size(120, 28);
             btnStartInventory.Margin = new Padding(2, 2, 6, 0);
@@ -239,46 +260,47 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(254, 243, 199),
                 BorderStyle = BorderStyle.FixedSingle,
                 Padding = new Padding(5, 3, 5, 3),
-                Margin = new Padding(2, 3, 15, 0)
+                Margin = new Padding(2, 4, 12, 0)
             };
 
-            btnSaveAdj = Theme.MakeButton("💾 حفظ كل التسويات", Theme.Accent);
-            btnSaveAdj.Size = new Size(135, 28);
+            btnSaveAdj = Theme.MakeButton("💾 حفظ كل", Theme.Accent);
+            btnSaveAdj.Size = new Size(90, 28);
             btnSaveAdj.Margin = new Padding(2, 2, 6, 0);
             btnSaveAdj.Click += BtnSaveAdj_Click;
 
-            btnClearAdj = Theme.MakeButton("❌ إلغاء التغييرات", Color.FromArgb(140, 40, 40));
-            btnClearAdj.Size = new Size(115, 28);
+            btnClearAdj = Theme.MakeButton("❌ إلغاء", Color.FromArgb(140, 40, 40));
+            btnClearAdj.Size = new Size(72, 28);
             btnClearAdj.Margin = new Padding(2, 2, 6, 0);
             btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
 
-            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق الجرد", Color.FromArgb(120, 50, 150));
-            btnVarianceReport.Size = new Size(135, 28);
+            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق", Color.FromArgb(120, 50, 150));
+            btnVarianceReport.Size = new Size(105, 28);
             btnVarianceReport.Margin = new Padding(2, 2, 6, 0);
             btnVarianceReport.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
-            btnPrintStock = Theme.MakeButton("🖨 طباعة الجرد", Color.FromArgb(200, 100, 0));
-            btnPrintStock.Size = new Size(105, 28);
+            btnPrintStock = Theme.MakeButton("🖨 طباعة", Color.FromArgb(200, 100, 0));
+            btnPrintStock.Size = new Size(72, 28);
             btnPrintStock.Margin = new Padding(2, 2, 6, 0);
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
-            btnMovement = Theme.MakeButton("📜 كشف الحركة", Theme.Primary);
-            btnMovement.Size = new Size(110, 28);
+            btnMovement = Theme.MakeButton("📜 كشف", Theme.Primary);
+            btnMovement.Size = new Size(72, 28);
             btnMovement.Margin = new Padding(2, 2, 6, 0);
             btnMovement.Click += BtnMovement_Click;
 
             btnAddExpiryRow = Theme.MakeButton("➕ إضافة صلاحية", Color.FromArgb(40, 120, 60));
-            btnAddExpiryRow.Size = new Size(120, 28);
+            btnAddExpiryRow.Size = new Size(115, 28);
             btnAddExpiryRow.Margin = new Padding(2, 2, 6, 0);
             btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
             btnAddExpiryRow.Enabled = false;
 
-            pnlRow2.Controls.AddRange(new Control[] {
+            pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory, lblInventoryStart,
                 btnSaveAdj, btnClearAdj,
                 btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
             });
 
+            pnlHeaderContainer.Controls.Add(pnlRow3);
             pnlHeaderContainer.Controls.Add(pnlRow2);
             pnlHeaderContainer.Controls.Add(pnlRow1);
 
