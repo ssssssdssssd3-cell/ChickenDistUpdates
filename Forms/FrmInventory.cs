@@ -494,6 +494,10 @@ namespace ChickenDist.Forms
 
             bool hideZero = chkHideZeroStock != null && chkHideZeroStock.Checked;
             bool expOnly  = chkExpiryOnly  != null && chkExpiryOnly.Checked;
+            if (dgStock.Columns.Contains("ExpiryDate"))
+            {
+                dgStock.Columns["ExpiryDate"].Visible = expOnly;
+            }
             int? catId = null;
             if (cboCategory != null && cboCategory.SelectedItem is ComboItem catCi && catCi.ID > 0)
                 catId = catCi.ID;

@@ -473,10 +473,12 @@ namespace ChickenDist.Forms
 
             try
             {
-                string search = txtProductSearch?.Text?.Trim() ?? "";
-                var dt = InventoryDAL.GetStock(_currentWarehouseID, search, maxRows: int.MaxValue);
-
+                dgStock.SuspendLayout();
                 dgStock.Rows.Clear();
+
+                string search = txtProductSearch?.Text?.Trim() ?? "";
+                var dt = InventoryDAL.GetStock(_currentWarehouseID, search, maxRows: 1000);
+
                 decimal totalValue    = 0m;
                 int     totalProducts = 0;
                 int     lowStockCount = 0;
@@ -519,13 +521,17 @@ namespace ChickenDist.Forms
 
                 // شريط الإجماليات
                 lblTotals.Text =
-                    $"  إجمالي الأصناف: {totalProducts}  |" +
+                    $"  إجمالي الأصناف المعروضة: {totalProducts}  |" +
                     $"  إجمالي القيمة (بسعر البيع): {totalValue:N2} ج  |" +
                     $"  🔴 أصناف بها عجز: {lowStockCount}";
             }
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ في تحميل الكميات:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                dgStock.ResumeLayout();
             }
         }
 

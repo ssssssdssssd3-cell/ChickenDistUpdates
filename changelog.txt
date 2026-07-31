@@ -1,3 +1,8 @@
+v2.0.215 - 2026-07-31
+- Performance & UI Freeze Prevention Fix (FrmWarehouses.cs + UpdateManager.cs):
+  1. معالجة تجميد الواجهة (Not Responding) عند فتح شاشة المستودعات عبر تحديد أقصى حد لجلب البيانات الدفعة الأولى (maxRows: 1000) مع تطبيق SuspendLayout / ResumeLayout لمنع الشاشة من التوقف.
+  2. تسريع عملية التحديث الآلي وضمان تجاوب الواجهة أثناء تحميل وتحديث الإصدار التراكمي الجديد v2.0.215.
+
 v2.0.214 - 2026-07-31
 - Advanced Inventory Features (FrmInventory.cs + InventoryDAL.cs + DbHelper.cs):
   1. زر "بدء جرد جديد": يسجّل تاريخ ووقت بدء عملية الجرد في قاعدة البيانات (جدول AppSettings)، ويظهر شارة التاريخ مباشرةً بجانب الزر.
