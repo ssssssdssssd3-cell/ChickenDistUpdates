@@ -95,23 +95,41 @@ namespace ChickenDist.Forms
             // Panel Left: Grid and filters (Dock Fill)
             var pnlLeft = new Panel { Dock = DockStyle.Fill };
 
-            var pnlF = new FlowLayoutPanel
+            var pnlHeaderContainer = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 135,
-                AutoScroll = true,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(10, 10, 10, 10),
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = true
+                Height = 88,
+                BackColor = Theme.BgCard
             };
 
-            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(5, 8, 5, 0) };
-            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
+            var pnlRow1 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(6, 6, 6, 2),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = true
+            };
+
+            var pnlRow2 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 44,
+                BackColor = Color.FromArgb(240, 244, 248),
+                Padding = new Padding(6, 6, 6, 2),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = true
+            };
+
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
             cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
 
-            var lblCat = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
-            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
+            var lblCat = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
             try
             {
                 cboCategory.Items.Add(new ComboItem(0, "(كل التصنيفات)"));
@@ -125,23 +143,29 @@ namespace ChickenDist.Forms
             catch { }
             cboCategory.SelectedIndexChanged += (s, e) => LoadStock();
 
-            var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
-            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(5, 4, 5, 0) };
+            var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 3, 2, 0) };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { _searchTimer.Stop(); LoadStock(); } };
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
-            btnSearch.Size = new Size(70, 26);
-            btnSearch.Margin = new Padding(5, 2, 5, 0);
+            btnSearch.Size = new Size(65, 26);
+            btnSearch.Margin = new Padding(2, 2, 10, 0);
             btnSearch.Click += (s, e) => LoadStock();
+
+            var lblLimit = new Label { Text = "عدد العرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            cboMaxRows = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
+            cboMaxRows.SelectedIndex = 0;
+            cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
 
             chkBelowMin = new CheckBox
             {
                 Text = "⚠️ حد الطلب",
                 ForeColor = Color.FromArgb(180, 90, 0),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(15, 6, 5, 0),
+                Margin = new Padding(6, 5, 6, 0),
                 RightToLeft = RightToLeft.Yes
             };
             chkBelowMin.CheckedChanged += (s, e) => LoadStock();
@@ -150,9 +174,9 @@ namespace ChickenDist.Forms
             {
                 Text = "🚫 بدون رصيد صفري",
                 ForeColor = Color.FromArgb(0, 102, 204),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(15, 6, 5, 0),
+                Margin = new Padding(6, 5, 6, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -162,74 +186,92 @@ namespace ChickenDist.Forms
             {
                 Text = "📗 صلاحية فقط",
                 ForeColor = Color.FromArgb(0, 130, 50),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(15, 6, 5, 0),
+                Margin = new Padding(6, 5, 6, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
             chkExpiryOnly.CheckedChanged += (s, e) => LoadStock();
 
-            btnMovement = Theme.MakeButton("📊 كشف حركة الصنف", Theme.Primary);
-            btnMovement.Size = new Size(130, 26);
-            btnMovement.Margin = new Padding(5, 2, 5, 0);
-            btnMovement.Click += BtnMovement_Click;
-
-            btnPrintStock = Theme.MakeButton("🖨 طباعة الجرد", Theme.Accent);
-            btnPrintStock.Size = new Size(110, 26);
-            btnPrintStock.Margin = new Padding(5, 2, 5, 0);
-            btnPrintStock.Click += (s, e) => PrintStocktakeReport();
-
-            btnAddExpiryRow = Theme.MakeButton("➕ إضافة صلاحية جديدة", Color.FromArgb(40, 120, 60));
-            btnAddExpiryRow.Size = new Size(150, 26);
-            btnAddExpiryRow.Margin = new Padding(5, 2, 5, 0);
-            btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
-            btnAddExpiryRow.Enabled = false;
-
-            // ── أدوات دورة الجرد ─────────────────────────────
-            btnStartInventory = Theme.MakeButton("🚀 بدء جرد جديد", Color.FromArgb(140, 80, 20));
-            btnStartInventory.Size = new Size(120, 26);
-            btnStartInventory.Margin = new Padding(5, 2, 5, 0);
-            btnStartInventory.Click += BtnStartInventory_Click;
-
-            lblInventoryStart = new Label
-            {
-                Text = "📅 تاريخ بدء الجرد: غير محدد",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(180, 70, 0),
-                BackColor = Color.FromArgb(254, 243, 199),
-                BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(6, 3, 6, 3),
-                Margin = new Padding(5, 4, 5, 0)
-            };
-
             chkUninventoriedOnly = new CheckBox
             {
                 Text = "⏳ لم تُجرد بعد",
                 ForeColor = Color.FromArgb(180, 50, 50),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(15, 6, 5, 0),
+                Margin = new Padding(6, 5, 6, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false,
                 Enabled = true
             };
             chkUninventoriedOnly.CheckedChanged += (s, e) => LoadStock();
 
-            var lblLimit = new Label { Text = "عدد العرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 8, 5, 0) };
-            cboMaxRows = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(5, 4, 5, 0) };
-            cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
-            cboMaxRows.SelectedIndex = 0;
-            cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
+            pnlRow1.Controls.AddRange(new Control[] {
+                lblWh, cboWarehouse,
+                lblCat, cboCategory,
+                lblSch, txtSearch, btnSearch,
+                lblLimit, cboMaxRows,
+                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkUninventoriedOnly
+            });
 
-            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق الجرد والعجز/الزيادة", Color.FromArgb(120, 50, 150));
-            btnVarianceReport.Size = new Size(210, 26);
-            btnVarianceReport.Margin = new Padding(5, 2, 5, 0);
+            // ── أدوات وتصرفات الجرد (السطر الثاني) ─────────────────────────────
+            btnStartInventory = Theme.MakeButton("🚀 بدء جرد جديد", Color.FromArgb(140, 80, 20));
+            btnStartInventory.Size = new Size(120, 28);
+            btnStartInventory.Margin = new Padding(2, 2, 6, 0);
+            btnStartInventory.Click += BtnStartInventory_Click;
+
+            lblInventoryStart = new Label
+            {
+                Text = "📅 بدء الجرد: غير محدد",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 70, 0),
+                BackColor = Color.FromArgb(254, 243, 199),
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(5, 3, 5, 3),
+                Margin = new Padding(2, 3, 15, 0)
+            };
+
+            btnSaveAdj = Theme.MakeButton("💾 حفظ كل التسويات", Theme.Accent);
+            btnSaveAdj.Size = new Size(135, 28);
+            btnSaveAdj.Margin = new Padding(2, 2, 6, 0);
+            btnSaveAdj.Click += BtnSaveAdj_Click;
+
+            btnClearAdj = Theme.MakeButton("❌ إلغاء التغييرات", Color.FromArgb(140, 40, 40));
+            btnClearAdj.Size = new Size(115, 28);
+            btnClearAdj.Margin = new Padding(2, 2, 6, 0);
+            btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
+
+            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق الجرد", Color.FromArgb(120, 50, 150));
+            btnVarianceReport.Size = new Size(135, 28);
+            btnVarianceReport.Margin = new Padding(2, 2, 6, 0);
             btnVarianceReport.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, lblLimit, cboMaxRows, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnStartInventory, lblInventoryStart, chkUninventoriedOnly, btnMovement, btnPrintStock, btnVarianceReport, btnAddExpiryRow });
+            btnPrintStock = Theme.MakeButton("🖨 طباعة الجرد", Color.FromArgb(200, 100, 0));
+            btnPrintStock.Size = new Size(105, 28);
+            btnPrintStock.Margin = new Padding(2, 2, 6, 0);
+            btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
+            btnMovement = Theme.MakeButton("📜 كشف الحركة", Theme.Primary);
+            btnMovement.Size = new Size(110, 28);
+            btnMovement.Margin = new Padding(2, 2, 6, 0);
+            btnMovement.Click += BtnMovement_Click;
+
+            btnAddExpiryRow = Theme.MakeButton("➕ إضافة صلاحية", Color.FromArgb(40, 120, 60));
+            btnAddExpiryRow.Size = new Size(120, 28);
+            btnAddExpiryRow.Margin = new Padding(2, 2, 6, 0);
+            btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
+            btnAddExpiryRow.Enabled = false;
+
+            pnlRow2.Controls.AddRange(new Control[] {
+                btnStartInventory, lblInventoryStart,
+                btnSaveAdj, btnClearAdj,
+                btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
+            });
+
+            pnlHeaderContainer.Controls.Add(pnlRow2);
+            pnlHeaderContainer.Controls.Add(pnlRow1);
 
             // ── شبكة الجرد ─────────────────────────────────
             dgStock = MakeGrid();
@@ -292,20 +334,6 @@ namespace ChickenDist.Forms
             dgStock.CellDoubleClick += (s, e) => { if (e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name != "ActualQty" && dgStock.Columns[e.ColumnIndex].Name != "Notes" && dgStock.Columns[e.ColumnIndex].Name != "ExpiryDate" && dgStock.Columns[e.ColumnIndex].Name != "Unit") BtnMovement_Click(s, e); };
             dgStock.CellFormatting += DgStock_CellFormatting;
 
-            // ── زر الحفظ الشامل ─────────────────────────────
-            btnSaveAdj = Theme.MakeButton("💾 حفظ كل التسويات", Theme.Accent);
-            btnSaveAdj.Size = new Size(145, 26);
-            btnSaveAdj.Margin = new Padding(5, 2, 5, 0);
-            btnSaveAdj.Click += BtnSaveAdj_Click;
-
-            btnClearAdj = Theme.MakeButton("❌ إلغاء التغييرات", Color.FromArgb(140, 40, 40));
-            btnClearAdj.Size = new Size(130, 26);
-            btnClearAdj.Margin = new Padding(5, 2, 5, 0);
-            btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
-
-            pnlF.Controls.Add(btnSaveAdj);
-            pnlF.Controls.Add(btnClearAdj);
-
             var pnlSummary = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -345,8 +373,8 @@ namespace ChickenDist.Forms
             pnlSummary.Controls.AddRange(new Control[] { lblCount, lblTotalCost, lblTotalSale });
 
             pnlLeft.Controls.Add(dgStock);    // Fill
-            pnlLeft.Controls.Add(pnlSummary); // Top (below pnlF)
-            pnlLeft.Controls.Add(pnlF);       // Top (filters)
+            pnlLeft.Controls.Add(pnlSummary); // Top (below header)
+            pnlLeft.Controls.Add(pnlHeaderContainer); // Top (Header 2 rows)
 
             tabStock.Controls.Add(pnlLeft);
         }
