@@ -1,3 +1,9 @@
+v2.0.209 - 2026-07-31
+- Perfect Print Formatting for Inventory Variance Report (FrmInventoryVarianceReport.cs):
+  1. معالجة تداخل نصوص اسم الصنف والكميات عند معاينة وطباعة التقرير عبر تخصيص مساحة بعرض (210px) لاسم الصنف وتحديد حدود كل عمود بدقة (RectangleF).
+  2. منع قص الأرقام أو تداخلها وتطبيق القطع الذكي للنص (... StringTrimming.EllipsisCharacter) لمنع خروج أي نص عن عموده.
+  3. تنظيف رموز الإيموجي من ملخص الطباعة لمنع ظهور المربعات السوداء المكسورة (Glyph Boxes) أثناء الطباعة.
+
 v2.0.208 - 2026-07-31
 - Fix DataGridView FillWeight Exception on Large Column Reports (FrmInventoryVarianceReport.cs, FrmReports.cs):
   1. معالجة خطأ FillWeight (لا يمكن أن يزيد مجموع قيم FillWeight عن 65535) في تقارير الجرد الشاملة ذات الأعمدة الكثيرة.

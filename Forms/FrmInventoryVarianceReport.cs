@@ -429,7 +429,11 @@ namespace ChickenDist.Forms
                 // Metrics summary line on page 1
                 if (_printRowIndex == 0)
                 {
-                    string summaryLine = $"🔴 إجمالي العجز: {lblTotalShortageCost.Text} ({lblTotalShortageQty.Text})  |  🟢 إجمالي الزيادة: {lblTotalSurplusCost.Text}  |  ⚖️ الصافي: {lblNetCostDiff.Text}";
+                    string shortageStr = $"{lblTotalShortageCost.Text} ({lblTotalShortageQty.Text})".Replace("🔴 ", "");
+                    string surplusStr = $"{lblTotalSurplusCost.Text}".Replace("🟢 ", "");
+                    string netStr = $"{lblNetCostDiff.Text}".Replace("⚖️ ", "");
+
+                    string summaryLine = $"إجمالي العجز: {shortageStr}   |   إجمالي الزيادة: {surplusStr}   |   الصافي: {netStr}";
                     g.DrawString(summaryLine, smallBold, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);
                     y += 22;
                     g.DrawLine(Pens.Gray, 20, y, pageW - 20, y);
@@ -437,11 +441,17 @@ namespace ChickenDist.Forms
                 }
 
                 // Table Header
-                int[] xCols = { 20, 110, 220, 330, 400, 470, 540, 620, 710 };
+                // Total printable width = 760 (from x=20 to x=780)
+                int[] xCols = { 20, 95, 175, 240, 455, 510, 565, 620, 680 };
+                int[] wCols = { 75, 80,  65,  210,  50,  50,  50,  55, 100 };
                 string[] headers = { "التاريخ", "المخزن", "كود الصنف", "اسم الصنف", "الدفتري", "الفعلي", "الفارق", "نوع الحركة", "خسارة العجز / الزيادة" };
 
                 for (int i = 0; i < headers.Length; i++)
-                    g.DrawString(headers[i], boldHeader, Brushes.DarkBlue, xCols[i], y);
+                {
+                    var rectHeader = new RectangleF(xCols[i], y, wCols[i], 20);
+                    var sfHeader = new StringFormat { Alignment = i >= 4 ? StringAlignment.Center : StringAlignment.Near, Trimming = StringTrimming.EllipsisCharacter };
+                    g.DrawString(headers[i], boldHeader, Brushes.DarkBlue, rectHeader, sfHeader);
+                }
                 y += 22;
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y);
                 y += 8;
@@ -451,14 +461,15 @@ namespace ChickenDist.Forms
                 while (_printRowIndex < dgGrid.Rows.Count)
                 {
                     var r = dgGrid.Rows[_printRowIndex];
-                    string date = r.Cells["AdjDate"].Value?.ToString()?.Substring(0, 10);
-                    string wh = r.Cells["WarehouseName"].Value?.ToString();
-                    string code = r.Cells["ProductCode"].Value?.ToString();
-                    string name = r.Cells["ProductName"].Value?.ToString();
-                    string book = r.Cells["BookQty"].Value?.ToString();
-                    string actual = r.Cells["ActualQty"].Value?.ToString();
-                    string diff = r.Cells["DiffQty"].Value?.ToString();
-                    string type = r.Cells["DiffType"].Value?.ToString();
+                    string date = r.Cells["AdjDate"].Value?.ToString();
+                    if (date != null && date.Length >= 10) date = date.Substring(0, 10);
+                    string wh = r.Cells["WarehouseName"].Value?.ToString() ?? "";
+                    string code = r.Cells["ProductCode"].Value?.ToString() ?? "";
+                    string name = r.Cells["ProductName"].Value?.ToString() ?? "";
+                    string book = r.Cells["BookQty"].Value?.ToString() ?? "0";
+                    string actual = r.Cells["ActualQty"].Value?.ToString() ?? "0";
+                    string diff = r.Cells["DiffQty"].Value?.ToString() ?? "0";
+                    string type = r.Cells["DiffType"].Value?.ToString() ?? "";
                     string lossGain = "";
 
                     decimal.TryParse(r.Cells["ShortageLoss"].Value?.ToString(), out decimal sl);
@@ -467,15 +478,18 @@ namespace ChickenDist.Forms
                     else if (sg > 0) lossGain = $"+{sg:N2} ج";
                     else lossGain = "0.00";
 
-                    g.DrawString(date, normalFont, Brushes.Black, xCols[0], y);
-                    g.DrawString(wh, normalFont, Brushes.Black, xCols[1], y);
-                    g.DrawString(code, normalFont, Brushes.Black, xCols[2], y);
-                    g.DrawString(name, normalFont, Brushes.Black, xCols[3], y);
-                    g.DrawString(book, normalFont, Brushes.Black, xCols[4], y);
-                    g.DrawString(actual, normalFont, Brushes.Black, xCols[5], y);
-                    g.DrawString(diff, smallBold, diff.StartsWith("+") ? Brushes.Green : Brushes.Red, xCols[6], y);
-                    g.DrawString(type, normalFont, Brushes.Black, xCols[7], y);
-                    g.DrawString(lossGain, smallBold, sl > 0 ? Brushes.Red : (sg > 0 ? Brushes.Green : Brushes.Black), xCols[8], y);
+                    var sfNear = new StringFormat { Trimming = StringTrimming.EllipsisCharacter };
+                    var sfCenter = new StringFormat { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+
+                    g.DrawString(date, normalFont, Brushes.Black, new RectangleF(xCols[0], y, wCols[0], 20), sfNear);
+                    g.DrawString(wh, normalFont, Brushes.Black, new RectangleF(xCols[1], y, wCols[1], 20), sfNear);
+                    g.DrawString(code, normalFont, Brushes.Black, new RectangleF(xCols[2], y, wCols[2], 20), sfNear);
+                    g.DrawString(name, normalFont, Brushes.Black, new RectangleF(xCols[3], y, wCols[3], 20), sfNear);
+                    g.DrawString(book, normalFont, Brushes.Black, new RectangleF(xCols[4], y, wCols[4], 20), sfCenter);
+                    g.DrawString(actual, normalFont, Brushes.Black, new RectangleF(xCols[5], y, wCols[5], 20), sfCenter);
+                    g.DrawString(diff, smallBold, diff.StartsWith("-") ? Brushes.Red : (diff.StartsWith("+") ? Brushes.Green : Brushes.Black), new RectangleF(xCols[6], y, wCols[6], 20), sfCenter);
+                    g.DrawString(type, normalFont, Brushes.Black, new RectangleF(xCols[7], y, wCols[7], 20), sfCenter);
+                    g.DrawString(lossGain, smallBold, sl > 0 ? Brushes.Red : (sg > 0 ? Brushes.Green : Brushes.Black), new RectangleF(xCols[8], y, wCols[8], 20), sfCenter);
 
                     y += 22;
                     _printRowIndex++;
