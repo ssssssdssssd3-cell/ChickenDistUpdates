@@ -198,7 +198,8 @@ namespace ChickenDist.Forms
 				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
 				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
 				("📊 حركة أصناف الموردين", "SupplierItemActivity"),
-				("⚠️ تقرير انتهاء الصلاحية", "ExpiryReport")
+				("⚠️ تقرير انتهاء الصلاحية", "ExpiryReport"),
+				("📊 تقرير فروق الجرد والعجز", "InventoryVariance")
 			};
 
 			var filteredReports = new List<(string name, string tag)>();
@@ -221,7 +222,7 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Stores")
 					{
-						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport");
+						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance");
 					}
 					else if (_targetModule == "Clients")
 					{
@@ -1035,6 +1036,26 @@ namespace ChickenDist.Forms
 						else
 							dgRow.DefaultCellStyle.BackColor = Color.FromArgb(198, 246, 213);
 					}
+					break;
+				case "InventoryVariance":
+					_currentDt = InventoryDAL.GetVarianceReport(dtpFrom.Value, dtpTo.Value, warehouseID);
+					SetupGrid(new (string, string)[]
+					{
+						("AdjDate", "التاريخ والوقت"),
+						("WarehouseName", "المخزن"),
+						("ProductCode", "كود الصنف"),
+						("ProductName", "اسم الصنف"),
+						("Unit", "الوحدة"),
+						("BookQty", "الرصيد الدفتري"),
+						("ActualQty", "الرصيد الفعلي"),
+						("DiffQty", "الفارق"),
+						("PurchasePrice", "سعر الشراء"),
+						("SalePrice", "سعر البيع"),
+						("ShortageCostLoss", "خسارة العجز (تكلفة)"),
+						("SurplusCostGain", "زيادة التكلفة (فائض)"),
+						("CreatedBy", "المسؤول"),
+						("Notes", "ملاحظات")
+					}, dataGridView);
 					break;
 				case "ClientBalances":
 					_currentDt = ReportDAL.ClientsReport();

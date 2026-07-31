@@ -285,6 +285,11 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void ApplyGridTheme(DataGridView grid)
+        {
+            StyleGridHeader(grid);
+        }
+
         public static void StyleGridHeader(DataGridView grid)
         {
             if (grid == null) return;

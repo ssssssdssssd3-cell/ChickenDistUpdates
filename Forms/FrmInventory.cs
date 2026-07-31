@@ -98,7 +98,8 @@ namespace ChickenDist.Forms
             var pnlF = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 120,
+                Height = 135,
+                AutoScroll = true,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10),
                 FlowDirection = FlowDirection.RightToLeft,
@@ -193,11 +194,14 @@ namespace ChickenDist.Forms
 
             lblInventoryStart = new Label
             {
-                Text = "",
+                Text = "📅 تاريخ بدء الجرد: غير محدد",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
-                ForeColor = Theme.Accent,
-                Margin = new Padding(3, 8, 5, 0)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 70, 0),
+                BackColor = Color.FromArgb(254, 243, 199),
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(6, 3, 6, 3),
+                Margin = new Padding(5, 4, 5, 0)
             };
 
             chkUninventoriedOnly = new CheckBox
@@ -209,7 +213,7 @@ namespace ChickenDist.Forms
                 Margin = new Padding(15, 6, 5, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false,
-                Enabled = false
+                Enabled = true
             };
             chkUninventoriedOnly.CheckedChanged += (s, e) => LoadStock();
 
@@ -219,7 +223,12 @@ namespace ChickenDist.Forms
             cboMaxRows.SelectedIndex = 0;
             cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
 
-            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, lblLimit, cboMaxRows, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnStartInventory, lblInventoryStart, chkUninventoriedOnly, btnMovement, btnPrintStock, btnAddExpiryRow });
+            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق الجرد والعجز/الزيادة", Color.FromArgb(120, 50, 150));
+            btnVarianceReport.Size = new Size(210, 26);
+            btnVarianceReport.Margin = new Padding(5, 2, 5, 0);
+            btnVarianceReport.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
+
+            pnlF.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblCat, cboCategory, lblSch, txtSearch, btnSearch, lblLimit, cboMaxRows, chkBelowMin, chkHideZeroStock, chkExpiryOnly, btnStartInventory, lblInventoryStart, chkUninventoriedOnly, btnMovement, btnPrintStock, btnVarianceReport, btnAddExpiryRow });
 
 
             // ── شبكة الجرد ─────────────────────────────────
@@ -375,7 +384,11 @@ namespace ChickenDist.Forms
             btnPrintLogs.Size = new Size(110, 30);
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
-            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs });
+            var btnVarianceReportLogs = Theme.MakeButton("📊 تقرير فروق الجرد المالي", Color.FromArgb(120, 50, 150));
+            btnVarianceReportLogs.Size = new Size(180, 30);
+            btnVarianceReportLogs.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
+
+            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs });
             tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
@@ -393,6 +406,16 @@ namespace ChickenDist.Forms
             
             pnlTop.BringToFront();
             dgLogs.BringToFront();
+        }
+
+        private Color GetInventoriedRowColor()
+        {
+            return AppConfig.AppTheme switch
+            {
+                "Light" => Color.FromArgb(170, 235, 180), // لون أخضر أوضح وبارز جداً لتأكيد جرد الصنف
+                "Slate" => Color.FromArgb(145, 215, 160),
+                _       => Color.FromArgb(20, 95, 45)    // أخضر زمردي غني في الداكن
+            };
         }
 
         private void LoadStock()
@@ -413,31 +436,7 @@ namespace ChickenDist.Forms
             if (cboCategory != null && cboCategory.SelectedItem is ComboItem catCi && catCi.ID > 0)
                 catId = catCi.ID;
 
-            // ── تحديث حالة دورة الجرد ──────────────────────────
-            _inventoryStartDate = InventoryDAL.GetInventoryStartDate(wid);
-            if (_inventoryStartDate.HasValue)
-            {
-                lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy HH:mm}";
-                chkUninventoriedOnly.Enabled = true;
-                _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
-                // ضم الأصناف المدخلة محلياً في الجلسة الحالية أيضاً
-                foreach (var kv in _enteredActualQty)
-                    _inventoriedProductIDs.Add(kv.Key);
-            }
-            else
-            {
-                lblInventoryStart.Text = "";
-                chkUninventoriedOnly.Enabled = false;
-                chkUninventoriedOnly.Checked = false;
-                _inventoriedProductIDs.Clear();
-            }
-
-            bool showUninventoriedOnly = chkUninventoriedOnly != null && chkUninventoriedOnly.Checked && _inventoryStartDate.HasValue;
-
-            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId);
-            var inv = System.Globalization.CultureInfo.InvariantCulture;
-
-            int displayedCount = 0;
+            // ── حساب الحد الأقصى للعرض أولاً لتمريره لـ SQL ───────
             int maxDisplay = 300;
             if (cboMaxRows != null)
             {
@@ -449,6 +448,51 @@ namespace ChickenDist.Forms
                 else maxDisplay = 300;
             }
 
+            // ── تحديث حالة تاريخ بداية دورة الجرد ──────────────────
+            _inventoryStartDate = InventoryDAL.GetInventoryStartDate(wid);
+            if (!_inventoryStartDate.HasValue && wid.HasValue)
+            {
+                // محاولة الجلب العام لكل المخازن
+                _inventoryStartDate = InventoryDAL.GetInventoryStartDate(null);
+            }
+
+            if (_inventoryStartDate.HasValue)
+            {
+                if (lblInventoryStart != null)
+                    lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy HH:mm}";
+                _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
+                foreach (var kv in _enteredActualQty)
+                    _inventoriedProductIDs.Add(kv.Key);
+            }
+            else
+            {
+                if (lblInventoryStart != null)
+                    lblInventoryStart.Text = "📅 تاريخ بدء الجرد: (لم يبدأ - انقر بدء جرد جديد)";
+                _inventoriedProductIDs.Clear();
+            }
+
+            if (chkUninventoriedOnly != null)
+            {
+                chkUninventoriedOnly.Enabled = true; // متاح دائماً للاختيار
+            }
+
+            bool showUninventoriedOnly = chkUninventoriedOnly != null && chkUninventoriedOnly.Checked;
+            if (showUninventoriedOnly && !_inventoryStartDate.HasValue)
+            {
+                // إذا تم تفعيل الخيار ولم يحدد تاريخ بدء سابقاً -> الاعتماد الافتراضي اليوم
+                _inventoryStartDate = DateTime.Today;
+                if (lblInventoryStart != null)
+                    lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy 00:00}";
+                _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
+                foreach (var kv in _enteredActualQty)
+                    _inventoriedProductIDs.Add(kv.Key);
+            }
+
+            int queryMaxRows = (maxDisplay == int.MaxValue) ? 100000 : maxDisplay;
+            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId, maxRows: queryMaxRows);
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+            int displayedCount = 0;
             decimal totalCost = 0m;
             decimal totalSale = 0m;
 
@@ -545,6 +589,15 @@ namespace ChickenDist.Forms
                 dgStock.Rows[ri].Cells["HasExpiry"].Value         = r["HasExpiry"];
                 dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value = r["DefaultExpiryDays"];
 
+                // تمييز لون السطر والأصناف المجرودة باللون الأخضر الناصع الجلي
+                bool isInventoried = _enteredActualQty.ContainsKey(pid) || _inventoriedProductIDs.Contains(pid);
+                if (isInventoried)
+                {
+                    Color invColor = GetInventoriedRowColor();
+                    dgStock.Rows[ri].DefaultCellStyle.BackColor = invColor;
+                    dgStock.Rows[ri].Cells["ActualQty"].Style.BackColor = invColor;
+                }
+
                 if (!string.IsNullOrEmpty(diffVal))
                 {
                     decimal diff2 = savedActual - displayedBookQty;
@@ -624,30 +677,7 @@ namespace ChickenDist.Forms
 
         private void DgStock_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0 || e.RowIndex >= dgStock.Rows.Count) return;
-
-            var row = dgStock.Rows[e.RowIndex];
-            if (row.Cells["ProductID"].Value == null) return;
-
-            int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-            bool isEntered = _enteredActualQty.ContainsKey(pid);
-            bool isInventoriedInDB = _inventoriedProductIDs.Contains(pid);
-
-            if (isEntered || isInventoriedInDB)
-            {
-                // تم جرد هذا الصنف -> تمييز لون السطر بالأخضر الناعم
-                row.DefaultCellStyle.BackColor = AppConfig.AppTheme switch
-                {
-                    "Light" => Color.FromArgb(220, 245, 225),
-                    "Slate" => Color.FromArgb(215, 240, 220),
-                    _       => Color.FromArgb(30, 65, 40)
-                };
-            }
-            else
-            {
-                // لم يُجرد بعد -> لون السطر المعتاد
-                row.DefaultCellStyle.BackColor = Color.Empty;
-            }
+            // Row background colors are set once in LoadStock and CellEndEdit to avoid lag and repaint cascades
         }
 
         private void DgStock_SelectionChanged(object sender, EventArgs e)
@@ -689,6 +719,9 @@ namespace ChickenDist.Forms
                         _enteredActualQty[rowPid] = actualQty;
                         _inventoriedProductIDs.Add(rowPid);
                     }
+                    Color invColor = GetInventoriedRowColor();
+                    row.DefaultCellStyle.BackColor = invColor;
+                    row.Cells["ActualQty"].Style.BackColor = invColor;
                     dgStock.InvalidateRow(e.RowIndex);
                 }
                 else
@@ -697,6 +730,8 @@ namespace ChickenDist.Forms
                     row.Cells["DiffQty"].Value   = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
                     if (rowPid > 0) _enteredActualQty.Remove(rowPid);
+                    row.DefaultCellStyle.BackColor = Color.Empty;
+                    row.Cells["ActualQty"].Style.BackColor = Color.FromArgb(255, 255, 225);
                     dgStock.InvalidateRow(e.RowIndex);
                 }
             }

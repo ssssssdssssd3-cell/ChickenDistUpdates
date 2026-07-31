@@ -1,0 +1,510 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Printing;
+using System.Windows.Forms;
+using ChickenDist.Core;
+using ChickenDist.DAL;
+
+namespace ChickenDist.Forms
+{
+    public class FrmInventoryVarianceReport : Form
+    {
+        private DateTimePicker dtpFrom;
+        private DateTimePicker dtpTo;
+        private ComboBox cboWarehouse;
+        private ComboBox cboFilterType;
+        private TextBox txtSearch;
+        private Button btnLoad;
+        private Button btnPrint;
+        private Button btnExport;
+
+        private Label lblTotalShortageQty;
+        private Label lblTotalShortageCost;
+        private Label lblTotalSurplusQty;
+        private Label lblTotalSurplusCost;
+        private Label lblNetCostDiff;
+        private Label lblTotalShortageSale;
+
+        private DataGridView dgGrid;
+        private DataTable _dtData;
+
+        public FrmInventoryVarianceReport()
+        {
+            InitUI();
+        }
+
+        private void InitUI()
+        {
+            Text = "📊 تقرير فروق وتسويات الجرد والعجز والزيادة والتقييم المالي";
+            Size = new Size(1250, 750);
+            StartPosition = FormStartPosition.CenterScreen;
+            RightToLeft = RightToLeft.Yes;
+            RightToLeftLayout = true;
+            BackColor = Theme.BgMain;
+            Font = Theme.FontMain;
+
+            // 1. Top Filter Panel
+            var pnlTop = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false
+            };
+
+            pnlTop.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(5, 10, 0, 0) });
+            dtpFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
+            pnlTop.Controls.Add(dtpFrom);
+
+            pnlTop.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 10, 0, 0) });
+            dtpTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            pnlTop.Controls.Add(dtpTo);
+
+            pnlTop.Controls.Add(new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 10, 0, 0) });
+            cboWarehouse = new ComboBox { Width = 160, DropDownStyle = ComboBoxStyle.DropDownList };
+            pnlTop.Controls.Add(cboWarehouse);
+
+            pnlTop.Controls.Add(new Label { Text = "التصفية:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 10, 0, 0) });
+            cboFilterType = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboFilterType.Items.AddRange(new object[] { "--- كل الفروق ---", "🔻 عجز فقط (خسارة)", "🔺 زيادة فقط (فائض)" });
+            cboFilterType.SelectedIndex = 0;
+            pnlTop.Controls.Add(cboFilterType);
+
+            pnlTop.Controls.Add(new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 10, 0, 0) });
+            txtSearch = new TextBox { Width = 140 };
+            pnlTop.Controls.Add(txtSearch);
+
+            btnLoad = Theme.MakeButton("🔍 عرض التقرير", Theme.Primary);
+            btnLoad.Size = new Size(110, 32);
+            btnLoad.Click += (s, e) => LoadReportData();
+            pnlTop.Controls.Add(btnLoad);
+
+            btnPrint = Theme.MakeButton("🖨️ طباعة A4", Theme.Secondary);
+            btnPrint.Size = new Size(110, 32);
+            btnPrint.Click += BtnPrint_Click;
+            pnlTop.Controls.Add(btnPrint);
+
+            btnExport = Theme.MakeButton("📊 إكسيل", Color.FromArgb(40, 120, 60));
+            btnExport.Size = new Size(90, 32);
+            btnExport.Click += BtnExport_Click;
+            pnlTop.Controls.Add(btnExport);
+
+            // 2. Metrics Cards Panel
+            var pnlCards = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 85,
+                ColumnCount = 4,
+                RowCount = 1,
+                Padding = new Padding(10, 5, 10, 5),
+                BackColor = Theme.BgMain
+            };
+            pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+
+            lblTotalShortageCost = new Label();
+            lblTotalShortageQty = new Label();
+            var card1 = CreateCard("🔴 إجمالي العجز (خسارة التكلفة)", lblTotalShortageCost, lblTotalShortageQty, Color.FromArgb(140, 30, 30), Color.FromArgb(255, 235, 235));
+
+            lblTotalSurplusCost = new Label();
+            lblTotalSurplusQty = new Label();
+            var card2 = CreateCard("🟢 إجمالي الزيادة (بالتكلفة)", lblTotalSurplusCost, lblTotalSurplusQty, Color.FromArgb(25, 110, 45), Color.FromArgb(230, 250, 235));
+
+            lblNetCostDiff = new Label();
+            var lblNetDesc = new Label { Text = "الفرق بين الزيادة والعجز", Font = new Font("Arial", 8f), ForeColor = Color.DarkGray };
+            var card3 = CreateCard("⚖️ صافي الفارق المالي", lblNetCostDiff, lblNetDesc, Color.FromArgb(20, 80, 140), Color.FromArgb(230, 240, 255));
+
+            lblTotalShortageSale = new Label();
+            var lblSaleDesc = new Label { Text = "القيمة البيعية المفقودة", Font = new Font("Arial", 8f), ForeColor = Color.DarkGray };
+            var card4 = CreateCard("🏷️ خسارة العجز (بسعر البيع)", lblTotalShortageSale, lblSaleDesc, Color.FromArgb(110, 40, 120), Color.FromArgb(245, 235, 255));
+
+            pnlCards.Controls.Add(card1, 0, 0);
+            pnlCards.Controls.Add(card2, 1, 0);
+            pnlCards.Controls.Add(card3, 2, 0);
+            pnlCards.Controls.Add(card4, 3, 0);
+
+            // 3. DataGrid
+            dgGrid = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RowHeadersVisible = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            };
+            Theme.ApplyGridTheme(dgGrid);
+
+            dgGrid.Columns.Add("AdjDate", "التاريخ والوقت");
+            dgGrid.Columns.Add("WarehouseName", "المخزن");
+            dgGrid.Columns.Add("ProductCode", "كود الصنف");
+            dgGrid.Columns.Add("ProductName", "اسم الصنف");
+            dgGrid.Columns.Add("Unit", "الوحدة");
+            dgGrid.Columns.Add("BookQty", "الدفتري");
+            dgGrid.Columns.Add("ActualQty", "الفعلي");
+            dgGrid.Columns.Add("DiffQty", "فارق الكمية");
+            dgGrid.Columns.Add("DiffType", "نوع الفارق");
+            dgGrid.Columns.Add("PurchasePrice", "سعر الشراء");
+            dgGrid.Columns.Add("SalePrice", "سعر البيع");
+            dgGrid.Columns.Add("ShortageLoss", "خسارة العجز (ج)");
+            dgGrid.Columns.Add("SurplusGain", "زيادة التكلفة (ج)");
+            dgGrid.Columns.Add("CreatedBy", "المسؤول");
+            dgGrid.Columns.Add("Notes", "ملاحظات");
+
+            Controls.Add(dgGrid);
+            Controls.Add(pnlCards);
+            Controls.Add(pnlTop);
+
+            LoadWarehouses();
+            LoadReportData();
+        }
+
+        private Panel CreateCard(string title, Label lblMainVal, Label lblSubVal, Color titleColor, Color bgColor)
+        {
+            var card = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = bgColor,
+                Padding = new Padding(8),
+                Margin = new Padding(4)
+            };
+            card.Paint += (s, e) =>
+            {
+                ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, titleColor, ButtonBorderStyle.Solid);
+            };
+
+            var lblTitle = new Label
+            {
+                Text = title,
+                Dock = DockStyle.Top,
+                Height = 20,
+                Font = new Font("Arial", 9.5f, FontStyle.Bold),
+                ForeColor = titleColor,
+                RightToLeft = RightToLeft.Yes
+            };
+
+            lblMainVal.Dock = DockStyle.Top;
+            lblMainVal.Height = 26;
+            lblMainVal.Font = new Font("Arial", 12f, FontStyle.Bold);
+            lblMainVal.ForeColor = titleColor;
+            lblMainVal.Text = "0.00 ج";
+            lblMainVal.RightToLeft = RightToLeft.Yes;
+
+            lblSubVal.Dock = DockStyle.Fill;
+            lblSubVal.RightToLeft = RightToLeft.Yes;
+
+            card.Controls.Add(lblSubVal);
+            card.Controls.Add(lblMainVal);
+            card.Controls.Add(lblTitle);
+            return card;
+        }
+
+        private void LoadWarehouses()
+        {
+            try
+            {
+                var dt = WarehouseDAL.GetAll(true);
+                cboWarehouse.Items.Clear();
+                cboWarehouse.Items.Add(new ComboItem(0, "--- كل المخازن ---"));
+                foreach (DataRow r in dt.Rows)
+                {
+                    cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+                }
+                cboWarehouse.DisplayMember = "Text";
+                cboWarehouse.ValueMember = "ID";
+                cboWarehouse.SelectedIndex = 0;
+            }
+            catch { }
+        }
+
+        private void LoadReportData()
+        {
+            try
+            {
+                int? wid = null;
+                if (cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                    wid = ci.ID;
+
+                string filterType = "ALL";
+                if (cboFilterType.SelectedIndex == 1) filterType = "SHORTAGE";
+                else if (cboFilterType.SelectedIndex == 2) filterType = "SURPLUS";
+
+                _dtData = InventoryDAL.GetVarianceReport(dtpFrom.Value, dtpTo.Value, wid, filterType, txtSearch.Text.Trim());
+                dgGrid.Rows.Clear();
+
+                decimal totalShortageCost = 0;
+                decimal totalShortageSale = 0;
+                decimal totalShortageQty = 0;
+
+                decimal totalSurplusCost = 0;
+                decimal totalSurplusQty = 0;
+
+                foreach (DataRow r in _dtData.Rows)
+                {
+                    decimal diff = Convert.ToDecimal(r["DiffQty"]);
+                    decimal purchasePrice = Convert.ToDecimal(r["PurchasePrice"]);
+                    decimal salePrice = Convert.ToDecimal(r["SalePrice"]);
+
+                    decimal shortageLoss = Convert.ToDecimal(r["ShortageCostLoss"]);
+                    decimal shortageSaleLoss = Convert.ToDecimal(r["ShortageSaleLoss"]);
+                    decimal surplusGain = Convert.ToDecimal(r["SurplusCostGain"]);
+
+                    string typeStr = "مطابق";
+                    if (diff < 0)
+                    {
+                        typeStr = "🔻 عجز";
+                        totalShortageQty += Math.Abs(diff);
+                        totalShortageCost += shortageLoss;
+                        totalShortageSale += shortageSaleLoss;
+                    }
+                    else if (diff > 0)
+                    {
+                        typeStr = "🔺 زيادة";
+                        totalSurplusQty += diff;
+                        totalSurplusCost += surplusGain;
+                    }
+
+                    int ri = dgGrid.Rows.Add(
+                        Convert.ToDateTime(r["AdjDate"]).ToString("dd/MM/yyyy HH:mm"),
+                        r["WarehouseName"],
+                        r["ProductCode"],
+                        r["ProductName"],
+                        r["Unit"],
+                        Convert.ToDecimal(r["BookQty"]).ToString("N3"),
+                        Convert.ToDecimal(r["ActualQty"]).ToString("N3"),
+                        (diff > 0 ? "+" : "") + diff.ToString("N3"),
+                        typeStr,
+                        purchasePrice.ToString("N2"),
+                        salePrice.ToString("N2"),
+                        shortageLoss > 0 ? shortageLoss.ToString("N2") : "0.00",
+                        surplusGain > 0 ? surplusGain.ToString("N2") : "0.00",
+                        r["CreatedBy"],
+                        r["Notes"]
+                    );
+
+                    if (diff < 0)
+                    {
+                        dgGrid.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.OrangeRed;
+                        dgGrid.Rows[ri].Cells["DiffType"].Style.ForeColor = Color.DarkRed;
+                        dgGrid.Rows[ri].Cells["ShortageLoss"].Style.ForeColor = Color.DarkRed;
+                        dgGrid.Rows[ri].Cells["ShortageLoss"].Style.Font = Theme.FontBold;
+                    }
+                    else if (diff > 0)
+                    {
+                        dgGrid.Rows[ri].Cells["DiffQty"].Style.ForeColor = Color.DarkGreen;
+                        dgGrid.Rows[ri].Cells["DiffType"].Style.ForeColor = Color.DarkGreen;
+                        dgGrid.Rows[ri].Cells["SurplusGain"].Style.ForeColor = Color.DarkGreen;
+                        dgGrid.Rows[ri].Cells["SurplusGain"].Style.Font = Theme.FontBold;
+                    }
+                }
+
+                // Update Cards
+                lblTotalShortageCost.Text = $"{totalShortageCost:N2} ج";
+                lblTotalShortageQty.Text = $"كمية العجز: {totalShortageQty:N3}";
+
+                lblTotalSurplusCost.Text = $"{totalSurplusCost:N2} ج";
+                lblTotalSurplusQty.Text = $"كمية الزيادة: {totalSurplusQty:N3}";
+
+                decimal netCost = totalSurplusCost - totalShortageCost;
+                if (netCost < 0)
+                {
+                    lblNetCostDiff.Text = $"- {Math.Abs(netCost):N2} ج (عجز صافي)";
+                    lblNetCostDiff.ForeColor = Color.OrangeRed;
+                }
+                else if (netCost > 0)
+                {
+                    lblNetCostDiff.Text = $"+ {netCost:N2} ج (زيادة صافية)";
+                    lblNetCostDiff.ForeColor = Color.DarkGreen;
+                }
+                else
+                {
+                    lblNetCostDiff.Text = "0.00 ج (متكافئ)";
+                    lblNetCostDiff.ForeColor = Color.DarkBlue;
+                }
+
+                lblTotalShortageSale.Text = $"{totalShortageSale:N2} ج";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل تحميل بيانات تقرير فروق الجرد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnExport_Click(object sender, EventArgs e)
+        {
+            if (dgGrid == null || dgGrid.Rows.Count == 0)
+            {
+                Theme.ShowMsg("لا توجد بيانات للتصدير.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (SaveFileDialog dlg = new SaveFileDialog())
+            {
+                dlg.Filter = "ملف CSV (*.csv)|*.csv";
+                dlg.FileName = $"تقرير_فروق_وتسويات_الجرد_{DateTime.Now:yyyyMMdd_HHmm}.csv";
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        var sb = new System.Text.StringBuilder();
+
+                        var headers = new List<string>();
+                        foreach (DataGridViewColumn col in dgGrid.Columns)
+                        {
+                            if (col.Visible)
+                                headers.Add($"\"{col.HeaderText.Replace("\"", "\"\"")}\"");
+                        }
+                        sb.AppendLine(string.Join(",", headers));
+
+                        foreach (DataGridViewRow row in dgGrid.Rows)
+                        {
+                            if (row.IsNewRow) continue;
+                            var cells = new List<string>();
+                            foreach (DataGridViewColumn col in dgGrid.Columns)
+                            {
+                                if (col.Visible)
+                                {
+                                    string val = row.Cells[col.Index].Value?.ToString() ?? "";
+                                    cells.Add($"\"{val.Replace("\"", "\"\"")}\"");
+                                }
+                            }
+                            sb.AppendLine(string.Join(",", cells));
+                        }
+
+                        System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), System.Text.Encoding.UTF8);
+                        Theme.ShowMsg("✅ تم تصدير التقرير بنجاح!\nيمكنك الآن فتح الملف باستخدام برنامج Excel.", "تم التصدير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        Theme.ShowMsg("❌ فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private int _printRowIndex = 0;
+
+        private void BtnPrint_Click(object sender, EventArgs e)
+        {
+            if (dgGrid.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات لطباعتها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            _printRowIndex = 0;
+            var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+            pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+
+            pd.PrintPage += (s, ev) =>
+            {
+                var g = ev.Graphics;
+                var boldTitle = new Font("Arial", 16, FontStyle.Bold);
+                var boldHeader = new Font("Arial", 10, FontStyle.Bold);
+                var normalFont = new Font("Arial", 9);
+                var smallBold = new Font("Arial", 9, FontStyle.Bold);
+                var center = new StringFormat { Alignment = StringAlignment.Center };
+
+                int y = 30;
+                int pageW = 800;
+
+                // Title Header
+                g.DrawString("تقرير فروق وتسويات الجرد والعجز والزيادة والتقييم المالي", boldTitle, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 30), center);
+                y += 30;
+                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}  |  المخزن: {cboWarehouse.Text}", normalFont, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);
+                y += 22;
+                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y);
+                y += 12;
+
+                // Metrics summary line on page 1
+                if (_printRowIndex == 0)
+                {
+                    string summaryLine = $"🔴 إجمالي العجز: {lblTotalShortageCost.Text} ({lblTotalShortageQty.Text})  |  🟢 إجمالي الزيادة: {lblTotalSurplusCost.Text}  |  ⚖️ الصافي: {lblNetCostDiff.Text}";
+                    g.DrawString(summaryLine, smallBold, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);
+                    y += 22;
+                    g.DrawLine(Pens.Gray, 20, y, pageW - 20, y);
+                    y += 10;
+                }
+
+                // Table Header
+                int[] xCols = { 20, 110, 220, 330, 400, 470, 540, 620, 710 };
+                string[] headers = { "التاريخ", "المخزن", "كود الصنف", "اسم الصنف", "الدفتري", "الفعلي", "الفارق", "نوع الحركة", "خسارة العجز / الزيادة" };
+
+                for (int i = 0; i < headers.Length; i++)
+                    g.DrawString(headers[i], boldHeader, Brushes.DarkBlue, xCols[i], y);
+                y += 22;
+                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y);
+                y += 8;
+
+                int maxY = 1080;
+
+                while (_printRowIndex < dgGrid.Rows.Count)
+                {
+                    var r = dgGrid.Rows[_printRowIndex];
+                    string date = r.Cells["AdjDate"].Value?.ToString()?.Substring(0, 10);
+                    string wh = r.Cells["WarehouseName"].Value?.ToString();
+                    string code = r.Cells["ProductCode"].Value?.ToString();
+                    string name = r.Cells["ProductName"].Value?.ToString();
+                    string book = r.Cells["BookQty"].Value?.ToString();
+                    string actual = r.Cells["ActualQty"].Value?.ToString();
+                    string diff = r.Cells["DiffQty"].Value?.ToString();
+                    string type = r.Cells["DiffType"].Value?.ToString();
+                    string lossGain = "";
+
+                    decimal.TryParse(r.Cells["ShortageLoss"].Value?.ToString(), out decimal sl);
+                    decimal.TryParse(r.Cells["SurplusGain"].Value?.ToString(), out decimal sg);
+                    if (sl > 0) lossGain = $"-{sl:N2} ج";
+                    else if (sg > 0) lossGain = $"+{sg:N2} ج";
+                    else lossGain = "0.00";
+
+                    g.DrawString(date, normalFont, Brushes.Black, xCols[0], y);
+                    g.DrawString(wh, normalFont, Brushes.Black, xCols[1], y);
+                    g.DrawString(code, normalFont, Brushes.Black, xCols[2], y);
+                    g.DrawString(name, normalFont, Brushes.Black, xCols[3], y);
+                    g.DrawString(book, normalFont, Brushes.Black, xCols[4], y);
+                    g.DrawString(actual, normalFont, Brushes.Black, xCols[5], y);
+                    g.DrawString(diff, smallBold, diff.StartsWith("+") ? Brushes.Green : Brushes.Red, xCols[6], y);
+                    g.DrawString(type, normalFont, Brushes.Black, xCols[7], y);
+                    g.DrawString(lossGain, smallBold, sl > 0 ? Brushes.Red : (sg > 0 ? Brushes.Green : Brushes.Black), xCols[8], y);
+
+                    y += 22;
+                    _printRowIndex++;
+
+                    if (y >= maxY && _printRowIndex < dgGrid.Rows.Count)
+                    {
+                        ev.HasMorePages = true;
+                        return;
+                    }
+                }
+
+                ev.HasMorePages = false;
+                y += 15;
+                if (y < maxY)
+                {
+                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y);
+                    y += 10;
+                    g.DrawString("اعتماد مسئول الجرد: .......................................         التوقيع: .......................................", smallBold, Brushes.Black, 20, y);
+                }
+            };
+
+            var preview = new PrintPreviewDialog
+            {
+                Document = pd,
+                Width = 950,
+                Height = 800,
+                Text = "معاينة طباعة تقرير فروق وتسويات الجرد (A4)"
+            };
+            preview.ShowDialog();
+        }
+    }
+}

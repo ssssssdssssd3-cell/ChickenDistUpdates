@@ -11,8 +11,6 @@ namespace ChickenDist.DAL
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع</summary>
         public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300)
         {
-            var stockDict = GetStockSummary(warehouseID);
-
             List<SqlParameter> prms = new List<SqlParameter>();
             prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 300 : maxRows));
 
@@ -62,21 +60,28 @@ namespace ChickenDist.DAL
             DataTable dt = DbHelper.Query(sql, prms.ToArray());
             DataTable result = dt.Clone();
 
-            foreach (DataRow r in dt.Rows)
+            if (dt.Rows.Count > 0)
             {
-                int pid = Convert.ToInt32(r["ProductID"]);
-                decimal bq = stockDict.TryGetValue(pid, out decimal val) ? val : 0m;
-                r["BookQty"] = bq;
+                List<int> pids = new List<int>();
+                foreach (DataRow r in dt.Rows) pids.Add(Convert.ToInt32(r["ProductID"]));
+                var stockDict = GetStockSummaryForProducts(pids, warehouseID);
 
-                if (belowMinOnly)
+                foreach (DataRow r in dt.Rows)
                 {
-                    decimal minLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
-                    if (minLimit <= 0 || bq > minLimit) continue;
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    decimal bq = stockDict.TryGetValue(pid, out decimal val) ? val : 0m;
+                    r["BookQty"] = bq;
+
+                    if (belowMinOnly)
+                    {
+                        decimal minLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
+                        if (minLimit <= 0 || bq > minLimit) continue;
+                    }
+
+                    if (hideZeroStock && bq == 0m) continue;
+
+                    result.ImportRow(r);
                 }
-
-                if (hideZeroStock && bq == 0m) continue;
-
-                result.ImportRow(r);
             }
 
             return result;
@@ -131,6 +136,105 @@ namespace ChickenDist.DAL
 
             var val = DbHelper.Scalar(sql, prms.ToArray());
             return val == null || val == DBNull.Value ? 0 : Convert.ToDecimal(val);
+        }
+
+        /// <summary>جلب ملخص أرصدة مجموعة أصناف مخصصة بسرعة فائقة</summary>
+        public static Dictionary<int, decimal> GetStockSummaryForProducts(IEnumerable<int> productIDs, int? warehouseID = null)
+        {
+            var dict = new Dictionary<int, decimal>();
+            var pidList = productIDs != null ? new List<int>(productIDs) : new List<int>();
+            if (pidList.Count == 0) return dict;
+
+            string pidInClause = string.Join(",", pidList);
+            List<SqlParameter> prms = new List<SqlParameter>();
+            if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
+
+            string sql = $@"
+                SELECT ProductID, SUM(NetQty) AS TotalQty
+                FROM (
+                    SELECT sa.ProductID, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
+                    FROM StockAdjustments sa
+                    INNER JOIN (
+                        SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
+                        FROM StockAdjustments
+                        WHERE ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND WarehouseID = @wid" : "")}
+                        GROUP BY ProductID, WarehouseID
+                    ) latest ON sa.ProductID = latest.ProductID AND sa.WarehouseID = latest.WarehouseID AND sa.AdjDate = latest.MaxDate
+                    WHERE sa.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
+
+                    UNION ALL
+
+                    SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
+                    FROM PurchaseItems pi
+                    JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    WHERE pi.ProductID IN ({pidInClause}) AND pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}
+                    GROUP BY pi.ProductID
+
+                    UNION ALL
+
+                    SELECT ri.ProductID, SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) AS NetQty
+                    FROM ReturnItems ri
+                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    WHERE ri.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}
+                    GROUP BY ri.ProductID
+
+                    UNION ALL
+
+                    SELECT hi.ProductID, SUM(hi.ReturnedQty * COALESCE(hi.Factor, 1.0)) AS NetQty
+                    FROM HandoverItems hi
+                    JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
+                    JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                    WHERE hi.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}
+                    GROUP BY hi.ProductID
+
+                    UNION ALL
+
+                    SELECT ti.ProductID, SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
+                    FROM WarehouseTransferItems ti
+                    JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    WHERE ti.ProductID IN ({pidInClause}) AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}
+                    GROUP BY ti.ProductID
+
+                    UNION ALL
+
+                    SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted = 1 {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                    GROUP BY si.ProductID
+
+                    UNION ALL
+
+                    SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
+                    FROM PurchaseReturnItems pri
+                    JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    WHERE pri.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}
+                    GROUP BY pri.ProductID
+
+                    UNION ALL
+
+                    SELECT ti.ProductID, -SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
+                    FROM WarehouseTransferItems ti
+                    JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    WHERE ti.ProductID IN ({pidInClause}) AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}
+                    GROUP BY ti.ProductID
+
+                    UNION ALL
+
+                    SELECT wli.ProductID, -SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) AS NetQty
+                    FROM WastageLossItems wli
+                    JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                    WHERE wli.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}
+                    GROUP BY wli.ProductID
+                ) StockUnion
+                GROUP BY ProductID";
+
+            DataTable dt = DbHelper.Query(sql, prms.ToArray());
+            foreach (DataRow r in dt.Rows)
+            {
+                dict[Convert.ToInt32(r["ProductID"])] = Convert.ToDecimal(r["TotalQty"]);
+            }
+            return dict;
         }
 
         /// <summary>جلب ملخص أرصدة كل الأصناف دفعة واحدة بسرعة فائقة بدون استعلامات فرعية مكررة</summary>
@@ -291,6 +395,65 @@ namespace ChickenDist.DAL
                     e.EmpName AS CreatedBy,
                     sa.UnitName AS AdjUnitName,
                     sa.Factor AS AdjFactor
+                FROM StockAdjustments sa
+                JOIN Products p ON sa.ProductID = p.ProductID
+                JOIN Warehouses w ON sa.WarehouseID = w.WarehouseID
+                LEFT JOIN Employees e ON sa.CreatedBy = e.EmpID
+                WHERE CAST(sa.AdjDate AS DATE) BETWEEN @f AND @t {filter}
+                ORDER BY sa.AdjDate DESC";
+
+            return DbHelper.Query(sql, prms.ToArray());
+        }
+
+        /// <summary>جلب تقرير فروق الجرد والعجز والزيادة والتقييم المالي</summary>
+        public static DataTable GetVarianceReport(DateTime from, DateTime to, int? warehouseID = null, string filterType = "ALL", string searchTerm = "")
+        {
+            string filter = "";
+            List<SqlParameter> prms = new List<SqlParameter> {
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date)
+            };
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                filter += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR sa.Notes LIKE @term) ";
+                prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
+            }
+
+            if (warehouseID.HasValue)
+            {
+                filter += " AND sa.WarehouseID = @wid ";
+                prms.Add(DbHelper.P("@wid", warehouseID.Value));
+            }
+
+            if (filterType == "SHORTAGE")
+            {
+                filter += " AND (sa.ActualQty - sa.BookQty) < 0 ";
+            }
+            else if (filterType == "SURPLUS")
+            {
+                filter += " AND (sa.ActualQty - sa.BookQty) > 0 ";
+            }
+
+            string sql = $@"
+                SELECT 
+                    sa.AdjID,
+                    sa.AdjDate,
+                    w.WarehouseName,
+                    p.ProductCode,
+                    p.ProductName,
+                    COALESCE(sa.UnitName, p.Unit) AS Unit,
+                    sa.BookQty,
+                    sa.ActualQty,
+                    (sa.ActualQty - sa.BookQty) AS DiffQty,
+                    COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
+                    COALESCE(p.SalePrice, 0) AS SalePrice,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) * COALESCE(p.PurchasePrice, 0) ELSE 0 END AS ShortageCostLoss,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) * COALESCE(p.SalePrice, 0) ELSE 0 END AS ShortageSaleLoss,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(p.PurchasePrice, 0) ELSE 0 END AS SurplusCostGain,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(p.SalePrice, 0) ELSE 0 END AS SurplusSaleGain,
+                    sa.Notes,
+                    e.EmpName AS CreatedBy
                 FROM StockAdjustments sa
                 JOIN Products p ON sa.ProductID = p.ProductID
                 JOIN Warehouses w ON sa.WarehouseID = w.WarehouseID
