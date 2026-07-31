@@ -16,6 +16,7 @@ namespace ChickenDist.Forms
 
         private DataGridView dgMovement;
         private DateTimePicker dtpFrom, dtpTo;
+        private ComboBox cboTransType;
         private Button btnLoad, btnPrint;
         private Label lblTitle;
 
@@ -31,7 +32,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = $"حركة الصنف - {_productName}";
-            this.Size = new Size(950, 650);
+            this.Size = new Size(980, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -54,35 +55,58 @@ namespace ChickenDist.Forms
             // Filter Bar
             var pnlFilters = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(10) };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(880, 15) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(915, 15) };
             dtpFrom = new DateTimePicker 
             { 
-                Location = new Point(730, 11), 
-                Width = 140, 
+                Location = new Point(780, 11), 
+                Width = 130, 
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today.AddDays(-30)
             };
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(680, 15) };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(735, 15) };
             dtpTo = new DateTimePicker 
             { 
-                Location = new Point(530, 11), 
-                Width = 140, 
+                Location = new Point(600, 11), 
+                Width = 130, 
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today
             };
 
+            var lblType = new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(515, 15) };
+            cboTransType = new ComboBox
+            {
+                Location = new Point(365, 11),
+                Width = 145,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = Theme.FontMain,
+                BackColor = Color.White,
+                ForeColor = Color.Black
+            };
+            cboTransType.Items.AddRange(new object[] {
+                "(جميع الحركات)",
+                "مبيعات",
+                "مشتريات",
+                "مرتجعات مبيعات",
+                "مرتجعات مشتريات",
+                "تسويات جردية",
+                "تحويلات مخزنية",
+                "تالف وهالك"
+            });
+            cboTransType.SelectedIndex = 0;
+            cboTransType.SelectedIndexChanged += (s, e) => LoadMovement();
+
             btnLoad = Theme.MakeButton("🔍 عرض الحركة", Color.FromArgb(60, 100, 60));
-            btnLoad.Location = new Point(390, 8);
-            btnLoad.Size = new Size(120, 32);
+            btnLoad.Location = new Point(225, 8);
+            btnLoad.Size = new Size(130, 32);
             btnLoad.Click += (s, e) => LoadMovement();
 
             btnPrint = Theme.MakeButton("🖨 طباعة تقرير الحركة", Theme.Accent);
-            btnPrint.Location = new Point(20, 8);
-            btnPrint.Size = new Size(160, 32);
+            btnPrint.Location = new Point(15, 8);
+            btnPrint.Size = new Size(165, 32);
             btnPrint.Click += (s, e) => PrintMovement();
 
-            pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnLoad, btnPrint });
+            pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblType, cboTransType, btnLoad, btnPrint });
             this.Controls.Add(pnlFilters);
 
             // Grid
@@ -160,19 +184,36 @@ namespace ChickenDist.Forms
             dgMovement.Rows[0].DefaultCellStyle.ForeColor = Theme.TextSub;
             dgMovement.Rows[0].DefaultCellStyle.Font = new Font(Theme.FontMain, FontStyle.Italic);
 
+            string selectedType = cboTransType?.SelectedItem?.ToString() ?? "(جميع الحركات)";
+
             // 3. Add movements within the selected period
             foreach (DataRow r in dt.Rows)
             {
                 DateTime date = Convert.ToDateTime(r["TransDate"]);
                 if (date.Date >= dtpFrom.Value.Date && date.Date <= dtpTo.Value.Date)
                 {
+                    string transType = r["TransType"]?.ToString() ?? "";
                     decimal qtyIn = Convert.ToDecimal(r["QtyIn"]);
                     decimal qtyOut = Convert.ToDecimal(r["QtyOut"]);
                     runningBalance += qtyIn - qtyOut;
 
+                    // Filter matching
+                    bool match = false;
+                    if (selectedType == "(جميع الحركات)") match = true;
+                    else if (selectedType == "مبيعات" && (transType.Contains("بيع") || transType.Contains("تحميل حمولة"))) match = true;
+                    else if (selectedType == "مشتريات" && transType.Contains("شراء") && !transType.Contains("مرتجع")) match = true;
+                    else if (selectedType == "مرتجعات مبيعات" && transType.Contains("مرتجع") && (transType.Contains("مبيعات") || transType.Contains("حمولة"))) match = true;
+                    else if (selectedType == "مرتجعات مشتريات" && transType.Contains("مرتجع") && transType.Contains("مشتريات")) match = true;
+                    else if (selectedType == "تسويات جردية" && transType.Contains("تسوية")) match = true;
+                    else if (selectedType == "تحويلات مخزنية" && transType.Contains("تحويل")) match = true;
+                    else if (selectedType == "تالف وهالك" && (transType.Contains("تالف") || transType.Contains("هالك"))) match = true;
+                    else if (transType.Equals(selectedType, StringComparison.OrdinalIgnoreCase)) match = true;
+
+                    if (!match) continue;
+
                     int rowIndex = dgMovement.Rows.Add(
                         date.ToString("dd/MM/yyyy HH:mm"),
-                        r["TransType"],
+                        transType,
                         r["RefCode"],
                         r["PersonName"],
                         qtyIn > 0 ? qtyIn.ToString("N2") : "",
@@ -216,8 +257,9 @@ namespace ChickenDist.Forms
                 g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y); y += 10;
 
                 // Meta Info
+                string typeFilterText = cboTransType != null && cboTransType.SelectedIndex > 0 ? $"   |   نوع الحركة: {cboTransType.SelectedItem}" : "";
                 g.DrawString($"الصنف: {_productName} ({_productUnit})", bold, Brushes.Black, 20, y);
-                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), right);
+                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}{typeFilterText}", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), right);
                 y += 25;
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 10;
 
@@ -280,3 +322,4 @@ namespace ChickenDist.Forms
         }
     }
 }
+
