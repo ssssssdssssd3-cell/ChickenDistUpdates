@@ -127,7 +127,6 @@ namespace ChickenDist.Forms
 
             pnlHeader.Controls.Add(pnlTitleBox);
             pnlHeader.Controls.Add(btnToggleDetails);
-            this.Controls.Add(pnlHeader);
 
             // ── 2. المحتوى الرئيسي ──────────────────────────────────────
             TableLayoutPanel tblMain = new TableLayoutPanel
@@ -319,7 +318,6 @@ namespace ChickenDist.Forms
             dgMovements.Columns.Add(new DataGridViewTextBoxColumn { Name = "Amount", HeaderText = "المبلغ النقدي (ج)", FillWeight = 70f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 
             tblMain.Controls.Add(dgMovements, 0, 3);
-            this.Controls.Add(tblMain);
 
             // ── 3. شريط التحكم السفلي ──────────────────────────────────
             pnlBottom = new Panel
@@ -357,7 +355,12 @@ namespace ChickenDist.Forms
             flowBottom.Controls.Add(btnRefresh);
 
             pnlBottom.Controls.Add(flowBottom);
+            
+            // Add top and bottom panels first, then tblMain in Fill, then bring tblMain to front so it docks between top and bottom
             this.Controls.Add(pnlBottom);
+            this.Controls.Add(tblMain);
+            this.Controls.Add(pnlHeader);
+            tblMain.BringToFront();
         }
 
         private Label MakeKpiCard(TableLayoutPanel parent, string title, string val, Color valColor, int colIdx)

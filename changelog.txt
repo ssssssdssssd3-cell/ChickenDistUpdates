@@ -1,3 +1,8 @@
+v2.0.234 - 2026-08-02
+- Fix WinForms Z-Order Docking Overlap in Shift Close Dialog (FrmShiftClose.cs):
+  1. إغلاق وتعديل ترتيب رص عناصر واجهة تقفيل الوردية لمنع تداخل الهيدر مع كروت حالة الوردية والمؤشرات.
+  2. ضبط محاذاة عناصر الجدول وحقل الملاحظات ووجهة النقدية بشكل متناسق 100%.
+
 v2.0.233 - 2026-08-02
 - Remove Auto-Drawer Fallback & Honor Employee Coded Safe (FrmSale.cs + FrmOpenShift.cs + Session.cs + DbHelper.cs):
   1. إلغاء خيار البحث والتجاوز التلقائي بـ "درج تلقائي" نهائياً.
