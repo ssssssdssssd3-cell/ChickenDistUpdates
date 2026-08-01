@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using ChickenDist.Core;
@@ -446,6 +447,31 @@ namespace ChickenDist.DAL
                            WHERE p.IsActive = 1 AND p.IsQuickItem = 1
                            ORDER BY p.ProductName";
             return DbHelper.Query(sql);
+        }
+
+        public static void UpdateMinStockLimit(int productID, decimal minStockLimit)
+        {
+            DbHelper.Execute("UPDATE Products SET MinStockLimit=@msl WHERE ProductID=@id",
+                DbHelper.P("@msl", minStockLimit),
+                DbHelper.P("@id", productID));
+        }
+
+        public static int BulkUpdateMinStockLimit(Dictionary<int, decimal> updates)
+        {
+            if (updates == null || updates.Count == 0) return 0;
+            int count = 0;
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                foreach (var kvp in updates)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "UPDATE Products SET MinStockLimit=@msl WHERE ProductID=@id",
+                        DbHelper.P("@msl", kvp.Value),
+                        DbHelper.P("@id", kvp.Key));
+                    count++;
+                }
+            });
+            return count;
         }
 
         public static void Delete(int id)

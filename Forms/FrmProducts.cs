@@ -206,11 +206,19 @@ namespace ChickenDist.Forms
             btnPricePoster.Width = 135;
             btnPricePoster.Click += (s, e) => new FrmPricePoster().ShowDialog();
 
+            var btnMinStock = Theme.MakeButton("🎯 حد الطلب والنواقص", Color.FromArgb(13, 148, 136));
+            btnMinStock.Width = 150;
+            btnMinStock.Click += (s, e) => {
+                new FrmMinStockEdit().ShowDialog();
+                LoadProducts();
+            };
+
             pnlFooter.Controls.AddRange(new Control[] { 
                 btnNew, 
                 btnEdit, 
                 btnDelete, 
                 btnQuickAdd, 
+                btnMinStock,
                 btnImportExcel, 
                 btnPrintBarcode, 
                 btnPricePoster 
