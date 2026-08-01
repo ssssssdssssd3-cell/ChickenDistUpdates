@@ -2122,6 +2122,22 @@ namespace ChickenDist.Core
                     CREATE INDEX IX_Inventory_Perf ON Inventory(ProductID, WarehouseID) INCLUDE (Quantity);
                 ");
 
+                SafeMigrate("CustomerReservationItems.Table", @"
+                IF OBJECT_ID('CustomerReservationItems', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE CustomerReservationItems (
+                        ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        ReservationID INT NOT NULL,
+                        ProductID INT NULL,
+                        ProductName NVARCHAR(255) NOT NULL,
+                        ProductCode NVARCHAR(100) NULL,
+                        Quantity DECIMAL(18,3) NOT NULL DEFAULT 1,
+                        UnitPrice DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        TotalPrice DECIMAL(18,2) NOT NULL DEFAULT 0
+                    );
+                    CREATE INDEX IX_CustomerReservationItems_ResID ON CustomerReservationItems(ReservationID);
+                END");
+
                 SafeMigrate("JournalDetails.ExpandAccountName", @"
                 IF OBJECT_ID('JournalDetails', 'U') IS NOT NULL
                 BEGIN

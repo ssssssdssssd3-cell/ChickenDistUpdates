@@ -1,3 +1,10 @@
+v2.0.219 - 2026-08-01
+- Client Reservations Enhancements (FrmReservations.cs + FrmAddReservation.cs + DbHelper.cs):
+  1. حجز أكثر من صنف في الفاتورة الواحدة وتخزين البنود في جدول CustomerReservationItems.
+  2. إضافة زر ووظيفة "تعديل الحجز" لتعديل العميل والأصناف والكميات والأسعار والعربون وتاريخ التوفير.
+  3. إضافة زر ووظيفة "طباعة إيصال الحجز" لمعاينة وطباعة إيصال حجز رسمي واحترافي.
+  4. تطبيق تمييز سطور الفواتير بالألوان التبادلية (Row Alternating Contrast) لإراحة العين في شاشة الحجوزات.
+
 v2.0.218 - 2026-08-01
 - App-Wide Performance Optimization & Database Acceleration (Theme.cs + DbHelper.cs):
   1. تفعيل التخزين المزدوج الشامل (DoubleBuffering) على مستوى كافة الشاشات والجداول واللوحات لمنع الوميض وزيادة السرعة بنسبة 500%.
