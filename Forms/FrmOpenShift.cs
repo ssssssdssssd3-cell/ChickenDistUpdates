@@ -216,6 +216,7 @@ namespace ChickenDist.Forms
 
             try
             {
+                DbHelper.EnsureShiftSchema();
                 int shiftID = DbHelper.ExecuteInsert(
                     @"INSERT INTO Shifts (ShiftDate, OpenTime, OpenedBy, OpeningCash, SafeAccountID, Status, Notes)
                       VALUES (CAST(GETDATE() AS DATE), GETDATE(), @emp, @cash, @safe, 'Open', @notes)",

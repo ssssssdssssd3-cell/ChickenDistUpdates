@@ -1,3 +1,7 @@
+v2.0.229 - 2026-08-02
+- Extra Schema Guard on Shift Creation (FrmOpenShift.cs):
+  1. إضافة التأكيد المسبق EnsureShiftSchema قبل إجراء أي عملية فتح وردية جديدة لضمان سلامة قاعدة البيانات 100%.
+
 v2.0.228 - 2026-08-02
 - Database Migration Fix for Shifts SafeAccountID (DbHelper.cs + FrmShiftClose.cs + FrmSale.cs):
   1. إضافة محرك فحص وتحديث تلقائي لهيكل جدول الورديات (EnsureShiftSchema) يضمن إنشاء عمود SafeAccountID فورياً لمنع خطأ Invalid column name على قواعد البيانات السابقة.
