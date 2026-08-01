@@ -1,3 +1,8 @@
+v2.0.235 - 2026-08-02
+- Added Detailed Shift Report & Deficit/Surplus Settlement Dialog (FrmShiftReport.cs + FrmShiftClose.cs):
+  1. إضافة شاشة تقرير تقفيل الوردية التفصيلي لعرض كروت المؤشرات الكاملة (فتح، كاش، آجل، مرتجعات، مصروفات، متوقع، فعلي، عجز/زيادة).
+  2. إضافة جدول تفصيلي بكافة حركات الوردية مع خيار الطباعة الحرارية والمراجعة والتحويل.
+
 v2.0.234 - 2026-08-02
 - Fix WinForms Z-Order Docking Overlap in Shift Close Dialog (FrmShiftClose.cs):
   1. إغلاق وتعديل ترتيب رص عناصر واجهة تقفيل الوردية لمنع تداخل الهيدر مع كروت حالة الوردية والمؤشرات.

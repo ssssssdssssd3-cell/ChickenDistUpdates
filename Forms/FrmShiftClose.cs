@@ -40,6 +40,7 @@ namespace ChickenDist.Forms
         
         private Button btnOpenShift;
         private Button btnCloseShift;
+        private Button btnDetailedReport;
         private Button btnPrintReport;
         private Button btnRefresh;
         private Button btnToggleDetails;
@@ -328,10 +329,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnOpenShift   = Theme.MakeButton("✅ فتح وردية جديدة", Theme.Success, new Point(0, 0), new Size(180, 42));
-            btnCloseShift  = Theme.MakeButton("🔒 إغلاق الوردية",   Theme.Danger,  new Point(0, 0), new Size(180, 42));
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير",   Theme.Primary, new Point(0, 0), new Size(170, 42));
-            btnRefresh     = Theme.MakeButton("🔄 تحديث", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(110, 42));
+            btnOpenShift       = Theme.MakeButton("✅ فتح وردية جديدة", Theme.Success, new Point(0, 0), new Size(180, 42));
+            btnCloseShift      = Theme.MakeButton("🔒 إغلاق الوردية",   Theme.Danger,  new Point(0, 0), new Size(180, 42));
+            btnDetailedReport  = Theme.MakeButton("📊 تقرير تفصيلي",   Theme.Accent,  new Point(0, 0), new Size(160, 42));
+            btnPrintReport     = Theme.MakeButton("🖨️ طباعة", Theme.Primary, new Point(0, 0), new Size(120, 42));
+            btnRefresh         = Theme.MakeButton("🔄 تحديث", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(110, 42));
 
             FlowLayoutPanel flowBottom = new FlowLayoutPanel
             {
@@ -339,18 +341,24 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Color.Transparent
             };
-            btnOpenShift.Margin   = new Padding(6, 0, 0, 0);
-            btnCloseShift.Margin  = new Padding(6, 0, 0, 0);
-            btnPrintReport.Margin = new Padding(6, 0, 0, 0);
-            btnRefresh.Margin     = new Padding(6, 0, 0, 0);
+            btnOpenShift.Margin      = new Padding(6, 0, 0, 0);
+            btnCloseShift.Margin     = new Padding(6, 0, 0, 0);
+            btnDetailedReport.Margin = new Padding(6, 0, 0, 0);
+            btnPrintReport.Margin    = new Padding(6, 0, 0, 0);
+            btnRefresh.Margin        = new Padding(6, 0, 0, 0);
 
-            btnOpenShift.Click   += BtnOpenShift_Click;
-            btnCloseShift.Click  += BtnCloseShift_Click;
-            btnPrintReport.Click += BtnPrintReport_Click;
-            btnRefresh.Click     += (s, e) => LoadCurrentShift();
+            btnOpenShift.Click      += BtnOpenShift_Click;
+            btnCloseShift.Click     += BtnCloseShift_Click;
+            btnDetailedReport.Click += (s, e) => {
+                int? sid = _openShift != null ? Convert.ToInt32(_openShift["ShiftID"]) : (int?)null;
+                using (var dlg = new FrmShiftReport(sid)) { dlg.ShowDialog(this); }
+            };
+            btnPrintReport.Click    += BtnPrintReport_Click;
+            btnRefresh.Click        += (s, e) => LoadCurrentShift();
 
             flowBottom.Controls.Add(btnOpenShift);
             flowBottom.Controls.Add(btnCloseShift);
+            flowBottom.Controls.Add(btnDetailedReport);
             flowBottom.Controls.Add(btnPrintReport);
             flowBottom.Controls.Add(btnRefresh);
 
