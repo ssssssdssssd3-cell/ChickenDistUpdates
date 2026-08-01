@@ -45,7 +45,7 @@ namespace ChickenDist.Forms
         private Button btnToggleDetails;
 
         private DataGridView dgMovements;
-        private bool _forceShowDetails = false;
+        private bool _forceShowDetails = true;
 
         public FrmShiftClose()
         {
@@ -139,8 +139,8 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
             tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 70f));  // كارت حالة الوردية والموظف
-            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));  // كروت المؤشرات KPI
-            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 65f));  // كارت العد الفعلي والفرق
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 95f));  // كروت المؤشرات KPI
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 80f));  // كارت العد الفعلي والفرق
             tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // جدول حركات الوردية
 
             // أ) كارت حالة الوردية
@@ -189,7 +189,7 @@ namespace ChickenDist.Forms
             };
             txtOpeningCash = new TextBox
             {
-                Dock = DockStyle.Bottom,
+                Dock = DockStyle.Top,
                 Height = 28,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -235,18 +235,18 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 ColumnCount = 4,
                 RowCount = 1,
-                Padding = new Padding(10, 4, 10, 4),
+                Padding = new Padding(10, 6, 10, 6),
                 RightToLeft = RightToLeft.Yes
             };
             tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f)); // الفعلي
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f)); // وجهة النقدية
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // الفرق
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 290f)); // وجهة النقدية
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f)); // الفرق
             tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // الملاحظات
 
             // 1. حقل الفعلي
             Panel pnlAct = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
-            txtActualCash = new TextBox { Dock = DockStyle.Bottom, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
+            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            txtActualCash = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
             txtActualCash.TextChanged += (s, e) => RecalcDiff();
             pnlAct.Controls.Add(txtActualCash);
             pnlAct.Controls.Add(lblActTitle);
@@ -254,24 +254,24 @@ namespace ChickenDist.Forms
 
             // 2. حقل وجهة نقدية الوردية (التحويل للخزنة أو إبقائها كرصيد افتتاحي)
             Panel pnlTargetSafe = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية (تحويل لخزنة / رصيد افتتاحي):", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
-            cboTargetSafe = new ComboBox { Dock = DockStyle.Bottom, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
+            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية (تحويل لخزنة / رصيد افتتاحي):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            cboTargetSafe = new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
             pnlTargetSafe.Controls.Add(cboTargetSafe);
             pnlTargetSafe.Controls.Add(lblTargetTitle);
             tblActual.Controls.Add(pnlTargetSafe, 1, 0);
 
             // 3. حقل الفرق
             Panel pnlDiff = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
-            lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Bottom, Height = 28, Font = new Font("Segoe UI", 12f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
+            var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 12f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
             pnlDiff.Controls.Add(lblDiffVal);
             pnlDiff.Controls.Add(lblDiffTitle);
             tblActual.Controls.Add(pnlDiff, 2, 0);
 
             // 4. حقل الملاحظات
             Panel pnlNotes = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontMain, ForeColor = Theme.TextMain };
-            txtNotes = new TextBox { Dock = DockStyle.Bottom, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
+            var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontMain, ForeColor = Theme.TextMain };
+            txtNotes = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             pnlNotes.Controls.Add(txtNotes);
             pnlNotes.Controls.Add(lblNotesTitle);
             tblActual.Controls.Add(pnlNotes, 3, 0);
@@ -367,7 +367,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Margin = new Padding(3),
-                Padding = new Padding(6)
+                Padding = new Padding(4)
             };
             pnl.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnl);
 
@@ -375,19 +375,20 @@ namespace ChickenDist.Forms
             {
                 Text = title,
                 Dock = DockStyle.Top,
-                Height = 22,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Height = 24,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Theme.TextSub,
-                TextAlign = ContentAlignment.TopRight
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             Label lblV = new Label
             {
                 Text = val,
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 36,
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = valColor,
-                TextAlign = ContentAlignment.BottomRight
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             pnl.Controls.Add(lblV);

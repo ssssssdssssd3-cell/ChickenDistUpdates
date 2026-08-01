@@ -1,3 +1,8 @@
+v2.0.232 - 2026-08-02
+- Layout & Alignment Fixes for Shift Close Dialog (FrmShiftClose.cs):
+  1. تعديل وتوسيع ارتفاع السطور في شاشة إغلاق الوردية لمنع اختفاء أرقام الكروت وتداخل الاختيارات أو قص القوائم المنسدلة.
+  2. تفعيل عرض أرقام الكروت والحركات افتراضياً بوضوح كامل دون اقتطاع.
+
 v2.0.231 - 2026-08-02
 - Comprehensive Shift Close & Open Ledger Entries for Cash Drawer (FrmShiftClose.cs + FrmOpenShift.cs + FrmCashBox.cs):
   1. تسجيل كافة عمليات تقفيل الورديات وسطور البيان والتسويات (عجز/زيادة/تحويل) فورياً في حركة الدرج (CashBox).
