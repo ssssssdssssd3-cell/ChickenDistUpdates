@@ -607,18 +607,13 @@ namespace ChickenDist.Forms
 
             if (dt.Rows.Count == 0)
             {
-                // Handle barcode-weight (e.g., prefix 20)
-                if (code.Length >= 8 && code.StartsWith(AppConfig.BarcodeScalePrefix))
+                // Handle barcode-weight (e.g. prefix 99, 20, 21, 22, 27, 9)
+                var parseRes = BarcodeParser.Parse(code);
+                if (parseRes.IsScaleBarcode)
                 {
-                    int codeLen = AppConfig.BarcodeScaleItemCodeLength;
-                    int weightLen = AppConfig.BarcodeScaleWeightLength;
-                    string itemCode = code.Substring(AppConfig.BarcodeScalePrefix.Length, codeLen);
-                    string weightStr = code.Substring(AppConfig.BarcodeScalePrefix.Length + codeLen, weightLen);
-                    decimal weight = 0;
-                    if (decimal.TryParse(weightStr, out weight)) weight /= AppConfig.BarcodeScaleDivideBy;
-
-                    string trimmedItemCode = itemCode.TrimStart('0');
-                    if (string.IsNullOrEmpty(trimmedItemCode)) trimmedItemCode = "0";
+                    string itemCode = parseRes.ItemCode;
+                    string trimmedItemCode = parseRes.TrimmedItemCode;
+                    decimal weight = parseRes.WeightOrPrice;
                     string paddedItemCode = itemCode;
                     if (int.TryParse(itemCode, out int itemCodeVal))
                     {
@@ -632,7 +627,7 @@ namespace ChickenDist.Forms
                                p.Unit3Factor, p.DefaultSaleUnit,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
-                        WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded)", 
+                        WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.InternationalCode = @trimmed)", 
                         DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode));
                     if (dt.Rows.Count > 0 && weight > 0)
                     {

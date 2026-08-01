@@ -304,7 +304,7 @@ namespace ChickenDist.Core
         // ===== إعدادات ميزان الباركود =====
         public static string BarcodeScalePrefix
         {
-            get => Get("BarcodeScalePrefix", "20");
+            get => Get("BarcodeScalePrefix", "20,99,21,22,27,9");
             set => Set("BarcodeScalePrefix", value);
         }
         public static int BarcodeScaleItemCodeLength
