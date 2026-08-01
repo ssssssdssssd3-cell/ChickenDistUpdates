@@ -1861,6 +1861,8 @@ namespace ChickenDist.Core
                     ALTER TABLE Shifts ADD SafeAccountID INT NULL;
                 END");
 
+                EnsureShiftSchema();
+
                 // 2. دفعات الأصناف مع تاريخ الانتهاء (ProductBatches)
                 SafeMigrate("ProductBatches", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='ProductBatches')
@@ -2751,6 +2753,45 @@ namespace ChickenDist.Core
                 AppLogger.Error("CheckAndEnforceVersion failed", ex, "DbHelper");
                 // في حالة حدوث خطأ غير متوقع في المقارنة، نسمح بالمرور منعاً لتعطيل العمل
                 return true;
+            }
+        }
+
+        public static void EnsureShiftSchema()
+        {
+            try
+            {
+                Execute(@"
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='Shifts')
+                    BEGIN
+                        CREATE TABLE Shifts (
+                            ShiftID       INT IDENTITY(1,1) PRIMARY KEY,
+                            ShiftDate     DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE),
+                            OpenTime      DATETIME NOT NULL DEFAULT GETDATE(),
+                            CloseTime     DATETIME NULL,
+                            OpenedBy      INT NOT NULL REFERENCES Employees(EmpID),
+                            ClosedBy      INT NULL REFERENCES Employees(EmpID),
+                            OpeningCash   DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            TotalSales    DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            TotalReturns  DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            CashSales     DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            VisaSales     DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            OtherSales    DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            ExpectedCash  DECIMAL(10,2) NOT NULL DEFAULT 0,
+                            ActualCash    DECIMAL(10,2) NULL,
+                            Difference    DECIMAL(10,2) NULL,
+                            Notes         NVARCHAR(500) NULL,
+                            Status        NVARCHAR(20) NOT NULL DEFAULT 'Open',
+                            SafeAccountID INT NULL
+                        );
+                    END
+                    ELSE IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                    BEGIN
+                        ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                    END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureShiftSchema", ex);
             }
         }
     }

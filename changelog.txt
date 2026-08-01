@@ -1,3 +1,8 @@
+v2.0.228 - 2026-08-02
+- Database Migration Fix for Shifts SafeAccountID (DbHelper.cs + FrmShiftClose.cs + FrmSale.cs):
+  1. إضافة محرك فحص وتحديث تلقائي لهيكل جدول الورديات (EnsureShiftSchema) يضمن إنشاء عمود SafeAccountID فورياً لمنع خطأ Invalid column name على قواعد البيانات السابقة.
+  2. إضافة آلية الاستعلام الاحتياطي تلقائياً (Query Fallback) لضمان استقرار شاشة الورديات بدون أخطاء.
+
 v2.0.227 - 2026-08-02
 - Shift Cash Transfer & CashBox Auto Ledger (FrmShiftClose.cs + FrmCashBox.cs):
   1. إضافة خيار تحديد الخزنة المستهدفة (مثل الخزينة الرئيسية) عند تقفيل الوردية لتوريد نقدية الوردية إليها آلياً.

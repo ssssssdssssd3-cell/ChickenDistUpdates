@@ -2082,12 +2082,25 @@ namespace ChickenDist.Forms
 			if (lblShiftSummaryBar == null) return;
 			try
 			{
-				var dt = DbHelper.Query(
-					@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, sa.AccountName AS SafeName
-					  FROM Shifts s
-					  JOIN Employees e ON s.OpenedBy = e.EmpID
-					  LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
-					  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+				DbHelper.EnsureShiftSchema();
+				DataTable dt;
+				try
+				{
+					dt = DbHelper.Query(
+						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, sa.AccountName AS SafeName
+						  FROM Shifts s
+						  JOIN Employees e ON s.OpenedBy = e.EmpID
+						  LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+						  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+				}
+				catch
+				{
+					dt = DbHelper.Query(
+						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, NULL AS SafeName
+						  FROM Shifts s
+						  JOIN Employees e ON s.OpenedBy = e.EmpID
+						  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+				}
 
 				if (dt.Rows.Count > 0)
 				{
