@@ -1,3 +1,8 @@
+v2.0.224 - 2026-08-02
+- Shortage Notebook Query & Auto Table Creation Fix (FrmShortageNotebook.cs):
+  1. إصلاح خطأ استعلام النواقص التلقائية باستخدام محرك جرد الأصناف الموحد InventoryDAL وتفادي الخطأ على قواعد البيانات الحديثة.
+  2. إنشاء جدول ShortageNotebook تلقائياً فور فتح الشاشة لتفادي أي خطأ في الجداول أو الهجرة.
+
 v2.0.223 - 2026-08-02
 - Scale Barcode Multi-Prefix Support (BarcodeParser.cs + AppConfig.cs + FrmPOS.cs + FrmSale.cs):
   1. دعم البادئات المتعددة لموازين الباركود الإلكترونية (20, 99, 21, 22, 27, 9) بشكل تلقائي دون الحاجة لتغيير الإعدادات اليدوية.

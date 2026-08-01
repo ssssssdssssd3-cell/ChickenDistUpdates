@@ -34,8 +34,39 @@ namespace ChickenDist.Forms
 
         public FrmShortageNotebook()
         {
+            EnsureTableExists();
             InitializeComponentCustom();
             LoadAllData();
+        }
+
+        private void EnsureTableExists()
+        {
+            try
+            {
+                DbHelper.Execute(@"
+                IF OBJECT_ID('ShortageNotebook', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE ShortageNotebook (
+                        ShortageID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID INT NULL,
+                        ProductName NVARCHAR(255) NOT NULL,
+                        ProductCode NVARCHAR(100) NULL,
+                        CurrentStock DECIMAL(18,3) NOT NULL DEFAULT 0,
+                        MinStockLimit DECIMAL(18,3) NOT NULL DEFAULT 0,
+                        RequestedQty DECIMAL(18,3) NOT NULL DEFAULT 1,
+                        Notes NVARCHAR(500) NULL,
+                        Status NVARCHAR(50) NOT NULL DEFAULT N'جديد',
+                        Source NVARCHAR(50) NOT NULL DEFAULT N'يدوي',
+                        CreatedBy INT NULL,
+                        CreatedDate DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                    CREATE INDEX IX_ShortageNotebook_Status ON ShortageNotebook(Status);
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Err ensuring ShortageNotebook table exists", ex);
+            }
         }
 
         private void InitializeComponentCustom()
@@ -231,87 +262,66 @@ namespace ChickenDist.Forms
             dgAutoShortages.Rows.Clear();
             string q = txtAutoSearch.Text.Trim();
 
-            // حساب رصيد المخزن الفعلي وتصفية الأصناف التي تجاوزت الحد الأدنى
-            var dtStock = DbHelper.Query(@"
-                SELECT 
-                    p.ProductID, p.ProductCode, p.ProductName, c.CategoryName, p.Unit,
-                    ISNULL(p.MinStockLimit, 0) AS MinStockLimit,
-                    (
-                        ISNULL((SELECT SUM(Quantity) FROM Inventory WHERE ProductID = p.ProductID), 0)
-                        + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1), 0)
-                        + ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0)
-                        - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, 1.0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1)), 0)
-                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) FROM PurchaseReturnItems pri WHERE pri.ProductID = p.ProductID), 0)
-                        - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) FROM WastageLossItems wli WHERE wli.ProductID = p.ProductID), 0)
-                    ) AS CurrentStock
-                FROM Products p
-                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
-                WHERE p.IsActive = 1 AND p.MinStockLimit IS NOT NULL AND p.MinStockLimit > 0
-                ORDER BY (ISNULL(p.MinStockLimit, 0) - 
-                    (
-                        ISNULL((SELECT SUM(Quantity) FROM Inventory WHERE ProductID = p.ProductID), 0)
-                        + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1), 0)
-                        + ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0)
-                        - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, 1.0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1)), 0)
-                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) FROM PurchaseReturnItems pri WHERE pri.ProductID = p.ProductID), 0)
-                        - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) FROM WastageLossItems wli WHERE wli.ProductID = p.ProductID), 0)
-                    )) DESC");
-
-            int count = 0;
-            foreach (DataRow r in dtStock.Rows)
+            try
             {
-                decimal stock = Convert.ToDecimal(r["CurrentStock"]);
-                decimal minLimit = Convert.ToDecimal(r["MinStockLimit"]);
+                // جلب الأصناف والنواقص باستخدام محرك InventoryDAL الموحد لتفادي الأخطاء
+                var dtStock = InventoryDAL.GetStock(warehouseID: null, searchTerm: q, belowMinOnly: true, hideZeroStock: false, expiryOnly: false, categoryID: null, maxRows: 3000);
 
-                if (stock <= minLimit)
+                int count = 0;
+                if (dtStock != null)
                 {
-                    string pName = r["ProductName"].ToString();
-                    string pCode = r["ProductCode"].ToString();
-                    string catName = r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "-";
-                    string unit = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "قطعة";
-
-                    if (!string.IsNullOrWhiteSpace(q) &&
-                        !pName.ToLower().Contains(q.ToLower()) &&
-                        !pCode.ToLower().Contains(q.ToLower()) &&
-                        !catName.ToLower().Contains(q.ToLower()))
+                    foreach (DataRow r in dtStock.Rows)
                     {
-                        continue;
+                        decimal stock = r["BookQty"] != DBNull.Value ? Convert.ToDecimal(r["BookQty"]) : 0m;
+                        decimal minLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
+
+                        if (minLimit > 0 && stock <= minLimit)
+                        {
+                            string pName = r["ProductName"].ToString();
+                            string pCode = r["ProductCode"].ToString();
+                            string catName = r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "-";
+                            string unit = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "قطعة";
+
+                            decimal deficit = minLimit - stock;
+                            if (deficit < 1) deficit = 1;
+
+                            string statusAlert = stock <= 0 ? "🔴 نفذ بالكامل" : "🟡 تحت الحد الأدنى";
+
+                            int ri = dgAutoShortages.Rows.Add(
+                                r["ProductID"],
+                                pCode,
+                                pName,
+                                catName,
+                                unit,
+                                stock.ToString("N2"),
+                                minLimit.ToString("N2"),
+                                deficit.ToString("N2"),
+                                statusAlert
+                            );
+
+                            var row = dgAutoShortages.Rows[ri];
+                            if (stock <= 0)
+                            {
+                                row.Cells["StatusAlert"].Style.ForeColor = Color.FromArgb(231, 76, 60);
+                                row.Cells["StatusAlert"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                            }
+                            else
+                            {
+                                row.Cells["StatusAlert"].Style.ForeColor = Color.FromArgb(230, 126, 34);
+                                row.Cells["StatusAlert"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                            }
+
+                            count++;
+                        }
                     }
-
-                    decimal deficit = minLimit - stock;
-                    if (deficit < 1) deficit = 1;
-
-                    string statusAlert = stock <= 0 ? "🔴 نفذ بالكامل" : "🟡 تحت الحد الأدنى";
-
-                    int ri = dgAutoShortages.Rows.Add(
-                        r["ProductID"],
-                        pCode,
-                        pName,
-                        catName,
-                        unit,
-                        stock.ToString("N2"),
-                        minLimit.ToString("N2"),
-                        deficit.ToString("N2"),
-                        statusAlert
-                    );
-
-                    var row = dgAutoShortages.Rows[ri];
-                    if (stock <= 0)
-                    {
-                        row.Cells["StatusAlert"].Style.ForeColor = Color.FromArgb(231, 76, 60);
-                        row.Cells["StatusAlert"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                    }
-                    else
-                    {
-                        row.Cells["StatusAlert"].Style.ForeColor = Color.FromArgb(230, 126, 34);
-                        row.Cells["StatusAlert"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                    }
-
-                    count++;
                 }
-            }
 
-            lblAutoCount.Text = $"إجمالي النواقص الآلية: {count} صنف";
+                lblAutoCount.Text = $"إجمالي النواقص الآلية: {count} صنف";
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Err loading auto shortages in FrmShortageNotebook", ex);
+            }
         }
 
         private void LoadManualShortages()
@@ -320,62 +330,69 @@ namespace ChickenDist.Forms
             string status = cboStatusFilter.SelectedItem?.ToString() ?? "الكل";
             string q = txtManualSearch.Text.Trim();
 
-            string sql = @"
-                SELECT ShortageID, CreatedDate, ProductName, RequestedQty, CurrentStock, Status, Source, Notes
-                FROM ShortageNotebook
-                WHERE 1=1 ";
-
-            if (status != "الكل")
+            try
             {
-                sql += " AND Status = @st ";
+                string sql = @"
+                    SELECT ShortageID, CreatedDate, ProductName, RequestedQty, CurrentStock, Status, Source, Notes
+                    FROM ShortageNotebook
+                    WHERE 1=1 ";
+
+                if (status != "الكل")
+                {
+                    sql += " AND Status = @st ";
+                }
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    sql += " AND (ProductName LIKE @q OR Notes LIKE @q) ";
+                }
+                sql += " ORDER BY ShortageID DESC";
+
+                var dt = DbHelper.Query(sql, DbHelper.P("@st", status), DbHelper.P("@q", "%" + q + "%"));
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    string st = r["Status"].ToString();
+                    DateTime cDate = Convert.ToDateTime(r["CreatedDate"]);
+
+                    int ri = dgManualShortages.Rows.Add(
+                        r["ShortageID"],
+                        cDate.ToString("yyyy/MM/dd HH:mm"),
+                        r["ProductName"],
+                        Convert.ToDecimal(r["RequestedQty"]).ToString("N2"),
+                        Convert.ToDecimal(r["CurrentStock"]).ToString("N2"),
+                        st,
+                        r["Source"].ToString(),
+                        r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "-"
+                    );
+
+                    var row = dgManualShortages.Rows[ri];
+                    if (st == "جديد")
+                    {
+                        row.Cells["Status"].Style.ForeColor = Color.FromArgb(230, 126, 34);
+                        row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    }
+                    else if (st == "تم الطلب")
+                    {
+                        row.Cells["Status"].Style.ForeColor = Color.FromArgb(41, 128, 185);
+                        row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    }
+                    else if (st == "تم التوفير")
+                    {
+                        row.Cells["Status"].Style.ForeColor = Color.FromArgb(46, 204, 113);
+                        row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    }
+                    else if (st == "ملغي")
+                    {
+                        row.Cells["Status"].Style.ForeColor = Color.Gray;
+                    }
+                }
+
+                lblManualCount.Text = $"إجمالي طلبات الكشكول: {dt.Rows.Count}";
             }
-            if (!string.IsNullOrWhiteSpace(q))
+            catch (Exception ex)
             {
-                sql += " AND (ProductName LIKE @q OR Notes LIKE @q) ";
+                AppLogger.Error("Err loading manual shortages in FrmShortageNotebook", ex);
             }
-            sql += " ORDER BY ShortageID DESC";
-
-            var dt = DbHelper.Query(sql, DbHelper.P("@st", status), DbHelper.P("@q", "%" + q + "%"));
-
-            foreach (DataRow r in dt.Rows)
-            {
-                string st = r["Status"].ToString();
-                DateTime cDate = Convert.ToDateTime(r["CreatedDate"]);
-
-                int ri = dgManualShortages.Rows.Add(
-                    r["ShortageID"],
-                    cDate.ToString("yyyy/MM/dd HH:mm"),
-                    r["ProductName"],
-                    Convert.ToDecimal(r["RequestedQty"]).ToString("N2"),
-                    Convert.ToDecimal(r["CurrentStock"]).ToString("N2"),
-                    st,
-                    r["Source"].ToString(),
-                    r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "-"
-                );
-
-                var row = dgManualShortages.Rows[ri];
-                if (st == "جديد")
-                {
-                    row.Cells["Status"].Style.ForeColor = Color.FromArgb(230, 126, 34);
-                    row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                }
-                else if (st == "تم الطلب")
-                {
-                    row.Cells["Status"].Style.ForeColor = Color.FromArgb(41, 128, 185);
-                    row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                }
-                else if (st == "تم التوفير")
-                {
-                    row.Cells["Status"].Style.ForeColor = Color.FromArgb(46, 204, 113);
-                    row.Cells["Status"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                }
-                else if (st == "ملغي")
-                {
-                    row.Cells["Status"].Style.ForeColor = Color.Gray;
-                }
-            }
-
-            lblManualCount.Text = $"إجمالي طلبات الكشكول: {dt.Rows.Count}";
         }
 
         private void BtnAddManual_Click(object sender, EventArgs e)
@@ -658,7 +675,7 @@ namespace ChickenDist.Forms
                 Visible = true
             };
             this.Controls.Add(txtProductName);
-            txtProductName.SendToBack(); // By default cbo is enabled
+            txtProductName.SendToBack();
 
             var lblQty = new Label { Text = "الكمية المطلوبة:", Location = new Point(25, 170), AutoSize = true, ForeColor = Theme.TextMain };
             this.Controls.Add(lblQty);
@@ -731,8 +748,15 @@ namespace ChickenDist.Forms
                 decimal stock = 0;
                 if (pId.HasValue && pId.Value > 0)
                 {
-                    var res = DbHelper.Scalar("SELECT ISNULL(SUM(Quantity), 0) FROM Inventory WHERE ProductID=@id", DbHelper.P("@id", pId.Value));
-                    if (res != null && res != DBNull.Value) stock = Convert.ToDecimal(res);
+                    var dtS = InventoryDAL.GetStock(warehouseID: null, searchTerm: "", belowMinOnly: false, hideZeroStock: false, expiryOnly: false, categoryID: null, maxRows: 1);
+                    if (dtS != null)
+                    {
+                        DataRow[] rows = dtS.Select($"ProductID = {pId.Value}");
+                        if (rows.Length > 0 && rows[0]["BookQty"] != DBNull.Value)
+                        {
+                            stock = Convert.ToDecimal(rows[0]["BookQty"]);
+                        }
+                    }
                 }
 
                 DbHelper.Execute(@"
