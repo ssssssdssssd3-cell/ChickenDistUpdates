@@ -2033,7 +2033,7 @@ namespace ChickenDist.Forms
 				}
 
 				int selectedIdx = -1;
-				int defaultSafeID = Session.DefaultSafeID ?? 0;
+				int defaultSafeID = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
 
 				foreach (DataRow row in safes.Rows)
 				{
@@ -2054,23 +2054,7 @@ namespace ChickenDist.Forms
 				cboSafeAccount.DisplayMember = "Text";
 				if (cboSafeAccount.Items.Count > 0)
 				{
-					if (selectedIdx >= 0)
-					{
-						cboSafeAccount.SelectedIndex = selectedIdx;
-					}
-					else
-					{
-						int fallbackIdx = 0;
-						for (int i = 0; i < cboSafeAccount.Items.Count; i++)
-						{
-							if (cboSafeAccount.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
-							{
-								fallbackIdx = i;
-								break;
-							}
-						}
-						cboSafeAccount.SelectedIndex = fallbackIdx;
-					}
+					cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
 				}
 			}
 			catch { }
@@ -2087,7 +2071,7 @@ namespace ChickenDist.Forms
 				try
 				{
 					dt = DbHelper.Query(
-						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, sa.AccountName AS SafeName
+						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, s.SafeAccountID, e.EmpName, sa.AccountName AS SafeName
 						  FROM Shifts s
 						  JOIN Employees e ON s.OpenedBy = e.EmpID
 						  LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
@@ -2096,7 +2080,7 @@ namespace ChickenDist.Forms
 				catch
 				{
 					dt = DbHelper.Query(
-						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, NULL AS SafeName
+						@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, NULL AS SafeAccountID, e.EmpName, NULL AS SafeName
 						  FROM Shifts s
 						  JOIN Employees e ON s.OpenedBy = e.EmpID
 						  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
@@ -2111,6 +2095,19 @@ namespace ChickenDist.Forms
 					decimal openingCash = Convert.ToDecimal(r["OpeningCash"]);
 					string emp = r["EmpName"].ToString();
 					string safe = r["SafeName"] != DBNull.Value ? r["SafeName"].ToString() : "درج الكاشير";
+
+					if (r.Table.Columns.Contains("SafeAccountID") && r["SafeAccountID"] != DBNull.Value)
+					{
+						int shiftSafeID = Convert.ToInt32(r["SafeAccountID"]);
+						for (int i = 0; i < cboSafeAccount.Items.Count; i++)
+						{
+							if (cboSafeAccount.Items[i] is ComboItem ci && ci.ID == shiftSafeID)
+							{
+								if (cboSafeAccount.SelectedIndex != i) cboSafeAccount.SelectedIndex = i;
+								break;
+							}
+						}
+					}
 
 					lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(74, 222, 128);

@@ -352,15 +352,12 @@ namespace ChickenDist.Core
             // كل SafeMigrate مستقلة: فشل أي خطوة لا يوقف الباقي
             try
             {
+                // Ensure default safe exists if table is empty
                 SafeMigrate("SafeAccounts.DefaultDrawer", @"
-                IF EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountID = 1 AND AccountName = N'الخزينة الرئيسية')
-                BEGIN
-                    UPDATE SafeAccounts SET AccountName = N'درج نقدي' WHERE AccountID = 1;
-                END
-                IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountName = N'درج نقدي')
+                IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE IsActive = 1)
                 BEGIN
                     INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
-                    VALUES (N'درج نقدي', N'Safe', N'Auto-Drawer', 0.00, 1);
+                    VALUES (N'الخزينة الرئيسية / الدرج', N'Safe', N'ACC-001', 0.00, 1);
                 END");
 
                 SafeMigrate("CustomerReservations", @"

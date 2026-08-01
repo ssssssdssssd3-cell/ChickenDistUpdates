@@ -20,7 +20,7 @@ namespace ChickenDist.Core
 
             try
             {
-                object safeIdObj = DbHelper.Scalar("SELECT TOP 1 AccountID FROM SafeAccounts WHERE AccountName = N'درج نقدي' OR IsActive = 1 ORDER BY AccountID");
+                object safeIdObj = DbHelper.Scalar("SELECT TOP 1 AccountID FROM SafeAccounts WHERE IsActive = 1 ORDER BY AccountID");
                 if (safeIdObj != null && safeIdObj != DBNull.Value)
                 {
                     return Convert.ToInt32(safeIdObj);

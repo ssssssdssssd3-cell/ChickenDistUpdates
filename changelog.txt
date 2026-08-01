@@ -1,3 +1,9 @@
+v2.0.233 - 2026-08-02
+- Remove Auto-Drawer Fallback & Honor Employee Coded Safe (FrmSale.cs + FrmOpenShift.cs + Session.cs + DbHelper.cs):
+  1. إلغاء خيار البحث والتجاوز التلقائي بـ "درج تلقائي" نهائياً.
+  2. اعتماد درج الموظف المكود في كارت الموظف (DefaultSafeID) كخيار افتراضي أولي، أو اختيار أول درج/خزنة فعلية مضافة (AccountID = 1).
+  3. ربط شاشة المبيعات وفتح الوردية آلياً بالدرج المختار للموظف والوردية المفتوحة.
+
 v2.0.232 - 2026-08-02
 - Layout & Alignment Fixes for Shift Close Dialog (FrmShiftClose.cs):
   1. تعديل وتوسيع ارتفاع السطور في شاشة إغلاق الوردية لمنع اختفاء أرقام الكروت وتداخل الاختيارات أو قص القوائم المنسدلة.

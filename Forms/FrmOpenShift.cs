@@ -178,8 +178,8 @@ namespace ChickenDist.Forms
             {
                 DataTable safes = AccountDAL.GetActiveSafeAccounts();
                 cboSafeAccount.Items.Clear();
-                int selectedIdx = 0;
-                int defaultSafeID = Session.DefaultSafeID ?? 0;
+                int selectedIdx = -1;
+                int defaultSafeID = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
 
                 for (int i = 0; i < safes.Rows.Count; i++)
                 {
@@ -188,13 +188,16 @@ namespace ChickenDist.Forms
                     string name = r["AccountName"].ToString();
                     var item = new ComboItem(id, name);
                     int added = cboSafeAccount.Items.Add(item);
-                    if (id == defaultSafeID || name.Contains("درج") || name.Contains("كاشير"))
+                    if (id == defaultSafeID)
                     {
                         selectedIdx = added;
                     }
                 }
                 cboSafeAccount.DisplayMember = "Text";
-                if (cboSafeAccount.Items.Count > 0) cboSafeAccount.SelectedIndex = selectedIdx;
+                if (cboSafeAccount.Items.Count > 0)
+                {
+                    cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+                }
             }
             catch { }
         }
