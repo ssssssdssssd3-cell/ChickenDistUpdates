@@ -678,30 +678,7 @@ namespace ChickenDist.Forms
                     DbHelper.P("@n", txtNotes.Text.Trim()),
                     DbHelper.P("@sid", shiftID));
 
-                // ── 1. تسجيل حركة تحويل النقدية من الدرج إلى الخزنة المستهدفة في CashBox ──
-                if (actual > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
-                {
-                    string cleanTargetName = targetSafeName.Replace("🏦 تحويل إلى: ", "").Trim();
-                    // أ) حركة صادر من الدرج
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
-                        DbHelper.P("@amt", actual),
-                        DbHelper.P("@acc", sourceAccountID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{cleanTargetName}]"),
-                        DbHelper.P("@uid", Session.EmpID));
-
-                    // ب) حركة وارد إلى الخزنة المستهدفة
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @acc, @notes, @uid)",
-                        DbHelper.P("@amt", actual),
-                        DbHelper.P("@acc", targetSafeID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - استلام نقدية الوردية من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
-                        DbHelper.P("@uid", Session.EmpID));
-                }
-
-                // ── 2. تسوية العجز أو الزيادة بالدرج ──
+                // ── 1. تسوية العجز أو الزيادة بالدرج أولاً لضبط رصيد الدرج بدقة 100% ──
                 if (diff < 0)
                 {
                     DbHelper.Execute(
@@ -720,6 +697,39 @@ namespace ChickenDist.Forms
                         DbHelper.P("@amt", diff),
                         DbHelper.P("@acc", sourceAccountID),
                         DbHelper.P("@notes", $"زيادة تقفيل وردية #{shiftID} (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+
+                // ── 2. تسجيل حركة توريد/تحويل النقدية أو التثبيت بالدرج كرصيد افتتاحي ──
+                if (actual > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
+                {
+                    string cleanTargetName = targetSafeName.Replace("🏦 تحويل إلى: ", "").Trim();
+                    // أ) حركة صادر من الدرج لخصم المبلغ المحوّل من رصيد الدرج
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@acc", sourceAccountID),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{cleanTargetName}]"),
+                        DbHelper.P("@uid", Session.EmpID));
+
+                    // ب) حركة وارد إلى الخزنة المستهدفة لإضافة المبلغ لرصيد الخزنة
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@acc", targetSafeID),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - استلام نقدية الوردية من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+                else
+                {
+                    // ج) إبقاء النقدية بالدرج (سطر بيان تقفيل الوردية لتأكيد الرصيد الفعلي بالدرج)
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftClose', 0, 0, @acc, @notes, @uid)",
+                        DbHelper.P("@acc", sourceAccountID),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - إبقاء النقدية بالدرج كـ رصيد افتتاحي (الرصيد الفعلي بالدرج: {actual:N2} ج) (الكاشير: {Session.EmpName})"),
                         DbHelper.P("@uid", Session.EmpID));
                 }
 

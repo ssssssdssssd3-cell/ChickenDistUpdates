@@ -230,6 +230,14 @@ namespace ChickenDist.Forms
                     Session.CurrentShiftID = shiftID;
                     if (safeAccountID > 0) Session.DefaultSafeID = safeAccountID;
 
+                    // تسجيل سطر بيان فتح الوردية في حركة الدرج
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid)",
+                        DbHelper.P("@acc", safeAccountID > 0 ? safeAccountID : (Session.DefaultSafeID ?? 1)),
+                        DbHelper.P("@notes", $"فتح وردية جديدة #{shiftID} - رصيد افتتاحي بالدرج: {openingCash:N2} ج (الموظف: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+
                     CreatedShiftID = shiftID;
                     MessageBox.Show($"تم فتح الوردية رقم #{shiftID} بنجاح برصيد افتتاحي {openingCash:N2} ج.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.DialogResult = DialogResult.OK;

@@ -1,3 +1,8 @@
+v2.0.231 - 2026-08-02
+- Comprehensive Shift Close & Open Ledger Entries for Cash Drawer (FrmShiftClose.cs + FrmOpenShift.cs + FrmCashBox.cs):
+  1. تسجيل كافة عمليات تقفيل الورديات وسطور البيان والتسويات (عجز/زيادة/تحويل) فورياً في حركة الدرج (CashBox).
+  2. ضمان مطابقة الصافي والرصيد الفعلي للدرج 100% مع تقرير كشف حساب الدرج وتفريغ الرصيد عند التحويل للخزنة الرئيسية.
+
 v2.0.230 - 2026-08-02
 - Explicit Options UI for Shift Cash Transfer / Opening Balance (FrmShiftClose.cs):
   1. تحسين واجهة تقفيل الوردية لتخيير الكاشير بشكل صريح بين (تحويل النقدية إلى خزنة محددة مثل الخزينة الرئيسية) أو (إبقاء النقدية بالدرج كرصيد افتتاحي للوردية القادمة).

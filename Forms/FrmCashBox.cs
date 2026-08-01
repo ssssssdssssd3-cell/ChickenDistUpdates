@@ -542,6 +542,7 @@ namespace ChickenDist.Forms
                     "ShiftCloseOut" => "إغلاق وردية (تحويل صادر)",
                     "ShiftCloseIn" => "إغلاق وردية (استلام وارد)",
                     "ShiftClose" => "تقفيل وردية",
+                    "ShiftOpen" => "فتح وردية جديدة",
                     "ShiftDeficit" => "عجز تقفيل وردية",
                     "ShiftSurplus" => "زيادة تقفيل وردية",
                     _ => transType
