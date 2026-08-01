@@ -1855,6 +1855,12 @@ namespace ChickenDist.Core
                     ALTER TABLE Sales ADD ShiftID INT NULL REFERENCES Shifts(ShiftID);
                 END");
 
+                SafeMigrate("Shifts.SafeAccountID", @"
+                IF OBJECT_ID('Shifts','U') IS NOT NULL AND COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                BEGIN
+                    ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                END");
+
                 // 2. دفعات الأصناف مع تاريخ الانتهاء (ProductBatches)
                 SafeMigrate("ProductBatches", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='ProductBatches')

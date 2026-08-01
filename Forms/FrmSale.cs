@@ -119,6 +119,7 @@ namespace ChickenDist.Forms
 		private NumericUpDown nudShippingCharge;
 		private Panel pnlQuickItems;
 		private FlowLayoutPanel flowQuickItems;
+		private Label lblShiftSummaryBar;
 
 		public FrmSale() : this(0, false)
 		{
@@ -635,8 +636,59 @@ namespace ChickenDist.Forms
 			pnlTierGroup.Controls.Add(pnlTierButtonsFlow);
 			pnlTierButtonsFlow.BringToFront();
 
+			// Group 3: Shift Status Card
+			var pnlShiftGroup = new Panel
+			{
+				Width = 320,
+				Height = 44,
+				BackColor = Color.FromArgb(43, 50, 70),
+				Padding = new Padding(6, 2, 6, 2),
+				Margin = new Padding(0, 0, 0, 4)
+			};
+			var lblShiftTitleHeader = new Label
+			{
+				Text = "الوردية والدرج المفتوح :",
+				Font = Theme.FontSmall,
+				ForeColor = Theme.TextSub,
+				Dock = DockStyle.Top,
+				Height = 15,
+				TextAlign = ContentAlignment.TopRight
+			};
+			pnlShiftGroup.Controls.Add(lblShiftTitleHeader);
+
+			lblShiftSummaryBar = new Label
+			{
+				Text = "🔄 جاري التحميل...",
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				ForeColor = Color.FromArgb(74, 222, 128),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter,
+				Cursor = Cursors.Hand
+			};
+			lblShiftSummaryBar.Click += (s, e) =>
+			{
+				if (Session.CurrentShiftID == null)
+				{
+					using (var dlg = new FrmOpenShift())
+					{
+						if (dlg.ShowDialog(this) == DialogResult.OK)
+						{
+							UpdateShiftSummaryLabel();
+						}
+					}
+				}
+				else
+				{
+					new FrmShiftClose().ShowDialog(this);
+					UpdateShiftSummaryLabel();
+				}
+			};
+			pnlShiftGroup.Controls.Add(lblShiftSummaryBar);
+			lblShiftSummaryBar.BringToFront();
+
 			pnlOptions.Controls.Add(pnlTypeGroup);
 			pnlOptions.Controls.Add(pnlTierGroup);
+			pnlOptions.Controls.Add(pnlShiftGroup);
 
 			tblHeaderMain.Controls.Add(tblDetails, 0, 0);
 			tblHeaderMain.Controls.Add(pnlOptions, 1, 0);
@@ -2019,6 +2071,42 @@ namespace ChickenDist.Forms
 						}
 						cboSafeAccount.SelectedIndex = fallbackIdx;
 					}
+				}
+			}
+			catch { }
+			UpdateShiftSummaryLabel();
+		}
+
+		private void UpdateShiftSummaryLabel()
+		{
+			if (lblShiftSummaryBar == null) return;
+			try
+			{
+				var dt = DbHelper.Query(
+					@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, e.EmpName, sa.AccountName AS SafeName
+					  FROM Shifts s
+					  JOIN Employees e ON s.OpenedBy = e.EmpID
+					  LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+					  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+
+				if (dt.Rows.Count > 0)
+				{
+					DataRow r = dt.Rows[0];
+					int shiftId = Convert.ToInt32(r["ShiftID"]);
+					Session.CurrentShiftID = shiftId;
+					DateTime openTime = Convert.ToDateTime(r["OpenTime"]);
+					decimal openingCash = Convert.ToDecimal(r["OpeningCash"]);
+					string emp = r["EmpName"].ToString();
+					string safe = r["SafeName"] != DBNull.Value ? r["SafeName"].ToString() : "درج الكاشير";
+
+					lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
+					lblShiftSummaryBar.ForeColor = Color.FromArgb(74, 222, 128);
+				}
+				else
+				{
+					Session.CurrentShiftID = null;
+					lblShiftSummaryBar.Text = "🔴 لا توجد وردية مفتوحة (اضغط هنا لفتح وردية)";
+					lblShiftSummaryBar.ForeColor = Color.FromArgb(248, 113, 113);
 				}
 			}
 			catch { }

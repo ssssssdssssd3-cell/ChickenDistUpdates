@@ -390,7 +390,11 @@ namespace ChickenDist.Forms
             try
             {
                 var dt = DbHelper.Query(
-                    "SELECT TOP 1 s.*, e.EmpName AS OpenedByName FROM Shifts s JOIN Employees e ON s.OpenedBy = e.EmpID WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+                    @"SELECT TOP 1 s.*, e.EmpName AS OpenedByName, sa.AccountName AS SafeName 
+                      FROM Shifts s 
+                      JOIN Employees e ON s.OpenedBy = e.EmpID 
+                      LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID 
+                      WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
 
                 if (dt.Rows.Count > 0)
                 {
@@ -401,10 +405,11 @@ namespace ChickenDist.Forms
                     DateTime openTime = Convert.ToDateTime(_openShift["OpenTime"]);
                     TimeSpan duration = DateTime.Now - openTime;
                     string durationStr = $"{(int)duration.TotalHours} ساعة و {duration.Minutes} دقيقة";
+                    string safeName = _openShift["SafeName"] != DBNull.Value ? _openShift["SafeName"].ToString() : "درج الكاشير / الخزنة العامة";
 
                     lblShiftStatus.Text = $"🟢  وردية مفتوحة #{shiftID}";
                     lblShiftStatus.ForeColor = Theme.Success;
-                    lblShiftInfo.Text = $"👤 الكاشير: {_openShift["OpenedByName"]}   |   📅 فتح الوردية: {openTime:yyyy-MM-dd  hh:mm tt}   |   ⏱️ المدة: {durationStr}";
+                    lblShiftInfo.Text = $"👤 الكاشير: {_openShift["OpenedByName"]}   |   📅 فتح الوردية: {openTime:yyyy-MM-dd  hh:mm tt}   |   🏦 الخزنة/الدرج: {safeName}   |   ⏱️ المدة: {durationStr}";
                     
                     txtOpeningCash.Text = Convert.ToDecimal(_openShift["OpeningCash"]).ToString("N2");
                     txtOpeningCash.Enabled = false;
@@ -588,21 +593,13 @@ namespace ChickenDist.Forms
 
         private void BtnOpenShift_Click(object sender, EventArgs e)
         {
-            if (!decimal.TryParse(txtOpeningCash.Text, out decimal opening)) opening = 0;
-            if (MessageBox.Show($"تأكيد فتح وردية جديدة برصيد فتح قدره {opening:N2} ج؟", "تأكيد فتح الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            try
+            using (var dlg = new FrmOpenShift())
             {
-                int shiftID = DbHelper.ExecuteInsert(
-                    "INSERT INTO Shifts (ShiftDate,OpenTime,OpenedBy,OpeningCash,Status) VALUES (CAST(GETDATE() AS DATE),GETDATE(),@emp,@cash,'Open')",
-                    DbHelper.P("@emp", Session.EmpID), DbHelper.P("@cash", opening));
-                if (shiftID > 0)
+                if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
-                    Session.CurrentShiftID = shiftID;
-                    MessageBox.Show("✅ تم فتح الوردية بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadCurrentShift();
                 }
             }
-            catch (Exception ex) { MessageBox.Show("خطأ أثناء فتح الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
         private void BtnCloseShift_Click(object sender, EventArgs e)
