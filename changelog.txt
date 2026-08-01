@@ -1,3 +1,7 @@
+v2.0.220 - 2026-08-01
+- Held / Draft Invoices Stock Deduction Update (DbHelper.cs + InventoryDAL.cs + CoreDAL.cs):
+  1. خصم وتخصيص كميات الأصناف في الفواتير المعلقة / الغير مرحلة (IsPosted = 0) فوراً من رصيد المخزن لمنع بيعها أو تكرارها بين أكثر من كاشير.
+
 v2.0.219 - 2026-08-01
 - Client Reservations Enhancements (FrmReservations.cs + FrmAddReservation.cs + DbHelper.cs):
   1. حجز أكثر من صنف في الفاتورة الواحدة وتخزين البنود في جدول CustomerReservationItems.

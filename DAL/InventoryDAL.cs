@@ -123,8 +123,8 @@ namespace ChickenDist.DAL
                     - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1) AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted IN (0, 1) AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
                     - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
@@ -207,7 +207,7 @@ namespace ChickenDist.DAL
                     SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted = 1 {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                    WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted IN (0, 1) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
                     GROUP BY si.ProductID
 
                     UNION ALL
@@ -302,7 +302,7 @@ namespace ChickenDist.DAL
                     SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE s.IsPosted = 1 " + (warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "") + @"
+                    WHERE s.IsPosted IN (0, 1) " + (warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "") + @"
                     GROUP BY si.ProductID
 
                     UNION ALL
@@ -522,7 +522,7 @@ namespace ChickenDist.DAL
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     LEFT JOIN Employees e ON s.DriverID = e.EmpID
                     WHERE si.ProductID = @pid
-                      AND s.IsPosted = 1
+                      AND s.IsPosted IN (0, 1)
                       AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
                       {whFilterSales}
  

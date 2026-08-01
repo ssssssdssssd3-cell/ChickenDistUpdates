@@ -711,7 +711,7 @@ namespace ChickenDist.DAL
                   FROM Products p
                   LEFT JOIN SaleItems si ON si.ProductID = p.ProductID
                   LEFT JOIN Sales s      ON si.SaleID = s.SaleID
-                                       AND s.IsPosted = 1
+                                       AND s.IsPosted IN (0, 1)
                                        AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                                        AND s.SaleType IN ('Cash','Credit','DriverLoad')
                   WHERE p.IsActive = 1
