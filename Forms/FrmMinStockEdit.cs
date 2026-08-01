@@ -33,8 +33,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🎯 إدارة وتعديل حد طلب الأصناف";
-            this.Size = new Size(1150, 720);
+            this.Text = "🎯 إدارة وتعديل حد طلب الأصناف (النواقص)";
+            this.Size = new Size(1180, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -43,7 +43,7 @@ namespace ChickenDist.Forms
 
             // Title Bar
             var titleBar = Theme.MakeTitleBar("🎯 تعديل حد طلب الأصناف (النواقص والحد الأدنى)",
-                "شاشة سريعة لعرض وتعديل حد الطلب للأصناف وتصفية الأصناف التي يقل رصيدها عن الحد الأدنى");
+                "شاشة سريعة لعرض وتعديل حد الطلب للأصناف، تصفية الأصناف التي يقل رصيدها عن الحد الأدنى، وإمكانية التعديل اليدوي المباشر.");
             this.Controls.Add(titleBar);
 
             // Filter Header Panel
@@ -192,16 +192,42 @@ namespace ChickenDist.Forms
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AutoGenerateColumns = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                MultiSelect = false,
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
                 EditMode = DataGridViewEditMode.EditOnEnter,
-                RowHeadersVisible = false
+                RowHeadersVisible = false,
+                ColumnHeadersVisible = true,
+                ColumnHeadersHeight = 40,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ReadOnly = false,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                GridColor = Theme.BorderColor,
+                EnableHeadersVisualStyles = false,
+                RightToLeft = RightToLeft.Yes
             };
-            Theme.StyleGrid(dgProducts);
+
+            dgProducts.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Theme.Primary,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+
+            dgProducts.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Theme.BgCard,
+                ForeColor = Theme.TextMain,
+                SelectionBackColor = Color.FromArgb(215, 235, 255),
+                SelectionForeColor = Color.Black,
+                Font = Theme.FontMain
+            };
 
             SetupGridColumns();
             dgProducts.CellValueChanged += DgProducts_CellValueChanged;
             dgProducts.CellFormatting += DgProducts_CellFormatting;
+            dgProducts.CellClick += DgProducts_CellClick;
+            dgProducts.EditingControlShowing += DgProducts_EditingControlShowing;
 
             this.Controls.Add(dgProducts);
 
@@ -227,6 +253,14 @@ namespace ChickenDist.Forms
 
             pnlFooter.Controls.AddRange(new Control[] { btnSave, btnClose });
             this.Controls.Add(pnlFooter);
+
+            titleBar.SendToBack();
+            pnlFilter.SendToBack();
+            pnlBulk.SendToBack();
+            pnlFooter.SendToBack();
+            dgProducts.BringToFront();
+
+            Theme.ApplyFormRTL(this);
         }
 
         private void SetupGridColumns()
@@ -296,7 +330,7 @@ namespace ChickenDist.Forms
                 Name = "MinStockLimit",
                 DataPropertyName = "MinStockLimit",
                 HeaderText = "حد الطلب (الحد الأدنى) ✏️",
-                Width = 170,
+                Width = 180,
                 ReadOnly = false,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -304,7 +338,7 @@ namespace ChickenDist.Forms
                     Format = "N2",
                     BackColor = Color.FromArgb(255, 250, 235),
                     ForeColor = Color.DarkBlue,
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
                 }
             });
 
@@ -312,7 +346,7 @@ namespace ChickenDist.Forms
             {
                 Name = "StockStatus",
                 HeaderText = "حالة الرصيد",
-                Width = 130,
+                Width = 140,
                 ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -320,6 +354,45 @@ namespace ChickenDist.Forms
                     Font = Theme.FontBold
                 }
             });
+        }
+
+        private void DgProducts_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                if (dgProducts.Columns[e.ColumnIndex].Name == "MinStockLimit")
+                {
+                    dgProducts.BeginEdit(true);
+                }
+            }
+        }
+
+        private void DgProducts_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
+        {
+            if (dgProducts.CurrentCell != null && dgProducts.Columns[dgProducts.CurrentCell.ColumnIndex].Name == "MinStockLimit")
+            {
+                if (e.Control is TextBox tb)
+                {
+                    tb.SelectAll();
+                    tb.KeyPress -= Tb_KeyPress;
+                    tb.KeyPress += Tb_KeyPress;
+                }
+            }
+        }
+
+        private void Tb_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // السماح بالأرقام والنقطة والعلامة والعكس فقط
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
+            {
+                e.Handled = true;
+            }
+
+            // السماح بنقطة واحدة فقط
+            if (e.KeyChar == '.' && (sender as TextBox).Text.IndexOf('.') > -1)
+            {
+                e.Handled = true;
+            }
         }
 
         private void LoadCategories()
@@ -351,7 +424,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                _dtProducts = InventoryDAL.GetStock(warehouseID: null, searchTerm: "", belowMinOnly: false, hideZeroStock: false, expiryOnly: false, categoryID: null, maxRows: 2000);
+                _dtProducts = InventoryDAL.GetStock(warehouseID: null, searchTerm: "", belowMinOnly: false, hideZeroStock: false, expiryOnly: false, categoryID: null, maxRows: 3000);
                 if (_dtProducts != null)
                 {
                     if (!_dtProducts.Columns.Contains("OriginalMinStockLimit"))
@@ -415,7 +488,6 @@ namespace ChickenDist.Forms
                 int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
                 decimal newVal = Convert.ToDecimal(row.Cells["MinStockLimit"].Value ?? 0);
                 
-                // Find matching row in _dtProducts
                 DataRow[] foundRows = _dtProducts.Select($"ProductID = {pid}");
                 if (foundRows.Length > 0)
                 {
@@ -463,7 +535,6 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // Highlight under-stocked rows subtly
             if (minStock > 0 && bookQty <= minStock)
             {
                 row.DefaultCellStyle.BackColor = Color.FromArgb(255, 238, 238);
@@ -529,7 +600,6 @@ namespace ChickenDist.Forms
                 int savedCount = ProductDAL.BulkUpdateMinStockLimit(updates);
                 MessageBox.Show($"تم حفظ تحديث حد الطلب بنجاح لعدد ({savedCount}) صنف!", "تم الحفظ بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // Refresh original values
                 foreach (int pid in _modifiedProductIDs)
                 {
                     DataRow[] found = _dtProducts.Select($"ProductID = {pid}");
