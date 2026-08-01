@@ -36,6 +36,7 @@ namespace ChickenDist.Forms
         private TextBox txtActualCash;
         private TextBox txtNotes;
         private TextBox txtOpeningCash;
+        private ComboBox cboTargetSafe;
         
         private Button btnOpenShift;
         private Button btnCloseShift;
@@ -49,6 +50,7 @@ namespace ChickenDist.Forms
         public FrmShiftClose()
         {
             InitUI();
+            LoadTargetSafes();
             LoadCurrentShift();
         }
 
@@ -231,39 +233,48 @@ namespace ChickenDist.Forms
             TableLayoutPanel tblActual = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 RowCount = 1,
                 Padding = new Padding(10, 4, 10, 4),
                 RightToLeft = RightToLeft.Yes
             };
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 230f)); // الفعلي
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f)); // الفرق
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // الملاحظات
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200f)); // الفعلي
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 230f)); // الخزنة المستهدفة للتحويل
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170f)); // الفرق
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // الملاحظات
 
-            // حقل الفعلي
+            // 1. حقل الفعلي
             Panel pnlAct = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي الموجود بالخزنة:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             txtActualCash = new TextBox { Dock = DockStyle.Bottom, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
             txtActualCash.TextChanged += (s, e) => RecalcDiff();
             pnlAct.Controls.Add(txtActualCash);
             pnlAct.Controls.Add(lblActTitle);
             tblActual.Controls.Add(pnlAct, 0, 0);
 
-            // حقل الفرق
+            // 2. حقل الخزنة المستهدفة لتحويل نقدية الوردية
+            Panel pnlTargetSafe = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
+            var lblTargetTitle = new Label { Text = "🏦 تحويل نقدية الوردية إلى:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            cboTargetSafe = new ComboBox { Dock = DockStyle.Bottom, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
+            pnlTargetSafe.Controls.Add(cboTargetSafe);
+            pnlTargetSafe.Controls.Add(lblTargetTitle);
+            tblActual.Controls.Add(pnlTargetSafe, 1, 0);
+
+            // 3. حقل الفرق
             Panel pnlDiff = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Bottom, Height = 28, Font = new Font("Segoe UI", 12f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
             pnlDiff.Controls.Add(lblDiffVal);
             pnlDiff.Controls.Add(lblDiffTitle);
-            tblActual.Controls.Add(pnlDiff, 1, 0);
+            tblActual.Controls.Add(pnlDiff, 2, 0);
 
-            // حقل الملاحظات
+            // 4. حقل الملاحظات
             Panel pnlNotes = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontMain, ForeColor = Theme.TextMain };
             txtNotes = new TextBox { Dock = DockStyle.Bottom, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             pnlNotes.Controls.Add(txtNotes);
             pnlNotes.Controls.Add(lblNotesTitle);
-            tblActual.Controls.Add(pnlNotes, 2, 0);
+            tblActual.Controls.Add(pnlNotes, 3, 0);
 
             pnlActualContainer.Controls.Add(tblActual);
             tblMain.Controls.Add(pnlActualContainer, 0, 2);
@@ -607,16 +618,27 @@ namespace ChickenDist.Forms
             if (_openShift == null) return;
             if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual))
             {
-                MessageBox.Show("الرجاء إدخال المبلغ الفعلي الموجود بالخزنة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("الرجاء إدخال المبلغ الفعلي الموجود بالدرج أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            if (MessageBox.Show("هل أنت تأكد من إغلاق الوردية الحالية وتسوية الحسابات؟", "تأكيد إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (MessageBox.Show("هل أنت تأكد من إغلاق الوردية الحالية وتسوية الحسابات وتحويل النقدية؟", "تأكيد إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
             try
             {
                 int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
                 decimal diff = actual - (_summary?.Expected ?? 0);
+
+                int sourceAccountID = _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
+                string sourceDrawerName = _openShift["SafeName"] != DBNull.Value ? _openShift["SafeName"].ToString() : "درج الكاشير";
+
+                int targetSafeID = 0;
+                string targetSafeName = "";
+                if (cboTargetSafe != null && cboTargetSafe.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+                {
+                    targetSafeID = safeItem.ID;
+                    targetSafeName = safeItem.Text;
+                }
 
                 DbHelper.Execute(@"
                     UPDATE Shifts SET 
@@ -643,9 +665,53 @@ namespace ChickenDist.Forms
                     DbHelper.P("@n", txtNotes.Text.Trim()),
                     DbHelper.P("@sid", shiftID));
 
+                // ── 1. تسجيل حركة تحويل النقدية من الدرج إلى الخزنة المستهدفة في CashBox ──
+                if (actual > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
+                {
+                    // أ) حركة صادر من الدرج
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@acc", sourceAccountID),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{targetSafeName}]"),
+                        DbHelper.P("@uid", Session.EmpID));
+
+                    // ب) حركة وارد إلى الخزنة المستهدفة
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@acc", targetSafeID),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - استلام نقدية الوردية من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+
+                // ── 2. تسوية العجز أو الزيادة بالدرج ──
+                if (diff < 0)
+                {
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftDeficit', 0, @amt, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", Math.Abs(diff)),
+                        DbHelper.P("@acc", sourceAccountID),
+                        DbHelper.P("@notes", $"عجز تقفيل وردية #{shiftID} (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+                else if (diff > 0)
+                {
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                          VALUES (GETDATE(), 'ShiftSurplus', @amt, 0, @acc, @notes, @uid)",
+                        DbHelper.P("@amt", diff),
+                        DbHelper.P("@acc", sourceAccountID),
+                        DbHelper.P("@notes", $"زيادة تقفيل وردية #{shiftID} (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+
                 Session.CurrentShiftID = null;
 
-                if (MessageBox.Show("✅ تم إغلاق الوردية بنجاح!\nهل تريد طباعة تقرير إغلاق الوردية الآن؟", "إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                if (MessageBox.Show("✅ تم إغلاق الوردية وتوريد النقدية وتسوية الحسابات بنجاح!\nهل تريد طباعة تقرير إغلاق الوردية الآن؟", "إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
                     PrintShiftReport(shiftID, actual, diff);
                 }
@@ -653,6 +719,35 @@ namespace ChickenDist.Forms
                 LoadCurrentShift();
             }
             catch (Exception ex) { MessageBox.Show("خطأ عند إغلاق الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        private void LoadTargetSafes()
+        {
+            try
+            {
+                DataTable dt = AccountDAL.GetActiveSafeAccounts();
+                if (cboTargetSafe == null) return;
+                cboTargetSafe.Items.Clear();
+                cboTargetSafe.Items.Add(new ComboItem(0, "-- لا يتم التحويل (إبقاء في الدرج) --"));
+
+                int defaultTargetIdx = 0;
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    DataRow r = dt.Rows[i];
+                    int id = Convert.ToInt32(r["AccountID"]);
+                    string name = r["AccountName"].ToString();
+                    var item = new ComboItem(id, name);
+                    int added = cboTargetSafe.Items.Add(item);
+
+                    if (name.Contains("الرئيسية") || name.Contains("الخزنة") || name.Contains("العامة"))
+                    {
+                        defaultTargetIdx = added;
+                    }
+                }
+                cboTargetSafe.DisplayMember = "Text";
+                if (cboTargetSafe.Items.Count > 0) cboTargetSafe.SelectedIndex = defaultTargetIdx > 0 ? defaultTargetIdx : (cboTargetSafe.Items.Count > 1 ? 1 : 0);
+            }
+            catch { }
         }
 
         private void BtnPrintReport_Click(object sender, EventArgs e)

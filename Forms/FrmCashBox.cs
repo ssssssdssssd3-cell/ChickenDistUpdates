@@ -539,6 +539,11 @@ namespace ChickenDist.Forms
                     "ReservationDeposit" => "عربون حجز صنف",
                     "Expense" => "مصروفات",
                     "Transfer" => "تحويل بين الحسابات",
+                    "ShiftCloseOut" => "إغلاق وردية (تحويل صادر)",
+                    "ShiftCloseIn" => "إغلاق وردية (استلام وارد)",
+                    "ShiftClose" => "تقفيل وردية",
+                    "ShiftDeficit" => "عجز تقفيل وردية",
+                    "ShiftSurplus" => "زيادة تقفيل وردية",
                     _ => transType
                 };
 
