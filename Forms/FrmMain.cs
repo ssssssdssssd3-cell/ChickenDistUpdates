@@ -308,6 +308,7 @@ namespace ChickenDist.Forms
                 case "FrmPriceChanges":
                 case "FrmBulkPrintBarcodes":
                 case "FrmMinStockEdit":
+                case "FrmShortageNotebook":
                     targetGroup = "المخازن";
                     break;
                 case "FrmClients":
@@ -445,6 +446,7 @@ namespace ChickenDist.Forms
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
                     ("🎯 تعديل حد طلب الأصناف", "MinStockEdit",     (Action)(() => NavigateTo(new FrmMinStockEdit()))),
+                    ("📓 كشكول النواقص والطلبات", "ShortageNotebook", (Action)(() => NavigateTo(new FrmShortageNotebook()))),
                     ("📊 تقرير فروق وعجز الجرد الشامل", "InventoryVarianceReport", (Action)(() => new FrmInventoryVarianceReport().ShowDialog())),
                     ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
                     ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
@@ -618,6 +620,7 @@ namespace ChickenDist.Forms
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
                     ("🎯 تعديل حد طلب الأصناف", "MinStockEdit",     (Action)(() => NavigateTo(new FrmMinStockEdit()))),
+                    ("📓 كشكول النواقص والطلبات", "ShortageNotebook", (Action)(() => NavigateTo(new FrmShortageNotebook()))),
                     ("📊 تقرير فروق وعجز الجرد الشامل", "InventoryVarianceReport", (Action)(() => new FrmInventoryVarianceReport().ShowDialog())),
                     ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
                     ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),

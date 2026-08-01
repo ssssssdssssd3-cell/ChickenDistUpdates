@@ -276,7 +276,7 @@ namespace ChickenDist.Core
             "Clients", "InactiveClients", "Vehicles",
             "Purchases", "PurchaseReturn", "PurchasesList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
-            "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "InventoryVarianceReport", "Wastage",
+            "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage",
             "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes",
             "CashBox", "Reports", "Financials", "DailyClosing", "Employees", "EmployeeTransactions",
             "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",

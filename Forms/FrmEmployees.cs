@@ -394,6 +394,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("Warehouses", "🏭 إدارة المخازن والمستودعات", 2),
             new ScreenInfo("Inventory", "📦 جرد وتعديل رصيد المخزن", 2),
             new ScreenInfo("MinStockEdit", "🎯 تعديل حد طلب الأصناف والنواقص", 2),
+            new ScreenInfo("ShortageNotebook", "📓 كشكول النواقص والطلبات الخاصة", 2),
             new ScreenInfo("InventoryVarianceReport", "📊 تقرير فروق وعجز الجرد الشامل", 2),
             new ScreenInfo("Wastage", "⚠️ تسجيل الهوالك والتالف", 2),
             new ScreenInfo("WarehouseTransfer", "🔄 تحويل مخزني صادر", 2),

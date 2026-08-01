@@ -2145,6 +2145,26 @@ namespace ChickenDist.Core
                     ALTER TABLE JournalDetails ALTER COLUMN AccountName NVARCHAR(500) NOT NULL;
                 END");
 
+                SafeMigrate("ShortageNotebook.Table", @"
+                IF OBJECT_ID('ShortageNotebook', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE ShortageNotebook (
+                        ShortageID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID INT NULL,
+                        ProductName NVARCHAR(255) NOT NULL,
+                        ProductCode NVARCHAR(100) NULL,
+                        CurrentStock DECIMAL(18,3) NOT NULL DEFAULT 0,
+                        MinStockLimit DECIMAL(18,3) NOT NULL DEFAULT 0,
+                        RequestedQty DECIMAL(18,3) NOT NULL DEFAULT 1,
+                        Notes NVARCHAR(500) NULL,
+                        Status NVARCHAR(50) NOT NULL DEFAULT N'جديد',
+                        Source NVARCHAR(50) NOT NULL DEFAULT N'يدوي',
+                        CreatedBy INT NULL,
+                        CreatedDate DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                    CREATE INDEX IX_ShortageNotebook_Status ON ShortageNotebook(Status);
+                END");
+
                 // الإجراء مزامنة وتوليد القيود المحاسبية المزدوجة التاريخية
                 SafeMigrate("SyncingGeneralLedger", @"
                 DELETE FROM JournalEntries;
