@@ -145,10 +145,22 @@ namespace ChickenDist.Core
         public static Font FontSmall  = new Font("Segoe UI", 9f);
         public static Font FontArabic = new Font("Segoe UI", 10f);
 
+        public static void EnableDoubleBuffering(this Control control)
+        {
+            if (control == null || SystemInformation.TerminalServerSession) return;
+            try
+            {
+                var pi = typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                pi?.SetValue(control, true, null);
+            }
+            catch { }
+        }
+
         public static void ApplyRTL(Control.ControlCollection controls)
         {
             foreach (Control c in controls)
             {
+                c.EnableDoubleBuffering();
                 // Force RTL on all controls
                 c.RightToLeft = RightToLeft.Yes;
 
@@ -290,16 +302,19 @@ namespace ChickenDist.Core
             StyleGridHeader(grid);
         }
 
+        private static readonly Font _gridHeaderFont = new Font("Segoe UI", 10f, FontStyle.Bold);
+
         public static void StyleGridHeader(DataGridView grid)
         {
             if (grid == null) return;
+            grid.EnableDoubleBuffering();
             grid.ColumnHeadersVisible = true;
             grid.EnableHeadersVisualStyles = false;
             grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             if (grid.ColumnHeadersHeight < 36) grid.ColumnHeadersHeight = 36;
             grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.Font = _gridHeaderFont;
             grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             grid.CellPainting -= HeaderCellPainting;
@@ -320,7 +335,7 @@ namespace ChickenDist.Core
                     e.Graphics.DrawRectangle(pen, e.CellBounds.X, e.CellBounds.Y, e.CellBounds.Width - 1, e.CellBounds.Height - 1);
                 }
                 string headerText = grid.Columns[e.ColumnIndex].HeaderText;
-                TextRenderer.DrawText(e.Graphics, headerText, new Font("Segoe UI", 10f, FontStyle.Bold),
+                TextRenderer.DrawText(e.Graphics, headerText, _gridHeaderFont,
                     e.CellBounds, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak);
                 e.Handled = true;
             }
@@ -329,6 +344,8 @@ namespace ChickenDist.Core
         /// <summary>يطبق RTL كاملاً على الـ Form بكل محتوياته</summary>
         public static void ApplyFormRTL(Form form)
         {
+            if (form == null) return;
+            form.EnableDoubleBuffering();
             form.RightToLeft = RightToLeft.Yes;
             form.RightToLeftLayout = true;
             ApplyRTL(form.Controls);

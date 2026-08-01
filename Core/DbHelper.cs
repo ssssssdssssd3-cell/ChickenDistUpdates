@@ -2111,6 +2111,15 @@ namespace ChickenDist.Core
 
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CashBox_Opt' AND object_id = OBJECT_ID('CashBox'))
                     CREATE INDEX IX_CashBox_Opt ON CashBox(AccountID, TransDate) INCLUDE (AmountIn, AmountOut);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Perf' AND object_id = OBJECT_ID('Products'))
+                    CREATE INDEX IX_Products_Perf ON Products(Barcode, IsActive, CategoryID) INCLUDE (ProductID, ProductName, SellPrice, MinStockLimit);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplierTransactions_Perf' AND object_id = OBJECT_ID('SupplierTransactions'))
+                    CREATE INDEX IX_SupplierTransactions_Perf ON SupplierTransactions(SupplierID, TransDate) INCLUDE (Debit, Credit);
+
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Inventory_Perf' AND object_id = OBJECT_ID('Inventory'))
+                    CREATE INDEX IX_Inventory_Perf ON Inventory(ProductID, WarehouseID) INCLUDE (Quantity);
                 ");
 
                 SafeMigrate("JournalDetails.ExpandAccountName", @"
