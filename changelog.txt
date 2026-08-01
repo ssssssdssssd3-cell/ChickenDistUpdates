@@ -1,3 +1,7 @@
+v2.0.225 - 2026-08-02
+- Master Price Update Override Fix (CoreDAL.cs + FrmInventory.cs):
+  1. مسح أي سعر بيع معلق تلقائياً (PendingSalePrice=NULL) عند تعديل سعر الصنف من كارت الصنف أو الجرد، ليتطبق السعر الجديد فوراً على كافة الكميات القديمة والجديدة.
+
 v2.0.224 - 2026-08-02
 - Shortage Notebook Query & Auto Table Creation Fix (FrmShortageNotebook.cs):
   1. إصلاح خطأ استعلام النواقص التلقائية باستخدام محرك جرد الأصناف الموحد InventoryDAL وتفادي الخطأ على قواعد البيانات الحديثة.
