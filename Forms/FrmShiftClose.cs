@@ -238,9 +238,9 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 4, 10, 4),
                 RightToLeft = RightToLeft.Yes
             };
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200f)); // الفعلي
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 230f)); // الخزنة المستهدفة للتحويل
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170f)); // الفرق
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f)); // الفعلي
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f)); // وجهة النقدية
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // الفرق
             tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // الملاحظات
 
             // 1. حقل الفعلي
@@ -252,10 +252,10 @@ namespace ChickenDist.Forms
             pnlAct.Controls.Add(lblActTitle);
             tblActual.Controls.Add(pnlAct, 0, 0);
 
-            // 2. حقل الخزنة المستهدفة لتحويل نقدية الوردية
+            // 2. حقل وجهة نقدية الوردية (التحويل للخزنة أو إبقائها كرصيد افتتاحي)
             Panel pnlTargetSafe = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblTargetTitle = new Label { Text = "🏦 تحويل نقدية الوردية إلى:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
-            cboTargetSafe = new ComboBox { Dock = DockStyle.Bottom, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
+            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية (تحويل لخزنة / رصيد افتتاحي):", Dock = DockStyle.Top, Height = 20, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            cboTargetSafe = new ComboBox { Dock = DockStyle.Bottom, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
             pnlTargetSafe.Controls.Add(cboTargetSafe);
             pnlTargetSafe.Controls.Add(lblTargetTitle);
             tblActual.Controls.Add(pnlTargetSafe, 1, 0);
@@ -681,13 +681,14 @@ namespace ChickenDist.Forms
                 // ── 1. تسجيل حركة تحويل النقدية من الدرج إلى الخزنة المستهدفة في CashBox ──
                 if (actual > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
                 {
+                    string cleanTargetName = targetSafeName.Replace("🏦 تحويل إلى: ", "").Trim();
                     // أ) حركة صادر من الدرج
                     DbHelper.Execute(
                         @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
                           VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
                         DbHelper.P("@amt", actual),
                         DbHelper.P("@acc", sourceAccountID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{targetSafeName}]"),
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{cleanTargetName}]"),
                         DbHelper.P("@uid", Session.EmpID));
 
                     // ب) حركة وارد إلى الخزنة المستهدفة
@@ -741,7 +742,7 @@ namespace ChickenDist.Forms
                 DataTable dt = AccountDAL.GetActiveSafeAccounts();
                 if (cboTargetSafe == null) return;
                 cboTargetSafe.Items.Clear();
-                cboTargetSafe.Items.Add(new ComboItem(0, "-- لا يتم التحويل (إبقاء في الدرج) --"));
+                cboTargetSafe.Items.Add(new ComboItem(0, "📌 إبقاء بالدرج (رصيد افتتاحي للوردية القادمة)"));
 
                 int defaultTargetIdx = 0;
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -749,7 +750,7 @@ namespace ChickenDist.Forms
                     DataRow r = dt.Rows[i];
                     int id = Convert.ToInt32(r["AccountID"]);
                     string name = r["AccountName"].ToString();
-                    var item = new ComboItem(id, name);
+                    var item = new ComboItem(id, $"🏦 تحويل إلى: {name}");
                     int added = cboTargetSafe.Items.Add(item);
 
                     if (name.Contains("الرئيسية") || name.Contains("الخزنة") || name.Contains("العامة"))
