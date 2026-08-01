@@ -94,7 +94,26 @@ namespace ChickenDist.Core
         public static bool CanAccess(string screen)
         {
             if (Role == "Admin") return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanAccess;
+            if (string.IsNullOrEmpty(screen)) return true;
+
+            // Handle comma-separated screen checks (e.g., "Reports,Financials")
+            if (screen.Contains(","))
+            {
+                string[] parts = screen.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    if (!CanAccess(p.Trim())) return false;
+                }
+                return true;
+            }
+
+            if (_perms.ContainsKey(screen) && _perms[screen].CanAccess) return true;
+
+            // Synonym mapping for backwards-compatibility or UI mismatches
+            if (screen == "DriverSales" && _perms.ContainsKey("DriverPortal") && _perms["DriverPortal"].CanAccess) return true;
+            if (screen == "DriverPortal" && _perms.ContainsKey("DriverSales") && _perms["DriverSales"].CanAccess) return true;
+
+            return false;
         }
 
         public static bool CanEditPrice(string screen = "Sales")
@@ -253,15 +272,15 @@ namespace ChickenDist.Core
 
 
         public static readonly string[] AllScreens = {
-            "Sales", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal",
+            "Sales", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
             "Clients", "InactiveClients", "Vehicles",
             "Purchases", "PurchaseReturn", "PurchasesList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
-            "Products", "Categories", "ImportProducts", "Warehouses", "Inventory", "Wastage",
-            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "BulkPrintBarcodes",
-            "CashBox", "Reports", "DailyClosing", "Employees", "EmployeeTransactions",
-            "DriverHandover", "DriverPortal", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
-            "Settings", "BotManager",
+            "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "InventoryVarianceReport", "Wastage",
+            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes",
+            "CashBox", "Reports", "Financials", "DailyClosing", "Employees", "EmployeeTransactions",
+            "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
+            "Settings", "BotManager", "EditInvoiceDate",
             "POS", "ShiftClose",
             "DashTreasury", "DashSales", "DashLoads", "DashBelowMin"
         };

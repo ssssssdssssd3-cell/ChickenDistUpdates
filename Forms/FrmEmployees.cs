@@ -389,24 +389,31 @@ namespace ChickenDist.Forms
             // Tab 2: Inventory & Products
             new ScreenInfo("Products", "🏷️ إدارة وتعديل الأصناف والأسعار", 2),
             new ScreenInfo("Categories", "🗂️ التصنيفات والأقسام", 2),
+            new ScreenInfo("Units", "📏 إدارة وحدات قياس الأصناف", 2),
             new ScreenInfo("ImportProducts", "📊 استيراد الأصناف من إكسيل", 2),
             new ScreenInfo("Warehouses", "🏭 إدارة المخازن والمستودعات", 2),
             new ScreenInfo("Inventory", "📦 جرد وتعديل رصيد المخزن", 2),
+            new ScreenInfo("MinStockEdit", "🎯 تعديل حد طلب الأصناف والنواقص", 2),
+            new ScreenInfo("InventoryVarianceReport", "📊 تقرير فروق وعجز الجرد الشامل", 2),
             new ScreenInfo("Wastage", "⚠️ تسجيل الهوالك والتالف", 2),
             new ScreenInfo("WarehouseTransfer", "🔄 تحويل مخزني صادر", 2),
             new ScreenInfo("WarehouseTransfersList", "📋 سجل التحويلات المخزنية", 2),
             new ScreenInfo("PriceChanges", "📉 سجل تغير وحركات الأسعار", 2),
+            new ScreenInfo("PricePoster", "📢 منشور الأسعار", 2),
+            new ScreenInfo("ProductMovement", "📊 تقرير وحركة الصنف", 2),
             new ScreenInfo("BulkPrintBarcodes", "🏷️ طباعة الباركود (مجمع)", 2),
 
             // Tab 3: Finance, Drivers & Administration
             new ScreenInfo("CashBox", "💰 حركات الخزينة والصندوق", 3),
-            new ScreenInfo("Reports", "📊 التقارير والإحصائيات المالية", 3),
+            new ScreenInfo("Reports", "📊 التقارير والإحصائيات العامة", 3),
+            new ScreenInfo("Financials", "📈 التقارير المالية وقائمة الدخل", 3),
             new ScreenInfo("DailyClosing", "🔒 تقفيل يومية المبيعات", 3),
             new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
             new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 3),
             new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 3),
             new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 3),
             new ScreenInfo("DriverPortal", "📱 بوابة المندوب الميداني", 3),
+            new ScreenInfo("DriverSales", "📱 مبيعات المندوب الميداني", 3),
             new ScreenInfo("ImportPreview", "📥 استيراد مبيعات المناديب", 3),
             new ScreenInfo("DriversMonitor", "📡 شاشة مراقبة السائقين", 3),
             new ScreenInfo("DashTreasury", "🏠 لوحة التحكم: رصيد الخزنة الحالي", 3),
@@ -831,10 +838,10 @@ namespace ChickenDist.Forms
         {
             ToggleAllPermissions(false);
 
-            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "Clients", "Vehicles", "Maintenance", "DashSales" };
+            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "Clients", "InactiveClients", "Vehicles", "Maintenance", "DashSales" };
             var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
-            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "Categories", "Warehouses", "Inventory", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "BulkPrintBarcodes", "DashBelowMin" };
-            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "DailyClosing", "ShiftClose", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };
+            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "DashBelowMin" };
+            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "Financials", "DailyClosing", "ShiftClose", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };
 
             var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
             foreach (var grid in grids)
