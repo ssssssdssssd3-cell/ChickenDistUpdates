@@ -1,3 +1,7 @@
+v2.0.237 - 2026-08-02
+- Removed Financial & Operational Summary Report (FrmReports.cs):
+  1. حذف التقرير المالي والتشغيلي المجمع من شاشة التقارير بناءً على طلب العميل للحفاظ على دقة باقي تقارير قائمة الدخل والمركز المالي والتقفيل اليومي.
+
 v2.0.236 - 2026-08-02
 - Client Preferred/Allowed Payment Method Integration (FrmClients.cs & FrmSale.cs):
   1. إضافة خيار "طريقة الدفع المسموحة" بكارت العميل: الكل (كاش/آجل)، كاش فقط (نقدي)، آجل فقط (مديونية).

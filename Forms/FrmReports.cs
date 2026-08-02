@@ -193,7 +193,6 @@ namespace ChickenDist.Forms
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
 				("📋 سجل تقفيل المناديب", "Handovers"),
 				("🚨 تقرير الهالك والتالف", "WastageLoss"),
-				("📈 الملخص المالي والتشغيلي", "FinancialSummary"),
 				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
 				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
 				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
