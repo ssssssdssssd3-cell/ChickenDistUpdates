@@ -44,6 +44,7 @@ namespace ChickenDist.Forms
         private Button btnPrintReport;
         private Button btnRefresh;
         private Button btnToggleDetails;
+        private Button btnDrawerMovementDetails;
 
         private DataGridView dgMovements;
         private bool _forceShowDetails = true;
@@ -78,18 +79,19 @@ namespace ChickenDist.Forms
             btnToggleDetails = new Button
             {
                 Text = "👁️ إظهار/إخفاء التفاصيل",
-                Size = new Size(170, 36),
+                Size = new Size(160, 36),
                 Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(70, 80, 95),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 0, 6, 0)
             };
             btnToggleDetails.FlatAppearance.BorderSize = 0;
             btnToggleDetails.Click += (s, e) =>
             {
-                if (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose"))
+                if (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || Session.CanAccess("ShiftDetails"))
                 {
                     _forceShowDetails = !_forceShowDetails;
                     if (_openShift != null)
@@ -101,6 +103,38 @@ namespace ChickenDist.Forms
                 else
                 {
                     MessageBox.Show("🔒 ليس لديك صلاحية لعرض التفاصيل المباشرة للوردية (الإغلاق الأعمى).", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            btnDrawerMovementDetails = new Button
+            {
+                Text = "🔍 حركة وتفاصيل الدرج",
+                Size = new Size(170, 36),
+                Dock = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnDrawerMovementDetails.FlatAppearance.BorderSize = 0;
+            btnDrawerMovementDetails.Click += (s, e) =>
+            {
+                if (Session.Role == "Admin" || Session.CanAccess("ShiftDetails") || Session.CanAccess("ShiftCloseDetails") || Session.CanViewDetails("ShiftClose"))
+                {
+                    if (_openShift != null)
+                    {
+                        int sid = Convert.ToInt32(_openShift["ShiftID"]);
+                        using (var dlg = new FrmShiftDrawerDetails(sid)) { dlg.ShowDialog(this); }
+                    }
+                    else
+                    {
+                        MessageBox.Show("⚠️ لا توجد وردية مفتوحة حالياً لعرض حركتها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("🔒 عفوًا: لا تملك صلاحية لعرض حركة وتفاصيل الدرج خلال الشيفت!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
 
@@ -127,6 +161,7 @@ namespace ChickenDist.Forms
             pnlTitleBox.Controls.Add(lblTitle);
 
             pnlHeader.Controls.Add(pnlTitleBox);
+            pnlHeader.Controls.Add(btnDrawerMovementDetails);
             pnlHeader.Controls.Add(btnToggleDetails);
 
             // ── 2. المحتوى الرئيسي ──────────────────────────────────────

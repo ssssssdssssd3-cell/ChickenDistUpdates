@@ -194,9 +194,42 @@ namespace ChickenDist.Forms
                     }
                 }
                 cboSafeAccount.DisplayMember = "Text";
+                cboSafeAccount.SelectedIndexChanged += (s, e) => UpdateOpeningCashFromPreviousShift();
                 if (cboSafeAccount.Items.Count > 0)
                 {
                     cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+                    UpdateOpeningCashFromPreviousShift();
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateOpeningCashFromPreviousShift()
+        {
+            if (!(cboSafeAccount.SelectedItem is ComboItem safeItem) || safeItem.ID <= 0) return;
+            try
+            {
+                DbHelper.EnsureShiftSchema();
+                var dtPrev = DbHelper.Query(@"
+                    SELECT TOP 1 ShiftID, ActualCash, TransferToSafeID, RemainingInDrawer
+                    FROM Shifts
+                    WHERE SafeAccountID = @safeID AND Status = 'Closed'
+                    ORDER BY ShiftID DESC",
+                    DbHelper.P("@safeID", safeItem.ID));
+
+                if (dtPrev.Rows.Count > 0)
+                {
+                    DataRow prevRow = dtPrev.Rows[0];
+                    decimal remainingInDrawer = 0m;
+                    if (prevRow.Table.Columns.Contains("RemainingInDrawer") && prevRow["RemainingInDrawer"] != DBNull.Value)
+                    {
+                        remainingInDrawer = Convert.ToDecimal(prevRow["RemainingInDrawer"]);
+                    }
+                    else if (prevRow["ActualCash"] != DBNull.Value)
+                    {
+                        remainingInDrawer = Convert.ToDecimal(prevRow["ActualCash"]);
+                    }
+                    txtOpeningCash.Text = remainingInDrawer.ToString("N2");
                 }
             }
             catch { }
