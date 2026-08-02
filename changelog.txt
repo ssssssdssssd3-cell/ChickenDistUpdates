@@ -1,3 +1,8 @@
+v2.0.239 - 2026-08-02
+- Shift Close Ledger & Drawer Net Impact Integration (FrmShiftClose.cs, FrmCashBox.cs & FrmShiftDrawerDetails.cs):
+  1. إدماج حركات تقفيل الوردية (التحويلات الصادرة والواردة وتعديلات العجز/الزيادة) كحركات محاسبية تؤثر مباشرة في رصيد الدرج النهائي وحركاته.
+  2. تعريب وتوضيح أنواع حركات التقفيل بـ (+) و (-) في جدول تفاصيل حركة الدرج وشاشة كشف حركة الصندوق.
+
 v2.0.238 - 2026-08-02
 - Automatic Opening Cash & Drawer Shift Movement Details Window (FrmOpenShift.cs & FrmShiftDrawerDetails.cs):
   1. الاعتماد والتعبئة التلقائية للرصيد الافتتاحي من المتبقي بالدرج في الوردية المغلقة السابقة عند فتح وردية جديدة.

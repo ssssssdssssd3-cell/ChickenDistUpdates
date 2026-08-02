@@ -270,17 +270,31 @@ namespace ChickenDist.Forms
                 // ملء شبكة الحركة
                 dgDrawerDetails.Rows.Clear();
                 var dtDetails = DbHelper.Query(@"
-                    SELECT 'فاتورة كاش' AS TransType, s.SaleDate AS TransTime, s.SaleCode AS RefCode, ISNULL(c.ClientName, N'عميل نقدي') AS Details, s.TotalAmount AS AmountIn, 0.00 AS AmountOut
+                    SELECT 'فاتورة كاش (+)' AS TransType, s.SaleDate AS TransTime, s.SaleCode AS RefCode, ISNULL(c.ClientName, N'عميل نقدي') AS Details, s.TotalAmount AS AmountIn, 0.00 AS AmountOut
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt)) AND s.SaleType = 'Cash' AND s.IsPosted = 1
                     UNION ALL
-                    SELECT 'مرجع كاش' AS TransType, sr.ReturnDate AS TransTime, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, N'مرتجع فاتورة كاش' AS Details, 0.00 AS AmountIn, sr.TotalAmount AS AmountOut
+                    SELECT 'مرتجع كاش (-)' AS TransType, sr.ReturnDate AS TransTime, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, N'مرتجع فاتورة كاش' AS Details, 0.00 AS AmountIn, sr.TotalAmount AS AmountOut
                     FROM SalesReturns sr
                     JOIN Sales s ON sr.SaleID = s.SaleID
                     WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt)) AND s.SaleType = 'Cash'
                     UNION ALL
-                    SELECT CASE WHEN AmountIn > 0 THEN 'توريد/إيراد' ELSE 'مصروف/سحب' END AS TransType, TransDate AS TransTime, CAST(CashID AS NVARCHAR) AS RefCode, Notes AS Details, AmountIn, AmountOut
+                    SELECT 
+                        CASE 
+                            WHEN TransType = 'ShiftCloseOut' THEN 'تحويل تقفيل صادر (-)'
+                            WHEN TransType = 'ShiftCloseIn'  THEN 'استلام تقفيل وارد (+)'
+                            WHEN TransType = 'ShiftClose'    THEN 'تقفيل وردية (إبقاء)'
+                            WHEN TransType = 'ShiftDeficit'  THEN 'تسوية عجز وردية (-)'
+                            WHEN TransType = 'ShiftSurplus'  THEN 'تسوية زيادة وردية (+)'
+                            WHEN AmountIn > 0 THEN 'توريد/إيراد (+)' 
+                            ELSE 'مصروف/سحب (-)' 
+                        END AS TransType, 
+                        TransDate AS TransTime, 
+                        CAST(CashID AS NVARCHAR) AS RefCode, 
+                        Notes AS Details, 
+                        AmountIn, 
+                        AmountOut
                     FROM CashBox
                     WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleReturn')
                     ORDER BY TransTime DESC",
