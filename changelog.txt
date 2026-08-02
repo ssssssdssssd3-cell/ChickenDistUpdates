@@ -1,3 +1,7 @@
+v2.0.240 - 2026-08-02
+- System Clock Safety & Validation Guard (DbHelper.cs & Program.cs):
+  1. حماية وتدقيق تاريخ وساعة جهاز الكمبيوتر عند تشغيل البرنامج مقارنة بأحدث حركة مسجلة بالداتا بيز لمنع أي تداخل أو تخبيط في تقارير الفواتير والورديات حال تلف حجارة البوردة.
+
 v2.0.239 - 2026-08-02
 - Shift Close Ledger & Drawer Net Impact Integration (FrmShiftClose.cs, FrmCashBox.cs & FrmShiftDrawerDetails.cs):
   1. إدماج حركات تقفيل الوردية (التحويلات الصادرة والواردة وتعديلات العجز/الزيادة) كحركات محاسبية تؤثر مباشرة في رصيد الدرج النهائي وحركاته.

@@ -11,6 +11,37 @@ namespace ChickenDist.Core
     {
         private static string _connStr = GetInitialConnectionString();
 
+        public static bool ValidateSystemDate(out string warningMessage)
+        {
+            warningMessage = "";
+            try
+            {
+                if (DateTime.Now.Year < 2024 || DateTime.Now.Year > 2035)
+                {
+                    warningMessage = $"⚠️ تنبيه هام جداً: تاريخ جهاز الكمبيوتر الحالي غير مضبوط ({DateTime.Now:yyyy-MM-dd}).\nقد يؤدي هذا إلى تسجيل فواتير وحركات بتاريخ خاطئ وتخبيط التقارير الفترية!\nيرجى ضبط تاريخ وساعة الويندوز فوراً قبل متابعة العمل.";
+                    return false;
+                }
+
+                var objMax = Scalar(@"
+                    SELECT MAX(MaxDate) FROM (
+                        SELECT MAX(SaleDate) AS MaxDate FROM Sales
+                        UNION ALL
+                        SELECT MAX(TransDate) AS MaxDate FROM CashBox
+                    ) T");
+
+                if (objMax != DBNull.Value && objMax != null && DateTime.TryParse(objMax.ToString(), out DateTime maxDbDate))
+                {
+                    if (DateTime.Now.Date < maxDbDate.Date.AddDays(-1))
+                    {
+                        warningMessage = $"⚠️ تنبيه خطأ في تاريخ الجهاز: تاريخ الويندوز الحالي ({DateTime.Now:yyyy-MM-dd}) أقدم من أحدث حركة مسجلة بالبرنامج بتاريخ ({maxDbDate:yyyy-MM-dd}).\nيرجى ضبط تاريخ الويندوز لتجنب تداخل الحركات!";
+                        return false;
+                    }
+                }
+            }
+            catch { }
+            return true;
+        }
+
         public static DateTime? ParseExpiryInput(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return null;

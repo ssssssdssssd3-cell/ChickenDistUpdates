@@ -25,6 +25,12 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // فحص تاريخ وساعة الويندوز للتأكد من سلامة التقارير
+            if (!ChickenDist.Core.DbHelper.ValidateSystemDate(out string dateWarning))
+            {
+                MessageBox.Show(dateWarning, "⚠️ تنبيه تاريخ الويندوز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
             // Pre-warm product, client, and supplier caches asynchronously so opening screens is instant over LAN
             ChickenDist.Core.ProductCache.PreWarm();
             ChickenDist.Core.ClientCache.PreWarm();
