@@ -568,11 +568,41 @@ namespace ChickenDist.Forms
 			
 			btnTypeCredit = new Button { Text = "آجل", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
-			btnTypeCredit.Click += delegate { SetInvoiceType("Credit"); };
+			btnTypeCredit.Click += delegate {
+				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+				{
+					DataRow clientRow = ClientDAL.GetByID(ci.ID);
+					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
+					{
+						string ptype = clientRow["DefaultPaymentType"].ToString();
+						if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+						{
+							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							return;
+						}
+					}
+				}
+				SetInvoiceType("Credit");
+			};
 
 			btnTypeCash = new Button { Text = "نقدي", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
-			btnTypeCash.Click += delegate { SetInvoiceType("Cash"); };
+			btnTypeCash.Click += delegate {
+				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+				{
+					DataRow clientRow = ClientDAL.GetByID(ci.ID);
+					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
+					{
+						string ptype = clientRow["DefaultPaymentType"].ToString();
+						if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "آجل")
+						{
+							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (آجل فقط)، لا يمكن البيع له نقداً!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							return;
+						}
+					}
+				}
+				SetInvoiceType("Cash");
+			};
 
 			btnTypeDriverLoad = new Button { Text = "تحميل", Width = 70, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
@@ -1794,6 +1824,21 @@ namespace ChickenDist.Forms
                         if (_selectedTier != "قطاعي")
                             SetTierButtons("قطاعي");
                     }
+
+                    // تطبيق طريقة الدفع الافتراضية للعميل (كاش أو آجل)
+                    if (byID != null && byID.Table.Columns.Contains("DefaultPaymentType") && byID["DefaultPaymentType"] != DBNull.Value)
+                    {
+                        string ptype = byID["DefaultPaymentType"].ToString();
+                        if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+                        {
+                            SetInvoiceType("Cash");
+                        }
+                        else if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "آجل")
+                        {
+                            SetInvoiceType("Credit");
+                        }
+                    }
+
                     EvaluateClientFinancials(comboItem2.ID);
                     UpdateClientBalanceLabel(comboItem2.ID);
 				}

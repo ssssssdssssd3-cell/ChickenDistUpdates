@@ -360,6 +360,12 @@ namespace ChickenDist.Core
                     VALUES (N'الخزينة الرئيسية / الدرج', N'Safe', N'ACC-001', 0.00, 1);
                 END");
 
+                SafeMigrate("Clients.DefaultPaymentType", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Clients') AND name = 'DefaultPaymentType')
+                BEGIN
+                    ALTER TABLE Clients ADD DefaultPaymentType NVARCHAR(20) NULL DEFAULT 'Any';
+                END");
+
                 SafeMigrate("CustomerReservations", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'CustomerReservations')
                 BEGIN

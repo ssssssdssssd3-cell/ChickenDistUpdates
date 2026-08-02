@@ -970,6 +970,7 @@ namespace ChickenDist.DAL
             string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
                            c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
                            COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
+                           COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
                            ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
                            COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
                            ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
@@ -985,6 +986,7 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address, c.DriverID, c.MaxCreditLimit, c.Notes,
                   COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
+                  COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
                   ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
                   COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
                   ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
@@ -1111,28 +1113,28 @@ namespace ChickenDist.DAL
             return result != null ? result.ToString() : "1";
         }
 
-        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي", int openingCrates = 0)
+        public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي", int openingCrates = 0, string defaultPaymentType = "Any")
         {
             if (id == 0)
             {
                 int newID = DbHelper.ExecuteInsert(
-                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes,DefaultPriceTier,OpeningCrates) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes,@dpt,@oc)",
+                    "INSERT INTO Clients(ClientCode,ClientName,Phone,Phone2,Address,OpeningBalance,IsActive,DriverID,MaxCreditLimit,Notes,DefaultPriceTier,OpeningCrates,DefaultPaymentType) VALUES(@c,@n,@ph,@ph2,@a,@ob,@act,@dr,@mcl,@notes,@dpt,@oc,@dptype)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
-                    DbHelper.P("@oc", openingCrates));
+                    DbHelper.P("@oc", openingCrates), DbHelper.P("@dptype", string.IsNullOrEmpty(defaultPaymentType) ? "Any" : defaultPaymentType));
                 return newID;
             }
             else
             {
                 DbHelper.Execute(
-                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt,OpeningCrates=@oc WHERE ClientID=@id",
+                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt,OpeningCrates=@oc,DefaultPaymentType=@dptype WHERE ClientID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
                     DbHelper.P("@a", address), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
-                    DbHelper.P("@oc", openingCrates),
+                    DbHelper.P("@oc", openingCrates), DbHelper.P("@dptype", string.IsNullOrEmpty(defaultPaymentType) ? "Any" : defaultPaymentType),
                     DbHelper.P("@id", id));
                 return id;
             }

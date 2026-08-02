@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private DataGridView dgClients;
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtPhone2, txtAddress, txtNotes;
         private NumericUpDown nudOpening, nudCreditLimit, nudOpeningCrates;
-        private ComboBox cmbDriver, cmbPriceTier;
+        private ComboBox cmbDriver, cmbPriceTier, cmbPaymentType;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport;
         private Label lblBalance;
@@ -178,6 +178,13 @@ namespace ChickenDist.Forms
             cmbPriceTier.SelectedIndex = 0;
             pnlDetails.Controls.Add(cmbPriceTier); y += 36;
 
+            var lblPaymentType = new Label { Text = "طريقة الدفع المسموحة:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            pnlDetails.Controls.Add(lblPaymentType);
+            cmbPaymentType = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cmbPaymentType.Items.AddRange(new object[] { "الكل (كاش / آجل)", "كاش فقط (نقدي)", "آجل فقط (مديونية)" });
+            cmbPaymentType.SelectedIndex = 0;
+            pnlDetails.Controls.Add(cmbPaymentType); y += 36;
+
             pnlDetails.Controls.Add(MakeField("ملاحظات:", ref y, out txtNotes));
 
             chkActive = new CheckBox { Text = "نشط", Location = new Point(110, y), Width = 185, ForeColor = Theme.TextMain, Checked = true, RightToLeft = RightToLeft.Yes }; y += 36;
@@ -270,10 +277,38 @@ namespace ChickenDist.Forms
             cmbPriceTier.Text = dr.Table.Columns.Contains("DefaultPriceTier") && dr["DefaultPriceTier"] != DBNull.Value
                 ? dr["DefaultPriceTier"].ToString()
                 : "قطاعي";
+
+            string ptype = dr.Table.Columns.Contains("DefaultPaymentType") && dr["DefaultPaymentType"] != DBNull.Value
+                ? dr["DefaultPaymentType"].ToString()
+                : "Any";
+            SetPaymentTypeCombo(ptype);
+
             if (AppConfig.EnableCratesTracking)
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الفوارغ: " + row.Cells["CratesBalance"].Value;
             else
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value;
+        }
+
+        private string GetSelectedPaymentType()
+        {
+            if (cmbPaymentType == null || cmbPaymentType.SelectedIndex < 0) return "Any";
+            switch (cmbPaymentType.SelectedIndex)
+            {
+                case 1: return "Cash";
+                case 2: return "Credit";
+                default: return "Any";
+            }
+        }
+
+        private void SetPaymentTypeCombo(string ptype)
+        {
+            if (cmbPaymentType == null) return;
+            if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+                cmbPaymentType.SelectedIndex = 1;
+            else if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "آجل")
+                cmbPaymentType.SelectedIndex = 2;
+            else
+                cmbPaymentType.SelectedIndex = 0;
         }
 
         private void LoadDrivers()
@@ -307,6 +342,7 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             if (cmbDriver.Items.Count > 0) cmbDriver.SelectedIndex = 0;
             if (cmbPriceTier.Items.Count > 0) cmbPriceTier.SelectedIndex = 0;
+            if (cmbPaymentType != null && cmbPaymentType.Items.Count > 0) cmbPaymentType.SelectedIndex = 0;
             txtNotes.Clear();
             lblBalance.Text = "الرصيد الحالي: ---";
         }
@@ -351,7 +387,7 @@ namespace ChickenDist.Forms
                 driverID = Convert.ToInt32(cmbDriver.SelectedValue);
 
             int id = ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
-                txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value);
+                txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value, GetSelectedPaymentType());
             if (id > 0) { ClientCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
             else MessageBox.Show("❌ فشل الحفظ");
         }
@@ -372,7 +408,7 @@ namespace ChickenDist.Forms
                     driverID = Convert.ToInt32(cmbDriver.SelectedValue);
 
                 ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
-                    txtAddress.Text, nudOpening.Value, false, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value);
+                    txtAddress.Text, nudOpening.Value, false, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value, GetSelectedPaymentType());
                 LoadClients();
                 ClearDetail();
             }
