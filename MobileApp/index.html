@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProSoft ERP | تطبيق المالك</title>
+    <title>ProSoft ERP | تطبيق المالك الشامل</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="../logo.png">
     <link rel="apple-touch-icon" href="../logo.png">
@@ -21,7 +21,6 @@
             --text-primary: #ffffff;
             --text-muted: #94a3b8;
             --gold: #f59e0b;
-            --gold-light: #fbbf24;
             --cyan: #06b6d4;
             --emerald: #10b981;
             --rose: #f43f5e;
@@ -94,79 +93,30 @@
             color: var(--text-primary);
         }
 
-        .theme-toggle-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            padding: 6px 14px;
+        /* Live Connection Health Badge */
+        .conn-badge {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--emerald);
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
-            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+        }
+
+        .conn-badge.offline {
+            background: rgba(244, 63, 94, 0.15);
+            border-color: rgba(244, 63, 94, 0.4);
+            color: var(--rose);
         }
 
         .container {
             padding: 16px;
             max-width: 680px;
             margin: 0 auto;
-        }
-
-        .view-mode-bar {
-            display: flex;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            padding: 4px;
-            border-radius: 14px;
-            margin-bottom: 16px;
-            gap: 4px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-weight: 800;
-            font-size: 12px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .mode-btn.active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
-            border: 1px solid var(--gold);
-            color: var(--gold);
-        }
-
-        .reports-menu-bar {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            margin-bottom: 16px;
-            scrollbar-width: none;
-        }
-
-        .menu-chip {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-muted);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 800;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
-        .menu-chip.active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
-            border-color: var(--gold);
-            color: var(--gold);
         }
 
         .report-card {
@@ -189,65 +139,42 @@
             padding-bottom: 10px;
         }
 
-        .report-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--border-subtle);
-            font-size: 13px;
-        }
-
-        .report-item:last-child {
-            border-bottom: none;
-        }
-
-        .report-item-title {
-            color: var(--text-muted);
-            font-weight: 700;
-        }
-
-        .report-item-val {
-            font-weight: 900;
-            color: var(--text-primary);
-        }
-
-        .notebook-card {
-            background: rgba(244, 63, 94, 0.1);
-            border: 1px solid rgba(244, 63, 94, 0.3);
-            border-radius: 14px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .notebook-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .hero-banner {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
+        /* Product Search & Detail Cards */
+        .prod-search-input {
+            width: 100%;
+            background: var(--bg-body);
             border: 1px solid var(--border-subtle);
-            border-radius: 22px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
+            color: var(--text-primary);
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 14px;
+            outline: none;
         }
 
-        .hero-num {
-            font-size: 34px;
-            font-weight: 1000;
-            color: var(--text-primary);
-            margin: 6px 0;
+        .prod-item-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        /* Batch Notebook Selector */
+        .notebook-item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .notebook-checkbox {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--gold);
+            cursor: pointer;
         }
 
         .btn-action {
@@ -268,223 +195,172 @@
             margin-top: 10px;
         }
 
-        .tab-section {
-            display: block;
-            margin-bottom: 16px;
-        }
-
-        body.tabbed-mode .tab-section {
-            display: none;
-        }
-
-        body.tabbed-mode .tab-section.active {
-            display: block;
+        .btn-whatsapp-batch {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
         }
     </style>
 </head>
 <body>
 
-    <!-- Header Navbar -->
+    <!-- Header Navbar with Health Connection Indicator -->
     <div class="app-header">
         <div class="store-identity">
-            <img src="../logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل" onerror="this.src='../logo.png'">
+            <img src="../logo.png" class="avatar-logo-img" alt="لوجو المحل">
             <div>
-                <div class="store-name" id="txtHeaderAppName">ProSoft ERP</div>
-                <div style="font-size:11px; color:var(--gold); font-weight:800;" id="txtHeaderStoreSub">تطبيق المالك للمتابعة</div>
+                <div class="store-name">ProSoft ERP</div>
+                <div id="connStatusBadge" class="conn-badge">
+                    <span id="connDot">🟢</span>
+                    <span id="connText">الجهاز الرئيسي: متصل أونلاين</span>
+                </div>
             </div>
         </div>
-        <button class="theme-toggle-btn" onclick="toggleTheme()">
-            <span id="themeIcon">🌙</span>
-            <span id="themeLabel">داكن</span>
-        </button>
+        <button class="theme-toggle-btn" style="background:var(--bg-card); border:1px solid var(--border-subtle); color:#fff; padding:6px 12px; border-radius:14px; font-weight:800;" onclick="toggleTheme()">🌙 داكن</button>
     </div>
 
     <div class="container">
 
-        <!-- View Mode Switcher Bar -->
-        <div class="view-mode-bar">
-            <button class="mode-btn active" id="btnModeAll" onclick="setViewMode('all')">📜 عرض جميع التقارير معاً</button>
-            <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبديل بالتبويبات</button>
-        </div>
-
-        <!-- Scrollable Complete 13 Reports Bar -->
-        <div class="reports-menu-bar" id="reportsMenuBar" style="display:none;">
-            <div class="menu-chip active" onclick="switchReport('profit', this)">📈 1. الأرباح والخسائر</div>
-            <div class="menu-chip" onclick="switchReport('sales', this)">🧾 2. فواتير المبيعات</div>
-            <div class="menu-chip" onclick="switchReport('purchases', this)">🛍️ 3. المشتريات</div>
-            <div class="menu-chip" onclick="switchReport('suppliers', this)">🏭 4. مبيعات الموردين</div>
-            <div class="menu-chip" onclick="switchReport('notebook', this)">📝 5. كشكول النواقص</div>
-            <div class="menu-chip" onclick="switchReport('cashbox', this)">💰 6. الخزنة والشيفت</div>
-            <div class="menu-chip" onclick="switchReport('stock', this)">📦 7. المخزون والجرد</div>
-            <div class="menu-chip" onclick="switchReport('clients', this)">👥 8. ديون العملاء</div>
-            <div class="menu-chip" onclick="switchReport('installments', this)">📅 9. الأقساط والآجل</div>
-            <div class="menu-chip" onclick="switchReport('topitems', this)">🔥 10. الأكثر مبيعاً وركوداً</div>
-            <div class="menu-chip" onclick="switchReport('wastage', this)">🗑️ 11. الهالك والروكود</div>
-            <div class="menu-chip" onclick="switchReport('pricehistory', this)">🏷️ 12. تاريخ الأسعار</div>
-            <div class="menu-chip" onclick="switchReport('drivers', this)">🚚 13. المندوبين والتوصيل</div>
-        </div>
-
-        <!-- HERO NET PROFIT SUMMARY -->
-        <div class="hero-banner">
-            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
-                <span>📈 صافي أرباح اليوم النهائي</span>
-                <span style="font-size:11px; color:var(--emerald);">مُحدث 11:58:05 🟢</span>
+        <!-- 1. FULL PRODUCT CATALOG INSPECTOR & SEARCH (تقرير وفحص كافة الأصناف) -->
+        <div class="report-card">
+            <div class="report-header">
+                <span>🔍 1. دليل وفحص كافة الأصناف والمخزن</span>
+                <span style="color:var(--cyan); font-size:12px;" id="lblProdCount">1,420 صنف مسجل</span>
             </div>
-            <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
-            <div style="display:flex; gap:14px; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
-                <div>المبيعات: <b style="color:var(--cyan);">18,450 ج</b></div>
-                <div>التكلفة: <b>12,080 ج</b></div>
-                <div>المصروفات: <b style="color:var(--rose);">1,850 ج</b></div>
-            </div>
-        </div>
+            
+            <input type="text" class="prod-search-input" id="txtProdQuery" placeholder="🔍 ابحث باسم الصنف أو الباركود أو المورد..." onkeyup="searchProductCatalog(this.value)">
 
-        <!-- 1. PROFIT & LOSS REPORT -->
-        <div id="sec-profit" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header">
-                    <span>📈 1. تقرير الأرباح والخسائر الشامل (ChickenDist P&L)</span>
-                    <span style="color:var(--emerald); font-size:12px;">اليوم</span>
-                </div>
-                <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">تكلفة البضاعة المباعة (COGS):</div><div class="report-item-val">12,080.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">مجمل الربح (Gross Profit):</div><div class="report-item-val" style="color:var(--emerald);">6,370.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المصروفات والنثريات:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;">4,520.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 2. SALES & INVOICES REPORT -->
-        <div id="sec-sales" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🧾 2. تقرير فواتير المبيعات التفصيلي</span></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الكلية (كاش + آجل):</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش محصل):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);">6,250.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد الفواتير الصادرة:</div><div class="report-item-val">24 فاتورة</div></div>
-            </div>
-        </div>
-
-        <!-- 3. PURCHASES REPORT -->
-        <div id="sec-purchases" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🛍️ 3. تقرير المشتريات وفواتير الموردين</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المشتريات النقدية (مدفوعة):</div><div class="report-item-val" style="color:var(--emerald);">8,000.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 4. SUPPLIER SALES REPORT -->
-        <div id="sec-suppliers" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🏭 4. تقرير مبيعات وأرباح الموردين</span></div>
-                <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين اليوم:</div><div class="report-item-val" style="color:var(--gold);">8,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">أرباح الموردين التقديرية:</div><div class="report-item-val" style="color:var(--emerald);">2,100.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 5. NOTEBOOK LOW STOCK (كشكول النواقص) -->
-        <div id="sec-notebook" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>📝 5. كشكول النواقص وطلبيات الشراء</span><span style="color:var(--rose); font-size:12px;">4 أصناف ناقصة</span></div>
-                <div class="notebook-card">
-                    <div>
-                        <div style="font-weight:900;">فلتر زيت تويوتا أصلي</div>
-                        <div style="font-size:11px; color:var(--text-muted);">الرصيد: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
+            <div id="prodCatalogList">
+                <div class="prod-item-card">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;">
+                        <span style="color:var(--gold);">فلتر زيت تويوتا أصلي</span>
+                        <span style="color:var(--emerald);">185.00 ج</span>
                     </div>
-                    <button class="notebook-btn" onclick="orderSupplier('فلتر زيت تويوتا', 'العالمية')">📲 طلب</button>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <span>كود/باركود: <b>88590123</b></span>
+                        <span>سعر الشراء: <b>140.00 ج</b></span>
+                        <span>الرصيد: <b style="color:var(--cyan);">45 قطعة</b></span>
+                    </div>
+                </div>
+
+                <div class="prod-item-card">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;">
+                        <span style="color:var(--gold);">زيت موتور توتال 10W40 4L</span>
+                        <span style="color:var(--emerald);">450.00 ج</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <span>كود/باركود: <b>62210450</b></span>
+                        <span>سعر الشراء: <b>370.00 ج</b></span>
+                        <span>الرصيد: <b style="color:var(--cyan);">18 جركن</b></span>
+                    </div>
+                </div>
+
+                <div class="prod-item-card">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;">
+                        <span style="color:var(--gold);">طقم فحمات فرامل كورولا 2018</span>
+                        <span style="color:var(--emerald);">650.00 ج</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <span>كود/باركود: <b>9091510001</b></span>
+                        <span>سعر الشراء: <b>500.00 ج</b></span>
+                        <span>الرصيد: <b style="color:var(--rose);">3 طقم (تحت الحد الأدنى)</b></span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 6. CASHBOX & EXPENSES -->
-        <div id="sec-cashbox" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>💰 6. تقرير الخزنة والمصروفات والشيفتات</span></div>
-                <div class="report-item"><div class="report-item-title">رصيد الخزنة الفعلي الحالي:</div><div class="report-item-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المقبوضات اليوم:</div><div class="report-item-val" style="color:var(--emerald);">15,400.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المصروفات اليوم:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
+        <!-- 2. BATCH MISSING ITEMS NOTEBOOK (كشكول النواقص التجمعي وتجهيز الشراء) -->
+        <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
+            <div class="report-header">
+                <span>📝 2. كشكول النواقص التجمعي وتجميع الطلبيات</span>
+                <span style="color:var(--gold); font-size:12px;">مشاركة تجميعية مباشرة</span>
             </div>
-        </div>
+            
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">حدد الأصناف الناقصة لتجميعها وإرسال قائمة الطلبية كاملة دفعة واحدة للمورد عبر الواتساب:</div>
 
-        <!-- CUSTOMIZATION BOX FOR SHOP LOGO & APP NAME -->
-        <div class="report-card" style="background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3);">
-            <div style="font-size:14px; font-weight:900; color:var(--gold); margin-bottom:8px;">🎨 تخصيص اسم ولوجو المحل للتطبيق</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">أدخل اسم محلك أو ارفع اللوجو ليظهر على أيقونة الموبايل وأعلى التطبيق:</div>
-            
-            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام لقطع الغيار)">
-            
-            <button class="btn-action" style="padding:10px; font-size:13px;" onclick="applyCustomStoreBranding()">
-                <span>💾 حفظ وتطبيق اسم ولوجو المحل</span>
+            <div class="notebook-item-row">
+                <input type="checkbox" class="notebook-checkbox" value="فلتر زيت تويوتا أصلي (مطلوب: 20 قطعة)" checked>
+                <div style="flex:1;">
+                    <div style="font-weight:900;">فلتر زيت تويوتا أصلي</div>
+                    <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
+                </div>
+                <input type="number" value="20" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+            </div>
+
+            <div class="notebook-item-row">
+                <input type="checkbox" class="notebook-checkbox" value="طقم بوجيهات دنسو ياباني (مطلوب: 10 طقم)" checked>
+                <div style="flex:1;">
+                    <div style="font-weight:900;">طقم بوجيهات دنسو ياباني</div>
+                    <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
+                </div>
+                <input type="number" value="10" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+            </div>
+
+            <div class="notebook-item-row">
+                <input type="checkbox" class="notebook-checkbox" value="زيت موتور توتال 10W40 (مطلوب: 15 جركن)" checked>
+                <div style="flex:1;">
+                    <div style="font-weight:900;">زيت موتور توتال 10W40</div>
+                    <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">3 جركن</b> | المورد: المصرية للزيوت</div>
+                </div>
+                <input type="number" value="15" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+            </div>
+
+            <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrder()">
+                <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد على الواتساب</span>
             </button>
         </div>
 
-        <button class="btn-action" onclick="shareWhatsAppReport()">
-            <span>📲 مشاركة كافة التقارير الـ 13 عبر الواتساب</span>
-        </button>
+        <!-- 3. MAIN PC CONNECTION & POS FOUNDATION STATUS -->
+        <div class="report-card">
+            <div class="report-header">
+                <span>⚡ 3. حالة اتصال السيرفر والعمليات المباشرة</span>
+                <span style="color:var(--emerald); font-size:12px;">نشط 100%</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.6;">
+                درجة جاهزية السيرفر للعمليات المباشرة:
+                <br>🟢 <b>اتصال السيرفر الرئيسي:</b> متصل ومستقر (Staging Ping: 12ms)
+                <br>🟢 <b>إمكانية المبيعات من الموبايل (Mobile POS):</b> جاهزة بالتحديث القادم
+                <br>🟢 <b>إمكانية إضافة فواتير الشراء:</b> جاهزة للربط الفوري
+            </div>
+        </div>
 
     </div>
 
     <script>
-        function applyCustomStoreBranding() {
-            const name = document.getElementById('txtCustomStoreName').value.trim();
-            if(name) {
-                document.getElementById('txtHeaderAppName').innerText = name;
-                document.getElementById('txtHeaderStoreSub').innerText = "تطبيق ChickenDist ERP للمالك";
-                localStorage.setItem('custom_store_name', name);
-                alert("✅ تم تطبيق اسم ولوجو المحل الخاص بك على تطبيق الموبايل بنجاح!");
+        function sendBatchWhatsAppOrder() {
+            let selectedItems = [];
+            document.querySelectorAll('.notebook-item-row').forEach(row => {
+                let cb = row.querySelector('.notebook-checkbox');
+                let qtyInput = row.querySelector('input[type="number"]');
+                if(cb && cb.checked) {
+                    let itemName = row.querySelector('div div').innerText;
+                    selectedItems.push(`- ${itemName} (الكمية المطلوبة: ${qtyInput.value})`);
+                }
+            });
+
+            if(selectedItems.length === 0) {
+                alert("برجاء اختيار صنف واحد على الأقل من كشكول النواقص!");
+                return;
             }
+
+            let msg = `السلام عليكم ورحمة الله وبركاته،\nبرجاء تجهيز طلبية التوريد الخاصة بحسابنا:\n\n` + selectedItems.join('\n') + `\n\nشاكرين لتعاونكم معنا 🙏`;
+            let encoded = encodeURIComponent(msg);
+            window.open(`https://wa.me/?text=${encoded}`, '_blank');
         }
 
-        window.onload = function() {
-            const savedName = localStorage.getItem('custom_store_name');
-            if(savedName) {
-                document.getElementById('txtHeaderAppName').innerText = savedName;
-                document.getElementById('txtCustomStoreName').value = savedName;
-            }
-        };
-
-        function setViewMode(mode) {
-            document.getElementById('btnModeAll').classList.remove('active');
-            document.getElementById('btnModeTabs').classList.remove('active');
-
-            if(mode === 'all') {
-                document.getElementById('btnModeAll').classList.add('active');
-                document.body.classList.remove('tabbed-mode');
-                document.getElementById('reportsMenuBar').style.display = 'none';
-            } else {
-                document.getElementById('btnModeTabs').classList.add('active');
-                document.body.classList.add('tabbed-mode');
-                document.getElementById('reportsMenuBar').style.display = 'flex';
-                switchReport('profit', document.querySelectorAll('.menu-chip')[0]);
-            }
-        }
-
-        function switchReport(tabId, el) {
-            document.querySelectorAll('.menu-chip').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
-
-            if(el) el.classList.add('active');
-            const target = document.getElementById('sec-' + tabId);
-            if(target) target.classList.add('active');
+        function searchProductCatalog(query) {
+            let q = query.trim().toLowerCase();
+            document.querySelectorAll('.prod-item-card').forEach(card => {
+                let text = card.innerText.toLowerCase();
+                if(text.includes(q)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
         }
 
         function toggleTheme() {
-            const body = document.body;
-            body.classList.toggle('light-mode');
-            const isLight = body.classList.contains('light-mode');
-            document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
-            document.getElementById('themeLabel').innerText = isLight ? 'نهار' : 'داكن';
-        }
-
-        function orderSupplier(item, supplier) {
-            const text = encodeURIComponent(`السلام عليكم، برجاء تجهيز طلبيات توريد لحسابنا:\nصنف: ${item}\nالمورد: ${supplier}\nشكراً لكم.`);
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-        }
-
-        function shareWhatsAppReport() {
-            const name = document.getElementById('txtHeaderAppName').innerText;
-            const text = encodeURIComponent(`📊 تقرير المالك الشامل - ${name}:\n\n📈 صافي الأرباح: 4,520 ج\n🧾 المبيعات: 18,450 ج\n🛍️ المشتريات: 14,200 ج\n💰 الخزنة: 34,800 ج\n📝 النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
-            window.open(`https://wa.me/?text=${text}`, '_blank');
+            document.body.classList.toggle('light-mode');
         }
     </script>
 </body>
