@@ -410,6 +410,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("Financials", "📈 التقارير المالية وقائمة الدخل", 3),
             new ScreenInfo("DailyClosing", "🔒 تقفيل يومية المبيعات", 3),
             new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
+            new ScreenInfo("ShiftsHistory", "📊 تقرير وسجل الورديات السابقة", 3),
             new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 3),
             new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 3),
             new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 3),
@@ -842,7 +843,7 @@ namespace ChickenDist.Forms
             var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "Clients", "InactiveClients", "Vehicles", "Maintenance", "DashSales" };
             var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
             var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "DashBelowMin" };
-            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "Financials", "DailyClosing", "ShiftClose", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };
+            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };
 
             var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
             foreach (var grid in grids)
@@ -1062,6 +1063,7 @@ namespace ChickenDist.Forms
 
                     bool isDetailsScreen = string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
                                            string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
+                                           string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase) ||
                                            string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase);
                     if (!isDetailsScreen)
                     {
@@ -1071,7 +1073,8 @@ namespace ChickenDist.Forms
                     bool isBalanceScreen = string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
                                            string.Equals(key, "DashTreasury", StringComparison.OrdinalIgnoreCase) ||
                                            string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase);
+                                           string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
+                                           string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase);
                     if (!isBalanceScreen)
                     {
                         DisableGridCell(targetGrid.Rows[ri], 13); // ViewBalance
