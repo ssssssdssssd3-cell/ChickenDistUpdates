@@ -16,11 +16,15 @@ namespace ChickenDist.Forms
         private DateTimePicker _dtpDate;
         private DataGridView   _dg;
         private Label          _lblTotalInvoice, _lblTotalPayment, _lblTotalBalance;
+        private Label          _lblProductPageInfo;
+        private Button         _btnPrevProducts, _btnNextProducts;
         private Panel          _pnlSummary;
 
         // ── State ────────────────────────────────────────────────────────────────
         private DataTable _products;          // active products
         private int       _productCount;      // number of product columns
+        private int       _productPage = 0;
+        private const int PRODUCT_PAGE_SIZE = 20;
         private decimal   _grandInvoice, _grandPayment, _grandBalance;
 
         public FrmDailyClosing()
@@ -72,6 +76,7 @@ namespace ChickenDist.Forms
                 Dock   = DockStyle.Right
             };
             _dtpDate.RightToLeftLayout = true;
+            _dtpDate.ValueChanged += (s, e) => { _productPage = 0; LoadReport(); };
 
             var btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Accent);
             btnLoad.Size   = new Size(110, 34);
@@ -89,7 +94,28 @@ namespace ChickenDist.Forms
             btnWhatsApp.Dock   = DockStyle.Right;
             btnWhatsApp.Click += BtnWhatsAppClosing_Click;
 
-            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp });
+            // ── Product Pagination / Scrolling Controls ───────────────────────
+            _btnNextProducts = Theme.MakeButton("الأصناف التالية ◀", Theme.Primary);
+            _btnNextProducts.Size = new Size(140, 34);
+            _btnNextProducts.Dock = DockStyle.Left;
+            _btnNextProducts.Click += (s, e) => { _productPage++; LoadReport(); };
+
+            _lblProductPageInfo = new Label
+            {
+                Text = "أصناف 1 - 20",
+                Font = Theme.FontBold,
+                ForeColor = Theme.TextMain,
+                AutoSize = true,
+                Dock = DockStyle.Left,
+                Padding = new Padding(10, 8, 10, 0)
+            };
+
+            _btnPrevProducts = Theme.MakeButton("▶ الأصناف السابقة", Theme.Primary);
+            _btnPrevProducts.Size = new Size(140, 34);
+            _btnPrevProducts.Dock = DockStyle.Left;
+            _btnPrevProducts.Click += (s, e) => { if (_productPage > 0) { _productPage--; LoadReport(); } };
+
+            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp, _btnNextProducts, _lblProductPageInfo, _btnPrevProducts });
             Controls.Add(toolbar);
 
             // ── Summary footer ────────────────────────────────────────────────
@@ -186,15 +212,54 @@ namespace ChickenDist.Forms
             {
                 DateTime date = _dtpDate.Value.Date;
 
-                // 1. Active products
-                _products     = ProductDAL.GetAll(activeOnly: true);
-                _productCount = _products.Rows.Count;
-
-                // 2. Quantities: client × product
+                // 1. Quantities: client × product
                 var dtQty    = ReportDAL.GetDailyClientProductSales(date);
 
-                // 3. Totals: invoice, last payment, balance per client
+                // 2. Totals: invoice, last payment, balance per client
                 var dtTotals = ReportDAL.GetDailyClientTotals(date);
+
+                // 3. Active products
+                _products     = ProductDAL.GetAll(activeOnly: true);
+
+                // Find sold products today to prioritize them first
+                var soldProductIDs = new HashSet<int>();
+                foreach (DataRow r in dtQty.Rows)
+                {
+                    if (Convert.ToDecimal(r["TotalQty"]) != 0)
+                        soldProductIDs.Add(Convert.ToInt32(r["ProductID"]));
+                }
+
+                // Order products: sold today first, then alphabetical
+                var orderedProductRows = _products.Rows.Cast<DataRow>()
+                    .OrderByDescending(r => soldProductIDs.Contains(Convert.ToInt32(r["ProductID"])))
+                    .ThenBy(r => r["ProductName"].ToString())
+                    .ToList();
+
+                int totalProductsCount = orderedProductRows.Count;
+                int startIdx = _productPage * PRODUCT_PAGE_SIZE;
+                if (startIdx >= totalProductsCount && totalProductsCount > 0)
+                {
+                    _productPage = Math.Max(0, (totalProductsCount - 1) / PRODUCT_PAGE_SIZE);
+                    startIdx = _productPage * PRODUCT_PAGE_SIZE;
+                }
+
+                var pageProductRows = orderedProductRows.Skip(startIdx).Take(PRODUCT_PAGE_SIZE).ToList();
+                _productCount = pageProductRows.Count;
+
+                // Update pagination controls
+                if (totalProductsCount == 0)
+                {
+                    _lblProductPageInfo.Text = "لا توجد أصناف";
+                    _btnPrevProducts.Enabled = false;
+                    _btnNextProducts.Enabled = false;
+                }
+                else
+                {
+                    int endIdx = startIdx + _productCount;
+                    _lblProductPageInfo.Text = $"أصناف {startIdx + 1} - {endIdx} من {totalProductsCount}";
+                    _btnPrevProducts.Enabled = _productPage > 0;
+                    _btnNextProducts.Enabled = endIdx < totalProductsCount;
+                }
 
                 // ── Build lookup: clientID → { productID → qty }
                 var qtyMap = new Dictionary<int, Dictionary<int, decimal>>();
@@ -244,8 +309,8 @@ namespace ChickenDist.Forms
                     }
                 });
 
-                // Columns: one per product
-                foreach (DataRow pr in _products.Rows)
+                // Columns: for products in current page (max 20)
+                foreach (DataRow pr in pageProductRows)
                 {
                     _dg.Columns.Add(new DataGridViewTextBoxColumn
                     {
@@ -272,7 +337,7 @@ namespace ChickenDist.Forms
                 priceVals[0] = "السعر";
                 for (int i = 0; i < _productCount; i++)
                 {
-                    decimal price = Convert.ToDecimal(_products.Rows[i]["SalePrice"]);
+                    decimal price = Convert.ToDecimal(pageProductRows[i]["SalePrice"]);
                     priceVals[i + 1] = price > 0 ? price.ToString("N2") : "-";
                 }
                 priceVals[_productCount + 1] = "";
@@ -298,7 +363,7 @@ namespace ChickenDist.Forms
 
                     for (int i = 0; i < _productCount; i++)
                     {
-                        int pid = Convert.ToInt32(_products.Rows[i]["ProductID"]);
+                        int pid = Convert.ToInt32(pageProductRows[i]["ProductID"]);
                         decimal qty = 0;
                         if (qtyMap.ContainsKey(cid) && qtyMap[cid].ContainsKey(pid))
                             qty = qtyMap[cid][pid];

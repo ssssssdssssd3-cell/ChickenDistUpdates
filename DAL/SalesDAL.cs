@@ -2125,8 +2125,8 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT
-                    c.ClientID,
-                    c.ClientName,
+                    ISNULL(c.ClientID, 0) AS ClientID,
+                    ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
                     t.ProductID,
                     SUM(t.Qty) AS TotalQty,
                     MAX(t.UnitPrice) AS UnitPrice
@@ -2147,9 +2147,9 @@ namespace ChickenDist.DAL
                       WHERE CAST(sr.ReturnDate AS DATE) = @date
                         AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ) t
-                  JOIN Clients c ON t.ClientID = c.ClientID
-                  GROUP BY c.ClientID, c.ClientName, t.ProductID
-                  ORDER BY c.ClientName",
+                  LEFT JOIN Clients c ON ISNULL(t.ClientID, 0) = c.ClientID
+                  GROUP BY ISNULL(c.ClientID, 0), ISNULL(c.ClientName, N'عميل نقدي / عام'), t.ProductID
+                  ORDER BY ClientName",
                 DbHelper.P("@date", date.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -2159,17 +2159,17 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT
-                    c.ClientID,
-                    c.ClientName,
+                    ISNULL(c.ClientID, 0) AS ClientID,
+                    ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
                     SUM(t.Amt) AS TotalInvoice,
                     ISNULL((
                         SELECT TOP 1 ct.Credit
                         FROM ClientTransactions ct
-                        WHERE ct.ClientID = c.ClientID
+                        WHERE ct.ClientID = ISNULL(c.ClientID, 0)
                           AND ct.TransType = 'Payment'
                         ORDER BY ct.TransDate DESC
                     ), 0) AS LastPayment,
-                    ISNULL(cb.Balance, c.OpeningBalance) AS Balance
+                    ISNULL(cb.Balance, ISNULL(c.OpeningBalance, 0)) AS Balance
                   FROM (
                       SELECT ClientID, TotalAmount AS Amt
                       FROM Sales
@@ -2185,10 +2185,10 @@ namespace ChickenDist.DAL
                       WHERE CAST(ReturnDate AS DATE) = @date
                         AND (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                   ) t
-                  JOIN Clients c ON t.ClientID = c.ClientID
+                  LEFT JOIN Clients c ON ISNULL(t.ClientID, 0) = c.ClientID
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                  GROUP BY c.ClientID, c.ClientName, c.OpeningBalance, cb.Balance
-                  ORDER BY c.ClientName",
+                  GROUP BY ISNULL(c.ClientID, 0), ISNULL(c.ClientName, N'عميل نقدي / عام'), c.OpeningBalance, cb.Balance
+                  ORDER BY ClientName",
                 DbHelper.P("@date", date.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
