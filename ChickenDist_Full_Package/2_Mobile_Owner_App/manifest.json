@@ -1,7 +1,7 @@
 {
-  "name": "ChickenDist ERP - متابعة المالك",
-  "short_name": "ChickenDist",
-  "description": "تطبيق متابعة المبيعات والخزنة والمخازن للمالك من الموبايل",
+  "name": "ProSoft ERP - تطبيق متابعة المالك",
+  "short_name": "ProSoft",
+  "description": "نظام ProSoft ERP المطور لمتابعة المبيعات والخزنة والمخازن والتقارير من الموبايل",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#070a12",

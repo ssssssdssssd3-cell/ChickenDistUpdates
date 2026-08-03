@@ -116,15 +116,15 @@ namespace ChickenDist.Core
                     Directory.CreateDirectory(folder);
 
                 // اسم الملف يتضمن التاريخ والوقت
-                string fileName = $"ChickenDist_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
+                string fileName = $"ProSoft_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
                 string fullPath = Path.Combine(folder, fileName);
 
                 // تنفيذ أمر BACKUP DATABASE
                 string sql = $@"
-                    BACKUP DATABASE [ChickenDist]
+                    BACKUP DATABASE [ProSoftDB]
                     TO DISK = N'{fullPath}'
                     WITH FORMAT, INIT,
-                         NAME = N'ChickenDist Backup',
+                         NAME = N'ProSoft Backup',
                          SKIP, NOREWIND, NOUNLOAD, STATS = 10";
 
                 using (var con = DbHelper.GetConnection())

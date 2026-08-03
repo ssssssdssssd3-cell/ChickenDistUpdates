@@ -78,10 +78,10 @@ namespace ChickenDist.Core
                 try
                 {
                     System.IO.File.WriteAllText(iniPath, 
-                        "; ChickenDist Configuration\r\n" +
+                        "; ProSoft Configuration\r\n" +
                         "[Database]\r\n" +
                         "Server=.\r\n" +
-                        "Database=ChickenDist\r\n" +
+                        "Database=ProSoftDB\r\n" +
                         "IntegratedSecurity=True\r\n" +
                         "User=\r\n" +
                         "Password=\r\n" +
@@ -94,7 +94,7 @@ namespace ChickenDist.Core
             try
             {
                 string server = ReadIniDirect(iniPath, "Database", "Server", ".");
-                string db = ReadIniDirect(iniPath, "Database", "Database", "ChickenDist");
+                string db = ReadIniDirect(iniPath, "Database", "Database", "ProSoftDB");
                 string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
                 string user = ReadIniDirect(iniPath, "Database", "User", "");
                 string pass = ReadIniDirect(iniPath, "Database", "Password", "");
@@ -123,7 +123,7 @@ namespace ChickenDist.Core
             }
             catch
             {
-                return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
+                return "Data Source=.;Initial Catalog=ProSoftDB;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
             }
         }
 
