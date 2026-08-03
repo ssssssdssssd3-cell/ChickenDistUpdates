@@ -2300,40 +2300,58 @@ namespace ChickenDist.Core
                 END");
 
                 // \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0641\u0647\u0627\u0631\u0633 \u0627\u0644\u0645\u062d\u0633\u0646\u0629 \u0644\u062a\u0633\u0631\u064a\u0639 \u0627\u0644\u0627\u0633\u062a\u0639\u0644\u0627\u0645\u0627\u062a \u0648\u0625\u0644\u063a\u0627\u0621 \u0628\u0637\u0621 \u062c\u0631\u062f \u0627\u0644\u0645\u062e\u0627\u0632\u0646 \u0646\u0647\u0627\u0626\u064a\u0627\u064b
-                SafeMigrate("OptimizingIndexes", @"
+                SafeMigrate("IX_Sales_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Sales_Opt' AND object_id = OBJECT_ID('Sales'))
-                    CREATE INDEX IX_Sales_Opt ON Sales(WarehouseID, IsPosted, SaleDate) INCLUDE (SaleID, SaleType, ClientID, DriverID, TotalAmount);
-                
+                    CREATE INDEX IX_Sales_Opt ON Sales(WarehouseID, IsPosted, SaleDate) INCLUDE (SaleID, SaleType, ClientID, DriverID, TotalAmount);");
+
+                SafeMigrate("IX_SaleItems_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_Opt' AND object_id = OBJECT_ID('SaleItems'))
-                    CREATE INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);
+                AND COL_LENGTH('SaleItems', 'Factor') IS NOT NULL
+                    CREATE INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);");
 
+                SafeMigrate("IX_Purchases_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Purchases_Opt' AND object_id = OBJECT_ID('Purchases'))
-                    CREATE INDEX IX_Purchases_Opt ON Purchases(WarehouseID, IsPosted, PurchaseDate) INCLUDE (PurchaseID);
+                    CREATE INDEX IX_Purchases_Opt ON Purchases(WarehouseID, IsPosted, PurchaseDate) INCLUDE (PurchaseID);");
 
+                SafeMigrate("IX_PurchaseItems_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
-                    CREATE INDEX IX_PurchaseItems_Opt ON PurchaseItems(ProductID, PurchaseID) INCLUDE (Quantity, Factor);
+                AND COL_LENGTH('PurchaseItems', 'Factor') IS NOT NULL
+                    CREATE INDEX IX_PurchaseItems_Opt ON PurchaseItems(ProductID, PurchaseID) INCLUDE (Quantity, Factor);");
 
+                SafeMigrate("IX_SalesReturns_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SalesReturns_Opt' AND object_id = OBJECT_ID('SalesReturns'))
-                    CREATE INDEX IX_SalesReturns_Opt ON SalesReturns(WarehouseID, ReturnDate) INCLUDE (ReturnID);
+                    CREATE INDEX IX_SalesReturns_Opt ON SalesReturns(WarehouseID, ReturnDate) INCLUDE (ReturnID);");
 
+                SafeMigrate("IX_ReturnItems_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_Opt' AND object_id = OBJECT_ID('ReturnItems'))
-                    CREATE INDEX IX_ReturnItems_Opt ON ReturnItems(ProductID, ReturnID) INCLUDE (Quantity, Factor);
+                AND COL_LENGTH('ReturnItems', 'Factor') IS NOT NULL
+                    CREATE INDEX IX_ReturnItems_Opt ON ReturnItems(ProductID, ReturnID) INCLUDE (Quantity, Factor);");
 
+                SafeMigrate("IX_ClientTransactions_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ClientTransactions_Opt' AND object_id = OBJECT_ID('ClientTransactions'))
-                    CREATE INDEX IX_ClientTransactions_Opt ON ClientTransactions(ClientID, TransDate) INCLUDE (Debit, Credit);
+                    CREATE INDEX IX_ClientTransactions_Opt ON ClientTransactions(ClientID, TransDate) INCLUDE (Debit, Credit);");
 
+                SafeMigrate("IX_CashBox_Opt", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CashBox_Opt' AND object_id = OBJECT_ID('CashBox'))
-                    CREATE INDEX IX_CashBox_Opt ON CashBox(AccountID, TransDate) INCLUDE (AmountIn, AmountOut);
+                    CREATE INDEX IX_CashBox_Opt ON CashBox(AccountID, TransDate) INCLUDE (AmountIn, AmountOut);");
 
+                // IX_Products_Perf — only create if Barcode and SellPrice columns exist (older DBs may not have them)
+                SafeMigrate("IX_Products_Perf", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Perf' AND object_id = OBJECT_ID('Products'))
+                AND COL_LENGTH('Products', 'Barcode') IS NOT NULL
+                AND COL_LENGTH('Products', 'SellPrice') IS NOT NULL
+                BEGIN
                     CREATE INDEX IX_Products_Perf ON Products(Barcode, IsActive, CategoryID) INCLUDE (ProductID, ProductName, SellPrice, MinStockLimit);
+                END");
 
+                SafeMigrate("IX_SupplierTransactions_Perf", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplierTransactions_Perf' AND object_id = OBJECT_ID('SupplierTransactions'))
-                    CREATE INDEX IX_SupplierTransactions_Perf ON SupplierTransactions(SupplierID, TransDate) INCLUDE (Debit, Credit);
+                    CREATE INDEX IX_SupplierTransactions_Perf ON SupplierTransactions(SupplierID, TransDate) INCLUDE (Debit, Credit);");
 
+                SafeMigrate("IX_Inventory_Perf", @"
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Inventory_Perf' AND object_id = OBJECT_ID('Inventory'))
-                    CREATE INDEX IX_Inventory_Perf ON Inventory(ProductID, WarehouseID) INCLUDE (Quantity);
-                ");
+                AND COL_LENGTH('Inventory', 'Quantity') IS NOT NULL
+                    CREATE INDEX IX_Inventory_Perf ON Inventory(ProductID, WarehouseID) INCLUDE (Quantity);");
 
                 SafeMigrate("CustomerReservationItems.Table", @"
                 IF OBJECT_ID('CustomerReservationItems', 'U') IS NULL
