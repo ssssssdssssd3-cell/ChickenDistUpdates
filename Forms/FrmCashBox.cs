@@ -171,6 +171,7 @@ namespace ChickenDist.Forms
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountIn", HeaderText = "وارد", FillWeight = 45 });
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountOut", HeaderText = "صادر", FillWeight = 45 });
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Net", HeaderText = "صافي", FillWeight = 45 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "RunningBalance", HeaderText = "الرصيد بعد الحركة", FillWeight = 55 });
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان" });
 
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
@@ -515,11 +516,41 @@ namespace ChickenDist.Forms
             }
 
             var dt = AccountDAL.GetCashBox(dtpCashFrom.Value, dtpCashTo.Value, selectedAccountID);
+            bool canViewBalance = Session.CanViewBalance("CashBox");
+
+            // ── حساب الرصيد الافتتاحي المسبق قبل تاريخ البداية لحساب الرصيد التراكمي بعد كل حركة ──
+            decimal runningBalance = 0;
+            if (selectedAccountID.HasValue && selectedAccountID.Value > 0)
+            {
+                var openingObj = DbHelper.Scalar(
+                    "SELECT OpeningBalance FROM SafeAccounts WHERE AccountID = @accId",
+                    DbHelper.P("@accId", selectedAccountID.Value));
+                runningBalance = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
+
+                var prevTransObj = DbHelper.Scalar(
+                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId AND CAST(TransDate AS DATE) < @fromDate",
+                    DbHelper.P("@accId", selectedAccountID.Value),
+                    DbHelper.P("@fromDate", dtpCashFrom.Value.Date));
+                runningBalance += prevTransObj != DBNull.Value && prevTransObj != null ? Convert.ToDecimal(prevTransObj) : 0m;
+            }
+            else
+            {
+                var openingObj = DbHelper.Scalar("SELECT SUM(OpeningBalance) FROM SafeAccounts");
+                runningBalance = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
+
+                var prevTransObj = DbHelper.Scalar(
+                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE CAST(TransDate AS DATE) < @fromDate",
+                    DbHelper.P("@fromDate", dtpCashFrom.Value.Date));
+                runningBalance += prevTransObj != DBNull.Value && prevTransObj != null ? Convert.ToDecimal(prevTransObj) : 0m;
+            }
+
             decimal totIn = 0, totOut = 0;
             foreach (DataRow r in dt.Rows)
             {
                 decimal inAmt = Convert.ToDecimal(r["AmountIn"]);
                 decimal outAmt = Convert.ToDecimal(r["AmountOut"]);
+
+                runningBalance += (inAmt - outAmt);
 
                 if (cboTransTypeFilter != null)
                 {
@@ -529,6 +560,7 @@ namespace ChickenDist.Forms
 
                 decimal net = inAmt - outAmt;
                 
+                string notes = r["Notes"].ToString();
                 string transType = r["TransType"].ToString();
                 string transTypeArabic = transType switch
                 {
@@ -538,7 +570,7 @@ namespace ChickenDist.Forms
                     "ClientPayment" => "تحصيل من عميل",
                     "ReservationDeposit" => "عربون حجز صنف",
                     "Expense" => "مصروفات",
-                    "Transfer" => "تحويل بين الحسابات",
+                    "Transfer" => notes.Contains("تقفيل وردية") ? "تحويل تقفيل وردية" : "تحويل بين الحسابات",
                     "ShiftCloseOut" => "إغلاق وردية (تحويل صادر)",
                     "ShiftCloseIn" => "إغلاق وردية (استلام وارد)",
                     "ShiftClose" => "تقفيل وردية",
@@ -548,18 +580,21 @@ namespace ChickenDist.Forms
                     _ => transType
                 };
 
-                string notes = r["Notes"].ToString();
                 string accName = r.Table.Columns.Contains("AccountName") && r["AccountName"] != DBNull.Value ? $" [{r["AccountName"]}]" : "";
+                string runningBalanceText = canViewBalance ? runningBalance.ToString("N2") : "*** 🔒";
 
                 var ri = dgCash.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
-                    transTypeArabic, inAmt > 0 ? inAmt.ToString("N2") : "",
+                    transTypeArabic, 
+                    inAmt > 0 ? inAmt.ToString("N2") : "",
                     outAmt > 0 ? outAmt.ToString("N2") : "",
-                    net.ToString("N2"), notes + accName);
+                    net.ToString("N2"), 
+                    runningBalanceText,
+                    notes + accName);
+
                 if (outAmt > 0) dgCash.Rows[ri].DefaultCellStyle.ForeColor = Color.OrangeRed;
                 totIn += inAmt; totOut += outAmt;
             }
-            bool canViewBalance = Session.CanViewBalance("CashBox");
             if (canViewBalance)
             {
                 lblCashIn.Text = "إجمالي وارد: " + totIn.ToString("N2") + " ج";

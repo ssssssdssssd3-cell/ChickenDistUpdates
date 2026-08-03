@@ -46,10 +46,10 @@
 
   <!-- Copy the bot and MobileApp folders automatically to the build output directory -->
   <ItemGroup>
-    <None Include="bot\**\*" Exclude="bot\node_modules\**\*">
+    <None Include="bot\**\*" Exclude="bot\node_modules\**\*;bot\.wwebjs_auth\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\bot\**\*" Exclude="..\bot\node_modules\**\*">
+    <None Include="..\bot\**\*" Exclude="..\bot\node_modules\**\*;..\bot\.wwebjs_auth\**\*">
       <Link>bot\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

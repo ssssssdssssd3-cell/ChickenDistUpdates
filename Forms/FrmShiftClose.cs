@@ -840,23 +840,25 @@ namespace ChickenDist.Forms
                 if (transferred > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
                 {
                     string cleanTargetName = targetSafeName.Replace("🏦 تحويل إلى: ", "").Trim();
-                    // أ) حركة صادر من الدرج بمبلغ التحويل المحدد فقط
+                    // أ) حركة صادر من الدرج بمبلغ التحويل المحدد خصماً من رصيد الدرج
                     DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                          VALUES (GETDATE(), 'Transfer', 0, @amt, @acc, @notes, @uid, @ref)",
                         DbHelper.P("@amt", transferred),
                         DbHelper.P("@acc", sourceAccountID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{cleanTargetName}]"),
-                        DbHelper.P("@uid", Session.EmpID));
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل صادر من [{sourceDrawerName}] إلى [{cleanTargetName}]"),
+                        DbHelper.P("@uid", Session.EmpID),
+                        DbHelper.P("@ref", shiftID));
 
-                    // ب) حركة وارد إلى الخزنة المستهدفة لإضافة مبلغ التحويل
+                    // ب) حركة وارد إلى الخزنة المستهدفة إضافةً إلى رصيد الخزنة
                     DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @acc, @notes, @uid)",
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                          VALUES (GETDATE(), 'Transfer', @amt, 0, @acc, @notes, @uid, @ref)",
                         DbHelper.P("@amt", transferred),
                         DbHelper.P("@acc", targetSafeID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - استلام نقدية الوردية من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
-                        DbHelper.P("@uid", Session.EmpID));
+                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل وارد إلى [{cleanTargetName}] من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
+                        DbHelper.P("@uid", Session.EmpID),
+                        DbHelper.P("@ref", shiftID));
                 }
 
                 // ── 3. سند تقفيل يومية للرصيد المتبقي الفعلي بالدرج ──

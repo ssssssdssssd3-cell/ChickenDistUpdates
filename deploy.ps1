@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.274"
+$VERSION   = "2.0.275"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -57,7 +57,9 @@ foreach ($path in $updateManagerPaths) {
 
 # Step 2: Build
 Write-Step "Building (dotnet publish)"
-if (Test-Path $OUT_DIR) { Remove-Item $OUT_DIR -Recurse -Force }
+if (Test-Path $OUT_DIR) { 
+    try { Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+}
 
 $buildResult = dotnet publish $CSPROJ -c Release -f net48 -o $OUT_DIR --nologo 2>&1
 $buildOutput = $buildResult -join "`n"
