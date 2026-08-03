@@ -88,6 +88,21 @@ namespace ChickenDist.Forms
             btnHelpTop.FlatAppearance.BorderSize = 0;
             btnHelpTop.Click += (s, e) => new FrmSupportBot().ShowDialog();
 
+            var btnMobileSync = new Button
+            {
+                Text = "📱 ربط الموبايل",
+                Width = 120,
+                Dock = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(40, 140, 220),
+                ForeColor = Color.White,
+                Font = Theme.FontBold,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5, 0, 5, 0)
+            };
+            btnMobileSync.FlatAppearance.BorderSize = 0;
+            btnMobileSync.Click += (s, e) => NavigateTo(new FrmCloudSync());
+
             this.lblUserInfo = new Label
             {
                 Text = $"👤 {Session.EmpName}  |  💼 {Session.Role}",
@@ -99,6 +114,7 @@ namespace ChickenDist.Forms
             };
 
             pnlProfile.Controls.Add(lblUserInfo);
+            pnlProfile.Controls.Add(btnMobileSync);
             pnlProfile.Controls.Add(btnHelpTop);
 
             this.lblTitle = new Label

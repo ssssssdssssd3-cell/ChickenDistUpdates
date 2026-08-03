@@ -570,6 +570,22 @@ namespace ChickenDist.Core
                     CREATE INDEX IX_Sales_CloudID ON Sales(CloudID);
                 END");
 
+                SafeMigrate("CloudSyncSettings", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'CloudSyncSettings')
+                BEGIN
+                    CREATE TABLE CloudSyncSettings (
+                        SettingID INT PRIMARY KEY DEFAULT 1,
+                        ApiUrl NVARCHAR(255) NULL,
+                        OwnerSecretKey NVARCHAR(100) NULL,
+                        AutoSyncEnabled BIT NOT NULL DEFAULT 1,
+                        SyncIntervalMinutes INT NOT NULL DEFAULT 5,
+                        LastSyncDate DATETIME NULL,
+                        LastSyncStatus NVARCHAR(200) NULL
+                    );
+                    INSERT INTO CloudSyncSettings (SettingID, ApiUrl, OwnerSecretKey, AutoSyncEnabled, SyncIntervalMinutes, LastSyncStatus)
+                    VALUES (1, 'https://api.chickendist.com/v1', 'OWNER-SECRET-KEY', 1, 5, N'لم يتم إجراء مزامنة بعد');
+                END");
+
                 SafeMigrate("Sales.CashPaid", @"
                 IF OBJECT_ID('Sales', 'U') IS NOT NULL
                 BEGIN
@@ -636,6 +652,58 @@ namespace ChickenDist.Core
                 IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseItems', 'ExpiryDate') IS NULL
                 BEGIN
                     ALTER TABLE PurchaseItems ADD ExpiryDate DATE NULL;
+                END");
+
+                // إضافة أعمدة الشراء من عميل والمرتجعات العامة
+                SafeMigrate("Purchases.ClientID", @"
+                IF OBJECT_ID('Purchases', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Purchases', 'ClientID') IS NULL
+                    BEGIN
+                        ALTER TABLE Purchases ADD ClientID INT NULL REFERENCES Clients(ClientID);
+                    END
+                    IF COL_LENGTH('Purchases', 'PurchaseSource') IS NULL
+                    BEGIN
+                        ALTER TABLE Purchases ADD PurchaseSource NVARCHAR(20) NOT NULL DEFAULT 'Supplier';
+                    END
+                END");
+
+                SafeMigrate("PurchaseReturns.General", @"
+                IF OBJECT_ID('PurchaseReturns', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseReturns', 'PurchaseID') IS NOT NULL
+                    BEGIN
+                        ALTER TABLE PurchaseReturns ALTER COLUMN PurchaseID INT NULL;
+                    END
+                    IF COL_LENGTH('PurchaseReturns', 'SupplierID') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseReturns ADD SupplierID INT NULL REFERENCES Suppliers(SupplierID);
+                    END
+                    IF COL_LENGTH('PurchaseReturns', 'WarehouseID') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseReturns ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
+                    END
+                END");
+
+                SafeMigrate("SalesReturns.General", @"
+                IF OBJECT_ID('SalesReturns', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('SalesReturns', 'SaleID') IS NOT NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ALTER COLUMN SaleID INT NULL;
+                    END
+                    IF COL_LENGTH('SalesReturns', 'ClientID') IS NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ADD ClientID INT NULL REFERENCES Clients(ClientID);
+                    END
+                    IF COL_LENGTH('SalesReturns', 'WarehouseID') IS NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
+                    END
+                    IF COL_LENGTH('SalesReturns', 'ReturnType') IS NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ADD ReturnType NVARCHAR(50) NOT NULL DEFAULT 'InvoiceReturn';
+                    END
                 END");
 
                 // Add Purchases and Suppliers schema (tables only)

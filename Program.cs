@@ -25,6 +25,9 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // Ensure MobileApp folder exists for owner
+            ChickenDist.Services.CloudSyncService.EnsureMobileAppFolderExists();
+
             // فحص تاريخ وساعة الويندوز للتأكد من سلامة التقارير
             if (!ChickenDist.Core.DbHelper.ValidateSystemDate(out string dateWarning))
             {

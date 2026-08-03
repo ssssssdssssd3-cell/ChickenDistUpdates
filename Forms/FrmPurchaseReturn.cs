@@ -11,11 +11,11 @@ namespace ChickenDist.Forms
     /// <summary>شاشة مرتجع مشتريات — مطابقة للمنطق المحاسبي الصحيح</summary>
     public class FrmPurchaseReturn : Form
     {
-        private ComboBox cboPurchase, cboSupplier;
-        private TextBox txtNotes, txtProductSearch;
+        private ComboBox cboMode, cboPurchase, cboSupplier, cboWarehouse, cboReturnType, cboAllProducts;
+        private TextBox txtNotes, txtProductSearch, txtGenQty, txtGenPrice;
         private DataGridView dgItems;
-        private Button btnSave;
-        private Label lblTotal;
+        private Button btnSave, btnAddGenItem;
+        private Label lblTotal, lblPur, lblSupplierLbl;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch;
         private Label lblPurchaseInfo;
@@ -76,8 +76,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "مرتجع مشتريات";
-            this.Size = new Size(1050, 680);
+            this.Text = "مرتجع مشتريات (فاتورة / عام)";
+            this.Size = new Size(1100, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -87,35 +87,69 @@ namespace ChickenDist.Forms
             this.KeyDown += FrmPurchaseReturn_KeyDown;
 
             // ===== شريط العنوان =====
-            var pnlTitle = Theme.MakeTitleBar("↩ مرتجع مشتريات", "إرجاع بضاعة للمورد مع تسوية الحساب تلقائياً");
+            var pnlTitle = Theme.MakeTitleBar("↩ مرتجع مشتريات", "إرجاع بضاعة للمورد (على فاتورة أو مرتجع عام) مع تسوية الحساب تلقائياً");
             pnlTitle.Dock = DockStyle.Top;
 
             // ===== شريط الفلتر والبيانات =====
             var pnlInfo = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 115,
+                Height = 150,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10, 12, 10, 10),
+                Padding = new Padding(10, 10, 10, 10),
                 WrapContents = true
             };
 
+            // نوع المرتجع
+            var lblMode = new Label { Text = "نوع المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+            cboMode = new ComboBox
+            {
+                Width = 230, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            cboMode.Items.Add("🧾 مرتجع على فاتورة شراء معينة");
+            cboMode.Items.Add("🌐 مرتجع شراء عام (بدون فاتورة)");
+            cboMode.SelectedIndex = 0;
+            cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
+
+            // المخزن
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            cboWarehouse = new ComboBox
+            {
+                Width = 140, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+
+            // طريقة التسوية
+            var lblRetType = new Label { Text = "التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            cboReturnType = new ComboBox
+            {
+                Width = 110, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            cboReturnType.Items.Add("📋 آجل");
+            cboReturnType.Items.Add("💵 نقدي");
+            cboReturnType.SelectedIndex = 0;
+
             // تواريخ البحث
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
-            dtpFrom = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            dtpFrom = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
-            dtpTo = new DateTimePicker { Width = 120, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpTo = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
             btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
-            btnSearch.Size = new Size(130, 28);
+            btnSearch.Size = new Size(110, 28);
             btnSearch.Margin = new Padding(10, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadCombos();
 
             // فاتورة الشراء
-            var lblPur = new Label { Text = "فاتورة الشراء الأصلية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            lblPur = new Label { Text = "فاتورة الشراء:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             cboPurchase = new ComboBox
             {
-                Width = 270, Height = 26,
+                Width = 250, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
@@ -134,21 +168,21 @@ namespace ChickenDist.Forms
             };
 
             // المورد
-            var lblSup = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            lblSupplierLbl = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             cboSupplier = new ComboBox
             {
-                Width = 200, Height = 26,
+                Width = 180, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
 
-            // بحث صنف
-            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
+            // بحث صنف في الفاتورة
+            var lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             txtProductSearch = new TextBox 
             { 
-                Width = 150, 
+                Width = 130, 
                 Height = 26, 
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain, 
@@ -165,15 +199,41 @@ namespace ChickenDist.Forms
                 }
             };
 
+            // إدخال صنف عام (للمرتجع العام)
+            var lblGenProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            cboAllProducts = new ComboBox
+            {
+                Width = 200, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+
+            var lblGenQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
+            txtGenQty = new TextBox { Width = 65, Height = 26, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+
+            var lblGenPrice = new Label { Text = "سعر الشراء:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
+            txtGenPrice = new TextBox { Width = 75, Height = 26, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+
+            btnAddGenItem = Theme.MakeButton("➕ إضافة", Theme.Success);
+            btnAddGenItem.Size = new Size(80, 26);
+            btnAddGenItem.Margin = new Padding(10, 2, 0, 0);
+            btnAddGenItem.Click += BtnAddGenItem_Click;
+
             // ملاحظات
-            var lblNotes = new Label { Text = "ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(20, 8, 0, 0), Font = Theme.FontBold };
-            txtNotes = new TextBox { Width = 220, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var lblNotes = new Label { Text = "ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            txtNotes = new TextBox { Width = 180, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
             pnlInfo.Controls.AddRange(new Control[] {
+                lblMode, cboMode,
+                lblWh, cboWarehouse,
+                lblRetType, cboReturnType,
                 lblFrom, dtpFrom, lblTo, dtpTo, btnSearch,
                 lblPur, cboPurchase, lblPurchaseInfo,
-                lblSup, cboSupplier,
+                lblSupplierLbl, cboSupplier,
                 lblProduct, txtProductSearch,
+                lblGenProd, cboAllProducts, lblGenQty, txtGenQty, lblGenPrice, txtGenPrice, btnAddGenItem,
                 lblNotes, txtNotes
             });
 
@@ -276,6 +336,63 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void ToggleReturnMode()
+        {
+            bool isGeneral = cboMode.SelectedIndex == 1;
+
+            if (lblPur != null) lblPur.Visible = !isGeneral;
+            if (cboPurchase != null) cboPurchase.Visible = !isGeneral;
+            if (btnSearch != null) btnSearch.Visible = !isGeneral;
+            if (lblPurchaseInfo != null) lblPurchaseInfo.Visible = !isGeneral;
+
+            // أظهر أدوات الإضافة المباشرة للصنف في المرتجع العام
+            cboAllProducts.Visible = isGeneral;
+            txtGenQty.Visible = isGeneral;
+            txtGenPrice.Visible = isGeneral;
+            btnAddGenItem.Visible = isGeneral;
+
+            dgItems.Rows.Clear();
+            RecalcTotal();
+
+            if (isGeneral)
+            {
+                cboSupplier.Enabled = true;
+            }
+        }
+
+        private void BtnAddGenItem_Click(object sender, EventArgs e)
+        {
+            if (!(cboAllProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
+            {
+                MessageBox.Show("اختر صنفاً أولاً من القائمة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtGenQty.Text, out decimal qty) || qty <= 0)
+            {
+                MessageBox.Show("أدخل كمية صالحة أكبر من صفر", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtGenPrice.Text, out decimal price) || price < 0)
+            {
+                MessageBox.Show("أدخل سعر شراء صالح", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int rowIdx = dgItems.Rows.Add();
+            var row = dgItems.Rows[rowIdx];
+            row.Cells["ProductID"].Value       = ci.ID;
+            row.Cells["ProductName"].Value     = ci.Text;
+            row.Cells["PurchasedQty"].Value    = "عام";
+            row.Cells["PrevReturnedQty"].Value = "0";
+            row.Cells["NewReturnedQty"].Value  = qty;
+            row.Cells["UnitPrice"].Value       = price.ToString("N2");
+            row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
+
+            RecalcTotal();
+        }
+
         private void LoadPurchasesCombo()
         {
             cboPurchase.SelectedIndexChanged -= CboPurchase_SelectedIndexChanged;
@@ -319,10 +436,38 @@ namespace ChickenDist.Forms
                 cboSupplier.Items.Add(new ComboItem((int)r["SupplierID"], r["SupplierName"].ToString()));
             cboSupplier.DisplayMember = "Text";
             cboSupplier.SelectedIndex = 0;
-
             cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
 
+            // المخازن
+            var dtWh = WarehouseDAL.GetAll(true);
+            cboWarehouse.Items.Clear();
+            foreach (DataRow r in dtWh.Rows)
+                cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+            cboWarehouse.DisplayMember = "Text";
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+
+            // جميع الأصناف للمرتجع العام
+            var dtProd = ProductDAL.GetAll(true);
+            cboAllProducts.Items.Clear();
+            cboAllProducts.Items.Add(new ComboItem(0, "-- اختر صنف --"));
+            foreach (DataRow r in dtProd.Rows)
+            {
+                var ci = new ComboItem((int)r["ProductID"], r["ProductName"].ToString());
+                ci.Extra = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                cboAllProducts.Items.Add(ci);
+            }
+            cboAllProducts.DisplayMember = "Text";
+            if (cboAllProducts.Items.Count > 0) cboAllProducts.SelectedIndex = 0;
+            cboAllProducts.SelectedIndexChanged += (s, e) =>
+            {
+                if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    txtGenPrice.Text = ci.Extra.ToString("N2");
+                }
+            };
+
             LoadPurchasesCombo();
+            ToggleReturnMode();
         }
 
         private void CboPurchase_SelectedIndexChanged(object sender, EventArgs e)
@@ -447,7 +592,9 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (!(cboPurchase.SelectedItem is ComboItem ci) || ci.ID == 0)
+            bool isGeneral = cboMode.SelectedIndex == 1;
+
+            if (!isGeneral && (!(cboPurchase.SelectedItem is ComboItem ci) || ci.ID == 0))
             {
                 MessageBox.Show("يجب اختيار فاتورة الشراء الأصلية أولاً", "تنبيه",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -464,16 +611,19 @@ namespace ChickenDist.Forms
                 decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal newQty);
                 if (newQty <= 0) continue;
 
-                decimal.TryParse(row.Cells["PurchasedQty"].Value?.ToString(), out decimal purQty);
-                decimal.TryParse(row.Cells["PrevReturnedQty"].Value?.ToString(), out decimal prevQty);
-
-                if (newQty + prevQty > purQty)
+                if (!isGeneral)
                 {
-                    MessageBox.Show(
-                        $"الكمية المرتجعة للصنف ({name}) تتجاوز الكمية الأصلية!\n" +
-                        $"المشتريات: {purQty:N3} | السابق: {prevQty:N3} | الجديد: {newQty:N3}",
-                        "تجاوز الكمية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    decimal.TryParse(row.Cells["PurchasedQty"].Value?.ToString(), out decimal purQty);
+                    decimal.TryParse(row.Cells["PrevReturnedQty"].Value?.ToString(), out decimal prevQty);
+
+                    if (newQty + prevQty > purQty)
+                    {
+                        MessageBox.Show(
+                            $"الكمية المرتجعة للصنف ({name}) تتجاوز الكمية الأصلية!\n" +
+                            $"المشتريات: {purQty:N3} | السابق: {prevQty:N3} | الجديد: {newQty:N3}",
+                            "تجاوز الكمية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
                 }
 
                 decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal price);
@@ -492,22 +642,30 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            int purchaseID = ci.ID;
+            int purchaseID = isGeneral ? 0 : ((ComboItem)cboPurchase.SelectedItem).ID;
             int? supplierID = (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null;
+            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
+            string returnType = cboReturnType.SelectedIndex == 1 ? "Cash" : "Credit";
+
+            if (isGeneral && returnType == "Credit" && !supplierID.HasValue)
+            {
+                MessageBox.Show("يرجى اختيار المورد أولاً لمرتجع الشراء العام الآجل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             try
             {
                 int id = PurchaseReturnDAL.SavePurchaseReturn(purchaseID, supplierID, totalReturnAmount,
-                    txtNotes.Text, returnItems);
+                    txtNotes.Text, returnItems, warehouseID, returnType);
                 if (id > 0)
                 {
-                    MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم تحديث حساب المورد والخزنة تلقائياً.",
+                    MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم تحديث المخزن وحساب المورد والخزنة تلقائياً.",
                         "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtNotes.Text = "";
-                    cboPurchase.SelectedIndex = 0;
+                    if (cboPurchase.Items.Count > 0) cboPurchase.SelectedIndex = 0;
                     dgItems.Rows.Clear();
                     lblTotal.Text = "الإجمالي: 0.00 ج";
-                    lblPurchaseInfo.Text = "";
+                    if (lblPurchaseInfo != null) lblPurchaseInfo.Text = "";
                 }
                 else
                 {

@@ -16,7 +16,9 @@ namespace ChickenDist.Forms
         private string _purchaseType = "Credit";
 
         // ── حقول الرأس ─────────────────────────────────────────────────────────
-        private ComboBox cboSupplier, cboProduct, cboWarehouse;
+        private ComboBox cboPurchaseSource, cboSupplier, cboProduct, cboWarehouse;
+        private Label lblSupp;
+        private Button btnSupplierAdd;
         private DateTimePicker dtpDate;
         private TextBox txtNotes, txtSupplierInvoiceNo;
         private Label lblCashBalance;
@@ -200,8 +202,26 @@ namespace ChickenDist.Forms
             lblType.TextAlign = ContentAlignment.MiddleRight;
             lblType.Margin = new Padding(2);
 
-            // المورد (col0-col1 صف 0)
-            var lblSupp = MakeLabel("المورد:", 0, 0);
+            // جهة الشراء (مورد / عميل)
+            var lblSource = MakeLabel("جهة الشراء:", 0, 0);
+            lblSource.Dock = DockStyle.Fill;
+            lblSource.TextAlign = ContentAlignment.MiddleRight;
+            lblSource.Margin = new Padding(2);
+
+            cboPurchaseSource = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 3, 2, 3)
+            };
+            cboPurchaseSource.Items.Add("🏭 مورد");
+            cboPurchaseSource.Items.Add("👤 عميل");
+            cboPurchaseSource.SelectedIndex = 0;
+            cboPurchaseSource.SelectedIndexChanged += (s, e) => LoadCombos();
+
+            // المورد / العميل
+            lblSupp = MakeLabel("* اسم المورد:", 0, 0);
             lblSupp.Dock = DockStyle.Fill;
             lblSupp.TextAlign = ContentAlignment.MiddleRight;
             lblSupp.Margin = new Padding(2);
@@ -213,7 +233,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
-            Button btnSupplierAdd = new Button
+            btnSupplierAdd = new Button
             {
                 Text = "➕",
                 Width = 30,
@@ -275,12 +295,12 @@ namespace ChickenDist.Forms
             };
 
             // إضافة إلى الجدول — صف 0
-            tbl.Controls.Add(lblSupp,       0, 0);
-            tbl.Controls.Add(pnlSupplier,   1, 0);
-            tbl.Controls.Add(lblDate,       2, 0);
-            tbl.Controls.Add(dtpDate,       3, 0);
-            tbl.Controls.Add(lblType,       4, 0);
-            tbl.Controls.Add(pnlTypeBtns,   5, 0);
+            tbl.Controls.Add(lblSupp,            0, 0);
+            tbl.Controls.Add(pnlSupplier,        1, 0);
+            tbl.Controls.Add(lblDate,            2, 0);
+            tbl.Controls.Add(dtpDate,            3, 0);
+            tbl.Controls.Add(lblType,            4, 0);
+            tbl.Controls.Add(pnlTypeBtns,        5, 0);
 
             // ── صف 1: رقم فاتورة المورد | ملاحظات | الصنف ───────────────────────────
             var lblSupplierInv = MakeLabel("* رقم فاتورة المورد:", 0, 0, Theme.Danger);
@@ -1067,19 +1087,41 @@ namespace ChickenDist.Forms
         // تحميل الكومبوات
         private void LoadCombos()
         {
-            // الموردون
-            DataTable dtSup = SupplierCache.GetActive();
-            cboSupplier.BeginUpdate();
-            cboSupplier.Items.Clear();
-            List<ComboItem> supplierItems = new List<ComboItem>();
-            supplierItems.Add(new ComboItem(0, "-- اختر المورد --"));
-            foreach (DataRow r in dtSup.Rows)
-                supplierItems.Add(new ComboItem(
-                    Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
-            cboSupplier.Items.AddRange(supplierItems.ToArray());
-            cboSupplier.DisplayMember = "Text";
-            cboSupplier.SelectedIndex = 0;
-            cboSupplier.EndUpdate();
+            if (cboSupplier != null)
+            {
+                bool isClient = cboPurchaseSource != null && cboPurchaseSource.SelectedIndex == 1;
+                cboSupplier.BeginUpdate();
+                cboSupplier.Items.Clear();
+                List<ComboItem> partyItems = new List<ComboItem>();
+
+                if (isClient)
+                {
+                    if (lblSupp != null) lblSupp.Text = "* اسم العميل:";
+                    if (btnSupplierAdd != null) btnSupplierAdd.Visible = false;
+
+                    partyItems.Add(new ComboItem(0, "-- اختر العميل --"));
+                    DataTable dtClient = ClientDAL.GetAll(true);
+                    foreach (DataRow r in dtClient.Rows)
+                        partyItems.Add(new ComboItem(
+                            Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+                }
+                else
+                {
+                    if (lblSupp != null) lblSupp.Text = "* اسم المورد:";
+                    if (btnSupplierAdd != null) btnSupplierAdd.Visible = true;
+
+                    partyItems.Add(new ComboItem(0, "-- اختر المورد --"));
+                    DataTable dtSup = SupplierCache.GetActive();
+                    foreach (DataRow r in dtSup.Rows)
+                        partyItems.Add(new ComboItem(
+                            Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+                }
+
+                cboSupplier.Items.AddRange(partyItems.ToArray());
+                cboSupplier.DisplayMember = "Text";
+                if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
+                cboSupplier.EndUpdate();
+            }
 
             // الأصناف
             DataTable dtProd = ProductCache.GetActive();
@@ -2135,10 +2177,15 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            int? supplierID = GetSelectedSupplier();
-            if (_purchaseType == "Credit" && !supplierID.HasValue)
+            bool isClientPurchase = cboPurchaseSource != null && cboPurchaseSource.SelectedIndex == 1;
+            int? partyID = GetSelectedSupplier();
+            int? supplierID = isClientPurchase ? null : partyID;
+            int? clientID = isClientPurchase ? partyID : null;
+            string purchaseSource = isClientPurchase ? "Client" : "Supplier";
+
+            if (_purchaseType == "Credit" && !partyID.HasValue)
             {
-                MessageBox.Show("اختر المورد أولاً للفواتير الآجلة", "تنبيه",
+                MessageBox.Show(isClientPurchase ? "اختر العميل أولاً للفواتير الآجلة" : "اختر المورد أولاً للفواتير الآجلة", "تنبيه",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -2255,7 +2302,7 @@ namespace ChickenDist.Forms
                     id = PurchaseDAL.SavePurchase(
                         _purchaseType, supplierID, net, txtNotes.Text, _items,
                         discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo,
-                        shippingCost: shippingCost, shippingOn: shippingOn);
+                        shippingCost: shippingCost, shippingOn: shippingOn, clientID: clientID, purchaseSource: purchaseSource);
                 }
 
                 if (id > 0)

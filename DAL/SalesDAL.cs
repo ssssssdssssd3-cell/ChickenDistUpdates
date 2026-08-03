@@ -1696,27 +1696,36 @@ namespace ChickenDist.DAL
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items)
+        public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items, int? warehouseID = null, string returnType = "Credit")
         {
             int returnedRetID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var dtSale = DbHelper.Query("SELECT SaleType, ClientID, WarehouseID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
-                string saleType = dtSale.Rows.Count > 0 ? dtSale.Rows[0]["SaleType"].ToString() : "Credit";
-                int whID = (dtSale.Rows.Count > 0 && dtSale.Rows[0]["WarehouseID"] != DBNull.Value) ? Convert.ToInt32(dtSale.Rows[0]["WarehouseID"]) : 1;
+                string saleType = returnType;
+                int whID = warehouseID ?? 1;
 
-                // استخدم clientID من الفاتورة الأصلية إذا لم يُحدَّد في الشاشة
-                if (!clientID.HasValue && dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
-                    clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                if (saleID > 0)
+                {
+                    var dtSale = DbHelper.QueryTrans(trans, "SELECT SaleType, ClientID, WarehouseID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                    if (dtSale.Rows.Count > 0)
+                    {
+                        saleType = dtSale.Rows[0]["SaleType"].ToString();
+                        if (dtSale.Rows[0]["WarehouseID"] != DBNull.Value)
+                            whID = Convert.ToInt32(dtSale.Rows[0]["WarehouseID"]);
+                        if (!clientID.HasValue && dtSale.Rows[0]["ClientID"] != DBNull.Value)
+                            clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                    }
+                }
 
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid)",
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid,@rtyp)",
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
-                    DbHelper.P("@wid", whID));
+                    DbHelper.P("@wid", whID),
+                    DbHelper.P("@rtyp", saleID > 0 ? "InvoiceReturn" : "GeneralReturn"));
 
                 if (retID <= 0) throw new Exception("فشل إنشاء سجل المرتجع.");
 
@@ -1738,12 +1747,11 @@ namespace ChickenDist.DAL
                 // بيع آجل أو حمولة مندوب → تخفيض دين العميل (Credit في ClientTransactions)
                 if (saleType == "Cash")
                 {
-                    // تسجيل خروج نقدية من الخزنة (رد مبلغ المرتجع للعميل)
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by)",
                         DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
-                        DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
+                        DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع للفاتورة رقم " + saleID) : ("مرتجع بيع عام نقدي " + (notes ?? ""))),
                         DbHelper.P("@by", Session.EmpID));
                 }
                 else if (clientID.HasValue)
@@ -1751,11 +1759,11 @@ namespace ChickenDist.DAL
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Return',@amt,@ref,@n,@by)",
                         DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                        DbHelper.P("@ref", retID), DbHelper.P("@n", "مرتجع بيع للفاتورة رقم " + saleID),
+                        DbHelper.P("@ref", retID), DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع للفاتورة رقم " + saleID) : ("مرتجع بيع عام آجل " + (notes ?? ""))),
                         DbHelper.P("@by", Session.EmpID));
                 }
 
-                // معالجة مرتجع التقسيط (تخفيض قيمة العقد وجدول الأقساط تلقائياً تنازلياً)
+                // معالجة مرتجع التقسيط
                 if (saleID > 0 && saleType == "Installment")
                 {
                     InstallmentDAL.HandleSalesReturn(trans, saleID, total);
@@ -1763,6 +1771,133 @@ namespace ChickenDist.DAL
             });
 
             return returnedRetID;
+        }
+
+        /// <summary>
+        /// استبدال أصناف: إرجاع بضاعة واستلام بضاعة جديدة في نفس الحركة وتسوية الفرق مالياً ومخزنياً
+        /// </summary>
+        public static bool SaveItemExchange(int? clientID, int warehouseID, List<SaleItemDTO> returnedItems, List<SaleItemDTO> newItems, string paymentType, string notes)
+        {
+            if (returnedItems == null || returnedItems.Count == 0)
+                throw new Exception("يجب تحديد صنف واحد على الأقل للمرتجع!");
+            if (newItems == null || newItems.Count == 0)
+                throw new Exception("يجب تحديد صنف جديد واحد على الأقل للبديل!");
+
+            decimal totalReturned = 0m;
+            foreach (var item in returnedItems) totalReturned += item.TotalPrice;
+
+            decimal totalNew = 0m;
+            foreach (var item in newItems) totalNew += item.TotalPrice;
+
+            decimal netDiff = totalNew - totalReturned;
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. تسجيل حركة المرتجع
+                int retID = DbHelper.ExecuteInsertTrans(trans,
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType) VALUES(@dt,NULL,@cid,@tot,@n,@by,@wid,N'ExchangeReturn')",
+                    DbHelper.P("@dt", DateTime.Now),
+                    DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@tot", totalReturned),
+                    DbHelper.P("@n", "استبدال أصناف (مرتجع) - " + notes),
+                    DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@wid", warehouseID));
+
+                foreach (var item in returnedItems)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
+                        DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice),
+                        DbHelper.P("@un", item.UnitName),
+                        DbHelper.P("@fac", item.Factor));
+                }
+
+                // 2. تسجيل حركة الصرف الجديدة (فاتورة بيع بديل)
+                var nextSaleCodeObj = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID),0)+1 FROM Sales");
+                string saleCode = "EXC-" + (nextSaleCodeObj ?? "1");
+
+                int saleID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO Sales (SaleCode, SaleDate, SaleType, ClientID, WarehouseID, TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount, ShippingCharge, CashPaid, Notes, CreatedBy, IsPosted)
+                      VALUES (@code, GETDATE(), @stype, @cid, @wid, @tot, 0, 0, 0, 0, 0, @cash, @n, @by, 1)",
+                    DbHelper.P("@code", saleCode),
+                    DbHelper.P("@stype", paymentType),
+                    DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@wid", warehouseID),
+                    DbHelper.P("@tot", totalNew),
+                    DbHelper.P("@cash", paymentType == "Cash" ? totalNew : 0m),
+                    DbHelper.P("@n", "استبدال أصناف (صرف بديل) - " + notes),
+                    DbHelper.P("@by", Session.EmpID));
+
+                foreach (var item in newItems)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@sid,@pid,@qty,@up,@tp,@un,@fac)",
+                        DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
+                        DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
+                        DbHelper.P("@tp", item.TotalPrice),
+                        DbHelper.P("@un", item.UnitName),
+                        DbHelper.P("@fac", item.Factor));
+                }
+
+                // 3. التسوية المالية للفرق الصافي
+                if (netDiff != 0m)
+                {
+                    if (paymentType == "Cash")
+                    {
+                        if (netDiff > 0)
+                        {
+                            // العميل دفع الفارق نقداً (إيراد للخزنة)
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) VALUES(@dt,'ExchangeDiffIn',@amt,@ref,@n,@by)",
+                                DbHelper.P("@dt", DateTime.Now),
+                                DbHelper.P("@amt", netDiff),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "تحصيل فارق استبدال أصناف (عميل)"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                        else
+                        {
+                            // تم إرجاع الفارق للعميل نقداً (خروج من الخزنة)
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ExchangeDiffOut',@amt,@ref,@n,@by)",
+                                DbHelper.P("@dt", DateTime.Now),
+                                DbHelper.P("@amt", Math.Abs(netDiff)),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "رد فارق استبدال أصناف للعميل نقداً"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
+                    else if (clientID.HasValue)
+                    {
+                        if (netDiff > 0)
+                        {
+                            // إضافة فرق المدينية على حساب العميل (Debit)
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'ExchangeDiff',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", netDiff),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "فارق استبدال أصناف (زيادة مديونية)"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                        else
+                        {
+                            // خصم الفارق من حساب العميل (Credit)
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'ExchangeDiff',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", Math.Abs(netDiff)),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "فارق استبدال أصناف (خصم مديونية)"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
+                }
+            });
+
+            return true;
         }
     }
 

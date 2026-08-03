@@ -171,7 +171,8 @@ namespace ChickenDist.DAL
             decimal taxPct = 0m, decimal taxAmount = 0m,
             bool isDraft = false, int? warehouseID = 1,
             string supplierInvoiceNo = "",
-            decimal shippingCost = 0m, string shippingOn = "Company")
+            decimal shippingCost = 0m, string shippingOn = "Company",
+            int? clientID = null, string purchaseSource = "Supplier")
         {
             int returnedID = -1;
 
@@ -195,11 +196,11 @@ namespace ChickenDist.DAL
 
                 int purchaseID = DbHelper.ExecuteInsertTrans(trans,
                     @"INSERT INTO Purchases
-                        (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID,
+                        (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID, ClientID, PurchaseSource,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
                          Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn)
                       VALUES
-                        (@code, @sinv, @dt, @typ, @sid,
+                        (@code, @sinv, @dt, @typ, @sid, @cid, @psrc,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
                          @n, @by, @ip, @wid, @shdost, @shon)",
                     DbHelper.P("@code",    code),
@@ -207,6 +208,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@dt",      DateTime.Now),
                     DbHelper.P("@typ",     purchaseType),
                     DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                    DbHelper.P("@cid",     clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                    DbHelper.P("@psrc",    purchaseSource ?? "Supplier"),
                     DbHelper.P("@tot",     total),
                     DbHelper.P("@discAmt", discountAmount),
                     DbHelper.P("@discPct", discountPct),
@@ -277,30 +280,58 @@ namespace ChickenDist.DAL
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────
                 if (!isDraft)
                 {
-                    // آجل → أضف دائناً في حساب المورد
-                    if (purchaseType == "Credit" && supplierID.HasValue)
+                    if (purchaseSource == "Client" || clientID.HasValue)
                     {
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
-                            " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
-                            DbHelper.P("@sid", supplierID.Value),
-                            DbHelper.P("@amt", total),
-                            DbHelper.P("@ref", purchaseID),
-                            DbHelper.P("@n",   "فاتورة مشتريات " + code),
-                            DbHelper.P("@by",  Session.EmpID));
+                        if (purchaseType == "Credit" && clientID.HasValue)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Credit, RefID, Notes, CreatedBy)" +
+                                " VALUES(@cid, 'ClientPurchase', @amt, @ref, @n, @by)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "فاتورة شراء من عميل آجل " + code),
+                                DbHelper.P("@by",  Session.EmpID));
+                        }
+                        else if (purchaseType == "Cash")
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy)" +
+                                " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @n, @by)",
+                                DbHelper.P("@dt",  DateTime.Now),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "فاتورة شراء من عميل نقدي " + code),
+                                DbHelper.P("@by",  Session.EmpID));
+                        }
                     }
-
-                    // نقدي → اخصم من الخزنة
-                    if (purchaseType == "Cash")
+                    else
                     {
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)" +
-                            " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by)",
-                            DbHelper.P("@dt",  DateTime.Now),
-                            DbHelper.P("@amt", total),
-                            DbHelper.P("@ref", purchaseID),
-                            DbHelper.P("@n",   "مشتريات نقدية " + code),
-                            DbHelper.P("@by",  Session.EmpID));
+                        // آجل → أضف دائناً في حساب المورد
+                        if (purchaseType == "Credit" && supplierID.HasValue)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
+                                " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
+                                DbHelper.P("@sid", supplierID.Value),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "فاتورة مشتريات " + code),
+                                DbHelper.P("@by",  Session.EmpID));
+                        }
+
+                        // نقدي → اخصم من الخزنة
+                        if (purchaseType == "Cash")
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)" +
+                                " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by)",
+                                DbHelper.P("@dt",  DateTime.Now),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "مشتريات نقدية " + code),
+                                DbHelper.P("@by",  Session.EmpID));
+                        }
                     }
                 }
             });
@@ -385,7 +416,8 @@ namespace ChickenDist.DAL
                             }
                         }
                         DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
-                        DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND TransType='PurchaseExpense'", DbHelper.P("@id", purchaseID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType='ClientPurchase'", DbHelper.P("@id", purchaseID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
                     }
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
@@ -569,26 +601,34 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>
-        /// حفظ مرتجع شراء مع القيد المحاسبي الصحيح:
+        /// حفظ مرتجع شراء مع القيد المحاسبي الصحيح (سواء على فاتورة أو عام):
         /// - شراء نقدي → يُعاد المبلغ للخزنة (AmountIn)
         /// - شراء آجل  → يُقلَّل ما يستحقه المورد (Debit في SupplierTransactions)
         /// </summary>
         public static int SavePurchaseReturn(int purchaseID, int? supplierID, decimal total,
-            string notes, List<PurchaseItemDTO> items)
+            string notes, List<PurchaseItemDTO> items, int? warehouseID = null, string returnType = "Credit")
         {
             int returnedRetID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                // جلب نوع الفاتورة الأصلية والمورد منها إذا لم يُحدَّد
-                var dtPur = DbHelper.Query(
-                    "SELECT PurchaseType, SupplierID, WarehouseID FROM Purchases WHERE PurchaseID=@pid",
-                    DbHelper.P("@pid", purchaseID));
-                string purType = dtPur.Rows.Count > 0 ? dtPur.Rows[0]["PurchaseType"].ToString() : "Credit";
-                int whID = (dtPur.Rows.Count > 0 && dtPur.Rows[0]["WarehouseID"] != DBNull.Value) ? Convert.ToInt32(dtPur.Rows[0]["WarehouseID"]) : 1;
+                string purType = returnType;
+                int whID = warehouseID ?? 1;
 
-                if (!supplierID.HasValue && dtPur.Rows.Count > 0 && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
-                    supplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+                if (purchaseID > 0)
+                {
+                    var dtPur = DbHelper.QueryTrans(trans,
+                        "SELECT PurchaseType, SupplierID, WarehouseID FROM Purchases WHERE PurchaseID=@pid",
+                        DbHelper.P("@pid", purchaseID));
+                    if (dtPur.Rows.Count > 0)
+                    {
+                        purType = dtPur.Rows[0]["PurchaseType"].ToString();
+                        if (dtPur.Rows[0]["WarehouseID"] != DBNull.Value)
+                            whID = Convert.ToInt32(dtPur.Rows[0]["WarehouseID"]);
+                        if (!supplierID.HasValue && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
+                            supplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+                    }
+                }
 
                 // تسجيل المرتجع
                 int retID = DbHelper.ExecuteInsertTrans(trans,
@@ -628,7 +668,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@dt",  DateTime.Now),
                         DbHelper.P("@amt", total),
                         DbHelper.P("@ref", retID),
-                        DbHelper.P("@n",   "مرتجع شراء نقدي — فاتورة رقم " + purchaseID),
+                        DbHelper.P("@n",   purchaseID > 0 ? ("مرتجع شراء نقدي — فاتورة رقم " + purchaseID) : ("مرتجع شراء عام نقدي " + (notes ?? ""))),
                         DbHelper.P("@by",  Session.EmpID));
                 }
                 else if (supplierID.HasValue)
@@ -640,7 +680,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@sid", supplierID.Value),
                         DbHelper.P("@amt", total),
                         DbHelper.P("@ref", retID),
-                        DbHelper.P("@n",   "مرتجع شراء — فاتورة رقم " + purchaseID),
+                        DbHelper.P("@n",   purchaseID > 0 ? ("مرتجع شراء — فاتورة رقم " + purchaseID) : ("مرتجع شراء عام آجل " + (notes ?? ""))),
                         DbHelper.P("@by",  Session.EmpID));
                 }
             });

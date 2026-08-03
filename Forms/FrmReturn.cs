@@ -9,15 +9,17 @@ using System.Linq;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة مرتجع مبيعات متطورة بتصميم رئيسي-تفصيلي</summary>
+    /// <summary>شاشة مرتجع مبيعات واستبدال أصناف متطورة</summary>
     public class FrmReturn : Form
     {
-        private DataGridView dgSales, dgItems;
-        private TextBox txtSearch, txtInvoiceBarcode, txtNotes;
-        private ComboBox cboClient;
+        private DataGridView dgSales, dgItems, dgExchangeNewItems;
+        private TextBox txtSearch, txtInvoiceBarcode, txtNotes, txtGenQty, txtGenPrice, txtNewGenQty, txtNewGenPrice;
+        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts;
         private DateTimePicker dtpFrom, dtpTo;
-        private Button btnSearch, btnSave;
-        private Label lblTotal;
+        private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
+        private Label lblTotal, lblExchangeSummary, lblSearch, lblBarcode, lblFrom, lblTo, lblClient;
+        private SplitContainer _mainSplit;
+        private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
         private decimal _selectedSaleTotalAmount = 0m;
@@ -27,12 +29,69 @@ namespace ChickenDist.Forms
         public FrmReturn()
         {
             InitUI();
-            LoadClients();
+            LoadCombos();
             LoadSales();
+        }
+
+        private void LoadCombos()
+        {
+            LoadClients();
+
+            // المخازن
+            if (cboWarehouse != null)
+            {
+                var dtWh = WarehouseDAL.GetAll(true);
+                cboWarehouse.Items.Clear();
+                foreach (DataRow r in dtWh.Rows)
+                    cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+                cboWarehouse.DisplayMember = "Text";
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+            }
+
+            // تحميل أصناف الكتالوج للمرتجع العام والبديل
+            DataTable dtProducts = ProductDAL.GetAll(true);
+            if (cboAllProducts != null)
+            {
+                cboAllProducts.Items.Clear();
+                cboAllProducts.Items.Add(new ComboItem(0, "-- اختر الصنف المرتجع --"));
+                foreach (DataRow r in dtProducts.Rows)
+                {
+                    var ci = new ComboItem((int)r["ProductID"], r["ProductName"].ToString());
+                    ci.Extra = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                    cboAllProducts.Items.Add(ci);
+                }
+                cboAllProducts.DisplayMember = "Text";
+                if (cboAllProducts.Items.Count > 0) cboAllProducts.SelectedIndex = 0;
+                cboAllProducts.SelectedIndexChanged += (s, e) =>
+                {
+                    if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+                        txtGenPrice.Text = ci.Extra.ToString("N2");
+                };
+            }
+
+            if (cboNewExchangeProducts != null)
+            {
+                cboNewExchangeProducts.Items.Clear();
+                cboNewExchangeProducts.Items.Add(new ComboItem(0, "-- اختر الصنف البديل الجديد --"));
+                foreach (DataRow r in dtProducts.Rows)
+                {
+                    var ci = new ComboItem((int)r["ProductID"], r["ProductName"].ToString());
+                    ci.Extra = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                    cboNewExchangeProducts.Items.Add(ci);
+                }
+                cboNewExchangeProducts.DisplayMember = "Text";
+                if (cboNewExchangeProducts.Items.Count > 0) cboNewExchangeProducts.SelectedIndex = 0;
+                cboNewExchangeProducts.SelectedIndexChanged += (s, e) =>
+                {
+                    if (cboNewExchangeProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+                        txtNewGenPrice.Text = ci.Extra.ToString("N2");
+                };
+            }
         }
 
         private void LoadClients()
         {
+            if (cboClient == null) return;
             cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
             cboClient.Items.Clear();
             cboClient.Items.Add(new ComboItem(0, "-- الكل --"));
@@ -53,7 +112,8 @@ namespace ChickenDist.Forms
 
         private void CboClient_SelectedIndexChanged(object sender, EventArgs e)
         {
-            LoadSales();
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
         }
 
         private void FrmReturn_KeyDown(object sender, KeyEventArgs e)
@@ -61,6 +121,7 @@ namespace ChickenDist.Forms
             if (e.KeyCode == Keys.F5)
             {
                 if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
+                if (dgExchangeNewItems != null && dgExchangeNewItems.IsCurrentCellInEditMode) dgExchangeNewItems.EndEdit();
                 btnSave.PerformClick();
                 e.Handled = true;
             }
@@ -76,7 +137,6 @@ namespace ChickenDist.Forms
                     var curCell = dgItems.CurrentCell;
                     if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
                     {
-                        // البحث عن الخلية التالية القابلة للتعديل في نفس السطر
                         int nextCol = -1;
                         for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
                         {
@@ -99,11 +159,6 @@ namespace ChickenDist.Forms
                             return true;
                         }
                     }
-                    else
-                    {
-                        txtNotes.Focus();
-                        return true;
-                    }
                 }
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -111,8 +166,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "مرتجع مبيعات - تحديد الفاتورة والارتجاع";
-            this.Size = new Size(1100, 720);
+            this.Text = "مرتجع مبيعات واستبدال أصناف";
+            this.Size = new Size(1180, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -122,25 +177,57 @@ namespace ChickenDist.Forms
             this.KeyDown += FrmReturn_KeyDown;
 
             // ===== 1. Top Filter panel =====
-            var pnlFilter = new FlowLayoutPanel
+            pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
+                Height = 85,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10),
-                WrapContents = false
+                WrapContents = true
             };
 
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            var lblMode = new Label { Text = "العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            cboMode = new ComboBox
+            {
+                Width = 220, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            cboMode.Items.Add("🧾 مرتجع على فاتورة بيع محددة");
+            cboMode.Items.Add("🌐 مرتجع بيع عام (بدون فاتورة)");
+            cboMode.Items.Add("🔄 استبدال أصناف (مرتجع + بديل)");
+            cboMode.SelectedIndex = 0;
+            cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
+
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0), Font = Theme.FontBold };
+            cboWarehouse = new ComboBox
+            {
+                Width = 130, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+
+            var lblRetType = new Label { Text = "نوع التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0), Font = Theme.FontBold };
+            cboReturnType = new ComboBox
+            {
+                Width = 110, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            cboReturnType.Items.Add("📋 آجل");
+            cboReturnType.Items.Add("💵 نقدي");
+            cboReturnType.SelectedIndex = 0;
+
+            lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             dtpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
             dtpFrom.ValueChanged += (s, e) => LoadSales();
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
             dtpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
             dtpTo.ValueChanged += (s, e) => LoadSales();
 
-            var lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
             cboClient = new ComboBox 
             { 
                 Width = 180, 
@@ -150,19 +237,14 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, 
                 ForeColor = Theme.TextMain 
             };
-            cboClient.SelectedIndexChanged += (s, e) =>
-            {
-                if (_isFilteringCombo) return;
-                LoadSales();
-            };
             SetupSearchableCombo(cboClient);
 
-            var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            txtSearch = new TextBox { Width = 150, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            txtSearch = new TextBox { Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             txtSearch.TextChanged += (s, e) => LoadSales();
 
-            var lblBarcode = new Label { Text = "باركود الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            txtInvoiceBarcode = new TextBox { Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
+            lblBarcode = new Label { Text = "باركود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            txtInvoiceBarcode = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
             txtInvoiceBarcode.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
@@ -173,22 +255,92 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnSearch = Theme.MakeButton("🔍 تحديث الفواتير", Theme.Accent);
-            btnSearch.Size = new Size(120, 28);
-            btnSearch.Margin = new Padding(20, 0, 0, 0);
+            btnSearch = Theme.MakeButton("🔍 تحديث", Theme.Accent);
+            btnSearch.Size = new Size(100, 28);
+            btnSearch.Margin = new Padding(15, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadSales();
 
-            pnlFilter.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblClient, cboClient, lblSearch, txtSearch, lblBarcode, txtInvoiceBarcode, btnSearch });
+            pnlFilter.Controls.AddRange(new Control[] { 
+                lblMode, cboMode, 
+                lblWh, cboWarehouse, 
+                lblRetType, cboReturnType, 
+                lblFrom, dtpFrom, lblTo, dtpTo, 
+                lblClient, cboClient, 
+                lblSearch, txtSearch, 
+                lblBarcode, txtInvoiceBarcode, btnSearch 
+            });
+
+            // ===== شريط إضافة صنف مرتجع عام / بديل =====
+            _pnlGenItemBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.FromArgb(45, 35, 45),
+                Padding = new Padding(10, 6, 10, 6),
+                Visible = false
+            };
+
+            var lblGenTitle = new Label { Text = "↩ صنف مرتجع:", AutoSize = true, ForeColor = Color.LightCoral, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            cboAllProducts = new ComboBox
+            {
+                Width = 220, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            btnAddGenItem = Theme.MakeButton("➕ إضافة مرتجع", Color.FromArgb(160, 60, 60));
+            btnAddGenItem.Size = new Size(110, 26);
+            btnAddGenItem.Margin = new Padding(10, 0, 0, 0);
+            btnAddGenItem.Click += BtnAddGenItem_Click;
+
+            _pnlGenItemBar.Controls.AddRange(new Control[] { lblGenTitle, cboAllProducts, lblGenQtyL, txtGenQty, lblGenPriceL, txtGenPrice, btnAddGenItem });
+
+            // شريط إضافة صنف جديد للاستبدال
+            _pnlNewItemBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.FromArgb(35, 45, 35),
+                Padding = new Padding(10, 6, 10, 6),
+                Visible = false
+            };
+
+            var lblNewTitle = new Label { Text = "🆕 صنف بديل جديد:", AutoSize = true, ForeColor = Color.LightGreen, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            cboNewExchangeProducts = new ComboBox
+            {
+                Width = 220, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            btnAddNewGenItem = Theme.MakeButton("➕ إضافة بديل", Color.FromArgb(50, 140, 70));
+            btnAddNewGenItem.Size = new Size(110, 26);
+            btnAddNewGenItem.Margin = new Padding(10, 0, 0, 0);
+            btnAddNewGenItem.Click += BtnAddNewGenItem_Click;
+
+            _pnlNewItemBar.Controls.AddRange(new Control[] { lblNewTitle, cboNewExchangeProducts, lblNewQtyL, txtNewGenQty, lblNewPriceL, txtNewGenPrice, btnAddNewGenItem });
 
             // ===== 2. SplitContainer =====
-            var split = new SplitContainer
+            _mainSplit = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 260
+                SplitterDistance = 250
             };
-            split.Panel1.Padding = new Padding(10, 5, 10, 5);
-            split.Panel2.Padding = new Padding(10, 5, 10, 5);
+            _mainSplit.Panel1.Padding = new Padding(10, 5, 10, 5);
+            _mainSplit.Panel2.Padding = new Padding(10, 5, 10, 5);
 
             // Top Grid: Sales Invoices
             dgSales = MakeGrid();
@@ -199,14 +351,15 @@ namespace ChickenDist.Forms
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "العميل", FillWeight = 110f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "صافي القيمة", FillWeight = 55f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120f });
-            split.Panel1.Controls.Add(dgSales);
+            dgSales.SelectionChanged += DgSales_SelectionChanged;
+            _mainSplit.Panel1.Controls.Add(dgSales);
 
-            // Bottom Grid: Selected Sale Items
+            // Bottom Grid: Selected Sale Items / Return Items
             dgItems = MakeGrid();
-            dgItems.ReadOnly = false; // تفعيل التعديل على الخلايا
+            dgItems.ReadOnly = false;
             dgItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف المرتجع", ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQty", HeaderText = "الكمية الأصلية", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40 });
@@ -214,7 +367,7 @@ namespace ChickenDist.Forms
             var colNew = new DataGridViewTextBoxColumn 
             { 
                 Name = "NewReturnedQty", 
-                HeaderText = "المرتجع الجديد (تعديل مباشر)", 
+                HeaderText = "المرتجع الجديد", 
                 ReadOnly = false, 
                 FillWeight = 50,
                 ValueType = typeof(decimal)
@@ -242,20 +395,46 @@ namespace ChickenDist.Forms
 
             dgItems.CellValidating += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
-            dgItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(140, 40, 40); // اللون الأحمر الغامق لتمييز بنود المرتجع
-            split.Panel2.Controls.Add(dgItems);
+            dgItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(140, 40, 40);
+
+            // جدول أصناف البديل الجديد في الاستبدال
+            dgExchangeNewItems = MakeGrid();
+            dgExchangeNewItems.ReadOnly = false;
+            dgExchangeNewItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف البديل الجديد", ReadOnly = true });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewQty", HeaderText = "الكمية", ReadOnly = false, FillWeight = 50 });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر البيع", ReadOnly = false, FillWeight = 50 });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي الصرف", ReadOnly = true, FillWeight = 60 });
+            dgExchangeNewItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(40, 110, 60);
+            dgExchangeNewItems.CellValueChanged += (s, e) => RecalcTotals();
+            dgExchangeNewItems.Visible = false;
+
+            var pnlGridsContainer = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1
+            };
+            pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            pnlGridsContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            pnlGridsContainer.Controls.Add(dgItems, 0, 0);
+            pnlGridsContainer.Controls.Add(dgExchangeNewItems, 1, 0);
+
+            _mainSplit.Panel2.Controls.Add(pnlGridsContainer);
 
             // ===== 3. Footer panel =====
             var pnlFoot = new Panel 
             { 
                 Dock = DockStyle.Bottom, 
-                Height = 60, 
+                Height = 65, 
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            var lblNotes = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 20), Anchor = AnchorStyles.Left };
-            txtNotes = new TextBox { Width = 300, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Location = new Point(125, 16), Anchor = AnchorStyles.Left };
+            var lblNotesL = new Label { Text = "ملاحظات العملية:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 20), Anchor = AnchorStyles.Left };
+            txtNotes = new TextBox { Width = 250, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Location = new Point(125, 16), Anchor = AnchorStyles.Left };
             
             lblTotal = new Label 
             { 
@@ -263,36 +442,172 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.Accent, 
                 Dock = DockStyle.Right,
                 Width = 250,
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleRight
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ مرتجع البيع", Color.FromArgb(160, 50, 50));
+            lblExchangeSummary = new Label
+            {
+                Text = "",
+                ForeColor = Color.Gold,
+                Dock = DockStyle.Right,
+                Width = 350,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight,
+                Visible = false
+            };
+
+            btnSave = Theme.MakeButton("💾 حفظ العملية", Color.FromArgb(160, 50, 50));
             btnSave.Width = 180;
-            btnSave.Height = 36;
-            btnSave.Location = new Point(450, 12);
+            btnSave.Height = 38;
+            btnSave.Location = new Point(400, 12);
             btnSave.Anchor = AnchorStyles.None;
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
             
             Label lblHotkeys = new Label
             {
-                Text = "الاختصارات: [F5] حفظ المرتجع",
+                Text = "الاختصارات: [F5] حفظ",
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Location = new Point(650, 20),
+                Location = new Point(600, 20),
                 AutoSize = true,
                 Anchor = AnchorStyles.Right
             };
 
-            pnlFoot.Controls.AddRange(new Control[] { lblNotes, txtNotes, lblTotal, btnSave, lblHotkeys });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave, lblHotkeys });
 
             // ===== 4. Add controls =====
-            this.Controls.Add(split);
+            this.Controls.Add(_mainSplit);
+            this.Controls.Add(_pnlNewItemBar);
+            this.Controls.Add(_pnlGenItemBar);
             this.Controls.Add(pnlFoot);
             this.Controls.Add(pnlFilter);
-            split.BringToFront();
+            _mainSplit.BringToFront();
             Theme.ApplyFormRTL(this);
+        }
+
+        private void ToggleReturnMode()
+        {
+            int mode = cboMode.SelectedIndex;
+            bool isInvoice = mode == 0;
+            bool isGeneral = mode == 1;
+            bool isExchange = mode == 2;
+
+            _mainSplit.Panel1Collapsed = !isInvoice;
+            _pnlGenItemBar.Visible = !isInvoice;
+            _pnlNewItemBar.Visible = isExchange;
+            dgExchangeNewItems.Visible = isExchange;
+
+            lblFrom.Visible = isInvoice; dtpFrom.Visible = isInvoice;
+            lblTo.Visible = isInvoice; dtpTo.Visible = isInvoice;
+            lblSearch.Visible = isInvoice; txtSearch.Visible = isInvoice;
+            lblBarcode.Visible = isInvoice; txtInvoiceBarcode.Visible = isInvoice;
+            btnSearch.Visible = isInvoice;
+
+            lblExchangeSummary.Visible = isExchange;
+
+            dgItems.Rows.Clear();
+            dgExchangeNewItems.Rows.Clear();
+            RecalcTotals();
+        }
+
+        private void BtnAddGenItem_Click(object sender, EventArgs e)
+        {
+            if (!(cboAllProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
+            {
+                MessageBox.Show("اختر الصنف المراد إرجاعه أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtGenQty.Text, out decimal qty) || qty <= 0)
+            {
+                MessageBox.Show("أدخل كمية صالحة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtGenPrice.Text, out decimal price) || price < 0)
+            {
+                MessageBox.Show("أدخل سعر صالح", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int idx = dgItems.Rows.Add();
+            var row = dgItems.Rows[idx];
+            row.Cells["ProductID"].Value       = ci.ID;
+            row.Cells["ProductName"].Value     = ci.Text;
+            row.Cells["SoldQty"].Value         = "عام";
+            row.Cells["PrevReturnedQty"].Value = "0";
+            row.Cells["NewReturnedQty"].Value  = qty;
+            row.Cells["UnitPrice"].Value       = price.ToString("N2");
+            row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
+
+            RecalcTotals();
+        }
+
+        private void BtnAddNewGenItem_Click(object sender, EventArgs e)
+        {
+            if (!(cboNewExchangeProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
+            {
+                MessageBox.Show("اختر الصنف البديل الجديد أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtNewGenQty.Text, out decimal qty) || qty <= 0)
+            {
+                MessageBox.Show("أدخل كمية صالحة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(txtNewGenPrice.Text, out decimal price) || price < 0)
+            {
+                MessageBox.Show("أدخل سعر صالح", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int idx = dgExchangeNewItems.Rows.Add();
+            var row = dgExchangeNewItems.Rows[idx];
+            row.Cells["ProductID"].Value   = ci.ID;
+            row.Cells["ProductName"].Value = ci.Text;
+            row.Cells["NewQty"].Value      = qty;
+            row.Cells["UnitPrice"].Value   = price.ToString("N2");
+            row.Cells["TotalPrice"].Value  = (qty * price).ToString("N2");
+
+            RecalcTotals();
+        }
+
+        private void RecalcTotals()
+        {
+            decimal totalRet = 0m;
+            foreach (DataGridViewRow r in dgItems.Rows)
+            {
+                decimal.TryParse(r.Cells["TotalPrice"].Value?.ToString(), out decimal t);
+                totalRet += t;
+            }
+
+            decimal totalNew = 0m;
+            foreach (DataGridViewRow r in dgExchangeNewItems.Rows)
+            {
+                decimal.TryParse(r.Cells["NewQty"].Value?.ToString(), out decimal q);
+                decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
+                decimal t = q * p;
+                r.Cells["TotalPrice"].Value = t.ToString("N2");
+                totalNew += t;
+            }
+
+            if (cboMode.SelectedIndex == 2)
+            {
+                decimal diff = totalNew - totalRet;
+                lblExchangeSummary.Text = $"مرتجع: {totalRet:N2} | بديل: {totalNew:N2}";
+                if (diff >= 0)
+                    lblTotal.Text = $"الصافي للدفع: {diff:N2} ج";
+                else
+                    lblTotal.Text = $"الصافي للمسترجع: {Math.Abs(diff):N2} ج";
+            }
+            else
+            {
+                lblTotal.Text = $"إجمالي المرتجع: {totalRet:N2} ج";
+            }
         }
 
         private DataGridView MakeGrid()
@@ -320,188 +635,148 @@ namespace ChickenDist.Forms
 
         private void LoadSales()
         {
-            dgSales.SelectionChanged -= DgSales_SelectionChanged;
-            dgSales.Rows.Clear();
-            dgItems.Rows.Clear();
-            lblTotal.Text = "الإجمالي: 0.00 ج";
-
-            string search = txtSearch.Text.Trim();
-            if (string.IsNullOrEmpty(search)) search = null;
-
-            int? selectedClientID = null;
-            if (cboClient != null && cboClient.SelectedItem is ComboItem cs && cs.ID > 0)
+            if (cboMode != null && cboMode.SelectedIndex != 0) return;
+            try
             {
-                selectedClientID = cs.ID;
+                int? clientID = null;
+                if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+                    clientID = ci.ID;
+
+                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, txtSearch.Text.Trim());
+                dgSales.DataSource = _salesDt;
             }
-
-            var dtS = SaleDAL.GetAll(dtpFrom.Value.Date, dtpTo.Value.Date, selectedClientID, null);
-            _salesDt = dtS;
-
-            foreach (DataRow r in dtS.Rows)
+            catch (Exception ex)
             {
-                int saleID = Convert.ToInt32(r["SaleID"]);
-                string saleCode = r["SaleCode"].ToString();
-                string dateStr = Convert.ToDateTime(r["SaleDate"]).ToString("yyyy/MM/dd HH:mm");
-                string type = r["SaleType"].ToString() == "Credit" ? "آجل" : (r["SaleType"].ToString() == "Installment" ? "تقسيط" : "نقدي");
-                string clientName = r["ClientName"].ToString();
-                decimal total = Convert.ToDecimal(r["TotalAmount"]);
-                string notes = r["Notes"].ToString();
-
-                if (search != null)
-                {
-                    bool match = saleCode.Contains(search) || clientName.Contains(search) || notes.Contains(search);
-                    if (!match) continue;
-                }
-
-                dgSales.Rows.Add(saleID, saleCode, dateStr, type, clientName, total.ToString("N2"), notes);
-            }
-
-            dgSales.SelectionChanged += DgSales_SelectionChanged;
-            if (dgSales.Rows.Count > 0)
-            {
-                dgSales.CurrentCell = dgSales.Rows[0].Cells[1];
+                AppLogger.Error("خطأ أثناء تحميل فواتير البيع للمرتجع", ex, "FrmReturn.LoadSales");
             }
         }
 
         private void DgSales_SelectionChanged(object sender, EventArgs e)
         {
-            dgItems.CellValueChanged -= DgItems_CellValueChanged;
             dgItems.Rows.Clear();
             lblTotal.Text = "الإجمالي: 0.00 ج";
             _selectedSaleTotalAmount = 0m;
             _selectedSaleShippingCharge = 0m;
             _selectedSalePrevReturnedAmount = 0m;
 
-            if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+            if (dgSales.CurrentRow == null || dgSales.CurrentRow.Cells["SaleID"].Value == null)
+                return;
+
+            int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+            
+            var dtSaleInfo = DbHelper.Query("SELECT ISNULL(TotalAmount,0) AS TotalAmount, ISNULL(ShippingCharge,0) AS ShippingCharge FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
+            if (dtSaleInfo.Rows.Count > 0)
             {
-                int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
-
-                var dtSaleInfo = DbHelper.Query(@"
-                    SELECT TotalAmount, COALESCE(ShippingCharge, 0.0) AS ShippingCharge 
-                    FROM Sales 
-                    WHERE SaleID = @sid", 
-                    DbHelper.P("@sid", saleID));
-                if (dtSaleInfo.Rows.Count > 0)
-                {
-                    _selectedSaleTotalAmount = Convert.ToDecimal(dtSaleInfo.Rows[0]["TotalAmount"]);
-                    _selectedSaleShippingCharge = Convert.ToDecimal(dtSaleInfo.Rows[0]["ShippingCharge"]);
-                }
-
-                _selectedSalePrevReturnedAmount = Convert.ToDecimal(DbHelper.Scalar(
-                    "SELECT COALESCE(SUM(TotalAmount), 0.0) FROM SalesReturns WHERE SaleID = @sid",
-                    DbHelper.P("@sid", saleID)));
-
-                DataTable dtItems = DbHelper.Query(@"
-                    SELECT 
-                        si.ProductID, 
-                        p.ProductName, 
-                        si.Quantity AS SoldQty, 
-                        si.UnitPrice,
-                        COALESCE((
-                             SELECT SUM(ri.Quantity * COALESCE(ri.Factor, 1.0))
-                             FROM ReturnItems ri
-                             JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                             WHERE sr.SaleID = si.SaleID AND ri.ProductID = si.ProductID
-                        ), 0) AS PrevReturnedQtyInSmallest,
-                        si.UnitName,
-                        COALESCE(si.Factor, 1.0) AS Factor,
-                        p.Unit AS BaseUnitName,
-                        p.Unit1Name,
-                        p.Unit1SalePrice,
-                        p.Unit2Name,
-                        p.Unit2Factor,
-                        p.Unit2SalePrice,
-                        p.Unit3Factor
-                    FROM SaleItems si
-                    JOIN Products p ON si.ProductID = p.ProductID
-                    WHERE si.SaleID = @sid", 
-                    DbHelper.P("@sid", saleID));
-
-                foreach (DataRow r in dtItems.Rows)
-                {
-                    int prodID = Convert.ToInt32(r["ProductID"]);
-                    string name = r["ProductName"].ToString();
-                    decimal soldQty = Convert.ToDecimal(r["SoldQty"]);
-                    decimal price = Convert.ToDecimal(r["UnitPrice"]);
-                    decimal prevQtyInSmallest = Convert.ToDecimal(r["PrevReturnedQtyInSmallest"]);
-                    
-                    decimal origFactor = Convert.ToDecimal(r["Factor"]);
-                    decimal soldQtyInSmallest = soldQty * origFactor;
-                    decimal prevQty = prevQtyInSmallest / (origFactor > 0 ? origFactor : 1m);
-
-                    string baseUnit = r["BaseUnitName"]?.ToString() ?? "";
-                    string u1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
-                    decimal u1Price = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
-                    string u2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
-                    decimal u2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
-                    decimal u2Price = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
-                    decimal u3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
-
-                    int rIndex = dgItems.Rows.Add(
-                        prodID, 
-                        name, 
-                        soldQty.ToString("F2"), 
-                        prevQty.ToString("F2"), 
-                        null, // UnitName combobox
-                        "0.00", // NewReturnedQty
-                        price.ToString("F2"), // UnitPrice
-                        "0.00", // TotalPrice
-                        // Hidden columns
-                        origFactor,
-                        price, // OriginalUnitPrice
-                        soldQtyInSmallest,
-                        prevQtyInSmallest,
-                        baseUnit,
-                        u1Name,
-                        u1Price,
-                        u2Name,
-                        u2Factor,
-                        u2Price,
-                        u3Factor
-                    );
-
-                    if (dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
-                    {
-                        var unitCell = (DataGridViewComboBoxCell)dgItems.Rows[rIndex].Cells["UnitName"];
-                        var unitList = new System.Collections.ArrayList();
-
-                        if (!string.IsNullOrEmpty(baseUnit)) unitList.Add(baseUnit);
-                        else unitList.Add("وحدة");
-
-                        if (!string.IsNullOrEmpty(u2Name)) unitList.Add(u2Name);
-                        if (!string.IsNullOrEmpty(u1Name) && u1Name != baseUnit) unitList.Add(u1Name);
-
-                        unitCell.DataSource = unitList;
-
-                        string soldUnitName = r["UnitName"]?.ToString();
-                        if (!string.IsNullOrEmpty(soldUnitName) && unitList.Contains(soldUnitName))
-                            unitCell.Value = soldUnitName;
-                        else if (unitList.Count > 0)
-                            unitCell.Value = unitList[0];
-                    }
-                }
+                _selectedSaleTotalAmount = Convert.ToDecimal(dtSaleInfo.Rows[0]["TotalAmount"]);
+                _selectedSaleShippingCharge = Convert.ToDecimal(dtSaleInfo.Rows[0]["ShippingCharge"]);
             }
 
-            dgItems.CellValueChanged += DgItems_CellValueChanged;
-            CalculateOverallTotal();
+            var dtPrevRetInfo = DbHelper.Query("SELECT ISNULL(SUM(TotalAmount),0) AS PrevReturned FROM SalesReturns WHERE SaleID = @id", DbHelper.P("@id", saleID));
+            if (dtPrevRetInfo.Rows.Count > 0)
+            {
+                _selectedSalePrevReturnedAmount = Convert.ToDecimal(dtPrevRetInfo.Rows[0]["PrevReturned"]);
+            }
+
+            DataTable dtItems = SaleDAL.GetItems(saleID);
+
+            foreach (DataRow row in dtItems.Rows)
+            {
+                int rowIndex = dgItems.Rows.Add();
+                var dgRow = dgItems.Rows[rowIndex];
+
+                dgRow.Cells["ProductID"].Value = row["ProductID"];
+                dgRow.Cells["ProductName"].Value = row["ProductName"];
+
+                decimal soldQty = Convert.ToDecimal(row["SoldQty"]);
+                decimal prevRetQty = Convert.ToDecimal(row["PrevReturnedQty"]);
+                decimal origUnitPrice = Convert.ToDecimal(row["UnitPrice"]);
+
+                string baseUnit = row["BaseUnitName"]?.ToString() ?? "";
+                string u1Name = row["Unit1Name"]?.ToString();
+                string u1PriceObj = row["Unit1SalePrice"]?.ToString();
+                string u2Name = row["Unit2Name"]?.ToString();
+                string u2FactorObj = row["Unit2Factor"]?.ToString();
+                string u2PriceObj = row["Unit2SalePrice"]?.ToString();
+                string u3FactorObj = row["Unit3Factor"]?.ToString();
+
+                decimal u2Factor = 1m;
+                if (!string.IsNullOrEmpty(u2FactorObj) && decimal.TryParse(u2FactorObj, out decimal parsedU2) && parsedU2 > 0)
+                    u2Factor = parsedU2;
+
+                decimal u3Factor = 1m;
+                if (!string.IsNullOrEmpty(u3FactorObj) && decimal.TryParse(u3FactorObj, out decimal parsedU3) && parsedU3 > 0)
+                    u3Factor = parsedU3;
+
+                string invoiceUnitName = row["UnitName"]?.ToString();
+                if (string.IsNullOrEmpty(invoiceUnitName))
+                {
+                    invoiceUnitName = !string.IsNullOrEmpty(u1Name) ? u1Name : baseUnit;
+                }
+
+                decimal invoiceFactor = 1m;
+                if (!string.IsNullOrEmpty(u2Name) && invoiceUnitName == u2Name)
+                {
+                    invoiceFactor = u2Factor;
+                }
+                else if (!string.IsNullOrEmpty(baseUnit) && invoiceUnitName == baseUnit)
+                {
+                    invoiceFactor = u2Factor * u3Factor;
+                }
+
+                decimal soldQtyInSmallest = soldQty * invoiceFactor;
+                decimal prevQtyInSmallest = prevRetQty * invoiceFactor;
+
+                dgRow.Cells["OriginalFactor"].Value = invoiceFactor;
+                dgRow.Cells["OriginalUnitPrice"].Value = origUnitPrice;
+                dgRow.Cells["SoldQtyInSmallest"].Value = soldQtyInSmallest;
+                dgRow.Cells["PrevReturnedQtyInSmallest"].Value = prevQtyInSmallest;
+                dgRow.Cells["BaseUnitName"].Value = baseUnit;
+                dgRow.Cells["Unit1Name"].Value = u1Name;
+                dgRow.Cells["Unit1SalePrice"].Value = u1PriceObj;
+                dgRow.Cells["Unit2Name"].Value = u2Name;
+                dgRow.Cells["Unit2Factor"].Value = u2Factor;
+                dgRow.Cells["Unit2SalePrice"].Value = u2PriceObj;
+                dgRow.Cells["Unit3Factor"].Value = u3Factor;
+
+                var comboCell = (DataGridViewComboBoxCell)dgRow.Cells["UnitName"];
+                comboCell.Items.Clear();
+
+                if (!string.IsNullOrEmpty(u1Name)) comboCell.Items.Add(u1Name);
+                if (!string.IsNullOrEmpty(u2Name) && !comboCell.Items.Contains(u2Name)) comboCell.Items.Add(u2Name);
+                if (!string.IsNullOrEmpty(baseUnit) && !comboCell.Items.Contains(baseUnit)) comboCell.Items.Add(baseUnit);
+
+                if (comboCell.Items.Contains(invoiceUnitName))
+                    comboCell.Value = invoiceUnitName;
+                else if (comboCell.Items.Count > 0)
+                    comboCell.Value = comboCell.Items[0];
+
+                dgRow.Cells["SoldQty"].Value = soldQty.ToString("G29");
+                dgRow.Cells["PrevReturnedQty"].Value = prevRetQty.ToString("G29");
+                dgRow.Cells["NewReturnedQty"].Value = 0m;
+                dgRow.Cells["UnitPrice"].Value = origUnitPrice.ToString("F2");
+                dgRow.Cells["TotalPrice"].Value = "0.00";
+            }
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
-            if (dgItems.Columns[e.ColumnIndex].Name == "NewReturnedQty")
+            if (e.RowIndex < 0) return;
+            var colName = dgItems.Columns[e.ColumnIndex].Name;
+
+            if (colName == "NewReturnedQty")
             {
-                string valStr = e.FormattedValue.ToString().Trim();
-                if (string.IsNullOrEmpty(valStr)) return;
-                
-                if (!decimal.TryParse(valStr, out decimal newQty) || newQty < 0)
+                if (string.IsNullOrWhiteSpace(e.FormattedValue?.ToString())) return;
+
+                if (!decimal.TryParse(e.FormattedValue.ToString(), out decimal newQty) || newQty < 0)
                 {
-                    MessageBox.Show("الرجاء إدخال كمية مرتجعة صالحة (أكبر من أو تساوي الصفر).", "خطأ مدخلات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى إدخال كمية صحيحة أكبر من أو تساوي الصفر.", "إدخال غير صحيح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     e.Cancel = true;
                     return;
                 }
 
+                if (cboMode.SelectedIndex != 0) return; // للمرتجع العام لا نشترط الفاتورة
+
                 var row = dgItems.Rows[e.RowIndex];
-                
                 string selectedUnit = row.Cells["UnitName"].Value?.ToString();
                 string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
                 string u1Name = row.Cells["Unit1Name"].Value?.ToString();
@@ -532,7 +807,7 @@ namespace ChickenDist.Forms
                 {
                     decimal maxAllowedInSmallest = soldQtyInSmallest - prevQtyInSmallest;
                     decimal maxAllowedInSelected = maxAllowedInSmallest / selectedFactor;
-                    MessageBox.Show($"الكمية المرتجعة الجديدة ({newQty} {selectedUnit}) مع المرتجع السابق لا يمكن أن تتجاوز الكمية الأصلية بالفاتورة.\n\nالحد الأقصى المسموح به حالياً للمرتجع الجديد هو: {maxAllowedInSelected:N3} {selectedUnit}", "تجاوز الكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"الكمية المرتجعة الجديدة ({newQty} {selectedUnit}) تتجاوز الكمية الأصلية بالفاتورة.\nالحد الأقصى المسموح به: {maxAllowedInSelected:N3} {selectedUnit}", "تجاوز الكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     e.Cancel = true;
                 }
             }
@@ -544,223 +819,186 @@ namespace ChickenDist.Forms
             var row = dgItems.Rows[e.RowIndex];
             var colName = dgItems.Columns[e.ColumnIndex].Name;
 
-            if (colName == "UnitName")
-            {
-                this.BeginInvoke((MethodInvoker)delegate
-                {
-                    if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
-                    {
-                        var curRow = dgItems.Rows[e.RowIndex];
-                        HandleUnitChange(curRow);
-                    }
-                });
-                return;
-            }
-
             if (colName == "NewReturnedQty")
             {
                 decimal newQty = 0;
                 if (row.Cells["NewReturnedQty"].Value != null)
-                {
                     decimal.TryParse(row.Cells["NewReturnedQty"].Value.ToString(), out newQty);
-                }
                 
                 decimal price = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
                 decimal rowTotal = newQty * price;
                 row.Cells["TotalPrice"].Value = rowTotal.ToString("F2");
 
-                CalculateOverallTotal();
-            }
-        }
-
-        private void HandleUnitChange(DataGridViewRow row)
-        {
-            string selectedUnit = row.Cells["UnitName"].Value?.ToString();
-            if (string.IsNullOrEmpty(selectedUnit)) return;
-
-            string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
-            string u1Name = row.Cells["Unit1Name"].Value?.ToString();
-            string u2Name = row.Cells["Unit2Name"].Value?.ToString();
-
-            decimal origUnitPrice = Convert.ToDecimal(row.Cells["OriginalUnitPrice"].Value);
-            decimal origFactor = Convert.ToDecimal(row.Cells["OriginalFactor"].Value);
-            if (origFactor <= 0) origFactor = 1m;
-
-            decimal selectedFactor = 1m;
-            if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
-            {
-                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                selectedFactor = u2Factor > 0 ? u2Factor : 1m;
-            }
-            else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
-            {
-                selectedFactor = 1m;
-            }
-            else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
-            {
-                decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
-                selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
-            }
-
-            decimal returnedUnitPrice = origUnitPrice * (selectedFactor / origFactor);
-            row.Cells["UnitPrice"].Value = returnedUnitPrice.ToString("F2");
-
-            decimal newQty = 0;
-            if (row.Cells["NewReturnedQty"].Value != null)
-            {
-                decimal.TryParse(row.Cells["NewReturnedQty"].Value.ToString(), out newQty);
-            }
-            row.Cells["TotalPrice"].Value = (newQty * returnedUnitPrice).ToString("F2");
-            CalculateOverallTotal();
-        }
-
-        private void CalculateOverallTotal()
-        {
-            decimal total = 0;
-            foreach (DataGridViewRow row in dgItems.Rows)
-            {
-                if (row.Cells["TotalPrice"].Value != null)
-                {
-                    decimal.TryParse(row.Cells["TotalPrice"].Value.ToString(), out decimal rowTotal);
-                    total += rowTotal;
-                }
-            }
-
-            decimal maxAllowed = Math.Max(0m, _selectedSaleTotalAmount - _selectedSaleShippingCharge - _selectedSalePrevReturnedAmount);
-
-            if (total > maxAllowed)
-            {
-                lblTotal.Text = $"الإجمالي: {total:N2} ج (المرتجع المسموح: {maxAllowed:N2} ج)";
-                lblTotal.ForeColor = Color.FromArgb(220, 100, 100);
-            }
-            else
-            {
-                lblTotal.Text = "الإجمالي: " + total.ToString("N2") + " ج";
-                lblTotal.ForeColor = Theme.Accent;
+                RecalcTotals();
             }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (dgSales.CurrentRow == null || dgSales.CurrentRow.Cells["SaleID"].Value == null) 
-            { 
-                MessageBox.Show("يجب اختيار الفاتورة الأصلية أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); 
-                return; 
-            }
+            int mode = cboMode.SelectedIndex;
+            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
+            string returnType = cboReturnType.SelectedIndex == 1 ? "Cash" : "Credit";
+            int? clientID = (cboClient.SelectedItem is ComboItem cc && cc.ID > 0) ? (int?)cc.ID : null;
 
-            int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
-
-            var returnItems = new List<SaleItemDTO>();
-            decimal totalReturnAmount = 0;
-
-            foreach (DataGridViewRow row in dgItems.Rows)
+            if (mode == 0) // مرتجع فاتورة معينة
             {
-                int prodID = Convert.ToInt32(row.Cells["ProductID"].Value);
-                string prodName = row.Cells["ProductName"].Value.ToString();
-                
-                decimal newQty = 0;
-                if (row.Cells["NewReturnedQty"].Value != null)
+                if (dgSales.CurrentRow == null || dgSales.CurrentRow.Cells["SaleID"].Value == null)
                 {
-                    decimal.TryParse(row.Cells["NewReturnedQty"].Value.ToString(), out newQty);
+                    MessageBox.Show("يرجى اختيار الفاتورة المراد الإرجاع منها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
 
-                if (newQty > 0)
+                int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+                var returnItems = new List<SaleItemDTO>();
+                decimal totalReturnAmount = 0;
+
+                foreach (DataGridViewRow row in dgItems.Rows)
                 {
-                    string selectedUnit = row.Cells["UnitName"].Value?.ToString();
-                    string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
-                    string u1Name = row.Cells["Unit1Name"].Value?.ToString();
-                    string u2Name = row.Cells["Unit2Name"].Value?.ToString();
+                    int prodID = Convert.ToInt32(row.Cells["ProductID"].Value);
+                    string prodName = row.Cells["ProductName"].Value.ToString();
+                    decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal newQty);
 
-                    decimal selectedFactor = 1m;
-                    if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
+                    if (newQty > 0)
                     {
-                        decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                        selectedFactor = u2Factor > 0 ? u2Factor : 1m;
+                        decimal price = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
+                        returnItems.Add(new SaleItemDTO 
+                        { 
+                            ProductID = prodID, 
+                            ProductName = prodName, 
+                            Quantity = newQty, 
+                            UnitPrice = price,
+                            UnitName = row.Cells["UnitName"].Value?.ToString(),
+                            Factor = 1m
+                        });
+                        totalReturnAmount += (newQty * price);
                     }
-                    else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
-                    {
-                        selectedFactor = 1m;
-                    }
-                    else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
-                    {
-                        decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                        decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
-                        selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
-                    }
+                }
 
-                    decimal soldQtyInSmallest = Convert.ToDecimal(row.Cells["SoldQtyInSmallest"].Value);
-                    decimal prevQtyInSmallest = Convert.ToDecimal(row.Cells["PrevReturnedQtyInSmallest"].Value);
-                    decimal newQtyInSmallest = newQty * selectedFactor;
-                    
-                    if (newQtyInSmallest + prevQtyInSmallest > soldQtyInSmallest)
-                    {
-                        MessageBox.Show($"عذراً، الكمية المرتجعة الجديدة مع السابقة للصنف ({prodName}) تتجاوز الكمية الأصلية بالفاتورة!", "تجاوز الكمية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                if (returnItems.Count == 0)
+                {
+                    MessageBox.Show("يرجى إدخال كمية مرتجعة جديدة صالحة لصنف واحد على الأقل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
-                    decimal price = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
-                    returnItems.Add(new SaleItemDTO 
+                try
+                {
+                    int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType);
+                    if (id > 0) 
                     { 
-                        ProductID = prodID, 
-                        ProductName = prodName, 
-                        Quantity = newQty, 
-                        UnitPrice = price,
-                        UnitName = selectedUnit,
-                        Factor = selectedFactor
-                    });
-                    totalReturnAmount += (newQty * price);
-                }
-            }
-
-            if (returnItems.Count == 0)
-            {
-                MessageBox.Show("يرجى إدخال كمية مرتجعة جديدة صالحة (أكبر من الصفر) لصنف واحد على الأقل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            int? clientID = null;
-            var dtSale = DbHelper.Query("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
-            if (dtSale.Rows.Count > 0 && dtSale.Rows[0]["ClientID"] != DBNull.Value)
-            {
-                clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
-            }
-
-            decimal maxAllowedReturn = Math.Max(0m, _selectedSaleTotalAmount - _selectedSaleShippingCharge - _selectedSalePrevReturnedAmount);
-            if (totalReturnAmount > maxAllowedReturn)
-            {
-                totalReturnAmount = maxAllowedReturn;
-            }
-
-            try
-            {
-                int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems);
-                if (id > 0) 
-                { 
-                    MessageBox.Show("تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
-                    txtNotes.Text = "";
-                    
-                    LoadSales();
-                    
-                    foreach (DataGridViewRow row in dgSales.Rows)
-                    {
-                        if (row.Cells["SaleID"].Value != null && Convert.ToInt32(row.Cells["SaleID"].Value) == saleID)
-                        {
-                            dgSales.CurrentCell = row.Cells[1];
-                            break;
-                        }
+                        MessageBox.Show("✅ تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                        txtNotes.Text = "";
+                        LoadSales();
                     }
-                    DgSales_SelectionChanged(dgSales, EventArgs.Empty);
+                    else 
+                    {
+                        MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
-                else 
+                catch (Exception ex)
                 {
-                    MessageBox.Show("فشل حفظ المرتجع", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    AppLogger.Error("فشل حفظ مرتجع المبيعات", ex, "FrmReturn.BtnSave_Click");
+                    MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-            catch (Exception ex)
+            else if (mode == 1) // مرتجع بيع عام
             {
-                AppLogger.Error("فشل حفظ مرتجع المبيعات", ex, "FrmReturn.BtnSave_Click");
-                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (returnType == "Credit" && !clientID.HasValue)
+                {
+                    MessageBox.Show("يرجى اختيار العميل أولاً لمرتجع البيع العام الآجل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var returnItems = new List<SaleItemDTO>();
+                decimal totalReturnAmount = 0;
+
+                foreach (DataGridViewRow row in dgItems.Rows)
+                {
+                    int prodID = Convert.ToInt32(row.Cells["ProductID"].Value);
+                    string prodName = row.Cells["ProductName"].Value.ToString();
+                    decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal newQty);
+                    decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal price);
+
+                    if (newQty > 0)
+                    {
+                        returnItems.Add(new SaleItemDTO { ProductID = prodID, ProductName = prodName, Quantity = newQty, UnitPrice = price });
+                        totalReturnAmount += (newQty * price);
+                    }
+                }
+
+                if (returnItems.Count == 0)
+                {
+                    MessageBox.Show("أضف صنفاً مرتجعاً واحداً على الأقل", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                try
+                {
+                    int id = ReturnDAL.SaveReturn(0, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType);
+                    if (id > 0)
+                    {
+                        MessageBox.Show("✅ تم حفظ مرتجع البيع العام بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        txtNotes.Text = "";
+                        dgItems.Rows.Clear();
+                        RecalcTotals();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("فشل حفظ مرتجع البيع العام", ex, "FrmReturn.BtnSave_Click");
+                    MessageBox.Show($"❌ حدث خطأ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else if (mode == 2) // استبدال أصناف
+            {
+                if (returnType == "Credit" && !clientID.HasValue)
+                {
+                    MessageBox.Show("يرجى اختيار العميل أولاً لعملية الاستبدال الآجلة!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var retItems = new List<SaleItemDTO>();
+                foreach (DataGridViewRow r in dgItems.Rows)
+                {
+                    int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+                    string name = r.Cells["ProductName"].Value.ToString();
+                    decimal.TryParse(r.Cells["NewReturnedQty"].Value?.ToString(), out decimal q);
+                    decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
+                    if (q > 0) retItems.Add(new SaleItemDTO { ProductID = pid, ProductName = name, Quantity = q, UnitPrice = p });
+                }
+
+                var newItems = new List<SaleItemDTO>();
+                foreach (DataGridViewRow r in dgExchangeNewItems.Rows)
+                {
+                    int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+                    string name = r.Cells["ProductName"].Value.ToString();
+                    decimal.TryParse(r.Cells["NewQty"].Value?.ToString(), out decimal q);
+                    decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
+                    if (q > 0) newItems.Add(new SaleItemDTO { ProductID = pid, ProductName = name, Quantity = q, UnitPrice = p });
+                }
+
+                if (retItems.Count == 0 || newItems.Count == 0)
+                {
+                    MessageBox.Show("يجب إضافة صنف مرتجع وصنف بديل جديد على الأقل لعملية الاستبدال!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                try
+                {
+                    bool ok = ReturnDAL.SaveItemExchange(clientID, warehouseID.Value, retItems, newItems, returnType, txtNotes.Text);
+                    if (ok)
+                    {
+                        MessageBox.Show("✅ تم إنجاز عملية استبدال الأصناف وتصفية الفرق بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        txtNotes.Text = "";
+                        dgItems.Rows.Clear();
+                        dgExchangeNewItems.Rows.Clear();
+                        RecalcTotals();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("فشل عملية استبدال الأصناف", ex, "FrmReturn.BtnSave_Click");
+                    MessageBox.Show($"❌ حدث خطأ أثناء الاستبدال:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -818,38 +1056,39 @@ namespace ChickenDist.Forms
                 {
                     if (cbo.Tag == null)
                     {
-                        List<ComboItem> list = new List<ComboItem>();
-                        foreach (ComboItem item in cbo.Items)
+                        var originalItems = new List<ComboItem>();
+                        foreach (var item in cbo.Items)
                         {
-                            list.Add(item);
+                            if (item is ComboItem ci) originalItems.Add(ci);
                         }
-                        cbo.Tag = list;
+                        cbo.Tag = originalItems;
                     }
-                    List<ComboItem> list2 = (List<ComboItem>)cbo.Tag;
-                    string text = cbo.Text;
+
+                    var allList = cbo.Tag as List<ComboItem>;
+                    if (allList == null) return;
+
+                    string filter = cbo.Text.Trim();
+                    string currentText = cbo.Text;
+                    int selStart = cbo.SelectionStart;
+
                     cbo.BeginUpdate();
                     cbo.Items.Clear();
-                    if (string.IsNullOrWhiteSpace(text))
+
+                    if (string.IsNullOrEmpty(filter))
                     {
-                        foreach (var item in list2)
-                        {
-                            cbo.Items.Add(item);
-                        }
+                        cbo.Items.AddRange(allList.ToArray());
                     }
                     else
                     {
-                        foreach (ComboItem item2 in list2)
-                        {
-                            if (item2.ID == 0 || item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                cbo.Items.Add(item2);
-                            }
-                        }
+                        var filtered = allList.Where(x => x.Text.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 || x.ID.ToString().Contains(filter)).ToArray();
+                        cbo.Items.AddRange(filtered);
                     }
-                    cbo.EndUpdate();
-                    cbo.SelectionStart = text.Length;
+
+                    cbo.Text = currentText;
+                    cbo.SelectionStart = selStart;
                     cbo.SelectionLength = 0;
                     cbo.DroppedDown = true;
+                    cbo.EndUpdate();
                 }
                 finally
                 {
