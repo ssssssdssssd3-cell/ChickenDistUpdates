@@ -280,6 +280,7 @@ namespace ChickenDist.Core
         {
             try
             {
+                TestConnection();
                 using (var con = GetConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
@@ -2722,6 +2723,11 @@ namespace ChickenDist.Core
 
         public static SqlConnection GetConnection()
         {
+            if (_connStr.Contains("Initial Catalog=ChickenDist") || _connStr.Contains("Database=ChickenDist"))
+            {
+                _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                   .Replace("Database=ChickenDist", "Database=ProSoftDB");
+            }
             return new SqlConnection(_connStr);
         }
 
@@ -2735,7 +2741,30 @@ namespace ChickenDist.Core
                     return true;
                 }
             }
-            catch { return false; }
+            catch 
+            {
+                try
+                {
+                    // محاولة الترحيل ذاتياً واستعادة الاتصال لـ ProSoftDB
+                    string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
+                    string server = ReadIniDirect(iniPath, "Database", "Server", ".");
+                    string user = ReadIniDirect(iniPath, "Database", "User", "");
+                    string pass = ReadIniDirect(iniPath, "Database", "Password", "");
+                    string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
+                    bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
+
+                    TryMigrateOldDatabase(server, user, pass, isIntegrated);
+                    UpdateIniDatabaseKey(iniPath, "ProSoftDB");
+
+                    _connStr = GetConnectionStringFromIni();
+                    using (var conRetry = GetConnection())
+                    {
+                        conRetry.Open();
+                        return true;
+                    }
+                }
+                catch { return false; }
+            }
         }
 
         /// <summary>تنفيذ استعلام وإرجاع DataTable</summary>
