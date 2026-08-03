@@ -238,7 +238,11 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Financials")
 					{
-						keep = (report.tag == "DailyClosing" || report.tag == "ShiftsHistory" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability");
+						keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability");
+					}
+					else if (_targetModule == "Shifts" || _targetModule == "ShiftsHistory")
+					{
+						keep = (report.tag == "ShiftsHistory");
 					}
 
 					if (keep)
