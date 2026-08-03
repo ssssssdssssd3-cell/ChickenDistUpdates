@@ -130,15 +130,30 @@ namespace ChickenDist.Forms
             btnSyncNow.Size = new Size(210, 38);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnGeneratePairing = Theme.MakeButton("📲 كود الربط بالموبايل", Color.FromArgb(160, 80, 220));
-            btnGeneratePairing.Size = new Size(190, 38);
+            btnGeneratePairing = Theme.MakeButton("🔑 توليد كود الربط (السيريال)", Color.FromArgb(160, 80, 220));
+            btnGeneratePairing.Size = new Size(210, 38);
             btnGeneratePairing.Click += BtnGeneratePairing_Click;
+
+            var btnOpenLocalWeb = Theme.MakeButton("🌐 فتح التطبيق بالبيانات الحقيقية", Theme.Primary);
+            btnOpenLocalWeb.Size = new Size(220, 38);
+            btnOpenLocalWeb.Click += (s, e) =>
+            {
+                try
+                {
+                    string localUrl = "http://localhost:5000/mobile";
+                    System.Diagnostics.Process.Start(localUrl);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("فشل فتح الرابط: " + ex.Message);
+                }
+            };
 
             btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Theme.Success);
             btnSave.Size = new Size(160, 38);
             btnSave.Click += BtnSave_Click;
 
-            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnGeneratePairing, btnSave });
+            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnGeneratePairing, btnOpenLocalWeb, btnSave });
 
             pnlMain.Controls.Add(grpSettings);
             pnlMain.Controls.Add(pnlActions);
@@ -261,8 +276,35 @@ namespace ChickenDist.Forms
 
         private void BtnGeneratePairing_Click(object sender, EventArgs e)
         {
-            string payload = CloudSyncService.GeneratePairingPayload();
-            MessageBox.Show($"كود المالك المحفوظ للتطبيق:\n\n{txtSecretKey.Text}\n\nبيانات الربط مع التطبيق:\n{payload}", "بيانات ربط الموبايل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            try
+            {
+                btnGeneratePairing.Enabled = false;
+                btnGeneratePairing.Text = "⏳ جاري التوليد...";
+
+                string cloudCode = DriverPortalServer.UploadToCloud();
+                if (!string.IsNullOrEmpty(cloudCode))
+                {
+                    Clipboard.SetText(cloudCode);
+                    MessageBox.Show(
+                        $"🔑 كود الربط السحابي (السيريال) الخاص بك هو:\n\n" +
+                        $"👉   {cloudCode}   👈\n\n" +
+                        $"✅ تم نسخ الكود بنجاح إلى الحافظة!\n\n" +
+                        $"📋 خطوات الاستخدام:\n" +
+                        $"1. افتح تطبيق الموبايل على أي جهاز.\n" +
+                        $"2. اضغط على زر '🔑 كود الربط' بأعلى شاشة الموبايل.\n" +
+                        $"3. الصق الكود واضغط '⚡ ربط وجلب البيانات الفعليه'.",
+                        "كود الربط بالموبايل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء إنشاء كود الربط السحابي: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnGeneratePairing.Enabled = true;
+                btnGeneratePairing.Text = "🔑 توليد كود الربط (السيريال)";
+            }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)

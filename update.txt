@@ -1,5 +1,5 @@
-version=2.0.277
+version=2.0.278
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
 download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=4B20AB2884C5726C4F340FB2A91445ED9B34D88759E202EDC1C3C5BED7D6C91E
-changelog=v2.0.277 - 2026-08-04: Bug fixes and UI improvements
+sha256=D715C477F8FAC6CBC62ECE904710A77DEBA420CA29EC0863B225D9E328D8FC71
+changelog=v2.0.278 - 2026-08-04: Bug fixes and UI improvements
