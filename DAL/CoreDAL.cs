@@ -1220,6 +1220,38 @@ namespace ChickenDist.DAL
         }
     }
 
+    // =================== Shift DAL ===================
+    public static class ShiftDAL
+    {
+        public static DataTable GetShiftsReport(DateTime from, DateTime to)
+        {
+            DbHelper.EnsureShiftSchema();
+            string sql = @"
+                SELECT 
+                    s.ShiftID,
+                    ISNULL(sa.AccountName, N'الدرج الرئيسي') AS SafeName,
+                    eOpen.EmpName AS OpenedByName,
+                    s.OpenTime,
+                    eClose.EmpName AS ClosedByName,
+                    s.CloseTime,
+                    s.OpeningCash,
+                    s.CashSales,
+                    s.TotalSales,
+                    s.ExpectedCash,
+                    s.ActualCash,
+                    s.Difference,
+                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
+                    s.Notes
+                FROM Shifts s
+                LEFT JOIN Employees eOpen ON s.OpenedBy = eOpen.EmpID
+                LEFT JOIN Employees eClose ON s.ClosedBy = eClose.EmpID
+                LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                WHERE CAST(s.OpenTime AS DATE) BETWEEN @f AND @t
+                ORDER BY s.ShiftID DESC";
+            return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+        }
+    }
+
     // =================== Account DAL ===================
     public static class AccountDAL
     {

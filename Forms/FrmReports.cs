@@ -181,6 +181,7 @@ namespace ChickenDist.Forms
 			var allReports = new List<(string name, string tag)>
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
+				("📊 سجل وتقارير الورديات", "ShiftsHistory"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
 				("🔄 سجل مرتجعات المشتريات", "DetailedPurchaseReturns"),
@@ -824,6 +825,26 @@ namespace ChickenDist.Forms
 				dataGridView.Rows.Clear();
 				switch (text)
 				{
+				case "ShiftsHistory":
+					_currentDt = ShiftDAL.GetShiftsReport(dtpFrom.Value, dtpTo.Value);
+					SetupGrid(new(string, string)[14]
+					{
+						("ShiftID", "رقم الوردية"),
+						("SafeName", "الدرج / الخزنة"),
+						("OpenedByName", "فتح بواسطة"),
+						("OpenTime", "وقت الفتح"),
+						("ClosedByName", "إغلاق بواسطة"),
+						("CloseTime", "وقت الإغلاق"),
+						("OpeningCash", "افتتاحي الدرج"),
+						("CashSales", "مبيعات كاش"),
+						("TotalSales", "إجمالي المبيعات"),
+						("ExpectedCash", "النقدية المتوقعة"),
+						("ActualCash", "النقدية الفعلية"),
+						("Difference", "العجز / الزيادة"),
+						("StatusArabic", "حالة الوردية"),
+						("Notes", "الملاحظات")
+					}, dataGridView);
+					break;
 				case "DetailedSales":
 					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
 					SetupGrid(new(string, string)[10]

@@ -103,11 +103,12 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 Text = "0.00",
                 TextAlign = HorizontalAlignment.Center,
-                BackColor = Color.White,
+                ReadOnly = true,
+                BackColor = Color.FromArgb(240, 243, 246),
                 ForeColor = Color.DarkGreen,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            this.Shown += (s, e) => { txtOpeningCash.Focus(); txtOpeningCash.SelectAll(); };
+            this.Shown += (s, e) => { txtNotes?.Focus(); };
             tbl.Controls.Add(lblCashTitle, 0, 2);
             tbl.Controls.Add(txtOpeningCash, 1, 2);
 
