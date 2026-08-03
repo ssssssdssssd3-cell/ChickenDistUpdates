@@ -2727,44 +2727,65 @@ namespace ChickenDist.Core
             {
                 _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
                                    .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                SqlConnection.ClearAllPools();
             }
             return new SqlConnection(_connStr);
+        }
+
+        public static SqlConnection GetOpenConnection()
+        {
+            if (_connStr.Contains("Initial Catalog=ChickenDist") || _connStr.Contains("Database=ChickenDist"))
+            {
+                _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                   .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                SqlConnection.ClearAllPools();
+            }
+
+            var con = new SqlConnection(_connStr);
+            try
+            {
+                con.Open();
+                return con;
+            }
+            catch (SqlException ex)
+            {
+                try { con.Dispose(); } catch { }
+                SqlConnection.ClearAllPools();
+
+                string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
+                string server = ReadIniDirect(iniPath, "Database", "Server", ".");
+                string user = ReadIniDirect(iniPath, "Database", "User", "");
+                string pass = ReadIniDirect(iniPath, "Database", "Password", "");
+                string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
+                bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
+
+                TryMigrateOldDatabase(server, user, pass, isIntegrated);
+                UpdateIniDatabaseKey(iniPath, "ProSoftDB");
+
+                _connStr = GetConnectionStringFromIni();
+                if (_connStr.Contains("ChickenDist"))
+                {
+                    _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                       .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                }
+                SqlConnection.ClearAllPools();
+
+                var conRetry = new SqlConnection(_connStr);
+                conRetry.Open();
+                return conRetry;
+            }
         }
 
         public static bool TestConnection()
         {
             try
             {
-                using (var con = GetConnection())
+                using (var con = GetOpenConnection())
                 {
-                    con.Open();
                     return true;
                 }
             }
-            catch 
-            {
-                try
-                {
-                    // محاولة الترحيل ذاتياً واستعادة الاتصال لـ ProSoftDB
-                    string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
-                    string server = ReadIniDirect(iniPath, "Database", "Server", ".");
-                    string user = ReadIniDirect(iniPath, "Database", "User", "");
-                    string pass = ReadIniDirect(iniPath, "Database", "Password", "");
-                    string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
-                    bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
-
-                    TryMigrateOldDatabase(server, user, pass, isIntegrated);
-                    UpdateIniDatabaseKey(iniPath, "ProSoftDB");
-
-                    _connStr = GetConnectionStringFromIni();
-                    using (var conRetry = GetConnection())
-                    {
-                        conRetry.Open();
-                        return true;
-                    }
-                }
-                catch { return false; }
-            }
+            catch { return false; }
         }
 
         /// <summary>تنفيذ استعلام وإرجاع DataTable</summary>
@@ -2773,18 +2794,16 @@ namespace ChickenDist.Core
             var dt = new DataTable();
             try
             {
-                using (var con = GetConnection())
+                using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
                     if (prms != null) cmd.Parameters.AddRange(prms);
-                    con.Open();
                     using (var da = new SqlDataAdapter(cmd))
                         da.Fill(dt);
                 }
             }
             catch (Exception ex)
             {
-                // تسجيل التفاصيل الكاملة في السجل وإظهار رسالة عامة للمستخدم
                 AppLogger.Error("DbHelper.Query failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
                 MessageBox.Show("حدث خطأ أثناء قراءة البيانات.\nيرجى مراجعة المسؤول أو ملف app.log للتفاصيل.",
                     "خطأ في قاعدة البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -2797,11 +2816,10 @@ namespace ChickenDist.Core
         {
             try
             {
-                using (var con = GetConnection())
+                using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
                     if (prms != null) cmd.Parameters.AddRange(prms);
-                    con.Open();
                     return cmd.ExecuteNonQuery();
                 }
             }
@@ -2819,11 +2837,10 @@ namespace ChickenDist.Core
         {
             try
             {
-                using (var con = GetConnection())
+                using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql + "; SELECT SCOPE_IDENTITY();", con))
                 {
                     if (prms != null) cmd.Parameters.AddRange(prms);
-                    con.Open();
                     var result = cmd.ExecuteScalar();
                     return result == null ? -1 : Convert.ToInt32(result);
                 }
@@ -2842,11 +2859,10 @@ namespace ChickenDist.Core
         {
             try
             {
-                using (var con = GetConnection())
+                using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
                     if (prms != null) cmd.Parameters.AddRange(prms);
-                    con.Open();
                     return cmd.ExecuteScalar();
                 }
             }
@@ -2866,9 +2882,8 @@ namespace ChickenDist.Core
 
         public static void RunInTransaction(Action<SqlConnection, SqlTransaction> action)
         {
-            using (var con = GetConnection())
+            using (var con = GetOpenConnection())
             {
-                con.Open();
                 using (var trans = con.BeginTransaction())
                 {
                     try
