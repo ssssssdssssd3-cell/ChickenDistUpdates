@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChickenDist Master Mobile App | مركز التقارير الشامل للمالك</title>
+    <title>ChickenDist ERP | تطبيق المالك</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="apple-touch-icon" href="../logo.png">
     <meta name="theme-color" content="#070a12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,15 +79,12 @@
             gap: 10px;
         }
 
-        .avatar-logo {
+        .avatar-logo-img {
             width: 42px;
             height: 42px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #f59e0b, #b45309);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+            object-fit: cover;
+            border: 2px solid var(--gold);
             box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
         }
 
@@ -114,7 +114,6 @@
             margin: 0 auto;
         }
 
-        /* View Mode Switcher: Single Page vs Tabbed */
         .view-mode-bar {
             display: flex;
             background: var(--bg-card);
@@ -143,7 +142,6 @@
             color: var(--gold);
         }
 
-        /* Scrollable Full Reports Menu Chips */
         .reports-menu-bar {
             display: flex;
             gap: 8px;
@@ -171,7 +169,6 @@
             color: var(--gold);
         }
 
-        /* Report Box Card */
         .report-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -215,7 +212,6 @@
             color: var(--text-primary);
         }
 
-        /* Notebook Item Card */
         .notebook-card {
             background: rgba(244, 63, 94, 0.1);
             border: 1px solid rgba(244, 63, 94, 0.3);
@@ -238,7 +234,6 @@
             cursor: pointer;
         }
 
-        /* Hero Banner */
         .hero-banner {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
             border: 1px solid var(--border-subtle);
@@ -255,7 +250,6 @@
             margin: 6px 0;
         }
 
-        /* Action Buttons */
         .btn-action {
             width: 100%;
             background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -274,9 +268,8 @@
             margin-top: 10px;
         }
 
-        /* Tab Visibility */
         .tab-section {
-            display: block; /* Visible by default in Show All mode */
+            display: block;
             margin-bottom: 16px;
         }
 
@@ -294,10 +287,10 @@
     <!-- Header Navbar -->
     <div class="app-header">
         <div class="store-identity">
-            <div class="avatar-logo">🏢</div>
+            <img src="../logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل" onerror="this.src='../logo.png'">
             <div>
-                <div class="store-name">ChickenDist Enterprise</div>
-                <div style="font-size:11px; color:var(--gold); font-weight:800;">جميع تقارير البرنامج (13 تقرير)</div>
+                <div class="store-name" id="txtHeaderAppName">ChickenDist ERP</div>
+                <div style="font-size:11px; color:var(--gold); font-weight:800;" id="txtHeaderStoreSub">تطبيق المالك للمتابعة</div>
             </div>
         </div>
         <button class="theme-toggle-btn" onclick="toggleTheme()">
@@ -314,7 +307,7 @@
             <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبديل بالتبويبات</button>
         </div>
 
-        <!-- Scrollable Complete 13 Reports Bar (Available in Tabbed Mode) -->
+        <!-- Scrollable Complete 13 Reports Bar -->
         <div class="reports-menu-bar" id="reportsMenuBar" style="display:none;">
             <div class="menu-chip active" onclick="switchReport('profit', this)">📈 1. الأرباح والخسائر</div>
             <div class="menu-chip" onclick="switchReport('sales', this)">🧾 2. فواتير المبيعات</div>
@@ -335,7 +328,7 @@
         <div class="hero-banner">
             <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
                 <span>📈 صافي أرباح اليوم النهائي</span>
-                <span style="font-size:11px; color:var(--emerald);">مُحدث 11:47:55 🟢</span>
+                <span style="font-size:11px; color:var(--emerald);">مُحدث 11:58:05 🟢</span>
             </div>
             <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
             <div style="display:flex; gap:14px; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
@@ -349,7 +342,7 @@
         <div id="sec-profit" class="tab-section active">
             <div class="report-card">
                 <div class="report-header">
-                    <span>📈 1. تقرير الأرباح والخسائر الشامل (P&L Report)</span>
+                    <span>📈 1. تقرير الأرباح والخسائر الشامل (ChickenDist P&L)</span>
                     <span style="color:var(--emerald); font-size:12px;">اليوم</span>
                 </div>
                 <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
@@ -368,17 +361,15 @@
                 <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش محصل):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);">6,250.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">عدد الفواتير الصادرة:</div><div class="report-item-val">24 فاتورة</div></div>
-                <div class="report-item"><div class="report-item-title">متوسط سعر الفاتورة:</div><div class="report-item-val">768.75 ج</div></div>
             </div>
         </div>
 
-        <!-- 3. PURCHASES & VENDORS REPORT -->
+        <!-- 3. PURCHASES REPORT -->
         <div id="sec-purchases" class="tab-section active">
             <div class="report-card">
                 <div class="report-header"><span>🛍️ 3. تقرير المشتريات وفواتير الموردين</span></div>
                 <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">المشتريات النقدية (مدفوعة):</div><div class="report-item-val" style="color:var(--emerald);">8,000.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المشتريات الآجلة (مستحقة للمورد):</div><div class="report-item-val" style="color:var(--rose);">6,200.00 ج</div></div>
             </div>
         </div>
 
@@ -387,7 +378,6 @@
             <div class="report-card">
                 <div class="report-header"><span>🏭 4. تقرير مبيعات وأرباح الموردين</span></div>
                 <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين اليوم:</div><div class="report-item-val" style="color:var(--gold);">8,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد القطع المباعة للموردين:</div><div class="report-item-val">38 قطعة</div></div>
                 <div class="report-item"><div class="report-item-title">أرباح الموردين التقديرية:</div><div class="report-item-val" style="color:var(--emerald);">2,100.00 ج</div></div>
             </div>
         </div>
@@ -403,17 +393,10 @@
                     </div>
                     <button class="notebook-btn" onclick="orderSupplier('فلتر زيت تويوتا', 'العالمية')">📲 طلب</button>
                 </div>
-                <div class="notebook-card">
-                    <div>
-                        <div style="font-weight:900;">طقم بوجيهات دنسو ياباني</div>
-                        <div style="font-size:11px; color:var(--text-muted);">الرصيد: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
-                    </div>
-                    <button class="notebook-btn" onclick="orderSupplier('طقم بوجيهات دنسو', 'النصر')">📲 طلب</button>
-                </div>
             </div>
         </div>
 
-        <!-- 6. CASHBOX & EXPENSES REPORT -->
+        <!-- 6. CASHBOX & EXPENSES -->
         <div id="sec-cashbox" class="tab-section active">
             <div class="report-card">
                 <div class="report-header"><span>💰 6. تقرير الخزنة والمصروفات والشيفتات</span></div>
@@ -423,65 +406,16 @@
             </div>
         </div>
 
-        <!-- 7. INVENTORY & STOCK VALUE REPORT -->
-        <div id="sec-stock" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>📦 7. تقرير المخزون وقيمة الجرد</span></div>
-                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر التكلفة:</div><div class="report-item-val" style="color:var(--gold);">285,000.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر البيع:</div><div class="report-item-val" style="color:var(--emerald);">356,250.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 8. CLIENT DEBTS REPORT -->
-        <div id="sec-clients" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>👥 8. تقرير ديون العملاء وآجل المحلات</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي ديون العملاء:</div><div class="report-item-val" style="color:var(--purple);">42,600.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد العملاء المدينين:</div><div class="report-item-val">14 عميل</div></div>
-            </div>
-        </div>
-
-        <!-- 9. INSTALLMENTS REPORT -->
-        <div id="sec-installments" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>📅 9. تقرير الأقساط والآجل المستحق</span></div>
-                <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">8,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">الأقساط المتأخرة عن الموعد:</div><div class="report-item-val" style="color:var(--rose);">2,400.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 10. TOP SELLING & SLOW REPORT -->
-        <div id="sec-topitems" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🔥 10. تقرير الأكثر مبيعاً والركودة</span></div>
-                <div class="report-item"><div class="report-item-title">🥇 الأكثر مبيعاً:</div><div class="report-item-val" style="color:var(--gold);">طقم فحمات فرامل (45 طقم)</div></div>
-                <div class="report-item"><div class="report-item-title">🐌 ركود لم يُبع منذ 30 يوماً:</div><div class="report-item-val" style="color:var(--rose);">فانوس خلفي هيونداي</div></div>
-            </div>
-        </div>
-
-        <!-- 11. WASTAGE REPORT -->
-        <div id="sec-wastage" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🗑️ 11. تقرير الهالك والتالف بالمخزن</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك هذا الشهر:</div><div class="report-item-val" style="color:var(--rose);">450.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 12. PRICE HISTORY REPORT -->
-        <div id="sec-pricehistory" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🏷️ 12. تقرير سجل وتاريخ تعديل الأسعار</span></div>
-                <div class="report-item"><div class="report-item-title">آخر صنف تم تعديل سعره:</div><div class="report-item-val">زيت توتال (من 420 إلى 450 ج)</div></div>
-            </div>
-        </div>
-
-        <!-- 13. DRIVERS & FLEET REPORT -->
-        <div id="sec-drivers" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🚚 13. تقرير المندوبين وخطوط السير</span></div>
-                <div class="report-item"><div class="report-item-title">مبيعات خطوط السير اليوم:</div><div class="report-item-val" style="color:var(--emerald);">8,400.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">تحصيلات السائقين الكاش:</div><div class="report-item-val" style="color:var(--cyan);">6,200.00 ج</div></div>
-            </div>
+        <!-- CUSTOMIZATION BOX FOR SHOP LOGO & APP NAME -->
+        <div class="report-card" style="background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3);">
+            <div style="font-size:14px; font-weight:900; color:var(--gold); margin-bottom:8px;">🎨 تخصيص اسم ولوجو المحل للتطبيق</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">أدخل اسم محلك أو ارفع اللوجو ليظهر على أيقونة الموبايل وأعلى التطبيق:</div>
+            
+            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام لقطع الغيار)">
+            
+            <button class="btn-action" style="padding:10px; font-size:13px;" onclick="applyCustomStoreBranding()">
+                <span>💾 حفظ وتطبيق اسم ولوجو المحل</span>
+            </button>
         </div>
 
         <button class="btn-action" onclick="shareWhatsAppReport()">
@@ -491,6 +425,24 @@
     </div>
 
     <script>
+        function applyCustomStoreBranding() {
+            const name = document.getElementById('txtCustomStoreName').value.trim();
+            if(name) {
+                document.getElementById('txtHeaderAppName').innerText = name;
+                document.getElementById('txtHeaderStoreSub').innerText = "تطبيق ChickenDist ERP للمالك";
+                localStorage.setItem('custom_store_name', name);
+                alert("✅ تم تطبيق اسم ولوجو المحل الخاص بك على تطبيق الموبايل بنجاح!");
+            }
+        }
+
+        window.onload = function() {
+            const savedName = localStorage.getItem('custom_store_name');
+            if(savedName) {
+                document.getElementById('txtHeaderAppName').innerText = savedName;
+                document.getElementById('txtCustomStoreName').value = savedName;
+            }
+        };
+
         function setViewMode(mode) {
             document.getElementById('btnModeAll').classList.remove('active');
             document.getElementById('btnModeTabs').classList.remove('active');
@@ -530,7 +482,8 @@
         }
 
         function shareWhatsAppReport() {
-            const text = encodeURIComponent(`📊 تقرير المالك الشامل لكل تقارير البرنامج الـ 13 - ChickenDist Enterprise:\n\n📈 صافي الأرباح: 4,520 ج\n🧾 المبيعات الكلية: 18,450 ج\n🛍️ المشتريات: 14,200 ج\n💰 الخزنة: 34,800 ج\n📝 النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
+            const name = document.getElementById('txtHeaderAppName').innerText;
+            const text = encodeURIComponent(`📊 تقرير المالك الشامل - ${name}:\n\n📈 صافي الأرباح: 4,520 ج\n🧾 المبيعات: 18,450 ج\n🛍️ المشتريات: 14,200 ج\n💰 الخزنة: 34,800 ج\n📝 النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
     </script>
