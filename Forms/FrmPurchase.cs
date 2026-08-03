@@ -2170,6 +2170,8 @@ namespace ChickenDist.Forms
         // حفظ الفاتورة النهائية
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("Purchases")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ فواتير الشراء.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (_items.Count == 0)
             {
                 MessageBox.Show("أضف أصنافاً أولاً", "تنبيه",

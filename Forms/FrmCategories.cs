@@ -175,6 +175,9 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedID == 0 && !Session.CanAdd("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة تصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("يرجى إدخال اسم التصنيف!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -198,6 +201,7 @@ namespace ChickenDist.Forms
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0) return;
+            if (!Session.CanDelete("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (MessageBox.Show("هل تريد بالتأكيد إيقاف هذا القسم؟", "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {

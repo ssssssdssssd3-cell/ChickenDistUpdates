@@ -835,6 +835,8 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("Returns")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ مرتجعات المبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             int mode = cboMode.SelectedIndex;
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
             string returnType = cboReturnType.SelectedIndex == 1 ? "Cash" : "Credit";

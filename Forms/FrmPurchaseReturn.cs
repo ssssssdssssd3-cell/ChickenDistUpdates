@@ -592,6 +592,8 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("PurchaseReturn")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ مرتجعات المشتريات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             bool isGeneral = cboMode.SelectedIndex == 1;
 
             if (!isGeneral && (!(cboPurchase.SelectedItem is ComboItem ci) || ci.ID == 0))

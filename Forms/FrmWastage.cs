@@ -363,6 +363,8 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("Wastage")) { MessageBox.Show("⛔ ليس لديك صلاحية تسجيل التالف والهالك.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (dgItems.Rows.Count == 0)
             {
                 MessageBox.Show("يرجى إضافة صنف واحد تالف على الأقل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);

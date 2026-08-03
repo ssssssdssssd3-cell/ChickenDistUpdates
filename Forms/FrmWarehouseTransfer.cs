@@ -372,6 +372,8 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("WarehouseTransfer")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ التحويلات المخزنية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (!(cboFromWarehouse.SelectedItem is ComboItem from) || from.ID == 0)
             { MessageBox.Show("اختر مستودع المصدر", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!(cboToWarehouse.SelectedItem is ComboItem to) || to.ID == 0)

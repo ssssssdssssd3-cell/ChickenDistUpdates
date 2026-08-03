@@ -565,6 +565,9 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedID == 0 && !Session.CanAdd("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة مخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("يرجى إدخال اسم المخزن!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -586,6 +589,7 @@ namespace ChickenDist.Forms
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID <= 1) return;
+            if (!Session.CanDelete("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (MessageBox.Show("هل تريد إيقاف هذا المخزن؟\nلن تتمكن من استخدامه في العمليات الجديدة.",
                     "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {

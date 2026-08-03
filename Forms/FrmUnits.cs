@@ -153,6 +153,9 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedID == 0 && !Session.CanAdd("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة وحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("يرجى إدخال اسم الوحدة!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -176,6 +179,7 @@ namespace ChickenDist.Forms
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0) return;
+            if (!Session.CanDelete("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (MessageBox.Show("هل تريد بالتأكيد حذف هذه الوحدة؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
