@@ -496,7 +496,8 @@ namespace ChickenDist.Forms
                 }),
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
-                    ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
