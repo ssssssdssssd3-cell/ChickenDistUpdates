@@ -35,6 +35,7 @@ namespace ChickenDist.Forms
         private Label lblRemainingVal;
 
         private TextBox txtActualCash;
+        private TextBox txtTransferAmount;
         private TextBox txtNotes;
         private TextBox txtOpeningCash;
         private ComboBox cboTargetSafe;
@@ -262,65 +263,75 @@ namespace ChickenDist.Forms
             pnlKpiContainer.Controls.Add(tblKpi);
             tblMain.Controls.Add(pnlKpiContainer, 0, 1);
 
-            // ج) لوحة العد الفعلي والفرق والملحوظات
+            // ج) لوحة العد الفعلي والتحويل والفرق والملحوظات
             pnlActualContainer = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Margin = new Padding(0, 0, 0, 6) };
             pnlActualContainer.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlActualContainer);
 
             TableLayoutPanel tblActual = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 5,
+                ColumnCount = 6,
                 RowCount = 1,
                 Padding = new Padding(10, 6, 10, 6),
                 RightToLeft = RightToLeft.Yes
             };
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f)); // الفعلي
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260f)); // وجهة النقدية
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 155f)); // الفرق
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175f)); // رصيد الدرج بعد التحويل
-            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // الملاحظات
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f)); // 1. الفعلي بالدرج
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f)); // 2. وجهة النقدية
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // 3. مبلغ التحويل للخزنة
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // 4. الفرق (عجز/زيادة)
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f)); // 5. رصيد الدرج بعد التحويل
+            tblActual.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // 6. الملاحظات
 
             // 1. حقل الفعلي
             Panel pnlAct = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblActTitle = new Label { Text = "💵 المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             txtActualCash = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
-            txtActualCash.TextChanged += (s, e) => RecalcDiff();
+            txtActualCash.TextChanged += (s, e) => OnActualCashChanged();
             pnlAct.Controls.Add(txtActualCash);
             pnlAct.Controls.Add(lblActTitle);
             tblActual.Controls.Add(pnlAct, 0, 0);
 
             // 2. حقل وجهة نقدية الوردية (التحويل للخزنة أو إبقائها كرصيد افتتاحي)
             Panel pnlTargetSafe = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية (تحويل لخزنة / رصيد افتتاحي):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             cboTargetSafe = new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
-            cboTargetSafe.SelectedIndexChanged += (s, e) => RecalcDiff();
+            cboTargetSafe.SelectedIndexChanged += (s, e) => OnTargetSafeChanged();
             pnlTargetSafe.Controls.Add(cboTargetSafe);
             pnlTargetSafe.Controls.Add(lblTargetTitle);
             tblActual.Controls.Add(pnlTargetSafe, 1, 0);
 
-            // 3. حقل الفرق
+            // 3. حقل مبلغ التحويل للخزنة
+            Panel pnlTransfer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
+            var lblTransferTitle = new Label { Text = "💸 مبلغ التحويل للخزنة:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            txtTransferAmount = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center, Enabled = false };
+            txtTransferAmount.TextChanged += (s, e) => RecalcDiff();
+            pnlTransfer.Controls.Add(txtTransferAmount);
+            pnlTransfer.Controls.Add(lblTransferTitle);
+            tblActual.Controls.Add(pnlTransfer, 2, 0);
+
+            // 4. حقل الفرق (عجز/زيادة)
             Panel pnlDiff = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 12f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
             pnlDiff.Controls.Add(lblDiffVal);
             pnlDiff.Controls.Add(lblDiffTitle);
-            tblActual.Controls.Add(pnlDiff, 2, 0);
+            tblActual.Controls.Add(pnlDiff, 3, 0);
 
-            // 4. حقل رصيد الدرج بعد التحويل
+            // 5. حقل رصيد الدرج بعد التحويل (الباقي بالدرج)
             Panel pnlRemaining = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblRemainingTitle = new Label { Text = "🪙 رصيد الدرج بعد التحويل:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblRemainingTitle = new Label { Text = "🪙 الباقي بالدرج بعد التحويل:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblRemainingVal = new Label { Text = "0.00 ج", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 12f, FontStyle.Bold), ForeColor = Theme.TextSub, TextAlign = ContentAlignment.MiddleCenter };
             pnlRemaining.Controls.Add(lblRemainingVal);
             pnlRemaining.Controls.Add(lblRemainingTitle);
-            tblActual.Controls.Add(pnlRemaining, 3, 0);
+            tblActual.Controls.Add(pnlRemaining, 4, 0);
 
-            // 5. حقل الملاحظات
+            // 6. حقل الملاحظات
             Panel pnlNotes = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontMain, ForeColor = Theme.TextMain };
             txtNotes = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             pnlNotes.Controls.Add(txtNotes);
             pnlNotes.Controls.Add(lblNotesTitle);
-            tblActual.Controls.Add(pnlNotes, 4, 0);
+            tblActual.Controls.Add(pnlNotes, 5, 0);
 
             pnlActualContainer.Controls.Add(tblActual);
             tblMain.Controls.Add(pnlActualContainer, 0, 2);
@@ -633,6 +644,37 @@ namespace ChickenDist.Forms
             catch { }
         }
 
+        private void OnActualCashChanged()
+        {
+            if (decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual))
+            {
+                if (cboTargetSafe != null && cboTargetSafe.SelectedItem is ComboItem si && si.ID > 0)
+                {
+                    txtTransferAmount.Text = actual.ToString("N2");
+                }
+            }
+            RecalcDiff();
+        }
+
+        private void OnTargetSafeChanged()
+        {
+            if (cboTargetSafe != null && cboTargetSafe.SelectedItem is ComboItem si && si.ID > 0)
+            {
+                txtTransferAmount.Enabled = true;
+                if (decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual) && actual > 0)
+                {
+                    if (string.IsNullOrWhiteSpace(txtTransferAmount.Text) || txtTransferAmount.Text == "0")
+                        txtTransferAmount.Text = actual.ToString("N2");
+                }
+            }
+            else
+            {
+                txtTransferAmount.Text = "0.00";
+                txtTransferAmount.Enabled = false;
+            }
+            RecalcDiff();
+        }
+
         private void RecalcDiff()
         {
             if (_summary == null) return;
@@ -649,16 +691,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            // حساب المبلغ المحوّل للخزنة
-            bool isTransferring = cboTargetSafe != null &&
-                                  cboTargetSafe.SelectedItem is ComboItem si && si.ID > 0;
-            decimal transferred = isTransferring ? actual : 0;
-            decimal remaining   = actual - transferred;
-
-            // رصيد الدرج بعد التحويل
-            lblRemainingVal.Text = remaining.ToString("N2") + " ج";
-            lblRemainingVal.ForeColor = remaining == 0 ? Theme.TextSub : Theme.Success;
-
+            // 1. العجز والزيادة يتحسب من إجمالي الفعلي بالدرج مقارنة بالمبلغ المتوقع
             decimal diff = actual - _summary.Expected;
             if (diff == 0)
             {
@@ -675,6 +708,23 @@ namespace ChickenDist.Forms
                 lblDiffVal.Text = $"+{diff:N2} ج (زيادة 🔵)";
                 lblDiffVal.ForeColor = Color.FromArgb(52, 152, 219);
             }
+
+            // 2. حساب المبلغ المحوّل والباقي بالدرج بعد التحويل
+            bool isTransferring = cboTargetSafe != null &&
+                                  cboTargetSafe.SelectedItem is ComboItem si && si.ID > 0;
+            decimal transferred = 0;
+            if (isTransferring)
+            {
+                decimal.TryParse(txtTransferAmount.Text.Replace(",", ""), out transferred);
+                if (transferred > actual) transferred = actual;
+                if (transferred < 0) transferred = 0;
+            }
+
+            decimal remaining = actual - transferred;
+
+            // رصيد الدرج بعد التحويل (الباقي بالدرج)
+            lblRemainingVal.Text = remaining.ToString("N2") + " ج";
+            lblRemainingVal.ForeColor = remaining == 0 ? Theme.TextSub : Theme.Success;
         }
 
         private void ClearSummary()
@@ -723,7 +773,15 @@ namespace ChickenDist.Forms
                     targetSafeName = safeItem.Text;
                 }
 
-                decimal remainingInDrawer = (targetSafeID > 0 && targetSafeID != sourceAccountID) ? 0 : actual;
+                decimal transferred = 0;
+                if (targetSafeID > 0 && targetSafeID != sourceAccountID)
+                {
+                    decimal.TryParse(txtTransferAmount.Text.Replace(",", ""), out transferred);
+                    if (transferred > actual) transferred = actual;
+                    if (transferred < 0) transferred = 0;
+                }
+
+                decimal remainingInDrawer = actual - transferred;
 
                 DbHelper.Execute(@"
                     UPDATE Shifts SET 
@@ -737,6 +795,7 @@ namespace ChickenDist.Forms
                         ActualCash = @act,
                         Difference = @diff,
                         TransferToSafeID = @tsafe,
+                        TransferredAmount = @tamt,
                         RemainingInDrawer = @rem,
                         Notes = @n,
                         Status = 'Closed' 
@@ -750,6 +809,7 @@ namespace ChickenDist.Forms
                     DbHelper.P("@act", actual),
                     DbHelper.P("@diff", diff),
                     DbHelper.P("@tsafe", targetSafeID > 0 ? (object)targetSafeID : DBNull.Value),
+                    DbHelper.P("@tamt", transferred),
                     DbHelper.P("@rem", remainingInDrawer),
                     DbHelper.P("@n", txtNotes.Text.Trim()),
                     DbHelper.P("@sid", shiftID));
@@ -776,38 +836,36 @@ namespace ChickenDist.Forms
                         DbHelper.P("@uid", Session.EmpID));
                 }
 
-                // ── 2. تسجيل حركة توريد/تحويل النقدية أو التثبيت بالدرج كرصيد افتتاحي ──
-                if (actual > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
+                // ── 2. تسجيل حركة سند تحويل النقدية المحولة فقط إلى الخزنة المستهدفة ──
+                if (transferred > 0 && targetSafeID > 0 && targetSafeID != sourceAccountID)
                 {
                     string cleanTargetName = targetSafeName.Replace("🏦 تحويل إلى: ", "").Trim();
-                    // أ) حركة صادر من الدرج لخصم المبلغ المحوّل من رصيد الدرج
+                    // أ) حركة صادر من الدرج بمبلغ التحويل المحدد فقط
                     DbHelper.Execute(
                         @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
                           VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @acc, @notes, @uid)",
-                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@amt", transferred),
                         DbHelper.P("@acc", sourceAccountID),
                         DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - تحويل نقدية الوردية إلى [{cleanTargetName}]"),
                         DbHelper.P("@uid", Session.EmpID));
 
-                    // ب) حركة وارد إلى الخزنة المستهدفة لإضافة المبلغ لرصيد الخزنة
+                    // ب) حركة وارد إلى الخزنة المستهدفة لإضافة مبلغ التحويل
                     DbHelper.Execute(
                         @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
                           VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @acc, @notes, @uid)",
-                        DbHelper.P("@amt", actual),
+                        DbHelper.P("@amt", transferred),
                         DbHelper.P("@acc", targetSafeID),
                         DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - استلام نقدية الوردية من [{sourceDrawerName}] (الكاشير: {Session.EmpName})"),
                         DbHelper.P("@uid", Session.EmpID));
                 }
-                else
-                {
-                    // ج) إبقاء النقدية بالدرج (سطر بيان تقفيل الوردية لتأكيد الرصيد الفعلي بالدرج)
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftClose', 0, 0, @acc, @notes, @uid)",
-                        DbHelper.P("@acc", sourceAccountID),
-                        DbHelper.P("@notes", $"تقفيل وردية #{shiftID} - إبقاء النقدية بالدرج كـ رصيد افتتاحي (الرصيد الفعلي بالدرج: {actual:N2} ج) (الكاشير: {Session.EmpName})"),
-                        DbHelper.P("@uid", Session.EmpID));
-                }
+
+                // ── 3. سند تقفيل يومية للرصيد المتبقي الفعلي بالدرج ──
+                DbHelper.Execute(
+                    @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                      VALUES (GETDATE(), 'ShiftClose', 0, 0, @acc, @notes, @uid)",
+                    DbHelper.P("@acc", sourceAccountID),
+                    DbHelper.P("@notes", $"سند تقفيل وردية #{shiftID} - الرصيد الفعلي المتبقي بالدرج: {remainingInDrawer:N2} ج (الكاشير: {Session.EmpName})"),
+                    DbHelper.P("@uid", Session.EmpID));
 
                 Session.CurrentShiftID = null;
 

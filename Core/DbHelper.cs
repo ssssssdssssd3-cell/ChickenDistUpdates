@@ -3111,6 +3111,8 @@ namespace ChickenDist.Core
                             ALTER TABLE Shifts ADD SafeAccountID INT NULL;
                         IF COL_LENGTH('Shifts','TransferToSafeID') IS NULL
                             ALTER TABLE Shifts ADD TransferToSafeID INT NULL;
+                        IF COL_LENGTH('Shifts','TransferredAmount') IS NULL
+                            ALTER TABLE Shifts ADD TransferredAmount DECIMAL(18,2) NULL;
                         IF COL_LENGTH('Shifts','RemainingInDrawer') IS NULL
                             ALTER TABLE Shifts ADD RemainingInDrawer DECIMAL(18,2) NULL;
                     END");
