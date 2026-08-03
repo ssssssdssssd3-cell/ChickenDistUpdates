@@ -46,6 +46,9 @@
 
   <!-- Copy the bot and MobileApp folders automatically to the build output directory -->
   <ItemGroup>
+    <None Include="bot\**\*" Exclude="bot\node_modules\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\bot\**\*" Exclude="..\bot\node_modules\**\*">
       <Link>bot\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
