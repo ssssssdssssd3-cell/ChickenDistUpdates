@@ -2060,10 +2060,15 @@ namespace ChickenDist.Core
                     ALTER TABLE Sales ADD ShiftID INT NULL REFERENCES Shifts(ShiftID);
                 END");
 
-                SafeMigrate("Shifts.SafeAccountID", @"
-                IF OBJECT_ID('Shifts','U') IS NOT NULL AND COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                SafeMigrate("Shifts.ExtraColumns", @"
+                IF OBJECT_ID('Shifts','U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                    IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                        ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                    IF COL_LENGTH('Shifts','TransferToSafeID') IS NULL
+                        ALTER TABLE Shifts ADD TransferToSafeID INT NULL;
+                    IF COL_LENGTH('Shifts','RemainingInDrawer') IS NULL
+                        ALTER TABLE Shifts ADD RemainingInDrawer DECIMAL(18,2) NULL;
                 END");
 
                 EnsureShiftSchema();
@@ -3100,9 +3105,14 @@ namespace ChickenDist.Core
                             SafeAccountID INT NULL
                         );
                     END
-                    ELSE IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                    ELSE
                     BEGIN
-                        ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                        IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
+                            ALTER TABLE Shifts ADD SafeAccountID INT NULL;
+                        IF COL_LENGTH('Shifts','TransferToSafeID') IS NULL
+                            ALTER TABLE Shifts ADD TransferToSafeID INT NULL;
+                        IF COL_LENGTH('Shifts','RemainingInDrawer') IS NULL
+                            ALTER TABLE Shifts ADD RemainingInDrawer DECIMAL(18,2) NULL;
                     END");
             }
             catch (Exception ex)
