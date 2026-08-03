@@ -117,6 +117,12 @@ namespace ChickenDist.Core
                         string html = GetAccountantOrdersHtmlWithData();
                         SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
                     }
+                    else if (path == "/mobile" || path == "/mobileapp" || path == "/mobile/index.html")
+                    {
+                        // حقن البيانات في تطبيق الموبايل (MobileApp/index.html)
+                        string html = GetMobileAppHtmlWithData();
+                        SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
+                    }
                     else
                     {
                         SendResponse(stream, "404 Not Found", "text/plain", "404 Not Found");
@@ -196,6 +202,25 @@ namespace ChickenDist.Core
                         return r.ReadToEnd();
             }
             return "<html><body>accountant_orders.html not found</body></html>";
+        }
+
+        /// <summary>يقرأ MobileApp/index.html ويحقن JSON البيانات بداخله مباشرة</summary>
+        private static string GetMobileAppHtmlWithData()
+        {
+            string html = GetMobileAppEmbeddedHtml();
+            string json = DAL.DriverDAL.BuildDriverExportJson();
+            string key = SecurityHelper.GetEffectiveKeyForJs();
+            string injection = $"\n<script>\n  window.__SERVER_DATA__ = {json};\n  window.__XOR_KEY__ = \"{key}\";\n</script>\n";
+            return html.Replace("</head>", injection + "</head>");
+        }
+
+        private static string GetMobileAppEmbeddedHtml()
+        {
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
+            if (File.Exists(filePath))
+                return File.ReadAllText(filePath, Encoding.UTF8);
+
+            return "<html><body>MobileApp/index.html not found</body></html>";
         }
 
         // ======================== الرفع السحابي ========================

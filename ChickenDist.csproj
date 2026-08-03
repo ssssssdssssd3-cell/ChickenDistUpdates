@@ -42,10 +42,13 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Copy the bot folder automatically to the build output directory (excluding node_modules) -->
+  <!-- Copy the bot and MobileApp folders automatically to the build output directory -->
   <ItemGroup>
     <None Include="..\bot\**\*" Exclude="..\bot\node_modules\**\*">
       <Link>bot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="MobileApp\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
