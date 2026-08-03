@@ -269,33 +269,36 @@ namespace ChickenDist.Core
 
                 if (!File.Exists(htmlPath) || new FileInfo(htmlPath).Length < 100)
                 {
-                    using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html"))
+                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html");
+                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.index.html");
+                    if (s != null)
                     {
-                        if (s != null)
+                        using (s)
+                        using (var r = new StreamReader(s, Encoding.UTF8))
                         {
-                            using (var r = new StreamReader(s, Encoding.UTF8))
-                            {
-                                File.WriteAllText(htmlPath, r.ReadToEnd(), Encoding.UTF8);
-                            }
+                            File.WriteAllText(htmlPath, r.ReadToEnd(), Encoding.UTF8);
                         }
                     }
                 }
 
                 if (!File.Exists(manifestPath) || new FileInfo(manifestPath).Length < 10)
                 {
-                    using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json"))
+                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json");
+                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.manifest.json");
+                    if (s != null)
                     {
-                        if (s != null)
+                        using (s)
+                        using (var r = new StreamReader(s, Encoding.UTF8))
                         {
-                            using (var r = new StreamReader(s, Encoding.UTF8))
-                            {
-                                File.WriteAllText(manifestPath, r.ReadToEnd(), Encoding.UTF8);
-                            }
+                            File.WriteAllText(manifestPath, r.ReadToEnd(), Encoding.UTF8);
                         }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("EnsureMobileAppFilesExtracted error: " + ex.Message);
+            }
         }
 
         // ======================== الرفع السحابي ========================

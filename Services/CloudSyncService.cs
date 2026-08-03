@@ -25,24 +25,7 @@ namespace ChickenDist.Services
         {
             try
             {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string mobileDir = System.IO.Path.Combine(baseDir, "MobileApp");
-                string indexHtml = System.IO.Path.Combine(mobileDir, "index.html");
-
-                if (!System.IO.Directory.Exists(mobileDir))
-                {
-                    System.IO.Directory.CreateDirectory(mobileDir);
-                }
-
-                if (!System.IO.File.Exists(indexHtml))
-                {
-                    // نسخ من المجلد الرئيسي أو إنتاج ملف الـ HTML الفاخر للموبايل
-                    string srcHtml = System.IO.Path.Combine(baseDir, "..", "..", "MobileApp", "index.html");
-                    if (System.IO.File.Exists(srcHtml))
-                    {
-                        System.IO.File.Copy(srcHtml, indexHtml, true);
-                    }
-                }
+                DriverPortalServer.EnsureMobileAppFilesExtracted();
             }
             catch (Exception ex)
             {
