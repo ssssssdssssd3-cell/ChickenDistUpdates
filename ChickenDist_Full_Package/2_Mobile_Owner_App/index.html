@@ -94,7 +94,6 @@
             color: var(--text-primary);
         }
 
-        /* Live Connection Health Badge */
         .conn-badge {
             background: rgba(16, 185, 129, 0.15);
             border: 1px solid rgba(16, 185, 129, 0.4);
@@ -123,13 +122,39 @@
             gap: 6px;
         }
 
+        .install-pwa-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
         .container {
             padding: 16px;
             max-width: 680px;
             margin: 0 auto;
         }
 
-        /* Search Bar for Reports */
+        .install-banner-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1), var(--bg-card));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-card);
+        }
+
         .reports-search-box {
             margin-bottom: 14px;
         }
@@ -146,7 +171,6 @@
             outline: none;
         }
 
-        /* View Mode Switcher */
         .view-mode-bar {
             display: flex;
             background: var(--bg-card);
@@ -175,7 +199,6 @@
             color: var(--gold);
         }
 
-        /* Scrollable Full 14 Reports Menu Chips */
         .reports-menu-bar {
             display: flex;
             gap: 8px;
@@ -203,7 +226,6 @@
             color: var(--gold);
         }
 
-        /* Hero Banner */
         .hero-banner {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
             border: 1px solid var(--border-subtle);
@@ -220,7 +242,6 @@
             margin: 6px 0;
         }
 
-        /* Report Cards */
         .report-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -264,7 +285,6 @@
             color: var(--text-primary);
         }
 
-        /* Batch Notebook Selector */
         .notebook-item-row {
             display: flex;
             align-items: center;
@@ -280,7 +300,6 @@
             cursor: pointer;
         }
 
-        /* Product Search Cards */
         .prod-search-input {
             width: 100%;
             background: var(--bg-body);
@@ -302,7 +321,6 @@
             margin-bottom: 10px;
         }
 
-        /* Action Buttons */
         .btn-action {
             width: 100%;
             background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -326,7 +344,6 @@
             box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
         }
 
-        /* Tab Visibility */
         .tab-section {
             display: block;
             margin-bottom: 16px;
@@ -340,7 +357,6 @@
             display: block;
         }
 
-        /* Bottom Nav Bar */
         .nav-bottom-bar {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -377,7 +393,7 @@
 </head>
 <body>
 
-    <!-- Header Navbar with Health Connection Indicator & Store Name -->
+    <!-- Header Navbar with Health Connection Indicator, PWA Install & Store Name -->
     <div class="app-header">
         <div class="store-identity">
             <img src="../logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل">
@@ -389,13 +405,24 @@
                 </div>
             </div>
         </div>
-        <button class="theme-toggle-btn" onclick="toggleTheme()">
-            <span id="themeIcon">🌙</span>
-            <span id="themeLabel">داكن</span>
-        </button>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="install-pwa-btn" onclick="installPwaApp()">📲 تثبيت</button>
+            <button class="theme-toggle-btn" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </div>
     </div>
 
     <div class="container">
+
+        <!-- Prominent PWA Install Banner Card on Main Dashboard -->
+        <div class="install-banner-card" id="pwaInstallBanner">
+            <div>
+                <div style="font-weight:900; font-size:14px; color:var(--emerald);">📲 تثبيت تطبيق ProSoft ERP على الموبايل</div>
+                <div style="font-size:11px; color:var(--text-muted);">ثبت التطبيق على الشاشة الرئيسية لتصفح التقارير بسهولة وسرعة</div>
+            </div>
+            <button class="install-pwa-btn" style="padding:8px 14px; font-size:12px;" onclick="installPwaApp()">📲 تثبيت الآن</button>
+        </div>
 
         <!-- Search Bar for All Reports -->
         <div class="reports-search-box">
@@ -430,7 +457,7 @@
         <div class="hero-banner">
             <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
                 <span>📈 صافي أرباح اليوم النهائي</span>
-                <span style="font-size:11px; color:var(--emerald);">مُحدث 12:20 🟢</span>
+                <span style="font-size:11px; color:var(--emerald);">مُحدث 12:23 🟢</span>
             </div>
             <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
             <div style="display:flex; gap:14px; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
@@ -500,20 +527,20 @@
             </div>
         </div>
 
-        <!-- 5. BATCH MISSING ITEMS NOTEBOOK (كشكول النواقص التجمعي وتجهيز الشراء) -->
+        <!-- 5. BATCH MISSING ITEMS NOTEBOOK (كشكول النواقص التجمعي - الواتساب صنف وكمية فقط) -->
         <div id="sec-notebook" class="tab-section active">
             <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
                 <div class="report-header">
                     <span>📝 5. كشكول النواقص التجمعي وتجميع الطلبيات</span>
-                    <span style="color:var(--gold); font-size:12px;">مشاركة تجميعية مباشرة</span>
+                    <span style="color:var(--gold); font-size:12px;">مشاركة مباشرة</span>
                 </div>
                 
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">حدد الأصناف الناقصة لتجميعها وإرسال قائمة الطلبية كاملة دفعة واحدة للمورد عبر الواتساب:</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">حدد الأصناف الناقصة لتجميعها (يتم التمرير للمورد بالاسم والكمية المطلوبة فقط بدون الرصيد السري):</div>
 
                 <div class="notebook-item-row">
                     <input type="checkbox" class="notebook-checkbox" checked>
                     <div style="flex:1;">
-                        <div style="font-weight:900;">فلتر زيت تويوتا أصلي</div>
+                        <div style="font-weight:900;" class="item-name-target">فلتر زيت تويوتا أصلي</div>
                         <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
                     </div>
                     <input type="number" value="20" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
@@ -522,7 +549,7 @@
                 <div class="notebook-item-row">
                     <input type="checkbox" class="notebook-checkbox" checked>
                     <div style="flex:1;">
-                        <div style="font-weight:900;">طقم بوجيهات دنسو ياباني</div>
+                        <div style="font-weight:900;" class="item-name-target">طقم بوجيهات دنسو ياباني</div>
                         <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
                     </div>
                     <input type="number" value="10" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
@@ -531,14 +558,14 @@
                 <div class="notebook-item-row">
                     <input type="checkbox" class="notebook-checkbox" checked>
                     <div style="flex:1;">
-                        <div style="font-weight:900;">زيت موتور توتال 10W40</div>
+                        <div style="font-weight:900;" class="item-name-target">زيت موتور توتال 10W40</div>
                         <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">3 جركن</b> | المورد: المصرية للزيوت</div>
                     </div>
                     <input type="number" value="15" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
                 </div>
 
-                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrder()">
-                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد على الواتساب</span>
+                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
+                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
                 </button>
             </div>
         </div>
@@ -715,14 +742,38 @@
     </div>
 
     <script>
-        function sendBatchWhatsAppOrder() {
+        // PWA Install Prompt Listener
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log("PWA install prompt ready!");
+        });
+
+        function installPwaApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        alert("✅ تم تثبيت التطبيق بنجاح على الشاشة الرئيسية!");
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert("📲 لتثبيت التطبيق على شاشة الموبايل الرئيسية:\n\n1. اضغط على زر خيارات المتصفح (⋮) أو خيار مشاركة (Share).\n2. اختر 'إضافة إلى الشاشة الرئيسية (Add to Home Screen)'.\n\nستظهر أيقونة التطبيق باسم محلك فوراً!");
+            }
+        }
+
+        // WhatsApp Order Generation WITHOUT stock balance & WITHOUT supplier name in sent text
+        function sendBatchWhatsAppOrderClean() {
             let selectedItems = [];
             document.querySelectorAll('.notebook-item-row').forEach(row => {
                 let cb = row.querySelector('.notebook-checkbox');
                 let qtyInput = row.querySelector('input[type="number"]');
                 if(cb && cb.checked) {
-                    let itemName = row.querySelector('div div').innerText;
-                    selectedItems.push(`- ${itemName} (الكمية المطلوبة: ${qtyInput.value})`);
+                    let itemName = row.querySelector('.item-name-target').innerText.trim();
+                    let qty = qtyInput.value.trim();
+                    selectedItems.push(`• ${itemName}: [الكمية المطلوبة: ${qty}]`);
                 }
             });
 
@@ -791,7 +842,6 @@
             body.classList.toggle('light-mode');
             const isLight = body.classList.contains('light-mode');
             document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
-            document.getElementById('themeLabel').innerText = isLight ? 'نهار' : 'داكن';
         }
 
         function filterSupplierReport(suppId) {
