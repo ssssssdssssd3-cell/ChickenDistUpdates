@@ -12,9 +12,9 @@
     <style>
         :root {
             --bg-body: #070a12;
-            --bg-card: rgba(18, 26, 43, 0.88);
-            --bg-header: rgba(11, 15, 25, 0.95);
-            --border-subtle: rgba(255, 255, 255, 0.08);
+            --bg-card: rgba(18, 26, 43, 0.95);
+            --bg-header: rgba(11, 15, 25, 0.98);
+            --border-subtle: rgba(255, 255, 255, 0.12);
             --text-primary: #ffffff;
             --text-muted: #94a3b8;
             --gold: #f59e0b;
@@ -23,22 +23,22 @@
             --emerald: #10b981;
             --rose: #f43f5e;
             --purple: #a855f7;
-            --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+            --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
         body.light-mode {
             --bg-body: #f1f5f9;
             --bg-card: #ffffff;
-            --bg-header: rgba(255, 255, 255, 0.96);
-            --border-subtle: #e2e8f0;
+            --bg-header: rgba(255, 255, 255, 0.98);
+            --border-subtle: #cbd5e1;
             --text-primary: #0f172a;
-            --text-muted: #64748b;
+            --text-muted: #475569;
             --gold: #d97706;
             --cyan: #0284c7;
             --emerald: #059669;
             --rose: #e11d48;
             --purple: #7c3aed;
-            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -47,14 +47,13 @@
             padding: 0;
             font-family: 'Cairo', system-ui, sans-serif;
             -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
         }
 
         body {
             background-color: var(--bg-body);
             color: var(--text-primary);
             min-height: 100vh;
-            padding-bottom: 95px;
+            padding-bottom: 100px;
         }
 
         .app-header {
@@ -62,7 +61,7 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 16px;
+            padding: 14px 16px;
             position: sticky;
             top: 0;
             z-index: 200;
@@ -78,19 +77,19 @@
         }
 
         .avatar-logo {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
             background: linear-gradient(135deg, #f59e0b, #b45309);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+            font-size: 24px;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
         }
 
         .store-name {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 900;
             color: var(--text-primary);
         }
@@ -99,7 +98,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             color: var(--text-primary);
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 800;
@@ -111,28 +110,40 @@
 
         .container {
             padding: 16px;
-            max-width: 650px;
+            max-width: 680px;
             margin: 0 auto;
         }
 
-        /* Search & Filter Reports Hub */
-        .reports-search-box {
-            margin-bottom: 14px;
-        }
-
-        .reports-search-input {
-            width: 100%;
+        /* View Mode Switcher: Single Page vs Tabbed */
+        .view-mode-bar {
+            display: flex;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            padding: 12px 16px;
+            padding: 4px;
             border-radius: 14px;
-            font-size: 13px;
-            font-weight: 700;
-            outline: none;
+            margin-bottom: 16px;
+            gap: 4px;
         }
 
-        /* Scrollable Full 12+ Reports Menu Bar */
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 800;
+            font-size: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+
+        /* Scrollable Full Reports Menu Chips */
         .reports-menu-bar {
             display: flex;
             gap: 8px;
@@ -152,7 +163,6 @@
             font-weight: 800;
             white-space: nowrap;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
 
         .menu-chip.active {
@@ -161,7 +171,7 @@
             color: var(--gold);
         }
 
-        /* Report Cards */
+        /* Report Box Card */
         .report-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -178,6 +188,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid var(--border-subtle);
+            padding-bottom: 10px;
         }
 
         .report-item {
@@ -203,54 +215,47 @@
             color: var(--text-primary);
         }
 
-        /* Bottom Nav Bar */
-        .nav-bottom-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: var(--bg-header);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-subtle);
+        /* Notebook Item Card */
+        .notebook-card {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
             display: flex;
-            justify-content: space-around;
-            padding: 8px 0 12px 0;
-            z-index: 300;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            color: var(--text-muted);
-            font-size: 10px;
+        .notebook-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
             font-weight: 800;
             cursor: pointer;
-            width: 14%;
         }
 
-        .nav-item.active {
-            color: var(--gold);
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
+            border: 1px solid var(--border-subtle);
+            border-radius: 22px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
         }
 
-        .nav-item-icon {
-            font-size: 18px;
+        .hero-num {
+            font-size: 34px;
+            font-weight: 1000;
+            color: var(--text-primary);
+            margin: 6px 0;
         }
 
-        .tab-section {
-            display: none;
-        }
-
-        .tab-section.active {
-            display: block;
-            animation: fadeIn 0.25s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* Action Buttons */
         .btn-action {
             width: 100%;
             background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -268,6 +273,20 @@
             box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
             margin-top: 10px;
         }
+
+        /* Tab Visibility */
+        .tab-section {
+            display: block; /* Visible by default in Show All mode */
+            margin-bottom: 16px;
+        }
+
+        body.tabbed-mode .tab-section {
+            display: none;
+        }
+
+        body.tabbed-mode .tab-section.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -278,7 +297,7 @@
             <div class="avatar-logo">🏢</div>
             <div>
                 <div class="store-name">ChickenDist Enterprise</div>
-                <div style="font-size:11px; color:var(--gold); font-weight:700;">مكتبة التقارير الشاملة بالكامل</div>
+                <div style="font-size:11px; color:var(--gold); font-weight:800;">جميع تقارير البرنامج (13 تقرير)</div>
             </div>
         </div>
         <button class="theme-toggle-btn" onclick="toggleTheme()">
@@ -289,33 +308,48 @@
 
     <div class="container">
 
-        <!-- Search Bar for All 12 Reports -->
-        <div class="reports-search-box">
-            <input type="text" class="reports-search-input" placeholder="🔍 ابحث في جميع تقارير البرنامج (مبيعات، مشتريات، أرباح، ركود، هالك...)" onkeyup="filterReportsMenu(this.value)">
+        <!-- View Mode Switcher Bar -->
+        <div class="view-mode-bar">
+            <button class="mode-btn active" id="btnModeAll" onclick="setViewMode('all')">📜 عرض جميع التقارير معاً</button>
+            <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبديل بالتبويبات</button>
         </div>
 
-        <!-- Scrollable Complete 12 Reports Bar -->
-        <div class="reports-menu-bar" id="reportsMenuBar">
+        <!-- Scrollable Complete 13 Reports Bar (Available in Tabbed Mode) -->
+        <div class="reports-menu-bar" id="reportsMenuBar" style="display:none;">
             <div class="menu-chip active" onclick="switchReport('profit', this)">📈 1. الأرباح والخسائر</div>
             <div class="menu-chip" onclick="switchReport('sales', this)">🧾 2. فواتير المبيعات</div>
-            <div class="menu-chip" onclick="switchReport('purchases', this)">🛍️ 3. فواتير المشتريات</div>
+            <div class="menu-chip" onclick="switchReport('purchases', this)">🛍️ 3. المشتريات</div>
             <div class="menu-chip" onclick="switchReport('suppliers', this)">🏭 4. مبيعات الموردين</div>
             <div class="menu-chip" onclick="switchReport('notebook', this)">📝 5. كشكول النواقص</div>
-            <div class="menu-chip" onclick="switchReport('cashbox', this)">💰 6. الخزنة والمصروفات</div>
+            <div class="menu-chip" onclick="switchReport('cashbox', this)">💰 6. الخزنة والشيفت</div>
             <div class="menu-chip" onclick="switchReport('stock', this)">📦 7. المخزون والجرد</div>
             <div class="menu-chip" onclick="switchReport('clients', this)">👥 8. ديون العملاء</div>
             <div class="menu-chip" onclick="switchReport('installments', this)">📅 9. الأقساط والآجل</div>
             <div class="menu-chip" onclick="switchReport('topitems', this)">🔥 10. الأكثر مبيعاً وركوداً</div>
             <div class="menu-chip" onclick="switchReport('wastage', this)">🗑️ 11. الهالك والروكود</div>
-            <div class="menu-chip" onclick="switchReport('pricehistory', this)">🏷️ 12. تاريخ تعديل الأسعار</div>
+            <div class="menu-chip" onclick="switchReport('pricehistory', this)">🏷️ 12. تاريخ الأسعار</div>
             <div class="menu-chip" onclick="switchReport('drivers', this)">🚚 13. المندوبين والتوصيل</div>
         </div>
 
-        <!-- REPORT 1: PROFIT & LOSS (تقرير الأرباح والخسائر الشامل) -->
+        <!-- HERO NET PROFIT SUMMARY -->
+        <div class="hero-banner">
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
+                <span>📈 صافي أرباح اليوم النهائي</span>
+                <span style="font-size:11px; color:var(--emerald);">مُحدث 11:47:55 🟢</span>
+            </div>
+            <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
+            <div style="display:flex; gap:14px; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                <div>المبيعات: <b style="color:var(--cyan);">18,450 ج</b></div>
+                <div>التكلفة: <b>12,080 ج</b></div>
+                <div>المصروفات: <b style="color:var(--rose);">1,850 ج</b></div>
+            </div>
+        </div>
+
+        <!-- 1. PROFIT & LOSS REPORT -->
         <div id="sec-profit" class="tab-section active">
             <div class="report-card">
                 <div class="report-header">
-                    <span>📈 تقرير الأرباح والخسائر الشامل (P&L Report)</span>
+                    <span>📈 1. تقرير الأرباح والخسائر الشامل (P&L Report)</span>
                     <span style="color:var(--emerald); font-size:12px;">اليوم</span>
                 </div>
                 <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
@@ -323,196 +357,158 @@
                 <div class="report-item"><div class="report-item-title">مجمل الربح (Gross Profit):</div><div class="report-item-val" style="color:var(--emerald);">6,370.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">إجمالي المصروفات والنثريات:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;">4,520.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">نسبة هامش صافي الربح:</div><div class="report-item-val">24.5%</div></div>
             </div>
-            <button class="btn-action" onclick="shareWhatsAppReport()">
-                <span>📲 مشاركة تقرير الأرباح على الواتساب</span>
-            </button>
         </div>
 
-        <!-- REPORT 2: SALES REPORT (تقرير فواتير المبيعات) -->
-        <div id="sec-sales" class="tab-section">
+        <!-- 2. SALES & INVOICES REPORT -->
+        <div id="sec-sales" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🧾 تقرير فواتير المبيعات التفصيلي</span></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الكلية:</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
+                <div class="report-header"><span>🧾 2. تقرير فواتير المبيعات التفصيلي</span></div>
+                <div class="report-item"><div class="report-item-title">المبيعات الكلية (كاش + آجل):</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش محصل):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);">6,250.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">عدد الفواتير الصادرة:</div><div class="report-item-val">24 فاتورة</div></div>
                 <div class="report-item"><div class="report-item-title">متوسط سعر الفاتورة:</div><div class="report-item-val">768.75 ج</div></div>
-                <div class="report-item"><div class="report-item-title">مرتجعات المبيعات:</div><div class="report-item-val" style="color:var(--rose);">350.00 ج</div></div>
             </div>
         </div>
 
-        <!-- REPORT 3: PURCHASES REPORT (تقرير فواتير المشتريات) -->
-        <div id="sec-purchases" class="tab-section">
+        <!-- 3. PURCHASES & VENDORS REPORT -->
+        <div id="sec-purchases" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🛍️ تقرير المشتريات وفواتير الموردين</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
+                <div class="report-header"><span>🛍️ 3. تقرير المشتريات وفواتير الموردين</span></div>
+                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">المشتريات النقدية (مدفوعة):</div><div class="report-item-val" style="color:var(--emerald);">8,000.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المشتريات الآجلة (مستحقة للمورد):</div><div class="report-row-val" style="color:var(--rose);">6,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد فواتير الشراء:</div><div class="report-item-val">4 فواتير شراء</div></div>
+                <div class="report-item"><div class="report-item-title">المشتريات الآجلة (مستحقة للمورد):</div><div class="report-item-val" style="color:var(--rose);">6,200.00 ج</div></div>
             </div>
         </div>
 
-        <!-- REPORT 4: SUPPLIER SALES REPORT (تقرير مبيعات الموردين) -->
-        <div id="sec-suppliers" class="tab-section">
+        <!-- 4. SUPPLIER SALES REPORT -->
+        <div id="sec-suppliers" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🏭 تقرير مبيعات وأرباح الموردين</span></div>
-                <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين:</div><div class="report-item-val" style="color:var(--gold);">8,450.00 ج</div></div>
+                <div class="report-header"><span>🏭 4. تقرير مبيعات وأرباح الموردين</span></div>
+                <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين اليوم:</div><div class="report-item-val" style="color:var(--gold);">8,450.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">عدد القطع المباعة للموردين:</div><div class="report-item-val">38 قطعة</div></div>
                 <div class="report-item"><div class="report-item-title">أرباح الموردين التقديرية:</div><div class="report-item-val" style="color:var(--emerald);">2,100.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي رصيد الموردين المستحق:</div><div class="report-item-val" style="color:var(--rose);">18,500.00 ج</div></div>
             </div>
         </div>
 
-        <!-- REPORT 5: NOTEBOOK LOW STOCK (كشكول النواقص) -->
-        <div id="sec-notebook" class="tab-section">
+        <!-- 5. NOTEBOOK LOW STOCK (كشكول النواقص) -->
+        <div id="sec-notebook" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>📝 كشكول النواقص وطلبيات الشراء</span></div>
-                <div style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); padding:10px; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div class="report-header"><span>📝 5. كشكول النواقص وطلبيات الشراء</span><span style="color:var(--rose); font-size:12px;">4 أصناف ناقصة</span></div>
+                <div class="notebook-card">
                     <div>
                         <div style="font-weight:900;">فلتر زيت تويوتا أصلي</div>
                         <div style="font-size:11px; color:var(--text-muted);">الرصيد: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
                     </div>
-                    <button class="btn-action" style="width:auto; padding:6px 12px; font-size:11px;" onclick="orderSupplier('فلتر زيت تويوتا', 'العالمية')">📲 طلب</button>
+                    <button class="notebook-btn" onclick="orderSupplier('فلتر زيت تويوتا', 'العالمية')">📲 طلب</button>
+                </div>
+                <div class="notebook-card">
+                    <div>
+                        <div style="font-weight:900;">طقم بوجيهات دنسو ياباني</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
+                    </div>
+                    <button class="notebook-btn" onclick="orderSupplier('طقم بوجيهات دنسو', 'النصر')">📲 طلب</button>
                 </div>
             </div>
         </div>
 
-        <!-- REPORT 6: CASHBOX & EXPENSES (تقرير الخزنة والمصروفات) -->
-        <div id="sec-cashbox" class="tab-section">
+        <!-- 6. CASHBOX & EXPENSES REPORT -->
+        <div id="sec-cashbox" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>💰 تقرير الخزنة والمصروفات والشيفت</span></div>
-                <div class="report-item"><div class="report-item-title">رصيد الخزنة الحالي:</div><div class="report-item-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
+                <div class="report-header"><span>💰 6. تقرير الخزنة والمصروفات والشيفتات</span></div>
+                <div class="report-item"><div class="report-item-title">رصيد الخزنة الفعلي الحالي:</div><div class="report-item-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">إجمالي المقبوضات اليوم:</div><div class="report-item-val" style="color:var(--emerald);">15,400.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">إجمالي المصروفات اليوم:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عجز/زيادة الشيفت الحالي:</div><div class="report-item-val" style="color:var(--rose);">-20.00 ج (عجز)</div></div>
             </div>
         </div>
 
-        <!-- REPORT 7: INVENTORY & STOCK (تقرير المخزون والجرد) -->
-        <div id="sec-stock" class="tab-section">
+        <!-- 7. INVENTORY & STOCK VALUE REPORT -->
+        <div id="sec-stock" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>📦 تقرير المخزون وقيمة الجرد</span></div>
+                <div class="report-header"><span>📦 7. تقرير المخزون وقيمة الجرد</span></div>
                 <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر التكلفة:</div><div class="report-item-val" style="color:var(--gold);">285,000.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر البيع:</div><div class="report-item-val" style="color:var(--emerald);">356,250.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">الأرباح التقديرية المتوقعة:</div><div class="report-item-val" style="color:var(--cyan);">71,250.00 ج</div></div>
             </div>
         </div>
 
-        <!-- REPORT 8: CLIENT DEBTS (تقرير ديون العملاء) -->
-        <div id="sec-clients" class="tab-section">
+        <!-- 8. CLIENT DEBTS REPORT -->
+        <div id="sec-clients" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>👥 تقرير كشوف ديون العملاء</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي مديونيات العملاء:</div><div class="report-item-val" style="color:var(--purple);">42,600.00 ج</div></div>
+                <div class="report-header"><span>👥 8. تقرير ديون العملاء وآجل المحلات</span></div>
+                <div class="report-item"><div class="report-item-title">إجمالي ديون العملاء:</div><div class="report-item-val" style="color:var(--purple);">42,600.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">عدد العملاء المدينين:</div><div class="report-item-val">14 عميل</div></div>
             </div>
         </div>
 
-        <!-- REPORT 9: INSTALLMENTS (تقرير الأقساط والآجل) -->
-        <div id="sec-installments" class="tab-section">
+        <!-- 9. INSTALLMENTS REPORT -->
+        <div id="sec-installments" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>📅 تقرير متابعة الأقساط والآجل</span></div>
+                <div class="report-header"><span>📅 9. تقرير الأقساط والآجل المستحق</span></div>
                 <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">8,200.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">الأقساط المتأخرة عن الموعد:</div><div class="report-item-val" style="color:var(--rose);">2,400.00 ج</div></div>
             </div>
         </div>
 
-        <!-- REPORT 10: TOP SELLING & SLOW ITEMS (تقرير الأكثر مبيعاً وركوداً) -->
-        <div id="sec-topitems" class="tab-section">
+        <!-- 10. TOP SELLING & SLOW REPORT -->
+        <div id="sec-topitems" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🔥 تقرير الأكثر مبيعاً والركودة</span></div>
+                <div class="report-header"><span>🔥 10. تقرير الأكثر مبيعاً والركودة</span></div>
                 <div class="report-item"><div class="report-item-title">🥇 الأكثر مبيعاً:</div><div class="report-item-val" style="color:var(--gold);">طقم فحمات فرامل (45 طقم)</div></div>
                 <div class="report-item"><div class="report-item-title">🐌 ركود لم يُبع منذ 30 يوماً:</div><div class="report-item-val" style="color:var(--rose);">فانوس خلفي هيونداي</div></div>
             </div>
         </div>
 
-        <!-- REPORT 11: WASTAGE & DAMAGED (تقرير الهالك والركود) -->
-        <div id="sec-wastage" class="tab-section">
+        <!-- 11. WASTAGE REPORT -->
+        <div id="sec-wastage" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🗑️ تقرير الهالك والتالف بالمخزن</span></div>
+                <div class="report-header"><span>🗑️ 11. تقرير الهالك والتالف بالمخزن</span></div>
                 <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك هذا الشهر:</div><div class="report-item-val" style="color:var(--rose);">450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد عمليات التكهين:</div><div class="report-item-val">2 عملية</div></div>
             </div>
         </div>
 
-        <!-- REPORT 12: PRICE CHANGE HISTORY (تقرير تاريخ تعديل الأسعار) -->
-        <div id="sec-pricehistory" class="tab-section">
+        <!-- 12. PRICE HISTORY REPORT -->
+        <div id="sec-pricehistory" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🏷️ تقرير سجل وتاريخ تعديل الأسعار</span></div>
-                <div class="report-item"><div class="report-item-title">آخر صنف تم تعديل سعره:</div><div class="report-item-val">زيت موتور توتال (من 420 إلى 450 ج)</div></div>
-                <div class="report-item"><div class="report-item-title">تاريخ التعديل:</div><div class="report-item-val">اليوم 09:15 صباحاً</div></div>
+                <div class="report-header"><span>🏷️ 12. تقرير سجل وتاريخ تعديل الأسعار</span></div>
+                <div class="report-item"><div class="report-item-title">آخر صنف تم تعديل سعره:</div><div class="report-item-val">زيت توتال (من 420 إلى 450 ج)</div></div>
             </div>
         </div>
 
-        <!-- REPORT 13: DRIVERS & FLEET (تقرير المندوبين والتوصيل) -->
-        <div id="sec-drivers" class="tab-section">
+        <!-- 13. DRIVERS & FLEET REPORT -->
+        <div id="sec-drivers" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🚚 تقرير مبيعات المندوبين وخطوط السير</span></div>
+                <div class="report-header"><span>🚚 13. تقرير المندوبين وخطوط السير</span></div>
                 <div class="report-item"><div class="report-item-title">مبيعات خطوط السير اليوم:</div><div class="report-item-val" style="color:var(--emerald);">8,400.00 ج</div></div>
                 <div class="report-item"><div class="report-item-title">تحصيلات السائقين الكاش:</div><div class="report-item-val" style="color:var(--cyan);">6,200.00 ج</div></div>
             </div>
         </div>
 
-    </div>
+        <button class="btn-action" onclick="shareWhatsAppReport()">
+            <span>📲 مشاركة كافة التقارير الـ 13 عبر الواتساب</span>
+        </button>
 
-    <!-- App Bottom Navigation Bar -->
-    <div class="nav-bottom-bar">
-        <div class="nav-item active" onclick="switchReport('profit', this)">
-            <span class="nav-item-icon">📈</span>
-            <span>الأرباح</span>
-        </div>
-        <div class="nav-item" onclick="switchReport('notebook', this)">
-            <span class="nav-item-icon">📝</span>
-            <span>النواقص</span>
-        </div>
-        <div class="nav-item" onclick="switchReport('sales', this)">
-            <span class="nav-item-icon">🧾</span>
-            <span>المبيعات</span>
-        </div>
-        <div class="nav-item" onclick="switchReport('purchases', this)">
-            <span class="nav-item-icon">🛍️</span>
-            <span>المشتريات</span>
-        </div>
-        <div class="nav-item" onclick="switchReport('cashbox', this)">
-            <span class="nav-item-icon">💰</span>
-            <span>الخزنة</span>
-        </div>
-        <div class="nav-item" onclick="switchReport('stock', this)">
-            <span class="nav-item-icon">📦</span>
-            <span>المخزن</span>
-        </div>
     </div>
 
     <script>
-        let ctx = document.getElementById('salesChart').getContext('2d');
-        let salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['9 ص', '11 ص', '1 م', '3 م', '5 م', '7 م', '9 م'],
-                datasets: [{
-                    label: 'الأرباح',
-                    data: [1200, 3400, 6800, 9500, 14200, 16800, 18450],
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' } }
-                }
+        function setViewMode(mode) {
+            document.getElementById('btnModeAll').classList.remove('active');
+            document.getElementById('btnModeTabs').classList.remove('active');
+
+            if(mode === 'all') {
+                document.getElementById('btnModeAll').classList.add('active');
+                document.body.classList.remove('tabbed-mode');
+                document.getElementById('reportsMenuBar').style.display = 'none';
+            } else {
+                document.getElementById('btnModeTabs').classList.add('active');
+                document.body.classList.add('tabbed-mode');
+                document.getElementById('reportsMenuBar').style.display = 'flex';
+                switchReport('profit', document.querySelectorAll('.menu-chip')[0]);
             }
-        });
+        }
 
         function switchReport(tabId, el) {
             document.querySelectorAll('.menu-chip').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
 
             if(el) el.classList.add('active');
@@ -528,25 +524,13 @@
             document.getElementById('themeLabel').innerText = isLight ? 'نهار' : 'داكن';
         }
 
-        function filterReportsMenu(query) {
-            let q = query.trim().toLowerCase();
-            document.querySelectorAll('.menu-chip').forEach(chip => {
-                let text = chip.innerText.toLowerCase();
-                if(text.includes(q)) {
-                    chip.style.display = 'inline-flex';
-                } else {
-                    chip.style.display = 'none';
-                }
-            });
-        }
-
         function orderSupplier(item, supplier) {
             const text = encodeURIComponent(`السلام عليكم، برجاء تجهيز طلبيات توريد لحسابنا:\nصنف: ${item}\nالمورد: ${supplier}\nشكراً لكم.`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
 
         function shareWhatsAppReport() {
-            const text = encodeURIComponent(`📊 تقرير المالك الشامل لكل تقارير البرنامج - ChickenDist Enterprise:\n\n📈 صافي الأرباح: 4,520 ج\n🧾 المبيعات: 18,450 ج\n🛍️ المشتريات: 14,200 ج\n💰 الخزنة: 34,800 ج\n📝 النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
+            const text = encodeURIComponent(`📊 تقرير المالك الشامل لكل تقارير البرنامج الـ 13 - ChickenDist Enterprise:\n\n📈 صافي الأرباح: 4,520 ج\n🧾 المبيعات الكلية: 18,450 ج\n🛍️ المشتريات: 14,200 ج\n💰 الخزنة: 34,800 ج\n📝 النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
     </script>
