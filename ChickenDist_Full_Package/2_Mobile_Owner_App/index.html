@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChickenDist Ultimate Mobile App | تطبيق المالك الشامل</title>
+    <title>ChickenDist Ultimate Mobile App | تطبيق المالك الشامل لكل التقارير</title>
     <meta name="theme-color" content="#070a12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* CSS Variables for Dark & Light Mode */
         :root {
             --bg-body: #070a12;
             --bg-card: rgba(18, 26, 43, 0.85);
@@ -26,7 +25,6 @@
             --rose: #f43f5e;
             --purple: #a855f7;
             --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.3);
-            --input-bg: rgba(18, 26, 43, 0.9);
         }
 
         body.light-mode {
@@ -44,7 +42,6 @@
             --rose: #e11d48;
             --purple: #7c3aed;
             --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
-            --input-bg: #ffffff;
         }
 
         * {
@@ -63,7 +60,6 @@
             padding-bottom: 95px;
         }
 
-        /* Fixed Top App Header */
         .app-header {
             background: var(--bg-header);
             backdrop-filter: blur(20px);
@@ -108,13 +104,6 @@
             font-weight: 700;
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Day/Night Theme Toggle Button */
         .theme-toggle-btn {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -132,12 +121,12 @@
 
         .container {
             padding: 16px;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
         }
 
-        /* Scrollable Reports Chips Bar */
-        .filter-bar {
+        /* Scrollable Full Reports Menu Bar */
+        .reports-menu-bar {
             display: flex;
             gap: 8px;
             overflow-x: auto;
@@ -146,7 +135,7 @@
             scrollbar-width: none;
         }
 
-        .filter-chip {
+        .menu-chip {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             color: var(--text-muted);
@@ -157,15 +146,18 @@
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .filter-chip.active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
+        .menu-chip.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
             border-color: var(--gold);
             color: var(--gold);
         }
 
-        /* Hero Profitability Banner */
+        /* Hero Banner */
         .hero-banner {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(6, 182, 212, 0.1), var(--bg-card));
             border: 1px solid var(--border-subtle);
@@ -185,14 +177,6 @@
             border-top-right-radius: 22px;
         }
 
-        .hero-label {
-            font-size: 13px;
-            color: var(--gold);
-            font-weight: 800;
-            display: flex;
-            justify-content: space-between;
-        }
-
         .hero-num {
             font-size: 32px;
             font-weight: 1000;
@@ -200,68 +184,20 @@
             margin: 4px 0;
         }
 
-        .hero-sub-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-subtle);
-            font-size: 11px;
-        }
-
-        /* 2-Column KPI Cards Grid */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 14px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .kpi-head {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .kpi-value {
-            font-size: 20px;
-            font-weight: 900;
-            color: var(--text-primary);
-        }
-
-        .kpi-sub {
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* Detailed Report List Card */
+        /* Report Cards & Sections */
         .report-box {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 20px;
-            padding: 16px;
+            padding: 18px;
             margin-bottom: 16px;
             box-shadow: var(--shadow-card);
         }
 
-        .report-box-title {
-            font-size: 14px;
+        .report-title {
+            font-size: 15px;
             font-weight: 900;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -290,17 +226,30 @@
             color: var(--text-primary);
         }
 
-        /* Chart Canvas Box */
-        .chart-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
+        /* Notebook Low Stock Table / Cards */
+        .notebook-card {
+            background: rgba(244, 63, 94, 0.08);
+            border: 1px solid rgba(244, 63, 94, 0.25);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Bottom Navbar */
+        .notebook-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        /* Bottom Nav */
         .nav-bottom-bar {
             position: fixed;
             bottom: 0;
@@ -326,7 +275,7 @@
             font-weight: 800;
             cursor: pointer;
             text-decoration: none;
-            width: 16%;
+            width: 14%;
         }
 
         .nav-item.active {
@@ -334,7 +283,7 @@
         }
 
         .nav-item-icon {
-            font-size: 19px;
+            font-size: 18px;
         }
 
         .tab-section {
@@ -381,8 +330,7 @@
                 <div class="store-sub">مؤسسة التوزيع والمبيعات</div>
             </div>
         </div>
-        <div class="header-actions">
-            <!-- Day/Night Mode Toggle -->
+        <div style="display:flex; gap:6px;">
             <button class="theme-toggle-btn" onclick="toggleTheme()">
                 <span id="themeIcon">🌙</span>
                 <span id="themeLabel">داكن</span>
@@ -392,276 +340,220 @@
 
     <div class="container">
 
-        <!-- Time Filter Chips Bar -->
-        <div class="filter-bar">
-            <div class="filter-chip active" onclick="setPeriod('today', this)">⚡ اليوم</div>
-            <div class="filter-chip" onclick="setPeriod('yesterday', this)">📅 أمس</div>
-            <div class="filter-chip" onclick="setPeriod('week', this)">📊 هذا الأسبوع</div>
-            <div class="filter-chip" onclick="setPeriod('month', this)">📅 هذا الشهر</div>
+        <!-- Scrollable Complete Reports Bar -->
+        <div class="reports-menu-bar">
+            <div class="menu-chip active" onclick="switchReport('dashboard', this)">📊 الرئيسية والربح</div>
+            <div class="menu-chip" onclick="switchReport('notebook', this)">📝 كشكول النواقص</div>
+            <div class="menu-chip" onclick="switchReport('supplier', this)">🏭 مبيعات مورد</div>
+            <div class="menu-chip" onclick="switchReport('sales', this)">🧾 المبيعات</div>
+            <div class="menu-chip" onclick="switchReport('cash', this)">💰 الخزنة والشيفت</div>
+            <div class="menu-chip" onclick="switchReport('stock', this)">📦 المخزون بالجرد</div>
+            <div class="menu-chip" onclick="switchReport('debts', this)">👥 الديون والعملاء</div>
+            <div class="menu-chip" onclick="switchReport('topitems', this)">🔥 الأكثر مبيعاً وركوداً</div>
+            <div class="menu-chip" onclick="switchReport('returns', this)">↩️ المرتجعات والاستبدال</div>
+            <div class="menu-chip" onclick="switchReport('drivers', this)">🚚 المندوبين والملاكي</div>
         </div>
 
-        <!-- TAB 1: MAIN DASHBOARD & PROFITABILITY REPORT -->
+        <!-- 1. TAB DASHBOARD OVERVIEW -->
         <div id="sec-dashboard" class="tab-section active">
-
-            <!-- Hero Net Profit Banner -->
             <div class="hero-banner">
-                <div class="hero-label">
-                    <span>📈 تقرير صافي الأرباح</span>
-                    <span style="font-size:11px; color:var(--emerald);">مُحدث 11:33:19</span>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
+                    <span>📈 صافي أرباح اليوم المقدرة</span>
+                    <span style="font-size:11px; color:var(--emerald);">مُحدث حي</span>
                 </div>
                 <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
-                
-                <div class="hero-sub-grid">
-                    <div>
-                        <div style="color:var(--text-muted);">المبيعات الكلية</div>
-                        <div style="font-weight:900; color:var(--cyan);" id="lblSalesTotal">18,450 ج</div>
-                    </div>
-                    <div>
-                        <div style="color:var(--text-muted);">تكلفة البضاعة</div>
-                        <div style="font-weight:900; color:var(--text-muted);" id="lblCostTotal">12,080 ج</div>
-                    </div>
-                    <div>
-                        <div style="color:var(--text-muted);">المصروفات</div>
-                        <div style="font-weight:900; color:var(--rose);" id="lblExpensesTotal">1,850 ج</div>
-                    </div>
+                <div style="display:flex; gap:12px; font-size:11px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                    <div>المبيعات: <b style="color:var(--cyan);">18,450 ج</b></div>
+                    <div>التكلفة: <b>12,080 ج</b></div>
+                    <div>المصروفات: <b style="color:var(--rose);">1,850 ج</b></div>
                 </div>
             </div>
 
-            <!-- KPI Summary Grid -->
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-head"><span>💵 الخزنة والدرج</span></div>
-                    <div class="kpi-value" style="color:var(--emerald);" id="lblCashbox">34,800 ج</div>
-                    <div class="kpi-sub">الرصيد الصافي المتاح</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-head"><span>🧾 الفواتير الصادرة</span></div>
-                    <div class="kpi-value" style="color:var(--cyan);" id="lblInvoices">24 فاتورة</div>
-                    <div class="kpi-sub">متوسط الفاتورة: 768 ج</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-head"><span>📋 مبيعات الآجل</span></div>
-                    <div class="kpi-value" style="color:var(--gold);" id="lblCreditSales">6,250 ج</div>
-                    <div class="kpi-sub">ديون العملاء الجدد</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-head"><span>⚠️ نواقص المخزن</span></div>
-                    <div class="kpi-value" style="color:var(--rose);" id="lblLowStock">4 أصناف</div>
-                    <div class="kpi-sub">تحت حد الطلب</div>
-                </div>
-            </div>
-
-            <!-- Sales Trend Chart -->
-            <div class="chart-box">
-                <div class="report-box-title">
-                    <span>📊 منحنى حركة الأرباح والمبيعات</span>
-                    <span style="font-size:11px; color:var(--cyan);">تحليل حقيقي</span>
-                </div>
+            <div class="report-box">
+                <div class="report-title">📊 منحنى الأرباح والمبيعات اليومية</div>
                 <canvas id="salesChart" height="150"></canvas>
             </div>
 
             <button class="btn-action" onclick="shareWhatsAppReport()">
-                <span>📲 مشاركة التقرير المباشر عبر الواتساب</span>
+                <span>📲 مشاركة تقرير المالك الشامل على الواتساب</span>
             </button>
         </div>
 
-        <!-- TAB 2: DETAILED SALES REPORT -->
+        <!-- 2. NEW TAB: كشكول النواقص وطلبيات الشراء -->
+        <div id="sec-notebook" class="tab-section">
+            <div class="report-box">
+                <div class="report-title">
+                    <span>📝 كشكول النواقص وطلبيات الشراء</span>
+                    <span style="color:var(--rose); font-size:12px;">4 أصناف مطلوبة</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">قائمة بالأصناف التي وصلت للحد الأدنى لتجهيز طلبية الموردين:</div>
+
+                <div class="notebook-card">
+                    <div>
+                        <div style="font-weight:900;">فلتر زيت تويوتا أصلي</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية لقطع الغيار</div>
+                    </div>
+                    <button class="notebook-btn" onclick="orderSupplier('فلتر زيت تويوتا', 'العالمية')">📲 طلب 20 قطعة</button>
+                </div>
+
+                <div class="notebook-card">
+                    <div>
+                        <div style="font-weight:900;">طقم بوجيهات دنسو ياباني</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر لاستيراد القطع</div>
+                    </div>
+                    <button class="notebook-btn" onclick="orderSupplier('طقم بوجيهات دنسو', 'النصر')">📲 طلب 10 طقم</button>
+                </div>
+
+                <div class="notebook-card">
+                    <div>
+                        <div style="font-weight:900;">زيت موتور توتال 10W40</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">3 جركن</b> | المورد: المصرية للزيوت</div>
+                    </div>
+                    <button class="notebook-btn" onclick="orderSupplier('زيت توتال 10W40', 'المصرية للزيوت')">📲 طلب 15 جركن</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. NEW TAB: تقرير مبيعات مورد -->
+        <div id="sec-supplier" class="tab-section">
+            <div class="report-box">
+                <div class="report-title">
+                    <span>🏭 تقرير مبيعات وحركات الموردين</span>
+                    <span style="color:var(--gold); font-size:12px;">مبيعات الموردين</span>
+                </div>
+                
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">اختر المورد:</label>
+                    <select id="cboSuppliers" onchange="filterSupplierReport(this.value)" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:var(--text-primary); padding:10px; border-radius:12px; font-weight:800; margin-top:4px;">
+                        <option value="all">-- جميع الموردين --</option>
+                        <option value="1">العالمية لقطع الغيار</option>
+                        <option value="2">النصر لاستيراد القطع</option>
+                        <option value="3">المصرية للزيوت والكماليات</option>
+                    </select>
+                </div>
+
+                <div class="report-row">
+                    <div class="report-row-title">إجمالي مبيعات أصناف المورد:</div>
+                    <div class="report-row-val" style="color:var(--gold);" id="lblSuppSales">8,450.00 ج</div>
+                </div>
+                <div class="report-row">
+                    <div class="report-row-title">عدد القطع المباعة للمورد:</div>
+                    <div class="report-row-val" id="lblSuppQty">38 قطعة</div>
+                </div>
+                <div class="report-row">
+                    <div class="report-row-title">أرباح المورد التقديرية:</div>
+                    <div class="report-row-val" style="color:var(--emerald);" id="lblSuppProfit">2,100.00 ج</div>
+                </div>
+                <div class="report-row">
+                    <div class="report-row-title">رصيد حساب المورد الفعلي:</div>
+                    <div class="report-row-val" style="color:var(--rose);" id="lblSuppBalance">18,500.00 ج (له)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. TAB DETAILED SALES -->
         <div id="sec-sales" class="tab-section">
             <div class="report-box">
-                <div class="report-box-title">
-                    <span>🧾 تقرير تفاصيل الفواتير والمبيعات</span>
-                    <span style="color:var(--cyan);">اليوم</span>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي المبيعات (كاش + آجل):</div>
-                    <div class="report-row-val" style="color:var(--cyan);">18,450.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">المبيعات النقدية (الكاش المحصل):</div>
-                    <div class="report-row-val" style="color:var(--emerald);">12,200.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">المبيعات الآجلة (ديون):</div>
-                    <div class="report-row-val" style="color:var(--gold);">6,250.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">عدد الفواتير الكلي:</div>
-                    <div class="report-row-val">24 فاتورة</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">متوسط قيمة الفاتورة:</div>
-                    <div class="report-row-val">768.75 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">مرتجعات المبيعات:</div>
-                    <div class="report-row-val" style="color:var(--rose);">350.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">ساعة الذروة (أعلى مبيعات):</div>
-                    <div class="report-row-val" style="color:var(--gold);">05:00 مساءً (6,800 ج)</div>
-                </div>
+                <div class="report-title"><span>🧾 تقرير تفاصيل الفواتير والمبيعات</span></div>
+                <div class="report-row"><div class="report-row-title">إجمالي المبيعات الكلية:</div><div class="report-row-val" style="color:var(--cyan);">18,450.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">المبيعات النقدية (الكاش):</div><div class="report-row-val" style="color:var(--emerald);">12,200.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">المبيعات الآجلة (ديون):</div><div class="report-row-val" style="color:var(--gold);">6,250.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">عدد الفواتير الكلي:</div><div class="report-row-val">24 فاتورة</div></div>
+                <div class="report-row"><div class="report-row-title">متوسط الفاتورة:</div><div class="report-row-val">768.75 ج</div></div>
             </div>
         </div>
 
-        <!-- TAB 3: DETAILED CASHBOX & SHIFT REPORT -->
+        <!-- 5. TAB CASHBOX & SHIFTS -->
         <div id="sec-cash" class="tab-section">
             <div class="report-box">
-                <div class="report-box-title">
-                    <span>💰 تقرير الخزنة وحركة الشيفت</span>
-                    <span style="color:var(--emerald);">رصيد حقيقي</span>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">رصيد الخزنة الفعلي الحالي:</div>
-                    <div class="report-row-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي مقبوضات اليوم:</div>
-                    <div class="report-row-val" style="color:var(--emerald);">15,400.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي مصروفات اليوم:</div>
-                    <div class="report-row-val" style="color:var(--rose);">1,850.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">الكاشير / الموظف الحالي:</div>
-                    <div class="report-row-val">أحمد محمود (الشيفت الأول)</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">حالة الدرج الحالية:</div>
-                    <div class="report-row-val" style="color:var(--emerald);">مفتوح وجاري العمل 🟢</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">فروقات آخر تقفيل (عجز/زيادة):</div>
-                    <div class="report-row-val" style="color:var(--rose);">-20.00 ج (عجز بسيط)</div>
-                </div>
+                <div class="report-title"><span>💰 تقرير الخزنة وحركة الشيفت</span></div>
+                <div class="report-row"><div class="report-row-title">رصيد الخزنة الفعلي:</div><div class="report-row-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">إجمالي المقبوضات:</div><div class="report-row-val" style="color:var(--emerald);">15,400.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">إجمالي المصروفات:</div><div class="report-row-val" style="color:var(--rose);">1,850.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">الكاشير الحالي:</div><div class="report-row-val">أحمد محمود</div></div>
             </div>
         </div>
 
-        <!-- TAB 4: DETAILED INVENTORY REPORT -->
+        <!-- 6. TAB INVENTORY & WAREHOUSE -->
         <div id="sec-stock" class="tab-section">
             <div class="report-box">
-                <div class="report-box-title">
-                    <span>📦 تقرير الجرد وقيمة المخزون</span>
-                    <span style="color:var(--gold);">480 صنف</span>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">قيمة البضاعة بسعر التكلفة:</div>
-                    <div class="report-row-val" style="color:var(--gold);">285,000.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">قيمة البضاعة المتوقعة بسعر البيع:</div>
-                    <div class="report-row-val" style="color:var(--emerald);">356,250.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">الأرباح المتوقعة عند البيع:</div>
-                    <div class="report-row-val" style="color:var(--cyan);">71,250.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">عدد الأصناف في المخزن الرئيسي:</div>
-                    <div class="report-row-val">340 صنف</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">عدد الأصناف في مخزن المندوبين:</div>
-                    <div class="report-row-val">140 صنف</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">أصناف النواقص (تحت الحد):</div>
-                    <div class="report-row-val" style="color:var(--rose);">4 أصناف</div>
-                </div>
+                <div class="report-title"><span>📦 تقرير الجرد وقيمة المخزون</span></div>
+                <div class="report-row"><div class="report-row-title">قيمة البضاعة بسعر التكلفة:</div><div class="report-row-val" style="color:var(--gold);">285,000.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">قيمة البضاعة بسعر البيع:</div><div class="report-row-val" style="color:var(--emerald);">356,250.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">الأرباح المتوقعة عند البيع:</div><div class="report-row-val" style="color:var(--cyan);">71,250.00 ج</div></div>
             </div>
         </div>
 
-        <!-- TAB 5: DEBTS & CLIENTS LEDGER REPORT -->
+        <!-- 7. TAB DEBTS & CLIENTS -->
         <div id="sec-debts" class="tab-section">
             <div class="report-box">
-                <div class="report-box-title">
-                    <span>👥 تقرير الديون والعملاء والتقسيط</span>
-                    <span style="color:var(--purple);">شجرة المديونيات</span>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي ديون العملاء (الآجل):</div>
-                    <div class="report-row-val" style="color:var(--purple);">42,600.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">مستحقات الموردين للشركات:</div>
-                    <div class="report-row-val" style="color:var(--rose);">18,500.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">عدد العملاء المدينين:</div>
-                    <div class="report-row-val">14 عميل</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">الأقساط المستحقة هذا الشهر:</div>
-                    <div class="report-row-val" style="color:var(--gold);">8,200.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">الأقساط المتأخرة عن الموعد:</div>
-                    <div class="report-row-val" style="color:var(--rose);">2,400.00 ج</div>
-                </div>
+                <div class="report-title"><span>👥 تقرير الديون والعملاء والتقسيط</span></div>
+                <div class="report-row"><div class="report-row-title">إجمالي ديون العملاء:</div><div class="report-row-val" style="color:var(--purple);">42,600.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">مستحقات الموردين:</div><div class="report-row-val" style="color:var(--rose);">18,500.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">أقساط مستحقة هذا الشهر:</div><div class="report-row-val" style="color:var(--gold);">8,200.00 ج</div></div>
             </div>
         </div>
 
-        <!-- TAB 6: FLEET & DRIVERS REPORT -->
+        <!-- 8. NEW TAB: الأكثر مبيعاً وركوداً -->
+        <div id="sec-topitems" class="tab-section">
+            <div class="report-box">
+                <div class="report-title"><span>🔥 الأصناف الأكثر مبيعاً والركودة</span></div>
+                <div class="report-row"><div class="report-row-title">🥇 الصنف الأكثر مبيعاً:</div><div class="report-row-val" style="color:var(--gold);">طقم فحمات فرامل كورولا (45 طقم)</div></div>
+                <div class="report-row"><div class="report-row-title">🥈 ثاني أعلى مبيعات:</div><div class="report-row-val" style="color:var(--cyan);">زيت توتال 10W40 (28 جركن)</div></div>
+                <div class="report-row"><div class="report-row-title">🐌 صنف ركود لم يُبع منذ 30 يوماً:</div><div class="report-row-val" style="color:var(--rose);">فانوس خلفي هيونداي 2018</div></div>
+            </div>
+        </div>
+
+        <!-- 9. NEW TAB: المرتجعات والاستبدال -->
+        <div id="sec-returns" class="tab-section">
+            <div class="report-box">
+                <div class="report-title"><span>↩️ تقرير المرتجعات واستبدال البضاعة</span></div>
+                <div class="report-row"><div class="report-row-title">إجمالي مرتجعات المبيعات اليوم:</div><div class="report-row-val" style="color:var(--rose);">350.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">عدد عمليات الاستبدال اللحظي:</div><div class="report-row-val">4 عمليات</div></div>
+                <div class="report-row"><div class="report-row-title">نسبة المرتجعات للمبيعات:</div><div class="report-row-val">1.8% (ضمن المعدل الطبيعي)</div></div>
+            </div>
+        </div>
+
+        <!-- 10. TAB DRIVERS & FLEET -->
         <div id="sec-drivers" class="tab-section">
             <div class="report-box">
-                <div class="report-box-title">
-                    <span>🚚 تقرير المندوبين وخطوط السير</span>
-                    <span style="color:var(--cyan);">السرحات</span>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">عدد المندوبين النشطين اليوم:</div>
-                    <div class="report-row-val">3 مندوبين</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي مبيعات خطوط السير:</div>
-                    <div class="report-row-val" style="color:var(--emerald);">8,400.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">إجمالي تحصيلات السائقين الكاش:</div>
-                    <div class="report-row-val" style="color:var(--cyan);">6,200.00 ج</div>
-                </div>
-                <div class="report-row">
-                    <div class="report-row-title">أعلى مندوب مبيعات اليوم:</div>
-                    <div class="report-row-val" style="color:var(--gold);">محمود علي (3,800 ج)</div>
-                </div>
+                <div class="report-title"><span>🚚 تقرير المندوبين وخطوط السير</span></div>
+                <div class="report-row"><div class="report-row-title">مبيعات خطوط السير اليوم:</div><div class="report-row-val" style="color:var(--emerald);">8,400.00 ج</div></div>
+                <div class="report-row"><div class="report-row-title">تحصيلات السائقين الكاش:</div><div class="report-row-val" style="color:var(--cyan);">6,200.00 ج</div></div>
             </div>
         </div>
 
     </div>
 
-    <!-- App Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar -->
     <div class="nav-bottom-bar">
-        <div class="nav-item active" onclick="switchTab('dashboard', this)">
+        <div class="nav-item active" onclick="switchReport('dashboard', this)">
             <span class="nav-item-icon">📊</span>
-            <span>الأرباح</span>
+            <span>الرئيسية</span>
         </div>
-        <div class="nav-item" onclick="switchTab('sales', this)">
+        <div class="nav-item" onclick="switchReport('notebook', this)">
+            <span class="nav-item-icon">📝</span>
+            <span>النواقص</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('supplier', this)">
+            <span class="nav-item-icon">🏭</span>
+            <span>الموردين</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('sales', this)">
             <span class="nav-item-icon">🧾</span>
             <span>المبيعات</span>
         </div>
-        <div class="nav-item" onclick="switchTab('cash', this)">
+        <div class="nav-item" onclick="switchReport('cash', this)">
             <span class="nav-item-icon">💰</span>
             <span>الخزنة</span>
         </div>
-        <div class="nav-item" onclick="switchTab('stock', this)">
+        <div class="nav-item" onclick="switchReport('stock', this)">
             <span class="nav-item-icon">📦</span>
             <span>المخزن</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('debts', this)">
-            <span class="nav-item-icon">👥</span>
-            <span>الديون</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('drivers', this)">
-            <span class="nav-item-icon">🚚</span>
-            <span>المندوبين</span>
         </div>
     </div>
 
     <script>
-        // Init Chart.js
         let ctx = document.getElementById('salesChart').getContext('2d');
         let salesChart = new Chart(ctx, {
             type: 'line',
@@ -674,8 +566,7 @@
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
                     fill: true,
                     tension: 0.4,
-                    borderWidth: 3,
-                    pointRadius: 4
+                    borderWidth: 3
                 }]
             },
             options: {
@@ -688,54 +579,45 @@
             }
         });
 
-        function switchTab(tabId, el) {
+        function switchReport(tabId, el) {
+            document.querySelectorAll('.menu-chip').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
 
-            if(el) el.classList.add('active');
             document.getElementById('sec-' + tabId).classList.add('active');
         }
 
-        // Day / Night Theme Toggle Function
         function toggleTheme() {
             const body = document.body;
-            const icon = document.getElementById('themeIcon');
-            const label = document.getElementById('themeLabel');
-
             body.classList.toggle('light-mode');
-
-            if(body.classList.contains('light-mode')) {
-                icon.innerText = '☀️';
-                label.innerText = 'نهار';
-                salesChart.options.scales.x.grid.color = 'rgba(0,0,0,0.06)';
-                salesChart.options.scales.y.grid.color = 'rgba(0,0,0,0.06)';
-            } else {
-                icon.innerText = '🌙';
-                label.innerText = 'داكن';
-                salesChart.options.scales.x.grid.color = 'rgba(255,255,255,0.05)';
-                salesChart.options.scales.y.grid.color = 'rgba(255,255,255,0.05)';
-            }
-            salesChart.update();
+            const isLight = body.classList.contains('light-mode');
+            document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
+            document.getElementById('themeLabel').innerText = isLight ? 'نهار' : 'داكن';
         }
 
-        function setPeriod(period, chip) {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-
-            if(period === 'today') {
-                document.getElementById('lblNetProfit').innerText = "4,520.00 ج";
-                document.getElementById('lblSalesTotal').innerText = "18,450.00 ج";
-            } else if(period === 'week') {
-                document.getElementById('lblNetProfit').innerText = "28,600.00 ج";
-                document.getElementById('lblSalesTotal').innerText = "112,800.00 ج";
-            } else if(period === 'month') {
-                document.getElementById('lblNetProfit').innerText = "94,200.00 ج";
-                document.getElementById('lblSalesTotal').innerText = "385,000.00 ج";
+        function filterSupplierReport(suppId) {
+            if(suppId === '1') {
+                document.getElementById('lblSuppSales').innerText = "4,200.00 ج";
+                document.getElementById('lblSuppQty').innerText = "18 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "1,050.00 ج";
+            } else if(suppId === '2') {
+                document.getElementById('lblSuppSales').innerText = "2,850.00 ج";
+                document.getElementById('lblSuppQty').innerText = "12 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "650.00 ج";
+            } else {
+                document.getElementById('lblSuppSales').innerText = "8,450.00 ج";
+                document.getElementById('lblSuppQty').innerText = "38 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "2,100.00 ج";
             }
+        }
+
+        function orderSupplier(item, supplier) {
+            const text = encodeURIComponent(`السلام عليكم، برجاء تجهيز طلبيات توريد لحسابنا:\nصنف: ${item}\nالمورد: ${supplier}\nشكراً لكم.`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
         }
 
         function shareWhatsAppReport() {
-            const text = encodeURIComponent(`📊 تقرير المالك اليومي - ChickenDist Enterprise:\n\n💰 صافي الأرباح: 4,520 ج\n📈 إجمالي المبيعات: 18,450 ج\n💵 رصيد الخزنة: 34,800 ج\n⚠️ النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
+            const text = encodeURIComponent(`📊 تقرير المالك الشامل - ChickenDist Enterprise:\n\n💰 صافي الأرباح: 4,520 ج\n📈 المبيعات الكلية: 18,450 ج\n💵 الخزنة: 34,800 ج\n📝 كشكول النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
     </script>
