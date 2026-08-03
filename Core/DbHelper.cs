@@ -99,14 +99,23 @@ namespace ChickenDist.Core
                 string user = ReadIniDirect(iniPath, "Database", "User", "");
                 string pass = ReadIniDirect(iniPath, "Database", "Password", "");
 
-                // الترحيل التلقائي لاسم قاعدة البيانات للعملاء القدامى (من ChickenDist إلى ProSoftDB)
-                TryMigrateOldDatabase(server, user, pass, intSec.Equals("True", StringComparison.OrdinalIgnoreCase));
+                bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
+
+                // 1. الترحيل التلقائي لاسم قاعدة البيانات للعملاء القدامى (من ChickenDist إلى ProSoftDB)
+                TryMigrateOldDatabase(server, user, pass, isIntegrated);
+
+                // 2. تحديث ملف Settings.ini على الجهاز إذا كان محتفظاً بالاسم القديم
+                if (db.Equals("ChickenDist", StringComparison.OrdinalIgnoreCase))
+                {
+                    db = "ProSoftDB";
+                    UpdateIniDatabaseKey(iniPath, "ProSoftDB");
+                }
 
                 var builder = new SqlConnectionStringBuilder
                 {
                     DataSource = server,
                     InitialCatalog = db,
-                    IntegratedSecurity = intSec.Equals("True", StringComparison.OrdinalIgnoreCase),
+                    IntegratedSecurity = isIntegrated,
                     TrustServerCertificate = true,
                     ConnectTimeout = 30,
                     PacketSize = 32768,
@@ -128,6 +137,21 @@ namespace ChickenDist.Core
             {
                 return "Data Source=.;Initial Catalog=ProSoftDB;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
             }
+        }
+
+        private static void UpdateIniDatabaseKey(string iniPath, string newDatabaseName)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(iniPath)) return;
+                string content = System.IO.File.ReadAllText(iniPath, Encoding.Unicode);
+                if (content.Contains("Database=ChickenDist"))
+                {
+                    content = content.Replace("Database=ChickenDist", "Database=" + newDatabaseName);
+                    System.IO.File.WriteAllText(iniPath, content, Encoding.Unicode);
+                }
+            }
+            catch { }
         }
 
         /// <summary>
@@ -179,6 +203,15 @@ namespace ChickenDist.Core
                         {
                             renameCmd.CommandTimeout = 120;
                             renameCmd.ExecuteNonQuery();
+                        }
+                    }
+                    else if (oldCount == 0 && newCount == 0)
+                    {
+                        // إنشاء قاعدة بيانات جديدة باسم ProSoftDB إذا لم توجد
+                        string createSql = "CREATE DATABASE [ProSoftDB]";
+                        using (var createCmd = new SqlCommand(createSql, con))
+                        {
+                            createCmd.ExecuteNonQuery();
                         }
                     }
                 }
