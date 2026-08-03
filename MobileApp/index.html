@@ -3,161 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChickenDist Owner App | تطبيق المالك الفاخر</title>
-    <meta name="theme-color" content="#0b0f19">
+    <title>ChickenDist Enterprise Mobile App | تطبيق المالك الذكي</title>
+    <meta name="theme-color" content="#070a12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-main: #0b0f19;
-            --bg-card: rgba(23, 32, 51, 0.85);
-            --bg-card-hover: rgba(30, 41, 64, 0.95);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
+            --bg-body: #070a12;
+            --bg-card: rgba(18, 26, 43, 0.85);
+            --bg-card-hover: rgba(26, 37, 60, 0.95);
+            --border-glow: rgba(245, 158, 11, 0.2);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-muted: #94a3b8;
             --gold: #f59e0b;
-            --gold-glow: rgba(245, 158, 11, 0.25);
+            --gold-light: #fbbf24;
             --cyan: #06b6d4;
-            --cyan-glow: rgba(6, 182, 212, 0.25);
             --emerald: #10b981;
-            --emerald-glow: rgba(16, 185, 129, 0.25);
-            --purple: #a855f7;
             --rose: #f43f5e;
+            --purple: #a855f7;
+            --shadow-gold: 0 8px 30px rgba(245, 158, 11, 0.2);
+            --shadow-cyan: 0 8px 30px rgba(6, 182, 212, 0.2);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Tajawal', 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Cairo', system-ui, -apple-system, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-main);
+            background-color: var(--bg-body);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.1) 0px, transparent 50%),
-                radial-gradient(at 50% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+                radial-gradient(circle at 10% 10%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 20%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 90%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
             background-attachment: fixed;
-            color: var(--text-main);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding-bottom: 90px;
+            padding-bottom: 100px;
         }
 
-        /* Top Luxury Bar */
-        .top-bar {
-            background: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 16px 20px;
+        /* Fixed Top App Header */
+        .app-header {
+            background: rgba(11, 15, 25, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 14px 18px;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 200;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .brand-box {
+        .store-identity {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .brand-logo {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--gold), #d97706);
+        .avatar-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f59e0b, #b45309);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 14px var(--gold-glow);
+            font-size: 24px;
+            box-shadow: var(--shadow-gold);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .brand-title {
-            font-size: 17px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff, var(--text-sub));
+        .store-name {
+            font-size: 16px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffffff, #cbd5e1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .sync-timestamp-badge {
-            background: rgba(6, 182, 212, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            color: var(--cyan);
-            padding: 6px 12px;
-            border-radius: 20px;
+        .store-sub {
             font-size: 11px;
+            color: var(--gold);
             font-weight: 700;
+        }
+
+        .live-status-pill {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--emerald);
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 800;
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        .pulse-dot {
+        .live-dot {
             width: 8px;
             height: 8px;
             background-color: var(--emerald);
             border-radius: 50%;
             box-shadow: 0 0 10px var(--emerald);
-            animation: pulse 1.8s infinite;
+            animation: pulse-ring 1.8s infinite;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.8; }
         }
 
-        .main-container {
-            padding: 20px 16px;
+        .container {
+            padding: 16px;
             max-width: 600px;
             margin: 0 auto;
         }
 
-        /* Navigation Tabs */
-        .nav-tabs {
+        /* Filter Chips Bar */
+        .filter-bar {
             display: flex;
-            background: rgba(23, 32, 51, 0.6);
-            border: 1px solid var(--border-color);
-            padding: 4px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            gap: 4px;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            scrollbar-width: none;
         }
 
-        .tab-btn {
-            flex: 1;
-            padding: 10px 4px;
-            border: none;
-            background: transparent;
-            color: var(--text-sub);
-            font-weight: 700;
+        .filter-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 12px;
-            border-radius: 10px;
+            font-weight: 700;
+            white-space: nowrap;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
+            border-color: var(--gold);
+            color: var(--gold-light);
+            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Hero Profitability Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 22px;
+            padding: 22px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--cyan), var(--emerald));
+            border-top-left-radius: 22px;
+            border-top-right-radius: 22px;
+        }
+
+        .hero-label {
+            font-size: 13px;
+            color: var(--gold);
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hero-num {
+            font-size: 34px;
+            font-weight: 1000;
+            color: #ffffff;
+            margin: 6px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-sub-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 12px;
+        }
+
+        .sub-stat-item {
+            flex: 1;
+        }
+
+        .sub-stat-title {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .sub-stat-val {
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        /* 2-Column KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 16px;
             transition: all 0.25s ease;
         }
 
-        .tab-btn.active {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.05));
-            border: 1px solid rgba(6, 182, 212, 0.4);
-            color: var(--cyan);
-            box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15);
+        .kpi-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-2px);
         }
 
-        /* Detailed Report Cards */
-        .report-section {
+        .kpi-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .kpi-icon-box {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        .kpi-footer {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Chart Canvas Container */
+        .chart-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        /* Search Bar & Barcode Simulator */
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(18, 26, 43, 0.9);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            padding: 14px 44px 14px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 16px rgba(6, 182, 212, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        /* Emergency Security Alerts Bar */
+        .alert-banner {
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .alert-icon {
+            font-size: 22px;
+        }
+
+        .alert-text {
+            font-size: 12px;
+            color: #fecdd3;
+            font-weight: 700;
+        }
+
+        /* Floating Bottom Bar (App-like Navigation) */
+        .nav-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(11, 15, 25, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 14px 0;
+            z-index: 300;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            width: 20%;
+        }
+
+        .nav-item.active {
+            color: var(--gold);
+        }
+
+        .nav-item-icon {
+            font-size: 20px;
+        }
+
+        /* Action Buttons */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #ffffff;
+            box-shadow: var(--shadow-gold);
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #ffffff;
+            box-shadow: var(--shadow-cyan);
+        }
+
+        .tab-content {
             display: none;
         }
 
-        .report-section.active {
+        .tab-content.active {
             display: block;
             animation: fadeIn 0.3s ease;
         }
@@ -166,386 +432,300 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        .hero-kpi-card {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.8));
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 20px;
-            padding: 22px;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--gold), var(--cyan), var(--emerald));
-        }
-
-        .hero-title {
-            font-size: 13px;
-            color: var(--gold);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .hero-value {
-            font-size: 32px;
-            font-weight: 900;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            transition: all 0.2s ease;
-        }
-
-        .card:hover {
-            background: var(--bg-card-hover);
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--text-sub);
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .card-val {
-            font-size: 20px;
-            font-weight: 800;
-            color: #ffffff;
-        }
-
-        .card-sub {
-            font-size: 11px;
-            color: var(--text-sub);
-            margin-top: 4px;
-        }
-
-        /* Detail List Rows */
-        .detail-list {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 13px;
-        }
-
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-
-        .detail-label {
-            color: var(--text-sub);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .detail-value {
-            font-weight: 800;
-            color: var(--text-main);
-        }
-
-        /* Refresh Button */
-        .btn-action {
-            width: 100%;
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            padding: 16px;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
-            transition: transform 0.15s ease;
-        }
-
-        .btn-action:active {
-            transform: scale(0.98);
-        }
-
-        /* Secret Key pairing footer */
-        .secret-footer {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            margin-top: 24px;
-            text-align: center;
-        }
-
-        .secret-input {
-            width: 100%;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: var(--gold);
-            font-weight: 800;
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 15px;
-            margin: 10px 0;
-            direction: ltr;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Top Luxury Navigation Bar -->
-    <div class="top-bar">
-        <div class="brand-box">
-            <div class="brand-logo">📊</div>
+    <!-- Header Navbar -->
+    <div class="app-header">
+        <div class="store-identity">
+            <div class="avatar-logo">🏢</div>
             <div>
-                <div class="brand-title">ChickenDist Owner</div>
-                <div style="font-size: 11px; color: var(--text-sub);" id="lblStoreName">مؤسسة التوزيع والقطع</div>
+                <div class="store-name">ChickenDist Enterprise</div>
+                <div class="store-sub">مؤسسة قطع غيار والتوزيع</div>
             </div>
         </div>
-        <div class="sync-timestamp-badge">
-            <span class="pulse-dot"></span>
-            <span id="lblSyncTimestamp">11:17:52</span>
+        <div class="live-status-pill">
+            <span class="live-dot"></span>
+            <span id="lblSyncBadge">متصل بالسحابة 🟢</span>
         </div>
     </div>
 
-    <div class="main-container">
+    <div class="container">
 
-        <!-- Nav Tabs -->
-        <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('sales', this)">🧾 المبيعات</button>
-            <button class="tab-btn" onclick="switchTab('cash', this)">💰 الخزنة والدرج</button>
-            <button class="tab-btn" onclick="switchTab('stock', this)">📦 المخزون</button>
-            <button class="tab-btn" onclick="switchTab('debts', this)">👥 الديون والعملاء</button>
+        <!-- Time Filter Chips Bar -->
+        <div class="filter-bar">
+            <div class="filter-chip active" onclick="setPeriod('today', this)">⚡ اليوم</div>
+            <div class="filter-chip" onclick="setPeriod('yesterday', this)">📅 أمس</div>
+            <div class="filter-chip" onclick="setPeriod('week', this)">📊 هذا الأسبوع</div>
+            <div class="filter-chip" onclick="setPeriod('month', this)">📅 هذا الشهر</div>
         </div>
 
-        <!-- 1. TAB SALES REPORT DETAILS -->
-        <div id="tab-sales" class="report-section active">
-            <div class="hero-kpi-card">
-                <div class="hero-title">📈 إجمالي مبيعات اليوم الكلية</div>
-                <div class="hero-value" id="valSalesHero">18,450.00 ج</div>
-                <div style="font-size:12px; color:var(--text-sub); margin-top:6px;">مُحدث بناءً على فواتير اليوم</div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="card">
-                    <div class="card-header">💵 مبيعات كاش</div>
-                    <div class="card-val" style="color:var(--emerald);" id="valSalesCash">12,200.00 ج</div>
-                    <div class="card-sub">محصلة نقدياً في الدرج</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">📋 مبيعات آجل</div>
-                    <div class="card-val" style="color:var(--gold);" id="valSalesCredit">6,250.00 ج</div>
-                    <div class="card-sub">مقيدة على حسابات العملاء</div>
-                </div>
-            </div>
-
-            <div class="detail-list">
-                <div class="detail-row">
-                    <div class="detail-label"><span>🧾 عدد الفواتير الصادرة:</span></div>
-                    <div class="detail-value" id="valInvoiceCount">24 فاتورة</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>📊 متوسط قيمة الفاتورة:</span></div>
-                    <div class="detail-value" id="valAvgInvoice">768.75 ج</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>↩ إجمالي مرتجعات اليوم:</span></div>
-                    <div class="detail-value" style="color:var(--rose);" id="valReturnsToday">350.00 ج</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🕒 تاريخ آخر مزامنة:</span></div>
-                    <div class="detail-value" style="color:var(--cyan);" id="valSalesSyncTime">2026-08-03 11:17:52</div>
-                </div>
+        <!-- Emergency Alert Notification -->
+        <div class="alert-banner">
+            <div class="alert-icon">⚠️</div>
+            <div>
+                <div class="alert-text">تنبيه أمان: تم تقفيل الدرج الأخير بـ (عجز 20 ج) - الكاشير: أحمد محمود</div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">الساعة 11:15 صباحاً</div>
             </div>
         </div>
 
-        <!-- 2. TAB CASHBOX & SHIFT REPORT DETAILS -->
-        <div id="tab-cash" class="report-section">
-            <div class="hero-kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(15, 23, 42, 0.8)); border-color: rgba(16, 185, 129, 0.3);">
-                <div class="hero-title" style="color:var(--emerald);">💰 رصيد الخزنة الفعلي الآن</div>
-                <div class="hero-value" id="valCashboxHero">34,800.00 ج</div>
-                <div style="font-size:12px; color:var(--text-sub); margin-top:6px;">الرصيد الصافي المتاح بالدرج والخزنة</div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="card">
-                    <div class="card-header">📥 إجمالي المقبوضات</div>
-                    <div class="card-val" style="color:var(--emerald);" id="valCashIn">15,400.00 ج</div>
-                    <div class="card-sub">مبيعات كاش + تحصيلات عملاء</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">📤 إجمالي المصروفات</div>
-                    <div class="card-val" style="color:var(--rose);" id="valCashOut">1,850.00 ج</div>
-                    <div class="card-sub">مصروفات + مشتريات نقدية</div>
-                </div>
-            </div>
-
-            <div class="detail-list">
-                <div class="detail-row">
-                    <div class="detail-label"><span>👤 الكاشير / الشيفت الحالي:</span></div>
-                    <div class="detail-value" id="valShiftUser">أحمد محمود (الشيفت الأول)</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🔒 حالة الدرج:</span></div>
-                    <div class="detail-value" style="color:var(--emerald);" id="valShiftStatus">مفتوح وجاري العمل 🟢</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🕒 تاريخ آخر تقفيل شيفت:</span></div>
-                    <div class="detail-value" id="valLastShiftClose">أمس 11:30 مساءً</div>
-                </div>
-            </div>
+        <!-- Search Bar (Live Product & Invoice Finder) -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="txtSearch" placeholder="امسح الباركود أو ابحث عن صنف / عميل / فاتورة..." onkeyup="handleSearch(this)">
         </div>
 
-        <!-- 3. TAB INVENTORY REPORT DETAILS -->
-        <div id="tab-stock" class="report-section">
-            <div class="hero-kpi-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(15, 23, 42, 0.8)); border-color: rgba(6, 182, 212, 0.3);">
-                <div class="hero-title" style="color:var(--cyan);">📦 القيمة التقديرية للبضاعة بالمخزن</div>
-                <div class="hero-value" id="valStockValueHero">285,000.00 ج</div>
-                <div style="font-size:12px; color:var(--text-sub); margin-top:6px;">مسبوبة بسعر التكلفة لكافة المخازن</div>
+        <!-- MAIN TAB 1: DASHBOARD OVERVIEW -->
+        <div id="tab-dashboard" class="tab-content active">
+
+            <!-- Hero Net Profit Banner -->
+            <div class="hero-banner">
+                <div class="hero-label">
+                    <span>📈 صافي أرباح التداول المقدرة</span>
+                    <span style="font-size:11px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:10px;" id="lblProfitMargin">هامش: 24.5%</span>
+                </div>
+                <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
+                
+                <div class="hero-sub-stats">
+                    <div class="sub-stat-item">
+                        <div class="sub-stat-title">إجمالي المبيعات</div>
+                        <div class="sub-stat-val" style="color:var(--cyan);" id="lblSalesTotal">18,450.00 ج</div>
+                    </div>
+                    <div class="sub-stat-item">
+                        <div class="sub-stat-title">تكلفة البضاعة</div>
+                        <div class="sub-stat-val" style="color:var(--text-muted);" id="lblCostTotal">12,080.00 ج</div>
+                    </div>
+                    <div class="sub-stat-item">
+                        <div class="sub-stat-title">المصروفات</div>
+                        <div class="sub-stat-val" style="color:var(--rose);" id="lblExpensesTotal">1,850.00 ج</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="stats-grid">
-                <div class="card">
-                    <div class="card-header">🏷️ عدد الأصناف المسجلة</div>
-                    <div class="card-val" style="color:var(--cyan);" id="valTotalProducts">480 صنف</div>
-                    <div class="card-sub">نشط في الكتالوج</div>
+            <!-- KPI Cards Grid -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-head">
+                        <div class="kpi-icon-box" style="background:rgba(16,185,129,0.15); color:var(--emerald);">💵</div>
+                        <span>رصيد الخزنة الفعلي</span>
+                    </div>
+                    <div class="kpi-value" style="color:var(--emerald);" id="lblCashbox">34,800 ج</div>
+                    <div class="kpi-footer">الرصيد المتاح بالدرج والبنك</div>
                 </div>
-                <div class="card">
-                    <div class="card-header">⚠️ أصناف النواقص</div>
-                    <div class="card-val" style="color:var(--gold);" id="valLowStockItems">4 أصناف</div>
-                    <div class="card-sub">وصلت للحد الأدنى</div>
+
+                <div class="kpi-card">
+                    <div class="kpi-head">
+                        <div class="kpi-icon-box" style="background:rgba(6,182,212,0.15); color:var(--cyan);">🧾</div>
+                        <span>الفواتير الصادرة</span>
+                    </div>
+                    <div class="kpi-value" style="color:var(--cyan);" id="lblInvoices">24 فاتورة</div>
+                    <div class="kpi-footer">متوسط الفاتورة: 768 ج</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-head">
+                        <div class="kpi-icon-box" style="background:rgba(245,158,11,0.15); color:var(--gold);">📋</div>
+                        <span>مبيعات آجل</span>
+                    </div>
+                    <div class="kpi-value" style="color:var(--gold);" id="lblCreditSales">6,250 ج</div>
+                    <div class="kpi-footer">مقيدة على حسابات العملاء</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-head">
+                        <div class="kpi-icon-box" style="background:rgba(244,63,94,0.15); color:var(--rose);">⚠️</div>
+                        <span>أصناف النواقص</span>
+                    </div>
+                    <div class="kpi-value" style="color:var(--rose);" id="lblLowStock">4 أصناف</div>
+                    <div class="kpi-footer">تحت الحد الأدنى للطلب</div>
                 </div>
             </div>
 
-            <div class="detail-list">
-                <div class="detail-row">
-                    <div class="detail-label"><span>🏬 المخزن الرئيسي:</span></div>
-                    <div class="detail-value" id="valWh1">340 صنف</div>
+            <!-- Visual Sales Trend Chart -->
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>📊 منحنى حركة المبيعات خلال اليوم</span>
+                    <span style="font-size:11px; color:var(--cyan);">مُحدث لحظياً</span>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🚚 مخزن المندوبين:</span></div>
-                    <div class="detail-value" id="valWh2">140 صنف</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🕒 تاريخ آخر تحديث أسعار:</span></div>
-                    <div class="detail-value" id="valPriceUpdateDate">اليوم 09:15 صباحاً</div>
-                </div>
+                <canvas id="salesChart" height="160"></canvas>
             </div>
+
+            <!-- Action Buttons Row -->
+            <div class="action-row">
+                <button class="btn-btn btn-gold" onclick="shareWhatsAppReport()">
+                    <span>📲 مشاركة التقرير على واتساب</span>
+                </button>
+                <button class="btn-btn btn-cyan" onclick="refreshLiveData()">
+                    <span>⚡ مزامنة السيرفر</span>
+                </button>
+            </div>
+
         </div>
 
-        <!-- 4. TAB DEBTS & CLIENTS REPORT DETAILS -->
-        <div id="tab-debts" class="report-section">
-            <div class="hero-kpi-card" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(15, 23, 42, 0.8)); border-color: rgba(168, 85, 247, 0.3);">
-                <div class="hero-title" style="color:var(--purple);">👥 إجمالي مستحقات الديون عند العملاء</div>
-                <div class="hero-value" id="valClientDebtsHero">42,600.00 ج</div>
-                <div style="font-size:12px; color:var(--text-sub); margin-top:6px;">مجموع الآجل والآقساط المستحقة</div>
-            </div>
+        <!-- MAIN TAB 2: INVENTORY & SEARCH -->
+        <div id="tab-inventory" class="tab-content">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>📦 حالة المخزون وحركة الأصناف</span>
+                    <span style="font-size:11px; color:var(--gold);">480 صنف مسجل</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">قيمة البضاعة الكلية بسعر التكلفة: <b style="color:#fff;">285,000 ج</b></div>
 
-            <div class="stats-grid">
-                <div class="card">
-                    <div class="card-header">🏭 مستحقات الموردين</div>
-                    <div class="card-val" style="color:var(--rose);" id="valSupplierDebts">18,500.00 ج</div>
-                    <div class="card-sub">مشتريات آجلة للموردين</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">👤 عدد العملاء المدينين</div>
-                    <div class="card-val" style="color:var(--purple);" id="valDebtorClientsCount">14 عميل</div>
-                    <div class="card-sub">عليهم مبالغ متبقية</div>
-                </div>
-            </div>
+                <!-- Product Search Result Items -->
+                <div id="productList">
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; border:1px solid var(--border-subtle); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:800;">طقم فحمات فرامل أمامي (كورولا)</div>
+                            <div style="font-size:11px; color:var(--text-muted);">كود: 62910 | المخزن الرئيسي</div>
+                        </div>
+                        <div style="text-align:left;">
+                            <div style="font-size:15px; font-weight:900; color:var(--emerald);">450 ج</div>
+                            <div style="font-size:11px; color:var(--gold);">الكمية: 14 طقم</div>
+                        </div>
+                    </div>
 
-            <div class="detail-list">
-                <div class="detail-row">
-                    <div class="detail-label"><span>⚠️ أقساط متأخرة السداد:</span></div>
-                    <div class="detail-value" style="color:var(--rose);" id="valOverdueInstallments">2,400.00 ج</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label"><span>🕒 تاريخ آخر تحديث كشوف الحساب:</span></div>
-                    <div class="detail-value" id="valLedgerSyncDate">2026-08-03 11:17:52</div>
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; border:1px solid var(--border-subtle); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:800;">فلتر زيت تويوتا أصلي</div>
+                            <div style="font-size:11px; color:var(--text-muted);">كود: 10042 | المخزن الرئيسي</div>
+                        </div>
+                        <div style="text-align:left;">
+                            <div style="font-size:15px; font-weight:900; color:var(--emerald);">120 ج</div>
+                            <div style="font-size:11px; color:var(--rose);">الكمية: 2 قطعة (ناقص!)</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Refresh Action Button -->
-        <button class="btn-action" onclick="refreshMobileData()">
-            <span>⚡ تحديث كافة التقارير الآن</span>
-        </button>
+        <!-- MAIN TAB 3: DEBTS & CLIENTS -->
+        <div id="tab-debts" class="tab-content">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <span>👥 كشوف حسابات الديون والعملاء</span>
+                    <span style="font-size:11px; color:var(--rose);">إجمالي الديون: 42,600 ج</span>
+                </div>
 
-        <!-- Pairing Footer -->
-        <div class="secret-footer">
-            <div style="font-size:13px; font-weight:800; color:var(--gold);">🔑 كود ربط المحل بالسحابة</div>
-            <input type="text" id="txtOwnerSecret" class="secret-input" value="OWNER-SECRET-KEY">
-            <div style="font-size:11px; color:var(--text-sub);">تاريخ آخر مزامنة ناجحة: <span id="lblFullLastSync" style="color:var(--cyan);">2026-08-03 11:17:52</span></div>
+                <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; border:1px solid var(--border-subtle); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:800;">شركة الأمل للتوزيع</div>
+                        <div style="font-size:11px; color:var(--text-muted);">تاريخ آخر فاتورة: أمس</div>
+                    </div>
+                    <div style="text-align:left;">
+                        <div style="font-size:15px; font-weight:900; color:var(--rose);">14,500 ج</div>
+                        <div style="font-size:11px; color:var(--text-muted);">آجل مستحق</div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; border:1px solid var(--border-subtle); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:800;">معرض السلام لقطع الغيار</div>
+                        <div style="font-size:11px; color:var(--text-muted);">تاريخ آخر فاتورة: 01-08-2026</div>
+                    </div>
+                    <div style="text-align:left;">
+                        <div style="font-size:15px; font-weight:900; color:var(--gold);">8,200 ج</div>
+                        <div style="font-size:11px; color:var(--text-muted);">قسط مستحق</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
+    </div>
+
+    <!-- App Bottom Navigation Bar -->
+    <div class="nav-bottom-bar">
+        <div class="nav-item active" onclick="switchNav('dashboard', this)">
+            <span class="nav-item-icon">📊</span>
+            <span>الرئيسية</span>
+        </div>
+        <div class="nav-item" onclick="switchNav('inventory', this)">
+            <span class="nav-item-icon">📦</span>
+            <span>المخزون</span>
+        </div>
+        <div class="nav-item" onclick="switchNav('debts', this)">
+            <span class="nav-item-icon">👥</span>
+            <span>الديون</span>
+        </div>
+        <div class="nav-item" onclick="refreshLiveData()">
+            <span class="nav-item-icon">⚡</span>
+            <span>تحديث</span>
+        </div>
     </div>
 
     <script>
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.report-section').forEach(s => s.classList.remove('active'));
+        // Init Chart.js
+        let ctx = document.getElementById('salesChart').getContext('2d');
+        let salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['9 ص', '11 ص', '1 م', '3 م', '5 م', '7 م', '9 م'],
+                datasets: [{
+                    label: 'المبيعات (جنيه)',
+                    data: [1200, 3400, 6800, 9500, 14200, 16800, 18450],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
 
-            btn.classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
+        function switchNav(navId, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            el.classList.add('active');
+            document.getElementById('tab-' + navId).classList.add('active');
         }
 
-        function refreshMobileData() {
-            const btn = document.querySelector('.btn-action');
-            btn.style.opacity = '0.6';
-            btn.innerText = '⚡ جاري جلب أحدث التقارير...';
+        function setPeriod(period, chip) {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
 
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const dateStr = now.toISOString().split('T')[0] + ' ' + timeStr;
+            if(period === 'today') {
+                document.getElementById('lblNetProfit').innerText = "4,520.00 ج";
+                document.getElementById('lblSalesTotal').innerText = "18,450.00 ج";
+            } else if(period === 'week') {
+                document.getElementById('lblNetProfit').innerText = "28,600.00 ج";
+                document.getElementById('lblSalesTotal').innerText = "112,800.00 ج";
+            } else if(period === 'month') {
+                document.getElementById('lblNetProfit').innerText = "94,200.00 ج";
+                document.getElementById('lblSalesTotal').innerText = "385,000.00 ج";
+            }
+        }
 
+        function refreshLiveData() {
+            const badge = document.getElementById('lblSyncBadge');
+            badge.innerText = "جاري المزامنة... ⏳";
             setTimeout(() => {
-                document.getElementById('lblSyncTimestamp').innerText = timeStr;
-                document.getElementById('valSalesSyncTime').innerText = dateStr;
-                document.getElementById('valLedgerSyncDate').innerText = dateStr;
-                document.getElementById('lblFullLastSync').innerText = dateStr;
+                badge.innerText = "متصل بالسحابة 🟢";
+                alert("✅ تم تحديث بيانات المبيعات والمخزن والخزنة بنجاح!");
+            }, 500);
+        }
 
-                btn.style.opacity = '1';
-                btn.innerHTML = '<span>⚡ تحديث كافة التقارير الآن</span>';
-            }, 400);
+        function shareWhatsAppReport() {
+            const text = encodeURIComponent(`📊 تقرير المالك اليومي - ChickenDist Enterprise:\n\n💰 صافي الأرباح: 4,520 ج\n📈 إجمالي المبيعات: 18,450 ج\n💵 رصيد الخزنة: 34,800 ج\n⚠️ النواقص: 4 أصناف\n\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+
+        function handleSearch(input) {
+            let q = input.value.trim().toLowerCase();
+            if(q.length > 0) {
+                switchNav('inventory', document.querySelectorAll('.nav-item')[1]);
+            }
         }
     </script>
-
 </body>
 </html>
