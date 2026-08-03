@@ -307,7 +307,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 29;
+        private const int CurrentSchemaVersion = 30;
 
         public static void EnsureAppSettingsTable()
         {
@@ -458,15 +458,22 @@ namespace ChickenDist.Core
                 string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
                 if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
                 {
-                    // Double check critical columns to handle database restore cases
+                    // Double check critical columns to handle database restore / rename cases
                     try
                     {
-                        var colExists = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
-                        var sinvExists = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
-                        var shipExists = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
-                        if (colExists != null && colExists != DBNull.Value &&
-                            sinvExists != null && sinvExists != DBNull.Value &&
-                            shipExists != null && shipExists != DBNull.Value)
+                        var colExists    = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
+                        var sinvExists   = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
+                        var shipExists   = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
+                        var qtyExists    = Scalar("SELECT COL_LENGTH('Products', 'Quantity')");
+                        var balClExists  = Scalar("SELECT COL_LENGTH('Clients', 'Balance')");
+                        var balSpExists  = Scalar("SELECT COL_LENGTH('Suppliers', 'Balance')");
+                        // Only skip migrations if ALL critical columns are present
+                        if (colExists   != null && colExists   != DBNull.Value &&
+                            sinvExists  != null && sinvExists  != DBNull.Value &&
+                            shipExists  != null && shipExists  != DBNull.Value &&
+                            qtyExists   != null && qtyExists   != DBNull.Value &&
+                            balClExists != null && balClExists != DBNull.Value &&
+                            balSpExists != null && balSpExists != DBNull.Value)
                         {
                             return;
                         }
@@ -2666,6 +2673,56 @@ namespace ChickenDist.Core
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SaleItems') AND name = 'KitchenNotes')
                 BEGIN
                     ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(200) NULL;
+                END");
+
+                // ═══ Safety migrations: ensure core columns exist even if DB was renamed or restored ═══
+                SafeMigrate("Products.CoreColumns", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'Quantity') IS NULL
+                        ALTER TABLE Products ADD Quantity DECIMAL(10,3) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Products', 'MinQuantity') IS NULL
+                        ALTER TABLE Products ADD MinQuantity DECIMAL(10,3) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Products', 'IsActive') IS NULL
+                        ALTER TABLE Products ADD IsActive BIT NOT NULL DEFAULT 1;
+                    IF COL_LENGTH('Products', 'CategoryID') IS NULL
+                        ALTER TABLE Products ADD CategoryID INT NULL;
+                    IF COL_LENGTH('Products', 'SalePrice') IS NULL
+                        ALTER TABLE Products ADD SalePrice DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Products', 'ProductCode') IS NULL
+                        ALTER TABLE Products ADD ProductCode NVARCHAR(50) NULL;
+                    IF COL_LENGTH('Products', 'ProductName') IS NULL
+                        ALTER TABLE Products ADD ProductName NVARCHAR(200) NOT NULL DEFAULT N'بدون اسم';
+                    IF COL_LENGTH('Products', 'DefaultSaleUnit') IS NULL
+                        ALTER TABLE Products ADD DefaultSaleUnit NVARCHAR(20) NULL DEFAULT N'قطعة';
+                    IF COL_LENGTH('Products', 'DefaultPurchaseUnit') IS NULL
+                        ALTER TABLE Products ADD DefaultPurchaseUnit NVARCHAR(20) NULL DEFAULT N'قطعة';
+                END");
+
+                SafeMigrate("Clients.CoreColumns", @"
+                IF OBJECT_ID('Clients', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Clients', 'Balance') IS NULL
+                        ALTER TABLE Clients ADD Balance DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Clients', 'OpeningBalance') IS NULL
+                        ALTER TABLE Clients ADD OpeningBalance DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Clients', 'ClientName') IS NULL
+                        ALTER TABLE Clients ADD ClientName NVARCHAR(150) NOT NULL DEFAULT N'عميل';
+                    IF COL_LENGTH('Clients', 'IsActive') IS NULL
+                        ALTER TABLE Clients ADD IsActive BIT NOT NULL DEFAULT 1;
+                    IF COL_LENGTH('Clients', 'Phone') IS NULL
+                        ALTER TABLE Clients ADD Phone NVARCHAR(20) NULL;
+                END");
+
+                SafeMigrate("Suppliers.CoreColumns", @"
+                IF OBJECT_ID('Suppliers', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Suppliers', 'Balance') IS NULL
+                        ALTER TABLE Suppliers ADD Balance DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Suppliers', 'OpeningBalance') IS NULL
+                        ALTER TABLE Suppliers ADD OpeningBalance DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    IF COL_LENGTH('Suppliers', 'IsActive') IS NULL
+                        ALTER TABLE Suppliers ADD IsActive BIT NOT NULL DEFAULT 1;
                 END");
 
                 SafeMigrate("AppSettings.Table", @"
