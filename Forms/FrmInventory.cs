@@ -717,6 +717,7 @@ namespace ChickenDist.Forms
 
         private void BtnStartInventory_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("Inventory")) { MessageBox.Show("⛔ ليس لديك صلاحية بدء جرد جديد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? wid = null;
             string whName = "كل المخازن";
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -924,6 +925,7 @@ namespace ChickenDist.Forms
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
+            if (!Session.CanEdit("Inventory")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ تسوية الجرد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? selectedWid = null;
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
             {

@@ -602,6 +602,7 @@ namespace ChickenDist.Forms
         private void BtnCollectSingle_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية تحصيل الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (dgSchedule.SelectedRows.Count == 0)
             {
                 MessageBox.Show("من فضلك اختر القسط المستحق المطلوب سداده من جدول الأقساط أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -644,6 +645,7 @@ namespace ChickenDist.Forms
         private void BtnCollectAmount_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية تحصيل دفعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // Get total remaining for contract
             decimal remTotal = 0m;
@@ -681,6 +683,7 @@ namespace ChickenDist.Forms
         private void BtnEarlyPayoff_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إجراء سداد مبكر.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // Get remaining sum
             decimal remaining = 0m;
@@ -834,6 +837,7 @@ namespace ChickenDist.Forms
         private void BtnReschedule_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
+            if (!Session.CanEdit("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إعادة جدولة الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             DataTable dt = InstallmentDAL.GetContractSchedule(_selectedContractID);
             List<InstallmentScheduleDTO> list = new List<InstallmentScheduleDTO>();
@@ -887,6 +891,7 @@ namespace ChickenDist.Forms
         private void BtnCancelContract_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
+            if (!Session.CanDelete("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إلغاء عقود التقسيط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // التحقق من وجود دفعات مسجلة
             if (InstallmentDAL.HasPaymentsCollected(_selectedContractID))

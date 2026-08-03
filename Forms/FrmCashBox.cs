@@ -577,16 +577,19 @@ namespace ChickenDist.Forms
 
         private void BtnDeposit_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية التوريد النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             ShowCashActionDialog("توريد نقدي للحساب", "Deposit");
         }
 
         private void BtnWithdraw_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية الصرف النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             ShowCashActionDialog("صرف نقدي من الحساب", "Withdraw");
         }
 
         private void BtnReconcile_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية إجراء التسوية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? selectedAccountID = null;
             if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
             {
@@ -598,6 +601,7 @@ namespace ChickenDist.Forms
 
         private void BtnTransfer_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية تحويل النقدية بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             var dlg = new Form
             {
                 Text = "🔄 تحويل نقدية بين الحسابات",
@@ -1088,6 +1092,7 @@ namespace ChickenDist.Forms
 
         private void BtnSaveExp_Click(object sender, EventArgs e)
         {
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (string.IsNullOrWhiteSpace(cboExpType.Text)) { MessageBox.Show("اختر نوع المصروف"); return; }
             if (nudExpAmount.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر"); return; }
             int? supplierID = null;
@@ -1114,6 +1119,7 @@ namespace ChickenDist.Forms
         private void BtnDelExp_Click(object sender, EventArgs e)
         {
             if (_selectedExpID == 0) return;
+            if (!Session.CanDelete("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (MessageBox.Show("حذف المصروف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { AccountDAL.DeleteExpense(_selectedExpID); ClearExp(); LoadExpenses(); LoadCashBox(); }
         }

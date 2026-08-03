@@ -245,6 +245,7 @@ namespace ChickenDist.Forms
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (dgReservations.SelectedRows.Count == 0)
             {
                 MessageBox.Show("يرجى تحديد فاتورة الحجز المراد تعديلها من الجدول", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -264,6 +265,7 @@ namespace ChickenDist.Forms
         private void BtnSetReady_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تحديث حالة الحجوز.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
             try
             {
@@ -280,6 +282,7 @@ namespace ChickenDist.Forms
         private void BtnCancelRes_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
+            if (!Session.CanDelete("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية إلغاء الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
 
             if (MessageBox.Show("هل أنت تأكد من إلغاء هذا الحجز؟", "تأكيد الإلغاء", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -300,6 +303,7 @@ namespace ChickenDist.Forms
         private void BtnConvertToSale_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تحويل الحجز لفاتورة مبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
 
             var dt = DbHelper.Query("SELECT * FROM CustomerReservations WHERE ReservationID=@id", DbHelper.P("@id", id));
