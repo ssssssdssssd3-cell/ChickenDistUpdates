@@ -498,6 +498,7 @@ namespace ChickenDist.Forms
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 سجل وتقارير الورديات", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
@@ -672,6 +673,7 @@ namespace ChickenDist.Forms
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 سجل وتقارير الورديات", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
