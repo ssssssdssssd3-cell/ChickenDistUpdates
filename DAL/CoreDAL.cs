@@ -1280,23 +1280,43 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
 
-        public static decimal GetCashBalance(int? accountID = null)
+        public static decimal GetCashBalance(int? accountID = null, DateTime? upToDate = null)
         {
             if (accountID.HasValue && accountID.Value > 0)
             {
                 var openingObj = DbHelper.Scalar("SELECT OpeningBalance FROM SafeAccounts WHERE AccountID = @accId", DbHelper.P("@accId", accountID.Value));
                 decimal opening = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
                 
-                var result = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId", DbHelper.P("@accId", accountID.Value));
-                return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                string sql = "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId";
+                if (upToDate.HasValue)
+                {
+                    sql += " AND CAST(TransDate AS DATE) <= @to";
+                    var result = DbHelper.Scalar(sql, DbHelper.P("@accId", accountID.Value), DbHelper.P("@to", upToDate.Value.Date));
+                    return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                }
+                else
+                {
+                    var result = DbHelper.Scalar(sql, DbHelper.P("@accId", accountID.Value));
+                    return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                }
             }
             else
             {
                 var openingObj = DbHelper.Scalar("SELECT SUM(OpeningBalance) FROM SafeAccounts");
                 decimal opening = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
                 
-                var result = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox");
-                return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                string sql = "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox";
+                if (upToDate.HasValue)
+                {
+                    sql += " WHERE CAST(TransDate AS DATE) <= @to";
+                    var result = DbHelper.Scalar(sql, DbHelper.P("@to", upToDate.Value.Date));
+                    return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                }
+                else
+                {
+                    var result = DbHelper.Scalar(sql);
+                    return opening + (result == null ? 0 : Convert.ToDecimal(result));
+                }
             }
         }
 

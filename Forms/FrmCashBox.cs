@@ -565,7 +565,7 @@ namespace ChickenDist.Forms
                 lblCashIn.Text = "إجمالي وارد: " + totIn.ToString("N2") + " ج";
                 lblCashOut.Text = "إجمالي صادر: " + totOut.ToString("N2") + " ج";
                 string balanceLabel = selectedAccountID == null ? "رصيد كافة الحسابات: " : "رصيد الحساب المختار: ";
-                lblCashBalance.Text = balanceLabel + AccountDAL.GetCashBalance(selectedAccountID).ToString("N2") + " ج";
+                lblCashBalance.Text = balanceLabel + AccountDAL.GetCashBalance(selectedAccountID, dtpCashTo.Value).ToString("N2") + " ج";
             }
             else
             {
