@@ -99,6 +99,9 @@ namespace ChickenDist.Core
                 string user = ReadIniDirect(iniPath, "Database", "User", "");
                 string pass = ReadIniDirect(iniPath, "Database", "Password", "");
 
+                // الترحيل التلقائي لاسم قاعدة البيانات للعملاء القدامى (من ChickenDist إلى ProSoftDB)
+                TryMigrateOldDatabase(server, user, pass, intSec.Equals("True", StringComparison.OrdinalIgnoreCase));
+
                 var builder = new SqlConnectionStringBuilder
                 {
                     DataSource = server,
@@ -124,6 +127,65 @@ namespace ChickenDist.Core
             catch
             {
                 return "Data Source=.;Initial Catalog=ProSoftDB;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
+            }
+        }
+
+        /// <summary>
+        /// فحص وتعديل اسم قاعدة البيانات تلقائياً للعملاء القدامى من ChickenDist إلى ProSoftDB عند التحديث
+        /// </summary>
+        private static void TryMigrateOldDatabase(string server, string user, string pass, bool integratedSecurity)
+        {
+            try
+            {
+                var masterBuilder = new SqlConnectionStringBuilder
+                {
+                    DataSource = server,
+                    InitialCatalog = "master",
+                    IntegratedSecurity = integratedSecurity,
+                    TrustServerCertificate = true,
+                    ConnectTimeout = 10
+                };
+                if (!integratedSecurity)
+                {
+                    masterBuilder.UserID = user;
+                    masterBuilder.Password = pass;
+                }
+
+                using (var con = new SqlConnection(masterBuilder.ToString()))
+                {
+                    con.Open();
+                    string checkSql = @"
+                        SELECT 
+                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ChickenDist') AS OldCount,
+                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ProSoftDB') AS NewCount";
+                    int oldCount = 0, newCount = 0;
+                    using (var cmd = new SqlCommand(checkSql, con))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            oldCount = Convert.ToInt32(reader["OldCount"]);
+                            newCount = Convert.ToInt32(reader["NewCount"]);
+                        }
+                    }
+
+                    if (oldCount > 0 && newCount == 0)
+                    {
+                        string renameSql = @"
+                            ALTER DATABASE [ChickenDist] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                            ALTER DATABASE [ChickenDist] MODIFY NAME = [ProSoftDB];
+                            ALTER DATABASE [ProSoftDB] SET MULTI_USER;";
+                        using (var renameCmd = new SqlCommand(renameSql, con))
+                        {
+                            renameCmd.CommandTimeout = 120;
+                            renameCmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Auto DB Rename Notice: {ex.Message}");
             }
         }
 
