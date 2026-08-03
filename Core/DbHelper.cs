@@ -81,7 +81,7 @@ namespace ChickenDist.Core
                         "; ProSoft Configuration\r\n" +
                         "[Database]\r\n" +
                         "Server=.\r\n" +
-                        "Database=ChickenDist\r\n" +
+                        "Database=ProSoftDB\r\n" +
                         "IntegratedSecurity=True\r\n" +
                         "User=\r\n" +
                         "Password=\r\n" +
@@ -94,15 +94,22 @@ namespace ChickenDist.Core
             try
             {
                 string server = ReadIniDirect(iniPath, "Database", "Server", ".");
-                string db = ReadIniDirect(iniPath, "Database", "Database", "ChickenDist");
+                string db = ReadIniDirect(iniPath, "Database", "Database", "ProSoftDB");
                 string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
                 string user = ReadIniDirect(iniPath, "Database", "User", "");
                 string pass = ReadIniDirect(iniPath, "Database", "Password", "");
 
                 bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
 
-                // التأكد من استرجاع الاسم الأصلي لقاعدة البيانات ChickenDist إذا كانت قد تم تغييرها مؤقتاً
-                EnsureDatabaseNameIsChickenDist(server, user, pass, isIntegrated);
+                // 1. الترحيل الفوري لاسم قاعدة البيانات للعملاء القدامى (من ChickenDist إلى ProSoftDB)
+                TryMigrateOldDatabase(server, user, pass, isIntegrated);
+
+                // 2. إذا كانت قاعدة البيانات المكتوبة في Settings.ini هي ChickenDist، نعدلها تلقائياً لـ ProSoftDB
+                if (db.Equals("ChickenDist", StringComparison.OrdinalIgnoreCase))
+                {
+                    db = "ProSoftDB";
+                    UpdateIniDatabaseKey(iniPath, "ProSoftDB");
+                }
 
                 var builder = new SqlConnectionStringBuilder
                 {
@@ -128,11 +135,29 @@ namespace ChickenDist.Core
             }
             catch
             {
-                return "Data Source=.;Initial Catalog=ChickenDist;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
+                return "Data Source=.;Initial Catalog=ProSoftDB;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
             }
         }
 
-        private static void EnsureDatabaseNameIsChickenDist(string server, string user, string pass, bool integratedSecurity)
+        private static void UpdateIniDatabaseKey(string iniPath, string newDatabaseName)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(iniPath)) return;
+                string content = System.IO.File.ReadAllText(iniPath, Encoding.Unicode);
+                if (content.Contains("Database=ChickenDist"))
+                {
+                    content = content.Replace("Database=ChickenDist", "Database=" + newDatabaseName);
+                    System.IO.File.WriteAllText(iniPath, content, Encoding.Unicode);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// فحص وتعديل اسم قاعدة البيانات تلقائياً للعملاء القدامى من ChickenDist إلى ProSoftDB عند التحديث
+        /// </summary>
+        private static void TryMigrateOldDatabase(string server, string user, string pass, bool integratedSecurity)
         {
             try
             {
@@ -155,25 +180,25 @@ namespace ChickenDist.Core
                     con.Open();
                     string checkSql = @"
                         SELECT 
-                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ChickenDist') AS ChickenCount,
-                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ProSoftDB') AS ProSoftCount";
-                    int chickenCount = 0, proSoftCount = 0;
+                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ChickenDist') AS OldCount,
+                            (SELECT COUNT(1) FROM sys.databases WHERE name = 'ProSoftDB') AS NewCount";
+                    int oldCount = 0, newCount = 0;
                     using (var cmd = new SqlCommand(checkSql, con))
                     using (var reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            chickenCount = Convert.ToInt32(reader["ChickenCount"]);
-                            proSoftCount = Convert.ToInt32(reader["ProSoftCount"]);
+                            oldCount = Convert.ToInt32(reader["OldCount"]);
+                            newCount = Convert.ToInt32(reader["NewCount"]);
                         }
                     }
 
-                    if (proSoftCount > 0 && chickenCount == 0)
+                    if (oldCount > 0 && newCount == 0)
                     {
                         string renameSql = @"
-                            ALTER DATABASE [ProSoftDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                            ALTER DATABASE [ProSoftDB] MODIFY NAME = [ChickenDist];
-                            ALTER DATABASE [ChickenDist] SET MULTI_USER;";
+                            ALTER DATABASE [ChickenDist] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                            ALTER DATABASE [ChickenDist] MODIFY NAME = [ProSoftDB];
+                            ALTER DATABASE [ProSoftDB] SET MULTI_USER;";
                         using (var renameCmd = new SqlCommand(renameSql, con))
                         {
                             renameCmd.CommandTimeout = 120;
@@ -181,9 +206,9 @@ namespace ChickenDist.Core
                         }
                         SqlConnection.ClearAllPools();
                     }
-                    else if (chickenCount == 0 && proSoftCount == 0)
+                    else if (oldCount == 0 && newCount == 0)
                     {
-                        string createSql = "CREATE DATABASE [ChickenDist]";
+                        string createSql = "CREATE DATABASE [ProSoftDB]";
                         using (var createCmd = new SqlCommand(createSql, con))
                         {
                             createCmd.ExecuteNonQuery();
@@ -193,7 +218,7 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"EnsureDatabaseNameIsChickenDist notice: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"TryMigrateOldDatabase Notice: {ex.Message}");
             }
         }
 
@@ -2698,11 +2723,24 @@ namespace ChickenDist.Core
 
         public static SqlConnection GetConnection()
         {
+            if (_connStr.Contains("Initial Catalog=ChickenDist") || _connStr.Contains("Database=ChickenDist"))
+            {
+                _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                   .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                SqlConnection.ClearAllPools();
+            }
             return new SqlConnection(_connStr);
         }
 
         public static SqlConnection GetOpenConnection()
         {
+            if (_connStr.Contains("Initial Catalog=ChickenDist") || _connStr.Contains("Database=ChickenDist"))
+            {
+                _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                   .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                SqlConnection.ClearAllPools();
+            }
+
             var con = new SqlConnection(_connStr);
             try
             {
@@ -2721,8 +2759,15 @@ namespace ChickenDist.Core
                 string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
                 bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
 
-                EnsureDatabaseNameIsChickenDist(server, user, pass, isIntegrated);
+                TryMigrateOldDatabase(server, user, pass, isIntegrated);
+                UpdateIniDatabaseKey(iniPath, "ProSoftDB");
+
                 _connStr = GetConnectionStringFromIni();
+                if (_connStr.Contains("ChickenDist"))
+                {
+                    _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
+                                       .Replace("Database=ChickenDist", "Database=ProSoftDB");
+                }
                 SqlConnection.ClearAllPools();
 
                 var conRetry = new SqlConnection(_connStr);
