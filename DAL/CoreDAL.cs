@@ -147,7 +147,8 @@ namespace ChickenDist.DAL
                            COALESCE(CanViewDetails, 1) AS CanViewDetails,
                            COALESCE(CanViewBalance, 1) AS CanViewBalance,
                            COALESCE(CanChangeSafe, 1) AS CanChangeSafe,
-                           COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals
+                           COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals,
+                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems
                     FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
             }
             catch
@@ -167,7 +168,8 @@ namespace ChickenDist.DAL
                            COALESCE(CanViewDetails, 1) AS CanViewDetails,
                            COALESCE(CanViewBalance, 1) AS CanViewBalance,
                            COALESCE(CanChangeSafe, 1) AS CanChangeSafe,
-                           COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals
+                           COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals,
+                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems
                     FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
             }
         }

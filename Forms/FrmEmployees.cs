@@ -936,6 +936,8 @@ namespace ChickenDist.Forms
 
         private void LoadPermissions()
         {
+            try
+            {
             var dt = EmployeeDAL.GetPermissions(_empID);
 
             dgSales.Rows.Clear();
@@ -945,6 +947,8 @@ namespace ChickenDist.Forms
 
             foreach (var screen in ScreensList)
             {
+                try
+                {
                 bool access = false, canAdd = true, canEdit = true, canDelete = true;
                 bool editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
                 bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true, viewQuickItems = true;
@@ -1102,10 +1106,12 @@ namespace ChickenDist.Forms
                     {
                         DisableGridCell(targetGrid.Rows[ri], 16); // CanViewQuickItems
                     }
-                }
-            }
+                } // end if (targetGrid != null)
+                } catch (Exception exScreen) { AppLogger.Error("LoadPermissions screen=" + screen.Key, exScreen); }
+            } // end foreach screen
 
             UpdateLiveCounter();
+            } catch (Exception ex) { AppLogger.Error("LoadPermissions", ex); }
         }
 
         private static void DisableGridCell(DataGridViewRow row, int colIdx)
