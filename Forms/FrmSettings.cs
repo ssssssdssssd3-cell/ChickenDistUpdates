@@ -1178,6 +1178,17 @@ namespace ChickenDist.Forms
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
             };
             this.Controls.Add(btnCopyIds);
+
+            var btnActivateLic = Theme.MakeButton("🔑 تفعيل الترخيص / سيريال العميل", 540, y, 220, 38, Theme.Success);
+            btnActivateLic.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnActivateLic.Click += (s, e) =>
+            {
+                using (var dlg = new FrmActivation(""))
+                {
+                    dlg.ShowDialog(this);
+                }
+            };
+            this.Controls.Add(btnActivateLic);
             y += 85;
 
             this.Height = y + 60;

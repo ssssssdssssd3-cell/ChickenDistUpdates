@@ -508,6 +508,7 @@ namespace ChickenDist.Forms
                     ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
                     ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
+                    ("🔑 تفعيل الترخيص (سيريال العميل)", "",        (Action)(() => new FrmActivation("").ShowDialog())),
                     ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
                     ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),

@@ -123,6 +123,11 @@ namespace ChickenDist.Core
                         string html = GetMobileAppHtmlWithData();
                         SendResponse(stream, "200 OK", "text/html; charset=utf-8", html);
                     }
+                    else if (path == "/manifest.json" || path == "/mobile/manifest.json")
+                    {
+                        string json = GetMobileAppManifest();
+                        SendResponse(stream, "200 OK", "application/json; charset=utf-8", json);
+                    }
                     else
                     {
                         SendResponse(stream, "404 Not Found", "text/plain", "404 Not Found");
@@ -216,11 +221,81 @@ namespace ChickenDist.Core
 
         private static string GetMobileAppEmbeddedHtml()
         {
+            EnsureMobileAppFilesExtracted();
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
             if (File.Exists(filePath))
                 return File.ReadAllText(filePath, Encoding.UTF8);
 
+            var asm = typeof(DriverPortalServer).Assembly;
+            using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html"))
+            {
+                if (s != null)
+                    using (var r = new StreamReader(s, Encoding.UTF8))
+                        return r.ReadToEnd();
+            }
+
             return "<html><body>MobileApp/index.html not found</body></html>";
+        }
+
+        private static string GetMobileAppManifest()
+        {
+            EnsureMobileAppFilesExtracted();
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "manifest.json");
+            if (File.Exists(filePath))
+                return File.ReadAllText(filePath, Encoding.UTF8);
+
+            var asm = typeof(DriverPortalServer).Assembly;
+            using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json"))
+            {
+                if (s != null)
+                    using (var r = new StreamReader(s, Encoding.UTF8))
+                        return r.ReadToEnd();
+            }
+
+            return "{}";
+        }
+
+        public static void EnsureMobileAppFilesExtracted()
+        {
+            try
+            {
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                string htmlPath = Path.Combine(dir, "index.html");
+                string manifestPath = Path.Combine(dir, "manifest.json");
+
+                var asm = typeof(DriverPortalServer).Assembly;
+
+                if (!File.Exists(htmlPath) || new FileInfo(htmlPath).Length < 100)
+                {
+                    using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html"))
+                    {
+                        if (s != null)
+                        {
+                            using (var r = new StreamReader(s, Encoding.UTF8))
+                            {
+                                File.WriteAllText(htmlPath, r.ReadToEnd(), Encoding.UTF8);
+                            }
+                        }
+                    }
+                }
+
+                if (!File.Exists(manifestPath) || new FileInfo(manifestPath).Length < 10)
+                {
+                    using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json"))
+                    {
+                        if (s != null)
+                        {
+                            using (var r = new StreamReader(s, Encoding.UTF8))
+                            {
+                                File.WriteAllText(manifestPath, r.ReadToEnd(), Encoding.UTF8);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         // ======================== الرفع السحابي ========================
