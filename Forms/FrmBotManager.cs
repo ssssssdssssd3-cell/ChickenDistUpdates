@@ -30,6 +30,7 @@ namespace ChickenDist.Forms
         private Process _nodeProcess;
         private TextBox txtAccUrl;
         private TextBox txtClientUrl;
+        private TextBox txtMobileAppUrl;
 
         public FrmBotManager()
         {
@@ -352,15 +353,76 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(btnOpenClientUrl);
 
-            // ─── 3. Deploy Button ───
+            // ─── 3. Owner Mobile App Link ───
+            Label lblMobileTitle = new Label
+            {
+                Text = "📱 رابط تطبيق موبايل المالك (تطبيق الشاشات والأرباح اللحظية):",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(44, 62, 80),
+                AutoSize = true,
+                Location = new Point(10, 128)
+            };
+            pnlAccountant.Controls.Add(lblMobileTitle);
+
+            string mobileUrl = $"https://{projectId}.web.app/mobile.html";
+
+            txtMobileAppUrl = new TextBox
+            {
+                Text = mobileUrl,
+                ReadOnly = true,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(142, 68, 173),
+                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
+                Location = new Point(230, 152),
+                Width = 400,
+                RightToLeft = RightToLeft.No
+            };
+            pnlAccountant.Controls.Add(txtMobileAppUrl);
+
+            Button btnCopyMobileUrl = new Button
+            {
+                Text = "نسخ الرابط",
+                BackColor = Color.FromArgb(149, 165, 166),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(120, 151),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnCopyMobileUrl.FlatAppearance.BorderSize = 0;
+            btnCopyMobileUrl.Click += (s, e) => {
+                Clipboard.SetText(txtMobileAppUrl.Text);
+                MessageBox.Show("✅ تم نسخ رابط تطبيق موبايل المالك إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            pnlAccountant.Controls.Add(btnCopyMobileUrl);
+
+            Button btnOpenMobileUrl = new Button
+            {
+                Text = "فتح التطبيق",
+                BackColor = Color.FromArgb(142, 68, 173),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(100, 28),
+                Location = new Point(10, 151),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnOpenMobileUrl.FlatAppearance.BorderSize = 0;
+            btnOpenMobileUrl.Click += (s, e) => {
+                try { Process.Start(txtMobileAppUrl.Text); } catch {}
+            };
+            pnlAccountant.Controls.Add(btnOpenMobileUrl);
+
+            // ─── 4. Deploy Button ───
             Button btnDeployHosting = new Button
             {
-                Text = "⚡ رفع وتفعيل المنيو سحابياً",
+                Text = "⚡ رفع وتفعيل السحابة الموحدة",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Size = new Size(210, 34),
-                Location = new Point(10, 130),
+                Location = new Point(10, 192),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -371,30 +433,43 @@ namespace ChickenDist.Forms
                 {
                     string botDir = GetBotDirectory();
                     string batPath = Path.Combine(botDir, "deploy_hosting.bat");
-                    
+
+                    // Copy MobileApp/index.html to bot/public/mobile.html
+                    try
+                    {
+                        string mobileSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
+                        string mobileDest = Path.Combine(botDir, "public", "mobile.html");
+                        if (File.Exists(mobileSource))
+                        {
+                            File.Copy(mobileSource, mobileDest, true);
+                        }
+                    }
+                    catch { }
+
                     string batContent = @"@echo off
 chcp 65001 > nul
 echo ===================================================
-echo   ⚡ Cloud Menu Deployer - ChickenDist ⚡
+echo   ⚡ Unified Firebase Deployer - ProSoft ERP ⚡
 echo ===================================================
 echo.
-echo [1/3] Checking Node.js and local packages...
+echo [1/4] Syncing Mobile App files to Firebase public folder...
 cd /d ""%~dp0""
+if exist ""..\MobileApp\index.html"" copy /y ""..\MobileApp\index.html"" ""public\mobile.html"" > nul
+echo.
+echo [2/4] Checking Node.js and local packages...
 call npm install
 echo.
-echo [2/3] Checking Firebase login status...
-echo (If a browser window opens, please login with your Google account)
+echo [3/4] Checking Firebase login status...
 call npx firebase login
 echo.
-echo [3/3] Deploying client menu and accountant portal to Firebase Hosting...
+echo [4/4] Deploying Client Menu, Accountant Portal & Owner Mobile App to Firebase Hosting...
 call npx firebase deploy --only hosting
 echo.
 echo ===================================================
-echo   ✅ Done! Your website is now live online!
+echo   ✅ Done! Your Unified Cloud App is Live Online!
 echo ===================================================
 pause
 ";
-                    // Write with UTF-8 without BOM to avoid cmd parse errors (∩╗┐@echo off)
                     var utf8WithoutBom = new System.Text.UTF8Encoding(false);
                     File.WriteAllText(batPath, batContent, utf8WithoutBom);
 
@@ -415,14 +490,14 @@ pause
             };
             pnlAccountant.Controls.Add(btnDeployHosting);
 
-            // ─── 4. Tip Label ───
+            // ─── 5. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 النصيحة: انشر رابط الويب سايت الأخضر لعملائك ليطلبوا منه، وافتح الأزرق في موبايل المحاسب.",
+                Text = "💡 المنيو للزبائن، الأزرق للمحاسب، والبنفسجي لموبايل المالك المباشر.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
-                Location = new Point(230, 138)
+                Location = new Point(230, 200)
             };
             pnlAccountant.Controls.Add(lblAccTip);
 
@@ -1195,8 +1270,10 @@ pause
                     // Update URLs in main form
                     string newAccUrl = $"https://{actualPid}.web.app/admin.html";
                     string newClientUrl = $"https://{actualPid}.web.app";
+                    string newMobileUrl = $"https://{actualPid}.web.app/mobile.html";
                     if (txtAccUrl != null) txtAccUrl.Text = newAccUrl;
                     if (txtClientUrl != null) txtClientUrl.Text = newClientUrl;
+                    if (txtMobileAppUrl != null) txtMobileAppUrl.Text = newMobileUrl;
 
                     LogMessage($"✅ تم حفظ إعدادات Firebase للمشروع: {actualPid}");
 

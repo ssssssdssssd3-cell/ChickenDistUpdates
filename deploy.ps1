@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.288"
+$VERSION   = "2.0.289"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -108,8 +108,8 @@ Copy-Item $exePath -Destination $BIN_DEST -Force
 $binSize = (Get-Item $BIN_DEST).Length
 Write-OK "Copied ChickenDist.bin - $([math]::Round($binSize/1024, 0)) KB"
 
-# Step 5.5: Copy MobileApp files to release destinations
-Write-Step "Updating MobileApp release folders"
+# Step 5.5: Copy MobileApp files to release destinations & Firebase bot public folder
+Write-Step "Updating MobileApp release folders & bot public folder"
 $releaseDestinations = @(
     "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\MobileApp",
     "D:\prosoft\MobileApp"
@@ -121,6 +121,10 @@ foreach ($dest in $releaseDestinations) {
         Write-OK "Synced MobileApp files to $dest"
     }
 }
+
+$botPublicMobile = Join-Path $REPO_ROOT "bot\public\mobile.html"
+Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\index.html") -Destination $botPublicMobile -Force
+Write-OK "Synced MobileApp/index.html to $botPublicMobile"
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
