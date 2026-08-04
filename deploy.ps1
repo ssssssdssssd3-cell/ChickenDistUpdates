@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.281"
+$VERSION   = "2.0.282"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -107,6 +107,20 @@ Write-Step "Updating ChickenDist.bin"
 Copy-Item $exePath -Destination $BIN_DEST -Force
 $binSize = (Get-Item $BIN_DEST).Length
 Write-OK "Copied ChickenDist.bin - $([math]::Round($binSize/1024, 0)) KB"
+
+# Step 5.5: Copy MobileApp files to release destinations
+Write-Step "Updating MobileApp release folders"
+$releaseDestinations = @(
+    "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\MobileApp",
+    "D:\prosoft\MobileApp"
+)
+foreach ($dest in $releaseDestinations) {
+    if (Test-Path (Split-Path $dest -Parent)) {
+        if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
+        Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\*") -Destination $dest -Force -Recurse
+        Write-OK "Synced MobileApp files to $dest"
+    }
+}
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
