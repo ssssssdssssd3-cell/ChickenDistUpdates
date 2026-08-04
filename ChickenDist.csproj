@@ -31,6 +31,7 @@
     <EmbeddedResource Include="Forms\accountant_orders.html" />
     <EmbeddedResource Include="MobileApp\index.html" />
     <EmbeddedResource Include="MobileApp\manifest.json" />
+    <EmbeddedResource Include="MobileApp\logo.png" />
     <EmbeddedResource Include="pro_soft_logo.png" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
     <EmbeddedResource Include="QRCoder.dll" />

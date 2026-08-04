@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ProSoft ERP | تطبيق المالك الشامل لكل التقارير</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="apple-touch-icon" href="../logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#070a12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -396,7 +396,7 @@
     <!-- Header Navbar with Health Connection Indicator, PWA Install & Store Name -->
     <div class="app-header">
         <div class="store-identity">
-            <img src="../logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل">
+            <img src="logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل">
             <div>
                 <div class="store-name" id="txtHeaderAppName">ProSoft ERP</div>
                 <div id="connStatusBadge" class="conn-badge">
@@ -757,11 +757,26 @@
 
     <script>
         // PWA Install Prompt Listener
+        // Register Service Worker for Android PWA App Installation
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => self.clients.claim());
+                self.addEventListener('fetch', e => {});
+            `;
+            try {
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log(err));
+            } catch(e) {}
+        }
+
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            console.log("PWA install prompt ready!");
+            const btnBanner = document.getElementById('pwaInstallBanner');
+            if (btnBanner) btnBanner.style.display = 'flex';
         });
 
         function installPwaApp() {
@@ -769,12 +784,17 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        alert("✅ تم تثبيت التطبيق بنجاح على الشاشة الرئيسية!");
+                        alert("✅ تم تثبيت التطبيق كـ أيقونة حقيقية بنجاح على شاشة الموبايل الرئيسية!");
                     }
                     deferredPrompt = null;
                 });
             } else {
-                alert("📲 لتثبيت التطبيق على شاشة الموبايل الرئيسية:\n\n1. اضغط على زر خيارات المتصفح (⋮) أو خيار مشاركة (Share).\n2. اختر 'إضافة إلى الشاشة الرئيسية (Add to Home Screen)'.\n\nستظهر أيقونة التطبيق باسم محلك فوراً!");
+                alert(
+                    "📲 لتثبيت التطبيق كأيقونة فعلية على موبايل الأندرويد:\n\n" +
+                    "1️⃣ اضغط على زر قائمة المتصفح (⋮) في أعلى شاشة الموبايل.\n" +
+                    "2️⃣ اختر 'إضافة إلى الشاشة الرئيسية (Add to Home screen)' أو 'تثبيت التطبيق (Install app)'.\n\n" +
+                    "✨ ستظهر أيقونة التطبيق الذهبية (ProSoft ERP) على شاشة موبايلك كـ تطبيق أندرويد حقيقي!"
+                );
             }
         }
 

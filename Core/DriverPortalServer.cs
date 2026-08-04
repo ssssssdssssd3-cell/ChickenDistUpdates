@@ -128,6 +128,11 @@ namespace ChickenDist.Core
                         string json = GetMobileAppManifest();
                         SendResponse(stream, "200 OK", "application/json; charset=utf-8", json);
                     }
+                    else if (path == "/logo.png" || path == "/mobile/logo.png" || path == "/MobileApp/logo.png")
+                    {
+                        byte[] logoBytes = GetMobileAppLogoBytes();
+                        SendBinaryResponse(stream, "200 OK", "image/png", logoBytes);
+                    }
                     else
                     {
                         SendResponse(stream, "404 Not Found", "text/plain", "404 Not Found");
@@ -294,10 +299,67 @@ namespace ChickenDist.Core
                         }
                     }
                 }
+
+                string logoPath = Path.Combine(dir, "logo.png");
+                if (!File.Exists(logoPath) || new FileInfo(logoPath).Length < 100)
+                {
+                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.logo.png");
+                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.logo.png");
+                    if (s == null) s = asm.GetManifestResourceStream("ChickenDist.pro_soft_logo.png");
+                    if (s != null)
+                    {
+                        using (s)
+                        using (var ms = new MemoryStream())
+                        {
+                            s.CopyTo(ms);
+                            File.WriteAllBytes(logoPath, ms.ToArray());
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("EnsureMobileAppFilesExtracted error: " + ex.Message);
+            }
+        }
+
+        private static byte[] GetMobileAppLogoBytes()
+        {
+            EnsureMobileAppFilesExtracted();
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "logo.png");
+            if (File.Exists(filePath))
+                return File.ReadAllBytes(filePath);
+
+            var asm = typeof(DriverPortalServer).Assembly;
+            using (var s = asm.GetManifestResourceStream("ChickenDist.MobileApp.logo.png") 
+                        ?? asm.GetManifestResourceStream("ChickenDist.pro_soft_logo.png"))
+            {
+                if (s != null)
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        s.CopyTo(ms);
+                        return ms.ToArray();
+                    }
+                }
+            }
+            return new byte[0];
+        }
+
+        private static void SendBinaryResponse(NetworkStream stream, string status, string contentType, byte[] bodyBytes)
+        {
+            string headers =
+                $"HTTP/1.1 {status}\r\n" +
+                $"Content-Type: {contentType}\r\n" +
+                $"Content-Length: {bodyBytes.Length}\r\n" +
+                "Access-Control-Allow-Origin: *\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+            byte[] headerBytes = Encoding.UTF8.GetBytes(headers);
+            stream.Write(headerBytes, 0, headerBytes.Length);
+            if (bodyBytes != null && bodyBytes.Length > 0)
+            {
+                stream.Write(bodyBytes, 0, bodyBytes.Length);
             }
         }
 
