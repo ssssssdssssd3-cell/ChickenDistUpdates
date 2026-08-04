@@ -924,18 +924,19 @@
 
         async function connectWithCloudSyncCode() {
             const codeInput = document.getElementById('txtCloudSyncCode');
-            const code = codeInput ? codeInput.value.trim() : '';
+            let code = codeInput ? codeInput.value.trim() : '';
             if (!code) {
-                alert("الرجاء إدخال كود المزامنة أو السيريال أولاً!");
+                alert("الرجاء إدخال كود المزامنة السحابي المولد من البرنامج أولاً!");
                 return;
             }
 
+            let cleanCode = code.replace(/^PROSOFT-/i, '').trim();
             let rawData = "";
             let fetchSuccess = false;
 
             // 1. Try pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
             try {
-                const resp1 = await fetch('https://api.pastes.dev/' + code);
+                const resp1 = await fetch('https://api.pastes.dev/' + cleanCode);
                 if (resp1.ok) {
                     const txt = await resp1.text();
                     if (txt && !txt.trim().startsWith('<')) {

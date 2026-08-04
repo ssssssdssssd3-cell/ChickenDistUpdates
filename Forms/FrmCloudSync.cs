@@ -271,20 +271,25 @@ namespace ChickenDist.Forms
             try
             {
                 btnGeneratePairing.Enabled = false;
-                btnGeneratePairing.Text = "⏳ جاري التوليد...";
+                btnGeneratePairing.Text = "⏳ جاري التوليد والمزامنة...";
 
                 string cloudCode = DriverPortalServer.UploadToCloud();
                 if (!string.IsNullOrEmpty(cloudCode))
                 {
+                    txtSecretKey.Text = cloudCode;
                     Clipboard.SetText(cloudCode);
+
+                    // Save latest key in settings
+                    DbHelper.Execute("UPDATE CloudSyncSettings SET OwnerSecretKey = @key, LastSyncDate = GETDATE() WHERE SettingID = 1", DbHelper.P("@key", cloudCode));
+
                     MessageBox.Show(
-                        $"🔑 كود الربط السحابي (السيريال) الخاص بك هو:\n\n" +
+                        $"🔑 كود الربط السحابي لمتجرك هو:\n\n" +
                         $"👉   {cloudCode}   👈\n\n" +
-                        $"✅ تم نسخ الكود بنجاح إلى الحافظة!\n\n" +
+                        $"✅ تم التزامـن ونسخ الكود بنجاح إلى الحافظة!\n\n" +
                         $"📋 خطوات الاستخدام:\n" +
-                        $"1. افتح تطبيق الموبايل على أي جهاز.\n" +
-                        $"2. اضغط على زر '🔑 كود الربط' بأعلى شاشة الموبايل.\n" +
-                        $"3. الصق الكود واضغط '⚡ ربط وجلب البيانات الفعليه'.",
+                        $"1. افتح تطبيق الموبايل على أي جهاز من أي مكان.\n" +
+                        $"2. الصق الكود ({cloudCode}) واضغط '⚡ ربط ودخول'.\n" +
+                        $"3. سيتم عرض بيانات محلك الحية فوراً بدون أي إعدادات أخرى.",
                         "كود الربط بالموبايل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
