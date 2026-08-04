@@ -1430,9 +1430,41 @@ pause
         }
 
 
+        private void KillNodeOnPort5000()
+        {
+            try
+            {
+                var killCmd = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c \"for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :5000') do taskkill /f /pid %a\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                var p = Process.Start(killCmd);
+                p?.WaitForExit(1500);
+            }
+            catch { }
+
+            try
+            {
+                if (_nodeProcess != null && !_nodeProcess.HasExited)
+                {
+                    _nodeProcess.Kill();
+                    _nodeProcess.Dispose();
+                    _nodeProcess = null;
+                }
+            }
+            catch { }
+        }
+
         private void StartLocalNodeServer(bool forceRestart = false)
         {
-            if (!forceRestart)
+            if (forceRestart)
+            {
+                KillNodeOnPort5000();
+            }
+            else
             {
                 try
                 {
@@ -1446,7 +1478,8 @@ pause
                 }
                 catch
                 {
-                    // Port 5000 is not responding — proceed to start
+                    // Port 5000 is not responding — kill any hanging process and start clean
+                    KillNodeOnPort5000();
                 }
             }
 

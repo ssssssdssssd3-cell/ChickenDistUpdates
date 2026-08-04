@@ -1020,6 +1020,15 @@ listenToClientMappings();
 // Auto-start WhatsApp Bot on startup
 startBot();
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running locally at http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`[Error] Port ${PORT} is already in use by another process.`);
+        process.exit(1);
+    } else {
+        console.error('[Error] Server error:', err);
+    }
 });
