@@ -926,48 +926,41 @@
             const codeInput = document.getElementById('txtCloudSyncCode');
             const code = codeInput ? codeInput.value.trim() : '';
             if (!code) {
-                alert("الرجاء إدخال سيريال العميل أولاً!");
+                alert("الرجاء إدخال كود المزامنة أو السيريال أولاً!");
                 return;
             }
 
-            let encryptedData = "";
+            let rawData = "";
             let fetchSuccess = false;
 
-            // 1. Try KVDB Endpoint (CORS-enabled persistent Cloud Store by Serial)
+            // 1. Try pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
             try {
-                const resp1 = await fetch(`https://kvdb.io/9u8nZ23pBqX412/${code}?_t=${Date.now()}`);
+                const resp1 = await fetch('https://api.pastes.dev/' + code);
                 if (resp1.ok) {
-                    encryptedData = await resp1.text();
-                    if (encryptedData && encryptedData.length > 5) {
+                    const txt = await resp1.text();
+                    if (txt && !txt.trim().startsWith('<')) {
+                        rawData = txt;
                         fetchSuccess = true;
                     }
                 }
             } catch (e) {}
 
-            // 2. Fallback to pastes.dev
+            // 2. Fallback to pastes.dev post endpoint
             if (!fetchSuccess) {
                 try {
                     const resp2 = await fetch('https://api.pastes.dev/post/' + code);
                     if (resp2.ok) {
-                        encryptedData = await resp2.text();
-                        fetchSuccess = true;
+                        const txt = await resp2.text();
+                        if (txt && !txt.trim().startsWith('<')) {
+                            rawData = txt;
+                            fetchSuccess = true;
+                        }
                     }
                 } catch (e) {}
             }
 
-            // 3. Fallback to pastes.dev val
-            if (!fetchSuccess) {
-                try {
-                    const resp3 = await fetch('https://pastes.dev/val/' + code);
-                    if (resp3.ok) {
-                        encryptedData = await resp3.text();
-                        fetchSuccess = true;
-                    }
-                } catch (e) {}
-            }
-
-            if (!fetchSuccess || !encryptedData) {
-                alert("❌ فشل جلب البيانات بالسيريال المدخل!\nتأكد من سيريال العميل وأن جهاز المحل قام بعمل مزامنة بالضغط على '⚡ مزامنة التقارير'.");
+            if (!fetchSuccess || !rawData || rawData.trim().startsWith('<')) {
+                alert("❌ كود الربط المدخل غير موجود أو انتهت صلاحيته!\nبرجاء الضغط على '⚡ مزامنة التقارير السحابية' في برنامج الكمبيوتر بالمحل.");
                 return;
             }
 
@@ -975,15 +968,15 @@
                 // XOR Decryption
                 const key = "ProSoftSecurityKey2026";
                 let decrypted = "";
-                for (let i = 0; i < encryptedData.length; i++) {
-                    decrypted += String.fromCharCode(encryptedData.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                for (let i = 0; i < rawData.length; i++) {
+                    decrypted += String.fromCharCode(rawData.charCodeAt(i) ^ key.charCodeAt(i % key.length));
                 }
 
                 let data;
                 try {
                     data = JSON.parse(decrypted);
                 } catch(pe) {
-                    data = JSON.parse(encryptedData); // Fallback plain JSON
+                    data = JSON.parse(rawData); // Fallback plain JSON
                 }
 
                 if (data) {
@@ -994,10 +987,10 @@
                     if(setupCard) setupCard.style.display = 'none';
 
                     renderLiveData(data);
-                    alert("✅ تم جلب ومزامنة بيانات متجرك بالسيريال بنجاح!");
+                    alert("✅ تم جلب ومزامنة بيانات المحل بالسيريال بنجاح!");
                 }
             } catch (err) {
-                alert("❌ حدث خطأ أثناء فك تشفير بيانات السيريال:\n" + err.message);
+                alert("❌ حدث خطأ أثناء قراءة بيانات السيريال:\n" + err.message);
             }
         }
 

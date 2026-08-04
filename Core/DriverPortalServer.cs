@@ -404,7 +404,7 @@ namespace ChickenDist.Core
             }
             catch { }
 
-            return clientSerial;
+            return !string.IsNullOrEmpty(_lastCloudCode) ? _lastCloudCode : clientSerial;
         }
 
         // ======================== عناوين الـ IP ========================
