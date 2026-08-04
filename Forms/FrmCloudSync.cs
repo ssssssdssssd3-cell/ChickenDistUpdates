@@ -126,34 +126,19 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnSyncNow = Theme.MakeButton("⚡ مزامنة وتحديث التقارير الآن", Theme.Accent);
-            btnSyncNow.Size = new Size(210, 38);
+            btnSyncNow = Theme.MakeButton("⚡ مزامنة وتحديث التقارير السحابية الآن", Theme.Accent);
+            btnSyncNow.Size = new Size(240, 38);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnGeneratePairing = Theme.MakeButton("🔑 توليد كود الربط (السيريال)", Color.FromArgb(160, 80, 220));
-            btnGeneratePairing.Size = new Size(210, 38);
+            btnGeneratePairing = Theme.MakeButton("🔑 توليد ونسخ سيريال العميل للموبايل", Color.FromArgb(160, 80, 220));
+            btnGeneratePairing.Size = new Size(240, 38);
             btnGeneratePairing.Click += BtnGeneratePairing_Click;
-
-            var btnOpenLocalWeb = Theme.MakeButton("🌐 فتح التطبيق بالبيانات الحقيقية", Theme.Primary);
-            btnOpenLocalWeb.Size = new Size(220, 38);
-            btnOpenLocalWeb.Click += (s, e) =>
-            {
-                try
-                {
-                    string localUrl = "http://localhost:5000/mobile";
-                    System.Diagnostics.Process.Start(localUrl);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("فشل فتح الرابط: " + ex.Message);
-                }
-            };
 
             btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Theme.Success);
             btnSave.Size = new Size(160, 38);
             btnSave.Click += BtnSave_Click;
 
-            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnGeneratePairing, btnOpenLocalWeb, btnSave });
+            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnGeneratePairing, btnSave });
 
             pnlMain.Controls.Add(grpSettings);
             pnlMain.Controls.Add(pnlActions);

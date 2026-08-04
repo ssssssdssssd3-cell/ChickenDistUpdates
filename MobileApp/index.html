@@ -438,6 +438,16 @@
             <button class="install-pwa-btn" style="padding:8px 14px; font-size:12px;" onclick="installPwaApp()">📲 تثبيت الآن</button>
         </div>
 
+        <!-- Serial Key Setup Card for Remote Internet Access -->
+        <div id="serialSetupCard" style="background:rgba(245,158,11,0.12); border:1px solid var(--gold); border-radius:14px; padding:16px; margin-bottom:15px; text-align:center;">
+            <div style="font-weight:900; font-size:15px; color:var(--gold); margin-bottom:6px;">🔑 ربط الموبايل بسيريال العميل عن بعد</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">أدخل سيريال المالك المولد من برنامج المحل لمتابعة جميع التقارير الحية من أي مكان في العالم:</div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="txtDirectSerialInput" placeholder="أدخل سيريال العميل (مثال: aSn51xltLu)" style="flex:1; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:10px; font-size:14px; text-align:center; direction:ltr;">
+                <button class="install-pwa-btn" style="background:var(--emerald); color:#fff; padding:10px 18px; font-size:14px;" onclick="saveDirectSerialAndFetch()">⚡ ربط ودخول</button>
+            </div>
+        </div>
+
         <!-- Search Bar for All Reports -->
         <div class="reports-search-box">
             <input type="text" class="reports-search-input" id="reportsSearchInput" placeholder="🔍 ابحث في التقارير (مبيعات، مشتريات، أرباح، موردين، ركود...)" onkeyup="filterReportsMenu(this.value)">
@@ -955,6 +965,17 @@
             }
         }
 
+        function saveDirectSerialAndFetch() {
+            const input = document.getElementById('txtDirectSerialInput');
+            const serial = input ? input.value.trim() : '';
+            if(!serial) {
+                alert("برجاء إدخال سيريال العميل أولاً!");
+                return;
+            }
+            document.getElementById('txtCloudSyncCode').value = serial;
+            connectWithCloudSyncCode();
+        }
+
         window.onload = function() {
             const savedName = localStorage.getItem('custom_store_name');
             if(savedName) {
@@ -962,16 +983,17 @@
                 document.getElementById('txtCustomStoreName').value = savedName;
             }
 
-            // Check if server injected data automatically
-            if (window.__SERVER_DATA__) {
+            const savedCode = localStorage.getItem('cloud_sync_code');
+            if (savedCode) {
+                if(document.getElementById('txtCloudSyncCode')) document.getElementById('txtCloudSyncCode').value = savedCode;
+                if(document.getElementById('txtDirectSerialInput')) document.getElementById('txtDirectSerialInput').value = savedCode;
+                const card = document.getElementById('serialSetupCard');
+                if(card) card.style.display = 'none';
+                connectWithCloudSyncCode();
+            } else if (window.__SERVER_DATA__) {
+                const card = document.getElementById('serialSetupCard');
+                if(card) card.style.display = 'none';
                 renderLiveData(window.__SERVER_DATA__);
-            } else {
-                // Try auto-loading saved sync code
-                const savedCode = localStorage.getItem('cloud_sync_code');
-                if (savedCode) {
-                    document.getElementById('txtCloudSyncCode').value = savedCode;
-                    connectWithCloudSyncCode();
-                }
             }
         };
 
