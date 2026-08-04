@@ -987,13 +987,63 @@
 
         function renderLiveData(d) {
             if (!d) return;
-            if (d.StoreName) document.getElementById('txtHeaderAppName').innerText = d.StoreName;
-            if (d.TodayNetProfit !== undefined) document.getElementById('lblNetProfit').innerText = Number(d.TodayNetProfit).toLocaleString('ar-EG', {minimumFractionDigits: 2}) + " ج";
-            
+
+            const fmt = (v) => Number(v || 0).toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ج";
+            const fmtInt = (v) => Number(v || 0).toLocaleString('ar-EG');
+
+            // اسم المحل
+            if (d.StoreName) {
+                const el = document.getElementById('txtHeaderAppName');
+                if (el) el.innerText = d.StoreName;
+            }
+
+            // مبيعات اليوم
+            const saleEl = document.getElementById('lblSalesTotal') || document.getElementById('lblTodaySales');
+            if (saleEl) saleEl.innerText = fmt(d.TodaySalesTotal);
+
+            // صافي الربح اليوم
+            const profitEl = document.getElementById('lblNetProfit') || document.getElementById('lblTodayNetProfit');
+            if (profitEl) profitEl.innerText = fmt(d.TodayNetProfit);
+
+            // نقدي / آجل
+            const cashSaleEl = document.getElementById('lblCashSales');
+            if (cashSaleEl) cashSaleEl.innerText = fmt(d.TodayCashSales);
+            const creditSaleEl = document.getElementById('lblCreditSales');
+            if (creditSaleEl) creditSaleEl.innerText = fmt(d.TodayCreditSales);
+
+            // رصيد الخزنة
+            const cbEl = document.getElementById('lblCashboxBalance') || document.getElementById('lblCashBalance');
+            if (cbEl) cbEl.innerText = fmt(d.CashboxBalance);
+
+            // ديون العملاء والموردين
+            const cdEl = document.getElementById('lblClientDebts');
+            if (cdEl) cdEl.innerText = fmt(d.ClientDebts);
+            const sdEl = document.getElementById('lblSupplierDebts');
+            if (sdEl) sdEl.innerText = fmt(d.SupplierDebts);
+
+            // مشتريات اليوم
+            const purEl = document.getElementById('lblTodayPurchases');
+            if (purEl) purEl.innerText = fmt(d.TodayPurchases);
+
+            // نواقص المخزن
+            const lowEl = document.getElementById('lblLowStock') || document.getElementById('lblLowStockCount');
+            if (lowEl) lowEl.innerText = fmtInt(d.LowStockCount) + " صنف";
+
+            // وقت المزامنة
+            if (d.SyncTime) {
+                const syncEl = document.getElementById('lblLastSyncTime') || document.getElementById('connStatusBadge');
+                if (syncEl) syncEl.innerHTML = `<span>🟢</span> <span>آخر مزامنة: ${d.SyncTime}</span>`;
+            }
+
+            // شارة الاتصال
             const badge = document.getElementById('connStatusBadge');
             if (badge) {
-                badge.innerHTML = `<span>🟢</span> <span>متصل بالسيرفر المباشر: ${new Date().toLocaleTimeString('ar-EG')}</span>`;
+                badge.innerHTML = `<span>🟢</span> <span>متصل — آخر مزامنة: ${d.SyncTime || new Date().toLocaleTimeString('ar-EG')}</span>`;
             }
+
+            // إخفاء حالة عدم الاتصال
+            const offlineBadge = document.getElementById('offlineStatusBadge');
+            if (offlineBadge) offlineBadge.style.display = 'none';
         }
 
         function saveDirectSerialAndFetch() {

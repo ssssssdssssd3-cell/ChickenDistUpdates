@@ -1361,7 +1361,47 @@ namespace ChickenDist.DAL
         /// </summary>
         public static string BuildDriverExportJson(int? driverID = null)
         {
-            // جلب العملاء النشطين مع DriverID
+            // ── بيانات المالك (KPIs) ──
+            string storeName = "";
+            try {
+                var dtStore = DbHelper.Query("SELECT TOP 1 SettingValue FROM AppSettings WHERE SettingKey = 'StoreName'");
+                if (dtStore.Rows.Count > 0) storeName = dtStore.Rows[0][0]?.ToString() ?? "";
+            } catch {}
+
+            decimal todaySalesTotal = 0, todayCashSales = 0, todayCreditSales = 0, todayNetProfit = 0;
+            decimal cashboxBalance = 0, clientDebts = 0, supplierDebts = 0, todayPurchases = 0;
+            int lowStockCount = 0;
+            try {
+                object o;
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                if (o != null && o != DBNull.Value) todaySalesTotal = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND ISNULL(SaleType,'') = 'Cash'");
+                if (o != null && o != DBNull.Value) todayCashSales = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND ISNULL(SaleType,'') <> 'Cash'");
+                if (o != null && o != DBNull.Value) todayCreditSales = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount - ISNULL(TotalCost,0)),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                if (o != null && o != DBNull.Value) todayNetProfit = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox");
+                if (o != null && o != DBNull.Value) cashboxBalance = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(Balance),0) FROM Clients WHERE Balance > 0");
+                if (o != null && o != DBNull.Value) clientDebts = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(Balance),0) FROM Suppliers WHERE Balance > 0");
+                if (o != null && o != DBNull.Value) supplierDebts = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                if (o != null && o != DBNull.Value) todayPurchases = Convert.ToDecimal(o);
+
+                o = DbHelper.Scalar("SELECT COUNT(*) FROM Products WHERE IsActive = 1 AND Quantity <= ISNULL(MinQuantity, 5)");
+                if (o != null && o != DBNull.Value) lowStockCount = Convert.ToInt32(o);
+            } catch {}
+
+            // ── بيانات المندوبين ──
             System.Data.DataTable clients;
             if (driverID.HasValue && driverID.Value > 0)
             {
@@ -1375,11 +1415,9 @@ namespace ChickenDist.DAL
                     "SELECT ClientID, ClientName, ISNULL(Phone,'') AS Phone, DriverID FROM Clients WHERE IsActive=1 ORDER BY ClientName");
             }
 
-            // جلب الأصناف النشطة
             var products = DbHelper.Query(
                 "SELECT ProductID, ProductName, SalePrice, ISNULL(Unit,'وحدة') AS Unit FROM Products WHERE IsActive=1 ORDER BY ProductName");
 
-            // جلب المناديب النشطين
             System.Data.DataTable drivers;
             if (driverID.HasValue && driverID.Value > 0)
             {
@@ -1393,7 +1431,6 @@ namespace ChickenDist.DAL
                     "SELECT EmpID, EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
             }
 
-            // جلب الحمولات المفتوحة
             System.Data.DataTable loads;
             if (driverID.HasValue && driverID.Value > 0)
             {
@@ -1417,6 +1454,19 @@ namespace ChickenDist.DAL
 
             var sb = new System.Text.StringBuilder();
             sb.Append("{");
+
+            // ── KPIs الرئيسية للمالك ──
+            sb.AppendFormat("\"StoreName\":\"{0}\",", EscapeJson(storeName));
+            sb.AppendFormat("\"SyncTime\":\"{0}\",", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            sb.AppendFormat("\"TodaySalesTotal\":{0},", todaySalesTotal.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"TodayCashSales\":{0},", todayCashSales.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"TodayCreditSales\":{0},", todayCreditSales.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"TodayNetProfit\":{0},", todayNetProfit.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"CashboxBalance\":{0},", cashboxBalance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"ClientDebts\":{0},", clientDebts.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"SupplierDebts\":{0},", supplierDebts.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"TodayPurchases\":{0},", todayPurchases.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendFormat("\"LowStockCount\":{0},", lowStockCount);
 
             // clients array
             sb.Append("\"clients\":[");
