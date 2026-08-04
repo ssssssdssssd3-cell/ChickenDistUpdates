@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --bg-body: #070a12;
@@ -926,7 +929,7 @@
             const codeInput = document.getElementById('txtCloudSyncCode');
             let code = codeInput ? codeInput.value.trim() : '';
             if (!code) {
-                alert("الرجاء إدخال كود المزامنة السحابي المولد من البرنامج أولاً!");
+                alert("الرجاء إدخال كود المزامنة السحابي أو Project ID الخاص بـ Firebase أولاً!");
                 return;
             }
 
@@ -934,7 +937,35 @@
             let rawData = "";
             let fetchSuccess = false;
 
-            // 1. Try pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
+            // A. Try Firebase Realtime Database first (Instant & Permanent)
+            let rtdbUrl = cleanCode.startsWith('http') 
+                ? cleanCode.replace(/\/$/, '') 
+                : `https://${cleanCode}-default-rtdb.firebaseio.com`;
+
+            try {
+                const fbResp = await fetch(rtdbUrl + '/erp_data.json');
+                if (fbResp.ok) {
+                    const fbData = await fbResp.json();
+                    if (fbData && (fbData.TodaySalesTotal !== undefined || fbData.StoreName !== undefined)) {
+                        localStorage.setItem('cloud_sync_code', cleanCode);
+                        localStorage.setItem('firebase_rtdb_url', rtdbUrl);
+
+                        const modal = document.getElementById('syncCodeModal');
+                        if (modal) modal.style.display = 'none';
+                        const setupCard = document.getElementById('serialSetupCard');
+                        if (setupCard) setupCard.style.display = 'none';
+
+                        renderLiveData(fbData);
+                        startFirebaseLiveListener(rtdbUrl);
+                        alert("✅ تم الربط بـ Firebase Realtime Database بنجاح! التحديثات ستصلك لحظياً للأبد 🔥");
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log("Firebase fetch skip:", e);
+            }
+
+            // B. Fallback 1: pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
             try {
                 const resp1 = await fetch('https://api.pastes.dev/' + cleanCode);
                 if (resp1.ok) {
@@ -947,7 +978,7 @@
                 }
             } catch (e) {}
 
-            // 2. Fallback to pastes.dev post endpoint
+            // C. Fallback 2: pastes.dev post endpoint
             if (!fetchSuccess) {
                 try {
                     const resp2 = await fetch('https://api.pastes.dev/post/' + code);
@@ -963,12 +994,11 @@
             }
 
             if (!fetchSuccess || !rawData || rawData.trim().startsWith('<')) {
-                alert("❌ كود الربط المدخل غير موجود أو انتهت صلاحيته!\nبرجاء الضغط على '⚡ مزامنة التقارير السحابية' في برنامج الكمبيوتر بالمحل.");
+                alert("❌ كود الربط المدخل غير موجود أو انتهت صلاحيته!\n\nخطوات الإصلاح:\n1. إذا كنت تستخدم Firebase أدخل Project ID (مثال: checkin-192ab).\n2. أو اضغط '⚡ مزامنة التقارير السحابية' في برنامج المحل لجلب كود جديد.");
                 return;
             }
 
             try {
-                // Server now uploads plain JSON — parse directly, no decryption needed
                 const data = JSON.parse(rawData);
                 if (data) {
                     localStorage.setItem('cloud_sync_code', cleanCode);
@@ -982,6 +1012,27 @@
                 }
             } catch (err) {
                 alert("❌ حدث خطأ أثناء قراءة بيانات الكود:\n" + err.message + "\n\nجرب توليد كود جديد من البرنامج.");
+            }
+        }
+
+        let activeFbApp = null;
+        function startFirebaseLiveListener(rtdbUrl) {
+            if (!window.firebase) return;
+            try {
+                if (activeFbApp) {
+                    activeFbApp.delete().catch(()=>{});
+                }
+                activeFbApp = firebase.initializeApp({ databaseURL: rtdbUrl }, 'erpApp_' + Math.floor(Math.random()*10000));
+                const db = activeFbApp.database();
+                db.ref('erp_data').on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    if (val) {
+                        console.log("🔥 Firebase Live Data Received:", val);
+                        renderLiveData(val);
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Live Listener error:", err);
             }
         }
 
@@ -1059,21 +1110,26 @@
 
         window.onload = function() {
             const savedName = localStorage.getItem('custom_store_name');
-            if(savedName) {
+            if (savedName) {
                 document.getElementById('txtHeaderAppName').innerText = savedName;
                 document.getElementById('txtCustomStoreName').value = savedName;
             }
 
+            const savedRtdb = localStorage.getItem('firebase_rtdb_url');
+            if (savedRtdb) {
+                startFirebaseLiveListener(savedRtdb);
+            }
+
             const savedCode = localStorage.getItem('cloud_sync_code');
             if (savedCode) {
-                if(document.getElementById('txtCloudSyncCode')) document.getElementById('txtCloudSyncCode').value = savedCode;
-                if(document.getElementById('txtDirectSerialInput')) document.getElementById('txtDirectSerialInput').value = savedCode;
+                if (document.getElementById('txtCloudSyncCode')) document.getElementById('txtCloudSyncCode').value = savedCode;
+                if (document.getElementById('txtDirectSerialInput')) document.getElementById('txtDirectSerialInput').value = savedCode;
                 const card = document.getElementById('serialSetupCard');
-                if(card) card.style.display = 'none';
+                if (card) card.style.display = 'none';
                 connectWithCloudSyncCode();
             } else if (window.__SERVER_DATA__) {
                 const card = document.getElementById('serialSetupCard');
-                if(card) card.style.display = 'none';
+                if (card) card.style.display = 'none';
                 renderLiveData(window.__SERVER_DATA__);
             }
         };

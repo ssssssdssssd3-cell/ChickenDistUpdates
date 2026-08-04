@@ -360,39 +360,87 @@ namespace ChickenDist.Core
         // ======================== الرفع السحابي ========================
 
         /// <summary>
-        /// يرفع JSON البيانات إلى pastes.dev ويُرجع الرمز التعريفي الفريد
+        /// يقرأ databaseURL من bot/firebase_config.json
+        /// </summary>
+        private static string GetFirebaseDatabaseUrl()
+        {
+            try
+            {
+                // مسار ملف firebase_config.json بجانب exe
+                string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                string configPath = Path.Combine(exeDir, "bot", "firebase_config.json");
+                if (!File.Exists(configPath)) return null;
+
+                string json = File.ReadAllText(configPath, Encoding.UTF8);
+
+                // استخراج databaseURL
+                var m = System.Text.RegularExpressions.Regex.Match(json, "\"databaseURL\"\\s*:\\s*\"([^\"]+)\"");
+                if (m.Success) return m.Groups[1].Value.TrimEnd('/');
+
+                // بناء الـ URL من projectId إذا لم يوجد databaseURL
+                var mp = System.Text.RegularExpressions.Regex.Match(json, "\"projectId\"\\s*:\\s*\"([^\"]+)\"");
+                if (mp.Success) return $"https://{mp.Groups[1].Value}-default-rtdb.firebaseio.com";
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>
+        /// يرفع بيانات ERP إلى Firebase Realtime Database ويُرجع السيريال الثابت للعميل
         /// </summary>
         public static string UploadToCloud(int? driverID = null)
         {
             string clientSerial = Services.CloudSyncService.GetPermanentClientSerial();
-            // Upload plain JSON — the random one-time code is the access key, no extra encryption needed
             string json = DAL.DriverDAL.BuildDriverExportJson(driverID);
 
-            // 1. Upload plain JSON to pastes.dev (primary — JS reads it directly)
-            try
+            // 1. الرفع لـ Firebase Realtime Database (الحل الدائم اللحظي)
+            string dbUrl = GetFirebaseDatabaseUrl();
+            bool firebaseOk = false;
+            if (!string.IsNullOrEmpty(dbUrl))
             {
-                using (var wc = new WebClient())
+                try
                 {
-                    wc.Encoding = Encoding.UTF8;
-                    wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
-                    wc.Headers[HttpRequestHeader.UserAgent]   = "ChickenDistApp (contact@chickendist.com)";
-
-                    string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", json);
-                    string code = "";
-                    var match = System.Text.RegularExpressions.Regex.Match(responseStr, @"""key""\s*:\s*""([^""]+)""");
-                    if (match.Success) code = match.Groups[1].Value;
-                    else code = responseStr.Trim();
-
-                    _lastCloudCode   = code;
-                    _cloudCodeExpiry = DateTime.Now.AddHours(24);
+                    using (var wc = new WebClient())
+                    {
+                        wc.Encoding = Encoding.UTF8;
+                        wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+                        // PUT /erp_data.json — يحفظ البيانات دائماً تحت /erp_data في قاعدة البيانات
+                        wc.UploadString($"{dbUrl}/erp_data.json", "PUT", json);
+                        firebaseOk = true;
+                        System.Diagnostics.Debug.WriteLine("Firebase RTDB upload OK");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Firebase RTDB Upload warning: " + ex.Message);
                 }
             }
-            catch (Exception ex)
+
+            // 2. Fallback إلى pastes.dev لو Firebase مش موجود أو فشل
+            if (!firebaseOk)
             {
-                System.Diagnostics.Debug.WriteLine("pastes.dev Upload warning: " + ex.Message);
+                try
+                {
+                    using (var wc = new WebClient())
+                    {
+                        wc.Encoding = Encoding.UTF8;
+                        wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
+                        wc.Headers[HttpRequestHeader.UserAgent]   = "ChickenDistApp (contact@chickendist.com)";
+
+                        string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", json);
+                        var match = System.Text.RegularExpressions.Regex.Match(responseStr, @"""key""\s*:\s*""([^""]+)""");
+                        _lastCloudCode   = match.Success ? match.Groups[1].Value : responseStr.Trim();
+                        _cloudCodeExpiry = DateTime.Now.AddHours(24);
+                        System.Diagnostics.Debug.WriteLine("Fallback pastes.dev upload OK: " + _lastCloudCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("pastes.dev Upload warning: " + ex.Message);
+                }
             }
 
-            return !string.IsNullOrEmpty(_lastCloudCode) ? _lastCloudCode : clientSerial;
+            return clientSerial; // السيريال الثابت دايماً هو الكود الرئيسي
         }
 
         // ======================== عناوين الـ IP ========================

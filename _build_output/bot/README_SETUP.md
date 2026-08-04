@@ -36,7 +36,19 @@
     }
   }
   ```
-* اضغط على **Publish** (نشر).
+### 2.1. تهيئة قاعدة البيانات اللحظية Realtime Database (لتطبيق الموبايل):
+* من القائمة الجانبية اليسرى، اضغط على **Build** ثم اختر **Realtime Database**.
+* اضغط على **Create Database** ثم اختر **Start in test mode** ثم اضغط **Enable**.
+* اذهب إلى تبويب **Rules** وتأكد أن القواعد تسمح بالقراءة والكتابة:
+  ```json
+  {
+    "rules": {
+      ".read": true,
+      ".write": true
+    }
+  }
+  ```
+* اضغط **Publish**.
 
 ### 3. تهيئة خدمة الاستضافة Firebase Hosting:
 * من القائمة اليسرى تحت قائمة **Build**، اختر **Hosting**.
