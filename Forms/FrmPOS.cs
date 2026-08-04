@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Media;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -27,6 +28,8 @@ namespace ChickenDist.Forms
         private FlowLayoutPanel flowQuickItems;
         private Panel pnlTotals, pnlQuick, pnlTop;
         private CheckBox chkRedeemPoints;
+        private Label lblClock;
+        private System.Windows.Forms.Timer _clockTimer;
 
         // ── عناصر واجهة المطعم ─────────────────────────────────
         private FlowLayoutPanel flowCategories;
@@ -116,6 +119,22 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(btnCustomizeCols);
             btnCustomizeCols.BringToFront();
 
+            // ── ساعة مباشرة ──────────────────────────────────────
+            lblClock = new Label
+            {
+                Text = DateTime.Now.ToString("hh:mm tt"),
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                AutoSize = true,
+                Location = new Point(10, 8),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            pnlTop.Controls.Add(lblClock);
+            lblClock.BringToFront();
+            _clockTimer = new System.Windows.Forms.Timer { Interval = 30000 }; // كل 30 ثانية
+            _clockTimer.Tick += (s, e) => lblClock.Text = DateTime.Now.ToString("hh:mm tt");
+            _clockTimer.Start();
+
             this.Controls.Add(pnlTop);
 
             // ── جدول الأصناف (يسار) ──────────────────────────
@@ -147,6 +166,31 @@ namespace ChickenDist.Forms
                 _           => "الصنف"
             });
             dgItems.Columns.Add("Qty", "الكمية");
+            // ── أزرار +/- للكمية ─────────────────────────────────
+            var plusCol = new DataGridViewButtonColumn
+            {
+                Name = "QtyPlus", HeaderText = "+",
+                Text = "+", UseColumnTextForButtonValue = true,
+                Width = 32, FlatStyle = FlatStyle.Flat
+            };
+            plusCol.DefaultCellStyle.BackColor = Color.FromArgb(25, 135, 84);
+            plusCol.DefaultCellStyle.ForeColor = Color.White;
+            plusCol.DefaultCellStyle.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            plusCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns.Add(plusCol);
+
+            var minusCol = new DataGridViewButtonColumn
+            {
+                Name = "QtyMinus", HeaderText = "-",
+                Text = "-", UseColumnTextForButtonValue = true,
+                Width = 32, FlatStyle = FlatStyle.Flat
+            };
+            minusCol.DefaultCellStyle.BackColor = Color.FromArgb(220, 53, 69);
+            minusCol.DefaultCellStyle.ForeColor = Color.White;
+            minusCol.DefaultCellStyle.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            minusCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns.Add(minusCol);
+
             dgItems.Columns.Add("Price", "السعر");
             dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
@@ -194,11 +238,28 @@ namespace ChickenDist.Forms
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && e.ColumnIndex < dgItems.Columns.Count)
                 {
-                    if (dgItems.Columns[e.ColumnIndex].Name == "Delete")
+                    string colName = dgItems.Columns[e.ColumnIndex].Name;
+                    if (colName == "Delete")
                     {
                         if (e.RowIndex < _items.Count)
                         {
                             _items.RemoveAt(e.RowIndex);
+                            RefreshGrid();
+                        }
+                    }
+                    else if (colName == "QtyPlus" && e.RowIndex < _items.Count)
+                    {
+                        _items[e.RowIndex].Qty += 1;
+                        _items[e.RowIndex].Total = (_items[e.RowIndex].Qty * _items[e.RowIndex].Price) - _items[e.RowIndex].DiscountAmt;
+                        RefreshGrid();
+                        try { SystemSounds.Asterisk.Play(); } catch { }
+                    }
+                    else if (colName == "QtyMinus" && e.RowIndex < _items.Count)
+                    {
+                        if (_items[e.RowIndex].Qty > 1)
+                        {
+                            _items[e.RowIndex].Qty -= 1;
+                            _items[e.RowIndex].Total = (_items[e.RowIndex].Qty * _items[e.RowIndex].Price) - _items[e.RowIndex].DiscountAmt;
                             RefreshGrid();
                         }
                     }
@@ -210,7 +271,7 @@ namespace ChickenDist.Forms
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
                     string colName = dgItems.Columns[e.ColumnIndex].Name;
-                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete")
+                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete" || colName == "QtyPlus" || colName == "QtyMinus")
                     {
                         return; // السماح بتعديل الخانات التفاعلية مباشرة
                     }
@@ -429,7 +490,7 @@ namespace ChickenDist.Forms
         {
             int w = this.ClientSize.Width;
             int h = this.ClientSize.Height;
-            int rightW = Math.Max(300, (int)(w * 0.38));
+            int rightW = Math.Max(340, (int)(w * 0.42));
             int leftW = w - rightW - 30;
 
             // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
@@ -848,6 +909,7 @@ namespace ChickenDist.Forms
             _items.Add(newItem);
             RefreshGrid();
             FocusQtyCell(newItem);
+            try { SystemSounds.Asterisk.Play(); } catch { } // صوت تنبيه عند إضافة صنف
         }
 
         private void FocusQtyCell(POSItem item)
@@ -882,11 +944,11 @@ namespace ChickenDist.Forms
                 item.Total = (item.Qty * item.Price) - item.DiscountAmt;
                 if (AppConfig.IsRestaurant)
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
                 }
                 else
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
                 }
                 total += item.Total;
             }
@@ -968,10 +1030,11 @@ namespace ChickenDist.Forms
         {
             if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
             var item = _items[e.RowIndex];
+            string colName = dgItems.Columns[e.ColumnIndex].Name;
 
-            if (e.ColumnIndex == 2) // Qty column
+            if (colName == "Qty")
             {
-                string cellText = dgItems.Rows[e.RowIndex].Cells[2].Value?.ToString()?.Trim() ?? "";
+                string cellText = dgItems.Rows[e.RowIndex].Cells["Qty"].Value?.ToString()?.Trim() ?? "";
 
                 // ── كشف سكانر: لو ما كُتب في خانة الكمية يطابق كود/باركود منتج ──
                 if (cellText.Length >= 3)
@@ -997,7 +1060,7 @@ namespace ChickenDist.Forms
                         {
                             // ← كود منتج تم مسحه بالسكانر في خانة الكمية
                             // → نعيد الكمية الأصلية ونضيف الصنف كسطر جديد
-                            dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                            dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
                             string scannedCode = cellText;
                             this.BeginInvoke(new Action(() =>
                             {
@@ -1015,7 +1078,7 @@ namespace ChickenDist.Forms
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
                         MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                        dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
                         return;
                     }
                     item.Qty = newQty;
@@ -1024,12 +1087,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    dgItems.Rows[e.RowIndex].Cells[2].Value = item.Qty.ToString("G");
+                    dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
                 }
             }
-            else if (e.ColumnIndex == 3) // Price column
+            else if (colName == "Price")
             {
-                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[3].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Price"].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
                 {
                     item.Price = newPrice;
                     item.Total = (item.Qty * newPrice) - item.DiscountAmt;
@@ -1037,12 +1100,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    dgItems.Rows[e.RowIndex].Cells[3].Value = item.Price.ToString("N2");
+                    dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
                 }
             }
-            else if (e.ColumnIndex == 4) // Discount column
+            else if (colName == "Discount")
             {
-                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells[4].Value?.ToString(), out decimal newDisc) && newDisc >= 0)
+                if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Discount"].Value?.ToString(), out decimal newDisc) && newDisc >= 0)
                 {
                     item.DiscountAmt = newDisc;
                     item.Total = (item.Qty * item.Price) - newDisc;
@@ -1050,12 +1113,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    dgItems.Rows[e.RowIndex].Cells[4].Value = item.DiscountAmt.ToString("N2");
+                    dgItems.Rows[e.RowIndex].Cells["Discount"].Value = item.DiscountAmt.ToString("N2");
                 }
             }
-            else if (AppConfig.IsRestaurant && e.ColumnIndex == 6) // Kitchen Notes column
+            else if (colName == "KitchenNotes")
             {
-                item.KitchenNotes = dgItems.Rows[e.RowIndex].Cells[6].Value?.ToString() ?? "";
+                item.KitchenNotes = dgItems.Rows[e.RowIndex].Cells["KitchenNotes"].Value?.ToString() ?? "";
             }
 
             // إعادة التركيز وتحديد خانة الباركود تلقائياً
@@ -1453,16 +1516,26 @@ namespace ChickenDist.Forms
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
 
                 Color btnColor = colors[colorIndex++ % colors.Length];
+
+                // تحذير الأصناف بسعر 0
+                string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
+                if (price == 0) btnColor = Color.FromArgb(108, 117, 125); // رمادي للتحذير
+
                 var btn = new Button
                 {
-                    Text = $"{name}\n\n{price:N2} ج",
-                    Size = new Size(95, 85), FlatStyle = FlatStyle.Flat,
+                    Text = $"{name}\n{priceText}",
+                    Size = new Size(110, 90), FlatStyle = FlatStyle.Flat,
                     BackColor = btnColor, ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     Cursor = Cursors.Hand, Margin = new Padding(4),
                     Tag = pid
                 };
                 btn.FlatAppearance.BorderSize = 0;
+                if (price == 0)
+                {
+                    btn.FlatAppearance.BorderSize = 2;
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(255, 193, 7); // حدود صفراء تحذيرية
+                }
                 btn.Click += QuickItemBtn_Click;
                 flowQuickItems.Controls.Add(btn);
             }
