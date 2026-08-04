@@ -1295,8 +1295,18 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                // طباعة تلقائية بعد الدفع — مباشرة بدون معاينة
-                PrintReceipt(_lastSaleID, askFirst: false);
+                // طباعة تلقائية بعد الدفع — حسب إعداد وضع طباعة الرسيت
+                string receiptMode = AppConfig.POSReceiptMode; // Always | Ask | Never
+                if (receiptMode == "Always")
+                {
+                    PrintReceipt(_lastSaleID, askFirst: false);
+                }
+                else if (receiptMode == "Ask")
+                {
+                    PrintReceipt(_lastSaleID, askFirst: true);
+                }
+                // لو "Never" — لا يتم طباعة رسيت خالص
+
                 if (AppConfig.IsRestaurant)
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }

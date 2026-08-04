@@ -15,6 +15,7 @@ namespace ChickenDist.Forms
         private TextBox txtShopLogoPath;
         private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
+        private ComboBox cboPOSReceiptMode;
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
         private ComboBox cboBarcodePrinter;
@@ -176,6 +177,28 @@ namespace ChickenDist.Forms
             });
             cboReceiptPrintMode.SelectedIndex = AppConfig.ReceiptPrintMode == "Compact" ? 1 : 0;
             this.Controls.Add(cboReceiptPrintMode);
+            y += 40;
+
+            // ── طباعة رسيت البيع بعد الدفع ────────────────────────
+            AddLabel("طباعة رسيت البيع بعد الدفع:", 20, ref y, 15);
+            cboPOSReceiptMode = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboPOSReceiptMode.Items.AddRange(new object[]
+            {
+                "طباعة تلقائية دائماً",
+                "اسألني كل مرة",
+                "لا تطبع رسيت — بون المطبخ فقط"
+            });
+            int posReceiptIdx = AppConfig.POSReceiptMode == "Never" ? 2 : AppConfig.POSReceiptMode == "Ask" ? 1 : 0;
+            cboPOSReceiptMode.SelectedIndex = posReceiptIdx;
+            this.Controls.Add(cboPOSReceiptMode);
             y += 40;
 
             // ── طابعة الريسيت الافتراضية ──────────────────────────
@@ -1027,6 +1050,7 @@ namespace ChickenDist.Forms
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
+                AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex == 2 ? "Never" : cboPOSReceiptMode.SelectedIndex == 1 ? "Ask" : "Always";
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();

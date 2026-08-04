@@ -146,6 +146,18 @@ namespace ChickenDist.Core
             set => Set("ReceiptShowClientInfo", value ? "true" : "false");
         }
 
+        /// <summary>
+        /// وضع طباعة رسيت البيع التلقائي من نقطة البيع
+        /// Always = طباعة تلقائية بدون سؤال (الافتراضي)
+        /// Ask = اسأل العميل كل مرة
+        /// Never = لا تطبع رسيت أبداً (بون المطبخ فقط)
+        /// </summary>
+        public static string POSReceiptMode
+        {
+            get => Get("POSReceiptMode", "Always");
+            set => Set("POSReceiptMode", value);
+        }
+
         // ===== إعدادات Firebase السحابية الديناميكية لكل عميل =====
 
         public static string FirebaseApiKey
