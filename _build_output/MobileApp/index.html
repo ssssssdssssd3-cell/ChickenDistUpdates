@@ -939,7 +939,8 @@
                 const resp1 = await fetch('https://api.pastes.dev/' + cleanCode);
                 if (resp1.ok) {
                     const txt = await resp1.text();
-                    if (txt && !txt.trim().startsWith('<')) {
+                    const t = txt.trim();
+                    if (t && t.startsWith('{') && !t.startsWith('<')) {
                         rawData = txt;
                         fetchSuccess = true;
                     }
@@ -952,7 +953,8 @@
                     const resp2 = await fetch('https://api.pastes.dev/post/' + code);
                     if (resp2.ok) {
                         const txt = await resp2.text();
-                        if (txt && !txt.trim().startsWith('<')) {
+                        const t = txt.trim();
+                        if (t && t.startsWith('{') && !t.startsWith('<')) {
                             rawData = txt;
                             fetchSuccess = true;
                         }
@@ -966,32 +968,20 @@
             }
 
             try {
-                // XOR Decryption
-                const key = "ProSoftSecurityKey2026";
-                let decrypted = "";
-                for (let i = 0; i < rawData.length; i++) {
-                    decrypted += String.fromCharCode(rawData.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-                }
-
-                let data;
-                try {
-                    data = JSON.parse(decrypted);
-                } catch(pe) {
-                    data = JSON.parse(rawData); // Fallback plain JSON
-                }
-
+                // Server now uploads plain JSON — parse directly, no decryption needed
+                const data = JSON.parse(rawData);
                 if (data) {
-                    localStorage.setItem('cloud_sync_code', code);
+                    localStorage.setItem('cloud_sync_code', cleanCode);
                     const modal = document.getElementById('syncCodeModal');
-                    if(modal) modal.style.display = 'none';
+                    if (modal) modal.style.display = 'none';
                     const setupCard = document.getElementById('serialSetupCard');
-                    if(setupCard) setupCard.style.display = 'none';
+                    if (setupCard) setupCard.style.display = 'none';
 
                     renderLiveData(data);
-                    alert("✅ تم جلب ومزامنة بيانات المحل بالسيريال بنجاح!");
+                    alert("✅ تم جلب ومزامنة بيانات المحل بنجاح!");
                 }
             } catch (err) {
-                alert("❌ حدث خطأ أثناء قراءة بيانات السيريال:\n" + err.message);
+                alert("❌ حدث خطأ أثناء قراءة بيانات الكود:\n" + err.message + "\n\nجرب توليد كود جديد من البرنامج.");
             }
         }
 

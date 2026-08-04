@@ -365,25 +365,10 @@ namespace ChickenDist.Core
         public static string UploadToCloud(int? driverID = null)
         {
             string clientSerial = Services.CloudSyncService.GetPermanentClientSerial();
+            // Upload plain JSON — the random one-time code is the access key, no extra encryption needed
             string json = DAL.DriverDAL.BuildDriverExportJson(driverID);
-            string encryptedJson = SecurityHelper.Encrypt(json);
 
-            // 1. Upload to KVDB (CORS-enabled persistent Cloud Store by Client Serial)
-            try
-            {
-                using (var wc = new WebClient())
-                {
-                    wc.Encoding = Encoding.UTF8;
-                    wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
-                    wc.UploadString($"https://kvdb.io/9u8nZ23pBqX412/{clientSerial}", "PUT", encryptedJson);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("KVDB Upload warning: " + ex.Message);
-            }
-
-            // 2. Upload to pastes.dev as fallback
+            // 1. Upload plain JSON to pastes.dev (primary — JS reads it directly)
             try
             {
                 using (var wc = new WebClient())
@@ -392,17 +377,20 @@ namespace ChickenDist.Core
                     wc.Headers[HttpRequestHeader.ContentType] = "text/plain";
                     wc.Headers[HttpRequestHeader.UserAgent]   = "ChickenDistApp (contact@chickendist.com)";
 
-                    string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", encryptedJson);
+                    string responseStr = wc.UploadString("https://api.pastes.dev/post", "POST", json);
                     string code = "";
                     var match = System.Text.RegularExpressions.Regex.Match(responseStr, @"""key""\s*:\s*""([^""]+)""");
                     if (match.Success) code = match.Groups[1].Value;
                     else code = responseStr.Trim();
 
-                    _lastCloudCode  = code;
+                    _lastCloudCode   = code;
                     _cloudCodeExpiry = DateTime.Now.AddHours(24);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("pastes.dev Upload warning: " + ex.Message);
+            }
 
             return !string.IsNullOrEmpty(_lastCloudCode) ? _lastCloudCode : clientSerial;
         }
