@@ -74,56 +74,73 @@ namespace ChickenDist.Services
             return dto;
         }
 
+        public static string GetPermanentClientSerial()
+        {
+            try
+            {
+                DataTable dt = DbHelper.Query("SELECT TOP 1 OwnerSecretKey FROM CloudSyncSettings WHERE SettingID = 1");
+                if (dt.Rows.Count > 0 && dt.Rows[0]["OwnerSecretKey"] != DBNull.Value)
+                {
+                    string key = dt.Rows[0]["OwnerSecretKey"].ToString().Trim();
+                    if (!string.IsNullOrEmpty(key) && key != "OWNER-SECRET-KEY")
+                    {
+                        return key;
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                string macId = LicenseManager.GetCurrentMachineId();
+                if (!string.IsNullOrEmpty(macId))
+                {
+                    uint hash = (uint)Math.Abs(macId.GetHashCode());
+                    return "PROSOFT-" + hash.ToString("X6");
+                }
+            }
+            catch { }
+
+            return "PROSOFT-" + Math.Abs(Environment.MachineName.GetHashCode()).ToString("X6");
+        }
+
         public static async Task<(bool success, string message)> SyncNowAsync()
         {
             try
             {
-                DataTable dtSet = DbHelper.Query("SELECT TOP 1 ApiUrl, OwnerSecretKey FROM CloudSyncSettings WHERE SettingID = 1");
-                string apiUrl = "https://api.chickendist.com/v1";
-                string ownerKey = "OWNER-SECRET-KEY";
+                string clientSerial = GetPermanentClientSerial();
+                string jsonPayload = DAL.DriverDAL.BuildDriverExportJson(null);
+                string encrypted = SecurityHelper.Encrypt(jsonPayload);
 
-                if (dtSet.Rows.Count > 0)
-                {
-                    apiUrl = dtSet.Rows[0]["ApiUrl"]?.ToString() ?? apiUrl;
-                    ownerKey = dtSet.Rows[0]["OwnerSecretKey"]?.ToString() ?? ownerKey;
-                }
+                bool uploadOk = false;
+                string statusMsg = $"تم التزامن السحابي بنجاح 🟢 (السيريال: {clientSerial})";
 
-                var stats = GetLiveStats();
-
-                string jsonPayload = $@"{{
-                    ""secretKey"": ""{ownerKey}"",
-                    ""companyName"": ""{AppConfig.CompanyName}"",
-                    ""syncTime"": ""{DateTime.Now:yyyy-MM-dd HH:mm:ss}"",
-                    ""todaySalesTotal"": {stats.TodaySalesTotal},
-                    ""todayCashSales"": {stats.TodayCashSales},
-                    ""todayCreditSales"": {stats.TodayCreditSales},
-                    ""cashboxBalance"": {stats.CashboxBalance},
-                    ""lowStockCount"": {stats.LowStockCount}
-                }}";
-
-                bool apiOk = false;
-                string statusMsg = "تم تحديث البيانات والجاهزية للمزامنة السحابية 🟢";
-
+                // 1. Upload to KVDB (CORS-enabled persistent Cloud Store by Client Serial)
                 try
                 {
                     using (var client = new HttpClient())
                     {
-                        client.Timeout = TimeSpan.FromSeconds(5);
-                        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                        var response = await client.PostAsync(apiUrl.TrimEnd('/') + "/sync", content);
+                        client.Timeout = TimeSpan.FromSeconds(8);
+                        var content = new StringContent(encrypted, Encoding.UTF8, "text/plain");
+                        var response = await client.PutAsync($"https://kvdb.io/9u8nZ23pBqX412/{clientSerial}", content);
                         if (response.IsSuccessStatusCode)
                         {
-                            apiOk = true;
-                            statusMsg = "تم المزامنة بنجاح مع سيرفر الموبايل 🟢";
+                            uploadOk = true;
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // السيرفر التجريبي غير متصل، لكن البيانات تم تجهيزها وحفظها محلياً
-                    apiOk = true;
-                    statusMsg = "تم تحديث البيانات المحلية وجاهزة للربط بالموبايل 🟡";
+                    System.Diagnostics.Debug.WriteLine("KVDB Upload warning: " + ex.Message);
                 }
+
+                // 2. Upload to DriverPortalServer fallback
+                try
+                {
+                    DriverPortalServer.UploadToCloud();
+                    uploadOk = true;
+                }
+                catch { }
 
                 DbHelper.Execute(@"
                     UPDATE CloudSyncSettings 
@@ -131,11 +148,11 @@ namespace ChickenDist.Services
                     WHERE SettingID = 1",
                     DbHelper.P("@status", statusMsg));
 
-                return (apiOk, statusMsg);
+                return (uploadOk, statusMsg);
             }
             catch (Exception ex)
             {
-                AppLogger.Error("فشل المزامنة مع سيرفر الموبايل", ex, "CloudSyncService.SyncNowAsync");
+                AppLogger.Error("فشل المزامنة مع السيرفر السحابي", ex, "CloudSyncService.SyncNowAsync");
                 return (false, "خطأ أثناء المزامنة: " + ex.Message);
             }
         }

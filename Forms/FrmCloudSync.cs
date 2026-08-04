@@ -196,7 +196,14 @@ namespace ChickenDist.Forms
                 {
                     DataRow r = dt.Rows[0];
                     txtApiUrl.Text = r["ApiUrl"]?.ToString() ?? "https://api.chickendist.com/v1";
-                    txtSecretKey.Text = r["OwnerSecretKey"]?.ToString() ?? ("OWNER-" + new Random().Next(1000, 9999));
+                    
+                    string key = r["OwnerSecretKey"]?.ToString();
+                    if (string.IsNullOrEmpty(key) || key == "OWNER-SECRET-KEY")
+                    {
+                        key = CloudSyncService.GetPermanentClientSerial();
+                    }
+                    txtSecretKey.Text = key;
+
                     chkAutoSync.Checked = r["AutoSyncEnabled"] != DBNull.Value && Convert.ToBoolean(r["AutoSyncEnabled"]);
 
                     int interval = r["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(r["SyncIntervalMinutes"]) : 5;
