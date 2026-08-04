@@ -310,6 +310,12 @@ namespace ChickenDist.Core
                         File.WriteAllBytes(logoPath, ms.ToArray());
                     }
                 }
+                // Also sync to bot/public/mobile.html for Firebase Hosting if bot/public exists
+                string botPublicDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bot", "public");
+                if (File.Exists(htmlPath) && Directory.Exists(botPublicDir))
+                {
+                    File.Copy(htmlPath, Path.Combine(botPublicDir, "mobile.html"), true);
+                }
             }
             catch (Exception ex)
             {

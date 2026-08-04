@@ -417,87 +417,30 @@ namespace ChickenDist.Forms
             // ─── 4. Deploy Button ───
             Button btnDeployHosting = new Button
             {
-                Text = "⚡ رفع وتفعيل السحابة الموحدة",
+                Text = "⚡ رفع وتحديث السحابة السريعة (Deploy to Firebase)",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(210, 34),
-                Location = new Point(10, 192),
+                Size = new Size(270, 36),
+                Location = new Point(10, 190),
                 Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
             btnDeployHosting.FlatAppearance.BorderSize = 0;
             btnDeployHosting.Click += (s, e) =>
             {
-                try
-                {
-                    string botDir = GetBotDirectory();
-                    string batPath = Path.Combine(botDir, "deploy_hosting.bat");
-
-                    // Copy MobileApp/index.html to bot/public/mobile.html
-                    try
-                    {
-                        string mobileSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
-                        string mobileDest = Path.Combine(botDir, "public", "mobile.html");
-                        if (File.Exists(mobileSource))
-                        {
-                            File.Copy(mobileSource, mobileDest, true);
-                        }
-                    }
-                    catch { }
-
-                    string batContent = @"@echo off
-chcp 65001 > nul
-echo ===================================================
-echo   ⚡ Unified Firebase Deployer - ProSoft ERP ⚡
-echo ===================================================
-echo.
-echo [1/4] Syncing Mobile App files to Firebase public folder...
-cd /d ""%~dp0""
-if exist ""..\MobileApp\index.html"" copy /y ""..\MobileApp\index.html"" ""public\mobile.html"" > nul
-echo.
-echo [2/4] Checking Node.js and local packages...
-call npm install
-echo.
-echo [3/4] Checking Firebase login status...
-call npx firebase login
-echo.
-echo [4/4] Deploying Client Menu, Accountant Portal & Owner Mobile App to Firebase Hosting...
-call npx firebase deploy --only hosting
-echo.
-echo ===================================================
-echo   ✅ Done! Your Unified Cloud App is Live Online!
-echo ===================================================
-pause
-";
-                    var utf8WithoutBom = new System.Text.UTF8Encoding(false);
-                    File.WriteAllText(batPath, batContent, utf8WithoutBom);
-
-                    var startInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c \"{batPath}\"",
-                        WorkingDirectory = botDir,
-                        UseShellExecute = true,
-                        CreateNoWindow = false
-                    };
-                    System.Diagnostics.Process.Start(startInfo);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"خطأ في تشغيل الرفع التلقائي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                RunFirebaseDeployScript(autoOpenMobile: true);
             };
             pnlAccountant.Controls.Add(btnDeployHosting);
 
             // ─── 5. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 المنيو للزبائن، الأزرق للمحاسب، والبنفسجي لموبايل المالك المباشر.",
+                Text = "💡 اضغط '⚡ رفع وتحديث السحابة' مرة واحدة لرفع المنيو وتطبيق المحاسب وتطبيق المالك أونلاين.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
-                Location = new Point(230, 200)
+                Location = new Point(290, 200)
             };
             pnlAccountant.Controls.Add(lblAccTip);
 
@@ -522,7 +465,7 @@ pause
                 if (_qrSecondsLeft > 0)
                 {
                     _qrSecondsLeft--;
-                    lblQrCountdown.Text = $"⏱ صالحية الكود: {_qrSecondsLeft} ثانية";
+                    lblQrCountdown.Text = $"⏱ صلاحية الكود: {_qrSecondsLeft} ثانية";
                     lblQrCountdown.ForeColor = _qrSecondsLeft < 15
                         ? Color.FromArgb(220, 50, 50)
                         : Color.FromArgb(230, 126, 34);
@@ -536,6 +479,82 @@ pause
 
             LogMessage("تم فتح شاشة إدارة البوت الميدانية.");
             LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر ☁️");
+        }
+
+        /// <summary>
+        /// يُنفذ سكربت الرفع لسحابة Firebase Hosting ويضمن تواجد mobile.html
+        /// </summary>
+        private void RunFirebaseDeployScript(bool autoOpenMobile = false)
+        {
+            try
+            {
+                string botDir = GetBotDirectory();
+                string publicDir = Path.Combine(botDir, "public");
+                if (!Directory.Exists(publicDir)) Directory.CreateDirectory(publicDir);
+
+                // Copy MobileApp/index.html to bot/public/mobile.html
+                try
+                {
+                    DriverPortalServer.EnsureMobileAppFilesExtracted();
+                    string mobileSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
+                    string mobileDest = Path.Combine(publicDir, "mobile.html");
+                    if (File.Exists(mobileSource))
+                    {
+                        File.Copy(mobileSource, mobileDest, true);
+                    }
+                }
+                catch { }
+
+                string batPath = Path.Combine(botDir, "deploy_hosting.bat");
+                string batContent = @"@echo off
+chcp 65001 > nul
+echo ===================================================
+echo   ⚡ Unified Firebase Deployer - ProSoft ERP ⚡
+echo ===================================================
+echo.
+echo [1/4] Syncing Mobile App files to Firebase public folder...
+cd /d ""%~dp0""
+if exist ""..\MobileApp\index.html"" copy /y ""..\MobileApp\index.html"" ""public\mobile.html"" > nul
+echo.
+echo [2/4] Checking Node.js and local packages...
+call npm install
+echo.
+echo [3/4] Checking Firebase login status...
+call npx firebase login
+echo.
+echo [4/4] Deploying Client Menu, Accountant Portal & Owner Mobile App to Firebase Hosting...
+call npx firebase deploy --only hosting
+echo.
+echo ===================================================
+echo   ✅ Done! Your Unified Cloud App is Live Online!
+echo ===================================================
+pause
+";
+                var utf8WithoutBom = new System.Text.UTF8Encoding(false);
+                File.WriteAllText(batPath, batContent, utf8WithoutBom);
+
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"{batPath}\"",
+                    WorkingDirectory = botDir,
+                    UseShellExecute = true,
+                    CreateNoWindow = false
+                };
+                var p = System.Diagnostics.Process.Start(startInfo);
+                if (autoOpenMobile && txtMobileAppUrl != null && !string.IsNullOrEmpty(txtMobileAppUrl.Text))
+                {
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(12000); // Wait 12 seconds for deploy to finish
+                        try { System.Diagnostics.Process.Start(txtMobileAppUrl.Text); } catch { }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"خطأ في تشغيل الرفع التلقائي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void LogMessage(string msg)
