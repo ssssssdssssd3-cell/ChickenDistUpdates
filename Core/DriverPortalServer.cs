@@ -269,51 +269,45 @@ namespace ChickenDist.Core
 
                 string htmlPath = Path.Combine(dir, "index.html");
                 string manifestPath = Path.Combine(dir, "manifest.json");
+                string logoPath = Path.Combine(dir, "logo.png");
 
                 var asm = typeof(DriverPortalServer).Assembly;
 
-                if (!File.Exists(htmlPath) || new FileInfo(htmlPath).Length < 100)
+                // Extract index.html (always force overwrite with latest embedded resource)
+                Stream sHtml = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html") 
+                            ?? asm.GetManifestResourceStream("MobileApp.index.html");
+                if (sHtml != null)
                 {
-                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.index.html");
-                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.index.html");
-                    if (s != null)
+                    using (sHtml)
+                    using (var r = new StreamReader(sHtml, Encoding.UTF8))
                     {
-                        using (s)
-                        using (var r = new StreamReader(s, Encoding.UTF8))
-                        {
-                            File.WriteAllText(htmlPath, r.ReadToEnd(), Encoding.UTF8);
-                        }
+                        File.WriteAllText(htmlPath, r.ReadToEnd(), Encoding.UTF8);
                     }
                 }
 
-                if (!File.Exists(manifestPath) || new FileInfo(manifestPath).Length < 10)
+                // Extract manifest.json (always force overwrite with latest embedded resource)
+                Stream sManifest = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json") 
+                               ?? asm.GetManifestResourceStream("MobileApp.manifest.json");
+                if (sManifest != null)
                 {
-                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.manifest.json");
-                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.manifest.json");
-                    if (s != null)
+                    using (sManifest)
+                    using (var r = new StreamReader(sManifest, Encoding.UTF8))
                     {
-                        using (s)
-                        using (var r = new StreamReader(s, Encoding.UTF8))
-                        {
-                            File.WriteAllText(manifestPath, r.ReadToEnd(), Encoding.UTF8);
-                        }
+                        File.WriteAllText(manifestPath, r.ReadToEnd(), Encoding.UTF8);
                     }
                 }
 
-                string logoPath = Path.Combine(dir, "logo.png");
-                if (!File.Exists(logoPath) || new FileInfo(logoPath).Length < 100)
+                // Extract logo.png (always force overwrite with latest embedded resource)
+                Stream sLogo = asm.GetManifestResourceStream("ChickenDist.MobileApp.logo.png")
+                            ?? asm.GetManifestResourceStream("MobileApp.logo.png")
+                            ?? asm.GetManifestResourceStream("ChickenDist.pro_soft_logo.png");
+                if (sLogo != null)
                 {
-                    Stream s = asm.GetManifestResourceStream("ChickenDist.MobileApp.logo.png");
-                    if (s == null) s = asm.GetManifestResourceStream("MobileApp.logo.png");
-                    if (s == null) s = asm.GetManifestResourceStream("ChickenDist.pro_soft_logo.png");
-                    if (s != null)
+                    using (sLogo)
+                    using (var ms = new MemoryStream())
                     {
-                        using (s)
-                        using (var ms = new MemoryStream())
-                        {
-                            s.CopyTo(ms);
-                            File.WriteAllBytes(logoPath, ms.ToArray());
-                        }
+                        sLogo.CopyTo(ms);
+                        File.WriteAllBytes(logoPath, ms.ToArray());
                     }
                 }
             }
