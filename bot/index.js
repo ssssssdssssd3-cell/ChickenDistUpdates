@@ -71,7 +71,8 @@ function readIniSettings() {
     };
     if (fs.existsSync(iniPath)) {
         try {
-            const content = fs.readFileSync(iniPath, 'utf8');
+            let content = fs.readFileSync(iniPath, 'utf8');
+            content = content.replace(/^\uFEFF/, '');
             const lines = content.split(/\r?\n/);
             for (const line of lines) {
                 const cleanLine = line.trim();
