@@ -43,7 +43,8 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "إدارة بوت الواتساب واللوحة السحابية";
-            this.Size = new Size(760, 740);
+            this.Size = new Size(820, 830);
+            this.MinimumSize = new Size(780, 780);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -53,14 +54,14 @@ namespace ChickenDist.Forms
             this.MaximizeBox = true;
 
             // Layout setup
-            TableLayoutPanel mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 5, Padding = new Padding(15) };
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Status
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs (takes remaining space)
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Buttons
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F)); // Sync text
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 175F)); // Accountant and Client App Links
+            TableLayoutPanel mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 5, Padding = new Padding(12) };
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 56F));
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F)); // Status
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // QR / Logs
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F)); // Buttons
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F)); // Sync text
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 235F)); // Accountant and Client App Links & Deploy
 
             // Header/Status Layout container to support refresh button
             TableLayoutPanel statusContainer = new TableLayoutPanel
@@ -116,6 +117,20 @@ namespace ChickenDist.Forms
             btnFirebaseSettings.FlatAppearance.BorderSize = 0;
             btnFirebaseSettings.Click += BtnFirebaseSettings_Click;
             statusBtnsPanel.Controls.Add(btnFirebaseSettings);
+
+            var btnTopDeploy = new Button
+            {
+                Text = "🚀 رفع السحابة",
+                BackColor = Color.FromArgb(155, 89, 182),
+                ForeColor = Color.White,
+                Size = new Size(125, 36),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            btnTopDeploy.FlatAppearance.BorderSize = 0;
+            btnTopDeploy.Click += (s, e) => RunFirebaseDeployScript(autoOpenMobile: true);
+            statusBtnsPanel.Controls.Add(btnTopDeploy);
 
             statusContainer.Controls.Add(statusBtnsPanel, 1, 0);
 
@@ -227,7 +242,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill, 
                 BackColor = Color.FromArgb(230, 240, 250),
                 Padding = new Padding(8),
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                AutoScroll = true
             };
             
             // ─── 1. Accountant App Link ───
@@ -237,7 +253,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
-                Location = new Point(10, 8)
+                Location = new Point(10, 6)
             };
             pnlAccountant.Controls.Add(lblAccTitle);
 
@@ -250,9 +266,9 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(41, 128, 185),
-                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
-                Location = new Point(230, 32),
-                Width = 400,
+                Font = new Font("Courier New", 10F, FontStyle.Bold),
+                Location = new Point(230, 26),
+                Width = 460,
                 RightToLeft = RightToLeft.No
             };
             pnlAccountant.Controls.Add(txtAccUrl);
@@ -263,8 +279,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(149, 165, 166),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(120, 31),
+                Size = new Size(95, 26),
+                Location = new Point(120, 25),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -281,8 +297,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(52, 73, 94),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(10, 31),
+                Size = new Size(95, 26),
+                Location = new Point(10, 25),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -299,7 +315,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
-                Location = new Point(10, 68)
+                Location = new Point(10, 60)
             };
             pnlAccountant.Controls.Add(lblClientTitle);
 
@@ -311,9 +327,9 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(39, 174, 96),
-                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
-                Location = new Point(230, 92),
-                Width = 400,
+                Font = new Font("Courier New", 10F, FontStyle.Bold),
+                Location = new Point(230, 80),
+                Width = 460,
                 RightToLeft = RightToLeft.No
             };
             pnlAccountant.Controls.Add(txtClientUrl);
@@ -324,8 +340,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(149, 165, 166),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(120, 91),
+                Size = new Size(95, 26),
+                Location = new Point(120, 79),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -342,8 +358,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(39, 174, 96),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(10, 91),
+                Size = new Size(95, 26),
+                Location = new Point(10, 79),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -360,7 +376,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
-                Location = new Point(10, 128)
+                Location = new Point(10, 114)
             };
             pnlAccountant.Controls.Add(lblMobileTitle);
 
@@ -372,9 +388,9 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(142, 68, 173),
-                Font = new Font("Courier New", 10.5F, FontStyle.Bold),
-                Location = new Point(230, 152),
-                Width = 400,
+                Font = new Font("Courier New", 10F, FontStyle.Bold),
+                Location = new Point(230, 134),
+                Width = 460,
                 RightToLeft = RightToLeft.No
             };
             pnlAccountant.Controls.Add(txtMobileAppUrl);
@@ -385,8 +401,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(149, 165, 166),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(120, 151),
+                Size = new Size(95, 26),
+                Location = new Point(120, 133),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -403,8 +419,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(142, 68, 173),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(100, 28),
-                Location = new Point(10, 151),
+                Size = new Size(95, 26),
+                Location = new Point(10, 133),
                 Cursor = Cursors.Hand,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
@@ -417,14 +433,14 @@ namespace ChickenDist.Forms
             // ─── 4. Deploy Button ───
             Button btnDeployHosting = new Button
             {
-                Text = "⚡ رفع وتحديث السحابة السريعة (Deploy to Firebase)",
+                Text = "🚀 رفع اللوحة والروابط أونلاين (Deploy to Firebase)",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(270, 36),
-                Location = new Point(10, 190),
+                Size = new Size(330, 36),
+                Location = new Point(10, 172),
                 Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
             btnDeployHosting.FlatAppearance.BorderSize = 0;
             btnDeployHosting.Click += (s, e) =>
@@ -436,11 +452,11 @@ namespace ChickenDist.Forms
             // ─── 5. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 اضغط '⚡ رفع وتحديث السحابة' مرة واحدة لرفع المنيو وتطبيق المحاسب وتطبيق المالك أونلاين.",
+                Text = "💡 اضغط '🚀 رفع اللوحة والروابط أونلاين' لرفع تطبيق المحاسب والمنيو وتطبيق المالك فوراً.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
-                Location = new Point(290, 200)
+                Location = new Point(350, 182)
             };
             pnlAccountant.Controls.Add(lblAccTip);
 
