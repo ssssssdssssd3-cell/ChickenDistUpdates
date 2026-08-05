@@ -337,7 +337,7 @@ async function startBot(pairingPhone = null) {
     client = new Client({
         authStrategy: new LocalAuth(),
         webVersionCache: {
-            type: 'remote',
+            type: 'localOrRemote',
             remotePath: remotePath
         },
         puppeteer: {
@@ -972,7 +972,7 @@ function listenForCommands() {
                             client = null;
                         }
                         botStatus = 'Offline';
-                        // Delete session folder
+                        // Delete session folder to remove stale corrupted auth data
                         const sessionDir = path.join(__dirname, '.wwebjs_auth');
                         if (fs.existsSync(sessionDir)) {
                             fs.rmSync(sessionDir, { recursive: true, force: true });
@@ -980,7 +980,9 @@ function listenForCommands() {
                         }
                         await updateFirebaseStatus('Offline');
                         await change.doc.ref.update({ status: 'completed' });
-                        console.log('[ClearSession]: Session cleared. Bot is now offline. Use start_bot or pairing code to reconnect.');
+                        console.log('[ClearSession]: Session cleared. Auto-starting bot for fresh QR...');
+                        // Automatically start bot to generate fresh QR
+                        setTimeout(() => startBot(), 2000);
                     }
                     else if (cmd.type === 'send_backup') {
                         console.log(`[Command]: Received send_backup to ${cmd.phone} for file ${cmd.filePath}`);
