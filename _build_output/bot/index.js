@@ -347,7 +347,9 @@ async function startBot(pairingPhone = null) {
                 '--no-first-run',
                 '--no-zygote',
                 '--disable-gpu',
-                '--disable-web-security'
+                '--disable-web-security',
+                '--disable-blink-features=AutomationControlled',
+                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
             ]
         }
     });

@@ -195,13 +195,28 @@ namespace ChickenDist.Forms
             btnToggle.FlatAppearance.BorderSize = 0;
             btnPanelLeft.Controls.Add(btnToggle);
 
+            // Pairing Code Button
+            var btnPairingCode = new Button
+            {
+                Text = "📲 كود الاقتران",
+                BackColor = Color.FromArgb(155, 89, 182),
+                ForeColor = Color.White,
+                Size = new Size(130, 42),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            btnPairingCode.FlatAppearance.BorderSize = 0;
+            btnPairingCode.Click += BtnPairingCode_Click;
+            btnPanelLeft.Controls.Add(btnPairingCode);
+
             // Clear Session button
             btnClearSession = new Button
             {
                 Text = "🗑️ مسح الجلسة",
                 BackColor = Color.FromArgb(180, 60, 60),
                 ForeColor = Color.White,
-                Size = new Size(130, 42),
+                Size = new Size(120, 42),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -862,6 +877,102 @@ pause
             {
                 btnClearSession.Text = "🗑️ مسح الجلسة";
                 btnClearSession.Enabled = true;
+            }
+        }
+
+        private async void BtnPairingCode_Click(object sender, EventArgs e)
+        {
+            using (Form inputDlg = new Form())
+            {
+                inputDlg.Text = "الربط برقم الهاتف (كود الاقتران)";
+                inputDlg.Size = new Size(420, 200);
+                inputDlg.StartPosition = FormStartPosition.CenterParent;
+                inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                inputDlg.MaximizeBox = false;
+                inputDlg.MinimizeBox = false;
+                inputDlg.RightToLeft = RightToLeft.Yes;
+                inputDlg.RightToLeftLayout = true;
+                inputDlg.BackColor = Color.FromArgb(245, 246, 250);
+
+                Label lblPhone = new Label
+                {
+                    Text = "أدخل رقم الهاتف المراد ربط البوت عليه (مثال: 01016517586):",
+                    Location = new Point(15, 20),
+                    Size = new Size(380, 25),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(44, 62, 80)
+                };
+                inputDlg.Controls.Add(lblPhone);
+
+                TextBox txtPhone = new TextBox
+                {
+                    Location = new Point(15, 50),
+                    Size = new Size(375, 30),
+                    Font = new Font("Segoe UI", 11F),
+                    Text = "01016517586"
+                };
+                inputDlg.Controls.Add(txtPhone);
+
+                Button btnOk = new Button
+                {
+                    Text = "📲 استخراج كود الاقتران",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(15, 95),
+                    Size = new Size(180, 38),
+                    BackColor = Color.FromArgb(155, 89, 182),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+                inputDlg.Controls.Add(btnOk);
+
+                Button btnCancel = new Button
+                {
+                    Text = "إلغاء",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(205, 95),
+                    Size = new Size(100, 38),
+                    BackColor = Color.FromArgb(149, 165, 166),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                };
+                btnCancel.FlatAppearance.BorderSize = 0;
+                inputDlg.Controls.Add(btnCancel);
+
+                inputDlg.AcceptButton = btnOk;
+                inputDlg.CancelButton = btnCancel;
+
+                if (inputDlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    string phone = txtPhone.Text.Trim();
+                    if (string.IsNullOrEmpty(phone))
+                    {
+                        MessageBox.Show("يرجى كتابة رقم الهاتف!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    LogMessage($"جاري طلب كود الاقتران لرقم {phone}...");
+                    string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                    string json = "{\"fields\": {" +
+                        "\"type\": {\"stringValue\": \"start_bot\"}," +
+                        "\"pairingPhone\": {\"stringValue\": \"" + phone + "\"}," +
+                        "\"status\": {\"stringValue\": \"pending\"}," +
+                        "\"time\": {\"stringValue\": \"" + isoNow + "\"}" +
+                        "}}";
+
+                    string projectId = GetFirebaseProjectId();
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await _httpClient.PostAsync(
+                        $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/commands",
+                        content);
+
+                    if (response.IsSuccessStatusCode)
+                        LogMessage("✅ تم إرسال طلب كود الاقتران — انتظر ظهور الكود على الشاشة خلال ثوانٍ...");
+                    else
+                        LogMessage($"❌ فشل إرسال الطلب: {response.StatusCode}");
+                }
             }
         }
 
