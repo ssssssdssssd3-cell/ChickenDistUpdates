@@ -72,11 +72,14 @@ namespace ChickenDist.Forms
 			};
 			dtpFrom = new DateTimePicker
 			{
-				Width = 130,
-				Format = DateTimePickerFormat.Short,
-				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+				Width = 175,
+				Format = DateTimePickerFormat.Custom,
+				CustomFormat = "yyyy/MM/dd   hh:mm tt",
+				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
 				Margin = new Padding(5, 4, 0, 0)
 			};
+			dtpFrom.ValueChanged += (s, e) => LoadCurrentTab();
+
 			Label label2 = new Label
 			{
 				Text = "إلى:",
@@ -87,10 +90,13 @@ namespace ChickenDist.Forms
 			};
 			dtpTo = new DateTimePicker
 			{
-				Width = 130,
-				Format = DateTimePickerFormat.Short,
+				Width = 175,
+				Format = DateTimePickerFormat.Custom,
+				CustomFormat = "yyyy/MM/dd   hh:mm tt",
+				Value = DateTime.Now,
 				Margin = new Padding(5, 4, 0, 0)
 			};
+			dtpTo.ValueChanged += (s, e) => LoadCurrentTab();
 			Label lblWh = new Label
 			{
 				Text = "المخزن:",
