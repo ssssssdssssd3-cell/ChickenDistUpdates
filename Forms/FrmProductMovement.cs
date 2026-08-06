@@ -58,20 +58,24 @@ namespace ChickenDist.Forms
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(915, 15) };
             dtpFrom = new DateTimePicker 
             { 
-                Location = new Point(780, 11), 
-                Width = 130, 
-                Format = DateTimePickerFormat.Short,
+                Location = new Point(735, 11), 
+                Width = 175, 
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Today.AddDays(-30)
             };
+            dtpFrom.ValueChanged += (s, e) => LoadMovement();
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(735, 15) };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(695, 15) };
             dtpTo = new DateTimePicker 
             { 
-                Location = new Point(600, 11), 
-                Width = 130, 
-                Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today
+                Location = new Point(515, 11), 
+                Width = 175, 
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
+                Value = DateTime.Now
             };
+            dtpTo.ValueChanged += (s, e) => LoadMovement();
 
             var lblType = new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(515, 15) };
             cboTransType = new ComboBox

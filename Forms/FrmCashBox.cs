@@ -89,11 +89,13 @@ namespace ChickenDist.Forms
             };
             
             pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
-            dtpCashFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), Margin = new Padding(10, 4, 0, 0) };
+            dtpCashFrom = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(10, 4, 0, 0) };
+            dtpCashFrom.ValueChanged += (s, e) => LoadCashBox();
             pnlF.Controls.Add(dtpCashFrom);
             
             pnlF.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
-            dtpCashTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Margin = new Padding(10, 4, 0, 0) };
+            dtpCashTo = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(10, 4, 0, 0) };
+            dtpCashTo.ValueChanged += (s, e) => LoadCashBox();
             pnlF.Controls.Add(dtpCashTo);
 
             pnlF.Controls.Add(new Label { Text = "الحساب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
@@ -216,11 +218,13 @@ namespace ChickenDist.Forms
             };
             
             pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), Margin = new Padding(10, 4, 0, 0) };
+            dtpExpFrom = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(10, 4, 0, 0) };
+            dtpExpFrom.ValueChanged += (s, e) => LoadExpenses();
             pnlF.Controls.Add(dtpExpFrom);
             
             pnlF.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
-            dtpExpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Margin = new Padding(10, 4, 0, 0) };
+            dtpExpTo = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(10, 4, 0, 0) };
+            dtpExpTo.ValueChanged += (s, e) => LoadExpenses();
             pnlF.Controls.Add(dtpExpTo);
 
             pnlF.Controls.Add(new Label { Text = "نوع العربية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });

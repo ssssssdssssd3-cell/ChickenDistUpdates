@@ -55,11 +55,13 @@ namespace ChickenDist.Forms
 			};
 
 			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-			dtpFrom = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) };
+			dtpFrom = new DateTimePicker { Width = 175, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
+			dtpFrom.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
 
 			Label lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-			dtpTo = new DateTimePicker { Width = 110, Height = 26, Format = DateTimePickerFormat.Short };
+			dtpTo = new DateTimePicker { Width = 175, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+			dtpTo.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 
 			Label lblType = new Label { Text = "النوع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };

@@ -52,15 +52,18 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(730, 15), AutoSize = true, ForeColor = Theme.TextMain });
             dtpFrom = new DateTimePicker
             {
-                Location = new Point(590, 11),
-                Width = 130,
-                Format = DateTimePickerFormat.Short,
-                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+                Location = new Point(550, 11),
+                Width = 175,
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
+                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
             };
+            dtpFrom.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpFrom);
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(545, 15), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpTo = new DateTimePicker { Location = new Point(405, 11), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(510, 15), AutoSize = true, ForeColor = Theme.TextMain });
+            dtpTo = new DateTimePicker { Location = new Point(330, 11), Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
 
             btnLoad = Theme.MakeButton("🔍 عرض", 305, 10, 90, 30, Theme.Accent);
