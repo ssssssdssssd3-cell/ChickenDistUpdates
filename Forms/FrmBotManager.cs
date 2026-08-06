@@ -1564,13 +1564,15 @@ pause
             {
                 var killCmd = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c \"for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :5000') do taskkill /f /pid %a\"",
+                    FileName = "taskkill",
+                    Arguments = "/F /T /IM node.exe",
                     CreateNoWindow = true,
-                    UseShellExecute = false
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
                 };
                 var p = Process.Start(killCmd);
-                p?.WaitForExit(1500);
+                p?.WaitForExit(2000);
             }
             catch { }
 
@@ -1591,6 +1593,7 @@ pause
             if (forceRestart)
             {
                 KillNodeOnPort5000();
+                System.Threading.Thread.Sleep(1000);
             }
             else
             {
@@ -1608,6 +1611,7 @@ pause
                 {
                     // Port 5000 is not responding — kill any hanging process and start clean
                     KillNodeOnPort5000();
+                    System.Threading.Thread.Sleep(1000);
                 }
             }
 
