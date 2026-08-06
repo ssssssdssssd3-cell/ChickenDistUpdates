@@ -56,11 +56,12 @@ namespace ChickenDist.Forms
 			FlowLayoutPanel panel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 55,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10),
-				FlowDirection = FlowDirection.RightToLeft,
-				WrapContents = false
+				Padding = new Padding(8),
+				FlowDirection = FlowDirection.LeftToRight,
+				WrapContents = true
 			};
 			Label label = new Label
 			{
@@ -68,15 +69,15 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
 				Font = Theme.FontBold,
-				Margin = new Padding(10, 8, 0, 0)
+				Margin = new Padding(6, 6, 0, 0)
 			};
 			dtpFrom = new DateTimePicker
 			{
-				Width = 190,
+				Width = 175,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd   hh:mm tt",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
-				Margin = new Padding(5, 4, 0, 0)
+				Margin = new Padding(4, 4, 0, 0)
 			};
 			dtpFrom.ValueChanged += (s, e) => LoadCurrentTab();
 
@@ -86,15 +87,15 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
 				Font = Theme.FontBold,
-				Margin = new Padding(20, 8, 0, 0)
+				Margin = new Padding(10, 6, 0, 0)
 			};
 			dtpTo = new DateTimePicker
 			{
-				Width = 190,
+				Width = 175,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd   hh:mm tt",
 				Value = DateTime.Now,
-				Margin = new Padding(5, 4, 0, 0)
+				Margin = new Padding(4, 4, 0, 0)
 			};
 			dtpTo.ValueChanged += (s, e) => LoadCurrentTab();
 			Label lblWh = new Label
