@@ -40,6 +40,7 @@ namespace ChickenDist.Forms
         private ComboBox cboDeliveryDriver;
         private Button btnSuspend, btnRecall, btnModelLookup;
         private int _loadedDraftSaleID = 0;
+        private bool _isSaving = false;
 
         // ── البيانات ──────────────────────────────────────────
         private List<POSItem> _items = new List<POSItem>();
@@ -1154,74 +1155,79 @@ namespace ChickenDist.Forms
         // ── إتمام البيع ──────────────────────────────────────
         private void BtnPay_Click(object sender, EventArgs e)
         {
+            if (_isSaving) return;
             if (_items.Count == 0) { MessageBox.Show("لا يوجد أصناف في الفاتورة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
-            // ── التحقق من وجود وردية مفتوحة للكاشير ──
-            if (!ShiftDAL.GetActiveShiftID().HasValue)
-            {
-                var res = MessageBox.Show(
-                    "⚠️ تنبيه الكاشير: لا توجد وردية (شيفت) مفتوحة حالياً!\n\n" +
-                    "يلزم الكاشير بفتح وردية عمل جديدة قبل إتمام أي عملية بيع وتسجيل النقدية بالدرج.\n\n" +
-                    "هل ترغب في فتح وردية جديدة الآن؟",
-                    "إلزام فتح وردية كاشير",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-
-                if (res == DialogResult.Yes)
-                {
-                    using (var frm = new FrmOpenShift())
-                    {
-                        frm.ShowDialog();
-                    }
-                }
-
-                if (!ShiftDAL.GetActiveShiftID().HasValue)
-                {
-                    MessageBox.Show("❌ عفوًا: لا يمكن إتمام عملية البيع بدون وجود وردية مفتوحة!", "إلزام فتح الوردية", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                    return;
-                }
-            }
-
-            decimal total = 0;
-            foreach (var item in _items) total += item.Total;
-
-            int clientID = 0;
-            if (cboClient.SelectedItem is ComboItem ci) clientID = ci.ID;
-
-            // Loyalty
-            decimal loyaltyDiscount = 0;
-            decimal pointsToRedeem = 0;
-            if (chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && clientID > 0)
-            {
-                var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", clientID));
-                decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
-                loyaltyDiscount = Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
-                pointsToRedeem = loyaltyDiscount / AppConfig.LoyaltyRedemptionRate;
-                total -= loyaltyDiscount;
-            }
-
-            // Extract restaurant fields if active
-            string orderType = null;
-            string tableNum = null;
-            int? selectedDriver = null;
-            if (AppConfig.IsRestaurant)
-            {
-                orderType = rbDineIn.Checked ? "DineIn" : rbDelivery.Checked ? "Delivery" : "Takeaway";
-                tableNum = rbDineIn.Checked ? txtTableNum.Text.Trim() : null;
-                if (rbDelivery.Checked && cboDeliveryDriver.SelectedItem is ComboItem driverItem && driverItem.ID > 0)
-                {
-                    selectedDriver = driverItem.ID;
-                }
-            }
+            _isSaving = true;
+            int draftToDelete = _loadedDraftSaleID;
+            _loadedDraftSaleID = 0;
 
             try
             {
+                // ── التحقق من وجود وردية مفتوحة للكاشير ──
+                if (!ShiftDAL.GetActiveShiftID().HasValue)
+                {
+                    var res = MessageBox.Show(
+                        "⚠️ تنبيه الكاشير: لا توجد وردية (شيفت) مفتوحة حالياً!\n\n" +
+                        "يلزم الكاشير بفتح وردية عمل جديدة قبل إتمام أي عملية بيع وتسجيل النقدية بالدرج.\n\n" +
+                        "هل ترغب في فتح وردية جديدة الآن؟",
+                        "إلزام فتح وردية كاشير",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning);
+
+                    if (res == DialogResult.Yes)
+                    {
+                        using (var frm = new FrmOpenShift())
+                        {
+                            frm.ShowDialog();
+                        }
+                    }
+
+                    if (!ShiftDAL.GetActiveShiftID().HasValue)
+                    {
+                        MessageBox.Show("❌ عفوًا: لا يمكن إتمام عملية البيع بدون وجود وردية مفتوحة!", "إلزام فتح الوردية", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        return;
+                    }
+                }
+
+                decimal total = 0;
+                foreach (var item in _items) total += item.Total;
+
+                int clientID = 0;
+                if (cboClient.SelectedItem is ComboItem ci) clientID = ci.ID;
+
+                // Loyalty
+                decimal loyaltyDiscount = 0;
+                decimal pointsToRedeem = 0;
+                if (chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && clientID > 0)
+                {
+                    var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", clientID));
+                    decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
+                    loyaltyDiscount = Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
+                    pointsToRedeem = loyaltyDiscount / AppConfig.LoyaltyRedemptionRate;
+                    total -= loyaltyDiscount;
+                }
+
+                // Extract restaurant fields if active
+                string orderType = null;
+                string tableNum = null;
+                int? selectedDriver = null;
+                if (AppConfig.IsRestaurant)
+                {
+                    orderType = rbDineIn.Checked ? "DineIn" : rbDelivery.Checked ? "Delivery" : "Takeaway";
+                    tableNum = rbDineIn.Checked ? txtTableNum.Text.Trim() : null;
+                    if (rbDelivery.Checked && cboDeliveryDriver.SelectedItem is ComboItem driverItem && driverItem.ID > 0)
+                    {
+                        selectedDriver = driverItem.ID;
+                    }
+                }
+
                 DbHelper.RunInTransaction((con, trans) =>
                 {
-                    if (_loadedDraftSaleID > 0)
+                    if (draftToDelete > 0)
                     {
-                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", _loadedDraftSaleID));
-                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", _loadedDraftSaleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", draftToDelete));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", draftToDelete));
                     }
 
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
@@ -1405,6 +1411,10 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmPOS.BtnPay_Click", ex);
+            }
+            finally
+            {
+                _isSaving = false;
             }
         }
 
@@ -2147,9 +2157,13 @@ namespace ChickenDist.Forms
 
         private void SuspendCurrentOrder()
         {
+            if (_isSaving) return;
             if (_items.Count == 0) { MessageBox.Show("لا يوجد أصناف في الفاتورة لتعليقها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
-            // Extract restaurant fields if active
+            _isSaving = true;
+            int draftToDelete = _loadedDraftSaleID;
+            _loadedDraftSaleID = 0;
+
             string orderType = null;
             string tableNum = null;
             int? selectedDriver = null;
@@ -2170,10 +2184,10 @@ namespace ChickenDist.Forms
                 DbHelper.RunInTransaction((con, trans) =>
                 {
                     // If we are updating an existing draft, we can delete the old one first
-                    if (_loadedDraftSaleID > 0)
+                    if (draftToDelete > 0)
                     {
-                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", _loadedDraftSaleID));
-                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", _loadedDraftSaleID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", draftToDelete));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Sales WHERE SaleID=@id AND IsPosted=0", DbHelper.P("@id", draftToDelete));
                     }
 
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
