@@ -1108,20 +1108,54 @@
             connectWithCloudSyncCode();
         }
 
-        window.onload = function() {
+        async function fetchLiveReportsFromFirestore() {
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const paramSerial = urlParams.get('serial') || urlParams.get('s') || urlParams.get('code');
-                if (paramSerial && paramSerial.trim()) {
-                    localStorage.setItem('cloud_sync_code', paramSerial.trim());
+                let hostname = window.location.hostname;
+                let projectId = 'mahmoud-68b74';
+                if (hostname && (hostname.includes('.web.app') || hostname.includes('.firebaseapp.com'))) {
+                    projectId = hostname.split('.')[0];
                 }
-            } catch (e) {}
+
+                const resp = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/metadata/live_reports`);
+                if (resp.ok) {
+                    const json = await resp.json();
+                    if (json && json.fields) {
+                        const f = json.fields;
+                        const d = {
+                            StoreName: f.StoreName?.stringValue || '',
+                            TodaySalesTotal: parseFloat(f.TodaySalesTotal?.doubleValue || f.TodaySalesTotal?.integerValue || 0),
+                            TodayCashSales: parseFloat(f.TodayCashSales?.doubleValue || f.TodayCashSales?.integerValue || 0),
+                            TodayCreditSales: parseFloat(f.TodayCreditSales?.doubleValue || f.TodayCreditSales?.integerValue || 0),
+                            CashboxBalance: parseFloat(f.CashboxBalance?.doubleValue || f.CashboxBalance?.integerValue || 0),
+                            TodayNetProfit: parseFloat(f.TodayNetProfit?.doubleValue || f.TodayNetProfit?.integerValue || 0),
+                            ClientDebts: parseFloat(f.ClientDebts?.doubleValue || f.ClientDebts?.integerValue || 0),
+                            SupplierDebts: parseFloat(f.SupplierDebts?.doubleValue || f.SupplierDebts?.integerValue || 0),
+                            TodayPurchases: parseFloat(f.TodayPurchases?.doubleValue || f.TodayPurchases?.integerValue || 0),
+                            LowStockCount: parseInt(f.LowStockCount?.integerValue || f.LowStockCount?.doubleValue || 0),
+                            SyncTime: f.LastSyncDate?.stringValue ? new Date(f.LastSyncDate.stringValue).toLocaleTimeString('ar-EG') : new Date().toLocaleTimeString('ar-EG')
+                        };
+                        renderLiveData(d);
+                    }
+                }
+            } catch (err) {
+                console.log("Firestore live fetch error:", err);
+            }
+        }
+
+        window.onload = function() {
+            // Always hide setup card so no demo/serial prompt appears
+            const card = document.getElementById('serialSetupCard');
+            if (card) card.style.display = 'none';
 
             const savedName = localStorage.getItem('custom_store_name');
             if (savedName) {
                 document.getElementById('txtHeaderAppName').innerText = savedName;
                 document.getElementById('txtCustomStoreName').value = savedName;
             }
+
+            // Immediately fetch live reports from Firestore
+            fetchLiveReportsFromFirestore();
+            setInterval(fetchLiveReportsFromFirestore, 10000);
 
             const savedRtdb = localStorage.getItem('firebase_rtdb_url');
             if (savedRtdb) {
@@ -1130,14 +1164,8 @@
 
             const savedCode = localStorage.getItem('cloud_sync_code');
             if (savedCode) {
-                if (document.getElementById('txtCloudSyncCode')) document.getElementById('txtCloudSyncCode').value = savedCode;
-                if (document.getElementById('txtDirectSerialInput')) document.getElementById('txtDirectSerialInput').value = savedCode;
-                const card = document.getElementById('serialSetupCard');
-                if (card) card.style.display = 'none';
                 connectWithCloudSyncCode();
             } else if (window.__SERVER_DATA__) {
-                const card = document.getElementById('serialSetupCard');
-                if (card) card.style.display = 'none';
                 renderLiveData(window.__SERVER_DATA__);
             }
         };

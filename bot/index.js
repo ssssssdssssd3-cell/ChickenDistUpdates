@@ -330,7 +330,23 @@ async function startBot(pairingPhone = null) {
     botStatus = 'Connecting';
     updateFirebaseStatus('Connecting');
 
-    console.log(`[WhatsApp]: Initializing client with live web version...`);
+    // Clean old session directory if generating fresh pairing code or restarting
+    const authDir = path.join(__dirname, '.wwebjs_auth');
+    if (pairingPhone && fs.existsSync(authDir)) {
+        try {
+            console.log('[WhatsApp]: Cleaning session storage before fresh pairing code generation...');
+            fs.rmSync(authDir, { recursive: true, force: true });
+        } catch (e) {}
+    }
+
+    let chromeExecPath = undefined;
+    if (fs.existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe')) {
+        chromeExecPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    } else if (fs.existsSync('C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe')) {
+        chromeExecPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
+    }
+
+    console.log(`[WhatsApp]: Initializing client with Chrome: ${chromeExecPath || 'Bundled Chromium'}`);
     
     client = new Client({
         authStrategy: new LocalAuth(),
@@ -338,6 +354,7 @@ async function startBot(pairingPhone = null) {
             type: 'none'
         },
         puppeteer: {
+            executablePath: chromeExecPath,
             headless: true,
             args: [
                 '--no-sandbox',
@@ -356,25 +373,37 @@ async function startBot(pairingPhone = null) {
 
     client.on('qr', async (qr) => {
         if (pairingPhone) {
-            try {
-                // Normalize phone: remove leading 0 and add Egypt country code if needed
-                let normalizedPhone = pairingPhone.replace(/\s+/g, '').replace(/^\+/, '');
-                if (normalizedPhone.startsWith('0')) {
-                    normalizedPhone = '20' + normalizedPhone.substring(1);
+            let normalizedPhone = pairingPhone.replace(/\s+/g, '').replace(/^\+/, '');
+            if (normalizedPhone.startsWith('0')) {
+                normalizedPhone = '20' + normalizedPhone.substring(1);
+            }
+            console.log(`[WhatsApp]: Requesting pairing code for phone ${normalizedPhone}...`);
+            
+            // Wait for DOM to finish loading before requesting pairing code
+            await new Promise(r => setTimeout(r, 3500));
+
+            let code = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[WhatsApp]: Attempt ${attempt}/3 to request pairing code...`);
+                    code = await client.requestPairingCode(normalizedPhone);
+                    if (code) break;
+                } catch (err) {
+                    console.warn(`[WhatsApp]: Attempt ${attempt} pairing code failed: ${err.message}`);
+                    await new Promise(r => setTimeout(r, 2000));
                 }
-                console.log(`[WhatsApp]: Requesting pairing code for phone ${normalizedPhone} (original: ${pairingPhone})...`);
-                const code = await client.requestPairingCode(normalizedPhone);
-                console.log(`[WhatsApp]: Pairing code generated: ${code}`);
+            }
+
+            if (code) {
+                console.log(`[WhatsApp]: Pairing code generated successfully: ${code}`);
                 botStatus = 'PairingCode_Ready';
                 updateFirebaseStatus('PairingCode_Ready', '', code);
-            } catch (err) {
-                console.error('[WhatsApp]: Failed to request pairing code:', err);
-                botStatus = 'Offline';
-                updateFirebaseStatus('Offline', '', '', err.message);
-                if (client) {
-                    try { await client.destroy(); } catch (e) {}
-                    client = null;
-                }
+            } else {
+                console.error('[WhatsApp]: Pairing code generation failed after 3 attempts. Falling back to QR code...');
+                botStatus = 'QR_Ready';
+                qrcode.toDataURL(qr, (err, url) => {
+                    if (!err) updateFirebaseStatus('QR_Ready', url);
+                });
             }
             return;
         }
