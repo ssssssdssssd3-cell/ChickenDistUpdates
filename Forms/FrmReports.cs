@@ -188,6 +188,7 @@ namespace ChickenDist.Forms
 			{
 				("📑 تقرير التقفيل اليومي", "DailyClosing"),
 				("📊 سجل وتقارير الورديات", "ShiftsHistory"),
+				("⚖️ مقارنة الورديات بالأيام التقويمية", "ShiftVsCalendarComparison"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
 				("🔄 سجل مرتجعات المشتريات", "DetailedPurchaseReturns"),
@@ -837,7 +838,7 @@ namespace ChickenDist.Forms
 				{
 				case "ShiftsHistory":
 					_currentDt = ShiftDAL.GetShiftsReport(dtpFrom.Value, dtpTo.Value);
-					SetupGrid(new(string, string)[14]
+					SetupGrid(new(string, string)[]
 					{
 						("ShiftID", "رقم الوردية"),
 						("SafeName", "الدرج / الخزنة"),
@@ -846,13 +847,28 @@ namespace ChickenDist.Forms
 						("ClosedByName", "إغلاق بواسطة"),
 						("CloseTime", "وقت الإغلاق"),
 						("OpeningCash", "افتتاحي الدرج"),
-						("CashSales", "مبيعات كاش"),
-						("TotalSales", "إجمالي المبيعات"),
+						("CashSales", "مبيعات كاش الوردية"),
+						("TotalSales", "إجمالي مبيعات الوردية"),
+						("CalendarSales", "مبيعات اليوم التقويمي 📅"),
 						("ExpectedCash", "النقدية المتوقعة"),
 						("ActualCash", "النقدية الفعلية"),
 						("Difference", "العجز / الزيادة"),
 						("StatusArabic", "حالة الوردية"),
 						("Notes", "الملاحظات")
+					}, dataGridView);
+					break;
+				case "ShiftVsCalendarComparison":
+					_currentDt = ShiftDAL.GetShiftVsCalendarComparison(dtpFrom.Value, dtpTo.Value);
+					SetupGrid(new(string, string)[]
+					{
+						("ShiftID", "رقم الوردية"),
+						("StatusArabic", "حالة الوردية"),
+						("OpenTime", "تاريخ ووقت فتح الوردية"),
+						("CloseTime", "تاريخ ووقت إغلاق الوردية"),
+						("ShiftSales", "إجمالي مبيعات فترة الوردية (الشيفت)"),
+						("CalendarSales", "إجمالي مبيعات اليوم التقويمي (من 12 ص لـ 12 م) 📅"),
+						("Difference", "الفارق الحسابي"),
+						("Explanation", "توضيح الفارق بين التقريرين")
 					}, dataGridView);
 					break;
 				case "DetailedSales":

@@ -1249,6 +1249,7 @@ namespace ChickenDist.DAL
                         WHEN s.Status = 'Closed' THEN s.TotalSales 
                         ELSE ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
                     END AS TotalSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(s.OpenTime AS DATE) AND IsPosted = 1), 0) AS CalendarSales,
                     CASE 
                         WHEN s.Status = 'Closed' THEN s.ExpectedCash 
                         ELSE (s.OpeningCash + 
@@ -1266,6 +1267,35 @@ namespace ChickenDist.DAL
                 LEFT JOIN Employees eOpen ON s.OpenedBy = eOpen.EmpID
                 LEFT JOIN Employees eClose ON s.ClosedBy = eClose.EmpID
                 LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                WHERE s.OpenTime BETWEEN @f AND @t
+                ORDER BY s.ShiftID DESC";
+            return DbHelper.Query(sql, DbHelper.P("@f", f), DbHelper.P("@t", t));
+        }
+
+        public static DataTable GetShiftVsCalendarComparison(DateTime from, DateTime to)
+        {
+            DbHelper.EnsureShiftSchema();
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
+            string sql = @"
+                SELECT 
+                    s.ShiftID,
+                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
+                    s.OpenTime,
+                    ISNULL(s.CloseTime, GETDATE()) AS CloseTime,
+                    CASE 
+                        WHEN s.Status = 'Closed' THEN s.TotalSales 
+                        ELSE ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
+                    END AS ShiftSales,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(s.OpenTime AS DATE) AND IsPosted = 1), 0) AS CalendarSales,
+                    (
+                        (CASE WHEN s.Status = 'Closed' THEN s.TotalSales ELSE ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) END) -
+                        ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(s.OpenTime AS DATE) AND IsPosted = 1), 0)
+                    ) AS Difference,
+                    N'مبيعات الوردية تحسب الفواتير من وقت الفتح إلى الإغلاق، بينما مبيعات اليوم التقويمي تحسب الفواتير من 12 ص إلى 11:59 م' AS Explanation
+                FROM Shifts s
                 WHERE s.OpenTime BETWEEN @f AND @t
                 ORDER BY s.ShiftID DESC";
             return DbHelper.Query(sql, DbHelper.P("@f", f), DbHelper.P("@t", t));
