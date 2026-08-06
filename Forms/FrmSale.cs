@@ -3095,7 +3095,13 @@ namespace ChickenDist.Forms
 		private bool CheckSaleItemStock(SaleItemDTO item, decimal newQty, out string err)
 		{
 			err = "";
-			if (item.IsService) return true;
+			bool isSrv = item.IsService;
+			if (!isSrv)
+			{
+				var isSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
+				isSrv = isSrvVal != null && isSrvVal != DBNull.Value && Convert.ToBoolean(isSrvVal);
+			}
+			if (isSrv) return true;
 
 			decimal reqQtyInFactor = newQty * item.Factor;
 			
@@ -3468,6 +3474,14 @@ namespace ChickenDist.Forms
 			// ─── التحقق من المخزون ───
 			foreach (SaleItemDTO item in _items)
 			{
+				bool isSrv = item.IsService;
+				if (!isSrv)
+				{
+					var isSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
+					isSrv = isSrvVal != null && isSrvVal != DBNull.Value && Convert.ToBoolean(isSrvVal);
+				}
+				if (isSrv) continue; // الأصناف الخدمية لا تخضع لفحص الرصيد وتباع بالسالب
+
 				decimal productStock = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
 				decimal quantityToCheck = item.Quantity;
 
