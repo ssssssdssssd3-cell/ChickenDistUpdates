@@ -94,6 +94,12 @@ namespace ChickenDist.DAL
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
             int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null)
         {
+            int? activeShiftID = ShiftDAL.GetActiveShiftID();
+            if (!activeShiftID.HasValue && !isDraft)
+            {
+                throw new InvalidOperationException("⚠️ عفوًا: لا يمكن حفظ الفاتورة بدون وجود وردية (شيفت) مفتوحة حالياً!\nيرجى فتح وردية جديدة أولاً لتسجيل الفاتورة وحساب النقدية والدرج.");
+            }
+
             int returnedSaleID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
@@ -104,7 +110,7 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping,@ot,@tn)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -114,7 +120,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
-                    DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber));
+                    DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
+                    DbHelper.P("@sid", activeShiftID.HasValue ? (object)activeShiftID.Value : DBNull.Value));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;

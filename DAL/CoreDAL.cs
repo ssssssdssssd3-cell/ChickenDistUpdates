@@ -1263,6 +1263,8 @@ namespace ChickenDist.DAL
                 {
                     int sid = Convert.ToInt32(o);
                     Session.CurrentShiftID = sid;
+                    // Auto-heal any orphan invoices created today that were saved without a ShiftID
+                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", sid)); } catch {}
                     return sid;
                 }
             }
