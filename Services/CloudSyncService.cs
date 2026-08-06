@@ -199,6 +199,26 @@ namespace ChickenDist.Services
                 object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
                 decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
 
+                // Real Missing items notebook from SQL Server
+                DataTable dtMissing = DbHelper.Query(
+                    "SELECT TOP 40 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
+                string missingJson = DataTableToJson(dtMissing);
+
+                // Real product catalog from SQL Server
+                DataTable dtProducts = DbHelper.Query(
+                    "SELECT TOP 100 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
+                string productsJson = DataTableToJson(dtProducts);
+
+                // Real Suppliers from SQL Server
+                DataTable dtSuppliers = DbHelper.Query(
+                    "SELECT TOP 30 SupplierID, SupplierName, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName ASC");
+                string suppliersJson = DataTableToJson(dtSuppliers);
+
+                // Real Client Debts from SQL Server
+                DataTable dtClients = DbHelper.Query(
+                    "SELECT TOP 30 ClientID, ClientName, ISNULL(Balance,0) AS Balance FROM Clients WHERE IsActive=1 AND Balance > 0 ORDER BY Balance DESC");
+                string clientsJson = DataTableToJson(dtClients);
+
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
 
@@ -213,12 +233,16 @@ namespace ChickenDist.Services
                     "\"SupplierDebts\": {\"doubleValue\": " + suppDebts + "}," +
                     "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
                     "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
-                    "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}" +
+                    "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
+                    "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
+                    "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
+                    "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
+                    "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}" +
                     "}}";
 
                 using (var client = new HttpClient())
                 {
-                    client.Timeout = TimeSpan.FromSeconds(8);
+                    client.Timeout = TimeSpan.FromSeconds(10);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
                     var req = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
                     {
@@ -233,6 +257,43 @@ namespace ChickenDist.Services
                 AppLogger.Error("فشل رفع التقارير المباشرة لـ Firestore", ex, "PushLiveStatsToFirestoreAsync");
                 return false;
             }
+        }
+
+        private static string DataTableToJson(DataTable dt)
+        {
+            if (dt == null || dt.Rows.Count == 0) return "[]";
+            var sb = new StringBuilder("[");
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append("{");
+                for (int j = 0; j < dt.Columns.Count; j++)
+                {
+                    if (j > 0) sb.Append(",");
+                    string colName = dt.Columns[j].ColumnName;
+                    object val = dt.Rows[i][j];
+                    sb.Append($"\"{EscapeJsonString(colName)}\":");
+                    if (val == DBNull.Value || val == null)
+                    {
+                        sb.Append("null");
+                    }
+                    else if (val is bool b)
+                    {
+                        sb.Append(b ? "true" : "false");
+                    }
+                    else if (val is int || val is long || val is short || val is decimal || val is double || val is float)
+                    {
+                        sb.Append(val.ToString().Replace(",", "."));
+                    }
+                    else
+                    {
+                        sb.Append($"\"{EscapeJsonString(val.ToString())}\"");
+                    }
+                }
+                sb.Append("}");
+            }
+            sb.Append("]");
+            return sb.ToString();
         }
 
         private static System.Threading.Timer _autoSyncTimer;

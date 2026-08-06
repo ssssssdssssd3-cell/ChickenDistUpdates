@@ -1097,6 +1097,69 @@
             // إخفاء حالة عدم الاتصال
             const offlineBadge = document.getElementById('offlineStatusBadge');
             if (offlineBadge) offlineBadge.style.display = 'none';
+
+            // 1. Dynamic Notebook Missing Items from SQL
+            if (d.MissingItems && Array.isArray(d.MissingItems)) {
+                const notebookBox = document.getElementById('sec-notebook');
+                if (notebookBox) {
+                    if (d.MissingItems.length === 0) {
+                        notebookBox.innerHTML = `
+                            <div class="report-card" style="border-color:rgba(16,185,129,0.3); text-align:center; padding:25px;">
+                                <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                                <div style="font-weight:900; font-size:16px; color:var(--emerald);">لا توجد أصناف ناقصة حالياً بمخزن المحل</div>
+                                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">جميع الأصناف المسجلة بالداتابيز تتجاوز الحد الأدنى للمخزون.</div>
+                            </div>`;
+                    } else {
+                        let rowsHtml = '';
+                        d.MissingItems.forEach(item => {
+                            rowsHtml += `
+                                <div class="notebook-item-row">
+                                    <input type="checkbox" class="notebook-checkbox" checked>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:900;" class="item-name-target">${item.ProductName}</div>
+                                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">${item.Quantity} قطعة</b> | كود: ${item.ProductCode || '---'} | المورد: ${item.Supplier || 'عام'}</div>
+                                    </div>
+                                    <input type="number" value="${Math.max(10, item.MinQuantity * 2)}" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                                </div>`;
+                        });
+                        notebookBox.innerHTML = `
+                            <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
+                                <div class="report-header">
+                                    <span>📝 5. كشكول النواقص الحقيقي المأخوذ من SQL المحل</span>
+                                    <span style="color:var(--gold); font-size:12px;">${d.MissingItems.length} صنف ناقص</span>
+                                </div>
+                                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">الأصناف التالية وصل رصيدها بالداتابيز للحد الأدنى (حدد الأصناف لتمريرها للطلبية):</div>
+                                ${rowsHtml}
+                                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
+                                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
+                                </button>
+                            </div>`;
+                    }
+                }
+            }
+
+            // 2. Dynamic Product Catalog from SQL
+            if (d.ProductsCatalog && Array.isArray(d.ProductsCatalog)) {
+                const catalogContainer = document.getElementById('prodCatalogList');
+                if (catalogContainer && d.ProductsCatalog.length > 0) {
+                    let catHtml = '';
+                    d.ProductsCatalog.forEach(p => {
+                        catHtml += `
+                            <div class="prod-item-card">
+                                <div style="display:flex; justify-content:space-between; font-weight:900;">
+                                    <span style="color:var(--gold);">${p.ProductName}</span>
+                                    <span style="color:var(--emerald);">${fmt(p.SalePrice)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                                    <span>كود: <b>${p.ProductCode || '---'}</b></span>
+                                    <span>سعر الشراء: <b>${fmt(p.PurchasePrice)}</b></span>
+                                    <span>الرصيد بالمخزن: <b style="color:var(--cyan);">${p.Quantity} قطعة</b></span>
+                                </div>
+                            </div>`;
+                    });
+                    catalogContainer.innerHTML = catHtml;
+                }
+            }
         }
 
         function saveDirectSerialAndFetch() {
@@ -1134,7 +1197,11 @@
                             SupplierDebts: parseFloat(f.SupplierDebts?.doubleValue || f.SupplierDebts?.integerValue || 0),
                             TodayPurchases: parseFloat(f.TodayPurchases?.doubleValue || f.TodayPurchases?.integerValue || 0),
                             LowStockCount: parseInt(f.LowStockCount?.integerValue || f.LowStockCount?.doubleValue || 0),
-                            SyncTime: f.LastSyncDate?.stringValue ? new Date(f.LastSyncDate.stringValue).toLocaleTimeString('ar-EG') : new Date().toLocaleTimeString('ar-EG')
+                            SyncTime: f.LastSyncDate?.stringValue ? new Date(f.LastSyncDate.stringValue).toLocaleTimeString('ar-EG') : new Date().toLocaleTimeString('ar-EG'),
+                            MissingItems: JSON.parse(f.MissingItemsJson?.stringValue || '[]'),
+                            ProductsCatalog: JSON.parse(f.ProductsCatalogJson?.stringValue || '[]'),
+                            SuppliersList: JSON.parse(f.SuppliersListJson?.stringValue || '[]'),
+                            ClientsList: JSON.parse(f.ClientsListJson?.stringValue || '[]')
                         };
                         renderLiveData(d);
                     }
