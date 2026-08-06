@@ -1382,7 +1382,7 @@ namespace ChickenDist.DAL
                 o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND ISNULL(SaleType,'') <> 'Cash'");
                 if (o != null && o != DBNull.Value) todayCreditSales = Convert.ToDecimal(o);
 
-                o = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount - ISNULL(TotalCost,0)),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                o = DbHelper.Scalar("SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID JOIN Products p ON si.ProductID = p.ProductID WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
                 if (o != null && o != DBNull.Value) todayNetProfit = Convert.ToDecimal(o);
 
                 o = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox");

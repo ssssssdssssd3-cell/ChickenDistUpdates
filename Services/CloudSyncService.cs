@@ -179,7 +179,12 @@ namespace ChickenDist.Services
                 var dto = GetLiveStats();
 
                 // Net Profit today
-                object profitObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount - ISNULL(TotalCost, 0)), 0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object profitObj = DbHelper.Scalar(
+                    @"SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0)
+                      FROM SaleItems si
+                      JOIN Sales s ON si.SaleID = s.SaleID
+                      JOIN Products p ON si.ProductID = p.ProductID
+                      WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
 
                 // Today Purchases
