@@ -74,7 +74,8 @@ namespace ChickenDist.Forms
                 { Text = t, AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 4, 0, 0) });
             DateTimePicker Dtp(int addDays)
             {
-                var d = new DateTimePicker { Width = 105, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(addDays), Margin = new Padding(4, 0, 4, 0) };
+                var d = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = addDays == 0 ? DateTime.Now : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
+                d.ValueChanged += (s, e) => LoadAuditLogs();
                 pnlFilter.Controls.Add(d);
                 return d;
             }
@@ -254,9 +255,13 @@ namespace ChickenDist.Forms
 
                 sql += " ORDER BY a.EditDate DESC";
 
+                DateTime f = dtpFrom.Value;
+                DateTime t = dtpTo.Value;
+                if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
                 var dt = DbHelper.Query(sql,
-                    DbHelper.P("@from", dtpFrom.Value.Date),
-                    DbHelper.P("@to",   dtpTo.Value.Date),
+                    DbHelper.P("@from", f),
+                    DbHelper.P("@to",   t),
                     DbHelper.P("@act",  actionFilter),
                     DbHelper.P("@q",    "%" + searchVal + "%"));
 

@@ -53,16 +53,18 @@ namespace ChickenDist.Forms
             dtpFrom = new DateTimePicker
             {
                 Location = new Point(x + 75, 12),
-                Width = 120,
-                Format = DateTimePickerFormat.Short,
+                Width = 175,
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Today.AddDays(-30)
             };
+            dtpFrom.ValueChanged += (s, e) => LoadLogs();
             pnlTop.Controls.Add(dtpFrom);
 
             pnlTop.Controls.Add(new Label
             {
                 Text = "إلى تاريخ:",
-                Location = new Point(x + 210, 15),
+                Location = new Point(x + 265, 15),
                 Width = 70,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
@@ -70,11 +72,13 @@ namespace ChickenDist.Forms
             });
             dtpTo = new DateTimePicker
             {
-                Location = new Point(x + 285, 12),
-                Width = 120,
-                Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today
+                Location = new Point(x + 340, 12),
+                Width = 175,
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
+                Value = DateTime.Now
             };
+            dtpTo.ValueChanged += (s, e) => LoadLogs();
             pnlTop.Controls.Add(dtpTo);
 
             pnlTop.Controls.Add(new Label
@@ -213,14 +217,18 @@ namespace ChickenDist.Forms
                 FROM PriceChangesLog pcl
                 JOIN Products p ON pcl.ProductID = p.ProductID
                 LEFT JOIN Employees e ON pcl.UserID = e.EmpID
-                WHERE CAST(pcl.ChangeDate AS DATE) BETWEEN @from AND @to
+                WHERE pcl.ChangeDate BETWEEN @from AND @to
                   AND (@source = 'All' OR pcl.ChangeSource = @source)
                   AND (@term = '' OR p.ProductName LIKE @term OR p.ProductCode LIKE @term)
                 ORDER BY pcl.ChangeDate DESC";
 
+            DateTime f = dtpFrom.Value;
+            DateTime t = dtpTo.Value;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
             var dt = DbHelper.Query(sql,
-                DbHelper.P("@from", dtpFrom.Value.Date),
-                DbHelper.P("@to", dtpTo.Value.Date),
+                DbHelper.P("@from", f),
+                DbHelper.P("@to", t),
                 DbHelper.P("@source", sourceFilter),
                 DbHelper.P("@term", string.IsNullOrEmpty(searchPattern) ? "" : "%" + searchPattern + "%"));
 
