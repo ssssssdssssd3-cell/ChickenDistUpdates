@@ -53,8 +53,9 @@ namespace ChickenDist.Forms
             // Left: Grid panel
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
             
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Theme.BgCard, Padding = new Padding(6) };
-            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 250, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "بحث بالاسم أو الهاتف...", Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.BgSearchPanel, Padding = new Padding(8) };
+            Theme.StyleSearchHeaderPanel(pnlSearch);
+            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 280, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Text = "بحث بالاسم أو الهاتف...", Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
             txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف...") txtSearch.Text = ""; };
             txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف..."; };
             txtSearch.TextChanged += (s, e) => {

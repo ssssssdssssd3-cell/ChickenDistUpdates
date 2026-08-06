@@ -98,8 +98,43 @@ namespace ChickenDist.Core
             _       => Color.FromArgb(50, 54, 64) // Dark
         };
 
-        public static Color BgInput => Color.FromArgb(254, 252, 229); // خانات الإدخال بلون بيج/كريمي ناعم مميز لتنبيه المستخدم للتعديل
+        // ألوان ونظام شريط البحث والفلترة المميز والمريح للعين
+        public static Color BgSearchPanel => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(235, 243, 255), // أزرق سماوي ناعم ومميز يوضح مكان الفلاتر
+            "Slate" => Color.FromArgb(218, 228, 243),
+            _       => Color.FromArgb(38, 45, 60)     // رمادي داكن مائل للأزرق
+        };
+
+        public static Color BorderSearchPanel => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(180, 208, 245),
+            "Slate" => Color.FromArgb(160, 190, 230),
+            _       => Color.FromArgb(65, 78, 102)
+        };
+
+        public static Color TextSearchLabel => AppConfig.AppTheme switch
+        {
+            "Light" => Color.FromArgb(15, 23, 42),    // كحلي داكن مريح ومميز
+            "Slate" => Color.FromArgb(15, 23, 42),
+            _       => Color.FromArgb(241, 245, 249)
+        };
+
+        public static Color BgInput => Color.White; // خانات الإدخال بلون أبيض ناصع ومريح
         public static Color TextInput => Color.FromArgb(33, 37, 41); // لون خط خانات الإدخال - غامق دائماً للقراءة على الخلفية البيضاء
+
+        public static void StyleSearchHeaderPanel(Panel pnl)
+        {
+            if (pnl == null) return;
+            pnl.BackColor = BgSearchPanel;
+            pnl.Paint += (s, e) =>
+            {
+                using (Pen p = new Pen(BorderSearchPanel, 1.5f))
+                {
+                    e.Graphics.DrawLine(p, 0, pnl.Height - 1, pnl.Width, pnl.Height - 1);
+                }
+            };
+        }
 
         public static Color TextMain => AppConfig.AppTheme switch
         {

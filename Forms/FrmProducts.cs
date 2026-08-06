@@ -44,26 +44,27 @@ namespace ChickenDist.Forms
             var pnlHeader = new Panel 
             { 
                 Dock = DockStyle.Top, 
-                Height = 58, 
-                BackColor = Theme.BgCard,
-                Padding = new Padding(10, 8, 10, 8)
+                Height = 62, 
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(12, 10, 12, 10)
             };
+            Theme.StyleSearchHeaderPanel(pnlHeader);
 
             lblSearch = new Label 
             { 
                 Text = "🔍 بحث سريع:", 
                 AutoSize = true, 
-                ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold
+                ForeColor = Theme.TextSearchLabel, 
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
             
             txtSearch = new TextBox 
             { 
-                Width = 230, 
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain, 
+                Width = 240, 
+                BackColor = Color.White, 
+                ForeColor = Color.FromArgb(15, 23, 42), 
                 BorderStyle = BorderStyle.FixedSingle, 
-                Font = Theme.FontNormal
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
@@ -71,18 +72,18 @@ namespace ChickenDist.Forms
             { 
                 Text = "📂 التصنيف:", 
                 AutoSize = true, 
-                ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold
+                ForeColor = Theme.TextSearchLabel, 
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
 
             cboCategory = new ComboBox
             {
-                Width = 170,
+                Width = 180,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 FlatStyle = FlatStyle.Flat,
-                Font = Theme.FontNormal
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
             LoadCategoriesCombo();
 
@@ -90,18 +91,18 @@ namespace ChickenDist.Forms
             { 
                 Text = "⚡ الحالة:", 
                 AutoSize = true, 
-                ForeColor = Theme.TextMain, 
-                Font = Theme.FontBold
+                ForeColor = Theme.TextSearchLabel, 
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
 
             cboStatus = new ComboBox
             {
-                Width = 120,
+                Width = 130,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 FlatStyle = FlatStyle.Flat,
-                Font = Theme.FontNormal
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
             cboStatus.Items.AddRange(new object[] { "جميع الأصناف", "النشطة فقط", "المعطلة فقط" });
             cboStatus.SelectedIndex = 0;
@@ -109,10 +110,12 @@ namespace ChickenDist.Forms
 
             lblItemCount = new Label
             {
-                Text = "عدد الأصناف: 0",
+                Text = "📊 عدد الأصناف: 0",
                 AutoSize = true,
-                ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                ForeColor = Color.FromArgb(180, 83, 9),
+                BackColor = Color.FromArgb(254, 243, 199),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Padding = new Padding(8, 4, 8, 4)
             };
 
             pnlHeader.Controls.AddRange(new Control[] { lblSearch, txtSearch, lblCat, cboCategory, lblStatus, cboStatus, lblItemCount });
