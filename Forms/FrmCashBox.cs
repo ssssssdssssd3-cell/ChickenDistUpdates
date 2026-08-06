@@ -81,11 +81,12 @@ namespace ChickenDist.Forms
             var pnlF = new FlowLayoutPanel 
             { 
                 Dock = DockStyle.Top, 
-                Height = 55, 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgCard, 
-                Padding = new Padding(10),
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false
+                Padding = new Padding(8),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true
             };
             
             pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
@@ -210,11 +211,12 @@ namespace ChickenDist.Forms
             var pnlF = new FlowLayoutPanel 
             { 
                 Dock = DockStyle.Top, 
-                Height = 55, 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgCard, 
-                Padding = new Padding(10),
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false
+                Padding = new Padding(8),
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true
             };
             
             pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
