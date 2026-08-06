@@ -55,11 +55,11 @@ namespace ChickenDist.Forms
             // Filter Bar
             var pnlFilters = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Theme.BgCard, Padding = new Padding(10) };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(915, 15) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(930, 15) };
             dtpFrom = new DateTimePicker 
             { 
                 Location = new Point(735, 11), 
-                Width = 175, 
+                Width = 190, 
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Today.AddDays(-30)
@@ -69,8 +69,8 @@ namespace ChickenDist.Forms
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(695, 15) };
             dtpTo = new DateTimePicker 
             { 
-                Location = new Point(515, 11), 
-                Width = 175, 
+                Location = new Point(500, 11), 
+                Width = 190, 
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Now

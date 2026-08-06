@@ -49,11 +49,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8)
             };
 
-            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(730, 15), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(745, 15), AutoSize = true, ForeColor = Theme.TextMain });
             dtpFrom = new DateTimePicker
             {
                 Location = new Point(550, 11),
-                Width = 175,
+                Width = 190,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
@@ -62,7 +62,14 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(dtpFrom);
 
             pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(510, 15), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpTo = new DateTimePicker { Location = new Point(330, 11), Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            dtpTo = new DateTimePicker
+            {
+                Location = new Point(315, 11),
+                Width = 190,
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd   hh:mm tt",
+                Value = DateTime.Now
+            };
             dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
 

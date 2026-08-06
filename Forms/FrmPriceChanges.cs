@@ -53,7 +53,7 @@ namespace ChickenDist.Forms
             dtpFrom = new DateTimePicker
             {
                 Location = new Point(x + 75, 12),
-                Width = 175,
+                Width = 190,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Today.AddDays(-30)
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(new Label
             {
                 Text = "إلى تاريخ:",
-                Location = new Point(x + 265, 15),
+                Location = new Point(x + 275, 15),
                 Width = 70,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
@@ -72,8 +72,8 @@ namespace ChickenDist.Forms
             });
             dtpTo = new DateTimePicker
             {
-                Location = new Point(x + 340, 12),
-                Width = 175,
+                Location = new Point(x + 350, 12),
+                Width = 190,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Now

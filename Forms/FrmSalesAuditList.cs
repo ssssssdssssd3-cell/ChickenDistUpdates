@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
                 { Text = t, AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 4, 0, 0) });
             DateTimePicker Dtp(int addDays)
             {
-                var d = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = addDays == 0 ? DateTime.Now : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
+                var d = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = addDays == 0 ? DateTime.Now : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
                 d.ValueChanged += (s, e) => LoadAuditLogs();
                 pnlFilter.Controls.Add(d);
                 return d;

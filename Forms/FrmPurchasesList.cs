@@ -48,19 +48,19 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Top,
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.RightToLeft,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(8, 8, 8, 8),
 				WrapContents = true
 			};
 
 			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-			dtpFrom = new DateTimePicker { Width = 175, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
+			dtpFrom = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
 			dtpFrom.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
 
 			Label lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-			dtpTo = new DateTimePicker { Width = 175, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+			dtpTo = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
 			dtpTo.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 

@@ -125,7 +125,7 @@ namespace ChickenDist.Forms
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
 			};
 			dtpFrom.ValueChanged += delegate { LoadSales(); };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 165));
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 190));
 
 			// إلى التاريخ والوقت (بالساعة والدقيقة)
 			dtpTo = new DateTimePicker
@@ -135,7 +135,7 @@ namespace ChickenDist.Forms
 				Value = DateTime.Now
 			};
 			dtpTo.ValueChanged += delegate { LoadSales(); };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 165));
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 190));
 
 			// نوع الفاتورة
 			cboTypeFilter = new ComboBox

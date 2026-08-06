@@ -72,7 +72,7 @@ namespace ChickenDist.Forms
 			};
 			dtpFrom = new DateTimePicker
 			{
-				Width = 175,
+				Width = 190,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd   hh:mm tt",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
@@ -90,7 +90,7 @@ namespace ChickenDist.Forms
 			};
 			dtpTo = new DateTimePicker
 			{
-				Width = 175,
+				Width = 190,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd   hh:mm tt",
 				Value = DateTime.Now,

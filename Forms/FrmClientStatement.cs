@@ -43,12 +43,12 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             var pnlFilter = new Panel { Dock = DockStyle.Top, Height = 48, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(730, 14), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpFrom = new DateTimePicker { Location = new Point(545, 10), Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
+            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(745, 14), AutoSize = true, ForeColor = Theme.TextMain });
+            dtpFrom = new DateTimePicker { Location = new Point(545, 10), Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
             dtpFrom.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpFrom);
             pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(505, 14), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpTo = new DateTimePicker { Location = new Point(325, 10), Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            dtpTo = new DateTimePicker { Location = new Point(305, 10), Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
             btnLoad = Theme.MakeButton("عرض", 300, 10, 80, 30, Theme.Accent);
