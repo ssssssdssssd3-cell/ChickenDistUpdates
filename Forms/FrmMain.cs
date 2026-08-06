@@ -28,6 +28,7 @@ namespace ChickenDist.Forms
             InitializeComponent();
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
+            try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
         }
 
         private void InitializeComponent()

@@ -235,6 +235,22 @@ namespace ChickenDist.Services
             }
         }
 
+        private static System.Threading.Timer _autoSyncTimer;
+
+        public static void StartAutoBackgroundSync()
+        {
+            if (_autoSyncTimer != null) return;
+            // Push live stats to Firestore immediately, then automatically every 30 seconds
+            _autoSyncTimer = new System.Threading.Timer(async _ =>
+            {
+                try
+                {
+                    await PushLiveStatsToFirestoreAsync();
+                }
+                catch {}
+            }, null, 1000, 30000);
+        }
+
         private static string EscapeJsonString(string s)
         {
             if (string.IsNullOrEmpty(s)) return "";
