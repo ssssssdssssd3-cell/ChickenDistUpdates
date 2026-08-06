@@ -395,7 +395,8 @@ namespace ChickenDist.Forms
             };
             pnlAccountant.Controls.Add(lblMobileTitle);
 
-            string mobileUrl = $"https://{projectId}.web.app/mobile.html";
+            string clientSerial = Services.CloudSyncService.GetPermanentClientSerial();
+            string mobileUrl = $"https://{projectId}.web.app/mobile.html?serial={clientSerial}";
 
             txtMobileAppUrl = new TextBox
             {
@@ -1416,7 +1417,7 @@ pause
                     // Update URLs in main form
                     string newAccUrl = $"https://{actualPid}.web.app/admin.html";
                     string newClientUrl = $"https://{actualPid}.web.app";
-                    string newMobileUrl = $"https://{actualPid}.web.app/mobile.html";
+                    string newMobileUrl = $"https://{actualPid}.web.app/mobile.html?serial={Services.CloudSyncService.GetPermanentClientSerial()}";
                     if (txtAccUrl != null) txtAccUrl.Text = newAccUrl;
                     if (txtClientUrl != null) txtClientUrl.Text = newClientUrl;
                     if (txtMobileAppUrl != null) txtMobileAppUrl.Text = newMobileUrl;

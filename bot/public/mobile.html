@@ -1109,6 +1109,14 @@
         }
 
         window.onload = function() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const paramSerial = urlParams.get('serial') || urlParams.get('s') || urlParams.get('code');
+                if (paramSerial && paramSerial.trim()) {
+                    localStorage.setItem('cloud_sync_code', paramSerial.trim());
+                }
+            } catch (e) {}
+
             const savedName = localStorage.getItem('custom_store_name');
             if (savedName) {
                 document.getElementById('txtHeaderAppName').innerText = savedName;
