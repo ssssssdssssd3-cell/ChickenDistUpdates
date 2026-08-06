@@ -117,17 +117,25 @@ namespace ChickenDist.Forms
 				return pnl;
 			}
 
-			// من التاريخ
+			// من التاريخ والوقت (بالساعة والدقيقة)
 			dtpFrom = new DateTimePicker
 			{
-				Format = DateTimePickerFormat.Short,
-				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+				Format = DateTimePickerFormat.Custom,
+				CustomFormat = "yyyy-MM-dd   hh:mm tt",
+				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
 			};
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 110));
+			dtpFrom.ValueChanged += delegate { LoadSales(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 165));
 
-			// إلى التاريخ
-			dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Short };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 110));
+			// إلى التاريخ والوقت (بالساعة والدقيقة)
+			dtpTo = new DateTimePicker
+			{
+				Format = DateTimePickerFormat.Custom,
+				CustomFormat = "yyyy-MM-dd   hh:mm tt",
+				Value = DateTime.Now
+			};
+			dtpTo.ValueChanged += delegate { LoadSales(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 165));
 
 			// نوع الفاتورة
 			cboTypeFilter = new ComboBox

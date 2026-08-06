@@ -1156,6 +1156,32 @@ namespace ChickenDist.Forms
         {
             if (_items.Count == 0) { MessageBox.Show("لا يوجد أصناف في الفاتورة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
+            // ── التحقق من وجود وردية مفتوحة للكاشير ──
+            if (!ShiftDAL.GetActiveShiftID().HasValue)
+            {
+                var res = MessageBox.Show(
+                    "⚠️ تنبيه الكاشير: لا توجد وردية (شيفت) مفتوحة حالياً!\n\n" +
+                    "يلزم الكاشير بفتح وردية عمل جديدة قبل إتمام أي عملية بيع وتسجيل النقدية بالدرج.\n\n" +
+                    "هل ترغب في فتح وردية جديدة الآن؟",
+                    "إلزام فتح وردية كاشير",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (res == DialogResult.Yes)
+                {
+                    using (var frm = new FrmOpenShift())
+                    {
+                        frm.ShowDialog();
+                    }
+                }
+
+                if (!ShiftDAL.GetActiveShiftID().HasValue)
+                {
+                    MessageBox.Show("❌ عفوًا: لا يمكن إتمام عملية البيع بدون وجود وردية مفتوحة!", "إلزام فتح الوردية", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    return;
+                }
+            }
+
             decimal total = 0;
             foreach (var item in _items) total += item.Total;
 

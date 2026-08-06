@@ -1252,6 +1252,23 @@ namespace ChickenDist.DAL
                 ORDER BY s.ShiftID DESC";
             return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
         }
+
+        public static int? GetActiveShiftID()
+        {
+            try
+            {
+                DbHelper.EnsureShiftSchema();
+                object o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                if (o != null && o != DBNull.Value)
+                {
+                    int sid = Convert.ToInt32(o);
+                    Session.CurrentShiftID = sid;
+                    return sid;
+                }
+            }
+            catch {}
+            return null;
+        }
     }
 
     // =================== Account DAL ===================

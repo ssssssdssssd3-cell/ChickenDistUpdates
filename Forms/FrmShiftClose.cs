@@ -876,6 +876,20 @@ namespace ChickenDist.Forms
                     PrintShiftReport(shiftID, actual, diff);
                 }
 
+                var resStartNew = MessageBox.Show(
+                    "🔄 هل ترغب في فتح وردية عمل جديدة فوراً للكاشير التالي لتواصل العمل بدون توقف؟",
+                    "بداية وردية جديدة تلقائياً",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (resStartNew == DialogResult.Yes)
+                {
+                    using (var frm = new FrmOpenShift())
+                    {
+                        frm.ShowDialog();
+                    }
+                }
+
                 LoadCurrentShift();
             }
             catch (Exception ex) { MessageBox.Show("خطأ عند إغلاق الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }

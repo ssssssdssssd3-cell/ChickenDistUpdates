@@ -21,6 +21,13 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero)
+            {
+                t = t.Date.AddDays(1).AddTicks(-1);
+            }
+
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
                          ISNULL(c.ClientName,N'---') AS ClientName,
@@ -51,7 +58,7 @@ namespace ChickenDist.DAL
                       JOIN Products p ON si.ProductID = p.ProductID
                       GROUP BY si.SaleID
                   ) costs ON costs.SaleID = s.SaleID
-                  WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  WHERE s.SaleDate BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     AND (@product IS NULL OR EXISTS (
@@ -62,7 +69,7 @@ namespace ChickenDist.DAL
                           OR pr.ProductCode LIKE N'%' + @product + N'%')
                     ))
                   ORDER BY s.SaleDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                 DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
