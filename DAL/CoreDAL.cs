@@ -1228,6 +1228,10 @@ namespace ChickenDist.DAL
         public static DataTable GetShiftsReport(DateTime from, DateTime to)
         {
             DbHelper.EnsureShiftSchema();
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
             string sql = @"
                 SELECT 
                     s.ShiftID,
@@ -1237,9 +1241,23 @@ namespace ChickenDist.DAL
                     eClose.EmpName AS ClosedByName,
                     s.CloseTime,
                     s.OpeningCash,
-                    s.CashSales,
-                    s.TotalSales,
-                    s.ExpectedCash,
+                    CASE 
+                        WHEN s.Status = 'Closed' THEN s.CashSales 
+                        ELSE ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
+                    END AS CashSales,
+                    CASE 
+                        WHEN s.Status = 'Closed' THEN s.TotalSales 
+                        ELSE ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
+                    END AS TotalSales,
+                    CASE 
+                        WHEN s.Status = 'Closed' THEN s.ExpectedCash 
+                        ELSE (s.OpeningCash + 
+                              ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) -
+                              ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr JOIN Sales sl ON sr.SaleID = sl.SaleID WHERE (sl.ShiftID = s.ShiftID OR (sl.ShiftID IS NULL AND sl.SaleDate >= s.OpenTime))), 0) -
+                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND TransType NOT IN ('Sale', 'SaleReturn')), 0) +
+                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND TransType NOT IN ('Sale', 'SaleReturn')), 0)
+                             )
+                    END AS ExpectedCash,
                     s.ActualCash,
                     s.Difference,
                     CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
@@ -1248,9 +1266,9 @@ namespace ChickenDist.DAL
                 LEFT JOIN Employees eOpen ON s.OpenedBy = eOpen.EmpID
                 LEFT JOIN Employees eClose ON s.ClosedBy = eClose.EmpID
                 LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
-                WHERE CAST(s.OpenTime AS DATE) BETWEEN @f AND @t
+                WHERE s.OpenTime BETWEEN @f AND @t
                 ORDER BY s.ShiftID DESC";
-            return DbHelper.Query(sql, DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));
+            return DbHelper.Query(sql, DbHelper.P("@f", f), DbHelper.P("@t", t));
         }
 
         public static int? GetActiveShiftID()
