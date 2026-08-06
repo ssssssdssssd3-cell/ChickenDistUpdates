@@ -165,5 +165,75 @@ namespace ChickenDist.Services
 
             return $@"chickendist://pair?url={Uri.EscapeDataString(apiUrl)}&key={Uri.EscapeDataString(ownerKey)}&company={Uri.EscapeDataString(AppConfig.CompanyName)}";
         }
+
+        public static async Task<bool> PushLiveStatsToFirestoreAsync(string projectId = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(projectId))
+                {
+                    projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
+                }
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+
+                var dto = GetLiveStats();
+
+                // Net Profit today
+                object profitObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Profit, 0)), 0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
+
+                // Today Purchases
+                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayPurchases = purObj != null && purObj != DBNull.Value ? Convert.ToDecimal(purObj) : 0m;
+
+                // Client Debts
+                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WHERE Balance > 0");
+                decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
+
+                // Supplier Debts
+                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
+                decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
+
+                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string storeName = EscapeJsonString(AppConfig.CompanyName);
+
+                string json = "{\"fields\": {" +
+                    "\"TodaySalesTotal\": {\"doubleValue\": " + dto.TodaySalesTotal + "}," +
+                    "\"TodayCashSales\": {\"doubleValue\": " + dto.TodayCashSales + "}," +
+                    "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales + "}," +
+                    "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance + "}," +
+                    "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit + "}," +
+                    "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases + "}," +
+                    "\"ClientDebts\": {\"doubleValue\": " + clientDebts + "}," +
+                    "\"SupplierDebts\": {\"doubleValue\": " + suppDebts + "}," +
+                    "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
+                    "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
+                    "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}" +
+                    "}}";
+
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(8);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var req = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
+                    {
+                        Content = content
+                    };
+                    var response = await client.SendAsync(req);
+                    return response.IsSuccessStatusCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل رفع التقارير المباشرة لـ Firestore", ex, "PushLiveStatsToFirestoreAsync");
+                return false;
+            }
+        }
+
+        private static string EscapeJsonString(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
+        }
     }
 }

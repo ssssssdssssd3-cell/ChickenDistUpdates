@@ -223,6 +223,31 @@ namespace ChickenDist.Forms
             btnClearSession.FlatAppearance.BorderSize = 0;
             btnClearSession.Click += BtnClearSession_Click;
             btnPanelLeft.Controls.Add(btnClearSession);
+
+            // Live Mobile Stats Refresh Button
+            var btnPushLiveStats = new Button
+            {
+                Text = "⚡ تحديث الموبايل حياً",
+                BackColor = Color.FromArgb(46, 204, 113),
+                ForeColor = Color.White,
+                Size = new Size(160, 42),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            btnPushLiveStats.FlatAppearance.BorderSize = 0;
+            btnPushLiveStats.Click += async (s, e) => {
+                btnPushLiveStats.Enabled = false;
+                btnPushLiveStats.Text = "⏳ جاري التحديث...";
+                bool ok = await Services.CloudSyncService.PushLiveStatsToFirestoreAsync();
+                if (ok)
+                    LogMessage("✅ تم تحديث ومزامنة جميع تقارير المبيعات والأرباح والمخزن إلى سحابة الموبايل بنجاح!");
+                else
+                    LogMessage("⚠️ تعذر رفع التحديث الحسابي — تأكد من الاتصال بالإنترنت.");
+                btnPushLiveStats.Text = "⚡ تحديث الموبايل حياً";
+                btnPushLiveStats.Enabled = true;
+            };
+            btnPanelLeft.Controls.Add(btnPushLiveStats);
             mainLayout.Controls.Add(btnPanelLeft, 0, 2);
 
             FlowLayoutPanel btnPanelRight = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
@@ -537,6 +562,9 @@ namespace ChickenDist.Forms
                 }
                 catch { }
 
+                // Automatically push current live stats to Firestore so Mobile App displays real data immediately
+                _ = Services.CloudSyncService.PushLiveStatsToFirestoreAsync();
+
                 string batPath = Path.Combine(botDir, "deploy_hosting.bat");
                 string batContent = @"@echo off
 chcp 65001 > nul
@@ -554,7 +582,7 @@ echo.
 echo [3/4] Checking Firebase login status...
 call npx firebase login
 echo.
-echo [4/4] Deploying Client Menu, Accountant Portal & Owner Mobile App to Firebase Hosting...
+echo [4/4] Deploying Client Menu, Accountant Portal and Owner Mobile App to Firebase Hosting...
 call npx firebase deploy --only hosting
 echo.
 echo ===================================================
