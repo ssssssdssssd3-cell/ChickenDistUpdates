@@ -1022,15 +1022,22 @@ listenToClientMappings();
 // Auto-start WhatsApp Bot on startup
 startBot();
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running locally at http://localhost:${PORT}`);
-});
+function startExpressServer(portToTry) {
+    const srv = app.listen(portToTry, '0.0.0.0', () => {
+        console.log(`Server running locally at http://localhost:${portToTry}`);
+    });
+    srv.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.warn(`[Server] Port ${portToTry} is occupied by another app. Retrying on port ${portToTry + 1}...`);
+            if (portToTry < 5010) {
+                setTimeout(() => startExpressServer(portToTry + 1), 500);
+            } else {
+                console.warn(`[Server] Local HTTP listener skipped. WhatsApp bot cloud sync remains 100% active!`);
+            }
+        } else {
+            console.error('[Error] Server error:', err);
+        }
+    });
+}
 
-server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        console.error(`[Error] Port ${PORT} is already in use by another process.`);
-        process.exit(1);
-    } else {
-        console.error('[Error] Server error:', err);
-    }
-});
+startExpressServer(PORT);

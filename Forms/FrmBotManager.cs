@@ -1597,22 +1597,22 @@ pause
             }
             else
             {
-                try
+                for (int p = 5000; p <= 5002; p++)
                 {
-                    var checkTask = _httpClient.GetAsync("http://localhost:5000/api/status");
-                    checkTask.Wait(1000);
-                    if (checkTask.IsCompleted && checkTask.Result.IsSuccessStatusCode)
+                    try
                     {
-                        LogMessage("خادم البوت المحلي نشط ويعمل بالفعل.");
-                        return;
+                        var checkTask = _httpClient.GetAsync($"http://localhost:{p}/api/status");
+                        checkTask.Wait(800);
+                        if (checkTask.IsCompleted && checkTask.Result.IsSuccessStatusCode)
+                        {
+                            LogMessage($"خادم البوت المحلي نشط ويعمل بالفعل على المخرج {p}.");
+                            return;
+                        }
                     }
+                    catch { }
                 }
-                catch
-                {
-                    // Port 5000 is not responding — kill any hanging process and start clean
-                    KillNodeOnPort5000();
-                    System.Threading.Thread.Sleep(1000);
-                }
+                KillNodeOnPort5000();
+                System.Threading.Thread.Sleep(1000);
             }
 
             try
