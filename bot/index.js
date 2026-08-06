@@ -330,15 +330,12 @@ async function startBot(pairingPhone = null) {
     botStatus = 'Connecting';
     updateFirebaseStatus('Connecting');
 
-    const webVersion = await getLatestWppVersion();
-    const remotePath = `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${webVersion}.html`;
-    console.log(`[WhatsApp]: Initializing client with remotePath: ${remotePath}`);
+    console.log(`[WhatsApp]: Initializing client with live web version...`);
     
     client = new Client({
         authStrategy: new LocalAuth(),
         webVersionCache: {
-            type: 'localOrRemote',
-            remotePath: remotePath
+            type: 'none'
         },
         puppeteer: {
             headless: true,
@@ -350,7 +347,7 @@ async function startBot(pairingPhone = null) {
                 '--no-first-run',
                 '--no-zygote',
                 '--disable-gpu',
-                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+                '--disable-web-security'
             ]
         }
     });
