@@ -482,15 +482,15 @@
 
         <!-- HERO NET PROFIT SUMMARY -->
         <div class="hero-banner">
-            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--gold); font-weight:800;">
-                <span>📈 صافي أرباح اليوم النهائي</span>
-                <span style="font-size:11px; color:var(--emerald);">مُحدث 12:23 🟢</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--gold); font-weight:800;">
+                <span>📈 صافي أرباح اليوم النهائي الحية</span>
+                <span id="lblHeroSyncTime" style="font-size:11px; color:var(--emerald); font-weight:700;">🟢 متصل بالمحل حياً</span>
             </div>
-            <div class="hero-num" id="lblNetProfit">4,520.00 ج</div>
-            <div style="display:flex; gap:14px; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
-                <div>المبيعات: <b style="color:var(--cyan);">18,450 ج</b></div>
-                <div>التكلفة: <b>12,080 ج</b></div>
-                <div>المصروفات: <b style="color:var(--rose);">1,850 ج</b></div>
+            <div class="hero-num" id="lblNetProfit">0.00 ج</div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                <div>إجمالي المبيعات: <b style="color:var(--cyan);" id="lblSalesTotal">0.00 ج</b></div>
+                <div>رصيد الخزنة: <b style="color:var(--emerald);" id="lblCashboxBalance">0.00 ج</b></div>
+                <div>نواقص المخزن: <b style="color:var(--rose);" id="lblLowStock">0 صنف</b></div>
             </div>
         </div>
 
@@ -499,14 +499,13 @@
             <div class="report-card">
                 <div class="report-header">
                     <span>📈 1. تقرير الأرباح والخسائر الشامل (P&L Report)</span>
-                    <span style="color:var(--emerald); font-size:12px;">اليوم</span>
+                    <span style="color:var(--emerald); font-size:12px;">مباشر من المحل</span>
                 </div>
-                <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">تكلفة البضاعة المباعة (COGS):</div><div class="report-item-val">12,080.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">مجمل الربح (Gross Profit):</div><div class="report-item-val" style="color:var(--emerald);">6,370.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المصروفات والنثريات:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;">4,520.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">نسبة هامش صافي الربح:</div><div class="report-item-val">24.5%</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);" id="lblSalesTotalCopy">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش):</div><div class="report-item-val" style="color:var(--emerald);" id="lblCashSales">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);" id="lblCreditSales">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--rose);" id="lblTodayPurchases">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;" id="lblNetProfitCopy">0.00 ج</div></div>
             </div>
         </div>
 
@@ -1049,12 +1048,16 @@
             }
 
             // مبيعات اليوم
-            const saleEl = document.getElementById('lblSalesTotal') || document.getElementById('lblTodaySales');
+            const saleEl = document.getElementById('lblSalesTotal');
             if (saleEl) saleEl.innerText = fmt(d.TodaySalesTotal);
+            const saleCopyEl = document.getElementById('lblSalesTotalCopy');
+            if (saleCopyEl) saleCopyEl.innerText = fmt(d.TodaySalesTotal);
 
             // صافي الربح اليوم
-            const profitEl = document.getElementById('lblNetProfit') || document.getElementById('lblTodayNetProfit');
+            const profitEl = document.getElementById('lblNetProfit');
             if (profitEl) profitEl.innerText = fmt(d.TodayNetProfit);
+            const profitCopyEl = document.getElementById('lblNetProfitCopy');
+            if (profitCopyEl) profitCopyEl.innerText = fmt(d.TodayNetProfit);
 
             // نقدي / آجل
             const cashSaleEl = document.getElementById('lblCashSales');
@@ -1063,7 +1066,7 @@
             if (creditSaleEl) creditSaleEl.innerText = fmt(d.TodayCreditSales);
 
             // رصيد الخزنة
-            const cbEl = document.getElementById('lblCashboxBalance') || document.getElementById('lblCashBalance');
+            const cbEl = document.getElementById('lblCashboxBalance');
             if (cbEl) cbEl.innerText = fmt(d.CashboxBalance);
 
             // ديون العملاء والموردين
@@ -1077,14 +1080,13 @@
             if (purEl) purEl.innerText = fmt(d.TodayPurchases);
 
             // نواقص المخزن
-            const lowEl = document.getElementById('lblLowStock') || document.getElementById('lblLowStockCount');
+            const lowEl = document.getElementById('lblLowStock');
             if (lowEl) lowEl.innerText = fmtInt(d.LowStockCount) + " صنف";
 
             // وقت المزامنة
-            if (d.SyncTime) {
-                const syncEl = document.getElementById('lblLastSyncTime') || document.getElementById('connStatusBadge');
-                if (syncEl) syncEl.innerHTML = `<span>🟢</span> <span>آخر مزامنة: ${d.SyncTime}</span>`;
-            }
+            const timeStr = d.SyncTime || new Date().toLocaleTimeString('ar-EG');
+            const heroTimeEl = document.getElementById('lblHeroSyncTime');
+            if (heroTimeEl) heroTimeEl.innerHTML = `🟢 متصل — ${timeStr}`;
 
             // شارة الاتصال
             const badge = document.getElementById('connStatusBadge');

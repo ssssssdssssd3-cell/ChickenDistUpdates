@@ -396,6 +396,8 @@ namespace ChickenDist.DAL
                 });
             }
 
+            try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
+
             return returnedSaleID;
         }
 
