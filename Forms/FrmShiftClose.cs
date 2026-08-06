@@ -418,7 +418,6 @@ namespace ChickenDist.Forms
             flowBottom.Controls.Add(btnDetailedReport);
             flowBottom.Controls.Add(btnPrintReport);
             flowBottom.Controls.Add(btnRefresh);
-
             pnlBottom.Controls.Add(flowBottom);
             
             // Add top and bottom panels first, then tblMain in Fill, then bring tblMain to front so it docks between top and bottom
@@ -470,6 +469,18 @@ namespace ChickenDist.Forms
             try
             {
                 DbHelper.EnsureShiftSchema();
+                // Auto-heal any orphan sales in DB created during open shift timeframe
+                try
+                {
+                    DbHelper.Execute(@"
+                        UPDATE Sales 
+                        SET ShiftID = s.ShiftID 
+                        FROM Sales 
+                        CROSS JOIN (SELECT TOP 1 ShiftID, OpenTime FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC) s
+                        WHERE Sales.ShiftID IS NULL AND Sales.SaleDate >= s.OpenTime");
+                }
+                catch { }
+
                 DataTable dt;
                 try
                 {
@@ -536,23 +547,24 @@ namespace ChickenDist.Forms
         {
             try
             {
+                DateTime openTime = _openShift != null ? Convert.ToDateTime(_openShift["OpenTime"]) : DateTime.Today;
+
                 var dt = DbHelper.Query(@"
                     SELECT
                         ISNULL(SUM(TotalAmount), 0) AS TotalSales,
                         ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END), 0) AS CashSales,
                         ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END), 0) AS CreditSales,
                         ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
-                    FROM Sales WHERE ShiftID = @sid AND IsPosted = 1",
-                    DbHelper.P("@sid", shiftID));
+                    FROM Sales 
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
                 var dtR = DbHelper.Query(@"
                     SELECT ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns
                     FROM SalesReturns sr
                     JOIN Sales s ON sr.SaleID = s.SaleID
-                    WHERE s.ShiftID = @sid",
-                    DbHelper.P("@sid", shiftID));
-
-                DateTime openTime = _openShift != null ? Convert.ToDateTime(_openShift["OpenTime"]) : DateTime.Today;
+                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
                 var dtExp = DbHelper.Query(@"
                     SELECT 
@@ -568,37 +580,46 @@ namespace ChickenDist.Forms
                 decimal os  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["OtherSales"])   : 0;
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]): 0;
                 decimal ex  = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalExpenses"]) : 0;
-                decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]) : 0;
-                decimal oc  = _openShift != null ? Convert.ToDecimal(_openShift["OpeningCash"])   : 0;
-                
-                decimal exp = oc + cs + cin - tr - ex;
+                decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"])   : 0;
 
-                _summary = new ShiftSummary { TotalSales = ts, CashSales = cs, CreditSales = cr, OtherSales = os, TotalReturns = tr, Expenses = ex, OpeningCash = oc, Expected = exp };
+                decimal oc = 0m;
+                if (_openShift != null && _openShift["OpeningCash"] != DBNull.Value)
+                    oc = Convert.ToDecimal(_openShift["OpeningCash"]);
+
+                decimal expected = oc + cs - tr - ex + cin;
+
+                _summary = new ShiftSummary
+                {
+                    TotalSales = ts,
+                    CashSales = cs,
+                    CreditSales = cr,
+                    OtherSales = os,
+                    TotalReturns = tr,
+                    Expenses = ex,
+                    OpeningCash = oc,
+                    Expected = expected
+                };
+
+                lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
+                lblCreditSalesVal.Text = (cr + os).ToString("N2") + " ج";
+                lblReturnsVal.Text     = tr.ToString("N2") + " ج";
+                lblExpensesVal.Text    = ex.ToString("N2") + " ج";
+                lblExpectedVal.Text    = expected.ToString("N2") + " ج";
+                txtActualCash.Text     = expected.ToString("N2");
 
                 bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
-
                 if (canViewDetails)
                 {
-                    lblOpeningCashVal.Text = oc.ToString("N2")  + " ج";
-                    lblCashSalesVal.Text   = cs.ToString("N2")  + " ج";
-                    lblCreditSalesVal.Text = cr.ToString("N2")  + " ج";
-                    lblReturnsVal.Text     = tr.ToString("N2")  + " ج";
-                    lblExpensesVal.Text    = ex.ToString("N2")  + " ج";
-                    lblExpectedVal.Text    = exp.ToString("N2") + " ج";
-                    txtActualCash.Text     = exp.ToString("N2");
+                    lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
+                    lblCashSalesVal.Visible = lblCreditSalesVal.Visible =
+                    lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = true;
                 }
                 else
                 {
-                    // الإغلاق الأعمى — إخفاء الأرقام المتوقعة من الكاشير
-                    lblOpeningCashVal.Text = "🔒 مخفي";
-                    lblCashSalesVal.Text   = "🔒 مخفي";
-                    lblCreditSalesVal.Text = "🔒 مخفي";
-                    lblReturnsVal.Text     = "🔒 مخفي";
-                    lblExpensesVal.Text    = "🔒 مخفي";
-                    lblExpectedVal.Text    = "🔒 مخفي (أعمى)";
-                    txtActualCash.Text     = "0.00";
+                    lblOpeningCashVal.Text = "غير مصرح";
+                    lblCashSalesVal.Visible = lblCreditSalesVal.Visible =
+                    lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = false;
                 }
-
                 RecalcDiff();
             }
             catch (Exception ex) { AppLogger.Error("FrmShiftClose.LoadShiftSummary", ex); }
