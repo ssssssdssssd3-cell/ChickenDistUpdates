@@ -261,6 +261,7 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
+                    ProductCache.Refresh();
                     ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
                     RaiseProductSaved();
                     ResetForm();

@@ -34,7 +34,12 @@ namespace ChickenDist.Forms
             {
                 this.BeginInvoke(new Action(() =>
                 {
-                    try { LoadProducts(); } catch { }
+                    try
+                    {
+                        ProductCache.Refresh();
+                        LoadProducts();
+                    }
+                    catch { }
                 }));
             }
         }
