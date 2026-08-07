@@ -371,6 +371,10 @@ namespace ChickenDist.Forms
                 case "FrmEmployeeTransactions":
                     targetGroup = "الإدارة";
                     break;
+                case "FrmMaintenance":
+                case "FrmMaintenanceCard":
+                    targetGroup = "الصيانة";
+                    break;
             }
 
             if (_activeGroupBtn != null)
@@ -516,10 +520,11 @@ namespace ChickenDist.Forms
                 }),
             };
 
-            if (AppConfig.BusinessType == "Mobiles")
+            if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "SpareParts" || AppConfig.BusinessType == "CarService" || AppConfig.BusinessType == "MaintenanceCenter" || AppConfig.BusinessType == "Maintenance")
             {
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
-                    ("🔧 تذاكر الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                    ("🔧 تذاكر وشاشة الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
+                    ("📋 كرت صيانة جديد",       "Maintenance", (Action)(() => NavigateTo(new FrmMaintenanceCard(0)))),
                 }));
             }
 
