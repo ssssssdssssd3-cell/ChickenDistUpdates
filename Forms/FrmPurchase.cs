@@ -2315,32 +2315,50 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
-                    // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف
+                    decimal headerDiscountFactor = 1m;
+                    if (gross > 0m && discAmt > 0m)
+                    {
+                        headerDiscountFactor = Math.Max(0m, (gross - discAmt) / gross);
+                    }
+
+                    // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف وتحديث صافي تكلفة الشراء بعد الخصم
                     if (priceDecision == "ApplyNow")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: true, purchaseID: id, unitName: item.UnitName);
+                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
+                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
+                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, baseNetCost, applyNow: true, purchaseID: id, unitName: item.UnitName);
                         }
                     }
                     else if (priceDecision == "Pending")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, item.UnitPrice, applyNow: false, purchaseID: id, unitName: item.UnitName);
+                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
+                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
+                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, baseNetCost, applyNow: false, purchaseID: id, unitName: item.UnitName);
                         }
                     }
                     else
                     {
-                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير) لكل صنف
+                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير الصافي بعد الخصم) لكل صنف
                         foreach (var item in _items)
                         {
+                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
+                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
+                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
                             DbHelper.Execute(
                                 "UPDATE Products SET CostPrice = @cp, PurchasePrice = @cp WHERE ProductID = @id",
-                                DbHelper.P("@cp", item.UnitPrice),
+                                DbHelper.P("@cp", baseNetCost),
                                 DbHelper.P("@id", item.ProductID));
                         }
                     }
+
+                    ProductCache.Refresh();
+                    FrmQuickAdd.RaiseProductSaved();
 
                     _lastPurchaseID = id;
                     MessageBox.Show(
