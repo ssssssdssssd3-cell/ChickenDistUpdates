@@ -2748,6 +2748,13 @@ namespace ChickenDist.Core
                         ALTER TABLE Suppliers ADD IsActive BIT NOT NULL DEFAULT 1;
                 END");
 
+                SafeMigrate("PurchaseItems.IMEIColumn", @"
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseItems', 'IMEI') IS NULL
+                        ALTER TABLE PurchaseItems ADD IMEI NVARCHAR(255) NULL;
+                END");
+
                 SafeMigrate("AppSettings.Table", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AppSettings')
                 BEGIN

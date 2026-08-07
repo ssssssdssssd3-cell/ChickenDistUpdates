@@ -1009,7 +1009,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "الرقم التسلسلي/IMEI", ReadOnly = false, FillWeight = 50f, Visible = (AppConfig.BusinessType == "Mobiles") });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 55f, Visible = true });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			
@@ -2809,6 +2809,31 @@ namespace ChickenDist.Forms
 				);
 				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
 				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
+
+				// ─── تهيئة ComboBox السيريال المتاح ─────────────────────────────────────
+				if (dgItems.Columns.Contains("IMEI"))
+				{
+					var availableSerials = PurchaseDAL.GetAvailableSerialsForProduct(item.ProductID);
+					if (availableSerials != null && availableSerials.Count > 0)
+					{
+						var comboCell = new DataGridViewComboBoxCell();
+						comboCell.Items.Add("");
+						foreach (var s in availableSerials)
+						{
+							comboCell.Items.Add(s);
+						}
+						dgItems.Rows[rIndex].Cells["IMEI"] = comboCell;
+						if (!string.IsNullOrEmpty(item.IMEI) && comboCell.Items.Contains(item.IMEI))
+						{
+							comboCell.Value = item.IMEI;
+						}
+						else if (comboCell.Items.Count > 1)
+						{
+							comboCell.Value = comboCell.Items[1];
+							item.IMEI = comboCell.Value.ToString();
+						}
+					}
+				}
 
 				// ─── تهيئة ComboBox الوحدة ──────────────────────────────────────────
 				if (dgItems.Columns.Contains("UnitName") && dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)

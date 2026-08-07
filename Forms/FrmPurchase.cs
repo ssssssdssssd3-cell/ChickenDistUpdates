@@ -492,6 +492,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
             Theme.AdjustGridHeaders(dgItems);
@@ -1629,7 +1630,8 @@ namespace ChickenDist.Forms
                     item.TotalPrice.ToString("F2"),
                     sell.ToString("F2"),
                     margin.ToString("F1") + "%",
-                    item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "");
+                    item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "",
+                    item.IMEI ?? "");
                 // عمود الكود للسطور المضافة = قراءة فقط
                 dgItems.Rows[rIdx].Cells["ProductCode"].ReadOnly = true;
 
@@ -1816,6 +1818,10 @@ namespace ChickenDist.Forms
                 {
                     dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "";
                 }
+            }
+            else if (colName == "IMEI")
+            {
+                item.IMEI = cellVal?.Trim() ?? "";
             }
 
             // تحديث عمود الإجمالي

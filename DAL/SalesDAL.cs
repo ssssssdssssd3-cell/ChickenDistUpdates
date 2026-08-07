@@ -2587,6 +2587,7 @@ namespace ChickenDist.DAL
                     s.SaleDate AS [تاريخ الفاتورة],
                     c.ClientName AS [العميل],
                     p.ProductName AS [الصنف],
+                    ISNULL(si.IMEI, N'-') AS [السيريال],
                     si.Quantity AS [الكمية],
                     si.UnitPrice AS [سعر الوحدة],
                     si.TotalPrice AS [الصافي],

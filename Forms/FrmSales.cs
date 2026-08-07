@@ -466,6 +466,12 @@ namespace ChickenDist.Forms
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "IMEI",
+				HeaderText = "السيريال",
+				FillWeight = 55f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "Discount",
 				HeaderText = "الخصم",
 				FillWeight = 45f
@@ -784,11 +790,15 @@ namespace ChickenDist.Forms
 					discText = itemDiscAmt.ToString("N2");
 				}
 
+				string imeiVal = row.Table.Columns.Contains("IMEI") && row["IMEI"] != DBNull.Value ? row["IMEI"].ToString() : "-";
+				if (string.IsNullOrWhiteSpace(imeiVal)) imeiVal = "-";
+
 				dgItems.Rows.Add(
 					row["ProductName"], 
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2") + " ج", 
 					lastPriceStr,
+					imeiVal,
 					discText,
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2") + " ج"
 				);

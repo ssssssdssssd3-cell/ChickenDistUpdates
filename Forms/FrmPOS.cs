@@ -194,6 +194,7 @@ namespace ChickenDist.Forms
 
             dgItems.Columns.Add("Price", "السعر");
             dgItems.Columns.Add("LastClientPrice", "آخر سعر للعميل 🏷️");
+            dgItems.Columns.Add("IMEI", "السيريال");
             dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
             if (AppConfig.IsRestaurant)
@@ -950,11 +951,13 @@ namespace ChickenDist.Forms
 
                 if (AppConfig.IsRestaurant)
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
+                    int rIdx = dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.IMEI ?? "", item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
+                    SetupPosSerialCombo(rIdx, item);
                 }
                 else
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                    int rIdx = dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.IMEI ?? "", item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                    SetupPosSerialCombo(rIdx, item);
                 }
                 total += item.Total;
             }
@@ -971,6 +974,33 @@ namespace ChickenDist.Forms
             lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {_items.ConvertAll(i => i.Qty).FindAll(q => q > 0).Count}";
             txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
+        }
+
+        private void SetupPosSerialCombo(int rIndex, POSItem item)
+        {
+            if (dgItems.Columns.Contains("IMEI"))
+            {
+                var availableSerials = PurchaseDAL.GetAvailableSerialsForProduct(item.ProductID);
+                if (availableSerials != null && availableSerials.Count > 0)
+                {
+                    var comboCell = new DataGridViewComboBoxCell();
+                    comboCell.Items.Add("");
+                    foreach (var s in availableSerials)
+                    {
+                        comboCell.Items.Add(s);
+                    }
+                    dgItems.Rows[rIndex].Cells["IMEI"] = comboCell;
+                    if (!string.IsNullOrEmpty(item.IMEI) && comboCell.Items.Contains(item.IMEI))
+                    {
+                        comboCell.Value = item.IMEI;
+                    }
+                    else if (comboCell.Items.Count > 1)
+                    {
+                        comboCell.Value = comboCell.Items[1];
+                        item.IMEI = comboCell.Value.ToString();
+                    }
+                }
+            }
         }
 
         private void RecalcChange()
@@ -1126,6 +1156,10 @@ namespace ChickenDist.Forms
             {
                 item.KitchenNotes = dgItems.Rows[e.RowIndex].Cells["KitchenNotes"].Value?.ToString() ?? "";
             }
+            else if (colName == "IMEI")
+            {
+                item.IMEI = dgItems.Rows[e.RowIndex].Cells["IMEI"].Value?.ToString()?.Trim() ?? "";
+            }
 
             // إعادة التركيز وتحديد خانة الباركود تلقائياً
             this.BeginInvoke(new Action(() => {
@@ -1261,8 +1295,8 @@ namespace ChickenDist.Forms
                     foreach (var item in _items)
                     {
                         DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn)",
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn,@imei)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
@@ -1270,7 +1304,8 @@ namespace ChickenDist.Forms
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
-                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
+                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
+                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
 
                         // Deduct from ProductBatches table
                         if (item.BatchID.HasValue)
@@ -1816,6 +1851,7 @@ namespace ChickenDist.Forms
             public DateTime? ExpiryDate;
             public int? BatchID;
             public string KitchenNotes = "";
+            public string IMEI = "";
         }
 
         public class ComboItem
@@ -2218,8 +2254,8 @@ namespace ChickenDist.Forms
                     foreach (var item in _items)
                     {
                         DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn)",
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn,@imei)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
@@ -2227,7 +2263,8 @@ namespace ChickenDist.Forms
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
-                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
+                            DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
+                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
                     }
                     _lastSaleID = saleID;
                 });

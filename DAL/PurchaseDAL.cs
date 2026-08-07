@@ -22,6 +22,7 @@ namespace ChickenDist.DAL
         public string UnitName { get; set; } = null;
         public decimal Factor { get; set; } = 1.0m;
         public DateTime? ExpiryDate { get; set; } = null;
+        public string IMEI { get; set; } = "";
 
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
@@ -231,8 +232,8 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
+                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
+                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
@@ -243,7 +244,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
                         DbHelper.P("@un",     item.UnitName),
                         DbHelper.P("@fac",    item.Factor),
-                        DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value));
+                        DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
+                        DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
 
                     if (!isDraft && item.ExpiryDate.HasValue)
                     {
@@ -564,6 +566,42 @@ namespace ChickenDist.DAL
                 AppLogger.Error($"Error updating purchase {purchaseID}", ex);
                 return false;
             }
+        }
+
+        public static List<string> GetAvailableSerialsForProduct(int productID)
+        {
+            var list = new List<string>();
+            if (productID <= 0) return list;
+
+            string sql = @"
+                SELECT DISTINCT LTRIM(RTRIM(pItem.IMEI)) AS IMEI
+                FROM PurchaseItems pItem
+                JOIN Purchases p ON pItem.PurchaseID = p.PurchaseID
+                WHERE pItem.ProductID = @pid 
+                  AND pItem.IMEI IS NOT NULL 
+                  AND LTRIM(RTRIM(pItem.IMEI)) <> '' 
+                  AND p.IsPosted = 1
+                  AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
+                      SELECT LTRIM(RTRIM(sItem.IMEI))
+                      FROM SaleItems sItem
+                      JOIN Sales s ON sItem.SaleID = s.SaleID
+                      WHERE sItem.ProductID = @pid 
+                        AND sItem.IMEI IS NOT NULL 
+                        AND LTRIM(RTRIM(sItem.IMEI)) <> '' 
+                        AND s.IsPosted = 1
+                  )
+                ORDER BY IMEI ASC";
+
+            DataTable dt = DbHelper.Query(sql, DbHelper.P("@pid", productID));
+            foreach (DataRow r in dt.Rows)
+            {
+                string imei = r["IMEI"]?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(imei) && !list.Contains(imei))
+                {
+                    list.Add(imei);
+                }
+            }
+            return list;
         }
     }
 
