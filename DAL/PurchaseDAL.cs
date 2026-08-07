@@ -176,6 +176,7 @@ namespace ChickenDist.DAL
             int? clientID = null, string purchaseSource = "Supplier")
         {
             int returnedID = -1;
+            DbHelper.EnsurePurchaseColumnsExist();
 
             DbHelper.RunInTransaction((con, trans) =>
             {

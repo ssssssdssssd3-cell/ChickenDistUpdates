@@ -446,6 +446,20 @@ namespace ChickenDist.Core
             BEGIN
                 CREATE INDEX IX_Products_IntlCode ON Products(InternationalCode);
             END");
+
+            SafeMigrate("PurchaseItems.IMEIColumn", @"
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('PurchaseItems', 'IMEI') IS NULL
+                    ALTER TABLE PurchaseItems ADD IMEI NVARCHAR(255) NULL;
+            END");
+
+            SafeMigrate("SaleItems.IMEIColumn", @"
+            IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('SaleItems', 'IMEI') IS NULL
+                    ALTER TABLE SaleItems ADD IMEI NVARCHAR(255) NULL;
+            END");
         }
 
         public static void EnsureDatabaseSchema()
@@ -2781,6 +2795,7 @@ namespace ChickenDist.Core
 
         public static void EnsurePermissionsColumns()
         {
+            EnsurePurchaseColumnsExist();
             try
             {
                 Execute(@"
@@ -2807,6 +2822,7 @@ namespace ChickenDist.Core
                 AppLogger.Error("EnsurePermissionsColumns failed", ex);
             }
         }
+
 
         public static SqlConnection GetConnection()
         {
