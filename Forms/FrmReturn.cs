@@ -344,13 +344,30 @@ namespace ChickenDist.Forms
 
             // Top Grid: Sales Invoices
             dgSales = MakeGrid();
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleID", Visible = false });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 70f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 45f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "العميل", FillWeight = 110f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "صافي القيمة", FillWeight = 55f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120f });
+            dgSales.AutoGenerateColumns = false;
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleID", DataPropertyName = "SaleID", Visible = false });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", DataPropertyName = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", DataPropertyName = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 75f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd HH:mm" } });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", DataPropertyName = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 50f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 110f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "اسم المندوب", FillWeight = 80f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", DataPropertyName = "TotalAmount", HeaderText = "إجمالي الفاتورة", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", DataPropertyName = "ReturnAmount", HeaderText = "المسترجع سابقاً", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "المستخدم", FillWeight = 85f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "الملاحظات", FillWeight = 120f });
+
+            dgSales.CellFormatting += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && dgSales.Columns[e.ColumnIndex].Name == "SaleType" && e.Value != null)
+                {
+                    string val = e.Value.ToString();
+                    if (val == "Cash") e.Value = "💵 نقدي";
+                    else if (val == "Credit") e.Value = "📋 آجل";
+                    else if (val == "DriverLoad") e.Value = "🚚 حمولة مندوب";
+                    else if (val == "Installment") e.Value = "📅 تقسيط";
+                }
+            };
+
             dgSales.SelectionChanged += DgSales_SelectionChanged;
             _mainSplit.Panel1.Controls.Add(dgSales);
 
