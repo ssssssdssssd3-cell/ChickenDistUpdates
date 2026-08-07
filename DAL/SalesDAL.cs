@@ -8,6 +8,22 @@ namespace ChickenDist.DAL
 {
     public static class SaleDAL
     {
+        public static decimal? GetLastPriceForClient(int productID, int clientID)
+        {
+            if (productID <= 0 || clientID <= 0) return null;
+            object res = DbHelper.Scalar(@"
+                SELECT TOP 1 si.UnitPrice 
+                FROM SaleItems si 
+                JOIN Sales s ON si.SaleID = s.SaleID 
+                WHERE s.ClientID = @cid AND si.ProductID = @pid AND s.IsPosted = 1 
+                ORDER BY s.SaleDate DESC, s.SaleID DESC",
+                DbHelper.P("@cid", clientID), DbHelper.P("@pid", productID));
+
+            if (res != null && res != DBNull.Value && decimal.TryParse(res.ToString(), out decimal price))
+                return price;
+            return null;
+        }
+
         public static DataTable GetAll(DateTime from, DateTime to)
         {
             return GetAll(from, to, null, null, null);
@@ -2704,6 +2720,22 @@ namespace ChickenDist.DAL
                 DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
                 DbHelper.P("@producerCompany", !string.IsNullOrEmpty(producerCompany) ? (object)producerCompany : DBNull.Value),
                 DbHelper.P("@search", !string.IsNullOrEmpty(searchTerm) ? (object)("%" + searchTerm + "%") : DBNull.Value));
+        }
+
+        public static decimal? GetLastPriceForClient(int productID, int clientID)
+        {
+            if (productID <= 0 || clientID <= 0) return null;
+            object res = DbHelper.Scalar(@"
+                SELECT TOP 1 si.UnitPrice 
+                FROM SaleItems si 
+                JOIN Sales s ON si.SaleID = s.SaleID 
+                WHERE s.ClientID = @cid AND si.ProductID = @pid AND s.IsPosted = 1 
+                ORDER BY s.SaleDate DESC, s.SaleID DESC",
+                DbHelper.P("@cid", clientID), DbHelper.P("@pid", productID));
+
+            if (res != null && res != DBNull.Value && decimal.TryParse(res.ToString(), out decimal price))
+                return price;
+            return null;
         }
     }
 }

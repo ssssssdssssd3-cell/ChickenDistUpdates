@@ -1004,6 +1004,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", ReadOnly = true, FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "خصم %", ReadOnly = false, FillWeight = 30f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
@@ -2777,9 +2778,13 @@ namespace ChickenDist.Forms
 		{
 			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
 			dgItems.Rows.Clear();
+			int clientID = (cboClient != null && cboClient.SelectedItem is ComboItem ci) ? ci.ID : 0;
 			foreach (SaleItemDTO item in _items)
 			{
 				decimal costTotal = item.PurchasePrice * item.Quantity;
+				decimal? lastPrice = (clientID > 0) ? SaleDAL.GetLastPriceForClient(item.ProductID, clientID) : null;
+				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") : "-";
+
 				int rIndex = dgItems.Rows.Add(
 					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
 					item.ProductName,
@@ -2793,6 +2798,7 @@ namespace ChickenDist.Forms
 					null,              // UnitName - سيُعيَّن بالكود أدناه
 					item.Quantity.ToString("F2"),
 					item.UnitPrice.ToString("F2"),
+					lastPriceStr,
 					item.DiscountPct.ToString("F2"),
 					item.DiscountAmt.ToString("F2"),
 					item.TotalPrice.ToString("F2"),

@@ -443,13 +443,13 @@ namespace ChickenDist.Forms
 			{
 				Name = "ProductName",
 				HeaderText = "الصنف",
-				FillWeight = 130f
+				FillWeight = 120f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "Quantity",
 				HeaderText = "الكمية",
-				FillWeight = 50f
+				FillWeight = 45f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -459,15 +459,22 @@ namespace ChickenDist.Forms
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "LastClientPrice",
+				HeaderText = "آخر سعر للعميل 🏷️",
+				FillWeight = 55f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "Discount",
 				HeaderText = "الخصم",
-				FillWeight = 50f
+				FillWeight = 45f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "TotalPrice",
 				HeaderText = "الإجمالي",
-				FillWeight = 60f
+				FillWeight = 55f
 			});
 
 			tblDetail.Controls.Add(flowLayoutPanel2, 0, 0);
@@ -747,9 +754,16 @@ namespace ChickenDist.Forms
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+			object cliObj = DbHelper.Scalar("SELECT ClientID FROM Sales WHERE SaleID=@id", DbHelper.P("@id", saleID));
+			int clientID = (cliObj != null && cliObj != DBNull.Value) ? Convert.ToInt32(cliObj) : 0;
+
 			DataTable items = SaleDAL.GetItems(saleID);
 			foreach (DataRow row in items.Rows)
 			{
+				int pid = row.Table.Columns.Contains("ProductID") && row["ProductID"] != DBNull.Value ? Convert.ToInt32(row["ProductID"]) : 0;
+				decimal? lastPrice = (clientID > 0 && pid > 0) ? SaleDAL.GetLastPriceForClient(pid, clientID) : null;
+				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") + " ج" : "-";
+
 				decimal itemDiscPct = 0;
 				decimal itemDiscAmt = 0;
 				if (row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value)
@@ -773,9 +787,10 @@ namespace ChickenDist.Forms
 				dgItems.Rows.Add(
 					row["ProductName"], 
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
-					Convert.ToDecimal(row["UnitPrice"]).ToString("N2"), 
+					Convert.ToDecimal(row["UnitPrice"]).ToString("N2") + " ج", 
+					lastPriceStr,
 					discText,
-					Convert.ToDecimal(row["TotalPrice"]).ToString("N2")
+					Convert.ToDecimal(row["TotalPrice"]).ToString("N2") + " ج"
 				);
 			}
 		}

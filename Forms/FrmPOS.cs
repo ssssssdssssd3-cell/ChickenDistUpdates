@@ -193,6 +193,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(minusCol);
 
             dgItems.Columns.Add("Price", "السعر");
+            dgItems.Columns.Add("LastClientPrice", "آخر سعر للعميل 🏷️");
             dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
             if (AppConfig.IsRestaurant)
@@ -940,16 +941,20 @@ namespace ChickenDist.Forms
         {
             dgItems.Rows.Clear();
             decimal total = 0;
+            int clientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient) ? ciClient.ID : 0;
             foreach (var item in _items)
             {
                 item.Total = (item.Qty * item.Price) - item.DiscountAmt;
+                decimal? lastPrice = (clientID > 0) ? SaleDAL.GetLastPriceForClient(item.ProductID, clientID) : null;
+                string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") + " ج" : "-";
+
                 if (AppConfig.IsRestaurant)
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
                 }
                 else
                 {
-                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
+                    dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
                 }
                 total += item.Total;
             }
