@@ -322,9 +322,21 @@ namespace ChickenDist.DAL
     {
         public static string GetNextProductCode()
         {
-            var result = DbHelper.Scalar("SELECT COALESCE(MAX(ProductID), 0) + 1 FROM Products");
-            int nextId = (result != null) ? Convert.ToInt32(result) : 1;
-            return nextId.ToString("D8"); // Padded to 8 digits, e.g., "00000008"
+            var result = DbHelper.Scalar("SELECT COALESCE(MAX(ProductID), 0) FROM Products");
+            int maxId = (result != DBNull.Value && result != null) ? Convert.ToInt32(result) : 0;
+
+            try
+            {
+                var objMaxCode = DbHelper.Scalar("SELECT MAX(CAST(ProductCode AS INT)) FROM Products WHERE ISNUMERIC(ProductCode) = 1");
+                if (objMaxCode != DBNull.Value && objMaxCode != null && int.TryParse(objMaxCode.ToString(), out int maxCodeNum))
+                {
+                    if (maxCodeNum > maxId) maxId = maxCodeNum;
+                }
+            }
+            catch { }
+
+            int nextId = maxId < 1000 ? 1001 : maxId + 1;
+            return nextId.ToString("D8");
         }
 
         public static DataTable GetAll(bool activeOnly = false)

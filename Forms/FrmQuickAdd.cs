@@ -57,26 +57,26 @@ namespace ChickenDist.Forms
             int y = 15;
 
             // الباركود / الكود
-            pnlForm.Controls.Add(new Label { Text = "الباركود / الكود:", Location = new Point(310, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtCode = new TextBox { Location = new Point(20, y), Width = 280, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "الباركود / الكود:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            txtCode = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(txtCode);
             y += 40;
 
             // اسم الصنف
-            pnlForm.Controls.Add(new Label { Text = "اسم الصنف:", Location = new Point(310, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtName = new TextBox { Location = new Point(20, y), Width = 280, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "اسم الصنف:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            txtName = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(txtName);
             y += 40;
 
             // سعر الشراء
-            pnlForm.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(310, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            nudPurchasePrice = new NumericUpDown { Location = new Point(20, y), Width = 280, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            nudPurchasePrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(nudPurchasePrice);
             y += 40;
 
             // سعر البيع
-            pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(310, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            nudPrice = new NumericUpDown { Location = new Point(20, y), Width = 280, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            nudPrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(nudPrice);
             y += 40;
 
