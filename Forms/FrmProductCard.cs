@@ -843,6 +843,7 @@ namespace ChickenDist.Forms
             if (id > 0)
             {
                 ChickenDist.Core.ProductCache.Refresh();
+                FrmQuickAdd.RaiseProductSaved();
                 MessageBox.Show("✅ تم الحفظ");
                 this.DialogResult = DialogResult.OK;
                 this.Close();

@@ -485,6 +485,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlTotals);
 
             this.FormClosing += FrmPOS_FormClosing;
+            FrmQuickAdd.ProductSaved += FrmPOS_ProductSaved;
             this.Resize += (s, e) => LayoutPanels();
             LayoutPanels();
         }
@@ -2015,8 +2016,25 @@ namespace ChickenDist.Forms
             return result == DialogResult.OK;
         }
 
+        private void FrmPOS_ProductSaved(object sender, EventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        LoadCategories();
+                        LoadQuickItems();
+                    }
+                    catch { }
+                }));
+            }
+        }
+
         private void FrmPOS_FormClosing(object sender, FormClosingEventArgs e)
         {
+            FrmQuickAdd.ProductSaved -= FrmPOS_ProductSaved;
             if (Session.CanOrderColumns("POS"))
             {
                 Session.SaveColumnOrder(dgItems, "POS");

@@ -199,6 +199,17 @@ namespace ChickenDist.Forms
             statusTimer.Start();
         }
 
+        public static event EventHandler ProductSaved;
+
+        public static void RaiseProductSaved()
+        {
+            try
+            {
+                ProductSaved?.Invoke(null, EventArgs.Empty);
+            }
+            catch { }
+        }
+
         private void BtnSave_Click(object sender, EventArgs e)
         {
             string name = txtName.Text.Trim();
@@ -251,6 +262,7 @@ namespace ChickenDist.Forms
                 if (id > 0)
                 {
                     ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
+                    RaiseProductSaved();
                     ResetForm();
                 }
                 else

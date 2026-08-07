@@ -24,6 +24,19 @@ namespace ChickenDist.Forms
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); FilterProducts(); };
             InitUI();
             LoadProducts();
+            FrmQuickAdd.ProductSaved += FrmProducts_ProductSaved;
+            this.FormClosing += (s, e) => FrmQuickAdd.ProductSaved -= FrmProducts_ProductSaved;
+        }
+
+        private void FrmProducts_ProductSaved(object sender, EventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    try { LoadProducts(); } catch { }
+                }));
+            }
         }
 
         private void InitUI()
