@@ -961,10 +961,11 @@ namespace ChickenDist.Forms
 					break;
 				case "SalesByProduct":
 					_currentDt = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[12]
+					SetupGrid(new(string, string)[13]
 					{
 						("ProductName", "الصنف"),
 						("Unit", "الوحدة"),
+						("CurrentStock", "الرصيد الفعلي"),
 						("AvgPrice", "متوسط سعر البيع"),
 						("TotalQty", "الكمية المباعة"),
 						("TotalAmount", "إجمالي المبيعات"),

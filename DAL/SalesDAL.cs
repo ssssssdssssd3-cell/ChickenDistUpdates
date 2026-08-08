@@ -2135,10 +2135,17 @@ namespace ChickenDist.DAL
                     WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
                       AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                     GROUP BY ri.ProductID
+                ),
+                StockTotals AS (
+                    SELECT ProductID, ISNULL(SUM(Quantity), 0.0) AS CurrentStock
+                    FROM ProductStock
+                    WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+                    GROUP BY ProductID
                 )
                 SELECT 
                     p.ProductName,
                     p.Unit,
+                    ISNULL(stk.CurrentStock, 0.0) AS CurrentStock,
                     ISNULL(st.AvgPrice, 0.0) AS AvgPrice,
                     ISNULL(st.TotalQty, 0.0) AS TotalQty,
                     ISNULL(st.TotalAmount, 0.0) AS TotalAmount,
@@ -2151,6 +2158,7 @@ namespace ChickenDist.DAL
                 FROM Products p
                 LEFT JOIN SaleTotals st ON p.ProductID = st.ProductID
                 LEFT JOIN ReturnTotals rt ON p.ProductID = rt.ProductID
+                LEFT JOIN StockTotals stk ON p.ProductID = stk.ProductID
                 WHERE (st.TotalQty > 0 OR rt.ReturnedQty > 0)
                 ORDER BY NetQty DESC",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
