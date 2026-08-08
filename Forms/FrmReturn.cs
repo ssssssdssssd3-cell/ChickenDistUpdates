@@ -155,7 +155,22 @@ namespace ChickenDist.Forms
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.Enter)
+            if (keyData == Keys.F2)
+            {
+                if (cboMode != null && cboMode.SelectedIndex != 0)
+                {
+                    OpenProductSearchDialog();
+                    return true;
+                }
+            }
+            else if (keyData == Keys.F5)
+            {
+                if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
+                if (dgExchangeNewItems != null && dgExchangeNewItems.IsCurrentCellInEditMode) dgExchangeNewItems.EndEdit();
+                BtnSave_Click(this, EventArgs.Empty);
+                return true;
+            }
+            else if (keyData == Keys.Enter)
             {
                 if (dgItems.Focused || dgItems.EditingControl != null)
                 {
@@ -300,7 +315,7 @@ namespace ChickenDist.Forms
             _pnlGenItemBar = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 42,
+                Height = 44,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Color.FromArgb(45, 35, 45),
                 Padding = new Padding(10, 6, 10, 6),
@@ -310,7 +325,7 @@ namespace ChickenDist.Forms
             var lblGenTitle = new Label { Text = "↩ صنف مرتجع:", AutoSize = true, ForeColor = Color.LightCoral, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
             cboAllProducts = new ComboBox
             {
-                Width = 220, Height = 26,
+                Width = 240, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
@@ -320,10 +335,11 @@ namespace ChickenDist.Forms
             txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
-            btnAddGenItem = Theme.MakeButton("➕ إضافة مرتجع", Color.FromArgb(160, 60, 60));
-            btnAddGenItem.Size = new Size(110, 26);
+            
+            btnAddGenItem = Theme.MakeButton("🔍 بحث في الأصناف (F2)", Color.FromArgb(40, 110, 160));
+            btnAddGenItem.Size = new Size(160, 28);
             btnAddGenItem.Margin = new Padding(10, 0, 0, 0);
-            btnAddGenItem.Click += BtnAddGenItem_Click;
+            btnAddGenItem.Click += (s, e) => OpenProductSearchDialog();
 
             _pnlGenItemBar.Controls.AddRange(new Control[] { lblGenTitle, cboAllProducts, lblGenQtyL, txtGenQty, lblGenPriceL, txtGenPrice, btnAddGenItem });
 
@@ -480,57 +496,46 @@ namespace ChickenDist.Forms
             _mainSplit.Panel2.Controls.Add(pnlGridsContainer);
 
             // ===== 3. Footer panel =====
-            var pnlFoot = new Panel 
+            var pnlFoot = new FlowLayoutPanel 
             { 
                 Dock = DockStyle.Bottom, 
-                Height = 65, 
+                Height = 62, 
+                FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 10, 15, 10)
+                Padding = new Padding(15, 10, 15, 10),
+                WrapContents = false
             };
 
-            var lblNotesL = new Label { Text = "ملاحظات العملية:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 20), Anchor = AnchorStyles.Left };
-            txtNotes = new TextBox { Width = 250, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Location = new Point(125, 16), Anchor = AnchorStyles.Left };
+            var lblNotesL = new Label { Text = "ملاحظات العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
+            txtNotes = new TextBox { Width = 220, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 5, 20, 0) };
             
             lblTotal = new Label 
             { 
-                Text = "الإجمالي: 0.00 ج", 
+                Text = "إجمالي المرتجع: 0.00 ج", 
                 ForeColor = Theme.Accent, 
-                Dock = DockStyle.Right,
-                Width = 250,
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight
+                AutoSize = true,
+                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Margin = new Padding(20, 4, 30, 0)
             };
 
             lblExchangeSummary = new Label
             {
                 Text = "",
                 ForeColor = Color.Gold,
-                Dock = DockStyle.Right,
-                Width = 350,
+                AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(10, 8, 10, 0),
                 Visible = false
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ العملية", Color.FromArgb(160, 50, 50));
+            btnSave = Theme.MakeButton("💾 حفظ العملية (F5)", Color.FromArgb(160, 50, 50));
             btnSave.Width = 180;
             btnSave.Height = 38;
-            btnSave.Location = new Point(400, 12);
-            btnSave.Anchor = AnchorStyles.None;
+            btnSave.Margin = new Padding(30, 0, 0, 0);
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
             
-            Label lblHotkeys = new Label
-            {
-                Text = "الاختصارات: [F5] حفظ",
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Location = new Point(600, 20),
-                AutoSize = true,
-                Anchor = AnchorStyles.Right
-            };
-
-            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave, lblHotkeys });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave });
 
             // ===== 4. Add controls =====
             this.Controls.Add(_mainSplit);
@@ -1167,6 +1172,50 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenProductSearchDialog()
+        {
+            int? whId = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
+            using (var dlg = new FrmProductSearch(whId, false))
+            {
+                if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    var pRow = ProductDAL.GetByID(dlg.SelectedProductID);
+                    string pname = pRow != null ? pRow["ProductName"].ToString() : "صنف " + dlg.SelectedProductID;
+                    decimal price = dlg.SelectedSalePrice > 0 ? dlg.SelectedSalePrice : (pRow != null && pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m);
+                    decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
+
+                    foreach (DataGridViewRow r in dgItems.Rows)
+                    {
+                        if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == dlg.SelectedProductID)
+                        {
+                            decimal currentQty = 0m;
+                            if (r.Cells["NewReturnedQty"].Value != null)
+                                decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
+
+                            decimal newQty = currentQty + qty;
+                            r.Cells["NewReturnedQty"].Value = newQty;
+                            r.Cells["UnitPrice"].Value = price.ToString("N2");
+                            r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
+                            RecalcTotals();
+                            return;
+                        }
+                    }
+
+                    int idx = dgItems.Rows.Add();
+                    var row = dgItems.Rows[idx];
+                    row.Cells["ProductID"].Value       = dlg.SelectedProductID;
+                    row.Cells["ProductName"].Value     = pname;
+                    row.Cells["SoldQty"].Value         = "عام";
+                    row.Cells["PrevReturnedQty"].Value = "0";
+                    row.Cells["NewReturnedQty"].Value  = qty;
+                    row.Cells["UnitPrice"].Value       = price.ToString("N2");
+                    row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
+
+                    RecalcTotals();
+                }
             }
         }
 
