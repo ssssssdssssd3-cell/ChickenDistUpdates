@@ -4925,9 +4925,6 @@ namespace ChickenDist.Forms
 			nudQty.Value = 1m;
 			if (nudCratesOut != null) nudCratesOut.Value = 0;
 			if (nudCratesIn != null) nudCratesIn.Value = 0;
-			if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
-			if (cboDriver.Items.Count > 0) cboDriver.SelectedIndex = 0;
-			if (cboProduct.Items.Count > 0) cboProduct.SelectedIndex = 0;
 			SetTierButtons("قطاعي");
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
@@ -4935,11 +4932,18 @@ namespace ChickenDist.Forms
 			_editSaleID = 0;
 			_isCopyMode = false;
 			_isDirty = false;
-						// Auto focus on cboProduct for the scanner
+
+			// إعادة تحميل الكومبو لإعادة تعيين الفلترة والبحث ومنح تجربة سريعة بين الفواتير
+			LoadCombos();
+
 			this.BeginInvoke((MethodInvoker)delegate
 			{
-				this.ActiveControl = cboProduct;
-				cboProduct.Focus();
+				if (cboProduct != null)
+				{
+					this.ActiveControl = cboProduct;
+					cboProduct.Focus();
+					cboProduct.SelectAll();
+				}
 			});
 		}
 

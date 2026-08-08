@@ -1496,18 +1496,30 @@ namespace ChickenDist.Forms
         private void NewInvoice()
         {
             _items.Clear();
+            _loadedDraftSaleID = 0;
+            if (cboClient != null)
+            {
+                cboClient.Tag = null;
+                LoadClients();
+            }
             RefreshGrid();
             txtPaid.Text = "0";
             txtBarcode.Clear();
             chkRedeemPoints.Checked = false;
-            _loadedDraftSaleID = 0;
             if (AppConfig.IsRestaurant)
             {
                 if (txtTableNum != null) txtTableNum.Clear();
                 if (rbDineIn != null) rbDineIn.Checked = true;
                 if (cboDeliveryDriver != null && cboDeliveryDriver.Items.Count > 0) cboDeliveryDriver.SelectedIndex = 0;
             }
-            txtBarcode.Focus();
+            this.BeginInvoke(new Action(() =>
+            {
+                if (txtBarcode != null)
+                {
+                    txtBarcode.Focus();
+                    txtBarcode.SelectAll();
+                }
+            }));
         }
 
         // ── طباعة الإيصال ─────────────────────────────────────
