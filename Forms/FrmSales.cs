@@ -718,7 +718,7 @@ namespace ChickenDist.Forms
 					}
 					string text8 = (text5 == "Credit") ? "آجل" : (text5 == "Cash") ? "نقدي" : (text5 == "Installment") ? "تقسيط شرعي" : "تحميل مندوب";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
-					dgSales.Rows.Add(
+					int addedIdx = dgSales.Rows.Add(
 						row["SaleID"], row["SaleCode"],
 						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
 						text8, text7,
@@ -728,6 +728,15 @@ namespace ChickenDist.Forms
 						netAmt.ToString("N2") + " ج",
 						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
+
+					if (returnAmt > 0)
+					{
+						var addedRow = dgSales.Rows[addedIdx];
+						addedRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // اصفر واضح ومميز للفواتير المرتجعة
+						addedRow.DefaultCellStyle.ForeColor = Color.Black;
+						addedRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
+						addedRow.DefaultCellStyle.SelectionForeColor = Color.Black;
+					}
 				}
 			}
 
@@ -793,7 +802,7 @@ namespace ChickenDist.Forms
 				string imeiVal = row.Table.Columns.Contains("IMEI") && row["IMEI"] != DBNull.Value ? row["IMEI"].ToString() : "-";
 				if (string.IsNullOrWhiteSpace(imeiVal)) imeiVal = "-";
 
-				dgItems.Rows.Add(
+				int addedItemIdx = dgItems.Rows.Add(
 					row["ProductName"], 
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2") + " ج", 
@@ -802,6 +811,15 @@ namespace ChickenDist.Forms
 					discText,
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2") + " ج"
 				);
+
+				if (row.Table.Columns.Contains("PrevReturnedQty") && row["PrevReturnedQty"] != DBNull.Value && Convert.ToDecimal(row["PrevReturnedQty"]) > 0)
+				{
+					var addedItemRow = dgItems.Rows[addedItemIdx];
+					addedItemRow.DefaultCellStyle.BackColor = Color.FromArgb(70, 80, 95); // رصاصي غامق مميز للأصناف المسترجعة
+					addedItemRow.DefaultCellStyle.ForeColor = Color.White;
+					addedItemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 55, 70);
+					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.Yellow;
+				}
 			}
 		}
 

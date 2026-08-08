@@ -1776,15 +1776,17 @@ namespace ChickenDist.DAL
         public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @"SELECT sr.ReturnID, sr.ReturnDate, s.SaleCode,
-                          ISNULL(c.ClientName,N'---') AS ClientName, sr.TotalAmount, sr.Notes
+                @"SELECT sr.ReturnID, sr.ReturnDate,
+                          ISNULL(s.SaleCode, N'مرتجع عام') AS SaleCode,
+                          ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                          sr.TotalAmount, sr.Notes
                   FROM SalesReturns sr
                   LEFT JOIN Sales s ON sr.SaleID=s.SaleID
                   LEFT JOIN Clients c ON sr.ClientID=c.ClientID
                   WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
                     AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ORDER BY sr.ReturnDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", from.Date),
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
