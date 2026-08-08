@@ -704,17 +704,17 @@ namespace ChickenDist.Forms
                 dgRow.Cells["ProductID"].Value = row["ProductID"];
                 dgRow.Cells["ProductName"].Value = row["ProductName"];
 
-                decimal soldQty = Convert.ToDecimal(row["SoldQty"]);
-                decimal prevRetQty = Convert.ToDecimal(row["PrevReturnedQty"]);
-                decimal origUnitPrice = Convert.ToDecimal(row["UnitPrice"]);
+                decimal soldQty = dtItems.Columns.Contains("SoldQty") ? Convert.ToDecimal(row["SoldQty"]) : (dtItems.Columns.Contains("Quantity") ? Convert.ToDecimal(row["Quantity"]) : 0m);
+                decimal prevRetQty = dtItems.Columns.Contains("PrevReturnedQty") ? Convert.ToDecimal(row["PrevReturnedQty"]) : 0m;
+                decimal origUnitPrice = dtItems.Columns.Contains("UnitPrice") ? Convert.ToDecimal(row["UnitPrice"]) : 0m;
 
-                string baseUnit = row["BaseUnitName"]?.ToString() ?? "";
-                string u1Name = row["Unit1Name"]?.ToString();
-                string u1PriceObj = row["Unit1SalePrice"]?.ToString();
-                string u2Name = row["Unit2Name"]?.ToString();
-                string u2FactorObj = row["Unit2Factor"]?.ToString();
-                string u2PriceObj = row["Unit2SalePrice"]?.ToString();
-                string u3FactorObj = row["Unit3Factor"]?.ToString();
+                string baseUnit = dtItems.Columns.Contains("BaseUnitName") ? row["BaseUnitName"]?.ToString() ?? "" : (dtItems.Columns.Contains("Unit") ? row["Unit"]?.ToString() ?? "" : "");
+                string u1Name = dtItems.Columns.Contains("Unit1Name") ? row["Unit1Name"]?.ToString() : null;
+                string u1PriceObj = dtItems.Columns.Contains("Unit1SalePrice") ? row["Unit1SalePrice"]?.ToString() : null;
+                string u2Name = dtItems.Columns.Contains("Unit2Name") ? row["Unit2Name"]?.ToString() : null;
+                string u2FactorObj = dtItems.Columns.Contains("Unit2Factor") ? row["Unit2Factor"]?.ToString() : null;
+                string u2PriceObj = dtItems.Columns.Contains("Unit2SalePrice") ? row["Unit2SalePrice"]?.ToString() : null;
+                string u3FactorObj = dtItems.Columns.Contains("Unit3Factor") ? row["Unit3Factor"]?.ToString() : null;
 
                 decimal u2Factor = 1m;
                 if (!string.IsNullOrEmpty(u2FactorObj) && decimal.TryParse(u2FactorObj, out decimal parsedU2) && parsedU2 > 0)
