@@ -407,7 +407,7 @@ namespace ChickenDist.Forms
                     UNION ALL
                     SELECT 'مصروف/حركة' AS TransType, CAST(CashID AS NVARCHAR) AS RefCode, TransDate AS TransTime, Notes AS Details, (AmountOut - AmountIn) AS Amount
                     FROM CashBox 
-                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleReturn')
+                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
