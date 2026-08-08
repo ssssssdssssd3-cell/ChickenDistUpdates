@@ -52,8 +52,9 @@ namespace ChickenDist.Forms
             DataTable dtProducts = ProductDAL.GetAll(true);
             if (cboAllProducts != null)
             {
+                cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
                 cboAllProducts.Items.Clear();
-                cboAllProducts.Items.Add(new ComboItem(0, "-- اختر الصنف المرتجع --"));
+                cboAllProducts.Items.Add(new ComboItem(0, "-- اختر / ابحث عن الصنف المرتجع --"));
                 foreach (DataRow r in dtProducts.Rows)
                 {
                     var ci = new ComboItem((int)r["ProductID"], r["ProductName"].ToString());
@@ -62,15 +63,12 @@ namespace ChickenDist.Forms
                 }
                 cboAllProducts.DisplayMember = "Text";
                 if (cboAllProducts.Items.Count > 0) cboAllProducts.SelectedIndex = 0;
-                cboAllProducts.SelectedIndexChanged += (s, e) =>
-                {
-                    if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
-                        txtGenPrice.Text = ci.Extra.ToString("N2");
-                };
+                cboAllProducts.SelectedIndexChanged += CboAllProducts_SelectedIndexChanged;
             }
 
             if (cboNewExchangeProducts != null)
             {
+                cboNewExchangeProducts.SelectedIndexChanged -= CboNewExchangeProducts_SelectedIndexChanged;
                 cboNewExchangeProducts.Items.Clear();
                 cboNewExchangeProducts.Items.Add(new ComboItem(0, "-- اختر الصنف البديل الجديد --"));
                 foreach (DataRow r in dtProducts.Rows)
@@ -81,11 +79,39 @@ namespace ChickenDist.Forms
                 }
                 cboNewExchangeProducts.DisplayMember = "Text";
                 if (cboNewExchangeProducts.Items.Count > 0) cboNewExchangeProducts.SelectedIndex = 0;
-                cboNewExchangeProducts.SelectedIndexChanged += (s, e) =>
+                cboNewExchangeProducts.SelectedIndexChanged += CboNewExchangeProducts_SelectedIndexChanged;
+            }
+        }
+
+        private void CboAllProducts_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                txtGenPrice.Text = ci.Extra.ToString("N2");
+                BtnAddGenItem_Click(sender, e);
+                this.BeginInvoke(new Action(() =>
                 {
-                    if (cboNewExchangeProducts.SelectedItem is ComboItem ci && ci.ID > 0)
-                        txtNewGenPrice.Text = ci.Extra.ToString("N2");
-                };
+                    cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
+                    cboAllProducts.SelectedIndex = 0;
+                    cboAllProducts.SelectedIndexChanged += CboAllProducts_SelectedIndexChanged;
+                    cboAllProducts.Focus();
+                }));
+            }
+        }
+
+        private void CboNewExchangeProducts_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboNewExchangeProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                txtNewGenPrice.Text = ci.Extra.ToString("N2");
+                BtnAddNewGenItem_Click(sender, e);
+                this.BeginInvoke(new Action(() =>
+                {
+                    cboNewExchangeProducts.SelectedIndexChanged -= CboNewExchangeProducts_SelectedIndexChanged;
+                    cboNewExchangeProducts.SelectedIndex = 0;
+                    cboNewExchangeProducts.SelectedIndexChanged += CboNewExchangeProducts_SelectedIndexChanged;
+                    cboNewExchangeProducts.Focus();
+                }));
             }
         }
 
@@ -94,7 +120,7 @@ namespace ChickenDist.Forms
             if (cboClient == null) return;
             cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
             cboClient.Items.Clear();
-            cboClient.Items.Add(new ComboItem(0, "-- الكل --"));
+            cboClient.Items.Add(new ComboItem(0, "👤 عميل نقدي / عام (بدون عميل مسجل)"));
             try
             {
                 var dtC = ClientDAL.GetAll(true);
@@ -262,10 +288,10 @@ namespace ChickenDist.Forms
 
             pnlFilter.Controls.AddRange(new Control[] { 
                 lblMode, cboMode, 
-                lblWh, cboWarehouse, 
-                lblRetType, cboReturnType, 
-                lblFrom, dtpFrom, lblTo, dtpTo, 
                 lblClient, cboClient, 
+                lblRetType, cboReturnType, 
+                lblWh, cboWarehouse, 
+                lblFrom, dtpFrom, lblTo, dtpTo, 
                 lblSearch, txtSearch, 
                 lblBarcode, txtInvoiceBarcode, btnSearch 
             });
@@ -531,22 +557,28 @@ namespace ChickenDist.Forms
 
         private void BtnAddGenItem_Click(object sender, EventArgs e)
         {
-            if (!(cboAllProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
-            {
-                MessageBox.Show("اختر الصنف المراد إرجاعه أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!(cboAllProducts.SelectedItem is ComboItem ci) || ci.ID == 0) return;
 
-            if (!decimal.TryParse(txtGenQty.Text, out decimal qty) || qty <= 0)
-            {
-                MessageBox.Show("أدخل كمية صالحة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!decimal.TryParse(txtGenQty.Text, out decimal qty) || qty <= 0) qty = 1m;
 
-            if (!decimal.TryParse(txtGenPrice.Text, out decimal price) || price < 0)
+            if (!decimal.TryParse(txtGenPrice.Text, out decimal price) || price < 0) price = ci.Extra;
+
+            // إذا كان الصنف موجوداً في القائمة مسبقاً نكتفي بزيادة الكمية
+            foreach (DataGridViewRow r in dgItems.Rows)
             {
-                MessageBox.Show("أدخل سعر صالح", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == ci.ID)
+                {
+                    decimal currentQty = 0m;
+                    if (r.Cells["NewReturnedQty"].Value != null)
+                        decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
+
+                    decimal newQty = currentQty + qty;
+                    r.Cells["NewReturnedQty"].Value = newQty;
+                    r.Cells["UnitPrice"].Value = price.ToString("N2");
+                    r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
+                    RecalcTotals();
+                    return;
+                }
             }
 
             int idx = dgItems.Rows.Add();
@@ -564,22 +596,27 @@ namespace ChickenDist.Forms
 
         private void BtnAddNewGenItem_Click(object sender, EventArgs e)
         {
-            if (!(cboNewExchangeProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
-            {
-                MessageBox.Show("اختر الصنف البديل الجديد أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!(cboNewExchangeProducts.SelectedItem is ComboItem ci) || ci.ID == 0) return;
 
-            if (!decimal.TryParse(txtNewGenQty.Text, out decimal qty) || qty <= 0)
-            {
-                MessageBox.Show("أدخل كمية صالحة", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!decimal.TryParse(txtNewGenQty.Text, out decimal qty) || qty <= 0) qty = 1m;
 
-            if (!decimal.TryParse(txtNewGenPrice.Text, out decimal price) || price < 0)
+            if (!decimal.TryParse(txtNewGenPrice.Text, out decimal price) || price < 0) price = ci.Extra;
+
+            foreach (DataGridViewRow r in dgExchangeNewItems.Rows)
             {
-                MessageBox.Show("أدخل سعر صالح", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == ci.ID)
+                {
+                    decimal currentQty = 0m;
+                    if (r.Cells["NewQty"].Value != null)
+                        decimal.TryParse(r.Cells["NewQty"].Value.ToString(), out currentQty);
+
+                    decimal newQty = currentQty + qty;
+                    r.Cells["NewQty"].Value = newQty;
+                    r.Cells["UnitPrice"].Value = price.ToString("N2");
+                    r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
+                    RecalcTotals();
+                    return;
+                }
             }
 
             int idx = dgExchangeNewItems.Rows.Add();
@@ -1026,6 +1063,54 @@ namespace ChickenDist.Forms
             if (string.IsNullOrEmpty(code)) return;
             try
             {
+                if (cboMode.SelectedIndex != 0) // المرتجع العام أو الاستبدال: دعم مسح باركود الأصناف مباشرةً
+                {
+                    var dtProd = DbHelper.Query(@"
+                        SELECT ProductID, ProductName, ISNULL(SalePrice,0) AS SalePrice 
+                        FROM Products 
+                        WHERE ProductCode = @c OR PartNumber = @c OR InternationalCode = @c 
+                           OR Unit1Barcode = @c OR Unit2Barcode = @c", DbHelper.P("@c", code));
+                    
+                    if (dtProd.Rows.Count > 0)
+                    {
+                        int pid = Convert.ToInt32(dtProd.Rows[0]["ProductID"]);
+                        string pname = dtProd.Rows[0]["ProductName"].ToString();
+                        decimal price = Convert.ToDecimal(dtProd.Rows[0]["SalePrice"]);
+
+                        foreach (DataGridViewRow r in dgItems.Rows)
+                        {
+                            if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == pid)
+                            {
+                                decimal currentQty = 0m;
+                                if (r.Cells["NewReturnedQty"].Value != null)
+                                    decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
+
+                                decimal newQty = currentQty + 1m;
+                                r.Cells["NewReturnedQty"].Value = newQty;
+                                r.Cells["UnitPrice"].Value = price.ToString("N2");
+                                r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
+                                RecalcTotals();
+                                txtInvoiceBarcode.Text = "";
+                                return;
+                            }
+                        }
+
+                        int idx = dgItems.Rows.Add();
+                        var row = dgItems.Rows[idx];
+                        row.Cells["ProductID"].Value       = pid;
+                        row.Cells["ProductName"].Value     = pname;
+                        row.Cells["SoldQty"].Value         = "عام";
+                        row.Cells["PrevReturnedQty"].Value = "0";
+                        row.Cells["NewReturnedQty"].Value  = 1m;
+                        row.Cells["UnitPrice"].Value       = price.ToString("N2");
+                        row.Cells["TotalPrice"].Value      = price.ToString("N2");
+
+                        RecalcTotals();
+                        txtInvoiceBarcode.Text = "";
+                        return;
+                    }
+                }
+
                 var dt = DbHelper.Query("SELECT SaleID FROM Sales WHERE SaleCode = @code OR CAST(SaleID AS VARCHAR) = @code", DbHelper.P("@code", code));
                 if (dt.Rows.Count > 0)
                 {
