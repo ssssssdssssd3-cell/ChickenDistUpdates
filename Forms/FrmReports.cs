@@ -995,11 +995,12 @@ namespace ChickenDist.Forms
 					break;
 				case "ProductQtyDetail":
 					_currentDt = ReportDAL.GetProductQtyDetail(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[12]
+					SetupGrid(new(string, string)[14]
 					{
 						("ProductCode",    "كود الصنف"),
 						("ProductName",    "اسم الصنف"),
 						("Unit",           "الوحدة"),
+						("CurrentStock",   "الرصيد الفعلي"),
 						("SalePrice",      "سعر البيع"),
 						("LastAdjQty",     "رصيد آخر تسوية"),
 						("SoldQty",        "إجمالي المبيع"),
@@ -1009,9 +1010,8 @@ namespace ChickenDist.Forms
 						("ReturnedQty",    "مرتجع مبيعات"),
 						("DriverReturnQty","مرتجع مناديب"),
 						("NetSoldQty",     "صافي المبيع"),
+						("TotalSalesAmt",  "إجمالي قيمة المبيع")
 					}, dataGridView);
-					dataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalSalesAmt", HeaderText = "إجمالي قيمة المبيع" });
-					dataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock",  HeaderText = "الرصيد الحالي" });
 					break;
 				case "Handovers":
 					_currentDt = DriverDAL.GetHandovers(dtpFrom.Value, dtpTo.Value, warehouseID);

@@ -2417,9 +2417,6 @@ namespace ChickenDist.DAL
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>
         public static DataTable GetProductQtyDetail(DateTime from, DateTime to, int? warehouseID = null)
         {
-            // FIX: استخدام CTE لحساب SoldQty, ReturnedQty, DriverReturnQty مرة واحدة
-            // الكود القديم كان يُعيد حساب نفس الـ subqueries 3 مرات في NetSoldQty و CurrentStock
-            // مما يُسبّب ضغطاً كبيراً على قاعدة البيانات في التقارير الكبيرة
             return DbHelper.Query(@"
                 ;WITH
                 SalesPeriod AS (
@@ -2456,51 +2453,11 @@ namespace ChickenDist.DAL
                       AND (@warehouseID IS NULL OR dl.WarehouseID = @warehouseID)
                     GROUP BY hi.ProductID
                 ),
-                StockSinceAdj AS (
-                    SELECT p2.ProductID,
-                           ISNULL(adj2.ActualQty, 0)
-                           + ISNULL((SELECT SUM(ri2.Quantity) FROM ReturnItems ri2
-                                      JOIN SalesReturns sr2 ON ri2.ReturnID=sr2.ReturnID
-                                      WHERE ri2.ProductID=p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR sr2.ReturnDate > adj2.AdjDate)
-                                        AND (@warehouseID IS NULL OR sr2.WarehouseID = @warehouseID)), 0)
-                           + ISNULL((SELECT SUM(hi2.ReturnedQty) FROM HandoverItems hi2
-                                      JOIN DriverHandovers dh2 ON hi2.HandoverID=dh2.HandoverID
-                                      JOIN DriverLoads dl2 ON dh2.LoadID = dl2.LoadID
-                                      WHERE hi2.ProductID=p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR dh2.HandoverDate > adj2.AdjDate)
-                                        AND (@warehouseID IS NULL OR dl2.WarehouseID = @warehouseID)), 0)
-                           -- Incoming: Purchases since adjustment
-                           + ISNULL((SELECT SUM(pi2.Quantity) FROM PurchaseItems pi2
-                                      JOIN Purchases pu2 ON pi2.PurchaseID = pu2.PurchaseID
-                                      WHERE pi2.ProductID = p2.ProductID
-                                        AND pu2.IsPosted = 1
-                                        AND (adj2.AdjDate IS NULL OR pu2.PurchaseDate > adj2.AdjDate)
-                                        AND (@warehouseID IS NULL OR pu2.WarehouseID = @warehouseID)), 0)
-                           -- Outgoing: Purchase Returns since adjustment
-                           - ISNULL((SELECT SUM(pri2.Quantity) FROM PurchaseReturnItems pri2
-                                      JOIN PurchaseReturns pr2 ON pri2.ReturnID = pr2.ReturnID
-                                      WHERE pri2.ProductID = p2.ProductID
-                                        AND (adj2.AdjDate IS NULL OR pr2.ReturnDate > adj2.AdjDate)
-                                        AND (@warehouseID IS NULL OR pr2.WarehouseID = @warehouseID)), 0)
-                           -- Outgoing: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                           - ISNULL((SELECT SUM(si2.Quantity) FROM SaleItems si2
-                                      JOIN Sales s2 ON si2.SaleID=s2.SaleID
-                                      WHERE si2.ProductID=p2.ProductID
-                                        AND s2.IsPosted = 1
-                                        AND (s2.SaleType = 'DriverLoad' OR (s2.SaleType IN ('Cash', 'Credit', 'Installment') AND s2.DriverID IS NULL))
-                                        AND (adj2.AdjDate IS NULL OR s2.SaleDate > adj2.AdjDate)
-                                        AND (@warehouseID IS NULL OR s2.WarehouseID = @warehouseID)), 0)
-                           AS CurrentStock
-                    FROM Products p2
-                    OUTER APPLY (
-                        SELECT TOP 1 sa2.AdjDate, sa2.ActualQty
-                        FROM StockAdjustments sa2
-                        WHERE sa2.ProductID = p2.ProductID
-                          AND (@warehouseID IS NULL OR sa2.WarehouseID = @warehouseID)
-                        ORDER BY sa2.AdjDate DESC
-                    ) adj2
-                    WHERE p2.IsActive = 1
+                StockTotals AS (
+                    SELECT ProductID, ISNULL(SUM(Quantity), 0.0) AS CurrentStock
+                    FROM ProductStock
+                    WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+                    GROUP BY ProductID
                 )
                 SELECT
                     p.ProductCode,
@@ -2524,21 +2481,19 @@ namespace ChickenDist.DAL
                     ISNULL(rp.ReturnedQty,     0)                          AS ReturnedQty,
                     ISNULL(drp.DriverReturnQty,0)                          AS DriverReturnQty,
 
-                    -- صافي المبيعات: مرة حساب واحدة من الـ CTEs بدلاً من subqueries مكررة
                     ISNULL(sp.TotalQty, 0)
                     - ISNULL(rp.ReturnedQty, 0)
                     - ISNULL(drp.DriverReturnQty, 0)                       AS NetSoldQty,
 
                     ISNULL(sp.TotalAmt,        0)                          AS TotalSalesAmt,
 
-                    -- الرصيد الكتابي الحالي من الـ CTE
-                    ISNULL(sca.CurrentStock,   0)                          AS CurrentStock
+                    ISNULL(stk.CurrentStock,   0)                          AS CurrentStock
 
                 FROM Products p
                 LEFT JOIN SalesPeriod        sp  ON sp.ProductID  = p.ProductID
                 LEFT JOIN ReturnsPeriod      rp  ON rp.ProductID  = p.ProductID
                 LEFT JOIN DriverReturnsPeriod drp ON drp.ProductID = p.ProductID
-                LEFT JOIN StockSinceAdj      sca ON sca.ProductID = p.ProductID
+                LEFT JOIN StockTotals        stk ON stk.ProductID = p.ProductID
                 WHERE p.IsActive = 1
                 ORDER BY p.ProductName",
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
