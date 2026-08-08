@@ -384,13 +384,25 @@ namespace ChickenDist.Forms
 
             dgSales.CellFormatting += (s, e) =>
             {
-                if (e.RowIndex >= 0 && dgSales.Columns[e.ColumnIndex].Name == "SaleType" && e.Value != null)
+                if (e.RowIndex >= 0)
                 {
-                    string val = e.Value.ToString();
-                    if (val == "Cash") e.Value = "💵 نقدي";
-                    else if (val == "Credit") e.Value = "📋 آجل";
-                    else if (val == "DriverLoad") e.Value = "🚚 حمولة مندوب";
-                    else if (val == "Installment") e.Value = "📅 تقسيط";
+                    var row = dgSales.Rows[e.RowIndex];
+                    if (row.Cells["ReturnAmount"].Value != null && decimal.TryParse(row.Cells["ReturnAmount"].Value.ToString(), out decimal retAmt) && retAmt > 0)
+                    {
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصغر واضح للفواتير المرتجعة
+                        row.DefaultCellStyle.ForeColor = Color.Black;
+                        row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
+                        row.DefaultCellStyle.SelectionForeColor = Color.Black;
+                    }
+
+                    if (dgSales.Columns[e.ColumnIndex].Name == "SaleType" && e.Value != null)
+                    {
+                        string val = e.Value.ToString();
+                        if (val == "Cash") e.Value = "💵 نقدي";
+                        else if (val == "Credit") e.Value = "📋 آجل";
+                        else if (val == "DriverLoad") e.Value = "🚚 حمولة مندوب";
+                        else if (val == "Installment") e.Value = "📅 تقسيط";
+                    }
                 }
             };
 
@@ -809,6 +821,14 @@ namespace ChickenDist.Forms
                 dgRow.Cells["NewReturnedQty"].Value = 0m;
                 dgRow.Cells["UnitPrice"].Value = origUnitPrice.ToString("F2");
                 dgRow.Cells["TotalPrice"].Value = "0.00";
+
+                if (prevRetQty > 0)
+                {
+                    dgRow.DefaultCellStyle.BackColor = Color.FromArgb(70, 80, 95); // رصاصي غامق مميز للأصناف المسترجعة
+                    dgRow.DefaultCellStyle.ForeColor = Color.White;
+                    dgRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 55, 70);
+                    dgRow.DefaultCellStyle.SelectionForeColor = Color.Yellow;
+                }
             }
         }
 
