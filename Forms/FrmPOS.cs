@@ -193,15 +193,40 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(minusCol);
 
             dgItems.Columns.Add("Price", "السعر");
-            dgItems.Columns.Add("LastClientPrice", "آخر سعر للعميل 🏷️");
-            dgItems.Columns.Add("IMEI", "السيريال");
+            
+            var colLastPrice = new DataGridViewTextBoxColumn
+            {
+                Name = "LastClientPrice",
+                HeaderText = "آخر سعر للعميل 🏷️",
+                Visible = false,
+                ReadOnly = true,
+                Width = 110
+            };
+            dgItems.Columns.Add(colLastPrice);
+
+            var colIMEI = new DataGridViewTextBoxColumn
+            {
+                Name = "IMEI",
+                HeaderText = "السيريال",
+                Visible = AppConfig.BusinessType == "Mobiles",
+                ReadOnly = false,
+                Width = 100
+            };
+            dgItems.Columns.Add(colIMEI);
+
             dgItems.Columns.Add("Discount", "الخصم");
             dgItems.Columns.Add("Total", "الإجمالي");
             if (AppConfig.IsRestaurant)
             {
-                dgItems.Columns.Add("KitchenNotes", "📝 ملاحظات المطبخ");
-                dgItems.Columns["KitchenNotes"].ReadOnly = false;
-                dgItems.Columns["KitchenNotes"].Width = 130;
+                var colKn = new DataGridViewTextBoxColumn
+                {
+                    Name = "KitchenNotes",
+                    HeaderText = "📝 ملاحظات المطبخ",
+                    Visible = false,
+                    ReadOnly = false,
+                    Width = 130
+                };
+                dgItems.Columns.Add(colKn);
             }
             var delCol = new DataGridViewButtonColumn
             {
@@ -2190,10 +2215,23 @@ namespace ChickenDist.Forms
                 string orderVal  = Core.LicenseManager.ReadIniValue("POSGridColumns", "Order",  "");
                 string hiddenVal = Core.LicenseManager.ReadIniValue("POSGridColumns", "Hidden", "");
 
-                if (string.IsNullOrWhiteSpace(orderVal)) return;
+                var hidden  = new List<string>(string.IsNullOrEmpty(hiddenVal) ? new string[0] : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                // Always ensure optional/extra columns default to hidden
+                if (!hidden.Contains("LastClientPrice")) hidden.Add("LastClientPrice");
+                if (!hidden.Contains("KitchenNotes")) hidden.Add("KitchenNotes");
+                if (AppConfig.BusinessType != "Mobiles" && !hidden.Contains("IMEI")) hidden.Add("IMEI");
+
+                if (string.IsNullOrWhiteSpace(orderVal))
+                {
+                    foreach (DataGridViewColumn col in dgItems.Columns)
+                    {
+                        if (hidden.Contains(col.Name)) col.Visible = false;
+                    }
+                    return;
+                }
 
                 var ordered = new List<string>(orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
-                var hidden  = new List<string>(string.IsNullOrEmpty(hiddenVal) ? new string[0] : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
 
                 foreach (DataGridViewColumn col in dgItems.Columns)
                 {
