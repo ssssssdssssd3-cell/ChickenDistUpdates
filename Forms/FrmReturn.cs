@@ -14,10 +14,10 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgSales, dgItems, dgExchangeNewItems;
         private TextBox txtSearch, txtInvoiceBarcode, txtNotes, txtGenQty, txtGenPrice, txtNewGenQty, txtNewGenPrice;
-        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts;
+        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
-        private Label lblTotal, lblExchangeSummary, lblSearch, lblBarcode, lblFrom, lblTo, lblClient;
+        private Label lblTotal, lblExchangeSummary, lblSearch, lblBarcode, lblFrom, lblTo, lblClient, lblSaleType, lblProductFilter;
         private SplitContainer _mainSplit;
         private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
         private DataTable _salesDt;
@@ -48,8 +48,22 @@ namespace ChickenDist.Forms
                 if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
             }
 
-            // تحميل أصناف الكتالوج للمرتجع العام والبديل
+            // تحميل أصناف الكتالوج للمرتجع العام والبديل وتصفية الفواتير بالصنف
             DataTable dtProducts = ProductDAL.GetAll(true);
+            if (cboProductFilter != null)
+            {
+                cboProductFilter.SelectedIndexChanged -= (s, e) => LoadSales();
+                cboProductFilter.Items.Clear();
+                cboProductFilter.Items.Add(new ComboItem(0, "الكل (جميع الأصناف)"));
+                foreach (DataRow r in dtProducts.Rows)
+                {
+                    cboProductFilter.Items.Add(new ComboItem((int)r["ProductID"], r["ProductName"].ToString()));
+                }
+                cboProductFilter.DisplayMember = "Text";
+                if (cboProductFilter.Items.Count > 0) cboProductFilter.SelectedIndex = 0;
+                cboProductFilter.SelectedIndexChanged += (s, e) => LoadSales();
+            }
+
             if (cboAllProducts != null)
             {
                 cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
@@ -224,14 +238,25 @@ namespace ChickenDist.Forms
                 Height = 85,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10, 10, 10, 10),
+                Padding = new Padding(8, 8, 8, 8),
                 WrapContents = true
             };
+
+            // دالة مساعدة لتطبيق لون مميز وواضح على جميع خانات البحث
+            Color searchBg = Color.FromArgb(30, 48, 70); // لون كحلي داكن مميز لخانات البحث
+            Color searchFg = Color.FromArgb(254, 240, 138); // خط أصفر ذهبي مضيء وواضح جداً
+
+            void StyleSearchInput(Control c)
+            {
+                c.BackColor = searchBg;
+                c.ForeColor = searchFg;
+                c.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            }
 
             var lblMode = new Label { Text = "العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
             cboMode = new ComboBox
             {
-                Width = 220, Height = 26,
+                Width = 210, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
@@ -241,18 +266,18 @@ namespace ChickenDist.Forms
             cboMode.SelectedIndex = 0;
             cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
 
-            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0), Font = Theme.FontBold };
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
             cboWarehouse = new ComboBox
             {
-                Width = 130, Height = 26,
+                Width = 120, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
 
-            var lblRetType = new Label { Text = "نوع التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0), Font = Theme.FontBold };
+            var lblRetType = new Label { Text = "نوع التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
             cboReturnType = new ComboBox
             {
-                Width = 110, Height = 26,
+                Width = 95, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
@@ -260,32 +285,55 @@ namespace ChickenDist.Forms
             cboReturnType.Items.Add("💵 نقدي");
             cboReturnType.SelectedIndex = 0;
 
-            lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            dtpFrom = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
+            lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(8, 5, 0, 0) };
+            dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
             dtpFrom.ValueChanged += (s, e) => LoadSales();
 
-            lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            dtpTo = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => LoadSales();
 
-            lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+            lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             cboClient = new ComboBox 
             { 
-                Width = 180, 
+                Width = 160, 
                 DropDownStyle = ComboBoxStyle.DropDown, 
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain 
+                AutoCompleteSource = AutoCompleteSource.ListItems
             };
+            StyleSearchInput(cboClient);
             SetupSearchableCombo(cboClient);
 
-            lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            txtSearch = new TextBox { Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            lblSaleType = new Label { Text = "نوع الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
+            cboSaleTypeFilter = new ComboBox
+            {
+                Width = 120, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
+            cboSaleTypeFilter.SelectedIndex = 0;
+            cboSaleTypeFilter.SelectedIndexChanged += (s, e) => LoadSales();
+            StyleSearchInput(cboSaleTypeFilter);
+
+            lblProductFilter = new Label { Text = "بحث بالصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
+            cboProductFilter = new ComboBox
+            {
+                Width = 160, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
+            };
+            StyleSearchInput(cboProductFilter);
+            SetupSearchableCombo(cboProductFilter);
+
+            lblSearch = new Label { Text = "بحث كود/ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtSearch = new TextBox { Width = 110, RightToLeft = RightToLeft.Yes };
+            StyleSearchInput(txtSearch);
             txtSearch.TextChanged += (s, e) => LoadSales();
 
-            lblBarcode = new Label { Text = "باركود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            txtInvoiceBarcode = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
+            lblBarcode = new Label { Text = "باركود الفاتورة/الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            txtInvoiceBarcode = new TextBox { Width = 110, RightToLeft = RightToLeft.No };
+            StyleSearchInput(txtInvoiceBarcode);
             txtInvoiceBarcode.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
@@ -297,13 +345,15 @@ namespace ChickenDist.Forms
             };
 
             btnSearch = Theme.MakeButton("🔍 تحديث", Theme.Accent);
-            btnSearch.Size = new Size(100, 28);
-            btnSearch.Margin = new Padding(15, 0, 0, 0);
+            btnSearch.Size = new Size(85, 28);
+            btnSearch.Margin = new Padding(10, 0, 0, 0);
             btnSearch.Click += (s, e) => LoadSales();
 
             pnlFilter.Controls.AddRange(new Control[] { 
                 lblMode, cboMode, 
                 lblClient, cboClient, 
+                lblSaleType, cboSaleTypeFilter,
+                lblProductFilter, cboProductFilter,
                 lblRetType, cboReturnType, 
                 lblWh, cboWarehouse, 
                 lblFrom, dtpFrom, lblTo, dtpTo, 
@@ -433,6 +483,14 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف المرتجع", ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQty", HeaderText = "الكمية الأصلية", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 40 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "CurrentStock", 
+                HeaderText = "الرصيد الفعلي 📦", 
+                ReadOnly = true, 
+                FillWeight = 45, 
+                DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter } 
+            });
             dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40 });
             
             var colNew = new DataGridViewTextBoxColumn 
@@ -600,10 +658,14 @@ namespace ChickenDist.Forms
 
             int idx = dgItems.Rows.Add();
             var row = dgItems.Rows[idx];
+            int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
+            decimal actStock = GetProductActualStock(ci.ID, selectedWh);
+
             row.Cells["ProductID"].Value       = ci.ID;
             row.Cells["ProductName"].Value     = ci.Text;
             row.Cells["SoldQty"].Value         = "عام";
             row.Cells["PrevReturnedQty"].Value = "0";
+            row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
             row.Cells["NewReturnedQty"].Value  = qty;
             row.Cells["UnitPrice"].Value       = price.ToString("N2");
             row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
@@ -704,16 +766,57 @@ namespace ChickenDist.Forms
             return dg;
         }
 
+        private decimal GetProductActualStock(int productID, int? warehouseID)
+        {
+            if (productID <= 0) return 0m;
+            try
+            {
+                object res = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(Quantity), 0.0) 
+                    FROM ProductStock 
+                    WHERE ProductID = @pid 
+                      AND (@wid IS NULL OR WarehouseID = @wid)",
+                    DbHelper.P("@pid", productID),
+                    DbHelper.P("@wid", warehouseID.HasValue && warehouseID.Value > 0 ? (object)warehouseID.Value : DBNull.Value));
+
+                if (res != null && res != DBNull.Value && decimal.TryParse(res.ToString(), out decimal stock))
+                    return stock;
+            }
+            catch { }
+            return 0m;
+        }
+
         private void LoadSales()
         {
             if (cboMode != null && cboMode.SelectedIndex != 0) return;
             try
             {
                 int? clientID = null;
-                if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+                if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
                     clientID = ci.ID;
 
-                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, txtSearch.Text.Trim());
+                int? warehouseID = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
+
+                string productSearch = null;
+                if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
+                    productSearch = pci.Text;
+                else if (cboProductFilter != null && !string.IsNullOrWhiteSpace(cboProductFilter.Text) && cboProductFilter.Text.Trim() != "الكل" && cboProductFilter.Text.Trim() != "الكل (جميع الأصناف)")
+                    productSearch = cboProductFilter.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(productSearch) && txtSearch != null && !string.IsNullOrWhiteSpace(txtSearch.Text))
+                    productSearch = txtSearch.Text.Trim();
+
+                string saleType = null;
+                if (cboSaleTypeFilter != null && cboSaleTypeFilter.SelectedIndex > 0)
+                {
+                    string sel = cboSaleTypeFilter.SelectedItem.ToString();
+                    if (sel.Contains("Cash") || sel.Contains("نقدي")) saleType = "Cash";
+                    else if (sel.Contains("Credit") || sel.Contains("آجل")) saleType = "Credit";
+                    else if (sel.Contains("Installment") || sel.Contains("تقسيط")) saleType = "Installment";
+                    else if (sel.Contains("DriverLoad") || sel.Contains("حمولة") || sel.Contains("تحميل")) saleType = "DriverLoad";
+                }
+
+                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType);
                 dgSales.DataSource = _salesDt;
             }
             catch (Exception ex)
@@ -818,11 +921,13 @@ namespace ChickenDist.Forms
 
                 if (comboCell.Items.Contains(invoiceUnitName))
                     comboCell.Value = invoiceUnitName;
-                else if (comboCell.Items.Count > 0)
-                    comboCell.Value = comboCell.Items[0];
+                int pid = Convert.ToInt32(row["ProductID"]);
+                int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
+                decimal actStock = GetProductActualStock(pid, selectedWh);
 
                 dgRow.Cells["SoldQty"].Value = soldQty.ToString("G29");
                 dgRow.Cells["PrevReturnedQty"].Value = prevRetQty.ToString("G29");
+                dgRow.Cells["CurrentStock"].Value = actStock.ToString("G29");
                 dgRow.Cells["NewReturnedQty"].Value = 0m;
                 dgRow.Cells["UnitPrice"].Value = origUnitPrice.ToString("F2");
                 dgRow.Cells["TotalPrice"].Value = "0.00";
@@ -1122,10 +1227,14 @@ namespace ChickenDist.Forms
 
                         int idx = dgItems.Rows.Add();
                         var row = dgItems.Rows[idx];
+                        int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
+                        decimal actStock = GetProductActualStock(pid, selectedWh);
+
                         row.Cells["ProductID"].Value       = pid;
                         row.Cells["ProductName"].Value     = pname;
                         row.Cells["SoldQty"].Value         = "عام";
                         row.Cells["PrevReturnedQty"].Value = "0";
+                        row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
                         row.Cells["NewReturnedQty"].Value  = 1m;
                         row.Cells["UnitPrice"].Value       = price.ToString("N2");
                         row.Cells["TotalPrice"].Value      = price.ToString("N2");
@@ -1206,10 +1315,13 @@ namespace ChickenDist.Forms
 
                     int idx = dgItems.Rows.Add();
                     var row = dgItems.Rows[idx];
+                    decimal actStock = GetProductActualStock(dlg.SelectedProductID, whId);
+
                     row.Cells["ProductID"].Value       = dlg.SelectedProductID;
                     row.Cells["ProductName"].Value     = pname;
                     row.Cells["SoldQty"].Value         = "عام";
                     row.Cells["PrevReturnedQty"].Value = "0";
+                    row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
                     row.Cells["NewReturnedQty"].Value  = qty;
                     row.Cells["UnitPrice"].Value       = price.ToString("N2");
                     row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");

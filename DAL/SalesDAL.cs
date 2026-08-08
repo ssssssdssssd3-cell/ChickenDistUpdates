@@ -34,9 +34,10 @@ namespace ChickenDist.DAL
             return GetAll(from, to, null, null, warehouseID);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null)
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
+            string saleTypeFilter = string.IsNullOrWhiteSpace(saleType) || saleType == "الكل" ? null : saleType.Trim();
             DateTime f = from;
             DateTime t = to;
             if (t.TimeOfDay == TimeSpan.Zero)
@@ -77,6 +78,7 @@ namespace ChickenDist.DAL
                   WHERE s.SaleDate BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    AND (@saleType IS NULL OR s.SaleType = @saleType)
                     AND (@product IS NULL OR EXISTS (
                         SELECT 1 FROM SaleItems si2
                         JOIN Products pr ON si2.ProductID = pr.ProductID
@@ -88,7 +90,8 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                 DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
-                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value));
         }
 
         public static DataTable GetItems(int saleID)
