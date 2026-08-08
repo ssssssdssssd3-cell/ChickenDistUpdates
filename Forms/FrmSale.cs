@@ -3641,7 +3641,7 @@ namespace ChickenDist.Forms
 							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
 							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID, showPreview: false);
-						this.Close();
+						ResetForm();
 					}
 					else
 					{

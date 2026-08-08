@@ -1495,6 +1495,7 @@ namespace ChickenDist.Forms
 
         private void NewInvoice()
         {
+            _isSaving = false;
             _items.Clear();
             _loadedDraftSaleID = 0;
             if (cboClient != null)
@@ -2358,6 +2359,10 @@ namespace ChickenDist.Forms
             {
                 AppLogger.Error("FrmPOS.SuspendCurrentOrder", ex);
                 MessageBox.Show("حدث خطأ أثناء تعليق الطلب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _isSaving = false;
             }
         }
 
