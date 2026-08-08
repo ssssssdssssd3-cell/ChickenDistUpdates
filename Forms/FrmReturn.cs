@@ -235,7 +235,8 @@ namespace ChickenDist.Forms
             pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 8, 8, 8),
@@ -524,6 +525,15 @@ namespace ChickenDist.Forms
 
             dgItems.CellValidating += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.CellFormatting += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CurrentStock")
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153); // أخضر مضيء ممتاز
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
+            };
             dgItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(140, 40, 40);
 
             // جدول أصناف البديل الجديد في الاستبدال
@@ -771,16 +781,7 @@ namespace ChickenDist.Forms
             if (productID <= 0) return 0m;
             try
             {
-                object res = DbHelper.Scalar(@"
-                    SELECT ISNULL(SUM(Quantity), 0.0) 
-                    FROM ProductStock 
-                    WHERE ProductID = @pid 
-                      AND (@wid IS NULL OR WarehouseID = @wid)",
-                    DbHelper.P("@pid", productID),
-                    DbHelper.P("@wid", warehouseID.HasValue && warehouseID.Value > 0 ? (object)warehouseID.Value : DBNull.Value));
-
-                if (res != null && res != DBNull.Value && decimal.TryParse(res.ToString(), out decimal stock))
-                    return stock;
+                return InventoryDAL.GetProductStock(productID, warehouseID);
             }
             catch { }
             return 0m;
