@@ -1193,19 +1193,15 @@ namespace ChickenDist.Forms
             if (string.IsNullOrEmpty(code)) return;
             try
             {
-                if (cboMode.SelectedIndex != 0) // المرتجع العام أو الاستبدال: دعم مسح باركود الأصناف مباشرةً
+                if (cboMode.SelectedIndex != 0) // المرتجع العام أو الاستبدال: دعم مسح باركود الأصناف والميزان مباشرةً
                 {
-                    var dtProd = DbHelper.Query(@"
-                        SELECT ProductID, ProductName, ISNULL(SalePrice,0) AS SalePrice 
-                        FROM Products 
-                        WHERE ProductCode = @c OR PartNumber = @c OR InternationalCode = @c 
-                           OR Unit1Barcode = @c OR Unit2Barcode = @c", DbHelper.P("@c", code));
-                    
-                    if (dtProd.Rows.Count > 0)
+                    DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal scanQty);
+                    if (pRow != null)
                     {
-                        int pid = Convert.ToInt32(dtProd.Rows[0]["ProductID"]);
-                        string pname = dtProd.Rows[0]["ProductName"].ToString();
-                        decimal price = Convert.ToDecimal(dtProd.Rows[0]["SalePrice"]);
+                        int pid = Convert.ToInt32(pRow["ProductID"]);
+                        string pname = pRow["ProductName"].ToString();
+                        decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+                        decimal qty = scanQty > 0 ? scanQty : 1m;
 
                         foreach (DataGridViewRow r in dgItems.Rows)
                         {
@@ -1215,7 +1211,7 @@ namespace ChickenDist.Forms
                                 if (r.Cells["NewReturnedQty"].Value != null)
                                     decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
 
-                                decimal newQty = currentQty + 1m;
+                                decimal newQty = currentQty + qty;
                                 r.Cells["NewReturnedQty"].Value = newQty;
                                 r.Cells["UnitPrice"].Value = price.ToString("N2");
                                 r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
@@ -1235,9 +1231,9 @@ namespace ChickenDist.Forms
                         row.Cells["SoldQty"].Value         = "عام";
                         row.Cells["PrevReturnedQty"].Value = "0";
                         row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
-                        row.Cells["NewReturnedQty"].Value  = 1m;
+                        row.Cells["NewReturnedQty"].Value  = qty;
                         row.Cells["UnitPrice"].Value       = price.ToString("N2");
-                        row.Cells["TotalPrice"].Value      = price.ToString("N2");
+                        row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
 
                         RecalcTotals();
                         txtInvoiceBarcode.Text = "";

@@ -717,8 +717,17 @@ namespace ChickenDist.Forms
                                p.Unit3Factor, p.DefaultSaleUnit,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
-                        WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.InternationalCode = @trimmed)", 
-                        DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode));
+                        WHERE p.IsActive = 1 AND (
+                            p.ProductCode = @c OR 
+                            p.ProductCode = @trimmed OR 
+                            p.ProductCode = @padded OR 
+                            p.InternationalCode = @c OR 
+                            p.InternationalCode = @trimmed OR
+                            (@itemCodeVal > 0 AND p.ProductID = @itemCodeVal) OR
+                            (@itemCodeVal > 0 AND CAST(p.ProductID AS VARCHAR) = @trimmed) OR
+                            (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @itemCodeVal)
+                        )", 
+                        DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode), DbHelper.P("@itemCodeVal", itemCodeVal));
                     if (dt.Rows.Count > 0 && weight > 0)
                     {
                         var row2 = dt.Rows[0];

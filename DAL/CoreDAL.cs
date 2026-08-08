@@ -375,6 +375,73 @@ namespace ChickenDist.DAL
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
+        public static DataRow GetByBarcodeOrScaleCode(string scannedCode, out decimal parsedWeight)
+        {
+            parsedWeight = 1m;
+            if (string.IsNullOrWhiteSpace(scannedCode)) return null;
+
+            scannedCode = scannedCode.Trim();
+
+            // 1. Check if this is a scale barcode
+            var scaleRes = BarcodeParser.Parse(scannedCode);
+            if (scaleRes.IsScaleBarcode && !string.IsNullOrEmpty(scaleRes.ItemCode))
+            {
+                parsedWeight = scaleRes.WeightOrPrice > 0 ? scaleRes.WeightOrPrice : 1m;
+                string itemCode = scaleRes.ItemCode;
+                string trimmed = scaleRes.TrimmedItemCode;
+                int.TryParse(trimmed, out int itemCodeInt);
+
+                var dtScale = DbHelper.Query(@"
+                    SELECT TOP 1 p.*, c.CategoryName 
+                    FROM Products p 
+                    LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                    WHERE p.IsActive = 1 AND (
+                        p.ProductCode = @c OR 
+                        p.ProductCode = @trimmed OR 
+                        p.InternationalCode = @c OR 
+                        p.InternationalCode = @trimmed OR 
+                        p.PartNumber = @c OR 
+                        p.PartNumber = @trimmed OR 
+                        (@intVal > 0 AND p.ProductID = @intVal) OR 
+                        (@intVal > 0 AND CAST(p.ProductID AS VARCHAR) = @trimmed) OR
+                        (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @intVal)
+                    )",
+                    DbHelper.P("@c", itemCode),
+                    DbHelper.P("@trimmed", trimmed),
+                    DbHelper.P("@intVal", itemCodeInt));
+
+                if (dtScale.Rows.Count > 0)
+                {
+                    return dtScale.Rows[0];
+                }
+            }
+
+            // 2. Direct barcode / code / ID lookup
+            int.TryParse(scannedCode, out int scannedInt);
+            var dtDirect = DbHelper.Query(@"
+                SELECT TOP 1 p.*, c.CategoryName 
+                FROM Products p 
+                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                WHERE p.IsActive = 1 AND (
+                    p.ProductCode = @code OR 
+                    p.InternationalCode = @code OR 
+                    p.PartNumber = @code OR 
+                    p.Unit1Barcode = @code OR 
+                    p.Unit2Barcode = @code OR 
+                    (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
+                    (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
+                )",
+                DbHelper.P("@code", scannedCode),
+                DbHelper.P("@scannedInt", scannedInt));
+
+            if (dtDirect.Rows.Count > 0)
+            {
+                return dtDirect.Rows[0];
+            }
+
+            return null;
+        }
+
         public static int Save(int id, string code, string name, string unit, decimal price, bool active, decimal purchasePrice, decimal minStockLimit, string description,
             string partNumber, int? categoryID, string carModel, string brand, string shelfLocation, decimal wholesalePrice = 0, decimal semiWholesalePrice = 0, string internationalCode = null, bool printLocalBarcode = true, bool isService = false,
             string unit1Name = null, string unit1Barcode = null, decimal? unit1SalePrice = null, decimal? unit1PurchasePrice = null,

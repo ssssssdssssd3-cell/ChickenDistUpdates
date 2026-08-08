@@ -774,53 +774,26 @@ namespace ChickenDist.Forms
 						return;
 					}
 
-					List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
-					if (allItems == null)
+					DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(scanText, out decimal weight);
+					if (pRow != null)
 					{
-						allItems = new List<ComboItem>();
-						foreach (var item in cboProduct.Items)
-						{
-							if (item is ComboItem ci) allItems.Add(ci);
-						}
-					}
-
-					ComboItem foundItem = null;
-					foreach (var ci in allItems)
-					{
-						if (ci.ID > 0 && 
-							(ci.ID.ToString() == scanText ||
-							 string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
-							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-							 MatchBarcode(ci.InternationalCode, scanText)))
-						{
-							foundItem = ci;
-							break;
-						}
-					}
-
-					if (foundItem != null)
-					{
+						int pid = Convert.ToInt32(pRow["ProductID"]);
 						e.Handled = true;
 						e.SuppressKeyPress = true;
 
 						_isScanningBarcode = true;
 						try
 						{
-							AddOrUpdateProduct(foundItem.ID, 1.00m, scannedBarcode: scanText);
+							AddOrUpdateProduct(pid, weight > 0 ? weight : 1.00m, scannedBarcode: scanText);
 							
-							cboProduct.Text = "";
-							cboProduct.BeginUpdate();
-							cboProduct.Items.Clear();
-							cboProduct.Items.AddRange(allItems.ToArray());
 							for (int i = 0; i < cboProduct.Items.Count; i++)
 							{
-								if (cboProduct.Items[i] is ComboItem ci && ci.ID == foundItem.ID)
+								if (cboProduct.Items[i] is ComboItem ci && ci.ID == pid)
 								{
 									cboProduct.SelectedIndex = i;
 									break;
 								}
 							}
-							cboProduct.EndUpdate();
 
 							txtProductCode.Clear();
 							txtProductCode.Focus();
@@ -832,7 +805,7 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show("لم يتم العثور على الصنف!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						MessageBox.Show($"لم يتم العثور على الصنف برقم الباركود أو كود الميزان ({scanText})!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					}
 				}
 			};

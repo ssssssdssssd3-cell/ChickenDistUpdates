@@ -25,35 +25,42 @@ namespace ChickenDist.Core
             barcode = barcode.Trim();
 
             string rawPrefixes = AppConfig.BarcodeScalePrefix;
-            if (string.IsNullOrWhiteSpace(rawPrefixes)) rawPrefixes = "20,99,21,22,27,9";
+            if (string.IsNullOrWhiteSpace(rawPrefixes)) rawPrefixes = "99,20,21,22,23,24,25,26,27,28,29,9";
 
             string[] prefixes = rawPrefixes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-            int codeLen = AppConfig.BarcodeScaleItemCodeLength; // 5
-            int weightLen = AppConfig.BarcodeScaleWeightLength; // 5
-            decimal div = AppConfig.BarcodeScaleDivideBy; // 1000
+            int codeLen = AppConfig.BarcodeScaleItemCodeLength; // default 5
+            int weightLen = AppConfig.BarcodeScaleWeightLength; // default 5
+            decimal div = AppConfig.BarcodeScaleDivideBy; // default 1000
 
             foreach (string prefix in prefixes)
             {
                 string p = prefix.Trim();
                 if (string.IsNullOrEmpty(p)) continue;
 
+                // EAN-13 (13 digits), EAN-12 (12 digits) or custom length
                 int expectedLength = p.Length + codeLen + weightLen + 1; // e.g. 2 + 5 + 5 + 1 = 13 digits
 
-                if (barcode.StartsWith(p) && (barcode.Length == expectedLength || (p.Length == 2 && barcode.Length == 13)))
+                if (barcode.StartsWith(p) && (barcode.Length == expectedLength || barcode.Length == 13 || barcode.Length == 12))
                 {
-                    result.IsScaleBarcode = true;
-                    result.MatchedPrefix = p;
-                    result.ItemCode = barcode.Substring(p.Length, codeLen);
-                    result.TrimmedItemCode = result.ItemCode.TrimStart('0');
-                    if (string.IsNullOrEmpty(result.TrimmedItemCode)) result.TrimmedItemCode = "0";
+                    int actualCodeLen = (barcode.Length == 13 && p.Length == 2) ? 5 : codeLen;
+                    int actualWeightLen = (barcode.Length == 13 && p.Length == 2) ? 5 : weightLen;
 
-                    string weightStr = barcode.Substring(p.Length + codeLen, weightLen);
-                    if (decimal.TryParse(weightStr, out decimal w))
+                    if (barcode.Length >= p.Length + actualCodeLen + actualWeightLen)
                     {
-                        result.WeightOrPrice = div > 0 ? w / div : w;
+                        result.IsScaleBarcode = true;
+                        result.MatchedPrefix = p;
+                        result.ItemCode = barcode.Substring(p.Length, actualCodeLen);
+                        result.TrimmedItemCode = result.ItemCode.TrimStart('0');
+                        if (string.IsNullOrEmpty(result.TrimmedItemCode)) result.TrimmedItemCode = "0";
+
+                        string weightStr = barcode.Substring(p.Length + actualCodeLen, actualWeightLen);
+                        if (decimal.TryParse(weightStr, out decimal w))
+                        {
+                            result.WeightOrPrice = div > 0 ? w / div : w;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 
