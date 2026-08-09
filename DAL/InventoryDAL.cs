@@ -163,24 +163,30 @@ namespace ChickenDist.DAL
             if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
 
             string sql = $@"
+                WITH LatestAdj AS (
+                    SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
+                    FROM StockAdjustments
+                    WHERE ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND WarehouseID = @wid" : "")}
+                    GROUP BY ProductID, WarehouseID
+                ),
+                LatestAdjVal AS (
+                    SELECT sa.ProductID, sa.WarehouseID, sa.AdjDate, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
+                    FROM StockAdjustments sa
+                    INNER JOIN LatestAdj l ON sa.ProductID = l.ProductID AND sa.WarehouseID = l.WarehouseID AND sa.AdjDate = l.MaxDate
+                )
                 SELECT ProductID, SUM(NetQty) AS TotalQty
                 FROM (
-                    SELECT sa.ProductID, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
-                    FROM StockAdjustments sa
-                    INNER JOIN (
-                        SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
-                        FROM StockAdjustments
-                        WHERE ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND WarehouseID = @wid" : "")}
-                        GROUP BY ProductID, WarehouseID
-                    ) latest ON sa.ProductID = latest.ProductID AND sa.WarehouseID = latest.WarehouseID AND sa.AdjDate = latest.MaxDate
-                    WHERE sa.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
+                    SELECT v.ProductID, v.NetQty
+                    FROM LatestAdjVal v
 
                     UNION ALL
 
                     SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
                     FROM PurchaseItems pi
                     JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    LEFT JOIN LatestAdj l ON pi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pu.WarehouseID" : "")}
                     WHERE pi.ProductID IN ({pidInClause}) AND pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR pu.PurchaseDate > l.MaxDate)
                     GROUP BY pi.ProductID
 
                     UNION ALL
@@ -188,7 +194,9 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID, SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) AS NetQty
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    LEFT JOIN LatestAdj l ON ri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = sr.WarehouseID" : "")}
                     WHERE ri.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR sr.ReturnDate > l.MaxDate)
                     GROUP BY ri.ProductID
 
                     UNION ALL
@@ -197,7 +205,9 @@ namespace ChickenDist.DAL
                     FROM HandoverItems hi
                     JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                     JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                    LEFT JOIN LatestAdj l ON hi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = dl.WarehouseID" : "")}
                     WHERE hi.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR dh.HandoverDate > l.MaxDate)
                     GROUP BY hi.ProductID
 
                     UNION ALL
@@ -205,7 +215,9 @@ namespace ChickenDist.DAL
                     SELECT ti.ProductID, SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    LEFT JOIN LatestAdj l ON ti.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = t.ToWarehouseID" : "")}
                     WHERE ti.ProductID IN ({pidInClause}) AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
                     GROUP BY ti.ProductID
 
                     UNION ALL
@@ -213,7 +225,9 @@ namespace ChickenDist.DAL
                     SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
+                    LEFT JOIN LatestAdj l ON si.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = s.WarehouseID" : "")}
                     WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted IN (0, 1) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR s.SaleDate > l.MaxDate)
                     GROUP BY si.ProductID
 
                     UNION ALL
@@ -221,7 +235,9 @@ namespace ChickenDist.DAL
                     SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    LEFT JOIN LatestAdj l ON pri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pr.WarehouseID" : "")}
                     WHERE pri.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR pr.ReturnDate > l.MaxDate)
                     GROUP BY pri.ProductID
 
                     UNION ALL
@@ -229,7 +245,9 @@ namespace ChickenDist.DAL
                     SELECT ti.ProductID, -SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                    LEFT JOIN LatestAdj l ON ti.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = t.FromWarehouseID" : "")}
                     WHERE ti.ProductID IN ({pidInClause}) AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
                     GROUP BY ti.ProductID
 
                     UNION ALL
@@ -237,7 +255,9 @@ namespace ChickenDist.DAL
                     SELECT wli.ProductID, -SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) AS NetQty
                     FROM WastageLossItems wli
                     JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                    LEFT JOIN LatestAdj l ON wli.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = wl.WarehouseID" : "")}
                     WHERE wli.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR wl.WastageDate > l.MaxDate)
                     GROUP BY wli.ProductID
                 ) StockUnion
                 GROUP BY ProductID";
@@ -257,25 +277,31 @@ namespace ChickenDist.DAL
             List<SqlParameter> prms = new List<SqlParameter>();
             if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
 
-            string sql = @"
+            string sql = $@"
+                WITH LatestAdj AS (
+                    SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
+                    FROM StockAdjustments
+                    {(warehouseID.HasValue ? "WHERE WarehouseID = @wid" : "")}
+                    GROUP BY ProductID, WarehouseID
+                ),
+                LatestAdjVal AS (
+                    SELECT sa.ProductID, sa.WarehouseID, sa.AdjDate, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
+                    FROM StockAdjustments sa
+                    INNER JOIN LatestAdj l ON sa.ProductID = l.ProductID AND sa.WarehouseID = l.WarehouseID AND sa.AdjDate = l.MaxDate
+                )
                 SELECT ProductID, SUM(NetQty) AS TotalQty
                 FROM (
-                    SELECT sa.ProductID, sa.ActualQty * COALESCE(sa.Factor, 1.0) AS NetQty
-                    FROM StockAdjustments sa
-                    INNER JOIN (
-                        SELECT ProductID, WarehouseID, MAX(AdjDate) AS MaxDate
-                        FROM StockAdjustments
-                        " + (warehouseID.HasValue ? "WHERE WarehouseID = @wid" : "") + @"
-                        GROUP BY ProductID, WarehouseID
-                    ) latest ON sa.ProductID = latest.ProductID AND sa.WarehouseID = latest.WarehouseID AND sa.AdjDate = latest.MaxDate
-                    " + (warehouseID.HasValue ? "WHERE sa.WarehouseID = @wid" : "") + @"
+                    SELECT v.ProductID, v.NetQty
+                    FROM LatestAdjVal v
 
                     UNION ALL
 
                     SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
                     FROM PurchaseItems pi
                     JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                    WHERE pu.IsPosted = 1 " + (warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON pi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pu.WarehouseID" : "")}
+                    WHERE pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR pu.PurchaseDate > l.MaxDate)
                     GROUP BY pi.ProductID
 
                     UNION ALL
@@ -283,7 +309,8 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID, SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)) AS NetQty
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
-                    " + (warehouseID.HasValue ? "WHERE sr.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON ri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = sr.WarehouseID" : "")}
+                    {(warehouseID.HasValue ? "WHERE sr.WarehouseID = @wid AND (l.MaxDate IS NULL OR sr.ReturnDate > l.MaxDate)" : "WHERE (l.MaxDate IS NULL OR sr.ReturnDate > l.MaxDate)")}
                     GROUP BY ri.ProductID
 
                     UNION ALL
@@ -292,7 +319,8 @@ namespace ChickenDist.DAL
                     FROM HandoverItems hi
                     JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID
                     JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
-                    " + (warehouseID.HasValue ? "WHERE dl.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON hi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = dl.WarehouseID" : "")}
+                    {(warehouseID.HasValue ? "WHERE dl.WarehouseID = @wid AND (l.MaxDate IS NULL OR dh.HandoverDate > l.MaxDate)" : "WHERE (l.MaxDate IS NULL OR dh.HandoverDate > l.MaxDate)")}
                     GROUP BY hi.ProductID
 
                     UNION ALL
@@ -300,7 +328,9 @@ namespace ChickenDist.DAL
                     SELECT ti.ProductID, SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                    WHERE t.IsPosted = 1 " + (warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON ti.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = t.ToWarehouseID" : "")}
+                    WHERE t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
                     GROUP BY ti.ProductID
 
                     UNION ALL
@@ -308,7 +338,9 @@ namespace ChickenDist.DAL
                     SELECT si.ProductID, -SUM(si.Quantity * COALESCE(si.Factor, 1.0)) AS NetQty
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
-                    WHERE s.IsPosted IN (0, 1) " + (warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON si.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = s.WarehouseID" : "")}
+                    WHERE s.IsPosted IN (0, 1) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR s.SaleDate > l.MaxDate)
                     GROUP BY si.ProductID
 
                     UNION ALL
@@ -316,7 +348,8 @@ namespace ChickenDist.DAL
                     SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                    " + (warehouseID.HasValue ? "WHERE pr.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON pri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pr.WarehouseID" : "")}
+                    {(warehouseID.HasValue ? "WHERE pr.WarehouseID = @wid AND (l.MaxDate IS NULL OR pr.ReturnDate > l.MaxDate)" : "WHERE (l.MaxDate IS NULL OR pr.ReturnDate > l.MaxDate)")}
                     GROUP BY pri.ProductID
 
                     UNION ALL
@@ -324,7 +357,9 @@ namespace ChickenDist.DAL
                     SELECT ti.ProductID, -SUM(ti.Quantity * COALESCE(ti.Factor, 1.0)) AS NetQty
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
-                    WHERE t.IsPosted = 1 " + (warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON ti.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = t.FromWarehouseID" : "")}
+                    WHERE t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}
+                      AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
                     GROUP BY ti.ProductID
 
                     UNION ALL
@@ -332,7 +367,8 @@ namespace ChickenDist.DAL
                     SELECT wli.ProductID, -SUM(wli.Quantity * COALESCE(wli.Factor, 1.0)) AS NetQty
                     FROM WastageLossItems wli
                     JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
-                    " + (warehouseID.HasValue ? "WHERE wl.WarehouseID = @wid" : "") + @"
+                    LEFT JOIN LatestAdj l ON wli.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = wl.WarehouseID" : "")}
+                    {(warehouseID.HasValue ? "WHERE wl.WarehouseID = @wid AND (l.MaxDate IS NULL OR wl.WastageDate > l.MaxDate)" : "WHERE (l.MaxDate IS NULL OR wl.WastageDate > l.MaxDate)")}
                     GROUP BY wli.ProductID
                 ) StockUnion
                 GROUP BY ProductID";
