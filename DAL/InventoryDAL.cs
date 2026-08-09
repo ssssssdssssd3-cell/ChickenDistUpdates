@@ -9,7 +9,7 @@ namespace ChickenDist.DAL
     public static class InventoryDAL
     {
         /// <summary>جلب رصيد الجرد الحالي لكل الأصناف مع إمكانية تحديد المخزن والبحث السريع والمكان/الرف</summary>
-        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300, string location = null)
+        public static DataTable GetStock(int? warehouseID = null, string searchTerm = "", bool belowMinOnly = false, bool hideZeroStock = false, bool expiryOnly = false, int? categoryID = null, int maxRows = 300, string location = null, bool scaleOnly = false)
         {
             List<SqlParameter> prms = new List<SqlParameter>();
             prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 300 : maxRows));
@@ -17,7 +17,7 @@ namespace ChickenDist.DAL
             string whereClause = " WHERE p.IsActive = 1 ";
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                whereClause += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term) ";
+                whereClause += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term OR p.ScalePLU LIKE @term) ";
                 prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
             }
 
@@ -39,10 +39,16 @@ namespace ChickenDist.DAL
                 whereClause += " AND COALESCE(p.HasExpiry, 0) = 1 ";
             }
 
+            if (scaleOnly)
+            {
+                whereClause += " AND p.ScalePLU IS NOT NULL AND LTRIM(RTRIM(p.ScalePLU)) <> '' ";
+            }
+
             string sql = $@"
                 SELECT TOP (@maxRows) 
                     p.ProductID,
                     p.ProductCode,
+                    p.ScalePLU,
                     p.PartNumber,
                     p.ProductName,
                     p.Unit,

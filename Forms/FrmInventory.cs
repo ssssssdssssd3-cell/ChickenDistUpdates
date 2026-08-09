@@ -18,7 +18,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
-        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly;
+        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly;
         private ComboBox cboCategory, cboMaxRows;
         private Label lblCount, lblTotalCost, lblTotalSale;
 
@@ -217,6 +217,18 @@ namespace ChickenDist.Forms
             };
             chkExpiryOnly.CheckedChanged += (s, e) => LoadStock();
 
+            chkScaleOnly = new CheckBox
+            {
+                Text = "⚖️ أصناف الميزان",
+                ForeColor = Color.FromArgb(120, 40, 180),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(6, 5, 6, 0),
+                RightToLeft = RightToLeft.Yes,
+                Checked = false
+            };
+            chkScaleOnly.CheckedChanged += (s, e) => LoadStock();
+
             chkUninventoriedOnly = new CheckBox
             {
                 Text = "⏳ لم تُجرد بعد",
@@ -242,7 +254,7 @@ namespace ChickenDist.Forms
             var lblLimit2 = new Label { Text = "عرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
             pnlRow2.Controls.AddRange(new Control[] {
                 lblLimit2, cboMaxRows,
-                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkUninventoriedOnly
+                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly
             });
 
             // ── الصف 3: أزرار العمليات ─────────────────────────────────────────
@@ -273,6 +285,11 @@ namespace ChickenDist.Forms
             btnClearAdj.Margin = new Padding(2, 2, 6, 0);
             btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
 
+            var btnScaleReport = Theme.MakeButton("⚖️ أصناف الميزان", Color.FromArgb(90, 40, 160));
+            btnScaleReport.Size = new Size(125, 28);
+            btnScaleReport.Margin = new Padding(2, 2, 6, 0);
+            btnScaleReport.Click += (s, e) => PrintScaleProductsReport();
+
             var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق", Color.FromArgb(120, 50, 150));
             btnVarianceReport.Size = new Size(105, 28);
             btnVarianceReport.Margin = new Padding(2, 2, 6, 0);
@@ -297,7 +314,7 @@ namespace ChickenDist.Forms
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory, lblInventoryStart,
                 btnSaveAdj, btnClearAdj,
-                btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
+                btnScaleReport, btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);
@@ -311,6 +328,7 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",     Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchID",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",   HeaderText = "كود الصنف", ReadOnly = true,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScalePLU",      HeaderText = "كود الميزان", ReadOnly = true,  FillWeight = 40 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",   HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "المكان/الرف", ReadOnly = true,  FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",    HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
@@ -556,7 +574,8 @@ namespace ChickenDist.Forms
 
             int queryMaxRows = (maxDisplay == int.MaxValue) ? 100000 : maxDisplay;
             string selectedLocation = (cboLocation != null && cboLocation.SelectedIndex > 0) ? cboLocation.SelectedItem.ToString() : null;
-            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId, maxRows: queryMaxRows, location: selectedLocation);
+            bool scaleOnly = chkScaleOnly != null && chkScaleOnly.Checked;
+            var dt  = InventoryDAL.GetStock(wid, txtSearch.Text, chkBelowMin != null && chkBelowMin.Checked, hideZero, expOnly, catId, maxRows: queryMaxRows, location: selectedLocation, scaleOnly: scaleOnly);
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
             int displayedCount = 0;
@@ -627,11 +646,13 @@ namespace ChickenDist.Forms
                     : (object)DBNull.Value;
 
                 string shelfLoc = (dt.Columns.Contains("ShelfLocation") && r["ShelfLocation"] != DBNull.Value) ? r["ShelfLocation"].ToString() : "---";
+                string scalePlu = (dt.Columns.Contains("ScalePLU") && r["ScalePLU"] != DBNull.Value) ? r["ScalePLU"].ToString() : "";
 
                 int ri = dgStock.Rows.Add(
                     r["ProductID"],
                     batchIdVal,
                     r["ProductCode"],
+                    scalePlu,
                     r["ProductName"],
                     shelfLoc,
                     expiryVal,
@@ -1592,6 +1613,109 @@ namespace ChickenDist.Forms
             newRow.Selected = true;
             dgStock.CurrentCell = newRow.Cells["ExpiryDate"];
             dgStock.BeginEdit(true);
+        }
+
+        private int _printScaleRowIndex = 0;
+
+        private void PrintScaleProductsReport()
+        {
+            _printScaleRowIndex = 0;
+            var pd = new PrintDocument();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+            pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+
+            int? wid = null;
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0)
+                wid = wci.ID;
+
+            string whName = (cboWarehouse != null && cboWarehouse.SelectedItem != null) ? cboWarehouse.SelectedItem.ToString() : "كل المخازن";
+
+            // Query all Scale Products directly
+            var dtScale = InventoryDAL.GetStock(wid, scaleOnly: true, maxRows: 10000);
+
+            if (dtScale == null || dtScale.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف تحتوي على كود ميزان (PLU) مسجل!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            pd.PrintPage += (s, e) =>
+            {
+                var g = e.Graphics;
+                var boldBig = new Font("Arial", 16, FontStyle.Bold);
+                var bold = new Font("Arial", 10, FontStyle.Bold);
+                var normal = new Font("Arial", 9);
+                var center = new StringFormat { Alignment = StringAlignment.Center };
+
+                int y = 30;
+                int pageW = 800;
+
+                // Header
+                g.DrawString("⚖️ تقرير الأصناف التي تحتوي على كود ميزان (PLU)", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 32), center);
+                y += 35;
+                g.DrawString($"المخزن: {whName} | تاريخ التقرير: {DateTime.Now:dd/MM/yyyy HH:mm} | إجمالي الأصناف: {dtScale.Rows.Count}", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);
+                y += 25;
+                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y);
+                y += 15;
+
+                // Columns: Local Code, Name, Scale PLU, Unit, Price, Available Qty
+                int[] xCols = { 20, 130, 420, 520, 600, 700 };
+                string[] headers = { "كود المحلي", "اسم الصنف", "كود الميزان", "الوحدة", "سعر البيع", "الرصيد المتاح" };
+
+                g.FillRectangle(new SolidBrush(Color.FromArgb(230, 236, 244)), 20, y - 3, pageW - 40, 26);
+                for (int i = 0; i < headers.Length; i++)
+                    g.DrawString(headers[i], bold, Brushes.DarkBlue, xCols[i], y);
+                y += 26;
+                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y);
+                y += 8;
+
+                int maxY = 1080;
+
+                while (_printScaleRowIndex < dtScale.Rows.Count)
+                {
+                    var row = dtScale.Rows[_printScaleRowIndex];
+                    string code = row["ProductCode"]?.ToString();
+                    string name = row["ProductName"]?.ToString();
+                    string scalePlu = row["ScalePLU"]?.ToString();
+                    string unit = row["Unit"]?.ToString();
+                    decimal price = row["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["SalePrice"]) : 0m;
+                    decimal qty = row["BookQty"] != DBNull.Value ? Convert.ToDecimal(row["BookQty"]) : 0m;
+
+                    g.DrawString(code ?? "", normal, Brushes.Black, xCols[0], y);
+                    g.DrawString(name ?? "", normal, Brushes.Black, xCols[1], y);
+                    g.DrawString(scalePlu ?? "", bold, Brushes.DarkRed, xCols[2], y);
+                    g.DrawString(unit ?? "", normal, Brushes.Black, xCols[3], y);
+                    g.DrawString(price.ToString("N2") + " ج", normal, Brushes.Black, xCols[4], y);
+                    g.DrawString(qty.ToString("N3"), bold, Brushes.DarkGreen, xCols[5], y);
+
+                    y += 24;
+                    _printScaleRowIndex++;
+
+                    if (y >= maxY && _printScaleRowIndex < dtScale.Rows.Count)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
+                }
+
+                e.HasMorePages = false;
+                y += 15;
+                if (y < maxY)
+                {
+                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y);
+                    y += 10;
+                    g.DrawString($"إجمالي عدد أصناف الميزان المسجلة: {dtScale.Rows.Count} صنف", bold, Brushes.DarkBlue, 20, y);
+                }
+            };
+
+            var preview = new PrintPreviewDialog
+            {
+                Document = pd,
+                Width = 900,
+                Height = 800,
+                Text = "طباعة تقرير أصناف الميزان (PLU)"
+            };
+            preview.ShowDialog();
         }
     }
 
