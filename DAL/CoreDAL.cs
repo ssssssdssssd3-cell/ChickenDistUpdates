@@ -634,80 +634,22 @@ namespace ChickenDist.DAL
         {
             if (string.IsNullOrWhiteSpace(code)) return new DataTable();
 
-            string cleanCode = code.Trim();
-            string trimmedCode = cleanCode.TrimStart('0');
-            if (string.IsNullOrEmpty(trimmedCode)) trimmedCode = "0";
+            DataRow dr = GetByBarcodeOrScaleCode(code, out decimal weight);
+            if (dr == null) return new DataTable();
 
-            string paddedCode = cleanCode;
-            if (int.TryParse(cleanCode, out int codeVal))
+            DataTable dt = dr.Table.Clone();
+            if (!dt.Columns.Contains("MatchedUnit")) dt.Columns.Add("MatchedUnit", typeof(int));
+            if (!dt.Columns.Contains("ParsedWeight")) dt.Columns.Add("ParsedWeight", typeof(decimal));
+
+            DataRow newRow = dt.NewRow();
+            foreach (DataColumn col in dr.Table.Columns)
             {
-                paddedCode = codeVal.ToString("D8");
+                if (dt.Columns.Contains(col.ColumnName))
+                    newRow[col.ColumnName] = dr[col.ColumnName];
             }
-
-            // 1) Direct lookup including ScalePLU
-            var dt = DbHelper.Query(
-                @"SELECT TOP 1 p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, 
-                         p.SalePrice, p.PurchasePrice, p.MinStockLimit, p.InternationalCode,
-                         p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
-                         p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                         p.Unit3Factor, p.ScalePLU,
-                         CASE 
-                             WHEN p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' THEN 1
-                             WHEN p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' THEN 2
-                             ELSE 3
-                          END AS MatchedUnit,
-                         CAST(1.000 AS DECIMAL(18,3)) AS ParsedWeight
-                  FROM Products p
-                  WHERE p.IsActive = 1
-                    AND (p.ScalePLU = @code OR p.ScalePLU = @trimmed OR p.ScalePLU = @padded
-                         OR (ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @codeVal)
-                         OR p.ProductCode = @code OR p.ProductCode = @trimmed OR p.ProductCode = @padded
-                         OR p.PartNumber = @code OR p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%'
-                         OR p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%'
-                         OR p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%')
-                  ORDER BY CASE WHEN (p.ScalePLU = @code OR p.ScalePLU = @trimmed OR (ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @codeVal)) THEN 0 ELSE 1 END",
-                DbHelper.P("@code", cleanCode),
-                DbHelper.P("@trimmed", trimmedCode),
-                DbHelper.P("@padded", paddedCode),
-                DbHelper.P("@codeVal", codeVal));
-
-            if (dt.Rows.Count > 0) return dt;
-
-            // 2) Scale Barcode Parsing (e.g. 9900168000724 -> Item 00168 / Weight 0.072 kg)
-            var parseRes = BarcodeParser.Parse(cleanCode);
-            if (parseRes.IsScaleBarcode && !string.IsNullOrEmpty(parseRes.ItemCode))
-            {
-                string itemCode = parseRes.ItemCode;
-                string trimmedItemCode = parseRes.TrimmedItemCode;
-                decimal weight = parseRes.WeightOrPrice > 0 ? parseRes.WeightOrPrice : 1m;
-                int.TryParse(trimmedItemCode, out int itemCodeVal);
-
-                string paddedItemCode = itemCode;
-                if (itemCodeVal > 0) paddedItemCode = itemCodeVal.ToString("D8");
-
-                dt = DbHelper.Query(
-                    @"SELECT TOP 1 p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.Unit, 
-                             p.SalePrice, p.PurchasePrice, p.MinStockLimit, p.InternationalCode,
-                             p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
-                             p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
-                             p.Unit3Factor, p.ScalePLU,
-                             3 AS MatchedUnit,
-                             @weight AS ParsedWeight
-                      FROM Products p
-                      WHERE p.IsActive = 1
-                        AND (p.ScalePLU = @c OR p.ScalePLU = @trimmed OR p.ScalePLU = @padded OR (@itemCodeVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @itemCodeVal)
-                             OR p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.InternationalCode = @trimmed
-                             OR (@itemCodeVal > 0 AND p.ProductID = @itemCodeVal)
-                             OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @itemCodeVal))
-                      ORDER BY CASE WHEN (p.ScalePLU = @c OR p.ScalePLU = @trimmed OR (@itemCodeVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @itemCodeVal)) THEN 0 ELSE 1 END",
-                    DbHelper.P("@c", itemCode),
-                    DbHelper.P("@trimmed", trimmedItemCode),
-                    DbHelper.P("@padded", paddedItemCode),
-                    DbHelper.P("@itemCodeVal", itemCodeVal),
-                    DbHelper.P("@weight", weight));
-
-                if (dt.Rows.Count > 0) return dt;
-            }
+            newRow["MatchedUnit"] = dr.Table.Columns.Contains("MatchedUnit") ? dr["MatchedUnit"] : 3;
+            newRow["ParsedWeight"] = weight;
+            dt.Rows.Add(newRow);
 
             return dt;
         }
