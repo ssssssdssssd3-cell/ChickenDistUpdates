@@ -25,7 +25,15 @@ namespace ChickenDist.Core
             barcode = barcode.Trim();
 
             string rawPrefixes = AppConfig.BarcodeScalePrefix;
-            if (string.IsNullOrWhiteSpace(rawPrefixes)) rawPrefixes = "99,20,21,22,23,24,25,26,27,28,29,9";
+            if (string.IsNullOrWhiteSpace(rawPrefixes))
+            {
+                rawPrefixes = "99,20,21,22,23,24,25,26,27,28,29,9";
+            }
+            else
+            {
+                if (!rawPrefixes.Contains("99")) rawPrefixes += ",99";
+                if (!rawPrefixes.Contains("20")) rawPrefixes += ",20";
+            }
 
             string[] prefixes = rawPrefixes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 

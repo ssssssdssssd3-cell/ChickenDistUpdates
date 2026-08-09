@@ -765,7 +765,7 @@ namespace ChickenDist.Forms
 			};
 			txtProductCode.KeyDown += (s, e) =>
 			{
-				if (e.KeyCode == Keys.Enter)
+				if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Tab)
 				{
 					string scanText = txtProductCode.Text.Trim();
 					if (string.IsNullOrEmpty(scanText))
@@ -796,7 +796,7 @@ namespace ChickenDist.Forms
 							}
 
 							txtProductCode.Clear();
-							txtProductCode.Focus();
+							this.BeginInvoke((MethodInvoker)delegate { txtProductCode.Focus(); });
 						}
 						finally
 						{
