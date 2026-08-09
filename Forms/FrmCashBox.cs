@@ -824,8 +824,8 @@ namespace ChickenDist.Forms
             var nudAmt = new NumericUpDown 
             { 
                 Width = 320, 
-                Minimum = 0.00m, 
-                Maximum = 9999999, 
+                Minimum = -999999999m, 
+                Maximum = 999999999m, 
                 DecimalPlaces = 2,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
