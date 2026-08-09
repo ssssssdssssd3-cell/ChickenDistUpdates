@@ -610,6 +610,13 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD InternationalCode NVARCHAR(100) NULL;
                 END");
 
+                // Add ScalePLU to Products
+                SafeMigrate("Products.ScalePLU", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ScalePLU')
+                BEGIN
+                    ALTER TABLE Products ADD ScalePLU NVARCHAR(50) NULL;
+                END");
+
                 // Add IsService to Products
                 SafeMigrate("Products.IsService", @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'IsService')
