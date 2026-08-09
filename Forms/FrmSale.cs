@@ -1550,68 +1550,31 @@ namespace ChickenDist.Forms
 			if (res.IsScaleBarcode)
 			{
 				_pendingBarcodeWeight = res.WeightOrPrice;
-				
-				// 1) Check ScalePLU
 				foreach (var ci in allItems)
 				{
-					if (ci.ID > 0 && !string.IsNullOrWhiteSpace(ci.ScalePLU) && (
-						ci.ScalePLU == res.ItemCode || 
-						ci.ScalePLU == res.TrimmedItemCode || 
-						(int.TryParse(ci.ScalePLU, out int pluVal) && pluVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+					if (ci.ID > 0 && (
+						ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+						ci.PartNumber == res.ItemCode ||
+						(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
 					))
 					{
 						foundItem = ci;
 						break;
 					}
 				}
-				// 2) Fallback to ProductCode / PartNumber / ID
-				if (foundItem == null)
-				{
-					foreach (var ci in allItems)
-					{
-						if (ci.ID > 0 && (
-							ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
-							ci.PartNumber == res.ItemCode ||
-							(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
-						))
-						{
-							foundItem = ci;
-							break;
-						}
-					}
-				}
 				if (foundItem == null) { _pendingBarcodeWeight = null; return; }
 			}
 			else
 			{
-				// Check via ProductDAL for scale code or general barcode match
-				DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(text, out decimal weight);
-				if (pRow != null)
+				foreach (var ci in allItems)
 				{
-					int pid = Convert.ToInt32(pRow["ProductID"]);
-					if (weight > 0) _pendingBarcodeWeight = weight;
-					foreach (var ci in allItems)
+					if (ci.ID > 0 &&
+						(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
+						 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
+						 MatchBarcode(ci.InternationalCode, text)))
 					{
-						if (ci.ID == pid)
-						{
-							foundItem = ci;
-							break;
-						}
-					}
-				}
-
-				if (foundItem == null)
-				{
-					foreach (var ci in allItems)
-					{
-						if (ci.ID > 0 &&
-							(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
-							 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
-							 MatchBarcode(ci.InternationalCode, text)))
-						{
-							foundItem = ci;
-							break;
-						}
+						foundItem = ci;
+						break;
 					}
 				}
 			}
@@ -2973,6 +2936,51 @@ namespace ChickenDist.Forms
 						product = ci;
 						break;
 					}
+				}
+			}
+			// Fallback: إذا لم يكن الصنف في الكومبو، نحمله مباشرة من قاعدة البيانات
+			if (product == null)
+			{
+				try
+				{
+					var pRow = ProductDAL.GetByID(productID);
+					if (pRow != null)
+					{
+						string name = pRow["ProductName"].ToString();
+						decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+						decimal purchasePrice = pRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["PurchasePrice"]) : 0m;
+						decimal minStock = pRow["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(pRow["MinStockLimit"]) : 0m;
+
+						product = new ComboItem(productID, name, $"{name} ({price:N2})", price, minStock, purchasePrice);
+						product.ProductCode = pRow["ProductCode"]?.ToString() ?? "";
+						product.InternationalCode = pRow["InternationalCode"]?.ToString() ?? "";
+						product.ScalePLU = pRow.Table.Columns.Contains("ScalePLU") && pRow["ScalePLU"] != DBNull.Value ? pRow["ScalePLU"].ToString().Trim() : "";
+						product.IsService = pRow.Table.Columns.Contains("IsService") && pRow["IsService"] != DBNull.Value && Convert.ToBoolean(pRow["IsService"]);
+						product.HasExpiry = pRow.Table.Columns.Contains("HasExpiry") && pRow["HasExpiry"] != DBNull.Value && Convert.ToBoolean(pRow["HasExpiry"]);
+						product.DefaultExpiryDays = pRow.Table.Columns.Contains("DefaultExpiryDays") && pRow["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(pRow["DefaultExpiryDays"]) : (int?)null;
+						product.DefaultSaleUnit = pRow.Table.Columns.Contains("DefaultSaleUnit") && pRow["DefaultSaleUnit"] != DBNull.Value ? pRow["DefaultSaleUnit"].ToString() : "";
+						product.BaseUnitName = pRow.Table.Columns.Contains("Unit") && pRow["Unit"] != DBNull.Value ? pRow["Unit"].ToString() : "";
+						product.Unit1Name = pRow.Table.Columns.Contains("Unit1Name") && pRow["Unit1Name"] != DBNull.Value ? pRow["Unit1Name"].ToString() : null;
+						product.Unit1SalePrice = pRow.Table.Columns.Contains("Unit1SalePrice") && pRow["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1SalePrice"]) : 0m;
+						product.Unit1PurchasePrice = pRow.Table.Columns.Contains("Unit1PurchasePrice") && pRow["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1PurchasePrice"]) : 0m;
+						product.Unit1Factor = 1m;
+						product.Unit2Name = pRow.Table.Columns.Contains("Unit2Name") && pRow["Unit2Name"] != DBNull.Value ? pRow["Unit2Name"].ToString() : null;
+						product.Unit2Factor = pRow.Table.Columns.Contains("Unit2Factor") && pRow["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2Factor"]) : 1m;
+						product.Unit2SalePrice = pRow.Table.Columns.Contains("Unit2SalePrice") && pRow["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2SalePrice"]) : 0m;
+						product.Unit2PurchasePrice = pRow.Table.Columns.Contains("Unit2PurchasePrice") && pRow["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2PurchasePrice"]) : 0m;
+						product.Unit3Factor = pRow.Table.Columns.Contains("Unit3Factor") && pRow["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit3Factor"]) : 1m;
+						product.PartNumber = pRow["PartNumber"]?.ToString() ?? "";
+						product.ShelfLocation = pRow["ShelfLocation"]?.ToString() ?? "";
+
+						// أضف الصنف للقائمة لتجنب التحميل مرة أخرى
+						cboProduct.Items.Add(product);
+						if (cboProduct.Tag is List<ComboItem> tagList)
+							tagList.Add(product);
+					}
+				}
+				catch (Exception ex)
+				{
+					AppLogger.Error("AddOrUpdateProduct fallback load", ex);
 				}
 			}
 			if (product == null) return;
