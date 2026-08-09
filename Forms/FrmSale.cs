@@ -2586,7 +2586,8 @@ namespace ChickenDist.Forms
 						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
 							dgItems.Rows.RemoveAt(rowIdx);
 						_pendingRowIdx = -1;
-						AddOrUpdateProduct(productID, 1.00m, price, false, unitName);
+						decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
+						AddOrUpdateProduct(productID, itemQty, price, false, unitName);
 						// فتح سطر جديد للإدخال التالي
 						AddNewCodeRow();
 					}
