@@ -9,7 +9,7 @@ namespace ChickenDist.Forms
 {
     public class FrmProductCard : Form
     {
-        private TextBox txtCode, txtName, txtEnglishName, txtDescription, txtPartNumber, txtInternationalCode;
+        private TextBox txtCode, txtName, txtEnglishName, txtDescription, txtPartNumber, txtInternationalCode, txtScalePLU;
         private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtProductSize, txtColor;
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor;
@@ -193,7 +193,13 @@ namespace ChickenDist.Forms
             var btnMultiBarcode = new Button { Text = "➕", Location = new Point(263, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnMultiBarcode.Click += BtnMultiBarcode_Click;
             grpPrice.Controls.AddRange(new Control[] { txtInternationalCode, btnMultiBarcode });
-            py += 40;
+            py += 36;
+
+            AddField(grpPrice, "⚖️ كود كرت الميزان (PLU):", 10, py, out txtScalePLU);
+            txtScalePLU.BackColor = Color.FromArgb(30, 48, 70);
+            txtScalePLU.ForeColor = Color.FromArgb(254, 240, 138);
+            txtScalePLU.Font = new Font(Theme.FontMain, FontStyle.Bold);
+            py += 38;
 
             if (bizType == "General" || bizType == "SpareParts" || bizType == "Mobiles" || bizType == "Clothing")
             {
@@ -579,6 +585,7 @@ namespace ChickenDist.Forms
                 if (txtEnglishName != null) txtEnglishName.Text = dr.Table.Columns.Contains("EnglishName") && dr["EnglishName"] != DBNull.Value ? dr["EnglishName"].ToString() : "";
                 if (txtPartNumber != null) txtPartNumber.Text = dr["PartNumber"] != DBNull.Value ? dr["PartNumber"].ToString() : "";
                 txtInternationalCode.Text = dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value ? dr["InternationalCode"].ToString() : "";
+                if (txtScalePLU != null) txtScalePLU.Text = dr.Table.Columns.Contains("ScalePLU") && dr["ScalePLU"] != DBNull.Value ? dr["ScalePLU"].ToString() : "";
                 if (txtCarModel != null) txtCarModel.Text = dr["CarModel"] != DBNull.Value ? dr["CarModel"].ToString() : "";
                 if (txtBrand != null) txtBrand.Text = dr["Brand"] != DBNull.Value ? dr["Brand"].ToString() : "";
                 if (txtProducerCompany != null) txtProducerCompany.Text = dr.Table.Columns.Contains("ProducerCompany") && dr["ProducerCompany"] != DBNull.Value ? dr["ProducerCompany"].ToString() : "";
@@ -669,6 +676,7 @@ namespace ChickenDist.Forms
             if (txtEnglishName != null) txtEnglishName.Clear();
             if (txtPartNumber != null) txtPartNumber.Clear();
             txtInternationalCode.Clear();
+            if (txtScalePLU != null) txtScalePLU.Clear();
             if (txtCarModel != null) txtCarModel.Text = "";
             if (txtBrand != null) txtBrand.Text = "";
             if (txtProducerCompany != null) txtProducerCompany.Text = "";
@@ -828,6 +836,7 @@ namespace ChickenDist.Forms
             string sizeValStr = txtProductSize != null ? txtProductSize.Text.Trim() : "";
             string colorValStr = txtColor != null ? txtColor.Text.Trim() : "";
             string enNameVal = txtEnglishName != null ? txtEnglishName.Text.Trim() : "";
+            string scalePLUVal = txtScalePLU != null ? txtScalePLU.Text.Trim() : "";
 
             // الحفظ في قاعدة البيانات
             int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
@@ -838,7 +847,7 @@ namespace ChickenDist.Forms
                 cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                 cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                 nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal);
+                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal);
 
             if (id > 0)
             {

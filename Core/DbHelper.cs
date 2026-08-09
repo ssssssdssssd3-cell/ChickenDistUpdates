@@ -1298,6 +1298,11 @@ namespace ChickenDist.Core
                     ALTER TABLE Clients ADD DefaultPriceTier NVARCHAR(20) DEFAULT N'قطاعي';
                 END
                 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'ScalePLU')
+                BEGIN
+                    ALTER TABLE Products ADD ScalePLU NVARCHAR(50) NULL;
+                END
+
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SalesAudit')
                 BEGIN
                     CREATE TABLE SalesAudit (

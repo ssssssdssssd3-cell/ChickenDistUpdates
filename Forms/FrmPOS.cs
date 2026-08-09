@@ -710,6 +710,7 @@ namespace ChickenDist.Forms
                         paddedItemCode = itemCodeVal.ToString("D8");
                     }
 
+                    // 1) First try to find product by ScalePLU
                     dt = DbHelper.Query(@"
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                                p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
@@ -718,16 +719,35 @@ namespace ChickenDist.Forms
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
                         WHERE p.IsActive = 1 AND (
-                            p.ProductCode = @c OR 
-                            p.ProductCode = @trimmed OR 
-                            p.ProductCode = @padded OR 
-                            p.InternationalCode = @c OR 
-                            p.InternationalCode = @trimmed OR
-                            (@itemCodeVal > 0 AND p.ProductID = @itemCodeVal) OR
-                            (@itemCodeVal > 0 AND CAST(p.ProductID AS VARCHAR) = @trimmed) OR
-                            (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @itemCodeVal)
+                            p.ScalePLU = @c OR 
+                            p.ScalePLU = @trimmed OR 
+                            p.ScalePLU = @padded OR
+                            (@itemCodeVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @itemCodeVal)
                         )", 
                         DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode), DbHelper.P("@itemCodeVal", itemCodeVal));
+
+                    // 2) Fall back to ProductCode/ProductID if ScalePLU is not set
+                    if (dt.Rows.Count == 0)
+                    {
+                        dt = DbHelper.Query(@"
+                            SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
+                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
+                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                                   p.Unit3Factor, p.DefaultSaleUnit,
+                                   p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
+                            FROM Products p 
+                            WHERE p.IsActive = 1 AND (
+                                p.ProductCode = @c OR 
+                                p.ProductCode = @trimmed OR 
+                                p.ProductCode = @padded OR 
+                                p.InternationalCode = @c OR 
+                                p.InternationalCode = @trimmed OR
+                                (@itemCodeVal > 0 AND p.ProductID = @itemCodeVal) OR
+                                (@itemCodeVal > 0 AND CAST(p.ProductID AS VARCHAR) = @trimmed) OR
+                                (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @itemCodeVal)
+                            )", 
+                            DbHelper.P("@c", itemCode), DbHelper.P("@trimmed", trimmedItemCode), DbHelper.P("@padded", paddedItemCode), DbHelper.P("@itemCodeVal", itemCodeVal));
+                    }
                     if (dt.Rows.Count > 0 && weight > 0)
                     {
                         var row2 = dt.Rows[0];

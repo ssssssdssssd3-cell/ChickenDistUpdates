@@ -1615,17 +1615,33 @@ namespace ChickenDist.Forms
 				{
 					_pendingBarcodeWeight = res.WeightOrPrice;
 					
-					// Search for item by scale code in unfiltered list
+					// 1) First check for exact ScalePLU match
 					foreach (var ci in allItems)
 					{
-						if (ci.ID > 0 && (
-							ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
-							ci.PartNumber == res.ItemCode ||
-							(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+						if (ci.ID > 0 && !string.IsNullOrWhiteSpace(ci.ScalePLU) && (
+							ci.ScalePLU == res.ItemCode || 
+							ci.ScalePLU == res.TrimmedItemCode || 
+							(int.TryParse(ci.ScalePLU, out int pluVal) && pluVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
 						))
 						{
 							foundItem = ci;
 							break;
+						}
+					}
+					// 2) Fallback to ProductCode/ID if no ScalePLU matched
+					if (foundItem == null)
+					{
+						foreach (var ci in allItems)
+						{
+							if (ci.ID > 0 && (
+								ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+								ci.PartNumber == res.ItemCode ||
+								(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+							))
+							{
+								foundItem = ci;
+								break;
+							}
 						}
 					}
 					if (foundItem == null)
@@ -1893,6 +1909,7 @@ namespace ChickenDist.Forms
 					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
 					itemOld.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
 					itemOld.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
+					itemOld.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
 					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
@@ -1921,6 +1938,7 @@ namespace ChickenDist.Forms
 					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
 					itemPending.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
 					itemPending.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
+					itemPending.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
 					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
@@ -1952,6 +1970,7 @@ namespace ChickenDist.Forms
 					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
 					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
 					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+					comboItem.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
 					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
 					comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
@@ -5181,6 +5200,7 @@ namespace ChickenDist.Forms
 		public decimal PendingQtyThreshold { get; set; } = 0m;
 		public string ProductCode { get; set; } = "";
 		public string InternationalCode { get; set; } = "";
+		public string ScalePLU { get; set; } = "";
 		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
 		public bool IsService { get; set; } = false;
 		public bool HasExpiry { get; set; } = false;
