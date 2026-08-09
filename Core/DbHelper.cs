@@ -460,6 +460,27 @@ namespace ChickenDist.Core
                 IF COL_LENGTH('SaleItems', 'IMEI') IS NULL
                     ALTER TABLE SaleItems ADD IMEI NVARCHAR(255) NULL;
             END");
+
+            SafeMigrate("Products.ScalePLUColumn", @"
+            IF OBJECT_ID('Products', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Products', 'ScalePLU') IS NULL
+                    ALTER TABLE Products ADD ScalePLU NVARCHAR(50) NULL;
+            END");
+        }
+
+        public static void EnsureScalePLUColumnExists()
+        {
+            try
+            {
+                SafeMigrate("Products.ScalePLUColumn", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'ScalePLU') IS NULL
+                        ALTER TABLE Products ADD ScalePLU NVARCHAR(50) NULL;
+                END");
+            }
+            catch {}
         }
 
         public static void EnsureDatabaseSchema()
