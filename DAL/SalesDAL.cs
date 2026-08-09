@@ -2152,8 +2152,8 @@ namespace ChickenDist.DAL
                     GROUP BY ri.ProductID
                 ),
                 StockTotals AS (
-                    SELECT ProductID, ISNULL(SUM(Quantity), 0.0) AS CurrentStock
-                    FROM ProductStock
+                    SELECT ProductID, ISNULL(SUM(CurrentQty), 0.0) AS CurrentStock
+                    FROM vw_CurrentStockByWarehouse
                     WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                     GROUP BY ProductID
                 )
@@ -2459,8 +2459,8 @@ namespace ChickenDist.DAL
                     GROUP BY hi.ProductID
                 ),
                 StockTotals AS (
-                    SELECT ProductID, ISNULL(SUM(Quantity), 0.0) AS CurrentStock
-                    FROM ProductStock
+                    SELECT ProductID, ISNULL(SUM(CurrentQty), 0.0) AS CurrentStock
+                    FROM vw_CurrentStockByWarehouse
                     WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
                     GROUP BY ProductID
                 )
