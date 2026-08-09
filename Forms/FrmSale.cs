@@ -765,6 +765,13 @@ namespace ChickenDist.Forms
 			};
 			txtProductCode.KeyDown += (s, e) =>
 			{
+				if (e.KeyCode == Keys.Down)
+				{
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					AddNewCodeRow();
+					return;
+				}
 				if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Tab)
 				{
 					string scanText = txtProductCode.Text.Trim();
@@ -821,6 +828,16 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 6, 2, 6)
 			};
 			SetupSearchableCombo(cboProduct);
+			cboProduct.KeyDown += (s, e) =>
+			{
+				if (e.KeyCode == Keys.Down)
+				{
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					AddNewCodeRow();
+					return;
+				}
+			};
 			cboProduct.KeyDown += CboProduct_KeyDown;
 			cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect;
 
@@ -1398,8 +1415,16 @@ namespace ChickenDist.Forms
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			if (keyData == Keys.Insert)
+			if (keyData == Keys.Insert || keyData == Keys.Down)
 			{
+				if (keyData == Keys.Down)
+				{
+					if (dgItems != null && dgItems.IsCurrentCellInEditMode && dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+					{
+						return base.ProcessCmdKey(ref msg, keyData);
+					}
+				}
+
 				AddNewCodeRow();
 				return true;
 			}
