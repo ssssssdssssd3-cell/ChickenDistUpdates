@@ -453,6 +453,36 @@ namespace ChickenDist.DAL
             decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null, string englishName = null, string scalePLU = null)
         {
             DbHelper.EnsureScalePLUColumnExists();
+
+            if (!string.IsNullOrWhiteSpace(scalePLU))
+            {
+                string cleanPLU = scalePLU.Trim();
+                string trimmedPLU = cleanPLU.TrimStart('0');
+                if (string.IsNullOrEmpty(trimmedPLU)) trimmedPLU = "0";
+
+                int.TryParse(trimmedPLU, out int pluInt);
+
+                var dtCheck = DbHelper.Query(@"
+                    SELECT TOP 1 ProductName 
+                    FROM Products 
+                    WHERE IsActive = 1 
+                      AND ProductID <> @id 
+                      AND (
+                          ScalePLU = @c OR 
+                          ScalePLU = @trimmed OR
+                          (@pluInt > 0 AND ISNUMERIC(ScalePLU) = 1 AND CAST(ScalePLU AS INT) = @pluInt)
+                      )",
+                    DbHelper.P("@id", id),
+                    DbHelper.P("@c", cleanPLU),
+                    DbHelper.P("@trimmed", trimmedPLU),
+                    DbHelper.P("@pluInt", pluInt));
+
+                if (dtCheck.Rows.Count > 0)
+                {
+                    string existingName = dtCheck.Rows[0]["ProductName"].ToString();
+                    throw new Exception($"⚠️ كود الميزان (PLU) [{cleanPLU}] مخصص بالفعل لصنف آخر: [{existingName}]!\nلا يمكن تكرار نفس كود الميزان لصنفين مختلفين.");
+                }
+            }
             if (id == 0)
                 return DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,

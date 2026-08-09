@@ -838,28 +838,35 @@ namespace ChickenDist.Forms
             string enNameVal = txtEnglishName != null ? txtEnglishName.Text.Trim() : "";
             string scalePLUVal = txtScalePLU != null ? txtScalePLU.Text.Trim() : "";
 
-            // الحفظ في قاعدة البيانات
-            int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
-                nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
-                partNumberVal, categoryID, carModelVal, brandVal, shelfVal,
-                nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
-                chkIsService.Checked,
-                cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
-                cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
-                nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal);
+            try
+            {
+                // الحفظ في قاعدة البيانات
+                int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
+                    nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,
+                    partNumberVal, categoryID, carModelVal, brandVal, shelfVal,
+                    nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
+                    chkIsService.Checked,
+                    cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
+                    cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
+                    nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
+                    chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal);
 
-            if (id > 0)
-            {
-                ChickenDist.Core.ProductCache.Refresh();
-                FrmQuickAdd.RaiseProductSaved();
-                MessageBox.Show("✅ تم الحفظ");
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                if (id > 0)
+                {
+                    ChickenDist.Core.ProductCache.Refresh();
+                    FrmQuickAdd.RaiseProductSaved();
+                    MessageBox.Show("✅ تم الحفظ");
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                }
+                else
+                {
+                    MessageBox.Show("❌ فشل الحفظ");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل الحفظ");
+                MessageBox.Show(ex.Message, "تنبيه الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
