@@ -1550,31 +1550,68 @@ namespace ChickenDist.Forms
 			if (res.IsScaleBarcode)
 			{
 				_pendingBarcodeWeight = res.WeightOrPrice;
+				
+				// 1) Check ScalePLU
 				foreach (var ci in allItems)
 				{
-					if (ci.ID > 0 && (
-						ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
-						ci.PartNumber == res.ItemCode ||
-						(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+					if (ci.ID > 0 && !string.IsNullOrWhiteSpace(ci.ScalePLU) && (
+						ci.ScalePLU == res.ItemCode || 
+						ci.ScalePLU == res.TrimmedItemCode || 
+						(int.TryParse(ci.ScalePLU, out int pluVal) && pluVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
 					))
 					{
 						foundItem = ci;
 						break;
 					}
 				}
+				// 2) Fallback to ProductCode / PartNumber / ID
+				if (foundItem == null)
+				{
+					foreach (var ci in allItems)
+					{
+						if (ci.ID > 0 && (
+							ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+							ci.PartNumber == res.ItemCode ||
+							(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+						))
+						{
+							foundItem = ci;
+							break;
+						}
+					}
+				}
 				if (foundItem == null) { _pendingBarcodeWeight = null; return; }
 			}
 			else
 			{
-				foreach (var ci in allItems)
+				// Check via ProductDAL for scale code or general barcode match
+				DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(text, out decimal weight);
+				if (pRow != null)
 				{
-					if (ci.ID > 0 &&
-						(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
-						 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
-						 MatchBarcode(ci.InternationalCode, text)))
+					int pid = Convert.ToInt32(pRow["ProductID"]);
+					if (weight > 0) _pendingBarcodeWeight = weight;
+					foreach (var ci in allItems)
 					{
-						foundItem = ci;
-						break;
+						if (ci.ID == pid)
+						{
+							foundItem = ci;
+							break;
+						}
+					}
+				}
+
+				if (foundItem == null)
+				{
+					foreach (var ci in allItems)
+					{
+						if (ci.ID > 0 &&
+							(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
+							 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
+							 MatchBarcode(ci.InternationalCode, text)))
+						{
+							foundItem = ci;
+							break;
+						}
 					}
 				}
 			}
