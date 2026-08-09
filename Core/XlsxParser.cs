@@ -37,7 +37,19 @@ namespace ChickenDist.Core
                 }
 
                 // 2. قراءة بيانات الورقة الأولى (Sheet 1)
-                ZipArchiveEntry sheetEntry = archive.GetEntry("xl/worksheets/sheet1.xml");
+                ZipArchiveEntry sheetEntry = archive.GetEntry("xl/worksheets/sheet1.xml") ?? archive.GetEntry("xl/worksheets/Sheet1.xml");
+                if (sheetEntry == null)
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (entry.FullName.StartsWith("xl/worksheets/sheet", StringComparison.OrdinalIgnoreCase))
+                        {
+                            sheetEntry = entry;
+                            break;
+                        }
+                    }
+                }
+
                 if (sheetEntry != null)
                 {
                     using (Stream stream = sheetEntry.Open())

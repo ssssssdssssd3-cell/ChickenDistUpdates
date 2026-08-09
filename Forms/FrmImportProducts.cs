@@ -271,21 +271,21 @@ namespace ChickenDist.Forms
         {
             var ruleMap = new Dictionary<string, string[]>
             {
-                { "ProductCode", new[] { "كود", "code", "barcode", "الباركود", "الصنف كود", "رقم الصنف", "رقم_الصنف", "كود_الصنف" } },
-                { "ProductName", new[] { "اسم", "name", "product", "item", "اسم الصنف", "اسم_الصنف", "الاسم" } },
-                { "PartNumber", new[] { "قطعة", "part", "oem", "رقم القطعة", "رقم_القطعة", "oem_number", "part_number", "رقم قطعة" } },
-                { "CategoryName", new[] { "تصنيف", "فئة", "قسم", "category", "group", "القسم", "الفئة" } },
-                { "CarModel", new[] { "موديل", "سيارة", "model", "car", "الموديل", "الموديل المتوافق" } },
-                { "Brand", new[] { "ماركة", "شركة", "براند", "brand", "make", "الماركة" } },
-                { "ShelfLocation", new[] { "رف", "موقع", "مكان", "shelf", "location", "موقع الرف", "رقم الرف", "الرف" } },
-                { "Unit", new[] { "وحدة", "unit", "الوحدة" } },
-                { "PurchasePrice", new[] { "شراء", "تكلفة", "cost", "purchase", "سعر الشراء", "سعر_الشراء", "سعر التكلفة" } },
-                { "SalePrice", new[] { "قطاعي", "بيع", "سعر", "price", "sale", "سعر البيع", "سعر_البيع", "سعر القطاعي" } },
-                { "SemiWholesalePrice", new[] { "نصف جملة", "نصف_جملة", "semi", "semi_wholesale", "سعر نصف جملة" } },
-                { "WholesalePrice", new[] { "جملة", "wholesale", "سعر الجملة" } },
-                { "MinStockLimit", new[] { "حد الطلب", "الطلب", "min", "limit", "minimum", "حد_الطلب" } },
-                { "InitialStock", new[] { "افتتاحي", "رصيد", "كمية", "qty", "quantity", "stock", "initial", "الرصيد الافتتاحي" } },
-                { "WarehouseName", new[] { "مخزن", "مستودع", "warehouse", "store", "المخزن" } }
+                { "ProductCode", new[] { "كود_الصنف", "كود الصنف", "رقم_الصنف", "رقم الصنف", "الصنف كود", "الباركود", "barcode", "code", "كود" } },
+                { "ProductName", new[] { "اسم_الصنف", "اسم الصنف", "اسم المنتج", "الاسم", "product_name", "item_name", "product", "name", "اسم" } },
+                { "PartNumber", new[] { "رقم_القطعة", "رقم القطعة", "رقم قطعة", "part_number", "oem_number", "part", "oem", "قطعة" } },
+                { "CategoryName", new[] { "التصنيف", "القسم", "الفئة", "category", "group", "تصنيف", "فئة", "قسم" } },
+                { "CarModel", new[] { "الموديل المتوافق", "الموديل", "السيارة", "car_model", "model", "موديل", "سيارة" } },
+                { "Brand", new[] { "الماركة", "الشركة", "براند", "brand", "make", "ماركة", "شركة" } },
+                { "ShelfLocation", new[] { "موقع الرف", "رقم الرف", "الرف", "shelf_location", "location", "shelf", "رف", "موقع", "مكان" } },
+                { "Unit", new[] { "الوحدة", "unit_name", "unit", "وحدة" } },
+                { "PurchasePrice", new[] { "سعر_الشراء", "سعر الشراء", "سعر التكلفة", "سعر_التكلفة", "purchase_price", "cost_price", "purchase", "cost", "شراء", "تكلفة" } },
+                { "SalePrice", new[] { "سعر_البيع", "سعر البيع", "سعر_القطاعي", "سعر القطاعي", "sale_price", "saleprice", "قطاعي", "بيع", "price", "sale" } },
+                { "SemiWholesalePrice", new[] { "سعر نصف جملة", "سعر_نصف_جملة", "نصف جملة", "نصف_جملة", "semi_wholesale", "semi" } },
+                { "WholesalePrice", new[] { "سعر الجملة", "سعر_الجملة", "جملة", "wholesale" } },
+                { "MinStockLimit", new[] { "حد_الطلب", "حد الطلب", "الطلب", "min_stock", "minimum", "limit", "min" } },
+                { "InitialStock", new[] { "الرصيد الافتتاحي", "الرصيد_الافتتاحي", "الكمية الحالية", "الكمية_الحالية", "الرصيد الحالي", "الرصيد_الحالي", "افتتاحي", "رصيد", "كمية", "initial_stock", "quantity", "stock", "qty" } },
+                { "WarehouseName", new[] { "المخزن", "المستودع", "warehouse_name", "warehouse", "store", "مخزن", "مستودع" } }
             };
 
             foreach (var kv in _mappings)
@@ -300,6 +300,8 @@ namespace ChickenDist.Forms
                 for (int i = 0; i < headers.Length; i++)
                 {
                     string header = headers[i].Trim().ToLowerInvariant();
+                    if (string.IsNullOrWhiteSpace(header)) continue;
+
                     foreach (string keyword in keywords)
                     {
                         if (header.Contains(keyword.ToLowerInvariant()))
@@ -331,7 +333,7 @@ namespace ChickenDist.Forms
 
         private void BtnCopyTemplate_Click(object sender, EventArgs e)
         {
-            string template = "كود_الصنف\tاسم_الصنف\tرقم_القطعة\tالتصنيف\tالموديل\tالماركة\tموقع_الرف\tالوحدة\tسعر_الشراء\tسعر_قطاعي\tسعر_نصف_جملة\tسعر_جملة\tحد_الطلب\tالرصيد_الافتتاحي\tالمخزن\r\n" +
+            string template = "كود_الصنف\tاسم_الصنف\tرقم_القطعة\tالتصنيف\tالموديل\tماركة\tموقع_الرف\tالوحدة\tسعر_الشراء\tسعر_قطاعي\tسعر_نصف_جملة\tسعر_جملة\tحد_الطلب\tالرصيد_الافتتاحي\tالمخزن\r\n" +
                               "A101\tفلتر زيت تويوتا كورولا\t90915-10001\tفلتر\tCorolla 2018\tToyota\tالرف A1\tحبة\t120.00\t180.00\t165.00\t150.00\t5\t50\tالمخزن الرئيسي\r\n" +
                               "B202\tبوجيهات ليزر ان جي كي\tIZFR6K11\tكهرباء\tCivic 2012\tNGK\tالرف B3\tطقم\t450.00\t600.00\t550.00\t500.00\t2\t20\tالمخزن الرئيسي";
             
@@ -363,6 +365,23 @@ namespace ChickenDist.Forms
                         {
                             MessageBox.Show("الملف فارغ أو لم نتمكن من قراءته.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
+                        }
+
+                        // ── الفحص الذكي لصفوف العناوين في ملفات إكسل (تخطي عنوان الجدول إذا كان في السطر الأول) ──
+                        while (_allLines.Count > 1)
+                        {
+                            string[] firstRow = _allLines[0];
+                            int nonCount = 0;
+                            foreach (var c in firstRow) if (!string.IsNullOrWhiteSpace(c)) nonCount++;
+
+                            if (nonCount <= 2 && _allLines.Count > 1)
+                            {
+                                _allLines.RemoveAt(0);
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
 
                         string[] headers = _allLines[0];
