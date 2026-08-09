@@ -382,10 +382,10 @@ namespace ChickenDist.DAL
 
             scannedCode = scannedCode.Trim();
 
-            // 1. Check if this is a scale barcode
+            // 1. Parse Scale Barcode (e.g. 9900168000724 -> PLU = 00168, Weight = 0.072)
             var scaleRes = BarcodeParser.Parse(scannedCode);
 
-            // Fallback for 13-digit scale barcodes starting with 99, 20, 21, 22, 27, 9 if parser didn't trigger
+            // Fallback parsing for 13-digit scale barcodes starting with 99, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 9
             if (!scaleRes.IsScaleBarcode && scannedCode.Length == 13 && (scannedCode.StartsWith("99") || scannedCode.StartsWith("20") || scannedCode.StartsWith("21") || scannedCode.StartsWith("22") || scannedCode.StartsWith("27") || scannedCode.StartsWith("9")))
             {
                 string p = (scannedCode.StartsWith("99") || scannedCode.StartsWith("20") || scannedCode.StartsWith("21") || scannedCode.StartsWith("22") || scannedCode.StartsWith("27")) ? scannedCode.Substring(0, 2) : "9";
@@ -420,20 +420,13 @@ namespace ChickenDist.DAL
                     FROM Products p 
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                     WHERE p.IsActive = 1 AND (
-                        p.ScalePLU = @c OR
-                        p.ScalePLU = @trimmed OR
-                        p.ScalePLU = @padded OR
-                        (@intVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @intVal) OR
-                        p.ProductCode = @c OR 
-                        p.ProductCode = @trimmed OR 
-                        p.ProductCode = @padded OR 
-                        p.InternationalCode = @c OR 
-                        p.InternationalCode = @trimmed OR 
-                        p.PartNumber = @c OR 
-                        p.PartNumber = @trimmed OR 
-                        (@intVal > 0 AND p.ProductID = @intVal) OR 
-                        (@intVal > 0 AND CAST(p.ProductID AS VARCHAR) = @trimmed) OR
-                        (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @intVal)
+                        p.ScalePLU = @c OR p.ScalePLU = @trimmed OR p.ScalePLU = @padded OR (@intVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @intVal) OR
+                        p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @intVal) OR
+                        p.InternationalCode = @c OR p.InternationalCode = @trimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @c + ',%' OR
+                        p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%' OR
+                        p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%' OR
+                        p.PartNumber = @c OR p.PartNumber = @trimmed OR
+                        (@intVal > 0 AND p.ProductID = @intVal)
                     )
                     ORDER BY CASE WHEN (p.ScalePLU = @c OR p.ScalePLU = @trimmed OR p.ScalePLU = @padded OR (@intVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @intVal)) THEN 0 ELSE 1 END",
                     DbHelper.P("@c", itemCode),
@@ -447,27 +440,30 @@ namespace ChickenDist.DAL
                 }
             }
 
-            // 2. Direct barcode / code / ID lookup
+            // 2. Direct barcode / code / ID lookup (fallback if PLU lookup didn't match any product)
+            parsedWeight = 1m;
             int.TryParse(scannedCode, out int scannedInt);
             string scannedPadded = scannedInt > 0 ? scannedInt.ToString("D8") : scannedCode;
+            string scannedTrimmed = scannedCode.TrimStart('0');
+            if (string.IsNullOrEmpty(scannedTrimmed)) scannedTrimmed = "0";
+
             var dtDirect = DbHelper.Query(@"
                 SELECT TOP 1 p.*, c.CategoryName 
                 FROM Products p 
                 LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                 WHERE p.IsActive = 1 AND (
-                    p.ScalePLU = @code OR
-                    p.ScalePLU = @scannedPadded OR
-                    p.ProductCode = @code OR 
-                    p.ProductCode = @scannedPadded OR 
-                    p.InternationalCode = @code OR 
-                    p.PartNumber = @code OR 
-                    p.Unit1Barcode = @code OR 
-                    p.Unit2Barcode = @code OR 
+                    p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
+                    p.ProductCode = @code OR p.ProductCode = @scannedPadded OR p.ProductCode = @scannedTrimmed OR
+                    p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR
+                    p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR
+                    p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR
+                    p.PartNumber = @code OR
                     (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
                     (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
                 )",
                 DbHelper.P("@code", scannedCode),
                 DbHelper.P("@scannedPadded", scannedPadded),
+                DbHelper.P("@scannedTrimmed", scannedTrimmed),
                 DbHelper.P("@scannedInt", scannedInt));
 
             if (dtDirect.Rows.Count > 0)
