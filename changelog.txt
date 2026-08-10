@@ -1,3 +1,8 @@
+v2.0.379 - 2026-08-10
+- Fix SubTotal SQL Query for Purchases (PurchaseDAL.cs):
+  1. إضافة عمود `SubTotal` المحسوب ديناميكياً من إجمالي ضرب الكميات في أسعار الأصناف بجدول فواتير الشراء (`PurchaseDAL.GetAll`).
+  2. منع استثناء `Invalid column name SubTotal` وضمان عرض واستعراض الفواتير في شاشة مرتجع المشتريات بكل سلاسة.
+
 v2.0.378 - 2026-08-10
 - Purchase Return Net Price After Discount & Split Layout Redesign (FrmPurchaseReturn.cs & PurchaseDAL.cs):
   1. إعادة تصميم شاشة مرتجع المشتريات (`FrmPurchaseReturn.cs`) لتصبح مقسمة تلقائياً بنظام (فواتير الشراء أعلى | الأصناف والخصم أسفل) مطابقة تماماً لسلاسة مرتجع المبيعات.

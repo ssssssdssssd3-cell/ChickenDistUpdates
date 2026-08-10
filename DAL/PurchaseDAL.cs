@@ -74,7 +74,12 @@ namespace ChickenDist.DAL
                              FROM PurchaseReturnItems pri
                              JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                              WHERE pr.PurchaseID = p.PurchaseID
-                         ), 0) AS ReturnAmount
+                         ), 0) AS ReturnAmount,
+                         ISNULL((
+                             SELECT SUM(pi.Quantity * pi.UnitPrice)
+                             FROM PurchaseItems pi
+                             WHERE pi.PurchaseID = p.PurchaseID
+                         ), p.TotalAmount + COALESCE(p.DiscountAmount, 0)) AS SubTotal
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   LEFT JOIN Clients c ON p.ClientID = c.ClientID
@@ -110,6 +115,11 @@ namespace ChickenDist.DAL
                          COALESCE(p.TaxAmount,     0) AS TaxAmount,
                          COALESCE(p.ShippingCost,  0) AS ShippingCost,
                          ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
+                         ISNULL((
+                             SELECT SUM(pi.Quantity * pi.UnitPrice)
+                             FROM PurchaseItems pi
+                             WHERE pi.PurchaseID = p.PurchaseID
+                         ), p.TotalAmount + COALESCE(p.DiscountAmount, 0)) AS SubTotal,
                          w.WarehouseName
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
