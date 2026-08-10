@@ -53,13 +53,17 @@ namespace ChickenDist.Forms
             public override string ToString() => DisplayText;
         }
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false)
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false)
         {
             _warehouseID = warehouseID;
             _isPurchaseMode = isPurchaseMode;
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
+            if (defaultShowZeroStock && chkShowZeroStock != null)
+            {
+                chkShowZeroStock.Checked = true;
+            }
             LoadCategories();
             LoadProducts();
         }

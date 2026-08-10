@@ -175,7 +175,6 @@ namespace ChickenDist.Forms
             tblHeader.SetColumnSpan(lblBanner, 4);
 
             pnlHeader.Controls.Add(tblHeader);
-            Controls.Add(pnlHeader);
 
             // ── 2. Product Entry Bar ──
             var pnlProductBar = new Panel
@@ -195,8 +194,8 @@ namespace ChickenDist.Forms
             };
             tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));
             tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));
-            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f));
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));
 
             var lblProdTitle = MakeLabel("الصنف :");
             txtProductCode = new TextBox
@@ -227,48 +226,8 @@ namespace ChickenDist.Forms
             tblProductBar.Controls.Add(btnManualAdd, 3, 0);
 
             pnlProductBar.Controls.Add(tblProductBar);
-            Controls.Add(pnlProductBar);
 
-            // ── 3. Items DataGridView ──
-            dgItems = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
-                EnableHeadersVisualStyles = false
-            };
-
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 30, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 90, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "موقع الصنف (الرف)", FillWeight = 45, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 30, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 35 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", FillWeight = 35 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 40, ReadOnly = true });
-
-            var btnDel = new DataGridViewButtonColumn
-            {
-                Name = "BtnDelete",
-                HeaderText = "حذف",
-                Text = "❌",
-                UseColumnTextForButtonValue = true,
-                FillWeight = 20
-            };
-            dgItems.Columns.Add(btnDel);
-
-            dgItems.CellValueChanged += DgItems_CellValueChanged;
-            dgItems.CellContentClick += DgItems_CellContentClick;
-
-            Controls.Add(dgItems);
-
-            // ── 4. Bottom Control & Actions Bar ──
+            // ── 3. Bottom Control & Actions Bar ──
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -311,7 +270,7 @@ namespace ChickenDist.Forms
             btnNew = Theme.MakeButton("📄 جديد (F1)", 0, 0, 110, 40, Color.FromArgb(55, 65, 81));
             btnNew.Click += (s, e) => NewQuote();
 
-            btnSuspend = Theme.MakeButton("📌 تعليق / حفظ عرض (F2)", 0, 0, 180, 40, Theme.Primary);
+            btnSuspend = Theme.MakeButton("📌 تعليق / حفظ (F2)", 0, 0, 160, 40, Theme.Primary);
             btnSuspend.Click += (s, e) => SaveQuote(false);
 
             btnPendingList = Theme.MakeButton("📋 العروض المعلقة (F4)", 0, 0, 160, 40, Theme.Accent);
@@ -329,9 +288,64 @@ namespace ChickenDist.Forms
             pnlActions.Controls.AddRange(new Control[] { btnNew, btnSuspend, btnPendingList, btnConvertToSale, btnPrintPrep, btnPrintQuote });
             tblBottom.Controls.Add(pnlActions, 0, 1);
             tblBottom.SetColumnSpan(pnlActions, 6);
-
             pnlBottom.Controls.Add(tblBottom);
+
+            // ── 4. Items DataGridView ──
+            dgItems = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = true,
+                AllowUserToAddRows = false,
+                RightToLeft = RightToLeft.Yes,
+                GridColor = Theme.BorderColor,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeight = 36
+            };
+            Theme.EnableDoubleBuffer(dgItems);
+
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 30, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 90, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "موقع الصنف (الرف)", FillWeight = 45, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 30, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 35 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", FillWeight = 35 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 40, ReadOnly = true });
+
+            var btnDel = new DataGridViewButtonColumn
+            {
+                Name = "BtnDelete",
+                HeaderText = "حذف",
+                Text = "❌",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 20
+            };
+            dgItems.Columns.Add(btnDel);
+
+            dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.CellContentClick += DgItems_CellContentClick;
+            dgItems.RowPostPaint += (s, e) =>
+            {
+                var grid = s as DataGridView;
+                var rowIdx = (e.RowIndex + 1).ToString();
+                var centerFormat = new StringFormat
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center
+                };
+                var headerBounds = new Rectangle(e.RowBounds.Right - grid.RowHeadersWidth, e.RowBounds.Top, grid.RowHeadersWidth, e.RowBounds.Height);
+                e.Graphics.DrawString(rowIdx, this.Font, SystemBrushes.ControlText, headerBounds, centerFormat);
+            };
+
+            // ADD CONTROLS IN PROPER WINFORMS DOCK ORDER
+            Controls.Add(dgItems);
             Controls.Add(pnlBottom);
+            Controls.Add(pnlProductBar);
+            Controls.Add(pnlHeader);
         }
 
         private Label MakeLabel(string txt)
@@ -414,7 +428,7 @@ namespace ChickenDist.Forms
             // Cache products for fast lookup
             try
             {
-                DataTable dtP = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, WholesalePrice, HalfWholesalePrice, Unit, ShelfLocation, PartNumber FROM Products WHERE IsActive=1");
+                DataTable dtP = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, WholesalePrice, SemiWholesalePrice, Unit, ShelfLocation, PartNumber FROM Products WHERE IsActive=1");
                 _productCache.Clear();
                 foreach (DataRow r in dtP.Rows)
                 {
@@ -463,11 +477,17 @@ namespace ChickenDist.Forms
 
         private void OpenQuickSearch()
         {
-            using (var dlg = new FrmModelLookup())
+            int? whId = null;
+            if (cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                whId = ci.ID;
+
+            using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true))
             {
-                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
                 {
-                    AddProductByID(dlg.SelectedProductID, 1.0m);
+                    decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1.00m;
+                    decimal price = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
+                    AddProductByID(frm.SelectedProductID, qty, price);
                 }
             }
         }
@@ -523,8 +543,8 @@ namespace ChickenDist.Forms
             string unit = pRow["Unit"]?.ToString() ?? "";
 
             decimal price = overridePrice ?? Convert.ToDecimal(pRow["SalePrice"]);
-            if (_selectedTier == "نصف جملة" && pRow.Table.Columns.Contains("HalfWholesalePrice") && pRow["HalfWholesalePrice"] != DBNull.Value)
-                price = Convert.ToDecimal(pRow["HalfWholesalePrice"]);
+            if (_selectedTier == "نصف جملة" && pRow.Table.Columns.Contains("SemiWholesalePrice") && pRow["SemiWholesalePrice"] != DBNull.Value)
+                price = Convert.ToDecimal(pRow["SemiWholesalePrice"]);
             else if (_selectedTier == "جملة" && pRow.Table.Columns.Contains("WholesalePrice") && pRow["WholesalePrice"] != DBNull.Value)
                 price = Convert.ToDecimal(pRow["WholesalePrice"]);
 

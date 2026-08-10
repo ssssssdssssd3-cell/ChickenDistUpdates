@@ -1,3 +1,9 @@
+v2.0.372 - 2026-08-10
+- Price Quotation Layout & Search Screen Enhancements (FrmPriceQuote.cs & FrmProductSearch.cs):
+  1. إصلاح خطأ اسم الحقل SQL `Invalid column name 'HalfWholesalePrice'` باستبداله باسم الحقل المعتمد `SemiWholesalePrice`.
+  2. إعادة تنظيم وتصميم شاشة بيان التسعير احترافياً وتصحيح ترتيب رسو عناصر التحكم (Dock Order) لتستوعب عشرات ومئات الأصناف بسلاسة ومساحة رؤية كاملة مع إظهار أرقام التسلسل للصفوف (1, 2, 3...).
+  3. تفعيل شاشة البحث المتقدم للأصناف (`FrmProductSearch`) المعتمدة في المبيعات في البحث السريع (F3) مع إظهار كافة الأصناف سواء لها رصيد أو بدون رصيد تلقائياً.
+
 v2.0.371 - 2026-08-10
 - Detailed Payment Voucher Printing & WhatsApp Sharing (FrmPrintClientPayment.cs, FrmPrintSupplierPayment.cs & TafqeetHelper.cs):
   1. إضافة طباعة تفصيلية لسندات تحصيل وتوريد النقدية من العملاء متضمنة: المبلغ بالأرقام والكلمات (التفقيط بالعربي)، الرصيد السابق قبل التوريد، والرصيد النهائي المتبقي على العميل.
