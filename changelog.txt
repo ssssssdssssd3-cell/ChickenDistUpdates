@@ -1,3 +1,8 @@
+v2.0.373 - 2026-08-10
+- Sales Screen (FrmSale.cs) Hidden Control ActiveControl Focus Exception Fix:
+  1. إصلاح استثناء `System.ArgumentException: لا يمكن تنشيط عنصر التحكم غير المرئي أو الذي تم تعطيله` عند فتح شاشة المبيعات.
+  2. توجيه التركيز التلقائي (ActiveControl) وحدث التحميل (Load Event) بأمان إلى مربع كود وقارئ الباركود `txtProductCode` المباشر بدلاً من قائمة الكومبو المخفية `cboProduct`.
+
 v2.0.372 - 2026-08-10
 - Price Quotation Layout & Search Screen Enhancements (FrmPriceQuote.cs & FrmProductSearch.cs):
   1. إصلاح خطأ اسم الحقل SQL `Invalid column name 'HalfWholesalePrice'` باستبداله باسم الحقل المعتمد `SemiWholesalePrice`.

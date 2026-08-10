@@ -146,7 +146,14 @@ namespace ChickenDist.Forms
 			{
 				ScaleService.Instance.WeightChanged += ScaleService_WeightChanged;
 			}
-			this.Load += (s, e) => { this.ActiveControl = cboProduct; cboProduct.Focus(); };
+			this.Load += (s, e) =>
+			{
+				if (txtProductCode != null && txtProductCode.Visible && txtProductCode.Enabled)
+				{
+					this.ActiveControl = txtProductCode;
+					txtProductCode.Focus();
+				}
+			};
 		}
 
 		private void ScaleService_WeightChanged(decimal weight, bool isStable)
@@ -1463,7 +1470,7 @@ namespace ChickenDist.Forms
 								}
 								else
 								{
-									cboProduct.Focus();
+									txtProductCode?.Focus();
 								}
 							});
 							return true;
@@ -1472,7 +1479,7 @@ namespace ChickenDist.Forms
 						{
 							this.BeginInvoke((MethodInvoker)delegate
 							{
-								cboProduct.Focus();
+								txtProductCode?.Focus();
 							});
 							return true;
 						}
@@ -1482,7 +1489,7 @@ namespace ChickenDist.Forms
 						dgItems.EndEdit();
 						this.BeginInvoke((MethodInvoker)delegate
 						{
-							cboProduct.Focus();
+							txtProductCode?.Focus();
 						});
 						return true;
 					}
@@ -1580,7 +1587,7 @@ namespace ChickenDist.Forms
 					cboProduct.Items.AddRange(allItems.ToArray());
 					cboProduct.SelectedIndex = 0;
 					cboProduct.EndUpdate();
-					cboProduct.Focus();
+					txtProductCode?.Focus();
 				}
 				finally
 				{
@@ -1696,7 +1703,7 @@ namespace ChickenDist.Forms
 						cboProduct.Items.AddRange(allItems.ToArray());
 						cboProduct.SelectedIndex = 0;
 						cboProduct.EndUpdate();
-						cboProduct.Focus();
+						txtProductCode?.Focus();
 					}
 					finally
 					{
