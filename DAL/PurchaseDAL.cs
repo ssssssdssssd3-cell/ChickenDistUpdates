@@ -654,19 +654,26 @@ namespace ChickenDist.DAL
             {
                 string purType = returnType;
                 int whID = warehouseID ?? 1;
+                bool isClientPurchase = false;
+                int? clientID = null;
 
                 if (purchaseID > 0)
                 {
                     var dtPur = DbHelper.QueryTrans(trans,
-                        "SELECT PurchaseType, SupplierID, WarehouseID FROM Purchases WHERE PurchaseID=@pid",
+                        "SELECT PurchaseType, SupplierID, ClientID, PurchaseSource, WarehouseID FROM Purchases WHERE PurchaseID=@pid",
                         DbHelper.P("@pid", purchaseID));
                     if (dtPur.Rows.Count > 0)
                     {
                         purType = dtPur.Rows[0]["PurchaseType"].ToString();
+                        string pSrc = dtPur.Rows[0]["PurchaseSource"]?.ToString() ?? "";
+                        if (pSrc == "Client") isClientPurchase = true;
+
                         if (dtPur.Rows[0]["WarehouseID"] != DBNull.Value)
                             whID = Convert.ToInt32(dtPur.Rows[0]["WarehouseID"]);
                         if (!supplierID.HasValue && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
                             supplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+                        if (dtPur.Rows[0]["ClientID"] != DBNull.Value)
+                            clientID = Convert.ToInt32(dtPur.Rows[0]["ClientID"]);
                     }
                 }
 
@@ -709,6 +716,18 @@ namespace ChickenDist.DAL
                         DbHelper.P("@amt", total),
                         DbHelper.P("@ref", retID),
                         DbHelper.P("@n",   purchaseID > 0 ? ("مرتجع شراء نقدي — فاتورة رقم " + purchaseID) : ("مرتجع شراء عام نقدي " + (notes ?? ""))),
+                        DbHelper.P("@by",  Session.EmpID));
+                }
+                else if (isClientPurchase && clientID.HasValue)
+                {
+                    // مرتجع شراء من عميل -> Debit في ClientTransactions (يُقلل دائنية العميل علينا)
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy)" +
+                        " VALUES(@cid,'Return',@amt,@ref,@n,@by)",
+                        DbHelper.P("@cid", clientID.Value),
+                        DbHelper.P("@amt", total),
+                        DbHelper.P("@ref", retID),
+                        DbHelper.P("@n",   purchaseID > 0 ? ("مرتجع شراء من عميل — فاتورة رقم " + purchaseID) : ("مرتجع شراء عام من عميل " + (notes ?? ""))),
                         DbHelper.P("@by",  Session.EmpID));
                 }
                 else if (supplierID.HasValue)

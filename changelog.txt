@@ -1,3 +1,9 @@
+v2.0.378 - 2026-08-10
+- Purchase Return Net Price After Discount & Split Layout Redesign (FrmPurchaseReturn.cs & PurchaseDAL.cs):
+  1. إعادة تصميم شاشة مرتجع المشتريات (`FrmPurchaseReturn.cs`) لتصبح مقسمة تلقائياً بنظام (فواتير الشراء أعلى | الأصناف والخصم أسفل) مطابقة تماماً لسلاسة مرتجع المبيعات.
+  2. احتساب وحسم سعر الشراء الصافي بعد خصم الفاتورة الإجمالي وخصم الصنف (`NetUnitPrice = GrossUnitPrice * (1 - DiscountPct/100) * HeaderFactor`) حتى يعود المرتجع بقيمته المسددة الفعلية بدقة محاسبية 100%.
+  3. إظهار سعر الشراء الأصلي، نسبة الخصم % الإجمالية، وسعر الشراء الصافي، وحفظ القيد المحاسبي في حسابات الموردين والعملاء بخصم المديونية الدقيق.
+
 v2.0.377 - 2026-08-10
 - High Quality Grid Table Printing Layout for Statements (FrmClientStatement.cs & FrmSupplierStatement.cs):
   1. إعادة تصميم وطباعة كشف حساب العميل وكشف حساب المورد بجداول رسمية فائقة التنظيم محاطة بخطوط شبكية رأسية وأفقية تفصل كافة الأعمدة عن بعضها بوضوح تام.
