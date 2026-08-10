@@ -127,9 +127,9 @@ namespace ChickenDist.Forms
             };
 
             var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 46, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Theme.Accent, Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.LightGreen, Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.OrangeRed, Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Color.FromArgb(10, 60, 140), Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.FromArgb(15, 120, 50), Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.FromArgb(180, 20, 20), Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
 
             this.Controls.Clear();
@@ -255,18 +255,32 @@ namespace ChickenDist.Forms
                     dgStatement.Rows[rowIdx].Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
                 }
 
-                // تلوين خاص لفواتير الشراء من عميل
-                if (typeStr == "ClientPurchase")
+                // تلوين احترافي وواضح لصفوف حركة الحساب بخلفيات متباينة ونصوص دقيقة
+                var rowStyle = dgStatement.Rows[rowIdx].DefaultCellStyle;
+                if (typeStr == "Sale")
                 {
-                    dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.SkyBlue;
-                }
-                else if (typeStr == "Return")
-                {
-                    dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.OrangeRed;
+                    rowStyle.BackColor = Color.FromArgb(240, 244, 255);
+                    rowStyle.ForeColor = Color.FromArgb(10, 50, 130);
                 }
                 else if (typeStr == "Payment")
                 {
-                    dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.LightGreen;
+                    rowStyle.BackColor = Color.FromArgb(235, 250, 240);
+                    rowStyle.ForeColor = Color.FromArgb(15, 120, 50);
+                }
+                else if (typeStr == "Return")
+                {
+                    rowStyle.BackColor = Color.FromArgb(255, 240, 240);
+                    rowStyle.ForeColor = Color.FromArgb(180, 20, 20);
+                }
+                else if (typeStr == "ClientPurchase")
+                {
+                    rowStyle.BackColor = Color.FromArgb(245, 238, 255);
+                    rowStyle.ForeColor = Color.FromArgb(90, 20, 140);
+                }
+                else
+                {
+                    rowStyle.BackColor = Color.FromArgb(250, 250, 250);
+                    rowStyle.ForeColor = Color.FromArgb(30, 40, 50);
                 }
             }
 

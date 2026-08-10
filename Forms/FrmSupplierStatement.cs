@@ -214,10 +214,6 @@ namespace ChickenDist.Forms
                 if (typeStr == "Purchase") _totalPurchases += cred;
                 else if (typeStr == "Payment") _totalPayments += deb;
 
-                Color rowColor = Theme.TextMain;
-                if (typeStr == "Purchase") rowColor = Color.OrangeRed;
-                else if (typeStr == "Payment") rowColor = Color.LightGreen;
-
                 int rowIdx = dgStatement.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
                     TransTypeName(typeStr),
@@ -228,15 +224,32 @@ namespace ChickenDist.Forms
                     typeStr,
                     refID);
 
-                dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = rowColor;
+                var rowStyle = dgStatement.Rows[rowIdx].DefaultCellStyle;
+                if (typeStr == "Purchase")
+                {
+                    rowStyle.BackColor = Color.FromArgb(255, 242, 242);
+                    rowStyle.ForeColor = Color.FromArgb(180, 30, 30);
+                }
+                else if (typeStr == "Payment")
+                {
+                    rowStyle.BackColor = Color.FromArgb(235, 250, 240);
+                    rowStyle.ForeColor = Color.FromArgb(15, 120, 50);
+                }
+                else
+                {
+                    rowStyle.BackColor = Color.FromArgb(250, 250, 250);
+                    rowStyle.ForeColor = Color.FromArgb(30, 40, 50);
+                }
             }
 
             lblPurchases.Text = $"إجمالي المشتريات: {_totalPurchases:N2} ج";
             lblPayments.Text  = $"إجمالي المدفوعات: {_totalPayments:N2} ج";
+            lblPurchases.ForeColor = Color.FromArgb(180, 30, 30);
+            lblPayments.ForeColor  = Color.FromArgb(15, 120, 50);
             lblBalance.Text   = _runBalance >= 0
                 ? $"صافي المديونية للمورد: {_runBalance:N2} ج"
                 : $"رصيد دائن (المورد مدين لنا): {Math.Abs(_runBalance):N2} ج";
-            lblBalance.ForeColor = _runBalance >= 0 ? Color.OrangeRed : Color.LightGreen;
+            lblBalance.ForeColor = _runBalance >= 0 ? Color.FromArgb(180, 30, 30) : Color.FromArgb(15, 120, 50);
         }
 
         private string TransTypeName(string t)
