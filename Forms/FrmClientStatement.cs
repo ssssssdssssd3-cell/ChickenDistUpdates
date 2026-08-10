@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private decimal _totalSales = 0;
         private decimal _totalReturns = 0;
         private decimal _totalPayments = 0;
+        private decimal _totalClientPurchases = 0;  // إجمالي فواتير الشراء من العميل
         private decimal _runBalance = 0;
 
         public FrmClientStatement(int clientID, string clientName)
@@ -140,6 +141,7 @@ namespace ChickenDist.Forms
             _totalSales = 0;
             _totalReturns = 0;
             _totalPayments = 0;
+            _totalClientPurchases = 0;
 
             if (prevBalance != 0)
             {
@@ -201,6 +203,24 @@ namespace ChickenDist.Forms
                 {
                     _totalPayments += cred;
                 }
+                else if (typeStr == "ClientPurchase" && refID > 0)
+                {
+                    // شراء من عميل آجل - يزيد رصيده (دائن)
+                    _totalClientPurchases += cred;
+                    // جلب تفاصيل أصناف فاتورة الشراء
+                    var dtItems = DbHelper.Query(@"
+                        SELECT p.ProductName, pi2.Quantity, pi2.UnitName
+                        FROM PurchaseItems pi2
+                        JOIN Products p ON pi2.ProductID = p.ProductID
+                        WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
+                    if (dtItems.Rows.Count > 0)
+                    {
+                        var itemsList = new System.Collections.Generic.List<string>();
+                        foreach (DataRow itemRow in dtItems.Rows)
+                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["UnitName"]})");
+                        detailedNotes += " [" + string.Join("، ", itemsList) + "]";
+                    }
+                }
                 else if (typeStr == "Opening")
                 {
                     _totalSales += deb;
@@ -224,7 +244,12 @@ namespace ChickenDist.Forms
                     dgStatement.Rows[rowIdx].Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
                 }
 
-                if (typeStr == "Return")
+                // تلوين خاص لفواتير الشراء من عميل
+                if (typeStr == "ClientPurchase")
+                {
+                    dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.SkyBlue;
+                }
+                else if (typeStr == "Return")
                 {
                     dgStatement.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.OrangeRed;
                 }
@@ -235,7 +260,8 @@ namespace ChickenDist.Forms
             }
 
             lblDebit.Text = $"إجمالي مديونية: {_totalSales:N2} ج";
-            lblCredit.Text = $"إجمالي مرتجع: {_totalReturns:N2} ج  |  إجمالي توريد: {_totalPayments:N2} ج";
+            lblCredit.Text = $"إجمالي مرتجع: {_totalReturns:N2} ج  |  إجمالي توريد: {_totalPayments:N2} ج" +
+                             (_totalClientPurchases > 0 ? $"  |  شراء من عميل: {_totalClientPurchases:N2} ج" : "");
             lblBalance.Text = $"الصافي: {_runBalance:N2} ج";
         }
 
@@ -249,6 +275,7 @@ namespace ChickenDist.Forms
                 case "Opening": return "رصيد افتتاحي";
                 case "Discount": return "تسوية خصم";
                 case "Addition": return "تسوية إضافة";
+                case "ClientPurchase": return "📦 شراء من عميل";
                 default: return t;
             }
         }
