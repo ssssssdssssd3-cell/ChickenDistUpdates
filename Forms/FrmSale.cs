@@ -86,6 +86,8 @@ namespace ChickenDist.Forms
 		private List<SaleItemDTO> _items = new List<SaleItemDTO>();
 		private decimal? _pendingBarcodeWeight = null;
 		private decimal? _pendingScaleWeight = null;
+		// كاش الأصناف المستقل (بدلاً من cboProduct.Tag)
+		private List<ComboItem> _productCache = new List<ComboItem>();
 		// FIX: cache أرصدة المخزون لتفادي رحلة DB لكل صنف عند الاختيار
 		private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
 
@@ -742,9 +744,9 @@ namespace ChickenDist.Forms
 				Padding = new Padding(0)
 			};
 			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));   // Col 0: Label
-			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));  // Col 1: txtProductCode
-			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Col 2: cboProduct (Fills space)
-			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));  // Col 3: btnSearchProduct
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Col 1: txtProductCode (يملأ المساحة)
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 0f));   // Col 2: مخفي (كان cboProduct)
+			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));  // Col 3: btnSearchProduct
 			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));   // Col 4: btnManualAdd
 			tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));  // Col 5: btnCustomizeCols
 
@@ -817,29 +819,10 @@ namespace ChickenDist.Forms
 				}
 			};
 
-			cboProduct = new ComboBox
-			{
-				Dock = DockStyle.Fill,
-				DropDownStyle = ComboBoxStyle.DropDown,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				FlatStyle = FlatStyle.Flat,
-				RightToLeft = RightToLeft.Yes,
-				Margin = new Padding(2, 6, 2, 6)
-			};
-			SetupSearchableCombo(cboProduct);
-			cboProduct.KeyDown += (s, e) =>
-			{
-				if (e.KeyCode == Keys.Down)
-				{
-					e.Handled = true;
-					e.SuppressKeyPress = true;
-					AddNewCodeRow();
-					return;
-				}
-			};
-			cboProduct.KeyDown += CboProduct_KeyDown;
-			cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect;
+			// cboProduct: نُبقي على الـ ComboBox مخفياً فقط كحاوية للكاش (لا يظهر في الواجهة)
+			cboProduct = new ComboBox { Visible = false, Width = 0 };
+			// لا نضيف أي Event handlers للـ cboProduct بعد الآن
+
 
 			btnSearchProduct = new Button
 			{
@@ -892,7 +875,7 @@ namespace ChickenDist.Forms
 
 			tblProductBar.Controls.Add(lblProductTitle, 0, 0);
 			tblProductBar.Controls.Add(txtProductCode, 1, 0);
-			tblProductBar.Controls.Add(cboProduct, 2, 0);
+			// Col 2 مخفي (لا نضيف cboProduct للواجهة)
 			tblProductBar.Controls.Add(btnSearchProduct, 3, 0);
 			tblProductBar.Controls.Add(btnManualAdd, 4, 0);
 			tblProductBar.Controls.Add(btnCustomizeCols, 5, 0);
@@ -1408,7 +1391,7 @@ namespace ChickenDist.Forms
 			if      (e.KeyCode == Keys.F2)  { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9)  { btnPrint.PerformClick(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F12) { cboProduct.Focus(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F12) { txtProductCode.Focus(); txtProductCode.SelectAll(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
@@ -1428,16 +1411,7 @@ namespace ChickenDist.Forms
 				AddNewCodeRow();
 				return true;
 			}
-			// إذا كانت قائمة المنتجات مفتوحة وفيها نص → معالجة كباركود أولاً
-			if (keyData == Keys.Enter && cboProduct.DroppedDown && !string.IsNullOrWhiteSpace(cboProduct.Text))
-			{
-				cboProduct.DroppedDown = false;
-				// إطلاق حدث الضغط على Enter يدوياً
-				var fakeArgs = new KeyEventArgs(Keys.Enter);
-				CboProduct_KeyDown(cboProduct, fakeArgs);
-				if (fakeArgs.Handled) return true;
-			}
-
+			// إذا كانت قائمة المنتجات مفتوحة (لا ينطبق بعد الآن - cboProduct مخفي)
 			if (keyData == Keys.Enter)
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
@@ -1799,6 +1773,7 @@ namespace ChickenDist.Forms
 		{
 			cboClient.Tag = null;
 			cboProduct.Tag = null;
+			_productCache.Clear();
 			cboDriver.Tag = null;
 
 			// FIX: تحميل كل أرصدة المخزون مرة واحدة بدلاً من رحلة DB لكل صنف
@@ -2021,42 +1996,16 @@ namespace ChickenDist.Forms
 					productItems.Add(comboItem);
 				}
 			}
+			_productCache = productItems;
+			// نحدّث cboProduct أيضاً للتوافق مع الكود القديم
+			cboProduct.BeginUpdate();
+			cboProduct.Items.Clear();
 			cboProduct.Items.AddRange(productItems.ToArray());
 			cboProduct.DisplayMember = "Text";
 			cboProduct.Tag = productItems;
 			cboProduct.SelectedIndex = 0;
 			cboProduct.EndUpdate();
-			cboProduct.SelectedIndexChanged += delegate
-			{
-				if (_isScanningBarcode) return;
-				if (cboProduct.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
-				{
-					decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
-					_pendingBarcodeWeight = null;
-					_pendingScaleWeight = null;
-
-					AddOrUpdateProduct(comboItem.ID, qtyToAdd, comboItem.Price);
-
-					int rowIndex = -1;
-					for (int i = _items.Count - 1; i >= 0; i--)
-					{
-						if (_items[i].ProductID == comboItem.ID && Math.Abs(_items[i].UnitPrice - comboItem.Price) < 0.005m)
-						{
-							rowIndex = i;
-							break;
-						}
-					}
-					if (rowIndex >= 0)
-					{
-						dgItems.Focus();
-						dgItems.ClearSelection();
-						dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells["Quantity"];
-						dgItems.BeginEdit(true);
-					}
-
-					cboProduct.SelectedIndex = 0;
-				}
-			};
+			// لا نضيف SelectedIndexChanged - cboProduct مخفي
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
@@ -2476,7 +2425,7 @@ namespace ChickenDist.Forms
 			{
 				_searchSessionActive = false;
 				// إرجاع الفوكس للكومبو أو الجدول
-				this.BeginInvoke((MethodInvoker)delegate { cboProduct.Focus(); });
+				this.BeginInvoke((MethodInvoker)delegate { txtProductCode.Clear(); txtProductCode.Focus(); });
 			}
 		}
 
@@ -2932,25 +2881,17 @@ namespace ChickenDist.Forms
 		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null)
 		{
 			ComboItem product = null;
-			foreach (var item in cboProduct.Items)
+			// البحث في _productCache أولاً
+			foreach (var ci in _productCache)
 			{
-				if (item is ComboItem ci && ci.ID == productID)
-				{
-					product = ci;
-					break;
-				}
+				if (ci.ID == productID) { product = ci; break; }
 			}
-			if (product == null && cboProduct.Tag is List<ComboItem> allItems)
-			{
-				foreach (var ci in allItems)
+			// Fallback: بحث في cboProduct.Items (للتوافق)
+			if (product == null)
+				foreach (var item in cboProduct.Items)
 				{
-					if (ci.ID == productID)
-					{
-						product = ci;
-						break;
-					}
+					if (item is ComboItem ci && ci.ID == productID) { product = ci; break; }
 				}
-			}
 			// Fallback: إذا لم يكن الصنف في الكومبو، نحمله مباشرة من قاعدة البيانات
 			if (product == null)
 			{
@@ -3337,13 +3278,15 @@ namespace ChickenDist.Forms
 		/// </summary>
 		private ComboItem GetProductComboItem(int productID)
 		{
-			// بحث في العناصر المرئية أولاً
+			// بحث في _productCache
+			foreach (var ci in _productCache)
+				if (ci.ID == productID) return ci;
+			// بحث في cboProduct.Items كـ fallback
 			foreach (var obj in cboProduct.Items)
-				if (obj is ComboItem ci && ci.ID == productID) return ci;
-			// بحث في cache الـ Tag
+				if (obj is ComboItem ci2 && ci2.ID == productID) return ci2;
 			if (cboProduct.Tag is List<ComboItem> all)
-				foreach (var ci in all)
-					if (ci.ID == productID) return ci;
+				foreach (var ci3 in all)
+					if (ci3.ID == productID) return ci3;
 			return null;
 		}
 
@@ -5041,11 +4984,10 @@ namespace ChickenDist.Forms
 
 			this.BeginInvoke((MethodInvoker)delegate
 			{
-				if (cboProduct != null)
+				if (txtProductCode != null)
 				{
-					this.ActiveControl = cboProduct;
-					cboProduct.Focus();
-					cboProduct.SelectAll();
+					this.ActiveControl = txtProductCode;
+					txtProductCode.Focus();
 				}
 			});
 		}
