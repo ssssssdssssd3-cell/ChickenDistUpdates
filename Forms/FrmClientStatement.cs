@@ -52,11 +52,22 @@ namespace ChickenDist.Forms
             dtpTo = new DateTimePicker { Location = new Point(305, 10), Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
-            btnLoad = Theme.MakeButton("عرض", 300, 10, 80, 30, Theme.Accent);
+            btnLoad = Theme.MakeButton("عرض", 260, 10, 75, 30, Theme.Accent);
             btnLoad.Click += (s, e) => LoadStatement();
-            btnPrint = Theme.MakeButton("🖨 طباعة", 200, 10, 90, 30, Theme.Primary);
+            btnPrint = Theme.MakeButton("🖨 طباعة", 165, 10, 85, 30, Theme.Primary);
             btnPrint.Click += BtnPrint_Click;
-            pnlFilter.Controls.AddRange(new Control[] { dtpFrom, dtpTo, btnLoad, btnPrint });
+            var btnCollect = Theme.MakeButton("💵 تحصيل نقدية", 10, 10, 145, 30, Theme.Success);
+            btnCollect.Click += (s, e) =>
+            {
+                using (var dlg = new FrmPayment(_clientID, _clientName))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        LoadStatement();
+                    }
+                }
+            };
+            pnlFilter.Controls.AddRange(new Control[] { dtpFrom, dtpTo, btnLoad, btnPrint, btnCollect });
             this.Controls.Add(pnlFilter);
 
             dgStatement = new DataGridView
@@ -490,8 +501,11 @@ namespace ChickenDist.Forms
                 targetSafeID = safeItem.ID;
             }
             ClientDAL.AddPayment(_clientID, amt, txtNotes.Text, targetSafeID);
-            MessageBox.Show("✅ تم تسجيل التحصيل");
             this.DialogResult = DialogResult.OK;
+            this.Close();
+
+            // Open print & WhatsApp options dialog
+            new FrmPrintClientPayment(_clientID, amt, txtNotes.Text, targetSafeID).ShowOptionsDialog();
         }
     }
 

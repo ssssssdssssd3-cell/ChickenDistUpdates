@@ -73,23 +73,17 @@ namespace ChickenDist.Forms
             dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
 
-            btnLoad = Theme.MakeButton("🔍 عرض", 305, 10, 90, 30, Theme.Accent);
+            btnLoad = Theme.MakeButton("🔍 عرض", 260, 10, 75, 30, Theme.Accent);
             btnLoad.Click += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(btnLoad);
 
-            btnPrint = Theme.MakeButton("🖨 طباعة", 205, 10, 95, 30, Theme.Primary);
+            btnPrint = Theme.MakeButton("🖨 طباعة", 165, 10, 85, 30, Theme.Primary);
             btnPrint.Click += BtnPrint_Click;
             pnlFilter.Controls.Add(btnPrint);
 
-            // عنوان المورد
-            pnlFilter.Controls.Add(new Label
-            {
-                Text = "🤝 المورد: " + _supplierName,
-                Location = new Point(10, 15),
-                AutoSize = true,
-                ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            });
+            var btnPay = Theme.MakeButton("💸 سداد/صرف نقدية", 10, 10, 145, 30, Color.FromArgb(140, 80, 0));
+            btnPay.Click += (s, e) => OpenSupplierPaymentDialog();
+            pnlFilter.Controls.Add(btnPay);
 
             this.Controls.Add(pnlFilter);
 
@@ -322,5 +316,64 @@ namespace ChickenDist.Forms
 
             new PrintPreviewDialog { Document = pd, Width = 950, Height = 720 }.ShowDialog();
         }
+
+        private void OpenSupplierPaymentDialog()
+        {
+            using (var dlg = new Form())
+            {
+                dlg.Text = "💸 صرف نقدية للمورد - " + _supplierName;
+                dlg.Size = new Size(420, 220);
+                dlg.StartPosition = FormStartPosition.CenterScreen;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Theme.BgCard;
+                dlg.Font = Theme.FontMain;
+
+                int dy = 20;
+                dlg.Controls.Add(new Label { Text = "المبلغ المَصروف:", Location = new Point(270, dy + 3), Width = 110, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+                var nudAmt = new NumericUpDown
+                {
+                    Location = new Point(20, dy), Width = 240,
+                    Maximum = 9999999, Minimum = 0, DecimalPlaces = 2,
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11, FontStyle.Bold)
+                };
+                dlg.Controls.Add(nudAmt); dy += 45;
+
+                dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(270, dy + 3), Width = 110, ForeColor = Theme.TextMain });
+                var txtNote = new TextBox
+                {
+                    Location = new Point(20, dy), Width = 240,
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                    Text = "سداد جزء من حساب المورد"
+                };
+                dlg.Controls.Add(txtNote); dy += 50;
+
+                var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 180, 38, Color.FromArgb(140, 80, 0));
+                var btnCancel = Theme.MakeButton("❌ إلغاء", 20, dy, 160, 38, Color.DarkSlateGray);
+
+                btnOk.Click += (s2, e2) =>
+                {
+                    if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                    try
+                    {
+                        SupplierDAL.AddSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim());
+                        dlg.DialogResult = DialogResult.OK;
+                        dlg.Close();
+                        LoadStatement();
+
+                        new FrmPrintSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), supplierName: _supplierName).ShowOptionsDialog(this);
+                    }
+                    catch { }
+                };
+                btnCancel.Click += (s2, e2) => dlg.Close();
+
+                dlg.Controls.AddRange(new Control[] { btnOk, btnCancel });
+                dlg.ShowDialog(this);
+            }
+        }
     }
 }
+

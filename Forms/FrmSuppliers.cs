@@ -350,14 +350,14 @@ namespace ChickenDist.Forms
                 try
                 {
                     string code = SupplierDAL.AddSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim());
-                    MessageBox.Show(
-                        $"✅ تم الصرف بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج\nالمورد: {supplierName}",
-                        "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
-                    LoadSuppliers(); // تحديث الرصيد في الجدول
+                    LoadSuppliers();
+
+                    // Open print & WhatsApp options dialog for supplier payment
+                    new FrmPrintSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim(), supplierName: supplierName).ShowOptionsDialog(this);
                 }
-                catch { } // الخطأ بيتعرض تلقائياً من RunInTransaction
+                catch { }
             };
             btnCancel.Click += (s2, e2) => dlg.Close();
 

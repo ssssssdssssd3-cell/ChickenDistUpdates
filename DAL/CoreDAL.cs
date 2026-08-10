@@ -911,6 +911,16 @@ namespace ChickenDist.DAL
                            " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
             return DbHelper.Query(sql);
         }
+        public static DataRow GetByID(int id)
+        {
+            var dt = DbHelper.Query("SELECT * FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", id));
+            return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+        }
+
+        public static decimal GetBalance(int supplierID)
+        {
+            return GetPreviousBalance(supplierID, DateTime.Now.AddDays(1));
+        }
 
 
         // ─── فحص التكرار ───
@@ -1144,6 +1154,11 @@ namespace ChickenDist.DAL
                 LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
                 WHERE c.ClientID = @id", DbHelper.P("@id", clientID));
             return dt.Rows.Count > 0 ? Convert.ToDecimal(dt.Rows[0]["Balance"]) : 0;
+        }
+
+        public static decimal GetBalance(int clientID)
+        {
+            return GetClientBalance(clientID);
         }
 
         public static int GetClientCratesBalance(int clientID)
