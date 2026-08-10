@@ -431,6 +431,7 @@ namespace ChickenDist.Forms
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), AppConfig.IsRestaurant ? new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
@@ -442,6 +443,7 @@ namespace ChickenDist.Forms
                 } : new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
@@ -620,6 +622,7 @@ namespace ChickenDist.Forms
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),

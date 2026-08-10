@@ -1,0 +1,1024 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Printing;
+using System.Windows.Forms;
+using ChickenDist.Core;
+using ChickenDist.DAL;
+
+namespace ChickenDist.Forms
+{
+    /// <summary>
+    /// شاشة بيان وتسعير البضائع (عرض سعر)
+    /// لا تؤثر إطلاقاً في كميات المخزون إلا عند التحويل الفعلي لفاتورة بيع
+    /// </summary>
+    public class FrmPriceQuote : Form
+    {
+        private ComboBox cboClient;
+        private TextBox txtClientManual;
+        private ComboBox cboWarehouse;
+        private Button btnTierRetail, btnTierSemi, btnTierWholesale;
+        private string _selectedTier = "قطاعي";
+
+        private TextBox txtProductCode;
+        private Button btnSearchProduct, btnManualAdd;
+        private DataGridView dgItems;
+
+        private Label lblTotalVal, lblNetVal;
+        private TextBox txtDiscount;
+        private TextBox txtNotes;
+
+        private Button btnNew, btnSuspend, btnPendingList, btnConvertToSale, btnPrintPrep, btnPrintQuote;
+
+        private List<SaleItemDTO> _items = new List<SaleItemDTO>();
+        private List<ComboItem> _productCache = new List<ComboItem>();
+        private int _currentQuoteID = 0;
+        private string _quoteCode = "";
+
+        public FrmPriceQuote(int quoteID = 0)
+        {
+            _currentQuoteID = quoteID;
+            InitUI();
+            LoadCombos();
+            if (_currentQuoteID > 0)
+            {
+                LoadQuoteForEdit(_currentQuoteID);
+            }
+            else
+            {
+                NewQuote();
+            }
+        }
+
+        private void InitUI()
+        {
+            Text = "📋 شاشة بيان تسعير وعرض أسعار (بدون تأثير مخزني)";
+            Size = new Size(1040, 700);
+            StartPosition = FormStartPosition.CenterScreen;
+            RightToLeft = RightToLeft.Yes;
+            RightToLeftLayout = true;
+            BackColor = Theme.BgMain;
+            Font = Theme.FontMain;
+            KeyPreview = true;
+            KeyDown += FrmPriceQuote_KeyDown;
+
+            // ── 1. Header Panel ──
+            var pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 110,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(12, 8, 12, 8)
+            };
+
+            var tblHeader = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 3,
+                ColumnCount = 4,
+                BackColor = Color.Transparent
+            };
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
+
+            tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+
+            // Row 0: Client & Warehouse
+            var lblClient = MakeLabel("العميل :");
+            cboClient = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                RightToLeft = RightToLeft.Yes,
+                Margin = new Padding(2)
+            };
+            SetupSearchableCombo(cboClient);
+
+            txtClientManual = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(2),
+                Font = Theme.FontMain,
+                Visible = false
+            };
+
+            var lblWH = MakeLabel("المخزن :");
+            cboWarehouse = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                RightToLeft = RightToLeft.Yes,
+                Margin = new Padding(2)
+            };
+
+            tblHeader.Controls.Add(lblClient, 0, 0);
+            var pnlClientWrap = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) };
+            pnlClientWrap.Controls.Add(cboClient);
+            pnlClientWrap.Controls.Add(txtClientManual);
+            tblHeader.Controls.Add(pnlClientWrap, 1, 0);
+            tblHeader.Controls.Add(lblWH, 2, 0);
+            tblHeader.Controls.Add(cboWarehouse, 3, 0);
+
+            // Row 1: Price Tier & Date
+            var lblTier = MakeLabel("فئة السعر :");
+            var pnlTiers = new FlowLayoutPanel { Dock = DockStyle.Fill, Margin = new Padding(0) };
+            btnTierRetail = MakeTierButton("قطاعي", true);
+            btnTierSemi = MakeTierButton("نصف جملة", false);
+            btnTierWholesale = MakeTierButton("جملة", false);
+
+            btnTierRetail.Click += (s, e) => SelectTier("قطاعي");
+            btnTierSemi.Click += (s, e) => SelectTier("نصف جملة");
+            btnTierWholesale.Click += (s, e) => SelectTier("جملة");
+
+            pnlTiers.Controls.AddRange(new Control[] { btnTierRetail, btnTierSemi, btnTierWholesale });
+
+            var lblDate = MakeLabel("التاريخ :");
+            var dtpDate = new DateTimePicker
+            {
+                Dock = DockStyle.Fill,
+                Enabled = false,
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "yyyy/MM/dd  hh:mm tt",
+                Value = DateTime.Now,
+                Margin = new Padding(2)
+            };
+
+            tblHeader.Controls.Add(lblTier, 0, 1);
+            tblHeader.Controls.Add(pnlTiers, 1, 1);
+            tblHeader.Controls.Add(lblDate, 2, 1);
+            tblHeader.Controls.Add(dtpDate, 3, 1);
+
+            // Row 2: Info banner
+            var lblBanner = new Label
+            {
+                Text = "ℹ️ تنبيه: بيان التسعير هذا مجرد عرض أسعار للعميل ولا يخصم أي كميات من المخزون إلا عند تحويله لفاتورة بيع.",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.Orange,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            tblHeader.Controls.Add(lblBanner, 0, 2);
+            tblHeader.SetColumnSpan(lblBanner, 4);
+
+            pnlHeader.Controls.Add(tblHeader);
+            Controls.Add(pnlHeader);
+
+            // ── 2. Product Entry Bar ──
+            var pnlProductBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 44,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(6, 4, 6, 4)
+            };
+
+            var tblProductBar = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 4,
+                BackColor = Color.Transparent
+            };
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));
+            tblProductBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
+
+            var lblProdTitle = MakeLabel("الصنف :");
+            txtProductCode = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes,
+                Margin = new Padding(2, 6, 2, 6),
+                Font = Theme.FontMain
+            };
+            txtProductCode.KeyDown += TxtProductCode_KeyDown;
+
+            btnSearchProduct = Theme.MakeButton("🔍 بحث سريع (F3)", 0, 0, 0, 0, Theme.Accent);
+            btnSearchProduct.Dock = DockStyle.Fill;
+            btnSearchProduct.Margin = new Padding(2);
+            btnSearchProduct.Click += (s, e) => OpenQuickSearch();
+
+            btnManualAdd = Theme.MakeButton("➕ إضافة", 0, 0, 0, 0, Theme.Success);
+            btnManualAdd.Dock = DockStyle.Fill;
+            btnManualAdd.Margin = new Padding(2);
+            btnManualAdd.Click += (s, e) => ProcessProductInput(txtProductCode.Text.Trim());
+
+            tblProductBar.Controls.Add(lblProdTitle, 0, 0);
+            tblProductBar.Controls.Add(txtProductCode, 1, 0);
+            tblProductBar.Controls.Add(btnSearchProduct, 2, 0);
+            tblProductBar.Controls.Add(btnManualAdd, 3, 0);
+
+            pnlProductBar.Controls.Add(tblProductBar);
+            Controls.Add(pnlProductBar);
+
+            // ── 3. Items DataGridView ──
+            dgItems = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                RightToLeft = RightToLeft.Yes,
+                GridColor = Theme.BorderColor,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                EnableHeadersVisualStyles = false
+            };
+
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 30, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 90, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "موقع الصنف (الرف)", FillWeight = 45, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 30, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 35 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", FillWeight = 35 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 40, ReadOnly = true });
+
+            var btnDel = new DataGridViewButtonColumn
+            {
+                Name = "BtnDelete",
+                HeaderText = "حذف",
+                Text = "❌",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 20
+            };
+            dgItems.Columns.Add(btnDel);
+
+            dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.CellContentClick += DgItems_CellContentClick;
+
+            Controls.Add(dgItems);
+
+            // ── 4. Bottom Control & Actions Bar ──
+            var pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 110,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(8)
+            };
+
+            var tblBottom = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 6
+            };
+            tblBottom.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            tblBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            lblTotalVal = new Label { Text = "الإجمالي: 0.00 ج", Font = new Font("Segoe UI", 11, FontStyle.Bold), ForeColor = Theme.TextMain, AutoSize = true, Anchor = AnchorStyles.Left };
+            txtDiscount = new TextBox { Width = 80, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtDiscount.TextChanged += (s, e) => RecalculateTotals();
+
+            lblNetVal = new Label { Text = "الصافي: 0.00 ج", Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Theme.Success, AutoSize = true, Anchor = AnchorStyles.Left };
+            txtNotes = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+            tblBottom.Controls.Add(lblTotalVal, 0, 0);
+            tblBottom.Controls.Add(new Label { Text = "خصم (ج):", AutoSize = true, Anchor = AnchorStyles.Right }, 1, 0);
+            tblBottom.Controls.Add(txtDiscount, 2, 0);
+            tblBottom.Controls.Add(lblNetVal, 3, 0);
+            tblBottom.Controls.Add(new Label { Text = "ملاحظات:", AutoSize = true, Anchor = AnchorStyles.Right }, 4, 0);
+            tblBottom.Controls.Add(txtNotes, 5, 0);
+
+            // Action Buttons Row
+            var pnlActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 4, 0, 0),
+                RightToLeft = RightToLeft.Yes
+            };
+
+            btnNew = Theme.MakeButton("📄 جديد (F1)", 0, 0, 110, 40, Color.FromArgb(55, 65, 81));
+            btnNew.Click += (s, e) => NewQuote();
+
+            btnSuspend = Theme.MakeButton("📌 تعليق / حفظ عرض (F2)", 0, 0, 180, 40, Theme.Primary);
+            btnSuspend.Click += (s, e) => SaveQuote(false);
+
+            btnPendingList = Theme.MakeButton("📋 العروض المعلقة (F4)", 0, 0, 160, 40, Theme.Accent);
+            btnPendingList.Click += (s, e) => OpenPendingQuotesList();
+
+            btnConvertToSale = Theme.MakeButton("🔄 تحويل لفاتورة بيع (F5)", 0, 0, 190, 40, Theme.Success);
+            btnConvertToSale.Click += (s, e) => ConvertToSaleInvoice();
+
+            btnPrintPrep = Theme.MakeButton("📦 طباعة إذن تحضير", 0, 0, 150, 40, Color.DarkSlateBlue);
+            btnPrintPrep.Click += (s, e) => PrintPreparationSlip();
+
+            btnPrintQuote = Theme.MakeButton("🖨️ طباعة عرض أسعار", 0, 0, 150, 40, Color.DarkGreen);
+            btnPrintQuote.Click += (s, e) => PrintPriceQuote();
+
+            pnlActions.Controls.AddRange(new Control[] { btnNew, btnSuspend, btnPendingList, btnConvertToSale, btnPrintPrep, btnPrintQuote });
+            tblBottom.Controls.Add(pnlActions, 0, 1);
+            tblBottom.SetColumnSpan(pnlActions, 6);
+
+            pnlBottom.Controls.Add(tblBottom);
+            Controls.Add(pnlBottom);
+        }
+
+        private Label MakeLabel(string txt)
+        {
+            return new Label
+            {
+                Text = txt,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(2)
+            };
+        }
+
+        private Button MakeTierButton(string txt, bool isSelected)
+        {
+            var btn = new Button
+            {
+                Text = txt,
+                Width = 80,
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = Theme.FontMain,
+                BackColor = isSelected ? Theme.Primary : Theme.BgCard,
+                ForeColor = isSelected ? Color.White : Theme.TextMain,
+                Margin = new Padding(2)
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Theme.Primary;
+            return btn;
+        }
+
+        private void SelectTier(string tier)
+        {
+            _selectedTier = tier;
+            btnTierRetail.BackColor = tier == "قطاعي" ? Theme.Primary : Theme.BgCard;
+            btnTierRetail.ForeColor = tier == "قطاعي" ? Color.White : Theme.TextMain;
+            btnTierSemi.BackColor = tier == "نصف جملة" ? Theme.Primary : Theme.BgCard;
+            btnTierSemi.ForeColor = tier == "نصف جملة" ? Color.White : Theme.TextMain;
+            btnTierWholesale.BackColor = tier == "جملة" ? Theme.Primary : Theme.BgCard;
+            btnTierWholesale.ForeColor = tier == "جملة" ? Color.White : Theme.TextMain;
+        }
+
+        private void SetupSearchableCombo(ComboBox cbo)
+        {
+            cbo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cbo.AutoCompleteSource = AutoCompleteSource.ListItems;
+        }
+
+        private void LoadCombos()
+        {
+            // Clients
+            try
+            {
+                cboClient.Items.Clear();
+                cboClient.Items.Add(new ComboItem(0, "-- اختر عميل / نقدي --"));
+                DataTable dtC = ClientDAL.GetAll(true);
+                foreach (DataRow r in dtC.Rows)
+                {
+                    cboClient.Items.Add(new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+                }
+                cboClient.SelectedIndex = 0;
+            }
+            catch { }
+
+            // Warehouses
+            try
+            {
+                cboWarehouse.Items.Clear();
+                DataTable dtW = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+                foreach (DataRow r in dtW.Rows)
+                {
+                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                }
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+            }
+            catch { }
+
+            // Cache products for fast lookup
+            try
+            {
+                DataTable dtP = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, WholesalePrice, HalfWholesalePrice, Unit, ShelfLocation, PartNumber FROM Products WHERE IsActive=1");
+                _productCache.Clear();
+                foreach (DataRow r in dtP.Rows)
+                {
+                    decimal price = Convert.ToDecimal(r["SalePrice"]);
+                    var ci = new ComboItem(Convert.ToInt32(r["ProductID"]), r["ProductName"].ToString(), r["ProductName"].ToString(), price, 0m, 0m);
+                    ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
+                    ci.ShelfLocation = r["ShelfLocation"]?.ToString() ?? "";
+                    ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
+                    ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
+                    _productCache.Add(ci);
+                }
+            }
+            catch { }
+        }
+
+        private void NewQuote()
+        {
+            _currentQuoteID = 0;
+            _quoteCode = "Q-NEW";
+            _items.Clear();
+            dgItems.Rows.Clear();
+            txtDiscount.Text = "0";
+            txtNotes.Text = "";
+            txtProductCode.Clear();
+            if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+            SelectTier("قطاعي");
+            RecalculateTotals();
+            txtProductCode.Focus();
+        }
+
+        private void TxtProductCode_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                string code = txtProductCode.Text.Trim();
+                if (!string.IsNullOrEmpty(code))
+                {
+                    ProcessProductInput(code);
+                    txtProductCode.Clear();
+                }
+            }
+        }
+
+        private void OpenQuickSearch()
+        {
+            using (var dlg = new FrmModelLookup())
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    AddProductByID(dlg.SelectedProductID, 1.0m);
+                }
+            }
+        }
+
+        private void ProcessProductInput(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return;
+
+            // Search in product cache by Code or PartNumber or Name
+            ComboItem match = null;
+            foreach (var ci in _productCache)
+            {
+                if (string.Equals(ci.ProductCode, code, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(ci.PartNumber, code, StringComparison.OrdinalIgnoreCase) ||
+                    ci.Text.Equals(code, StringComparison.OrdinalIgnoreCase))
+                {
+                    match = ci;
+                    break;
+                }
+            }
+
+            if (match != null)
+            {
+                AddProductByID(match.ID, 1.0m, match.Price);
+            }
+            else
+            {
+                // DB Fallback search
+                DataTable dt = DbHelper.Query("SELECT ProductID, ProductName, SalePrice FROM Products WHERE ProductCode=@c OR PartNumber=@c OR InternationalCode=@c", DbHelper.P("@c", code));
+                if (dt.Rows.Count > 0)
+                {
+                    int pid = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                    decimal price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+                    AddProductByID(pid, 1.0m, price);
+                }
+                else
+                {
+                    MessageBox.Show("الصنف غير موجود!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            txtProductCode.Clear();
+            txtProductCode.Focus();
+        }
+
+        private void AddProductByID(int productID, decimal qty, decimal? overridePrice = null)
+        {
+            DataRow pRow = ProductDAL.GetByID(productID);
+            if (pRow == null) return;
+
+            string name = pRow["ProductName"].ToString();
+            string code = pRow["ProductCode"]?.ToString() ?? "";
+            string shelfLoc = pRow["ShelfLocation"]?.ToString() ?? "";
+            string unit = pRow["Unit"]?.ToString() ?? "";
+
+            decimal price = overridePrice ?? Convert.ToDecimal(pRow["SalePrice"]);
+            if (_selectedTier == "نصف جملة" && pRow.Table.Columns.Contains("HalfWholesalePrice") && pRow["HalfWholesalePrice"] != DBNull.Value)
+                price = Convert.ToDecimal(pRow["HalfWholesalePrice"]);
+            else if (_selectedTier == "جملة" && pRow.Table.Columns.Contains("WholesalePrice") && pRow["WholesalePrice"] != DBNull.Value)
+                price = Convert.ToDecimal(pRow["WholesalePrice"]);
+
+            // Check if item already exists in quote list
+            SaleItemDTO existing = _items.Find(x => x.ProductID == productID && Math.Abs(x.UnitPrice - price) < 0.005m);
+            if (existing != null)
+            {
+                existing.Quantity += qty;
+            }
+            else
+            {
+                var dto = new SaleItemDTO
+                {
+                    ProductID = productID,
+                    ProductName = name,
+                    ProductCode = code,
+                    ShelfLocation = shelfLoc,
+                    UnitName = unit,
+                    Quantity = qty,
+                    UnitPrice = price,
+                    Factor = 1.0m
+                };
+                _items.Add(dto);
+            }
+            RefreshGrid();
+        }
+
+        private void RefreshGrid()
+        {
+            dgItems.Rows.Clear();
+            foreach (var item in _items)
+            {
+                decimal total = item.Quantity * item.UnitPrice - item.DiscountAmt;
+                dgItems.Rows.Add(
+                    item.ProductCode,
+                    item.ProductName,
+                    item.ShelfLocation,
+                    item.UnitName,
+                    item.Quantity.ToString("F2"),
+                    item.UnitPrice.ToString("N2"),
+                    total.ToString("N2")
+                );
+            }
+            RecalculateTotals();
+        }
+
+        private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
+
+            var row = dgItems.Rows[e.RowIndex];
+            var item = _items[e.RowIndex];
+
+            if (dgItems.Columns[e.ColumnIndex].Name == "Quantity")
+            {
+                if (decimal.TryParse(row.Cells["Quantity"].Value?.ToString(), out decimal q) && q > 0)
+                {
+                    item.Quantity = q;
+                }
+            }
+            else if (dgItems.Columns[e.ColumnIndex].Name == "UnitPrice")
+            {
+                if (decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal p) && p >= 0)
+                {
+                    item.UnitPrice = p;
+                }
+            }
+            RefreshGrid();
+        }
+
+        private void DgItems_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "BtnDelete")
+            {
+                _items.RemoveAt(e.RowIndex);
+                RefreshGrid();
+            }
+        }
+
+        private void RecalculateTotals()
+        {
+            decimal gross = 0m;
+            foreach (var item in _items)
+            {
+                gross += (item.Quantity * item.UnitPrice) - item.DiscountAmt;
+            }
+            lblTotalVal.Text = $"الإجمالي: {gross:N2} ج";
+
+            decimal disc = 0m;
+            decimal.TryParse(txtDiscount.Text, out disc);
+            decimal net = Math.Max(0m, gross - disc);
+            lblNetVal.Text = $"الصافي: {net:N2} ج";
+        }
+
+        private int? GetSelectedClientID()
+        {
+            if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0) return ci.ID;
+            return null;
+        }
+
+        private string GetClientName()
+        {
+            if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0) return ci.Text;
+            if (!string.IsNullOrWhiteSpace(txtClientManual.Text)) return txtClientManual.Text.Trim();
+            return "عميل نقدي";
+        }
+
+        private int? GetSelectedWarehouseID()
+        {
+            if (cboWarehouse.SelectedItem is ComboItem w && w.ID > 0) return w.ID;
+            return null;
+        }
+
+        private bool SaveQuote(bool isSilent = false)
+        {
+            if (_items.Count == 0)
+            {
+                if (!isSilent) MessageBox.Show("أضف أصنافاً أولاً لبيان التسعير!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            decimal gross = 0m;
+            foreach (var item in _items) gross += (item.Quantity * item.UnitPrice) - item.DiscountAmt;
+            decimal disc = 0m;
+            decimal.TryParse(txtDiscount.Text, out disc);
+            decimal net = Math.Max(0m, gross - disc);
+
+            int savedID = PriceQuoteDAL.SaveQuote(
+                GetSelectedClientID(),
+                GetClientName(),
+                net,
+                disc,
+                0m,
+                txtNotes.Text,
+                _items,
+                GetSelectedWarehouseID(),
+                _selectedTier,
+                _currentQuoteID
+            );
+
+            if (savedID > 0)
+            {
+                _currentQuoteID = savedID;
+                if (!isSilent) MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
+            }
+            return false;
+        }
+
+        private void LoadQuoteForEdit(int quoteID)
+        {
+            DataRow qRow = PriceQuoteDAL.GetQuoteHeader(quoteID);
+            if (qRow == null) return;
+
+            _currentQuoteID = quoteID;
+            _quoteCode = qRow["QuoteCode"].ToString();
+
+            // Client
+            if (qRow["ClientID"] != DBNull.Value)
+            {
+                int cid = Convert.ToInt32(qRow["ClientID"]);
+                for (int i = 0; i < cboClient.Items.Count; i++)
+                    if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
+                    { cboClient.SelectedIndex = i; break; }
+            }
+            else
+            {
+                txtClientManual.Text = qRow["ClientName"]?.ToString() ?? "";
+            }
+
+            // Warehouse
+            if (qRow["WarehouseID"] != DBNull.Value)
+            {
+                int wid = Convert.ToInt32(qRow["WarehouseID"]);
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    if (cboWarehouse.Items[i] is ComboItem w && w.ID == wid)
+                    { cboWarehouse.SelectedIndex = i; break; }
+            }
+
+            SelectTier(qRow["PriceTier"]?.ToString() ?? "قطاعي");
+            txtDiscount.Text = Convert.ToDecimal(qRow["DiscountAmount"]).ToString("G");
+            txtNotes.Text = qRow["Notes"]?.ToString() ?? "";
+
+            // Load Items
+            DataTable dtItems = PriceQuoteDAL.GetQuoteItems(quoteID);
+            _items.Clear();
+            foreach (DataRow r in dtItems.Rows)
+            {
+                _items.Add(new SaleItemDTO
+                {
+                    ProductID = Convert.ToInt32(r["ProductID"]),
+                    ProductName = r["ProductName"].ToString(),
+                    ProductCode = r["ProductCode"]?.ToString() ?? "",
+                    ShelfLocation = r["ProductShelfLocation"]?.ToString() ?? "",
+                    UnitName = r["UnitName"]?.ToString() ?? "",
+                    Quantity = Convert.ToDecimal(r["Quantity"]),
+                    UnitPrice = Convert.ToDecimal(r["UnitPrice"]),
+                    Factor = Convert.ToDecimal(r["Factor"])
+                });
+            }
+            RefreshGrid();
+        }
+
+        private void OpenPendingQuotesList()
+        {
+            using (var dlg = new FrmPriceQuotesList())
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedQuoteID > 0)
+                {
+                    if (dlg.ActionType == "Edit")
+                    {
+                        LoadQuoteForEdit(dlg.SelectedQuoteID);
+                    }
+                    else if (dlg.ActionType == "Convert")
+                    {
+                        LoadQuoteForEdit(dlg.SelectedQuoteID);
+                        ConvertToSaleInvoice();
+                    }
+                }
+            }
+        }
+
+        private void ConvertToSaleInvoice()
+        {
+            if (_items.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف لتحويلها إلى فاتورة بيع!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Save quote first
+            SaveQuote(true);
+
+            // Confirm conversion
+            var confirm = MessageBox.Show(
+                "هل تريد تحويل بيان التسعير الحالي إلى فاتورة بيع الآن؟\nسوف يتم إدخال الأصناف في شاشة البيع لخصمها من المخزون وتسجيلها كفاتورة بيع رسمية.",
+                "تأكيد تحويل البيان إلى فاتورة بيع",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (confirm != DialogResult.Yes) return;
+
+            // Open Sale form with quote items
+            int? cid = GetSelectedClientID();
+            int? wid = GetSelectedWarehouseID();
+            string notes = txtNotes.Text;
+
+            var frmSale = new FrmSale();
+            frmSale.LoadFromPriceQuote(_currentQuoteID, cid, wid, _selectedTier, _items, notes);
+            frmSale.Show();
+            this.Close();
+        }
+
+        // ── 🖨️ Printing Logic ──
+
+        private void PrintPreparationSlip()
+        {
+            if (_items.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف في بيان التسعير لطباعة إذن التحضير!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Ask printer format (Receipt vs A4)
+            var res = MessageBox.Show("هل تريد طباعة إذن التحضير على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع الطباعة", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            if (res == DialogResult.Cancel) return;
+
+            bool isReceipt = (res == DialogResult.Yes);
+
+            var pd = new PrintDocument();
+            if (isReceipt)
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
+                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+            }
+            else
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+                pd.DefaultPageSettings.Margins = new Margins(25, 25, 25, 25);
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+            }
+
+            string whName = cboWarehouse.Text;
+            string empName = Session.EmpName;
+            int itemIdx = 0;
+
+            pd.PrintPage += (s, e) =>
+            {
+                var g = e.Graphics;
+                var fontTitle = new Font("Arial", isReceipt ? 12 : 16, FontStyle.Bold);
+                var fontHeader = new Font("Arial", isReceipt ? 9 : 11, FontStyle.Bold);
+                var fontBody = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Regular);
+                var fontBold = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Bold);
+
+                int y = 15;
+                int left = e.MarginBounds.Left;
+                int right = e.MarginBounds.Right;
+                int width = e.MarginBounds.Width;
+
+                // Title
+                string title = "📦 إذن تحضير وتجميع بضاعة";
+                SizeF szTitle = g.MeasureString(title, fontTitle);
+                g.DrawString(title, fontTitle, Brushes.Black, (pageW(e) - szTitle.Width) / 2, y);
+                y += (int)szTitle.Height + 10;
+
+                // Header Info: Warehouse & Employee ONLY
+                g.DrawString($"المخزن المختار: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"المخزن المختار: {whName}", fontHeader).Width, y);
+                y += 22;
+                g.DrawString($"الموظف المسؤول: {empName}", fontHeader, Brushes.Black, right - g.MeasureString($"الموظف المسؤول: {empName}", fontHeader).Width, y);
+                g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}", fontBody, Brushes.Black, left, y);
+                y += 25;
+
+                g.DrawLine(Pens.Black, left, y, right, y);
+                y += 8;
+
+                // Items Table Header (ONLY: Product, Qty, Shelf Location)
+                int colProductW = (int)(width * 0.45);
+                int colQtyW = (int)(width * 0.25);
+                int colLocW = (int)(width * 0.30);
+
+                g.DrawString("الصنف", fontHeader, Brushes.Black, right - colProductW, y);
+                g.DrawString("الكمية والوحدة", fontHeader, Brushes.Black, right - colProductW - colQtyW, y);
+                g.DrawString("موقع الصنف (الرف)", fontHeader, Brushes.Black, right - colProductW - colQtyW - colLocW, y);
+                y += 22;
+
+                g.DrawLine(Pens.Gray, left, y, right, y);
+                y += 6;
+
+                // Items list
+                while (itemIdx < _items.Count)
+                {
+                    var item = _items[itemIdx];
+                    string loc = !string.IsNullOrWhiteSpace(item.ShelfLocation) ? item.ShelfLocation : "---";
+
+                    g.DrawString(item.ProductName, fontBody, Brushes.Black, right - colProductW, y);
+                    g.DrawString($"{item.Quantity:N0} {item.UnitName}", fontBold, Brushes.Black, right - colProductW - colQtyW, y);
+                    g.DrawString(loc, fontBold, Brushes.DarkBlue, right - colProductW - colQtyW - colLocW, y);
+
+                    y += 22;
+                    itemIdx++;
+
+                    if (y > e.MarginBounds.Bottom - 40)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
+                }
+
+                g.DrawLine(Pens.Black, left, y, right, y);
+                y += 15;
+                g.DrawString("توقيع المحضّر: ....................", fontHeader, Brushes.Black, right - 220, y);
+            };
+
+            try
+            {
+                pd.Print();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ في الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PrintPriceQuote()
+        {
+            if (_items.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف في بيان التسعير للطباعة!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var res = MessageBox.Show("هل تريد طباعة بيان التسعير على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "نوع بيان التسعير", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            if (res == DialogResult.Cancel) return;
+
+            bool isReceipt = (res == DialogResult.Yes);
+
+            var pd = new PrintDocument();
+            if (isReceipt)
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
+                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+            }
+            else
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+                pd.DefaultPageSettings.Margins = new Margins(25, 25, 25, 25);
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+            }
+
+            string clientName = GetClientName();
+            string empName = Session.EmpName;
+            int itemIdx = 0;
+
+            pd.PrintPage += (s, e) =>
+            {
+                var g = e.Graphics;
+                var fontTitle = new Font("Arial", isReceipt ? 12 : 16, FontStyle.Bold);
+                var fontHeader = new Font("Arial", isReceipt ? 9 : 11, FontStyle.Bold);
+                var fontBody = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Regular);
+                var fontBold = new Font("Arial", isReceipt ? 9f : 11, FontStyle.Bold);
+
+                int y = 15;
+                int left = e.MarginBounds.Left;
+                int right = e.MarginBounds.Right;
+                int width = e.MarginBounds.Width;
+
+                string title = "📋 بيان تسعير وعرض أسعار";
+                SizeF szTitle = g.MeasureString(title, fontTitle);
+                g.DrawString(title, fontTitle, Brushes.Black, (pageW(e) - szTitle.Width) / 2, y);
+                y += (int)szTitle.Height + 8;
+
+                g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
+                g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy}", fontBody, Brushes.Black, left, y);
+                y += 22;
+
+                g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف: {empName}", fontBody).Width, y);
+                y += 22;
+
+                g.DrawLine(Pens.Black, left, y, right, y);
+                y += 8;
+
+                // Table Header
+                int colProdW = (int)(width * 0.45);
+                int colQtyW = (int)(width * 0.15);
+                int colPriceW = (int)(width * 0.20);
+                int colTotW = (int)(width * 0.20);
+
+                g.DrawString("الصنف", fontHeader, Brushes.Black, right - colProdW, y);
+                g.DrawString("الكمية", fontHeader, Brushes.Black, right - colProdW - colQtyW, y);
+                g.DrawString("السعر", fontHeader, Brushes.Black, right - colProdW - colQtyW - colPriceW, y);
+                g.DrawString("الإجمالي", fontHeader, Brushes.Black, right - colProdW - colQtyW - colPriceW - colTotW, y);
+                y += 22;
+                g.DrawLine(Pens.Gray, left, y, right, y);
+                y += 6;
+
+                decimal gross = 0m;
+                while (itemIdx < _items.Count)
+                {
+                    var item = _items[itemIdx];
+                    decimal tot = item.Quantity * item.UnitPrice - item.DiscountAmt;
+                    gross += tot;
+
+                    g.DrawString(item.ProductName, fontBody, Brushes.Black, right - colProdW, y);
+                    g.DrawString(item.Quantity.ToString("N0"), fontBody, Brushes.Black, right - colProdW - colQtyW, y);
+                    g.DrawString(item.UnitPrice.ToString("N2"), fontBody, Brushes.Black, right - colProdW - colQtyW - colPriceW, y);
+                    g.DrawString(tot.ToString("N2"), fontBold, Brushes.Black, right - colProdW - colQtyW - colPriceW - colTotW, y);
+
+                    y += 22;
+                    itemIdx++;
+
+                    if (y > e.MarginBounds.Bottom - 50)
+                    {
+                        e.HasMorePages = true;
+                        return;
+                    }
+                }
+
+                g.DrawLine(Pens.Black, left, y, right, y);
+                y += 10;
+
+                decimal disc = 0m;
+                decimal.TryParse(txtDiscount.Text, out disc);
+                decimal net = Math.Max(0m, gross - disc);
+
+                g.DrawString($"الإجمالي العام: {net:N2} ج", fontBold, Brushes.Black, left, y);
+                y += 25;
+                g.DrawString("* الأسعار الاسترشادية المدونة أعلاه غير شاملة أي حجز للمخزون.", fontBody, Brushes.Gray, left, y);
+            };
+
+            try
+            {
+                pd.Print();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ في الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private int pageW(PrintPageEventArgs e)
+        {
+            return e.PageBounds.Width;
+        }
+
+        private void FrmPriceQuote_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F1) { NewQuote(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F2) { SaveQuote(false); e.Handled = true; }
+            else if (e.KeyCode == Keys.F4) { OpenPendingQuotesList(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F5) { ConvertToSaleInvoice(); e.Handled = true; }
+            else if (e.KeyCode == Keys.F3) { OpenQuickSearch(); e.Handled = true; }
+        }
+    }
+}

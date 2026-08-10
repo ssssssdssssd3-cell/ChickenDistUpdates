@@ -94,6 +94,7 @@ namespace ChickenDist.Forms
 		private int _lastSaleID = 0;
         private bool _isDirty = false;
         private int _editSaleID = 0;
+        private int _loadedQuoteID = 0; // معرف عرض الأسعار المحول
         private bool _isCopyMode = false;
         private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
@@ -3489,6 +3490,50 @@ namespace ChickenDist.Forms
 			_isDirty = false;
 		}
 
+		public void LoadFromPriceQuote(int quoteID, int? clientID, int? warehouseID, string priceTier, List<SaleItemDTO> quoteItems, string notes)
+		{
+			_loadedQuoteID = quoteID;
+			if (clientID.HasValue && clientID.Value > 0)
+			{
+				for (int i = 0; i < cboClient.Items.Count; i++)
+					if (cboClient.Items[i] is ComboItem ci && ci.ID == clientID.Value)
+					{ cboClient.SelectedIndex = i; break; }
+			}
+			if (warehouseID.HasValue && warehouseID.Value > 0)
+			{
+				for (int i = 0; i < cboWarehouse.Items.Count; i++)
+					if (cboWarehouse.Items[i] is ComboItem w && w.ID == warehouseID.Value)
+					{ cboWarehouse.SelectedIndex = i; break; }
+			}
+			if (!string.IsNullOrEmpty(priceTier))
+			{
+				SetTierButtons(priceTier);
+			}
+			if (!string.IsNullOrEmpty(notes))
+			{
+				txtNotes.Text = notes;
+			}
+
+			_items.Clear();
+			foreach (var item in quoteItems)
+			{
+				_items.Add(new SaleItemDTO
+				{
+					ProductID = item.ProductID,
+					ProductName = item.ProductName,
+					ProductCode = item.ProductCode,
+					ShelfLocation = item.ShelfLocation,
+					UnitName = item.UnitName,
+					Quantity = item.Quantity,
+					UnitPrice = item.UnitPrice,
+					DiscountAmt = item.DiscountAmt,
+					DiscountPct = item.DiscountPct,
+					Factor = item.Factor
+				});
+			}
+			RefreshGrid();
+		}
+
 
 		private void SaveInvoiceLogic(bool isDraft)
 		{
@@ -3748,6 +3793,11 @@ namespace ChickenDist.Forms
 				{
 					_lastSaleID = num3;
 					_isDirty = false;
+					if (_loadedQuoteID > 0)
+					{
+						try { PriceQuoteDAL.MarkAsConverted(_loadedQuoteID, num3); } catch { }
+						_loadedQuoteID = 0;
+					}
 					if (isDraft)
 					{
 						MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.",
