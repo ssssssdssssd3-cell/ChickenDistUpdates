@@ -1,3 +1,8 @@
+v2.0.380 - 2026-08-10
+- Fix Price Quote Product Search NullReferenceException (FrmProductSearch.cs & FrmPriceQuote.cs):
+  1. معالجة استثناء `NullReferenceException` في شاشة البحث المتقدم للأصناف عند فتحها من شاشة عرض الأسعار/بيان الأسعار (`FrmPriceQuote.cs`).
+  2. تأخير تفعيل خيار عرض الأصناف الصفرية `defaultShowZeroStock` لما بعد تحميل الكتالوج `LoadProducts` وتعيين حماية `if (_dvProducts == null) return;` داخل دالة التصفية لمنع أي انهيار قبل الجلب.
+
 v2.0.379 - 2026-08-10
 - Fix SubTotal SQL Query for Purchases (PurchaseDAL.cs):
   1. إضافة عمود `SubTotal` المحسوب ديناميكياً من إجمالي ضرب الكميات في أسعار الأصناف بجدول فواتير الشراء (`PurchaseDAL.GetAll`).

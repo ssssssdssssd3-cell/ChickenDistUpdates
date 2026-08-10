@@ -60,12 +60,12 @@ namespace ChickenDist.Forms
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
+            LoadCategories();
+            LoadProducts();
             if (defaultShowZeroStock && chkShowZeroStock != null)
             {
                 chkShowZeroStock.Checked = true;
             }
-            LoadCategories();
-            LoadProducts();
         }
 
         private void InitUI()
@@ -434,6 +434,7 @@ namespace ChickenDist.Forms
 
         private void ApplyFilter()
         {
+            if (_dvProducts == null) return;
             string term = txtSearch.Text.Trim().Replace("'", "''");
             string brandTerm = txtBrandFilter.Text.Trim().Replace("'", "''");
             string colorTerm = txtColorFilter != null ? txtColorFilter.Text.Trim().Replace("'", "''") : "";
