@@ -1,3 +1,7 @@
+v2.0.375 - 2026-08-10
+- Purchase Search Screen Loop Enhancements (FrmPurchase.cs):
+  1. ضبط شاشة البحث المتقدم للأصناف في شاشة المشتريات (`FrmPurchase.cs`) لتعيد الفتح تلقائياً بعد اختيار وتنزل كل صنف، مطابقة تماماً لسلوك شاشة المبيعات لسرعة وسلاسة إضافة الأصناف المتعددة المتتالية.
+
 v2.0.374 - 2026-08-10
 - Purchase from Client & Comprehensive Purchase Reports Enhancements (FrmPurchase.cs, PurchaseDAL.cs & FrmReports.cs):
   1. إظهار وتثبيت خيار "جهة الشراء" (🏭 مورد / 👤 عميل) في أعلى شاشة المشتريات (`FrmPurchase.cs`) لإتاحة الشراء من عميل بسلاسة مع تأثيرها المباشر في كشف حساب العميل.

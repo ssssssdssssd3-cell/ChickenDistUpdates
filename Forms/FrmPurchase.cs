@@ -395,46 +395,60 @@ namespace ChickenDist.Forms
             btnSearchProduct.FlatAppearance.BorderSize = 0;
             btnSearchProduct.Click += (s, e) =>
             {
-                // فتح نافذة بحث الأصناف (وضع الشراء)
-                using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true))
+                try
                 {
-                    if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
+                    while (true)
                     {
-                        ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
-                        if (prodItem == null)
+                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true))
                         {
-                            LoadCombos();
-                            prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
-                        }
-                        string prodCode = prodItem?.ProductCode ?? "";
-                        string prodName = prodItem?.Text ?? "";
-
-                        decimal qty = dlgSearch.SelectedQuantity > 0 ? dlgSearch.SelectedQuantity : 1m;
-                        decimal purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : dlgSearch.SelectedPrice;
-                        decimal salePrice = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : dlgSearch.SelectedPrice;
-                        decimal discount = dlgSearch.SelectedDiscount;
-
-                        AddProductToGrid(
-                            dlgSearch.SelectedProductID,
-                            prodCode,
-                            prodName,
-                            qty,
-                            purchasePrice,
-                            discount,
-                            salePrice
-                        );
-
-                        if (!string.IsNullOrEmpty(dlgSearch.SelectedUnitName) && _items.Count > 0)
-                        {
-                            var lastItem = _items.FindLast(i => i.ProductID == dlgSearch.SelectedProductID);
-                            if (lastItem != null)
+                            if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                             {
-                                lastItem.UnitName = dlgSearch.SelectedUnitName;
-                                RefreshGrid();
+                                ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
+                                if (prodItem == null)
+                                {
+                                    LoadCombos();
+                                    prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
+                                }
+                                string prodCode = prodItem?.ProductCode ?? "";
+                                string prodName = prodItem?.Text ?? "";
+
+                                decimal qty = dlgSearch.SelectedQuantity > 0 ? dlgSearch.SelectedQuantity : 1m;
+                                decimal purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : dlgSearch.SelectedPrice;
+                                decimal salePrice = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : dlgSearch.SelectedPrice;
+                                decimal discount = dlgSearch.SelectedDiscount;
+
+                                AddProductToGrid(
+                                    dlgSearch.SelectedProductID,
+                                    prodCode,
+                                    prodName,
+                                    qty,
+                                    purchasePrice,
+                                    discount,
+                                    salePrice
+                                );
+
+                                if (!string.IsNullOrEmpty(dlgSearch.SelectedUnitName) && _items.Count > 0)
+                                {
+                                    var lastItem = _items.FindLast(i => i.ProductID == dlgSearch.SelectedProductID);
+                                    if (lastItem != null)
+                                    {
+                                        lastItem.UnitName = dlgSearch.SelectedUnitName;
+                                        RefreshGrid();
+                                    }
+                                }
+
+                                // إعادة فتح الشاشة تلقائياً لاختيار أصناف أخرى
+                                continue;
+                            }
+                            else
+                            {
+                                // ضغط إلغاء أو خروج -> الخروج من حلقة البحث
+                                break;
                             }
                         }
                     }
                 }
+                catch { }
             };
 
             // إضافة — صف 2
