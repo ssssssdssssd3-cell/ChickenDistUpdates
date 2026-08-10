@@ -1428,6 +1428,16 @@ namespace ChickenDist.Forms
 				AddNewCodeRow();
 				return true;
 			}
+			// إذا كانت قائمة المنتجات مفتوحة وفيها نص → معالجة كباركود أولاً
+			if (keyData == Keys.Enter && cboProduct.DroppedDown && !string.IsNullOrWhiteSpace(cboProduct.Text))
+			{
+				cboProduct.DroppedDown = false;
+				// إطلاق حدث الضغط على Enter يدوياً
+				var fakeArgs = new KeyEventArgs(Keys.Enter);
+				CboProduct_KeyDown(cboProduct, fakeArgs);
+				if (fakeArgs.Handled) return true;
+			}
+
 			if (keyData == Keys.Enter)
 			{
 				if (dgItems.Focused || dgItems.EditingControl != null)
@@ -1774,7 +1784,10 @@ namespace ChickenDist.Forms
 				cbo.EndUpdate();
 				cbo.SelectionStart = text.Length;
 				cbo.SelectionLength = 0;
-				if (!cbo.DroppedDown)
+				// لا تفتح القائمة إذا كانت الكتابة سريعة جداً (سكانر باركود)
+				var timeSinceLastKey = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
+				bool isBarcodeScan = timeSinceLastKey <= BARCODE_INTERVAL_MS;
+				if (!cbo.DroppedDown && !isBarcodeScan)
 				{
 					cbo.DroppedDown = true;
 					Cursor.Current = Cursors.Default;
