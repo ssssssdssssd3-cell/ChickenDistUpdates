@@ -61,8 +61,8 @@ namespace ChickenDist.DAL
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             return DbHelper.Query(
                 @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
-                         ISNULL(s.SupplierName, N'---') AS SupplierName,
-                         p.TotalAmount, p.Notes, p.SupplierID,
+                         ISNULL(s.SupplierName, ISNULL(c.ClientName, N'---')) AS SupplierName,
+                         p.TotalAmount, p.Notes, p.SupplierID, p.ClientID, p.PurchaseSource,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
                          COALESCE(p.TaxPct,        0) AS TaxPct,
@@ -77,9 +77,10 @@ namespace ChickenDist.DAL
                          ), 0) AS ReturnAmount
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                  LEFT JOIN Clients c ON p.ClientID = c.ClientID
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
-                    AND (@supplierID IS NULL OR p.SupplierID = @supplierID)
+                    AND (@supplierID IS NULL OR p.SupplierID = @supplierID OR p.ClientID = @supplierID)
                     AND (@product IS NULL OR (
                         p.PurchaseCode LIKE N'%' + @product + N'%' OR
                         p.SupplierInvoiceNo LIKE N'%' + @product + N'%' OR

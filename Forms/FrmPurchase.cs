@@ -294,11 +294,11 @@ namespace ChickenDist.Forms
                 Margin = new Padding(2)
             };
 
-            // إضافة إلى الجدول — صف 0
-            tbl.Controls.Add(lblSupp,            0, 0);
-            tbl.Controls.Add(pnlSupplier,        1, 0);
-            tbl.Controls.Add(lblDate,            2, 0);
-            tbl.Controls.Add(dtpDate,            3, 0);
+            // إضافة إلى الجدول — صف 0: جهة الشراء | المورد/العميل | نوع الفاتورة
+            tbl.Controls.Add(lblSource,          0, 0);
+            tbl.Controls.Add(cboPurchaseSource,  1, 0);
+            tbl.Controls.Add(lblSupp,            2, 0);
+            tbl.Controls.Add(pnlSupplier,        3, 0);
             tbl.Controls.Add(lblType,            4, 0);
             tbl.Controls.Add(pnlTypeBtns,        5, 0);
 

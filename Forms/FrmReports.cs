@@ -192,6 +192,9 @@ namespace ChickenDist.Forms
 				("⚖️ مقارنة الورديات بالأيام التقويمية", "ShiftVsCalendarComparison"),
 				("🧾 سجل فواتير المبيعات", "DetailedSales"),
 				("🔄 سجل مرتجعات المبيعات", "DetailedReturns"),
+				("🧾 تقرير المشتريات التفصيلي الشامل", "DetailedPurchases"),
+				("📦 مشتريات الأصناف والتكلفة", "PurchasesByProduct"),
+				("🤝 مشتريات الموردين والعملاء", "PurchasesBySupplier"),
 				("🔄 سجل مرتجعات المشتريات", "DetailedPurchaseReturns"),
 				("🗓 مبيعات يومية تفصيلية", "SalesByDay"),
 				("🚚 مبيعات المناديب", "SalesByDriver"),
@@ -226,7 +229,7 @@ namespace ChickenDist.Forms
 					}
 					else if (_targetModule == "Purchases")
 					{
-						keep = (report.tag == "DetailedPurchaseReturns");
+						keep = (report.tag == "DetailedPurchases" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesBySupplier" || report.tag == "DetailedPurchaseReturns");
 					}
 					else if (_targetModule == "Stores")
 					{
@@ -908,12 +911,57 @@ namespace ChickenDist.Forms
 					{
 						("ReturnDate", "التاريخ والوقت"),
 						("PurchaseCode", "الفاتورة الأصلية"),
-						("SupplierName", "المورد"),
+						("SupplierName", "المورد / العميل"),
 						("TotalAmount", "قيمة المرتجع"),
 						("Notes", "البيان / الملاحظات"),
 						("ReturnID", "معرف المرتجع")
 					}, dataGridView);
 					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
+					break;
+				case "DetailedPurchases":
+					_currentDt = ReportDAL.GetDetailedPurchases(dtpFrom.Value, dtpTo.Value, warehouseID, keyword: txtSearchClient != null ? txtSearchClient.Text.Trim() : null);
+					SetupGrid(new(string, string)[]
+					{
+						("PurchaseDate", "التاريخ والوقت"),
+						("PurchaseCode", "رقم الفاتورة"),
+						("SupplierInvoiceNo", "رقم فاتورة المورد"),
+						("PartyName", "جهة الشراء (المورد / العميل)"),
+						("PurchaseSourceText", "نوع الجهة"),
+						("PurchaseType", "نوع الفاتورة"),
+						("Subtotal", "قبل الخصم"),
+						("DiscountAmount", "الخصم"),
+						("TaxAmount", "الضريبة"),
+						("ShippingCost", "الشحن"),
+						("TotalAmount", "الصافي النهائي"),
+						("WarehouseName", "المخزن"),
+						("CreatedByName", "الموظف"),
+						("Notes", "الملاحظات")
+					}, dataGridView);
+					break;
+				case "PurchasesByProduct":
+					_currentDt = ReportDAL.GetPurchasesByProduct(dtpFrom.Value, dtpTo.Value, warehouseID, keyword: txtSearchClient != null ? txtSearchClient.Text.Trim() : null);
+					SetupGrid(new(string, string)[]
+					{
+						("ProductCode", "كود الصنف"),
+						("ProductName", "اسم الصنف"),
+						("CategoryName", "التصنيف"),
+						("TotalQty", "إجمالي الكمية المشتراة"),
+						("BaseUnit", "الوحدة"),
+						("AvgUnitPrice", "متوسط سعر الشراء"),
+						("TotalCost", "إجمالي التكلفة / القيمة")
+					}, dataGridView);
+					break;
+				case "PurchasesBySupplier":
+					_currentDt = ReportDAL.GetPurchasesBySupplier(dtpFrom.Value, dtpTo.Value, warehouseID);
+					SetupGrid(new(string, string)[]
+					{
+						("PartyName", "المورد / العميل"),
+						("PartyType", "نوع الجهة"),
+						("InvoiceCount", "عدد الفواتير"),
+						("CashTotal", "مشتريات نقدي"),
+						("CreditTotal", "مشتريات آجل"),
+						("TotalPurchases", "إجمالي المشتريات")
+					}, dataGridView);
 					break;
 				case "SalesByDay":
 					_currentDt = ReportDAL.SalesByDay(dtpFrom.Value, dtpTo.Value, warehouseID);

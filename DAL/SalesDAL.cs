@@ -2716,6 +2716,131 @@ namespace ChickenDist.DAL
                 return price;
             return null;
         }
+
+        public static DataTable GetDetailedPurchases(DateTime from, DateTime to, int? warehouseID = null, int? supplierID = null, int? clientID = null, string purchaseType = null, string purchaseSource = null, string keyword = null)
+        {
+            string kw = string.IsNullOrWhiteSpace(keyword) ? null : keyword.Trim();
+            string sql = @"
+                SELECT 
+                    p.PurchaseDate,
+                    p.PurchaseCode,
+                    ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo,
+                    CASE 
+                        WHEN p.PurchaseSource = 'Client' THEN ISNULL(c.ClientName, N'عميل غير معروف')
+                        ELSE ISNULL(s.SupplierName, N'مورد غير معروف')
+                    END AS PartyName,
+                    CASE 
+                        WHEN p.PurchaseSource = 'Client' THEN N'👤 عميل'
+                        ELSE N'🏭 مورد'
+                    END AS PurchaseSourceText,
+                    CASE 
+                        WHEN p.PurchaseType = 'Cash' THEN N'💵 نقدي'
+                        ELSE N'📋 آجل'
+                    END AS PurchaseType,
+                    COALESCE(p.SubTotal, p.TotalAmount) AS Subtotal,
+                    COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
+                    COALESCE(p.TaxAmount, 0) AS TaxAmount,
+                    COALESCE(p.ShippingCost, 0) AS ShippingCost,
+                    p.TotalAmount,
+                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName,
+                    ISNULL(e.EmpName, N'النظام') AS CreatedByName,
+                    p.Notes,
+                    p.PurchaseID
+                FROM Purchases p
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
+                LEFT JOIN Employees e ON p.CreatedBy = e.EmpID
+                WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND p.IsPosted = 1
+                  AND (@wh IS NULL OR p.WarehouseID = @wh)
+                  AND (@sup IS NULL OR p.SupplierID = @sup)
+                  AND (@cli IS NULL OR p.ClientID = @cli)
+                  AND (@ptype IS NULL OR p.PurchaseType = @ptype)
+                  AND (@psrc IS NULL OR p.PurchaseSource = @psrc)
+                  AND (@kw IS NULL OR (
+                        p.PurchaseCode LIKE N'%' + @kw + N'%' OR
+                        p.SupplierInvoiceNo LIKE N'%' + @kw + N'%' OR
+                        s.SupplierName LIKE N'%' + @kw + N'%' OR
+                        c.ClientName LIKE N'%' + @kw + N'%' OR
+                        p.Notes LIKE N'%' + @kw + N'%'
+                  ))
+                ORDER BY p.PurchaseDate DESC";
+
+            return DbHelper.Query(sql,
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@sup", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@cli", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@ptype", !string.IsNullOrEmpty(purchaseType) && purchaseType != "All" ? (object)purchaseType : DBNull.Value),
+                DbHelper.P("@psrc", !string.IsNullOrEmpty(purchaseSource) && purchaseSource != "All" ? (object)purchaseSource : DBNull.Value),
+                DbHelper.P("@kw", (object)kw ?? DBNull.Value));
+        }
+
+        public static DataTable GetPurchasesByProduct(DateTime from, DateTime to, int? warehouseID = null, int? categoryID = null, string keyword = null)
+        {
+            string kw = string.IsNullOrWhiteSpace(keyword) ? null : keyword.Trim();
+            string sql = @"
+                SELECT 
+                    pr.ProductCode,
+                    pr.ProductName,
+                    ISNULL(cat.CategoryName, N'بدون تصنيف') AS CategoryName,
+                    SUM(pi.Quantity) AS TotalQty,
+                    ISNULL(pi.UnitName, pr.Unit) AS BaseUnit,
+                    CASE WHEN SUM(pi.Quantity) > 0 THEN SUM(pi.TotalPrice) / SUM(pi.Quantity) ELSE 0 END AS AvgUnitPrice,
+                    SUM(pi.TotalPrice) AS TotalCost
+                FROM PurchaseItems pi
+                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                JOIN Products pr ON pi.ProductID = pr.ProductID
+                LEFT JOIN Categories cat ON pr.CategoryID = cat.CategoryID
+                WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND p.IsPosted = 1
+                  AND (@wh IS NULL OR p.WarehouseID = @wh)
+                  AND (@cat IS NULL OR pr.CategoryID = @cat)
+                  AND (@kw IS NULL OR (
+                        pr.ProductName LIKE N'%' + @kw + N'%' OR
+                        pr.ProductCode LIKE N'%' + @kw + N'%' OR
+                        pr.PartNumber LIKE N'%' + @kw + N'%'
+                  ))
+                GROUP BY pr.ProductCode, pr.ProductName, cat.CategoryName, ISNULL(pi.UnitName, pr.Unit)
+                ORDER BY TotalCost DESC";
+
+            return DbHelper.Query(sql,
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@cat", categoryID.HasValue ? (object)categoryID.Value : DBNull.Value),
+                DbHelper.P("@kw", (object)kw ?? DBNull.Value));
+        }
+
+        public static DataTable GetPurchasesBySupplier(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            string sql = @"
+                SELECT 
+                    CASE 
+                        WHEN p.PurchaseSource = 'Client' THEN ISNULL(c.ClientName, N'عميل غير معروف')
+                        ELSE ISNULL(s.SupplierName, N'مورد غير معروف')
+                    END AS PartyName,
+                    CASE 
+                        WHEN p.PurchaseSource = 'Client' THEN N'👤 عميل'
+                        ELSE N'🏭 مورد'
+                    END AS PartyType,
+                    COUNT(p.PurchaseID) AS InvoiceCount,
+                    SUM(CASE WHEN p.PurchaseType = 'Cash' THEN p.TotalAmount ELSE 0 END) AS CashTotal,
+                    SUM(CASE WHEN p.PurchaseType = 'Credit' THEN p.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(p.TotalAmount) AS TotalPurchases
+                FROM Purchases p
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND p.IsPosted = 1
+                  AND (@wh IS NULL OR p.WarehouseID = @wh)
+                GROUP BY p.PurchaseSource, s.SupplierID, s.SupplierName, c.ClientID, c.ClientName
+                ORDER BY TotalPurchases DESC";
+
+            return DbHelper.Query(sql,
+                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
+                DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
     }
 }
 
