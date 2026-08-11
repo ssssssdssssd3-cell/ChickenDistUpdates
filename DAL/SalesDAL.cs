@@ -2737,7 +2737,11 @@ namespace ChickenDist.DAL
                         WHEN p.PurchaseType = 'Cash' THEN N'💵 نقدي'
                         ELSE N'📋 آجل'
                     END AS PurchaseType,
-                    COALESCE(p.SubTotal, p.TotalAmount) AS Subtotal,
+                    ISNULL((
+                        SELECT SUM(pi.Quantity * pi.UnitPrice)
+                        FROM PurchaseItems pi
+                        WHERE pi.PurchaseID = p.PurchaseID
+                    ), p.TotalAmount + COALESCE(p.DiscountAmount, 0)) AS Subtotal,
                     COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                     COALESCE(p.TaxAmount, 0) AS TaxAmount,
                     COALESCE(p.ShippingCost, 0) AS ShippingCost,
