@@ -327,7 +327,8 @@ namespace ChickenDist.Core
                     string t = c.Tag?.ToString()?.ToLower() ?? "";
                     if (n.StartsWith("pnlfilter") || n.StartsWith("pnlsearch") || n.StartsWith("pnlinfo") ||
                         n.StartsWith("pnlf") || n.StartsWith("pnltop") || n.StartsWith("pnlheader") ||
-                        n.StartsWith("grpfilter") || n.StartsWith("grpsearch") || t.Contains("search") || t.Contains("filter"))
+                        n.StartsWith("grpfilter") || n.StartsWith("grpsearch") || t.Contains("search") || t.Contains("filter") ||
+                        c.Dock == DockStyle.Top)
                     {
                         StyleSearchPanel(c);
                     }
@@ -351,7 +352,7 @@ namespace ChickenDist.Core
                 if (c is Label lbl)
                 {
                     lbl.BackColor = Color.Transparent;
-                    if (lbl.ForeColor == TextMain || lbl.ForeColor == TextDark || lbl.ForeColor == SystemColors.ControlText || lbl.ForeColor == Color.Black || lbl.ForeColor == Color.Empty)
+                    if (lbl.ForeColor != Color.Red && lbl.ForeColor != Color.Green && lbl.ForeColor != Color.OrangeRed)
                     {
                         lbl.ForeColor = Color.FromArgb(255, 220, 110);
                     }

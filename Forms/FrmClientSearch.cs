@@ -40,9 +40,10 @@ namespace ChickenDist.Forms
             // Search Header Panel
             var pnlSearch = new Panel
             {
+                Name = "pnlSearch",
                 Dock = DockStyle.Top,
                 Height = 65,
-                BackColor = Theme.BgCard,
+                BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(12)
             };
 
@@ -51,7 +52,7 @@ namespace ChickenDist.Forms
                 Text = "ابحث بالاسم أو الهاتف أو الكود:",
                 Location = new Point(480, 22),
                 Width = 180,
-                ForeColor = Theme.TextMain,
+                ForeColor = Color.FromArgb(255, 220, 110),
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = Theme.FontBold
             };
@@ -60,8 +61,8 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(20, 18),
                 Width = 450,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 12f)
             };
@@ -70,6 +71,7 @@ namespace ChickenDist.Forms
 
             pnlSearch.Controls.Add(lblSearch);
             pnlSearch.Controls.Add(txtSearch);
+            Theme.StyleSearchPanel(pnlSearch);
 
             // DataGridView Panel
             var pnlGrid = new Panel

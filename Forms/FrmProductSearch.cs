@@ -82,9 +82,9 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── Top panel (Filters) ──────────────────────────────────────────
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(248, 250, 252), Padding = new Padding(12, 8, 12, 8) };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 145, Name = "pnlSearch", BackColor = Theme.BgSearchPanel, Padding = new Padding(12, 8, 12, 8) };
             
-            Color labelColor = Color.FromArgb(30, 41, 59);
+            Color labelColor = Color.FromArgb(255, 220, 110);
             Color inputBg = Color.White;
             Color inputFg = Color.FromArgb(15, 23, 42);
 
@@ -126,7 +126,7 @@ namespace ChickenDist.Forms
                 Location = new Point(10, 108),
                 Width = 290,
                 Height = 24,
-                ForeColor = labelColor,
+                ForeColor = Color.White,
                 Font = Theme.FontBold,
                 Checked = false
             };
@@ -137,6 +137,8 @@ namespace ChickenDist.Forms
                 lblBrand, txtBrandFilter, lblColor, txtColorFilter, lblCompany, txtCompanyFilter, lblPriceRange, txtPriceFrom, lblPriceTo, txtPriceTo, 
                 chkShowZeroStock 
             });
+
+            Theme.StyleSearchPanel(pnlSearch);
 
             // ── Grid Panel (Full Height) ──────────────────────────────────────
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 4, 8, 4) };
