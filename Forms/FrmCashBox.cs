@@ -168,6 +168,22 @@ namespace ChickenDist.Forms
             btnTransfer.Click += BtnTransfer_Click;
             pnlF.Controls.Add(btnTransfer);
 
+            var btnPrintVoucher = Theme.MakeButton("🖨️ طباعة كشف الحركة", Color.FromArgb(16, 185, 129));
+            btnPrintVoucher.Size = new Size(130, 32);
+            btnPrintVoucher.Margin = new Padding(10, 0, 0, 0);
+            btnPrintVoucher.Click += (s, e) =>
+            {
+                int? accId = null;
+                if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem item && item.ID > 0)
+                {
+                    accId = item.ID;
+                }
+                var dtTrans = AccountDAL.GetCashBox(dtpCashFrom.Value, dtpCashTo.Value, accId);
+                string safeName = cboSafeFilter != null ? cboSafeFilter.Text : "الخزينة الرئيسية";
+                new FrmPrintPayment(dtTrans, safeName, 0, "AlTarekVoucher", true);
+            };
+            pnlF.Controls.Add(btnPrintVoucher);
+
             dgCash = MakeGrid();
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ", FillWeight = 50 });
             dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع" });

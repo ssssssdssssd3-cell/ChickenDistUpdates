@@ -765,7 +765,70 @@ namespace ChickenDist.Forms
                     var boldBigSheet = new Font("Arial", 14, FontStyle.Bold);
                     var boldSheet = new Font("Arial", 10, FontStyle.Bold);
 
-                    if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // ════════════════════════════════════════════════════════════════════════
+                        // AL TAREK HOME FULL GRID & BALANCE INVOICE TEMPLATE (نموذج الطارق هوم)
+                        // ════════════════════════════════════════════════════════════════════════
+
+                        // 1. Watermark Logo
+                        if (!string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                        {
+                            try
+                            {
+                                using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                                {
+                                    int w = 280;
+                                    int h = (int)(img.Height * ((double)w / img.Width));
+                                    int x = (pageW - w) / 2;
+                                    int yWm = (e.PageBounds.Height - h) / 2;
+                                    var cm = new System.Drawing.Imaging.ColorMatrix { Matrix33 = 0.12f };
+                                    var ia = new System.Drawing.Imaging.ImageAttributes();
+                                    ia.SetColorMatrix(cm);
+                                    g.DrawImage(img, new Rectangle(x, yWm, w, h), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, ia);
+                                }
+                            }
+                            catch { }
+                        }
+
+                        // 2. Top Header Block
+                        DrawShopLogo(g, pageW, ref y, false);
+                        if (y < 20) y = 20;
+
+                        g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 26), right);
+                        g.DrawString($"العنوان: {AppConfig.CompanyAddress}  |  موبايل: {AppConfig.CompanyPhone}", normal, Brushes.DarkSlateGray, new RectangleF(0, y + 24, pageW - margin, 18), right);
+
+                        y += 46;
+
+                        // 3. Ribbon Bar (Date, Time, Invoice Code)
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(224, 242, 254)), margin, y, pageW - 2 * margin, 26);
+                        g.DrawRectangle(new Pen(Color.FromArgb(186, 230, 253), 1.2f), margin, y, pageW - 2 * margin, 26);
+
+                        if (_saleRow != null)
+                        {
+                            g.DrawString($"صفحة 1/1   {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, margin + 10, y + 4);
+                            g.DrawString($"فاتورة مبيعات  |  رقم: {_saleRow["SaleCode"]}", boldSheet, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(0, y + 4, pageW - margin - 10, 20), right);
+                        }
+
+                        y += 34;
+
+                        // 4. Customer Info Frame Box
+                        if (_saleRow != null)
+                        {
+                            g.DrawRectangle(new Pen(Color.FromArgb(100, 116, 139), 1f), margin, y, pageW - 2 * margin, 52);
+
+                            string clientName = _saleRow["ClientName"]?.ToString() ?? "";
+                            string phone = _saleRow.Table.Columns.Contains("ClientPhone") ? _saleRow["ClientPhone"].ToString() : "";
+                            string addr = _saleRow.Table.Columns.Contains("ClientAddress") ? _saleRow["ClientAddress"].ToString() : "";
+
+                            g.DrawString($"اسم العميل :  {clientName}", boldSheet, Brushes.Black, new RectangleF(margin + 10, y + 4, pageW - 2 * margin - 20, 20), right);
+                            g.DrawString($"رقم الهاتف :  {phone}", normal, Brushes.Black, new RectangleF(margin + 10, y + 28, 250, 18), right);
+                            g.DrawString($"العنـوان :  {(string.IsNullOrEmpty(addr) ? "الرئيسي" : addr)}", normal, Brushes.Black, new RectangleF(margin + 280, y + 28, pageW - 2 * margin - 290, 18), right);
+
+                            y += 60;
+                        }
+                    }
+                    else if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
                         // Modern minimalist header
                         g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.DarkSlateGray, margin, y);
@@ -999,7 +1062,8 @@ namespace ChickenDist.Forms
                             else if (itemDiscAmt > 0)
                                 discText = itemDiscAmt.ToString("F2");
 
-                            if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
+                            if (string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
                                 string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ||
                                 string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1225,7 +1289,43 @@ namespace ChickenDist.Forms
 
                             g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
 
-                            if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // ════════════════════════════════════════════════════════════════════════
+                                // 5-Column Invoice Summary Table: [ إجمالي | مدفوع | أجل | سابق | حالي ]
+                                // ════════════════════════════════════════════════════════════════════════
+                                int sumTableW = pageW - 2 * margin;
+                                float colW5 = sumTableW / 5f;
+                                float x5 = margin;
+
+                                // Header row
+                                g.FillRectangle(new SolidBrush(Color.FromArgb(241, 245, 249)), margin, y, sumTableW, 22);
+                                g.DrawRectangle(Pens.Black, margin, y, sumTableW, 22);
+
+                                string[] h5 = { "إجمالي", "مدفوع", "أجل", "سابق", "حالي" };
+                                for (int i = 0; i < 5; i++)
+                                {
+                                    g.DrawString(h5[i], boldSheet, Brushes.Black, new RectangleF(x5 + i * colW5, y + 2, colW5, 18), center);
+                                    if (i > 0) g.DrawLine(Pens.Black, x5 + i * colW5, y, x5 + i * colW5, y + 22);
+                                }
+                                y += 22;
+
+                                // Values row
+                                g.DrawRectangle(Pens.Black, margin, y, sumTableW, 24);
+                                string[] v5 = { netAmount.ToString("N2"), sheetCashPaid.ToString("N2"), remainingFromInvoice.ToString("N2"), previousBalance.ToString("N2"), currentBalance.ToString("N2") };
+                                for (int i = 0; i < 5; i++)
+                                {
+                                    g.DrawString(v5[i], boldSheet, Brushes.Black, new RectangleF(x5 + i * colW5, y + 3, colW5, 18), center);
+                                    if (i > 0) g.DrawLine(Pens.Black, x5 + i * colW5, y, x5 + i * colW5, y + 24);
+                                }
+                                y += 32;
+
+                                // Tafqeet Text
+                                string tafqeetStr = TafqeetHelper.ConvertToArabicWords(netAmount);
+                                g.DrawString(tafqeetStr, boldSheet, Brushes.Black, new RectangleF(margin, y, sumTableW, 22), center);
+                                y += 30;
+                            }
+                            else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
                             {
                                 string balText = $"الرصيد السابق: {previousBalance:N2} | ";
                                 if (returnToday > 0)

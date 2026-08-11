@@ -54,6 +54,11 @@ namespace ChickenDist.Core
             set => Set("CompanyPhone2", value);
         }
 
+        public static string CompanyPhone
+        {
+            get => !string.IsNullOrEmpty(CompanyPhone1) ? CompanyPhone1 : CompanyPhone2;
+        }
+
         public static string CompanyAddress
         {
             get => Get("CompanyAddress", "");
@@ -104,8 +109,14 @@ namespace ChickenDist.Core
 
         public static string A4Template
         {
-            get => Get("A4Template", "Classic");
+            get => Get("A4Template", "AlTarekGrid");
             set => Set("A4Template", value);
+        }
+
+        public static string VoucherTemplate
+        {
+            get => Get("VoucherTemplate", "AlTarekVoucher");
+            set => Set("VoucherTemplate", value);
         }
 
         public static string BarcodeTemplate

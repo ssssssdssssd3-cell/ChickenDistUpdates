@@ -1,3 +1,9 @@
+v2.0.381 - 2026-08-11
+- Al-Tarek Multi-Print Templates for A4/A5 Sales Invoices & Supply/Collection Vouchers (FrmPrintSale.cs, FrmPrintPayment.cs & AppConfig.cs):
+  1. إضافة نموذج طباعة الفواتير الشبكي المطابق لصورة العميل (`AlTarekGrid`) بالحدود والخطوط الشبكية الكاملة، وصندوق بيانات العميل التفصيلي، والجدول الخماسي في الأسفل (`إجمالي | مدفوع | أجل | سابق | حالي`)، والتفقيط بالحروف العربية بالعريضة، والواترمارك.
+  2. إنشاء محرك طباعة السندات وكشوف النقدية (`FrmPrintPayment.cs`) بنموذج التوريد والتحصيل المطابق للصورة 1 (`AlTarekVoucher`) بالشريط العلوي الملون، والشبكة الكاملة لكل حركة، والتفقيط العربي، والتوقيعات الرسمية.
+  3. إضافة خيارات تحديد نمط ونموذج الطباعة في الإعدادات `VoucherTemplate` و `A4Template` وإعادة تفعيل زر طباعة السند في الخزنة.
+
 v2.0.380 - 2026-08-10
 - Fix Price Quote Product Search NullReferenceException (FrmProductSearch.cs & FrmPriceQuote.cs):
   1. معالجة استثناء `NullReferenceException` في شاشة البحث المتقدم للأصناف عند فتحها من شاشة عرض الأسعار/بيان الأسعار (`FrmPriceQuote.cs`).
