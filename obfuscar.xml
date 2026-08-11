@@ -14,5 +14,5 @@
   <Var name="SuppressIldasm" value="true" />     <!-- Prevents disassembling using standard MSIL tools -->
 
   <!-- The primary binary to protect -->
-  <Module file="$(InPath)\ChickenDist.exe" />
+  <Module file="$(InPath)\ProSoft.exe" />
 </Obfuscator>

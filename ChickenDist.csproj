@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>ChickenDist</AssemblyName>
+    <AssemblyName>ProSoft</AssemblyName>
     <RootNamespace>ChickenDist</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>9.0</LangVersion>

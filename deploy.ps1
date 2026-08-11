@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.381"
+$VERSION   = "2.0.382"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -79,10 +79,10 @@ Write-OK "Build successful"
 
 # Step 3: Verify Output
 Write-Step "Checking EXE"
-$exePath = Join-Path $OUT_DIR "ChickenDist.exe"
+$exePath = Join-Path $OUT_DIR "ProSoft.exe"
 
 # Overwrite with the obfuscated EXE from Obfuscated directory to secure the binary
-$obfuscatedSource = "$PROJECT_DIR\bin\Release\net48\Obfuscated\ChickenDist.exe"
+$obfuscatedSource = "$PROJECT_DIR\bin\Release\net48\Obfuscated\ProSoft.exe"
 if (Test-Path $obfuscatedSource) {
     Copy-Item $obfuscatedSource -Destination $exePath -Force
     Write-OK "Applied Obfuscation to output binary successfully!"
