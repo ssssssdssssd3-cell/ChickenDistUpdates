@@ -97,16 +97,16 @@ if ($exeSize -lt 500000) {
     Write-Fail "File is too small! Build might be incomplete."
 }
 
-# Step 4: Calculate SHA256
-Write-Step "Calculating SHA256"
-$sha256 = [System.BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash([System.IO.File]::ReadAllBytes($exePath))).Replace("-", "")
-Write-OK "SHA256: $sha256"
-
 # Step 5: Copy Bin
 Write-Step "Updating ChickenDist.bin"
 Copy-Item $exePath -Destination $BIN_DEST -Force
 $binSize = (Get-Item $BIN_DEST).Length
 Write-OK "Copied ChickenDist.bin - $([math]::Round($binSize/1024, 0)) KB"
+
+# Step 4 (AFTER copy): Calculate SHA256 from the final .bin file to ensure accuracy
+Write-Step "Calculating SHA256"
+$sha256 = [System.BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash([System.IO.File]::ReadAllBytes($BIN_DEST))).Replace("-", "")
+Write-OK "SHA256: $sha256"
 
 # Step 5.5: Copy MobileApp files to release destinations & Firebase bot public folder
 Write-Step "Updating MobileApp release folders & bot public folder"
@@ -129,9 +129,12 @@ Write-OK "Synced MobileApp/index.html to $botPublicMobile"
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
 $changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Bug fixes and UI improvements"
+# Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
+$cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"
 $updateContent  = "version=$VERSION`r`n"
 $updateContent += "url=$UPDATE_URL`r`n"
-$updateContent += "download=$UPDATE_URL`r`n"
+$updateContent += "download=$cacheBustedDlUrl`r`n"
 $updateContent += "sha256=$sha256`r`n"
 $updateContent += "changelog=$changelogText`r`n"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
