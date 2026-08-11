@@ -648,6 +648,7 @@ namespace ChickenDist.Forms
         private string GetClientName()
         {
             if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0) return ci.Text;
+            if (!string.IsNullOrWhiteSpace(cboClient.Text) && !cboClient.Text.StartsWith("--")) return cboClient.Text.Trim();
             if (!string.IsNullOrWhiteSpace(txtClientManual.Text)) return txtClientManual.Text.Trim();
             return "عميل نقدي";
         }
@@ -712,7 +713,9 @@ namespace ChickenDist.Forms
             }
             else
             {
-                txtClientManual.Text = qRow["ClientName"]?.ToString() ?? "";
+                string clientNameStr = qRow["ClientName"]?.ToString() ?? "";
+                cboClient.Text = clientNameStr;
+                txtClientManual.Text = clientNameStr;
             }
 
             // Warehouse

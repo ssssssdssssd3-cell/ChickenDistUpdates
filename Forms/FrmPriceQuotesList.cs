@@ -7,11 +7,15 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>قائمة عروض وبيانات الأسعار المعلقة</summary>
+    /// <summary>قائمة عروض وبيانات الأسعار المعلقة مع خاصية البحث والتحكم الكامل</summary>
     public class FrmPriceQuotesList : Form
     {
         private DataGridView dgQuotes;
+        private TextBox txtSearch;
+        private Label lblCount;
         private Button btnRecall, btnConvertToSale, btnDelete, btnRefresh, btnClose;
+        private DataTable _dtQuotes;
+
         public int SelectedQuoteID { get; private set; } = 0;
         public string ActionType { get; private set; } = ""; // "Edit" or "Convert"
 
@@ -24,32 +28,57 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             Text = "📋 قائمة عروض وبيانات الأسعار المعلقة";
-            Size = new Size(880, 520);
+            Size = new Size(950, 560);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
             RightToLeftLayout = true;
             BackColor = Theme.BgMain;
             Font = Theme.FontMain;
 
+            // ── Panel Top (Search & Info) ──────────────────────────
             var pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 45,
+                Height = 55,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8)
+                Padding = new Padding(10, 8, 10, 8)
             };
 
-            var lblTitle = new Label
+            var lblSearch = new Label
             {
-                Text = "اختر عرض أسعار لاسترجاعه وتعديله أو تحويله مباشرة لفاتورة بيع:",
+                Text = "🔍 بحث:",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = Theme.FontBold,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 6, 5, 0)
             };
-            pnlTop.Controls.Add(lblTitle);
-            Controls.Add(pnlTop);
 
+            txtSearch = new TextBox
+            {
+                Dock = DockStyle.Left,
+                Width = 260,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark
+            };
+            txtSearch.TextChanged += (s, e) => FilterData();
+
+            lblCount = new Label
+            {
+                Text = "عدد العروض المعلقة: 0",
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Font = Theme.FontBold,
+                ForeColor = Theme.Accent,
+                Margin = new Padding(0, 6, 0, 0)
+            };
+
+            pnlTop.Controls.Add(txtSearch);
+            pnlTop.Controls.Add(lblSearch);
+            pnlTop.Controls.Add(lblCount);
+
+            // ── DataGridView ────────────────────────────────────────
             dgQuotes = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -63,84 +92,126 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ColumnHeadersVisible = true,
+                ColumnHeadersHeight = 38,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Theme.BgCard,
                     ForeColor = Theme.TextMain,
-                    Font = Theme.FontMain,
+                    Font = new Font("Segoe UI", 9.5f),
                     SelectionBackColor = Theme.Primary,
                     SelectionForeColor = Color.White
-                },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-                {
-                    BackColor = Theme.Primary,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
-                },
-                EnableHeadersVisualStyles = false
+                }
             };
 
             dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "QuoteID", HeaderText = "#", Visible = false });
             dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "QuoteCode", HeaderText = "رقم العرض", FillWeight = 30 });
-            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "QuoteDate", HeaderText = "التاريخ والوقت", FillWeight = 50 });
-            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "DisplayClient", HeaderText = "العميل", FillWeight = 60 });
-            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemCount", HeaderText = "عدد الأصناف", FillWeight = 30 });
+            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "QuoteDate", HeaderText = "التاريخ والوقت", FillWeight = 45 });
+            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "DisplayClient", HeaderText = "اسم العميل", FillWeight = 65 });
+            dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemCount", HeaderText = "عدد الأصناف", FillWeight = 25 });
             dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", HeaderText = "إجمالي المبلغ", FillWeight = 40 });
             dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "PriceTier", HeaderText = "فئة السعر", FillWeight = 30 });
             dgQuotes.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "مُسجِّل العرض", FillWeight = 40 });
 
-            Controls.Add(dgQuotes);
+            // Apply system grid header style (Dark Slate Blue header background with White bold text)
+            Theme.StyleGridHeader(dgQuotes);
 
+            // ── Panel Bottom (Actions) ──────────────────────────────
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 55,
+                Height = 58,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10)
             };
 
-            btnRecall = Theme.MakeButton("📥 استرجاع للتعديل (Enter)", 10, 10, 190, 35, Theme.Accent);
+            btnRecall = Theme.MakeButton("📥 استرجاع للتعديل (Enter)", 10, 10, 200, 36, Theme.Accent);
             btnRecall.Click += (s, e) => DoRecall();
 
-            btnConvertToSale = Theme.MakeButton("🔄 تحويل لفاتورة بيع", 210, 10, 170, 35, Theme.Success);
+            btnConvertToSale = Theme.MakeButton("🔄 تحويل لفاتورة بيع", 220, 10, 180, 36, Theme.Success);
             btnConvertToSale.Click += (s, e) => DoConvertToSale();
 
-            btnDelete = Theme.MakeButton("🗑️ حذف العرض", 390, 10, 130, 35, Color.Brown);
+            btnDelete = Theme.MakeButton("🗑️ حذف العرض", 410, 10, 130, 36, Color.Brown);
             btnDelete.Click += (s, e) => DoDelete();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 530, 10, 100, 35, Color.Gray);
+            btnRefresh = Theme.MakeButton("🔄 تحديث", 550, 10, 100, 36, Color.Gray);
             btnRefresh.Click += (s, e) => LoadData();
 
-            btnClose = Theme.MakeButton("إغلاق", 640, 10, 90, 35, Color.DarkSlateGray);
+            btnClose = Theme.MakeButton("إغلاق", 660, 10, 100, 36, Color.DarkSlateGray);
             btnClose.Click += (s, e) => this.Close();
 
             pnlBottom.Controls.AddRange(new Control[] { btnRecall, btnConvertToSale, btnDelete, btnRefresh, btnClose });
+
+            // Docking Hierarchy: Add Fill FIRST, then Top & Bottom
+            Controls.Add(dgQuotes);
+            Controls.Add(pnlTop);
             Controls.Add(pnlBottom);
+
+            dgQuotes.BringToFront();
+            pnlTop.BringToFront();
+            pnlBottom.BringToFront();
 
             dgQuotes.DoubleClick += (s, e) => DoRecall();
             dgQuotes.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter) { DoRecall(); e.Handled = true; }
             };
+
+            Theme.ApplyFormRTL(this);
         }
 
         private void LoadData()
         {
-            DataTable dt = PriceQuoteDAL.GetPendingQuotes();
-            dgQuotes.Rows.Clear();
-            foreach (DataRow r in dt.Rows)
+            try
             {
+                _dtQuotes = PriceQuoteDAL.GetPendingQuotes();
+                FilterData();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadData in FrmPriceQuotesList failed", ex, "FrmPriceQuotesList");
+            }
+        }
+
+        private void FilterData()
+        {
+            if (_dtQuotes == null) return;
+
+            dgQuotes.Rows.Clear();
+            string q = txtSearch?.Text?.Trim() ?? "";
+
+            int count = 0;
+            foreach (DataRow r in _dtQuotes.Rows)
+            {
+                string code   = r["QuoteCode"]?.ToString() ?? "";
+                string client = r["DisplayClient"]?.ToString() ?? "";
+                string tier   = r["PriceTier"]?.ToString() ?? "";
+                string user   = r["CreatedByName"]?.ToString() ?? "";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    bool match = code.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                 client.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                 tier.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                 user.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+                    if (!match) continue;
+                }
+
                 dgQuotes.Rows.Add(
                     r["QuoteID"],
-                    r["QuoteCode"],
+                    code,
                     Convert.ToDateTime(r["QuoteDate"]).ToString("yyyy/MM/dd HH:mm"),
-                    r["DisplayClient"],
+                    client,
                     r["ItemCount"],
                     Convert.ToDecimal(r["TotalAmount"]).ToString("N2") + " ج",
-                    r["PriceTier"],
-                    r["CreatedByName"]
+                    tier,
+                    user
                 );
+                count++;
             }
+
+            lblCount.Text = $"عدد العروض المعلقة: {count}";
         }
 
         private int GetSelectedID()
