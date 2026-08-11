@@ -116,9 +116,9 @@ namespace ChickenDist.Forms
                 var normal = new Font("Arial", 8.5f, FontStyle.Regular);
                 var smallFont = new Font("Arial", 8f, FontStyle.Regular);
 
-                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                var sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
-                var sfLeft = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
+                var sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap };
+                var sfLeft = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
 
                 if (string.Equals(_voucherTemplate, "AlTarekVoucher", StringComparison.OrdinalIgnoreCase))
                 {
@@ -151,7 +151,7 @@ namespace ChickenDist.Forms
 
                     // 4. Grid Table Headers
                     // Columns: [م] [العملية / البيان] [مدين] [دائن] [رصيد] [الخزنة] [نوع الحركة] [التاريخ] [ملاحظات] [المستخدم] [الوقت]
-                    int[] colW = { 25, 110, 60, 60, 65, 75, 70, 65, 120, 80, 57 };
+                    int[] colW = { 24, 100, 72, 72, 75, 70, 65, 65, 115, 65, 64 };
                     string[] colNames = { "م", "العملية", "مدين", "دائن", "رصيد", "الخزنة", "نوع الحركة", "التاريخ", "ملاحظات", "المستخدم", "الوقت" };
 
                     int xCur = lMargin;
@@ -181,9 +181,9 @@ namespace ChickenDist.Forms
                         string startDeb = _startBalance > 0 ? _startBalance.ToString("N2") : "";
                         string startCred = _startBalance < 0 ? Math.Abs(_startBalance).ToString("N2") : "";
 
-                        g.DrawString(startDeb, boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], 20), sfCenter); xCur += colW[2];
-                        g.DrawString(startCred, boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], 20), sfCenter); xCur += colW[3];
-                        g.DrawString(_startBalance.ToString("N2"), boldSmall, Brushes.Black, new RectangleF(xCur, y, colW[4], 20), sfCenter); xCur += colW[4];
+                        DrawStringFit(g, startDeb, boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], 20), sfCenter); xCur += colW[2];
+                        DrawStringFit(g, startCred, boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], 20), sfCenter); xCur += colW[3];
+                        DrawStringFit(g, _startBalance.ToString("N2"), boldSmall, Brushes.Black, new RectangleF(xCur, y, colW[4], 20), sfCenter); xCur += colW[4];
 
                         for (int i = 5; i < colW.Length; i++)
                         {
@@ -226,7 +226,7 @@ namespace ChickenDist.Forms
                         string notes = r["Notes"]?.ToString() ?? "";
                         string user = r.Table.Columns.Contains("CreatedByName") ? r["CreatedByName"].ToString() : "---";
 
-                        int rowH = 20;
+                        int rowH = 22;
                         g.DrawRectangle(Pens.Black, lMargin, y, printableW, rowH);
 
                         xCur = lMargin;
@@ -235,11 +235,11 @@ namespace ChickenDist.Forms
                         // العملية
                         g.DrawString(GetTransTypeName(tType), smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[1] - 4, rowH), sfRight); xCur += colW[1];
                         // مدين
-                        g.DrawString(inAmt > 0 ? inAmt.ToString("N2") : "", boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], rowH), sfCenter); xCur += colW[2];
+                        DrawStringFit(g, inAmt > 0 ? inAmt.ToString("N2") : "", boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], rowH), sfCenter); xCur += colW[2];
                         // دائن
-                        g.DrawString(outAmt > 0 ? outAmt.ToString("N2") : "", boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], rowH), sfCenter); xCur += colW[3];
+                        DrawStringFit(g, outAmt > 0 ? outAmt.ToString("N2") : "", boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], rowH), sfCenter); xCur += colW[3];
                         // رصيد
-                        g.DrawString(running.ToString("N2"), boldSmall, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(xCur, y, colW[4], rowH), sfCenter); xCur += colW[4];
+                        DrawStringFit(g, running.ToString("N2"), boldSmall, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(xCur, y, colW[4], rowH), sfCenter); xCur += colW[4];
                         // الخزنة
                         g.DrawString(_accountName, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[5] - 4, rowH), sfRight); xCur += colW[5];
                         // نوع الحركة
@@ -269,29 +269,36 @@ namespace ChickenDist.Forms
                     e.HasMorePages = false;
 
                     // 6. Summary Totals Row (Highlighted Background)
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(254, 226, 226)), lMargin, y, printableW, 24);
-                    g.DrawRectangle(new Pen(Color.Red, 1.2f), lMargin, y, printableW, 24);
+                    int summaryH = 28;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(254, 226, 226)), lMargin, y, printableW, summaryH);
+                    g.DrawRectangle(new Pen(Color.Red, 1.2f), lMargin, y, printableW, summaryH);
 
                     xCur = lMargin;
-                    g.DrawString("إجمالي الحركة", boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[0] + colW[1], 24), sfCenter);
+                    g.DrawString("إجمالي الحركة", boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[0] + colW[1], summaryH), sfCenter);
                     xCur += colW[0] + colW[1];
+                    g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
-                    g.DrawString(_totalIn.ToString("N2"), boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], 24), sfCenter); xCur += colW[2];
-                    g.DrawString(_totalOut.ToString("N2"), boldMain, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], 24), sfCenter); xCur += colW[3];
-                    g.DrawString(_netBalance.ToString("N2"), boldMain, Brushes.Black, new RectangleF(xCur, y, colW[4], 24), sfCenter);
+                    DrawStringFit(g, _totalIn.ToString("N2"), boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], summaryH), sfCenter); xCur += colW[2];
+                    g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
-                    y += 32;
+                    DrawStringFit(g, _totalOut.ToString("N2"), boldMain, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], summaryH), sfCenter); xCur += colW[3];
+                    g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
+
+                    DrawStringFit(g, _netBalance.ToString("N2"), boldMain, Brushes.Black, new RectangleF(xCur, y, colW[4], summaryH), sfCenter); xCur += colW[4];
+                    g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
+
+                    y += summaryH + 12;
 
                     // 7. Tafqeet Text (تفقيط المبلغ بالحروف العربية بالعريضة)
                     string tafqeetText = TafqeetHelper.ConvertToArabicWords(Math.Abs(_netBalance));
                     g.DrawString(tafqeetText, boldMain, Brushes.Black, new RectangleF(lMargin, y, printableW, 22), sfCenter);
 
-                    y += 40;
+                    y += 35;
 
                     // 8. Signatures Block
-                    g.DrawString("توقيع المستلم: ....................", boldSmall, Brushes.Black, lMargin + 20, y);
-                    g.DrawString("توقيع المحاسب: ....................", boldSmall, Brushes.Black, pageW / 2 - 70, y);
-                    g.DrawString("توقيع أمين الخزينة: ....................", boldSmall, Brushes.Black, new RectangleF(0, y, pageW - rMargin - 20, 20), sfRight);
+                    g.DrawString("توقيع المستلم: ....................", boldSmall, Brushes.Black, lMargin + 10, y);
+                    g.DrawString("توقيع المحاسب: ....................", boldSmall, Brushes.Black, lMargin + (printableW - 160) / 2, y);
+                    g.DrawString("توقيع أمين الخزينة: ....................", boldSmall, Brushes.Black, lMargin + printableW - 190, y);
 
                     y += 35;
 
@@ -315,6 +322,7 @@ namespace ChickenDist.Forms
                     g.DrawString("توقيع المستلم: ....................", normal, Brushes.Black, lMargin + 50, y);
                     g.DrawString("توقيع أمين الصندوق: ....................", normal, Brushes.Black, new RectangleF(0, y, pageW - rMargin - 50, 20), sfRight);
                 }
+
             };
 
             if (_showPreview)
@@ -392,6 +400,29 @@ namespace ChickenDist.Forms
                 }
             }
             catch { }
+        }
+
+        private void DrawStringFit(Graphics g, string text, Font font, Brush brush, RectangleF rect, StringFormat sf, float minFontSize = 7f)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            var sfNoWrap = (StringFormat)sf.Clone();
+            sfNoWrap.FormatFlags |= StringFormatFlags.NoWrap;
+
+            Font currentFont = font;
+            SizeF sz = g.MeasureString(text, currentFont, (int)rect.Width, sfNoWrap);
+
+            while (sz.Width > rect.Width - 1 && currentFont.Size > minFontSize)
+            {
+                float newSize = currentFont.Size - 0.5f;
+                currentFont = new Font(font.FontFamily, newSize, font.Style);
+                sz = g.MeasureString(text, currentFont, (int)rect.Width, sfNoWrap);
+            }
+
+            g.DrawString(text, currentFont, brush, rect, sfNoWrap);
+
+            if (currentFont != font) currentFont.Dispose();
+            sfNoWrap.Dispose();
         }
     }
 }
