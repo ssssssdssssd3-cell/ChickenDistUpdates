@@ -32,6 +32,14 @@ namespace ChickenDist.DAL
                             LastModifiedDate DATETIME NOT NULL DEFAULT GETDATE()
                         );
                     END
+                    ELSE
+                    BEGIN
+                        -- Migration: add Status column if missing in existing databases
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id=OBJECT_ID('PriceQuotes') AND name='Status')
+                            ALTER TABLE PriceQuotes ADD Status NVARCHAR(20) DEFAULT N'Pending';
+                        -- Set all NULL statuses to Pending (for rows created before migration)
+                        UPDATE PriceQuotes SET Status = N'Pending' WHERE Status IS NULL;
+                    END
 
                     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='PriceQuoteItems')
                     BEGIN
@@ -72,7 +80,7 @@ namespace ChickenDist.DAL
                     DbHelper.ExecuteTrans(trans,
                         @"UPDATE PriceQuotes 
                           SET ClientID=@cid, ClientName=@cname, TotalAmount=@tot, DiscountAmount=@damt, DiscountPct=@dpct,
-                              Notes=@n, WarehouseID=@wid, PriceTier=@pt, LastModifiedDate=GETDATE()
+                              Notes=@n, WarehouseID=@wid, PriceTier=@pt, Status=N'Pending', LastModifiedDate=GETDATE()
                           WHERE QuoteID=@qid",
                         DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                         DbHelper.P("@cname", string.IsNullOrEmpty(clientName) ? DBNull.Value : (object)clientName),
