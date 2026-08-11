@@ -36,6 +36,11 @@ namespace ChickenDist.Forms
                 btnSave.PerformClick();
                 e.Handled = true;
             }
+            else if (e.KeyCode == Keys.F3 && cboMode.SelectedIndex == 1)
+            {
+                OpenQuickSearch();
+                e.Handled = true;
+            }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -237,29 +242,35 @@ namespace ChickenDist.Forms
 
             pnlGeneralItemBar = new FlowLayoutPanel
             {
+                Name = "pnlFilter",
                 Dock = DockStyle.Top,
-                Height = 40,
+                Height = 42,
                 FlowDirection = FlowDirection.LeftToRight,
-                BackColor = Theme.BgCard,
+                BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(5, 5, 5, 5),
                 Visible = false
             };
 
-            var lblGenProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 6, 0, 0), Font = Theme.FontBold };
+            var btnSearchProd = Theme.MakeButton("🔍 بحث عن صنف (F3)", Color.FromArgb(20, 80, 150));
+            btnSearchProd.Size = new Size(150, 26);
+            btnSearchProd.Margin = new Padding(5, 1, 5, 0);
+            btnSearchProd.Click += (s, e) => OpenQuickSearch();
+
+            var lblGenProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
             cboAllProducts = new ComboBox
             {
-                Width = 220, Height = 26,
+                Width = 200, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42)
             };
 
-            var lblGenQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
-            txtGenQty = new TextBox { Width = 70, Height = 26, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var lblGenQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
+            txtGenQty = new TextBox { Width = 65, Height = 26, Text = "1", BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            var lblGenPrice = new Label { Text = "سعر الشراء الصافي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
-            txtGenPrice = new TextBox { Width = 80, Height = 26, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var lblGenPrice = new Label { Text = "سعر الشراء الصافي:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
+            txtGenPrice = new TextBox { Width = 75, Height = 26, Text = "0", BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
             btnAddGenItem = Theme.MakeButton("➕ إضافة للصنف المرتجع", Theme.Success);
             btnAddGenItem.Size = new Size(160, 26);
@@ -267,6 +278,7 @@ namespace ChickenDist.Forms
             btnAddGenItem.Click += BtnAddGenItem_Click;
 
             pnlGeneralItemBar.Controls.AddRange(new Control[] {
+                btnSearchProd,
                 lblGenProd, cboAllProducts,
                 lblGenQty, txtGenQty,
                 lblGenPrice, txtGenPrice,
@@ -390,13 +402,29 @@ namespace ChickenDist.Forms
             _mainSplit.Panel1Collapsed = isGeneral;
             pnlGeneralItemBar.Visible = isGeneral;
 
+            if (dgItems.Columns.Contains("NetUnitPrice"))
+            {
+                dgItems.Columns["NetUnitPrice"].ReadOnly = !isGeneral;
+                dgItems.Columns["NetUnitPrice"].DefaultCellStyle.BackColor = isGeneral ? Color.FromArgb(40, 60, 45) : Theme.BgCard;
+                dgItems.Columns["NetUnitPrice"].DefaultCellStyle.ForeColor = isGeneral ? Color.LightGreen : Theme.TextMain;
+                dgItems.Columns["NetUnitPrice"].DefaultCellStyle.Font = isGeneral ? new Font("Segoe UI", 10f, FontStyle.Bold) : Theme.FontMain;
+            }
+
+            if (dgItems.Columns.Contains("GrossUnitPrice"))
+            {
+                dgItems.Columns["GrossUnitPrice"].ReadOnly = !isGeneral;
+                dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.BackColor = isGeneral ? Color.FromArgb(40, 60, 45) : Theme.BgCard;
+                dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.ForeColor = isGeneral ? Color.LightGreen : Theme.TextMain;
+                dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.Font = isGeneral ? new Font("Segoe UI", 10f, FontStyle.Bold) : Theme.FontMain;
+            }
+
             dgItems.Rows.Clear();
             RecalcTotal();
 
             if (isGeneral)
             {
                 cboSupplier.Enabled = true;
-                lblPurchaseInfo.Text = "مرتجع عام دون التقيد ببيانات فاتورة محددة";
+                lblPurchaseInfo.Text = "مرتجع عام دون التقيد ببيانات فاتورة محددة - يمكنك البحث السريع والتعديل المباشر للأسعار والكميات في الجدول";
             }
             else
             {
@@ -438,9 +466,12 @@ namespace ChickenDist.Forms
             if (cboAllProducts.Items.Count > 0) cboAllProducts.SelectedIndex = 0;
             cboAllProducts.SelectedIndexChanged += (s, e) =>
             {
-                if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+                if (cboAllProducts.Focused && cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
                     txtGenPrice.Text = ci.Extra.ToString("N2");
+                    decimal.TryParse(txtGenQty.Text, out decimal q);
+                    if (q <= 0) q = 1m;
+                    AddGeneralProductByID(ci.ID, q, ci.Extra);
                 }
             };
         }
@@ -590,6 +621,59 @@ namespace ChickenDist.Forms
                 dgItems.CurrentCell = dgItems.Rows[0].Cells["NewReturnedQty"];
         }
 
+        private void OpenQuickSearch()
+        {
+            using (var dlg = new FrmProductSearch())
+            {
+                if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    AddGeneralProductByID(dlg.SelectedProductID);
+                }
+            }
+        }
+
+        private void AddGeneralProductByID(int productID, decimal defaultQty = 1m, decimal? customPrice = null)
+        {
+            var dtP = DbHelper.Query("SELECT ProductID, ProductName, COALESCE(PurchasePrice, 0) AS PurchasePrice, COALESCE(UnitName, '') AS UnitName FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
+            if (dtP == null || dtP.Rows.Count == 0) return;
+
+            var r = dtP.Rows[0];
+            string name = r["ProductName"].ToString();
+            decimal price = customPrice ?? Convert.ToDecimal(r["PurchasePrice"]);
+
+            // Check if already in dgItems
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                if (row.Cells["ProductID"].Value != null && Convert.ToInt32(row.Cells["ProductID"].Value) == productID)
+                {
+                    decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal curQty);
+                    decimal newQty = curQty + defaultQty;
+                    row.Cells["NewReturnedQty"].Value = newQty;
+
+                    decimal.TryParse(row.Cells["NetUnitPrice"].Value?.ToString(), out decimal curPrice);
+                    row.Cells["TotalPrice"].Value = (newQty * curPrice).ToString("N2");
+                    RecalcTotal();
+                    return;
+                }
+            }
+
+            int rowIdx = dgItems.Rows.Add();
+            var newRow = dgItems.Rows[rowIdx];
+            newRow.Cells["ProductID"].Value       = productID;
+            newRow.Cells["ProductName"].Value     = name;
+            newRow.Cells["PurchasedQty"].Value    = "عام";
+            newRow.Cells["PrevReturnedQty"].Value = "0";
+            newRow.Cells["NewReturnedQty"].Value  = defaultQty;
+            newRow.Cells["GrossUnitPrice"].Value  = price.ToString("N2");
+            newRow.Cells["DiscountPct"].Value     = "0%";
+            newRow.Cells["NetUnitPrice"].Value    = price.ToString("N2");
+            newRow.Cells["TotalPrice"].Value      = (defaultQty * price).ToString("N2");
+            newRow.Cells["UnitName"].Value        = r["UnitName"]?.ToString() ?? "";
+            newRow.Cells["Factor"].Value          = 1.0m;
+
+            RecalcTotal();
+        }
+
         private void BtnAddGenItem_Click(object sender, EventArgs e)
         {
             if (!(cboAllProducts.SelectedItem is ComboItem ci) || ci.ID == 0)
@@ -610,30 +694,18 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            int rowIdx = dgItems.Rows.Add();
-            var row = dgItems.Rows[rowIdx];
-            row.Cells["ProductID"].Value       = ci.ID;
-            row.Cells["ProductName"].Value     = ci.Text;
-            row.Cells["PurchasedQty"].Value    = "عام";
-            row.Cells["PrevReturnedQty"].Value = "0";
-            row.Cells["NewReturnedQty"].Value  = qty;
-            row.Cells["GrossUnitPrice"].Value  = price.ToString("N2");
-            row.Cells["DiscountPct"].Value     = "0%";
-            row.Cells["NetUnitPrice"].Value    = price.ToString("N2");
-            row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
-            row.Cells["UnitName"].Value        = "";
-            row.Cells["Factor"].Value          = 1.0m;
-
-            RecalcTotal();
+            AddGeneralProductByID(ci.ID, qty, price);
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
-            if (dgItems.Columns[e.ColumnIndex].Name != "NewReturnedQty") return;
-            if (e.FormattedValue?.ToString() == "") return;
+            string colName = dgItems.Columns[e.ColumnIndex].Name;
+            if (colName != "NewReturnedQty" && colName != "NetUnitPrice" && colName != "GrossUnitPrice") return;
+            if (string.IsNullOrWhiteSpace(e.FormattedValue?.ToString())) return;
+
             if (!decimal.TryParse(e.FormattedValue.ToString(), out decimal val) || val < 0)
             {
-                MessageBox.Show("أدخل كمية صالحة (رقم موجب أو صفر)", "تحقق من الإدخال",
+                MessageBox.Show("أدخل قيمة رقمية صالحة أكبر من أو تساوي صفر", "تحقق من الإدخال",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 e.Cancel = true;
             }
@@ -641,10 +713,21 @@ namespace ChickenDist.Forms
 
         private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || dgItems.Columns[e.ColumnIndex].Name != "NewReturnedQty") return;
+            if (e.RowIndex < 0) return;
+            string colName = dgItems.Columns[e.ColumnIndex].Name;
+            if (colName != "NewReturnedQty" && colName != "NetUnitPrice" && colName != "GrossUnitPrice") return;
+
             var row = dgItems.Rows[e.RowIndex];
             decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal qty);
             decimal.TryParse(row.Cells["NetUnitPrice"].Value?.ToString(), out decimal netPrice);
+
+            if (colName == "GrossUnitPrice" && cboMode.SelectedIndex == 1)
+            {
+                decimal.TryParse(row.Cells["GrossUnitPrice"].Value?.ToString(), out decimal grossPrice);
+                netPrice = grossPrice;
+                row.Cells["NetUnitPrice"].Value = grossPrice.ToString("N2");
+            }
+
             row.Cells["TotalPrice"].Value = (qty * netPrice).ToString("N2");
             RecalcTotal();
         }
