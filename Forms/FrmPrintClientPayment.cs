@@ -50,7 +50,7 @@ namespace ChickenDist.Forms
 
                 // Current balance after payment
                 _currentBalance = ClientDAL.GetBalance(_clientID);
-                // Previous balance before this payment (Payment reduced client balance, so prev = current + amount)
+                // Previous balance before this payment
                 _prevBalance = _currentBalance + _amount;
 
                 // Safe name
@@ -58,13 +58,28 @@ namespace ChickenDist.Forms
                 {
                     var safeObj = DbHelper.Scalar("SELECT AccountName FROM SafeAccounts WHERE AccountID = @id", DbHelper.P("@id", _safeAccountID.Value));
                     if (safeObj != null && safeObj != DBNull.Value)
-                    {
                         _safeName = safeObj.ToString();
-                    }
                 }
 
                 _employeeName = Session.EmpName;
-                _voucherCode = "PAY-C-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+
+                // ── رقم السند التسلسلي من قاعدة البيانات ──
+                try
+                {
+                    var maxId = DbHelper.Scalar(
+                        "SELECT COALESCE(MAX(TransID), 0) FROM ClientTransactions WHERE TransType='Payment'");
+                    long seq = (maxId != null && maxId != DBNull.Value) ? Convert.ToInt64(maxId) : 0;
+                    if (seq == 0)
+                    {
+                        var cnt = DbHelper.Scalar("SELECT COUNT(*) FROM ClientTransactions WHERE TransType='Payment'");
+                        seq = (cnt != null && cnt != DBNull.Value) ? Convert.ToInt64(cnt) : 1;
+                    }
+                    _voucherCode = seq.ToString();
+                }
+                catch
+                {
+                    _voucherCode = DateTime.Now.ToString("HHmmss");
+                }
             }
             catch (Exception ex)
             {
@@ -110,25 +125,25 @@ namespace ChickenDist.Forms
             {
                 var g = e.Graphics;
                 int pageW = e.PageBounds.Width;
-                int left = e.MarginBounds.Left;
+                int left  = e.MarginBounds.Left;
                 int right = e.MarginBounds.Right;
                 int width = e.MarginBounds.Width;
 
-                var fTitle = new Font("Arial", isReceipt ? 12 : 16, FontStyle.Bold);
-                var fHeader = new Font("Arial", isReceipt ? 9 : 11, FontStyle.Bold);
-                var fBody = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Regular);
-                var fBold = new Font("Arial", isReceipt ? 9f : 11, FontStyle.Bold);
+                var fTitle  = new Font("Arial", isReceipt ? 12 : 16, FontStyle.Bold);
+                var fHeader = new Font("Arial", isReceipt ? 9  : 11, FontStyle.Bold);
+                var fBody   = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Regular);
+                var fBold   = new Font("Arial", isReceipt ? 9f  : 11, FontStyle.Bold);
 
                 int y = 15;
 
-                // Company Name Header
+                // Company Name
                 string company = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "مؤسسة التوزيع والتجارة" : AppConfig.CompanyName;
                 SizeF szComp = g.MeasureString(company, fTitle);
                 g.DrawString(company, fTitle, Brushes.Black, (pageW - szComp.Width) / 2, y);
                 y += (int)szComp.Height + 5;
 
                 // Title
-                string docTitle = "🧾 سند تحصيل نقدية / إشعار توريد";
+                string docTitle = "سند تحصيل نقدية / إشعار توريد";
                 SizeF szTitle = g.MeasureString(docTitle, fHeader);
                 g.DrawString(docTitle, fHeader, Brushes.Black, (pageW - szTitle.Width) / 2, y);
                 y += (int)szTitle.Height + 10;
@@ -136,37 +151,43 @@ namespace ChickenDist.Forms
                 g.DrawLine(Pens.Black, left, y, right, y);
                 y += 8;
 
-                // Info block
-                g.DrawString($"رقم السند: {_voucherCode}", fBody, Brushes.Black, right - g.MeasureString($"رقم السند: {_voucherCode}", fBody).Width, y);
+                // رقم السند + التاريخ
+                g.DrawString($"رقم السند: {_voucherCode}", fBody, Brushes.Black,
+                    right - g.MeasureString($"رقم السند: {_voucherCode}", fBody).Width, y);
                 g.DrawString($"التاريخ: {_transDate:dd/MM/yyyy HH:mm}", fBody, Brushes.Black, left, y);
                 y += 22;
 
-                g.DrawString($"اسم العميل: {_clientName}", fBold, Brushes.Black, right - g.MeasureString($"اسم العميل: {_clientName}", fBold).Width, y);
+                // اسم العميل + الهاتف
+                g.DrawString($"اسم العميل: {_clientName}", fBold, Brushes.Black,
+                    right - g.MeasureString($"اسم العميل: {_clientName}", fBold).Width, y);
                 if (!string.IsNullOrEmpty(_clientPhone))
-                {
                     g.DrawString($"الهاتف: {_clientPhone}", fBody, Brushes.Black, left, y);
-                }
                 y += 22;
 
                 g.DrawLine(Pens.Gray, left, y, right, y);
                 y += 8;
 
-                // Financial details
+                // المبلغ
                 string amountTafqeet = TafqeetHelper.ConvertToArabicWords(_amount);
-                g.DrawString($"المبلغ المحصَّل: {_amount:N2} ج", new Font("Arial", isReceipt ? 11 : 14, FontStyle.Bold), Brushes.DarkGreen, right - g.MeasureString($"المبلغ المحصَّل: {_amount:N2} ج", new Font("Arial", isReceipt ? 11 : 14, FontStyle.Bold)).Width, y);
+                var fAmt = new Font("Arial", isReceipt ? 11 : 14, FontStyle.Bold);
+                g.DrawString($"المبلغ المحصَّل: {_amount:N2} ج", fAmt, Brushes.DarkGreen,
+                    right - g.MeasureString($"المبلغ المحصَّل: {_amount:N2} ج", fAmt).Width, y);
                 y += 26;
-
-                g.DrawString($"تفييد المبلغ: ({amountTafqeet})", fBody, Brushes.Black, right - g.MeasureString($"تفييد المبلغ: ({amountTafqeet})", fBody).Width, y);
+                g.DrawString($"تفييد المبلغ: ({amountTafqeet})", fBody, Brushes.Black,
+                    right - g.MeasureString($"تفييد المبلغ: ({amountTafqeet})", fBody).Width, y);
                 y += 24;
 
                 g.DrawLine(Pens.LightGray, left, y, right, y);
                 y += 8;
 
-                // Account Balances
-                g.DrawString($"الرصيد السابق قبل التوريد: {_prevBalance:N2} ج", fBody, Brushes.Black, right - g.MeasureString($"الرصيد السابق قبل التوريد: {_prevBalance:N2} ج", fBody).Width, y);
+                // الأرصدة
+                g.DrawString($"الرصيد السابق قبل التوريد: {_prevBalance:N2} ج", fBody, Brushes.Black,
+                    right - g.MeasureString($"الرصيد السابق قبل التوريد: {_prevBalance:N2} ج", fBody).Width, y);
                 y += 22;
 
-                g.DrawString($"الرصيد النهائي المتبقي للعميل: {_currentBalance:N2} ج", new Font("Arial", isReceipt ? 9.5f : 11.5f, FontStyle.Bold), Brushes.DarkBlue, right - g.MeasureString($"الرصيد النهائي المتبقي للعميل: {_currentBalance:N2} ج", new Font("Arial", isReceipt ? 9.5f : 11.5f, FontStyle.Bold)).Width, y);
+                var fBal = new Font("Arial", isReceipt ? 9.5f : 11.5f, FontStyle.Bold);
+                g.DrawString($"الرصيد النهائي المتبقي للعميل: {_currentBalance:N2} ج", fBal, Brushes.DarkBlue,
+                    right - g.MeasureString($"الرصيد النهائي المتبقي للعميل: {_currentBalance:N2} ج", fBal).Width, y);
                 y += 25;
 
                 g.DrawLine(Pens.Gray, left, y, right, y);
@@ -174,16 +195,19 @@ namespace ChickenDist.Forms
 
                 if (!string.IsNullOrWhiteSpace(_safeName) && _safeName != "---")
                 {
-                    g.DrawString($"الخزنة / الحساب: {_safeName}", fBody, Brushes.Black, right - g.MeasureString($"الخزنة / الحساب: {_safeName}", fBody).Width, y);
+                    g.DrawString($"الخزنة / الحساب: {_safeName}", fBody, Brushes.Black,
+                        right - g.MeasureString($"الخزنة / الحساب: {_safeName}", fBody).Width, y);
                     y += 20;
                 }
 
-                g.DrawString($"المستلم (الموظف): {_employeeName}", fBody, Brushes.Black, right - g.MeasureString($"المستلم (الموظف): {_employeeName}", fBody).Width, y);
+                g.DrawString($"المستلم (الموظف): {_employeeName}", fBody, Brushes.Black,
+                    right - g.MeasureString($"المستلم (الموظف): {_employeeName}", fBody).Width, y);
                 y += 20;
 
                 if (!string.IsNullOrWhiteSpace(_notes))
                 {
-                    g.DrawString($"البيان / ملاحظات: {_notes}", fBody, Brushes.Black, right - g.MeasureString($"البيان / ملاحظات: {_notes}", fBody).Width, y);
+                    g.DrawString($"البيان / ملاحظات: {_notes}", fBody, Brushes.Black,
+                        right - g.MeasureString($"البيان / ملاحظات: {_notes}", fBody).Width, y);
                     y += 22;
                 }
 
@@ -192,13 +216,10 @@ namespace ChickenDist.Forms
                 y += 12;
 
                 g.DrawString("توقيع المحصّل: ....................", fBody, Brushes.Black, right - 180, y);
-                g.DrawString("توقيع العميل: ....................", fBody, Brushes.Black, left, y);
+                g.DrawString("توقيع العميل: ....................",  fBody, Brushes.Black, left, y);
             };
 
-            try
-            {
-                pd.Print();
-            }
+            try { pd.Print(); }
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ في الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -227,9 +248,7 @@ namespace ChickenDist.Forms
             sb.AppendLine($"📊 *الرصيد السابق قبل التوريد:* {_prevBalance:N2} ج");
             sb.AppendLine($"📌 *الرصيد النهائي المتبقي:* {_currentBalance:N2} ج");
             if (!string.IsNullOrWhiteSpace(_notes))
-            {
                 sb.AppendLine($"📝 *البيان:* {_notes}");
-            }
             sb.AppendLine("===============================");
             sb.AppendLine("✨ *شكراً لتعاملكم معنا!*");
 
@@ -247,13 +266,10 @@ namespace ChickenDist.Forms
             try
             {
                 using (Bitmap bmp = DrawVoucherBitmap())
-                {
                     Clipboard.SetImage(bmp);
-                }
 
                 MessageBox.Show("✅ تم تصميم إشعار التوريد ونسخ الصورة للحافظة بنجاح!\nسيتم فتح محادثة الواتساب للعميل الآن، فقط اضغط (Ctrl+V) للصق وإرسال الصورة.",
                     "تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                 WhatsAppSender.OpenWhatsAppChat(_clientPhone);
             }
             catch (Exception ex)
@@ -262,73 +278,145 @@ namespace ChickenDist.Forms
             }
         }
 
+        // ══════════════════════════════════════════════════════════════
+        //  رسم صورة الإشعار (واتساب) – تصميم احترافي RTL
+        // ══════════════════════════════════════════════════════════════
         private Bitmap DrawVoucherBitmap()
         {
-            int w = 450;
-            int h = 550;
-            Bitmap bmp = new Bitmap(w, h);
-            using (Graphics g = Graphics.FromImage(bmp))
+            int bw = 560, bh = 620;
+            var bmp = new Bitmap(bw, bh);
+
+            using (var g = Graphics.FromImage(bmp))
             {
-                g.Clear(Color.White);
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.SmoothingMode     = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                var fTitle = new Font("Arial", 14, FontStyle.Bold);
-                var fHeader = new Font("Arial", 11, FontStyle.Bold);
-                var fBody = new Font("Arial", 10, FontStyle.Regular);
-                var fBold = new Font("Arial", 11, FontStyle.Bold);
+                // ── خلفية بيضاء ناعمة ─────────────────────────────────
+                g.FillRectangle(new SolidBrush(Color.FromArgb(248, 252, 250)), 0, 0, bw, bh);
 
-                int y = 20;
+                // ── هيدر أخضر متدرج ────────────────────────────────────
+                var grad = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, bw, 95),
+                    Color.FromArgb(16, 84, 64),
+                    Color.FromArgb(22, 120, 90),
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal);
+                g.FillRectangle(grad, 0, 0, bw, 95);
+                grad.Dispose();
 
-                // Border
-                g.DrawRectangle(new Pen(Color.FromArgb(5, 122, 85), 3), 10, 10, w - 20, h - 20);
+                // ── إطار خارجي ────────────────────────────────────────
+                g.DrawRectangle(new Pen(Color.FromArgb(16, 100, 75), 2.5f), 8, 8, bw - 16, bh - 16);
 
+                // ── StringFormats ──────────────────────────────────────
+                var sfC  = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfR  = new StringFormat { Alignment = StringAlignment.Far };   // محاذاة يمين
+                var sfL  = new StringFormat { Alignment = StringAlignment.Near };  // محاذاة يسار
+
+                // ── Fonts ──────────────────────────────────────────────
+                var fComp   = new Font("Arial", 15, FontStyle.Bold);
+                var fSub    = new Font("Arial", 10, FontStyle.Regular);
+                var fLbl    = new Font("Arial", 10, FontStyle.Bold);
+                var fVal    = new Font("Arial", 10, FontStyle.Regular);
+                var fAmt    = new Font("Arial", 19, FontStyle.Bold);
+                var fSmall  = new Font("Arial",  9, FontStyle.Regular);
+
+                // ── اسم الشركة (وسط الهيدر) ───────────────────────────
                 string company = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "مؤسسة التوزيع والتجارة" : AppConfig.CompanyName;
-                SizeF szC = g.MeasureString(company, fTitle);
-                g.DrawString(company, fTitle, Brushes.Black, (w - szC.Width) / 2, y);
+                g.DrawString(company, fComp, Brushes.White, new RectangleF(20, 10, bw - 40, 38), sfC);
+                g.DrawString("إشعار وسند تحصيل نقدية", fSub, new SolidBrush(Color.FromArgb(200, 255, 220)),
+                    new RectangleF(20, 52, bw - 40, 28), sfC);
+
+                // ── خط فاصل تحت الهيدر ────────────────────────────────
+                g.DrawLine(new Pen(Color.FromArgb(180, 215, 195)), 20, 96, bw - 20, 96);
+
+                int y  = 110;
+                int lx = 24;          // يسار
+                int rx = bw - 24;     // يمين
+
+                // ── اسم العميل ────────────────────────────────────────
+                DrawPair(g, fLbl, fLbl, lx, rx, y, "العميل:", _clientName,
+                    Color.FromArgb(70, 70, 70), Color.FromArgb(10, 80, 55));
                 y += 30;
 
-                string title = "🧾 إشعار وسند تحصيل نقدية";
-                SizeF szT = g.MeasureString(title, fHeader);
-                g.DrawString(title, fHeader, Brushes.DarkGreen, (w - szT.Width) / 2, y);
-                y += 30;
+                // ── رقم السند والتاريخ ────────────────────────────────
+                g.DrawString($"التاريخ: {_transDate:dd/MM/yyyy HH:mm}", fSmall,
+                    new SolidBrush(Color.FromArgb(110, 110, 110)), lx, y);
+                g.DrawString($"رقم السند: {_voucherCode}", fSmall,
+                    new SolidBrush(Color.FromArgb(110, 110, 110)),
+                    new RectangleF(lx, y, rx - lx, 20), sfR);
+                y += 32;
 
-                g.DrawLine(Pens.Gray, 20, y, w - 20, y);
-                y += 15;
+                // ── خط فاصل ───────────────────────────────────────────
+                g.DrawLine(new Pen(Color.FromArgb(210, 225, 215)), lx, y, rx, y);
+                y += 14;
 
-                g.DrawString($"العميل: {_clientName}", fBold, Brushes.Black, 30, y);
-                y += 25;
+                // ── المبلغ (بارز) ──────────────────────────────────────
+                g.FillRectangle(new SolidBrush(Color.FromArgb(232, 252, 242)), lx, y - 4, rx - lx, 50);
+                g.DrawString($"المبلغ المحصَّل: {_amount:N2} ج", fAmt,
+                    new SolidBrush(Color.FromArgb(10, 140, 85)),
+                    new RectangleF(lx, y, rx - lx, 44), sfC);
+                y += 52;
 
-                g.DrawString($"رقم السند: {_voucherCode}", fBody, Brushes.DimGray, 30, y);
-                g.DrawString($"التاريخ: {_transDate:dd/MM/yyyy HH:mm}", fBody, Brushes.DimGray, 220, y);
-                y += 30;
-
-                g.DrawLine(Pens.LightGray, 20, y, w - 20, y);
-                y += 15;
-
-                g.DrawString($"المبلغ المحصَّل: {_amount:N2} ج", new Font("Arial", 15, FontStyle.Bold), Brushes.Green, 30, y);
-                y += 30;
-
+                // ── التفييد ───────────────────────────────────────────
                 string tafqeet = TafqeetHelper.ConvertToArabicWords(_amount);
-                g.DrawString($"({tafqeet})", fBody, Brushes.DarkSlateGray, 30, y);
-                y += 30;
+                g.DrawString($"({tafqeet})", fSmall, new SolidBrush(Color.FromArgb(90, 90, 90)),
+                    new RectangleF(lx, y, rx - lx, 20), sfC);
+                y += 32;
 
-                g.DrawLine(Pens.LightGray, 20, y, w - 20, y);
-                y += 15;
+                // ── خط فاصل ───────────────────────────────────────────
+                g.DrawLine(new Pen(Color.FromArgb(210, 225, 215)), lx, y, rx, y);
+                y += 12;
 
-                g.DrawString($"الرصيد السابق: {_prevBalance:N2} ج", fBody, Brushes.Black, 30, y);
-                y += 25;
-                g.DrawString($"الرصيد المتبقي النهائى: {_currentBalance:N2} ج", fBold, Brushes.DarkBlue, 30, y);
-                y += 30;
+                // ── الأرصدة ───────────────────────────────────────────
+                DrawPair(g, fVal, fLbl, lx, rx, y,
+                    "الرصيد السابق:", $"{_prevBalance:N2} ج",
+                    Color.FromArgb(80, 80, 80), Color.FromArgb(70, 70, 70));
+                y += 28;
+
+                DrawPair(g, new Font("Arial", 11, FontStyle.Bold), fLbl, lx, rx, y,
+                    "الرصيد المتبقي النهائي:", $"{_currentBalance:N2} ج",
+                    Color.FromArgb(15, 60, 180), Color.FromArgb(15, 60, 180));
+                y += 34;
+
+                // ── خط فاصل ───────────────────────────────────────────
+                g.DrawLine(new Pen(Color.FromArgb(210, 225, 215)), lx, y, rx, y);
+                y += 12;
+
+                // ── الخزنة والمستلم ───────────────────────────────────
+                if (!string.IsNullOrWhiteSpace(_safeName) && _safeName != "---")
+                {
+                    DrawPair(g, fSmall, fSmall, lx, rx, y, "الخزنة:", _safeName,
+                        Color.FromArgb(90,90,90), Color.FromArgb(90,90,90));
+                    y += 24;
+                }
+                DrawPair(g, fSmall, fSmall, lx, rx, y, "المستلم:", _employeeName,
+                    Color.FromArgb(90,90,90), Color.FromArgb(90,90,90));
+                y += 24;
 
                 if (!string.IsNullOrWhiteSpace(_notes))
                 {
-                    g.DrawString($"البيان: {_notes}", fBody, Brushes.Black, 30, y);
-                    y += 25;
+                    DrawPair(g, fSmall, fSmall, lx, rx, y, "البيان:", _notes,
+                        Color.FromArgb(90,90,90), Color.FromArgb(90,90,90));
+                    y += 24;
                 }
 
-                g.DrawString($"المستلم: {_employeeName}", fBody, Brushes.DimGray, 30, y);
+                // ── شكر ختامي ─────────────────────────────────────────
+                y += 10;
+                g.DrawLine(new Pen(Color.FromArgb(16, 100, 75), 1.5f), lx, y, rx, y);
+                y += 10;
+                g.DrawString("✨ شكراً لتعاملكم معنا", fSmall,
+                    new SolidBrush(Color.FromArgb(16, 100, 75)),
+                    new RectangleF(lx, y, rx - lx, 20), sfC);
             }
             return bmp;
+        }
+
+        /// <summary>يرسم صف: التسمية على اليسار، القيمة على اليمين</summary>
+        private void DrawPair(Graphics g, Font fVal, Font fLbl, int lx, int rx, int y,
+            string label, string value, Color lblColor, Color valColor)
+        {
+            g.DrawString(label, fLbl, new SolidBrush(lblColor), lx, y);
+            SizeF sz = g.MeasureString(value, fVal);
+            g.DrawString(value, fVal, new SolidBrush(valColor), rx - sz.Width, y);
         }
     }
 }
