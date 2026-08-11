@@ -496,13 +496,20 @@ namespace ChickenDist.Forms
             if (cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
                 whId = ci.ID;
 
-            using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true))
+            while (true)
             {
-                if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
+                using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true))
                 {
-                    decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1.00m;
-                    decimal price = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
-                    AddProductByID(frm.SelectedProductID, qty, price);
+                    if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
+                    {
+                        decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1.00m;
+                        decimal price = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
+                        AddProductByID(frm.SelectedProductID, qty, price);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
