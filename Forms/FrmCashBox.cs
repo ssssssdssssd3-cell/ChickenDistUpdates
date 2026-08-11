@@ -80,10 +80,11 @@ namespace ChickenDist.Forms
         {
             var pnlF = new FlowLayoutPanel 
             { 
+                Name = "pnlF",
                 Dock = DockStyle.Top, 
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                BackColor = Theme.BgCard, 
+                BackColor = Theme.BgSearchPanel, 
                 Padding = new Padding(8),
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true

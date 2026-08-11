@@ -101,24 +101,19 @@ namespace ChickenDist.Core
         // ألوان ونظام شريط البحث والفلترة المميز والمريح للعين
         public static Color BgSearchPanel => AppConfig.AppTheme switch
         {
-            "Light" => Color.FromArgb(235, 243, 255), // أزرق سماوي ناعم ومميز يوضح مكان الفلاتر
-            "Slate" => Color.FromArgb(218, 228, 243),
-            _       => Color.FromArgb(38, 45, 60)     // رمادي داكن مائل للأزرق
+            "Light" => Color.FromArgb(24, 43, 73),   // كحلي فخم ومميز زاهي وواضح جداً
+            "Slate" => Color.FromArgb(30, 41, 59),
+            _       => Color.FromArgb(24, 38, 62)    // رمادي داكن مائل للأزرق
         };
 
         public static Color BorderSearchPanel => AppConfig.AppTheme switch
         {
-            "Light" => Color.FromArgb(180, 208, 245),
-            "Slate" => Color.FromArgb(160, 190, 230),
+            "Light" => Color.FromArgb(41, 65, 105),
+            "Slate" => Color.FromArgb(50, 75, 115),
             _       => Color.FromArgb(65, 78, 102)
         };
 
-        public static Color TextSearchLabel => AppConfig.AppTheme switch
-        {
-            "Light" => Color.FromArgb(15, 23, 42),    // كحلي داكن مريح ومميز
-            "Slate" => Color.FromArgb(15, 23, 42),
-            _       => Color.FromArgb(241, 245, 249)
-        };
+        public static Color TextSearchLabel => Color.FromArgb(255, 220, 110); // ذهبي عالي التباين والأناقة
 
         public static Color BgInput => Color.White; // خانات الإدخال بلون أبيض ناصع ومريح
         public static Color TextInput => Color.FromArgb(33, 37, 41); // لون خط خانات الإدخال - غامق دائماً للقراءة على الخلفية البيضاء
@@ -326,9 +321,92 @@ namespace ChickenDist.Core
                 {
                     StyleGridHeader(dgv);
                 }
+                else if (c is Panel || c is FlowLayoutPanel || c is TableLayoutPanel || c is GroupBox)
+                {
+                    string n = c.Name?.ToLower() ?? "";
+                    string t = c.Tag?.ToString()?.ToLower() ?? "";
+                    if (n.StartsWith("pnlfilter") || n.StartsWith("pnlsearch") || n.StartsWith("pnlinfo") ||
+                        n.StartsWith("pnlf") || n.StartsWith("pnltop") || n.StartsWith("pnlheader") ||
+                        n.StartsWith("grpfilter") || n.StartsWith("grpsearch") || t.Contains("search") || t.Contains("filter"))
+                    {
+                        StyleSearchPanel(c);
+                    }
+                }
 
                 if (c.HasChildren)
                     ApplyRTL(c.Controls);
+            }
+        }
+
+        public static void StyleSearchPanel(Control container)
+        {
+            if (container == null) return;
+
+            container.BackColor = BgSearchPanel;
+
+            foreach (Control c in container.Controls)
+            {
+                c.RightToLeft = RightToLeft.Yes;
+
+                if (c is Label lbl)
+                {
+                    lbl.BackColor = Color.Transparent;
+                    if (lbl.ForeColor == TextMain || lbl.ForeColor == TextDark || lbl.ForeColor == SystemColors.ControlText || lbl.ForeColor == Color.Black || lbl.ForeColor == Color.Empty)
+                    {
+                        lbl.ForeColor = Color.FromArgb(255, 220, 110);
+                    }
+                    lbl.Font = FontBold;
+                }
+                else if (c is TextBox tb)
+                {
+                    tb.BorderStyle = BorderStyle.FixedSingle;
+                    tb.BackColor = Color.White;
+                    tb.ForeColor = Color.FromArgb(15, 23, 42);
+                    tb.Font = FontBold;
+                }
+                else if (c is ComboBox cb)
+                {
+                    cb.FlatStyle = FlatStyle.Flat;
+                    cb.BackColor = Color.White;
+                    cb.ForeColor = Color.FromArgb(15, 23, 42);
+                    cb.Font = FontBold;
+                }
+                else if (c is DateTimePicker dtp)
+                {
+                    dtp.Font = FontBold;
+                }
+                else if (c is NumericUpDown nud)
+                {
+                    nud.BorderStyle = BorderStyle.FixedSingle;
+                    nud.BackColor = Color.White;
+                    nud.ForeColor = Color.FromArgb(15, 23, 42);
+                    nud.Font = FontBold;
+                }
+                else if (c is CheckBox chk)
+                {
+                    chk.BackColor = Color.Transparent;
+                    chk.ForeColor = Color.White;
+                    chk.Font = FontBold;
+                }
+                else if (c is RadioButton rb)
+                {
+                    rb.BackColor = Color.Transparent;
+                    rb.ForeColor = Color.White;
+                    rb.Font = FontBold;
+                }
+                else if (c is Button btn)
+                {
+                    if (btn.BackColor == BgCard || btn.BackColor == SystemColors.Control || btn.BackColor == Color.Empty || btn.BackColor == Color.White)
+                    {
+                        btn.BackColor = Accent;
+                        btn.ForeColor = Color.White;
+                    }
+                }
+
+                if (c.HasChildren)
+                {
+                    StyleSearchPanel(c);
+                }
             }
         }
 
