@@ -47,8 +47,16 @@ namespace ChickenDist.Forms
             }
             else
             {
-                NewQuote();
+                NewQuote(false);
             }
+
+            this.Shown += (s, e) =>
+            {
+                if (_currentQuoteID == 0)
+                {
+                    OpenQuickSearch();
+                }
+            };
         }
 
         private void InitUI()
@@ -268,7 +276,7 @@ namespace ChickenDist.Forms
             };
 
             btnNew = Theme.MakeButton("📄 جديد (F1)", 0, 0, 110, 40, Color.FromArgb(55, 65, 81));
-            btnNew.Click += (s, e) => NewQuote();
+            btnNew.Click += (s, e) => NewQuote(true);
 
             btnSuspend = Theme.MakeButton("📌 تعليق / حفظ (F2)", 0, 0, 160, 40, Theme.Primary);
             btnSuspend.Click += (s, e) => SaveQuote(false);
@@ -444,7 +452,7 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        private void NewQuote()
+        private void NewQuote(bool openSearch = false)
         {
             _currentQuoteID = 0;
             _quoteCode = "Q-NEW";
@@ -458,6 +466,13 @@ namespace ChickenDist.Forms
             SelectTier("قطاعي");
             RecalculateTotals();
             txtProductCode.Focus();
+
+            if (openSearch && this.IsHandleCreated)
+            {
+                this.BeginInvoke((MethodInvoker)delegate {
+                    OpenQuickSearch();
+                });
+            }
         }
 
         private void TxtProductCode_KeyDown(object sender, KeyEventArgs e)
@@ -689,7 +704,11 @@ namespace ChickenDist.Forms
             if (savedID > 0)
             {
                 _currentQuoteID = savedID;
-                if (!isSilent) MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!isSilent)
+                {
+                    MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    NewQuote(true);
+                }
                 return true;
             }
             return false;
@@ -1095,7 +1114,7 @@ namespace ChickenDist.Forms
 
         private void FrmPriceQuote_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.F1) { NewQuote(); e.Handled = true; }
+            if (e.KeyCode == Keys.F1) { NewQuote(true); e.Handled = true; }
             else if (e.KeyCode == Keys.F2) { SaveQuote(false); e.Handled = true; }
             else if (e.KeyCode == Keys.F4) { OpenPendingQuotesList(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { ConvertToSaleInvoice(); e.Handled = true; }
