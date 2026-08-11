@@ -1894,86 +1894,165 @@ namespace ChickenDist.Forms
 			{
 				printDocument.DefaultPageSettings.Landscape = true;
 			}
+
 			int pageRow = 0;
+			int pageNum = 1;
+
 			printDocument.PrintPage += delegate(object s, PrintPageEventArgs ev)
 			{
-				Graphics graphics = ev.Graphics;
-				Font font = new Font("Arial", 14f, FontStyle.Bold);
-				Font font2 = new Font("Arial", 9f, FontStyle.Bold);
-				Font font3 = new Font("Arial", 8f);
-				int num = 20;
+				Graphics g = ev.Graphics;
+				Font fComp  = new Font("Arial", 13f, FontStyle.Bold);
+				Font fTitle = new Font("Arial", 15f, FontStyle.Bold);
+				Font fHead  = new Font("Arial", 9.5f, FontStyle.Bold);
+				Font fCell  = new Font("Arial", 8.5f, FontStyle.Regular);
+				Font fCellB = new Font("Arial", 8.5f, FontStyle.Bold);
+				Font fFoot  = new Font("Arial", 8f, FontStyle.Regular);
 
+				var brushHeaderBg = new SolidBrush(Color.FromArgb(28, 45, 78));
+				var brushRowAlt   = new SolidBrush(Color.FromArgb(245, 248, 253));
+				var brushTotBg    = new SolidBrush(Color.FromArgb(220, 245, 225));
+				var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
+				var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
+
+				int pageW = printDocument.DefaultPageSettings.Landscape ? 1040 : 775;
+				int startX = 25;
+				int y = 25;
+
+				// 1. Company & Report Title Header
+				string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+				SizeF szComp = g.MeasureString(companyName, fComp);
+				g.DrawString(companyName, fComp, Brushes.DarkBlue, startX + (pageW - szComp.Width) / 2f, y);
+				y += (int)szComp.Height + 3;
+
+				string titleText = tabReports.SelectedTab?.Text ?? "تقرير";
+				SizeF szTitle = g.MeasureString(titleText, fTitle);
+				g.DrawString(titleText, fTitle, Brushes.Black, startX + (pageW - szTitle.Width) / 2f, y);
+				y += (int)szTitle.Height + 5;
+
+				string dateInfo = (tabReports.SelectedTab?.Tag?.ToString() == "ClientBalances")
+					? $"تاريخ التقرير: {DateTime.Now:dd/MM/yyyy HH:mm}"
+					: $"من تاريخ: {dtpFrom.Value:dd/MM/yyyy}   إلى تاريخ: {dtpTo.Value:dd/MM/yyyy}";
+				SizeF szDate = g.MeasureString(dateInfo, fFoot);
+				g.DrawString(dateInfo, fFoot, Brushes.DarkGray, startX + (pageW - szDate.Width) / 2f, y);
+				y += (int)szDate.Height + 6;
+
+				g.DrawLine(penDark, startX, y, startX + pageW, y);
+				y += 10;
+
+				// Compute visible columns and widths
+				var visCols = new List<DataGridViewColumn>();
 				int totalGridWidth = 0;
 				for (int k = 0; k < dg.Columns.Count; k++)
 				{
 					if (dg.Columns[k].Visible)
+					{
+						visCols.Add(dg.Columns[k]);
 						totalGridWidth += dg.Columns[k].Width;
+					}
 				}
-				if (totalGridWidth == 0) totalGridWidth = 1;
+				if (totalGridWidth <= 0) totalGridWidth = 1;
 
-				int printWidth = printDocument.DefaultPageSettings.Landscape ? 1050 : 780;
-				int titleX = printDocument.DefaultPageSettings.Landscape ? 450 : 320;
-
-				graphics.DrawString(tabReports.SelectedTab.Text, font, Brushes.DarkBlue, titleX, num);
-				num += 30;
-				if (tabReports.SelectedTab.Tag?.ToString() == "ClientBalances")
+				int[] colWidths = new int[visCols.Count];
+				int assignedW = 0;
+				for (int i = 0; i < visCols.Count; i++)
 				{
-					graphics.DrawString($"تاريخ التقرير: {DateTime.Now:dd/MM/yyyy HH:mm}", font3, Brushes.Black, titleX, num);
-					num += 25;
+					colWidths[i] = (visCols[i].Width * pageW) / totalGridWidth;
+					if (colWidths[i] < 30) colWidths[i] = 30;
+					assignedW += colWidths[i];
 				}
-				else
+				if (colWidths.Length > 0 && assignedW != pageW)
 				{
-					graphics.DrawString($"من تاريخ: {dtpFrom.Value:dd/MM/yyyy}  إلى تاريخ: {dtpTo.Value:dd/MM/yyyy}", font3, Brushes.Black, titleX - 20, num);
-					num += 25;
+					colWidths[colWidths.Length - 1] += (pageW - assignedW);
 				}
-				graphics.DrawLine(Pens.DarkBlue, 20, num, printWidth + 20, num);
-				num += 10;
 
-				int currentX = 20;
-				for (int i = 0; i < dg.Columns.Count; i++)
+				int headH = 26;
+				int rowH  = 22;
+
+				// 2. Draw Table Header Row (RTL: right to left)
+				int curX = startX + pageW;
+				g.FillRectangle(brushHeaderBg, startX, y, pageW, headH);
+				g.DrawRectangle(penDark, startX, y, pageW, headH);
+
+				for (int i = 0; i < visCols.Count; i++)
 				{
-					if (!dg.Columns[i].Visible) continue;
-					int colWidth = (dg.Columns[i].Width * printWidth) / totalGridWidth;
-					graphics.DrawString(dg.Columns[i].HeaderText, font2, Brushes.DarkBlue, currentX, num);
-					currentX += colWidth;
-				}
-				num += 22;
-				graphics.DrawLine(Pens.Gray, 20, num, printWidth + 20, num);
-				num += 8;
+					int cw = colWidths[i];
+					curX -= cw;
+					var rect = new RectangleF(curX, y, cw, headH);
+					g.DrawRectangle(penGrid, curX, y, cw, headH);
 
+					var sf = new StringFormat
+					{
+						Alignment = StringAlignment.Center,
+						LineAlignment = StringAlignment.Center,
+						Trimming = StringTrimming.EllipsisCharacter,
+						FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
+					};
+					g.DrawString(visCols[i].HeaderText, fHead, Brushes.White, rect, sf);
+				}
+				y += headH;
+
+				// 3. Draw Table Data Rows (RTL Grid with borders & alternating colors)
 				while (pageRow < dg.Rows.Count)
 				{
-					DataGridViewRow dataGridViewRow = dg.Rows[pageRow];
-					bool flag = dataGridViewRow.Cells[0].Value?.ToString() == "الإجمالي الكلي" || dataGridViewRow.Cells[0].Value?.ToString() == "الإجمالي";
-					Font font4 = (flag ? new Font("Arial", 8.5f, FontStyle.Bold) : font3);
-					Brush brush = (flag ? Brushes.DarkGreen : Brushes.Black);
+					DataGridViewRow dgRow = dg.Rows[pageRow];
+					if (dgRow.IsNewRow) { pageRow++; continue; }
 
-					currentX = 20;
-					for (int j = 0; j < dg.Columns.Count; j++)
+					string cell0Val = dgRow.Cells[0].Value?.ToString() ?? "";
+					bool isTotalRow = cell0Val.Contains("الإجمالي") || cell0Val.Contains("المجموع");
+					Font rowFont = isTotalRow ? fCellB : fCell;
+
+					Brush bgBrush = isTotalRow ? brushTotBg 
+								  : (pageRow % 2 == 1 ? brushRowAlt : Brushes.White);
+					Brush textBrush = isTotalRow ? Brushes.DarkGreen : Brushes.Black;
+
+					g.FillRectangle(bgBrush, startX, y, pageW, rowH);
+					g.DrawRectangle(penGrid, startX, y, pageW, rowH);
+
+					curX = startX + pageW;
+					for (int j = 0; j < visCols.Count; j++)
 					{
-						if (!dg.Columns[j].Visible) continue;
-						int colWidth = (dg.Columns[j].Width * printWidth) / totalGridWidth;
+						int cw = colWidths[j];
+						curX -= cw;
+						var rect = new RectangleF(curX + 2, y + 1, cw - 4, rowH - 2);
+						g.DrawRectangle(penGrid, curX, y, cw, rowH);
+
+						string val = dgRow.Cells[visCols[j].Index].Value?.ToString() ?? "";
 						
-						var rect = new RectangleF(currentX, num, colWidth - 5, 18);
-						var sf = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-						graphics.DrawString(dataGridViewRow.Cells[j].Value?.ToString() ?? "", font4, brush, rect, sf);
-						
-						currentX += colWidth;
+						var sf = new StringFormat
+						{
+							Alignment = StringAlignment.Center,
+							LineAlignment = StringAlignment.Center,
+							Trimming = StringTrimming.EllipsisCharacter,
+							FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
+						};
+
+						g.DrawString(val, rowFont, textBrush, rect, sf);
 					}
-					num += 18;
+
+					y += rowH;
 					pageRow++;
-					if (num > ev.PageBounds.Height - 45)
+
+					if (y > ev.PageBounds.Height - 65)
 					{
+						g.DrawString($"صفحة {pageNum}", fFoot, Brushes.Gray, startX + pageW - 60, ev.PageBounds.Height - 35);
+						g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fFoot, Brushes.Gray, startX, ev.PageBounds.Height - 35);
+						pageNum++;
 						ev.HasMorePages = true;
 						return;
 					}
 				}
+
+				g.DrawLine(penGrid, startX, y + 5, startX + pageW, y + 5);
+				g.DrawString($"صفحة {pageNum}", fFoot, Brushes.Gray, startX + pageW - 60, ev.PageBounds.Height - 35);
+				g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fFoot, Brushes.Gray, startX, ev.PageBounds.Height - 35);
+
 				pageRow = 0;
 			};
+
 			PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
 			printPreviewDialog.Document = printDocument;
-			printPreviewDialog.Width = 950;
-			printPreviewDialog.Height = 750;
+			printPreviewDialog.Width = 1150;
+			printPreviewDialog.Height = 800;
 			printPreviewDialog.ShowDialog();
 		}
 
