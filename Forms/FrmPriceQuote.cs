@@ -1019,6 +1019,7 @@ namespace ChickenDist.Forms
 
             string clientName = GetClientName();
             string empName = Session.EmpName;
+            string whName = cboWarehouse.Text;
             int itemIdx = 0;
 
             pd.PrintPage += (s, e) =>
@@ -1040,25 +1041,28 @@ namespace ChickenDist.Forms
                 y += (int)szTitle.Height + 8;
 
                 g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
-                g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy}", fontBody, Brushes.Black, left, y);
+                g.DrawString($"المخزن: {whName}", fontHeader, Brushes.Black, left, y);
                 y += 22;
 
                 g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف: {empName}", fontBody).Width, y);
+                g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}", fontBody, Brushes.Black, left, y);
                 y += 22;
 
                 g.DrawLine(Pens.Black, left, y, right, y);
                 y += 8;
 
-                // Table Header
-                int colProdW = (int)(width * 0.45);
-                int colQtyW = (int)(width * 0.15);
-                int colPriceW = (int)(width * 0.20);
-                int colTotW = (int)(width * 0.20);
+                // Table Header (RTL order: الصنف, مكان التخزين, الكمية, السعر, الإجمالي)
+                int colProdW  = (int)(width * (isReceipt ? 0.35 : 0.38));
+                int colLocW   = (int)(width * (isReceipt ? 0.20 : 0.18));
+                int colQtyW   = (int)(width * (isReceipt ? 0.15 : 0.14));
+                int colPriceW = (int)(width * (isReceipt ? 0.15 : 0.15));
+                int colTotW   = (int)(width * (isReceipt ? 0.15 : 0.15));
 
-                g.DrawString("الصنف", fontHeader, Brushes.Black, right - colProdW, y);
-                g.DrawString("الكمية", fontHeader, Brushes.Black, right - colProdW - colQtyW, y);
-                g.DrawString("السعر", fontHeader, Brushes.Black, right - colProdW - colQtyW - colPriceW, y);
-                g.DrawString("الإجمالي", fontHeader, Brushes.Black, right - colProdW - colQtyW - colPriceW - colTotW, y);
+                g.DrawString("الصنف",        fontHeader, Brushes.Black, right - colProdW, y);
+                g.DrawString("مكان التخزين", fontHeader, Brushes.Black, right - colProdW - colLocW, y);
+                g.DrawString("الكمية",       fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW, y);
+                g.DrawString("السعر",        fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW, y);
+                g.DrawString("الإجمالي",     fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW - colTotW, y);
                 y += 22;
                 g.DrawLine(Pens.Gray, left, y, right, y);
                 y += 6;
@@ -1070,10 +1074,13 @@ namespace ChickenDist.Forms
                     decimal tot = item.Quantity * item.UnitPrice - item.DiscountAmt;
                     gross += tot;
 
+                    string loc = !string.IsNullOrWhiteSpace(item.ShelfLocation) ? item.ShelfLocation : "---";
+
                     g.DrawString(item.ProductName, fontBody, Brushes.Black, right - colProdW, y);
-                    g.DrawString(item.Quantity.ToString("N0"), fontBody, Brushes.Black, right - colProdW - colQtyW, y);
-                    g.DrawString(item.UnitPrice.ToString("N2"), fontBody, Brushes.Black, right - colProdW - colQtyW - colPriceW, y);
-                    g.DrawString(tot.ToString("N2"), fontBold, Brushes.Black, right - colProdW - colQtyW - colPriceW - colTotW, y);
+                    g.DrawString(loc,              fontBody, Brushes.DarkBlue, right - colProdW - colLocW, y);
+                    g.DrawString(item.Quantity.ToString("N0"), fontBody, Brushes.Black, right - colProdW - colLocW - colQtyW, y);
+                    g.DrawString(item.UnitPrice.ToString("N2"), fontBody, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW, y);
+                    g.DrawString(tot.ToString("N2"), fontBold, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW - colTotW, y);
 
                     y += 22;
                     itemIdx++;
