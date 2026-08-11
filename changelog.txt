@@ -1,3 +1,6 @@
+v2.0.386 - 2026-08-11
+- إصلاح أبعاد وترتيب تصميم نافذة سند التوريد FrmPaymentPrintDialog لمنع تداخل الزرين والقطع من الأعلى والأسفل
+
 v2.0.385 - 2026-08-11
 - إصلاح خطأ دالة تقارير المشتريات التفصيلية (Invalid column name 'SubTotal' in SalesDAL.GetDetailedPurchases)
 
