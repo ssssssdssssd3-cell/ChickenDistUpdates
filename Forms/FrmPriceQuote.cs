@@ -1005,7 +1005,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var res = MessageBox.Show("هل تريد طباعة بيان التسعير على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "نوع بيان التسعير", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            var res = MessageBox.Show("هل تريد طباعة عرض الأسعار كفاتورة بيع تقديرية على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع الطباعة", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (res == DialogResult.Cancel) return;
 
             bool isReceipt = (res == DialogResult.Yes);
@@ -1027,88 +1027,197 @@ namespace ChickenDist.Forms
             string clientName = GetClientName();
             string empName = Session.EmpName;
             string whName = cboWarehouse.Text;
+            string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+            string companyPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
             int itemIdx = 0;
+            int rowNum = 0;
 
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                var fontTitle = new Font("Arial", isReceipt ? 12 : 16, FontStyle.Bold);
-                var fontHeader = new Font("Arial", isReceipt ? 9 : 11, FontStyle.Bold);
-                var fontBody = new Font("Arial", isReceipt ? 8.5f : 10, FontStyle.Regular);
-                var fontBold = new Font("Arial", isReceipt ? 9f : 11, FontStyle.Bold);
+                float titleSize  = isReceipt ? 12f : 16f;
+                float headerSize = isReceipt ? 9f  : 11f;
+                float bodySize   = isReceipt ? 8.5f: 10f;
 
-                int y = 15;
-                int left = e.MarginBounds.Left;
+                var fontCompany = new Font("Arial", isReceipt ? 11f : 14f, FontStyle.Bold);
+                var fontTitle   = new Font("Arial", titleSize,  FontStyle.Bold);
+                var fontHeader  = new Font("Arial", headerSize, FontStyle.Bold);
+                var fontBody    = new Font("Arial", bodySize,   FontStyle.Regular);
+                var fontBold    = new Font("Arial", bodySize,   FontStyle.Bold);
+
+                var brushDarkBlue = new SolidBrush(Color.FromArgb(20, 60, 120));
+                var brushHeaderBg = new SolidBrush(Color.FromArgb(30, 60, 114));
+                var brushRowAlt   = new SolidBrush(Color.FromArgb(242, 246, 252));
+                var penLight      = new Pen(Color.FromArgb(190, 200, 215));
+                var penDark       = new Pen(Color.Black, 1.5f);
+
+                int y     = e.MarginBounds.Top;
+                int left  = e.MarginBounds.Left;
                 int right = e.MarginBounds.Right;
                 int width = e.MarginBounds.Width;
 
-                string title = "📋 بيان تسعير وعرض أسعار";
+                // ── Header: Company & Title ──────────────────
+                SizeF szComp = g.MeasureString(companyName, fontCompany);
+                g.DrawString(companyName, fontCompany, brushDarkBlue, (pageW(e) - szComp.Width) / 2, y);
+                y += (int)szComp.Height + 2;
+
+                if (!string.IsNullOrWhiteSpace(companyPhone))
+                {
+                    string phStr = $"تليفون: {companyPhone}";
+                    SizeF szPh = g.MeasureString(phStr, fontBody);
+                    g.DrawString(phStr, fontBody, Brushes.DarkGray, (pageW(e) - szPh.Width) / 2, y);
+                    y += (int)szPh.Height + 4;
+                }
+
+                string title = "🧾 فاتورة بيع تقديرية (عرض أسعار)";
                 SizeF szTitle = g.MeasureString(title, fontTitle);
                 g.DrawString(title, fontTitle, Brushes.Black, (pageW(e) - szTitle.Width) / 2, y);
-                y += (int)szTitle.Height + 8;
+                y += (int)szTitle.Height + 6;
 
-                g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
-                g.DrawString($"المخزن: {whName}", fontHeader, Brushes.Black, left, y);
-                y += 22;
+                g.DrawLine(penDark, left, y, right, y);
+                y += (isReceipt ? 4 : 8);
 
-                g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف: {empName}", fontBody).Width, y);
-                g.DrawString($"التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}", fontBody, Brushes.Black, left, y);
-                y += 22;
+                // ── Invoice Details Section ──────────────────
+                string dateStr = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                string codeStr = !string.IsNullOrWhiteSpace(_quoteCode) ? _quoteCode : "---";
 
-                g.DrawLine(Pens.Black, left, y, right, y);
-                y += 8;
+                if (!isReceipt)
+                {
+                    g.DrawString($"رقم البيان: {codeStr}", fontHeader, Brushes.Black, right - g.MeasureString($"رقم البيان: {codeStr}", fontHeader).Width, y);
+                    g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
+                    y += 20;
 
-                // Table Header (RTL order: الصنف, مكان التخزين, الكمية, السعر, الإجمالي)
-                int colProdW  = (int)(width * (isReceipt ? 0.35 : 0.38));
-                int colLocW   = (int)(width * (isReceipt ? 0.20 : 0.18));
-                int colQtyW   = (int)(width * (isReceipt ? 0.15 : 0.14));
-                int colPriceW = (int)(width * (isReceipt ? 0.15 : 0.15));
-                int colTotW   = (int)(width * (isReceipt ? 0.15 : 0.15));
+                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
+                    g.DrawString($"المخزن: {whName}", fontBody, Brushes.Black, left, y);
+                    y += 20;
 
-                g.DrawString("الصنف",        fontHeader, Brushes.Black, right - colProdW, y);
-                g.DrawString("مكان التخزين", fontHeader, Brushes.Black, right - colProdW - colLocW, y);
-                g.DrawString("الكمية",       fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW, y);
-                g.DrawString("السعر",        fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW, y);
-                g.DrawString("الإجمالي",     fontHeader, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW - colTotW, y);
-                y += 22;
-                g.DrawLine(Pens.Gray, left, y, right, y);
-                y += 6;
+                    g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف: {empName}", fontBody).Width, y);
+                    g.DrawString($"فئة السعر: {_selectedTier}", fontBody, Brushes.Black, left, y);
+                    y += 22;
+                }
+                else
+                {
+                    g.DrawString($"رقم البيان: {codeStr}", fontHeader, Brushes.Black, right - g.MeasureString($"رقم البيان: {codeStr}", fontHeader).Width, y);
+                    g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, left, y);
+                    y += 18;
+                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
+                    y += 18;
+                    g.DrawString($"المخزن: {whName} | الموظف: {empName}", fontBody, Brushes.Black, left, y);
+                    y += 20;
+                }
 
+                g.DrawLine(penLight, left, y, right, y);
+                y += (isReceipt ? 4 : 6);
+
+                // ── Table Column Headers ──────────────────────
+                int colNumW   = isReceipt ? 16 : (int)(width * 0.05);
+                int colCodeW  = isReceipt ? 35 : (int)(width * 0.12);
+                int colLocW   = isReceipt ? 35 : (int)(width * 0.16);
+                int colUnitW  = isReceipt ? 25 : (int)(width * 0.09);
+                int colQtyW   = isReceipt ? 25 : (int)(width * 0.10);
+                int colPriceW = isReceipt ? 35 : (int)(width * 0.12);
+                int colTotW   = isReceipt ? 40 : (int)(width * 0.14);
+                int colProdW  = width - colNumW - colCodeW - colLocW - colUnitW - colQtyW - colPriceW - colTotW;
+                int rowH      = isReceipt ? 18 : 24;
+
+                if (!isReceipt)
+                {
+                    g.FillRectangle(brushHeaderBg, left, y, width, rowH + 4);
+                    int hY = y + 4;
+                    g.DrawString("الصنف",        fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW, hY);
+                    g.DrawString("مكان التخزين", fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW - colLocW, hY);
+                    g.DrawString("الوحدة",       fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW - colLocW - colUnitW, hY);
+                    g.DrawString("الكمية",       fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW, hY);
+                    g.DrawString("السعر",        fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW - colPriceW, hY);
+                    g.DrawString("الإجمالي",     fontHeader, Brushes.White, right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW - colPriceW - colTotW, hY);
+                    g.DrawString("الكود",        fontHeader, Brushes.White, right - colNumW - colCodeW, hY);
+                    g.DrawString("#",            fontHeader, Brushes.White, left, hY);
+                    y += rowH + 8;
+                }
+                else
+                {
+                    g.DrawString("الصنف",  fontHeader, Brushes.Black, right - colNumW - colProdW, y);
+                    g.DrawString("الكمية",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
+                    g.DrawString("السعر",   fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colPriceW, y);
+                    g.DrawString("الإجمالي", fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colPriceW - colTotW, y);
+                    y += rowH;
+                    g.DrawLine(penLight, left, y, right, y);
+                    y += 4;
+                }
+
+                // ── Invoice Items Rows ───────────────────────
                 decimal gross = 0m;
                 while (itemIdx < _items.Count)
                 {
                     var item = _items[itemIdx];
                     decimal tot = item.Quantity * item.UnitPrice - item.DiscountAmt;
                     gross += tot;
+                    rowNum++;
 
-                    string loc = !string.IsNullOrWhiteSpace(item.ShelfLocation) ? item.ShelfLocation : "---";
+                    string loc  = !string.IsNullOrWhiteSpace(item.ShelfLocation) ? item.ShelfLocation : "---";
+                    string code = !string.IsNullOrWhiteSpace(item.ProductCode) ? item.ProductCode : "---";
+                    string unit = !string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "";
 
-                    g.DrawString(item.ProductName, fontBody, Brushes.Black, right - colProdW, y);
-                    g.DrawString(loc,              fontBody, Brushes.DarkBlue, right - colProdW - colLocW, y);
-                    g.DrawString(item.Quantity.ToString("N0"), fontBody, Brushes.Black, right - colProdW - colLocW - colQtyW, y);
-                    g.DrawString(item.UnitPrice.ToString("N2"), fontBody, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW, y);
-                    g.DrawString(tot.ToString("N2"), fontBold, Brushes.Black, right - colProdW - colLocW - colQtyW - colPriceW - colTotW, y);
+                    if (!isReceipt && rowNum % 2 == 0)
+                        g.FillRectangle(brushRowAlt, left, y - 2, width, rowH);
 
-                    y += 22;
+                    int tx = y + (isReceipt ? 0 : 3);
+                    if (!isReceipt)
+                    {
+                        g.DrawString(item.ProductName,             fontBody, Brushes.Black,  right - colNumW - colCodeW - colProdW, tx);
+                        g.DrawString(loc,                          fontBody, brushDarkBlue,  right - colNumW - colCodeW - colProdW - colLocW, tx);
+                        g.DrawString(unit,                         fontBody, Brushes.Black,  right - colNumW - colCodeW - colProdW - colLocW - colUnitW, tx);
+                        g.DrawString(item.Quantity.ToString("N0"), fontBold, Brushes.Black,  right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW, tx);
+                        g.DrawString(item.UnitPrice.ToString("N2"),fontBody, Brushes.Black,  right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW - colPriceW, tx);
+                        g.DrawString(tot.ToString("N2"),           fontBold, Brushes.Black,  right - colNumW - colCodeW - colProdW - colLocW - colUnitW - colQtyW - colPriceW - colTotW, tx);
+                        g.DrawString(code,                         fontBody, Brushes.Gray,   right - colNumW - colCodeW, tx);
+                        g.DrawString(rowNum.ToString(),            fontBody, Brushes.Black,  left, tx);
+                    }
+                    else
+                    {
+                        g.DrawString(item.ProductName,             fontBody, Brushes.Black,  right - colNumW - colProdW, tx);
+                        g.DrawString(item.Quantity.ToString("N0"), fontBold, Brushes.Black,  right - colNumW - colProdW - colQtyW, tx);
+                        g.DrawString(item.UnitPrice.ToString("N2"),fontBody, Brushes.Black,  right - colNumW - colProdW - colQtyW - colPriceW, tx);
+                        g.DrawString(tot.ToString("N2"),           fontBold, Brushes.Black,  right - colNumW - colProdW - colQtyW - colPriceW - colTotW, tx);
+                    }
+
+                    y += rowH;
+                    g.DrawLine(penLight, left, y - 2, right, y - 2);
                     itemIdx++;
 
-                    if (y > e.MarginBounds.Bottom - 50)
+                    if (y > e.MarginBounds.Bottom - 60)
                     {
                         e.HasMorePages = true;
                         return;
                     }
                 }
 
-                g.DrawLine(Pens.Black, left, y, right, y);
-                y += 10;
+                // ── Totals & Summary Block ───────────────────
+                y += (isReceipt ? 6 : 10);
+                g.DrawLine(penDark, left, y, right, y);
+                y += (isReceipt ? 6 : 10);
 
                 decimal disc = 0m;
                 decimal.TryParse(txtDiscount.Text, out disc);
                 decimal net = Math.Max(0m, gross - disc);
 
-                g.DrawString($"الإجمالي العام: {net:N2} ج", fontBold, Brushes.Black, left, y);
-                y += 25;
-                g.DrawString("* الأسعار الاسترشادية المدونة أعلاه غير شاملة أي حجز للمخزون.", fontBody, Brushes.Gray, left, y);
+                if (disc > 0)
+                {
+                    g.DrawString($"إجمالي البضاعة: {gross:N2} ج", fontBody, Brushes.Black, left, y); y += 18;
+                    g.DrawString($"الخصم: {disc:N2} ج", fontBody, Brushes.DarkRed, left, y); y += 18;
+                }
+
+                g.DrawString($"الصافي النهائي للمطالبة: {net:N2} ج", fontBold, Brushes.Black, left, y);
+                y += 24;
+
+                // ── Disclaimer Box ──────────────────────────
+                g.DrawLine(penLight, left, y, right, y);
+                y += 6;
+                string noteStr = "* ملاحظة هامة: تعتبر هذه الفاتورة بياناً تقديرياً وعرض أسعار استرشادي للعميل، ولا خصم للمخزون إلا بعد الاعتماد وإصدار إذن التحضير.";
+                g.DrawString(noteStr, fontBody, Brushes.DarkSlateGray, left, y);
+
+                brushDarkBlue.Dispose(); brushHeaderBg.Dispose();
+                brushRowAlt.Dispose(); penLight.Dispose(); penDark.Dispose();
             };
 
             try
