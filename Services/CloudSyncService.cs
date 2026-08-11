@@ -254,7 +254,10 @@ namespace ChickenDist.Services
             }
             catch (Exception ex)
             {
-                AppLogger.Error("فشل رفع التقارير المباشرة لـ Firestore", ex, "PushLiveStatsToFirestoreAsync");
+                if (!(ex is TaskCanceledException || ex is OperationCanceledException || ex is System.Net.Http.HttpRequestException))
+                {
+                    AppLogger.Error("فشل رفع التقارير المباشرة لـ Firestore", ex, "PushLiveStatsToFirestoreAsync");
+                }
                 return false;
             }
         }

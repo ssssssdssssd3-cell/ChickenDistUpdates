@@ -487,6 +487,7 @@ namespace ChickenDist.Forms
         }
 
         // =========================================================================
+        // =========================================================================
         // DATA LOADING & ACTIONS
         // =========================================================================
         private void LoadMasterData()
@@ -494,14 +495,14 @@ namespace ChickenDist.Forms
             LoadEntitiesForCategory();
 
             // Safes & Bank Accounts
-            var dtAcc = DbHelper.Query("SELECT SafeID, SafeName FROM Safes WHERE IsActive=1 ORDER BY SafeName");
+            var dtAcc = AccountDAL.GetActiveSafeAccounts();
             cboAccountSafe.Items.Clear();
             cboTransferFrom.Items.Clear();
             cboTransferTo.Items.Clear();
 
             foreach (DataRow r in dtAcc.Rows)
             {
-                var ci = new ComboItem((int)r["SafeID"], r["SafeName"].ToString());
+                var ci = new ComboItem((int)r["AccountID"], r["AccountName"].ToString());
                 cboAccountSafe.Items.Add(ci);
                 cboTransferFrom.Items.Add(ci);
                 cboTransferTo.Items.Add(ci);
@@ -553,21 +554,19 @@ namespace ChickenDist.Forms
         private void LoadExpensesReport()
         {
             var dt = DbHelper.Query(
-                @"SELECT PaymentID AS [رقم السند], PaymentDate AS [التاريخ والوقت], 
-                         CASE WHEN SupplierID IS NOT NULL THEN N'صرف لمورد' 
-                              WHEN ClientID IS NOT NULL THEN N'صرف لعميل' 
+                @"SELECT e.ExpenseID AS [رقم السند], e.ExpenseDate AS [التاريخ والوقت], 
+                         CASE WHEN e.SupplierID IS NOT NULL THEN N'صرف لمورد' 
                               ELSE N'مصروف إداري' END AS [نوع السند],
-                         COALESCE(s.SupplierName, c.ClientName, N'مصروفات عامة') AS [الجهة],
-                         Amount AS [المبلغ], 
-                         PaymentType AS [طريقة الدفع], 
-                         sf.SafeName AS [الخزنة / الحساب], 
-                         Notes AS [البيان والملاحظات]
-                  FROM Payments p
-                  LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
-                  LEFT JOIN Clients c ON p.ClientID = c.ClientID
-                  LEFT JOIN Safes sf ON p.SafeID = sf.SafeID
-                  WHERE PaymentDate BETWEEN @f AND @t
-                  ORDER BY PaymentID DESC",
+                         COALESCE(s.SupplierName, N'مصروفات عامة') AS [الجهة],
+                         e.Amount AS [المبلغ], 
+                         e.ExpenseType AS [طريقة الدفع/البند], 
+                         sa.AccountName AS [الخزنة / الحساب], 
+                         e.Notes AS [البيان والملاحظات]
+                  FROM Expenses e
+                  LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID
+                  LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
+                  WHERE e.ExpenseDate BETWEEN @f AND @t
+                  ORDER BY e.ExpenseID DESC",
                 DbHelper.P("@f", dtpExpFrom.Value.Date),
                 DbHelper.P("@t", dtpExpTo.Value.Date.AddDays(1).AddSeconds(-1)));
 
@@ -582,21 +581,19 @@ namespace ChickenDist.Forms
         private void LoadReceiptsReport()
         {
             var dt = DbHelper.Query(
-                @"SELECT CollectionID AS [رقم السند], CollectionDate AS [التاريخ والوقت], 
-                         CASE WHEN ClientID IS NOT NULL THEN N'قبض من عميل' 
-                              WHEN SupplierID IS NOT NULL THEN N'توريد من مورد' 
+                @"SELECT cb.CashID AS [رقم السند], cb.TransDate AS [التاريخ والوقت], 
+                         CASE WHEN cb.TransType = 'ClientPayment' THEN N'قبض من عميل' 
+                              WHEN cb.TransType = 'Deposit' THEN N'توريد نقدية' 
                               ELSE N'توريد عام' END AS [نوع السند],
-                         COALESCE(c.ClientName, s.SupplierName, N'توريد عام') AS [الجهة],
-                         Amount AS [المبلغ], 
-                         PaymentType AS [طريقة الدفع], 
-                         sf.SafeName AS [الخزنة / الحساب], 
-                         Notes AS [البيان والملاحظات]
-                  FROM Collections col
-                  LEFT JOIN Clients c ON col.ClientID = c.ClientID
-                  LEFT JOIN Suppliers s ON col.SupplierID = s.SupplierID
-                  LEFT JOIN Safes sf ON col.SafeID = sf.SafeID
-                  WHERE CollectionDate BETWEEN @f AND @t
-                  ORDER BY CollectionID DESC",
+                         cb.Notes AS [الجهة والبيان],
+                         cb.AmountIn AS [المبلغ], 
+                         cb.TransType AS [طريقة الدفع], 
+                         sa.AccountName AS [الخزنة / الحساب], 
+                         cb.Notes AS [البيان والملاحظات]
+                  FROM CashBox cb
+                  LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                  WHERE cb.AmountIn > 0 AND cb.TransDate BETWEEN @f AND @t
+                  ORDER BY cb.CashID DESC",
                 DbHelper.P("@f", dtpRecFrom.Value.Date),
                 DbHelper.P("@t", dtpRecTo.Value.Date.AddDays(1).AddSeconds(-1)));
 
@@ -620,11 +617,12 @@ namespace ChickenDist.Forms
             // Totals
             decimal safesTotal = 0m, banksTotal = 0m;
 
-            var dtSafes = DbHelper.Query("SELECT SafeName, Balance, SafeType FROM Safes WHERE IsActive=1");
+            var dtSafes = AccountDAL.GetActiveSafeAccounts();
             foreach (DataRow r in dtSafes.Rows)
             {
-                decimal bal = r["Balance"] != DBNull.Value ? Convert.ToDecimal(r["Balance"]) : 0m;
-                string type = r["SafeType"]?.ToString() ?? "";
+                int accId = Convert.ToInt32(r["AccountID"]);
+                decimal bal = AccountDAL.GetCashBalance(accId);
+                string type = r["AccountType"]?.ToString() ?? "";
                 if (type.Contains("Bank")) banksTotal += bal;
                 else safesTotal += bal;
             }
@@ -634,12 +632,16 @@ namespace ChickenDist.Forms
             lblTotalLiquidityVal.Text = $"{(safesTotal + banksTotal):N2} ج";
 
             var dtMovements = DbHelper.Query(
-                @"SELECT TransactionID AS [رقم الحركة], TransactionDate AS [التاريخ والوقت],
-                         sf.SafeName AS [الخزنة / الحساب], TransactionType AS [نوع الحركة],
-                         Amount AS [المبلغ], Description AS [البيان التفصيلي]
-                  FROM SafeTransactions st
-                  JOIN Safes sf ON st.SafeID = sf.SafeID
-                  ORDER BY TransactionID DESC");
+                @"SELECT cb.CashID AS [رقم الحركة], cb.TransDate AS [التاريخ والوقت],
+                         COALESCE(sa.AccountName, N'الخزنة الرئيسية') AS [الخزنة / الحساب],
+                         cb.TransType AS [نوع الحركة],
+                         cb.AmountIn AS [إيداع/قبض],
+                         cb.AmountOut AS [صرف/سحب],
+                         (cb.AmountIn - cb.AmountOut) AS [الصافي],
+                         cb.Notes AS [البيان التفصيلي]
+                  FROM CashBox cb
+                  LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                  ORDER BY cb.CashID DESC");
             dgAccountMovements.DataSource = dtMovements;
         }
 
@@ -665,17 +667,16 @@ namespace ChickenDist.Forms
                 totalSales = Convert.ToDecimal(dtSales.Rows[0]["TotalSales"]);
             }
 
-            // Current Stock Values
-            var dtStock = DbHelper.Query(
-                @"SELECT ISNULL(SUM(StockQuantity * COALESCE(PurchasePrice,0)), 0) AS CostVal,
-                         ISNULL(SUM(StockQuantity * COALESCE(SellingPrice,0)), 0) AS RetailVal
-                  FROM Products WHERE IsActive=1");
-
+            // Current Stock Values using InventoryDAL.GetStock
+            DataTable dtStock = InventoryDAL.GetStock(maxRows: 5000);
             decimal stockCost = 0m, stockRetail = 0m;
-            if (dtStock.Rows.Count > 0)
+            foreach (DataRow r in dtStock.Rows)
             {
-                stockCost = Convert.ToDecimal(dtStock.Rows[0]["CostVal"]);
-                stockRetail = Convert.ToDecimal(dtStock.Rows[0]["RetailVal"]);
+                decimal bq = r["BookQty"] != DBNull.Value ? Convert.ToDecimal(r["BookQty"]) : 0m;
+                decimal pp = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                decimal sp = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                stockCost += bq * pp;
+                stockRetail += bq * sp;
             }
 
             lblCogsVal.Text = $"{cogs:N2} ج";
@@ -685,8 +686,11 @@ namespace ChickenDist.Forms
 
             // Adjustments
             var dtAdj = DbHelper.Query(
-                @"SELECT InventoryID AS [رقم التسوية], InventoryDate AS [تاريخ الجرد], Notes AS [ملاحظات التسوية]
-                  FROM Inventory WHERE Notes IS NOT NULL ORDER BY InventoryID DESC");
+                @"SELECT it.TransID AS [رقم التسوية], it.TransDate AS [تاريخ الحركة], p.ProductName AS [الصنف], it.TransType AS [نوع الحركة], it.Quantity AS [الكمية], it.Notes AS [ملاحظات التسوية]
+                  FROM InventoryTransactions it
+                  LEFT JOIN Products p ON it.ProductID = p.ProductID
+                  WHERE it.TransType IN ('Adjustment', 'Inventory', 'InitialStock', 'Damage')
+                  ORDER BY it.TransID DESC");
             dgInventoryAdjustments.DataSource = dtAdj;
         }
 
@@ -712,39 +716,32 @@ namespace ChickenDist.Forms
             }
 
             int safeID = (cboAccountSafe.SelectedItem is ComboItem cs && cs.ID > 0) ? cs.ID : 1;
-            string payType = cboPayMethod.SelectedItem?.ToString() ?? "Cash";
 
             try
             {
                 if (isExpense)
                 {
-                    DbHelper.Execute(
-                        @"INSERT INTO Payments (SupplierID, ClientID, Amount, PaymentDate, Notes, SafeID, PaymentType)
-                          VALUES (@sid, @cid, @amt, GETDATE(), @notes, @safeId, @payType)",
-                        DbHelper.P("@sid", supplierID), DbHelper.P("@cid", clientID), DbHelper.P("@amt", amt),
-                        DbHelper.P("@notes", txtNotes.Text), DbHelper.P("@safeId", safeID), DbHelper.P("@payType", payType));
-
-                    DbHelper.Execute("UPDATE Safes SET Balance = ISNULL(Balance,0) - @amt WHERE SafeID = @safeId", DbHelper.P("@amt", amt), DbHelper.P("@safeId", safeID));
-
-                    DbHelper.Execute(@"INSERT INTO SafeTransactions (SafeID, TransactionType, Amount, Description, TransactionDate)
-                                       VALUES (@safeId, 'Expense', @amt, @desc, GETDATE())",
-                                       DbHelper.P("@safeId", safeID), DbHelper.P("@amt", amt), DbHelper.P("@desc", "سند صرف: " + txtNotes.Text));
+                    if (supplierID.HasValue)
+                    {
+                        SupplierDAL.AddSupplierPayment(supplierID.Value, amt, txtNotes.Text);
+                    }
+                    else
+                    {
+                        AccountDAL.SaveExpense(0, DateTime.Now, category, amt, txtNotes.Text, supplierID, null, safeID);
+                    }
 
                     MessageBox.Show("✅ تم حفظ وإصدار سند الصرف بنجاح وتحديث الحسابات!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    DbHelper.Execute(
-                        @"INSERT INTO Collections (ClientID, SupplierID, Amount, CollectionDate, Notes, SafeID, PaymentType)
-                          VALUES (@cid, @sid, @amt, GETDATE(), @notes, @safeId, @payType)",
-                        DbHelper.P("@cid", clientID), DbHelper.P("@sid", supplierID), DbHelper.P("@amt", amt),
-                        DbHelper.P("@notes", txtNotes.Text), DbHelper.P("@safeId", safeID), DbHelper.P("@payType", payType));
-
-                    DbHelper.Execute("UPDATE Safes SET Balance = ISNULL(Balance,0) + @amt WHERE SafeID = @safeId", DbHelper.P("@amt", amt), DbHelper.P("@safeId", safeID));
-
-                    DbHelper.Execute(@"INSERT INTO SafeTransactions (SafeID, TransactionType, Amount, Description, TransactionDate)
-                                       VALUES (@safeId, 'Collection', @amt, @desc, GETDATE())",
-                                       DbHelper.P("@safeId", safeID), DbHelper.P("@amt", amt), DbHelper.P("@desc", "سند قبض/توريد: " + txtNotes.Text));
+                    if (clientID.HasValue)
+                    {
+                        ClientDAL.AddPayment(clientID.Value, amt, txtNotes.Text, safeID);
+                    }
+                    else
+                    {
+                        AccountDAL.SaveCashReceipt(null, amt, DateTime.Now, txtNotes.Text, safeID);
+                    }
 
                     MessageBox.Show("✅ تم حفظ وإصدار سند القبض / التوريد بنجاح وتحديث الحسابات!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -776,17 +773,7 @@ namespace ChickenDist.Forms
 
             try
             {
-                // Record transfer out & transfer in
-                DbHelper.Execute("UPDATE Safes SET Balance = Balance - @a WHERE SafeID=@id", DbHelper.P("@a", amt), DbHelper.P("@id", cFrom.ID));
-                DbHelper.Execute("UPDATE Safes SET Balance = Balance + @a WHERE SafeID=@id", DbHelper.P("@a", amt), DbHelper.P("@id", cTo.ID));
-
-                DbHelper.Execute(@"INSERT INTO SafeTransactions (SafeID, TransactionType, Amount, Description, TransactionDate)
-                                   VALUES (@id, 'TransferOut', @a, @desc, GETDATE())",
-                                   DbHelper.P("@id", cFrom.ID), DbHelper.P("@a", amt), DbHelper.P("@desc", $"تحويل صادرة إلى: {cTo.Text} - {txtTransferNotes.Text}"));
-
-                DbHelper.Execute(@"INSERT INTO SafeTransactions (SafeID, TransactionType, Amount, Description, TransactionDate)
-                                   VALUES (@id, 'TransferIn', @a, @desc, GETDATE())",
-                                   DbHelper.P("@id", cTo.ID), DbHelper.P("@a", amt), DbHelper.P("@desc", $"تحويل واردة من: {cFrom.Text} - {txtTransferNotes.Text}"));
+                AccountDAL.TransferFunds(cFrom.ID, cTo.ID, amt, txtTransferNotes.Text);
 
                 MessageBox.Show("✅ تم تنفيذ التحويل الفوري بنجاح وتحديث أرصدة الخزائن والحسابات!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 txtTransferAmount.Text = "0.00";
