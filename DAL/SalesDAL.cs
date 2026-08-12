@@ -2603,13 +2603,56 @@ namespace ChickenDist.DAL
             query += " ORDER BY s.SaleDate DESC, s.SaleID DESC";
 
             return DbHelper.Query(query,
-                DbHelper.P("@f", from.Date),
-                DbHelper.P("@t", to.Date),
+                DbHelper.P("@f", from),
+                DbHelper.P("@t", to),
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                 DbHelper.P("@productID", productID.HasValue ? (object)productID.Value : DBNull.Value),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
                 DbHelper.P("@saleType", !string.IsNullOrEmpty(saleType) ? (object)saleType : DBNull.Value));
         }
+
+        public static DataTable GetClientItemizedStatement(DateTime from, DateTime to, int? clientID, int? warehouseID = null)
+        {
+            string query = @"
+                SELECT 
+                    p.ProductCode AS [كود الصنف],
+                    p.ProductName AS [اسم الصنف],
+                    ISNULL(p.Unit, N'قطعة') AS [الوحدة],
+                    ISNULL(SUM(si.Quantity), 0) AS [إجمالي المبيعات],
+                    ISNULL(SUM(ret.ReturnQty), 0) AS [إجمالي المرتجع],
+                    (ISNULL(SUM(si.Quantity), 0) - ISNULL(SUM(ret.ReturnQty), 0)) AS [صافي الكمية],
+                    CASE WHEN ISNULL(SUM(si.Quantity), 0) > 0 
+                         THEN ROUND(SUM(si.TotalPrice) / SUM(si.Quantity), 2)
+                         ELSE p.SalePrice 
+                    END AS [متوسط السعر],
+                    (ISNULL(SUM(si.TotalPrice), 0) - ISNULL(SUM(ret.ReturnTotal), 0)) AS [صافي المبلغ]
+                FROM SaleItems si
+                JOIN Sales s ON si.SaleID = s.SaleID
+                JOIN Products p ON si.ProductID = p.ProductID
+                LEFT JOIN (
+                    SELECT ri.ProductID, r.ClientID, SUM(ri.Quantity) AS ReturnQty, SUM(ri.TotalPrice) AS ReturnTotal
+                    FROM ReturnItems ri
+                    JOIN Returns r ON ri.ReturnID = r.ReturnID
+                    WHERE r.IsPosted = 1
+                      AND r.ReturnDate BETWEEN @f AND @t
+                      AND (@clientID IS NULL OR r.ClientID = @clientID)
+                    GROUP BY ri.ProductID, r.ClientID
+                ) ret ON ret.ProductID = si.ProductID AND ret.ClientID = s.ClientID
+                WHERE s.IsPosted = 1
+                  AND s.SaleDate BETWEEN @f AND @t
+                  AND (@clientID IS NULL OR s.ClientID = @clientID)
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY p.ProductCode, p.ProductName, p.Unit, p.SalePrice
+                HAVING (ISNULL(SUM(si.Quantity), 0) - ISNULL(SUM(ret.ReturnQty), 0)) <> 0 OR ISNULL(SUM(si.TotalPrice), 0) <> 0
+                ORDER BY [صافي المبلغ] DESC";
+
+            return DbHelper.Query(query,
+                DbHelper.P("@f", from),
+                DbHelper.P("@t", to),
+                DbHelper.P("@clientID", clientID.HasValue && clientID.Value > 0 ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@warehouseID", warehouseID.HasValue && warehouseID.Value > 0 ? (object)warehouseID.Value : DBNull.Value));
+        }
+
 
         public static DataTable GetSupplierItemActivityReport(DateTime from, DateTime to, int? supplierID, string producerCompany, string searchTerm)
         {

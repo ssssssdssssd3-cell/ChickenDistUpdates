@@ -16,7 +16,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudOpening, nudCreditLimit, nudOpeningCrates;
         private ComboBox cmbDriver, cmbPriceTier, cmbPaymentType;
         private CheckBox chkActive;
-        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport;
+        private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement;
         private Label lblBalance;
         private int _selectedID = 0;
 
@@ -199,8 +199,9 @@ namespace ChickenDist.Forms
             btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Theme.Danger); y += 44;
             btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Theme.Success);
             btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Theme.Secondary);
-            btnStatement = Theme.MakeButton("📄 كشف", 10, y, 95, 32, Theme.Primary); y += 44;
-            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 290, 32, Theme.Accent); y += 44;
+            btnStatement = Theme.MakeButton("📄 كشف مالي", 10, y, 95, 32, Theme.Primary); y += 44;
+            btnItemizedStatement = Theme.MakeButton("📦 كشف أصناف العميل", 160, y, 140, 32, Color.FromArgb(20, 100, 160));
+            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 140, 32, Theme.Accent); y += 44;
  
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -209,8 +210,14 @@ namespace ChickenDist.Forms
             btnPayment.Click += BtnPayment_Click;
             btnAdjustment.Click += BtnAdjustment_Click;
             btnSalesReport.Click += BtnSalesReport_Click;
+            btnItemizedStatement.Click += (s, e) =>
+            {
+                if (_selectedID == 0) { MessageBox.Show("اختر عميلاً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+                new FrmClientStatement(_selectedID, txtName.Text, initialTab: 1).ShowDialog();
+            };
  
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport });
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement });
+
             
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
@@ -424,10 +431,31 @@ namespace ChickenDist.Forms
         private void BtnPayment_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0) { MessageBox.Show("اختر عميلاً أولاً"); return; }
-            var frm = new FrmPayment(_selectedID, txtName.Text);
-            if (frm.ShowDialog() == DialogResult.OK)
+            var dlg = new Form
+            {
+                Width = 380, Height = 230,
+                Text = "تحصيل نقدية من العميل",
+                StartPosition = FormStartPosition.CenterParent,
+                RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
+                BackColor = Theme.BgCard, Font = Theme.FontMain
+            };
+            var lbl = new Label { Text = $"👤 العميل: {txtName.Text}\n💰 أدخل المبلغ المحصل (ج.م):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
+            var nud = new NumericUpDown { Location = new Point(15, 55), Width = 330, Minimum = 0.01m, Maximum = 9999999m, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f) };
+            var txtNotes = new TextBox { Location = new Point(15, 95), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 185, 135, 160, 36, Theme.Success);
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 15, 135, 150, 36, Theme.Danger);
+            btnSave.Click += (s2, e2) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+            btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+            dlg.Controls.AddRange(new Control[] { lbl, nud, txtNotes, btnSave, btnCancel });
+
+            if (dlg.ShowDialog(this) == DialogResult.OK && nud.Value > 0)
+            {
+                ClientDAL.AddPayment(_selectedID, nud.Value, txtNotes.Text.Trim());
+                new FrmPrintClientPayment(_selectedID, nud.Value, txtNotes.Text.Trim(), null, txtName.Text);
                 LoadClients();
+            }
         }
+
 
         private void BtnAdjustment_Click(object sender, EventArgs e)
         {
