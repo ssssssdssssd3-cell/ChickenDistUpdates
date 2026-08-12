@@ -4686,6 +4686,108 @@ namespace ChickenDist.Forms
 			}
 		}
 
+		public static void SendSaleInvoiceWhatsApp(int saleID, Form parent = null)
+		{
+			try
+			{
+				DataTable dtSale = DbHelper.Query("SELECT s.*, c.ClientName, c.Phone AS ClientPhone, c.Phone2 AS ClientPhone2 FROM Sales s LEFT JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID=@id", DbHelper.P("@id", saleID));
+				if (dtSale == null || dtSale.Rows.Count == 0)
+				{
+					MessageBox.Show("لم يتم العثور على الفاتورة المحددة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					return;
+				}
+				DataRow sRow = dtSale.Rows[0];
+
+				int clientID = sRow["ClientID"] != DBNull.Value ? Convert.ToInt32(sRow["ClientID"]) : 0;
+				string clientPhone = sRow.Table.Columns.Contains("ClientPhone") && sRow["ClientPhone"] != DBNull.Value ? sRow["ClientPhone"].ToString() : "";
+				if (string.IsNullOrWhiteSpace(clientPhone) && sRow.Table.Columns.Contains("ClientPhone2") && sRow["ClientPhone2"] != DBNull.Value)
+					clientPhone = sRow["ClientPhone2"].ToString();
+				string clientName = sRow.Table.Columns.Contains("ClientName") && sRow["ClientName"] != DBNull.Value ? sRow["ClientName"].ToString() : "";
+
+				if (clientID > 0)
+				{
+					DataRow cRow = ClientDAL.GetByID(clientID);
+					if (cRow != null)
+					{
+						clientPhone = cRow["Phone"] != DBNull.Value ? cRow["Phone"].ToString() : "";
+						if (string.IsNullOrWhiteSpace(clientPhone) && cRow.Table.Columns.Contains("Phone2") && cRow["Phone2"] != DBNull.Value)
+							clientPhone = cRow["Phone2"].ToString();
+					}
+				}
+
+				if (string.IsNullOrWhiteSpace(clientPhone))
+				{
+					using (var inputDlg = new Form())
+					{
+						inputDlg.Text = "📱 أدخل رقم الواتساب للعميل";
+						inputDlg.Size = new Size(380, 160);
+						inputDlg.StartPosition = FormStartPosition.CenterParent;
+						inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+						inputDlg.MaximizeBox = false; inputDlg.MinimizeBox = false;
+						inputDlg.RightToLeft = RightToLeft.Yes;
+						inputDlg.BackColor = Theme.BgMain;
+						inputDlg.Font = Theme.FontMain;
+
+						var lbl = new Label { Text = $"رقم موبايل/واتساب العميل ({clientName}):", Location = new Point(15, 15), AutoSize = true, ForeColor = Theme.TextMain };
+						var txt = new TextBox { Location = new Point(15, 40), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+						var btn = Theme.MakeButton("إرسال الآن 📱", 200, 75, 145, 30, Theme.Success);
+						btn.Click += (s, e) => { inputDlg.DialogResult = DialogResult.OK; inputDlg.Close(); };
+
+						inputDlg.Controls.AddRange(new Control[] { lbl, txt, btn });
+						if (inputDlg.ShowDialog(parent) == DialogResult.OK)
+						{
+							clientPhone = txt.Text.Trim();
+						}
+					}
+				}
+
+				if (string.IsNullOrWhiteSpace(clientPhone))
+				{
+					MessageBox.Show("لم يتم إدخال رقم واتساب إرسال الفاتورة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					return;
+				}
+
+				string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+				string saleCode = sRow["SaleCode"]?.ToString() ?? "";
+				string saleDate = Convert.ToDateTime(sRow["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
+				decimal totalAmount = Convert.ToDecimal(sRow["TotalAmount"]);
+
+				DataTable items = SaleDAL.GetItems(saleID);
+				var sb = new System.Text.StringBuilder();
+				sb.AppendLine($"🧾 *فاتورة مبيعات - {shopName}*");
+				sb.AppendLine($"رقم الفاتورة: #{saleCode}");
+				sb.AppendLine($"التاريخ: {saleDate}");
+				sb.AppendLine($"العميل: {clientName}");
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
+				sb.AppendLine("📦 *الأصناف والمسحوبات:*");
+
+				foreach (DataRow item in items.Rows)
+				{
+					string pName = item["ProductName"]?.ToString() ?? "";
+					decimal qty = Convert.ToDecimal(item["Quantity"]);
+					decimal price = Convert.ToDecimal(item["UnitPrice"]);
+					decimal total = Convert.ToDecimal(item["TotalPrice"]);
+					sb.AppendLine($"• {pName} × {qty:0.##} = {total:N2} ج.م");
+				}
+
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
+				sb.AppendLine($"💰 *إجمالي الفاتورة:* {totalAmount:N2} ج.م");
+
+				if (clientID > 0)
+				{
+					decimal clientBalance = ClientDAL.GetBalance(clientID);
+					sb.AppendLine($"⚖️ *رصيد الحساب الحالي:* {clientBalance:N2} ج.م");
+				}
+				sb.AppendLine("🙏 شكراً لتعاملكم معنا!");
+
+				SendWhatsApp(clientPhone, sb.ToString());
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"❌ فشل إرسال الفاتورة عبر الواتساب: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
 		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance = 0m)
 		{
 			int itemCount = items != null ? items.Rows.Count : 0;

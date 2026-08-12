@@ -272,6 +272,209 @@ namespace ChickenDist.Forms
 					Tag = item2,
 					BackColor = Theme.BgMain
 				};
+				if (item2 == "DetailedSales")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 2,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 55f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 45f));
+
+					DataGridView dgDetailedSales = new DataGridView
+					{
+						Name = "dgDetailedSales",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgDetailedSales, 0, 0);
+
+					TableLayoutPanel tblBottom = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 2,
+						RowCount = 1,
+						RightToLeft = RightToLeft.Yes,
+						Margin = new Padding(0, 4, 0, 0)
+					};
+					tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f));
+					tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+					tblBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+					FlowLayoutPanel pnlActionButtons = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						FlowDirection = FlowDirection.TopDown,
+						BackColor = Theme.BgCard,
+						Padding = new Padding(10, 8, 10, 8),
+						WrapContents = false,
+						AutoScroll = true
+					};
+
+					var btnPrintReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري", Theme.Primary);
+					btnPrintReceipt.Size = new Size(195, 34);
+					btnPrintReceipt.Margin = new Padding(0, 0, 0, 8);
+
+					var btnPrintA4 = Theme.MakeButton("📄 طباعة فاتورة (A4/A5)", Color.FromArgb(40, 120, 180));
+					btnPrintA4.Size = new Size(195, 34);
+					btnPrintA4.Margin = new Padding(0, 0, 0, 8);
+
+					var btnSendWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
+					btnSendWhatsApp.Size = new Size(195, 34);
+					btnSendWhatsApp.ForeColor = Color.White;
+					btnSendWhatsApp.Margin = new Padding(0, 0, 0, 12);
+
+					Label lblItemsHeader = new Label
+					{
+						Text = "📦 الأصناف المسحوبة بالفاتورة:",
+						Size = new Size(195, 40),
+						ForeColor = Theme.TextSub,
+						Font = Theme.FontBold,
+						TextAlign = ContentAlignment.TopRight
+					};
+
+					pnlActionButtons.Controls.AddRange(new Control[] { btnPrintReceipt, btnPrintA4, btnSendWhatsApp, lblItemsHeader });
+
+					DataGridView dgDetailedSaleItems = new DataGridView
+					{
+						Name = "dgDetailedSaleItems",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Color.FromArgb(40, 60, 90),
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 32,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+
+					dgDetailedSaleItems.Columns.Add("ProductName", "اسم الصنف");
+					dgDetailedSaleItems.Columns.Add("Quantity", "الكمية");
+					dgDetailedSaleItems.Columns.Add("UnitPrice", "سعر الوحدة");
+					dgDetailedSaleItems.Columns.Add("Discount", "الخصم");
+					dgDetailedSaleItems.Columns.Add("TotalPrice", "الإجمالي");
+
+					tblBottom.Controls.Add(pnlActionButtons, 0, 0);
+					tblBottom.Controls.Add(dgDetailedSaleItems, 1, 0);
+					layout.Controls.Add(tblBottom, 0, 1);
+
+					dgDetailedSales.SelectionChanged += (s, e) =>
+					{
+						dgDetailedSaleItems.Rows.Clear();
+						if (dgDetailedSales.SelectedRows.Count == 0) return;
+						int saleID = 0;
+						if (dgDetailedSales.Columns.Contains("SaleID") && dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value != null)
+						{
+							int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value.ToString(), out saleID);
+						}
+						if (saleID > 0)
+						{
+							DataTable items = SaleDAL.GetItems(saleID);
+							foreach (DataRow r in items.Rows)
+							{
+								string pName = r["ProductName"]?.ToString() ?? "";
+								string qty = Convert.ToDecimal(r["Quantity"]).ToString("N2");
+								string price = Convert.ToDecimal(r["UnitPrice"]).ToString("N2") + " ج";
+								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") : "-";
+								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
+								dgDetailedSaleItems.Rows.Add(pName, qty, price, disc, total);
+							}
+						}
+					};
+
+					btnPrintReceipt.Click += (s, e) =>
+					{
+						if (dgDetailedSales.SelectedRows.Count == 0 || !dgDetailedSales.Columns.Contains("SaleID")) return;
+						if (int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value?.ToString(), out int sid) && sid > 0)
+						{
+							new FrmPrintSale(sid, "Receipt", showPreview: false);
+						}
+						else
+						{
+							MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						}
+					};
+
+					btnPrintA4.Click += (s, e) =>
+					{
+						if (dgDetailedSales.SelectedRows.Count == 0 || !dgDetailedSales.Columns.Contains("SaleID")) return;
+						if (int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value?.ToString(), out int sid) && sid > 0)
+						{
+							new FrmPrintSale(sid, "A4", showPreview: true);
+						}
+						else
+						{
+							MessageBox.Show("من فضلك اختر الفاتورة المراد طباعتها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						}
+					};
+
+					btnSendWhatsApp.Click += (s, e) =>
+					{
+						if (dgDetailedSales.SelectedRows.Count == 0 || !dgDetailedSales.Columns.Contains("SaleID")) return;
+						if (int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value?.ToString(), out int sid) && sid > 0)
+						{
+							FrmSale.SendSaleInvoiceWhatsApp(sid, this);
+						}
+						else
+						{
+							MessageBox.Show("من فضلك اختر الفاتورة المراد إرسالها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						}
+					};
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
 				if (item2 == "ClientProductSales")
 				{
 					TableLayoutPanel layout = new TableLayoutPanel
@@ -877,6 +1080,7 @@ namespace ChickenDist.Forms
 					break;
 				case "DetailedSales":
 					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
+					var targetDgSales = tabReports.SelectedTab?.Controls.Find("dgDetailedSales", true).FirstOrDefault() as DataGridView ?? dataGridView;
 					SetupGrid(new(string, string)[10]
 					{
 						("SaleCode", "رقم الفاتورة"),
@@ -889,8 +1093,8 @@ namespace ChickenDist.Forms
 						("NetProfit", "الربح"),
 						("Notes", "الملاحظات"),
 						("SaleID", "معرف الفاتورة")
-					}, dataGridView);
-					if (dataGridView.Columns["SaleID"] != null) dataGridView.Columns["SaleID"].Visible = false;
+					}, targetDgSales);
+					if (targetDgSales.Columns["SaleID"] != null) targetDgSales.Columns["SaleID"].Visible = false;
 					break;
 				case "DetailedReturns":
 					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);

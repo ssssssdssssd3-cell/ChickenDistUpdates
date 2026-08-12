@@ -409,6 +409,22 @@ namespace ChickenDist.Forms
 			btnPrint.Click += BtnPrint_Click;
 			flowLayoutPanel2.Controls.Add(btnPrint);
 
+			var btnWhatsApp = Theme.MakeButton("📱 إعادة إرسال واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsApp.Size = new Size(190, 36);
+			btnWhatsApp.ForeColor = Color.White;
+			btnWhatsApp.Margin = new Padding(0, 0, 0, 8);
+			btnWhatsApp.Click += (s, e) =>
+			{
+				if (dgSales.SelectedRows.Count == 0 || !dgSales.Columns.Contains("SaleID"))
+				{
+					MessageBox.Show("من فضلك اختر الفاتورة المراد إرسالها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					return;
+				}
+				int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+				FrmSale.SendSaleInvoiceWhatsApp(saleID, this);
+			};
+			flowLayoutPanel2.Controls.Add(btnWhatsApp);
+
 			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
 			btnEdit.Size = new Size(190, 36);
 			btnEdit.Margin = new Padding(0, 0, 0, 8);
