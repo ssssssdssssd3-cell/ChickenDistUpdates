@@ -141,6 +141,12 @@ namespace ChickenDist.Forms
             // ── العنوان الرئيسي ──
             var pnlTitle = Theme.MakeTitleBar("📊 لوحة الحسابات العامة والقوائم المالية", "النظام المحاسبي الموحد: الموقف المالي، قائمة الدخل، الميزانية العمومية، والتسويات الدفترية");
             pnlTitle.Dock = DockStyle.Top;
+
+            var btnPrintPosition = Theme.MakeButton("🖨️ طباعة الموقف المالي للمكان", 15, 10, 230, 36, Theme.Primary);
+            btnPrintPosition.Click += BtnPrintFinancialPosition_Click;
+            pnlTitle.Controls.Add(btnPrintPosition);
+            btnPrintPosition.BringToFront();
+
             this.Controls.Add(pnlTitle);
 
             // ── TabControl الرئيسي ──
@@ -1093,6 +1099,207 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show($"❌ فشل تحميل الميزانية العمومية: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnPrintFinancialPosition_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // ضمان تحديث كافة الأرقام الحية قبل الطباعة
+                LoadDashboardData();
+
+                var pd = new System.Drawing.Printing.PrintDocument();
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+
+                pd.PrintPage += (s, ev) =>
+                {
+                    var g = ev.Graphics;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                    var titleFont        = new Font("Arial", 15, FontStyle.Bold);
+                    var subTitleFont     = new Font("Arial", 9.5f, FontStyle.Bold);
+                    var sectionFont      = new Font("Arial", 11, FontStyle.Bold);
+                    var cardTitleFont    = new Font("Arial", 9, FontStyle.Bold);
+                    var cardValFont      = new Font("Arial", 10.5f, FontStyle.Bold);
+                    var headerFont       = new Font("Arial", 9.5f, FontStyle.Bold);
+                    var dataFont         = new Font("Arial", 9f, FontStyle.Regular);
+                    var boldDataFont     = new Font("Arial", 9f, FontStyle.Bold);
+
+                    var borderPen       = new Pen(Color.FromArgb(15, 45, 90), 1.5f);
+                    var gridPen         = new Pen(Color.FromArgb(200, 210, 225), 1f);
+
+                    int y = 25;
+                    int leftMargin = 20;
+                    int rightMargin = 805;
+                    int tableWidth = rightMargin - leftMargin;
+
+                    var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+                    // ── 1. Title Header Block ──
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(240, 244, 252)), leftMargin, y, tableWidth, 55);
+                    g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 55);
+
+                    string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+                    g.DrawString($"تقرير الموقف والمركز المالي الشامل للمكان - {shopName}", titleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 26), sfCenter);
+                    g.DrawString($"تحليل السيولة النقدية والمخزونية والحقوق والالتزامات | تاريخ التقرير: {DateTime.Now:yyyy/MM/dd  hh:mm tt}", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 32, tableWidth, 18), sfCenter);
+                    y += 68;
+
+                    // ── 2. Key Financial Cards Grid (2 rows of 3 columns) ──
+                    g.DrawString("📌 أولاً: ملخص السيولة والموجودات والمطلوبات النقدية والمخزونية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    y += 26;
+
+                    int cardWidth = (tableWidth - 10) / 3;
+                    int cardHeight = 44;
+
+                    string[,] cards = {
+                        { "💵 إجمالي السيولة بالخزن", lblTotalCash.Text, "0" },
+                        { "📦 قيمة المخزون الحالي (شراء)", lblInventoryPurchase.Text, "1" },
+                        { "👥 مديونيات ومستحقات العملاء", lblClientReceivables.Text, "2" },
+                        { "🏢 مطلوبات وديون الموردين", lblSupplierPayables.Text, "3" },
+                        { "⚖️ رأس المال العامل الصافي", lblWorkingCapital.Text, "4" },
+                        { "📈 صافي أرباح الفترة الحالية", lblNetProfitDashboard.Text, "5" }
+                    };
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        int row = i / 3;
+                        int col = i % 3;
+                        int cx = leftMargin + (2 - col) * (cardWidth + 5);
+                        int cy = y + row * (cardHeight + 6);
+
+                        Color bgCol = (i == 0 || i == 4) ? Color.FromArgb(235, 245, 255) :
+                                      (i == 1 || i == 5) ? Color.FromArgb(235, 250, 240) :
+                                      (i == 2) ? Color.FromArgb(240, 248, 255) : Color.FromArgb(255, 240, 240);
+
+                        g.FillRectangle(new SolidBrush(bgCol), cx, cy, cardWidth, cardHeight);
+                        g.DrawRectangle(Pens.SteelBlue, cx, cy, cardWidth, cardHeight);
+
+                        g.DrawString(cards[i, 0], cardTitleFont, Brushes.DarkSlateGray, new RectangleF(cx, cy + 3, cardWidth, 16), sfCenter);
+                        g.DrawString(cards[i, 1], cardValFont, Brushes.DarkBlue, new RectangleF(cx, cy + 20, cardWidth, 20), sfCenter);
+                    }
+                    y += (cardHeight * 2) + 18;
+
+                    // ── 3. Ratios & Performance Indicators ──
+                    g.DrawString("⚡ ثانياً: مؤشرات الكفاءة والسيولة المالية للمكان", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    y += 24;
+
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(248, 249, 252)), leftMargin, y, tableWidth, 26);
+                    g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 26);
+
+                    int ratioColW = tableWidth / 5;
+                    string[] ratioNames = { "نسبة التداول", "نسبة السيولة السريعة", "دوران المخزون", "دوران العملاء", "دوران الموردين" };
+                    string[] ratioVals  = { lblCurrentRatio.Text, lblQuickRatio.Text, lblInvTurnover.Text, lblClientTurnover.Text, lblSupplierTurnover.Text };
+
+                    for (int r = 0; r < 5; r++)
+                    {
+                        int rx = leftMargin + (4 - r) * ratioColW;
+                        g.DrawString($"{ratioNames[r]}: {ratioVals[r]}", subTitleFont, Brushes.DarkSlateGray, new RectangleF(rx, y, ratioColW, 26), sfCenter);
+                        if (r > 0) g.DrawLine(gridPen, rx, y, rx, y + 26);
+                    }
+                    y += 34;
+
+                    // ── 4. Safe Accounts Liquidity Table ──
+                    g.DrawString("🏛️ ثالثاً: بيان تفصيلي بأرصدة الخزن والمحفظة النقدية والمصرفية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    y += 24;
+
+                    int[] safeCols = { leftMargin, leftMargin + 250, leftMargin + 450, rightMargin };
+                    string[] safeHeaders = { "اسم الخزينة / الحساب", "نوع الحساب", "الرصيد الحقيقي المتاح" };
+
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(15, 45, 90)), leftMargin, y, tableWidth, 24);
+                    g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 24);
+
+                    for (int k = 0; k < safeHeaders.Length; k++)
+                    {
+                        float cx = safeCols[k];
+                        float cw = safeCols[k + 1] - safeCols[k];
+                        g.DrawString(safeHeaders[k], headerFont, Brushes.White, new RectangleF(cx, y, cw, 24), sfCenter);
+                        if (k > 0) g.DrawLine(Pens.White, safeCols[k], y, safeCols[k], y + 24);
+                    }
+                    y += 24;
+
+                    foreach (DataGridViewRow row in dgSafes.Rows)
+                    {
+                        if (row.IsNewRow) continue;
+                        string sName = row.Cells[0].Value?.ToString() ?? "";
+                        string sType = row.Cells[1].Value?.ToString() ?? "";
+                        string sBal  = row.Cells[2].Value?.ToString() ?? "";
+
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(250, 252, 255)), leftMargin, y, tableWidth, 22);
+                        g.DrawRectangle(gridPen, leftMargin, y, tableWidth, 22);
+
+                        g.DrawString(sName, boldDataFont, Brushes.DarkSlateGray, new RectangleF(safeCols[0] + 8, y, safeCols[1] - safeCols[0] - 16, 22), sfRight);
+                        g.DrawString(sType, dataFont, Brushes.Black, new RectangleF(safeCols[1], y, safeCols[2] - safeCols[1], 22), sfCenter);
+                        g.DrawString(sBal,  boldDataFont, Brushes.DarkGreen, new RectangleF(safeCols[2], y, safeCols[3] - safeCols[2], 22), sfCenter);
+
+                        y += 22;
+                    }
+                    y += 18;
+
+                    // ── 5. Top Clients & Suppliers Tables (Side by Side) ──
+                    int halfWidth = (tableWidth - 15) / 2;
+
+                    g.DrawString("👥 كبار العملاء المدينين (حقوق المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(rightMargin - halfWidth, y, halfWidth, 20), sfRight);
+                    g.DrawString("🏢 كبار الموردين الدائنين (التزامات المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, halfWidth, 20), sfRight);
+                    y += 22;
+
+                    // Table headers
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(25, 80, 140)), rightMargin - halfWidth, y, halfWidth, 22);
+                    g.DrawRectangle(borderPen, rightMargin - halfWidth, y, halfWidth, 22);
+                    g.DrawString("اسم العميل", headerFont, Brushes.White, new RectangleF(rightMargin - halfWidth + 120, y, halfWidth - 120, 22), sfCenter);
+                    g.DrawString("الرصيد المدين", headerFont, Brushes.White, new RectangleF(rightMargin - halfWidth, y, 120, 22), sfCenter);
+
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(140, 40, 25)), leftMargin, y, halfWidth, 22);
+                    g.DrawRectangle(borderPen, leftMargin, y, halfWidth, 22);
+                    g.DrawString("اسم المورد", headerFont, Brushes.White, new RectangleF(leftMargin + 120, y, halfWidth - 120, 22), sfCenter);
+                    g.DrawString("الرصيد الدائن", headerFont, Brushes.White, new RectangleF(leftMargin, y, 120, 22), sfCenter);
+                    y += 22;
+
+                    int maxRows = Math.Max(dgTopClients.Rows.Count, dgTopSuppliers.Rows.Count);
+                    maxRows = Math.Min(maxRows, 7); // Show top 7
+
+                    for (int r = 0; r < maxRows; r++)
+                    {
+                        // Client Row
+                        if (r < dgTopClients.Rows.Count && !dgTopClients.Rows[r].IsNewRow)
+                        {
+                            string cName = dgTopClients.Rows[r].Cells[0].Value?.ToString() ?? "";
+                            string cBal  = dgTopClients.Rows[r].Cells[2].Value?.ToString() ?? "";
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(248, 252, 255)), rightMargin - halfWidth, y, halfWidth, 20);
+                            g.DrawRectangle(gridPen, rightMargin - halfWidth, y, halfWidth, 20);
+                            g.DrawString(cName, dataFont, Brushes.Black, new RectangleF(rightMargin - halfWidth + 120, y, halfWidth - 130, 20), sfRight);
+                            g.DrawString(cBal, boldDataFont, Brushes.DarkBlue, new RectangleF(rightMargin - halfWidth, y, 120, 20), sfCenter);
+                        }
+
+                        // Supplier Row
+                        if (r < dgTopSuppliers.Rows.Count && !dgTopSuppliers.Rows[r].IsNewRow)
+                        {
+                            string sName = dgTopSuppliers.Rows[r].Cells[0].Value?.ToString() ?? "";
+                            string sBal  = dgTopSuppliers.Rows[r].Cells[2].Value?.ToString() ?? "";
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(255, 248, 248)), leftMargin, y, halfWidth, 20);
+                            g.DrawRectangle(gridPen, leftMargin, y, halfWidth, 20);
+                            g.DrawString(sName, dataFont, Brushes.Black, new RectangleF(leftMargin + 120, y, halfWidth - 130, 20), sfRight);
+                            g.DrawString(sBal, boldDataFont, Brushes.DarkRed, new RectangleF(leftMargin, y, 120, 20), sfCenter);
+                        }
+                        y += 20;
+                    }
+
+                    // ── 6. Footer Signatures Block ──
+                    y = ev.PageBounds.Height - 75;
+                    g.DrawLine(borderPen, leftMargin, y, rightMargin, y);
+                    y += 8;
+
+                    g.DrawString("التوقيع والاعتماد المحاسبي: .......................................", subTitleFont, Brushes.DarkSlateGray, new RectangleF(rightMargin - 350, y, 350, 22), sfRight);
+                    g.DrawString("اعتماد إدارة المؤسسة: .......................................", subTitleFont, Brushes.DarkSlateGray, new RectangleF(leftMargin, y, 350, 22), sfRight);
+                };
+
+                var preview = new PrintPreviewDialog { Document = pd, Width = 1000, Height = 750 };
+                preview.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ فشل إعداد أو طباعة تقرير الموقف المالي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
