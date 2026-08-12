@@ -20,10 +20,14 @@ namespace ChickenDist.Forms
         private TabPage tabFinancial;
         private TabPage tabItemized;
 
-        // Financial Tab Controls
-        private DataGridView dgStatement;
+        // Shared Filter Controls
+        private ComboBox cmbClientSelector;
+        private bool _isLoadingCombo = false;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnLoad, btnPrint;
+
+        // Financial Tab Controls
+        private DataGridView dgStatement;
         private Label lblDebit, lblCredit, lblBalance;
         private DataTable _dt;
         private decimal _totalSales = 0;
@@ -39,12 +43,17 @@ namespace ChickenDist.Forms
         private Label lblItemizedCount, lblItemizedTotalQty, lblItemizedTotalAmount;
         private Button btnPrintItemized, btnWhatsAppItemized, btnExportItemizedExcel;
 
+        public FrmClientStatement() : this(0, "")
+        {
+        }
+
         public FrmClientStatement(int clientID, string clientName, int initialTab = 0)
         {
             _clientID = clientID;
             _clientName = clientName;
             _initialTab = initialTab;
             InitUI();
+            LoadClientsCombo();
             LoadStatement();
             LoadItemizedStatement();
 
@@ -56,15 +65,15 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "كشف حساب تفصيلي - " + _clientName;
-            this.Size = new Size(1020, 660);
+            this.Text = "كشف حساب تفصيلي - " + (!string.IsNullOrEmpty(_clientName) ? _clientName : "اختر العميل");
+            this.Size = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // Shared Date Filter Bar (Top)
+            // Shared Date & Client Filter Bar (Top)
             var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -74,10 +83,23 @@ namespace ChickenDist.Forms
                 WrapContents = false
             };
 
-            pnlFilter.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
+            pnlFilter.Controls.Add(new Label { Text = "👤 العميل:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
+            cmbClientSelector = new ComboBox
+            {
+                Width = 230,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f),
+                Margin = new Padding(2, 2, 0, 0)
+            };
+            cmbClientSelector.SelectedIndexChanged += CmbClientSelector_SelectedIndexChanged;
+            pnlFilter.Controls.Add(cmbClientSelector);
+
+            pnlFilter.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(12, 6, 0, 0) });
             dtpFrom = new DateTimePicker
             {
-                Width = 185,
+                Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
@@ -86,10 +108,10 @@ namespace ChickenDist.Forms
             dtpFrom.ValueChanged += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(dtpFrom);
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(12, 6, 0, 0) });
+            pnlFilter.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(10, 6, 0, 0) });
             dtpTo = new DateTimePicker
             {
-                Width = 185,
+                Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Now,
@@ -99,16 +121,21 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(dtpTo);
 
             btnLoad = Theme.MakeButton("🔄 تحديث العرض", Theme.Accent);
-            btnLoad.Size = new Size(120, 30);
-            btnLoad.Margin = new Padding(15, 0, 0, 0);
+            btnLoad.Size = new Size(115, 30);
+            btnLoad.Margin = new Padding(12, 0, 0, 0);
             btnLoad.Click += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(btnLoad);
 
             var btnCollect = Theme.MakeButton("💵 تحصيل نقدية", Theme.Success);
-            btnCollect.Size = new Size(130, 30);
-            btnCollect.Margin = new Padding(10, 0, 0, 0);
+            btnCollect.Size = new Size(125, 30);
+            btnCollect.Margin = new Padding(8, 0, 0, 0);
             btnCollect.Click += (s, e) =>
             {
+                if (_clientID <= 0)
+                {
+                    MessageBox.Show("اختر عميلاً أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 var dlg = new Form
                 {
                     Width = 380, Height = 230,
@@ -166,6 +193,56 @@ namespace ChickenDist.Forms
 
             this.Controls.Add(tblMain);
             Theme.ApplyFormRTL(this);
+        }
+
+        private void LoadClientsCombo()
+        {
+            try
+            {
+                _isLoadingCombo = true;
+                DataTable dt = ClientDAL.GetAll();
+                cmbClientSelector.DataSource = dt;
+                cmbClientSelector.DisplayMember = "ClientName";
+                cmbClientSelector.ValueMember = "ClientID";
+
+                if (_clientID > 0)
+                {
+                    cmbClientSelector.SelectedValue = _clientID;
+                }
+                else if (dt != null && dt.Rows.Count > 0)
+                {
+                    _clientID = Convert.ToInt32(dt.Rows[0]["ClientID"]);
+                    _clientName = dt.Rows[0]["ClientName"].ToString();
+                    this.Text = "كشف حساب تفصيلي - " + _clientName;
+                    cmbClientSelector.SelectedValue = _clientID;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadClientsCombo failed", ex);
+            }
+            finally
+            {
+                _isLoadingCombo = false;
+            }
+        }
+
+        private void CmbClientSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isLoadingCombo) return;
+            if (cmbClientSelector.SelectedValue != null && cmbClientSelector.SelectedValue != DBNull.Value)
+            {
+                if (int.TryParse(cmbClientSelector.SelectedValue.ToString(), out int cid) && cid > 0)
+                {
+                    if (cid != _clientID)
+                    {
+                        _clientID = cid;
+                        _clientName = cmbClientSelector.Text;
+                        this.Text = "كشف حساب تفصيلي - " + _clientName;
+                        RefreshAllData();
+                    }
+                }
+            }
         }
 
         private void RefreshAllData()
@@ -274,7 +351,7 @@ namespace ChickenDist.Forms
 
         private void LoadStatement()
         {
-            if (dgStatement == null) return;
+            if (dgStatement == null || _clientID <= 0) return;
             _dt = ClientDAL.GetStatement(_clientID, dtpFrom.Value, dtpTo.Value);
             dgStatement.Rows.Clear();
             decimal prevBalance = ClientDAL.GetPreviousBalance(_clientID, dtpFrom.Value);
@@ -524,6 +601,7 @@ namespace ChickenDist.Forms
 
         private void LoadItemizedStatement()
         {
+            if (_clientID <= 0) return;
             _dtItemized = ReportDAL.GetClientItemizedStatement(dtpFrom.Value, dtpTo.Value, _clientID);
             FilterAndDisplayItemized();
         }

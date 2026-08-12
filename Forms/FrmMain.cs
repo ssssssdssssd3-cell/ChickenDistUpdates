@@ -480,7 +480,8 @@ namespace ChickenDist.Forms
                 }),
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
-                    ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("👥 إدارة العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
                     ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
                     ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
@@ -660,7 +661,8 @@ namespace ChickenDist.Forms
                 }),
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
-                    ("👥 العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("👥 إدارة العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
+                    ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
                     ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
                     ("📊 تقارير العملاء", "Reports,Clients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
@@ -1296,6 +1298,59 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("❌ خطأ أثناء فتح شاشة كشف حساب المورد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenClientStatementSelector()
+        {
+            try
+            {
+                DataTable dt = ClientDAL.GetAll();
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا يوجد عملاء مسجلين حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var dlg = new Form())
+                {
+                    dlg.Text = "📊 اختر العميل لعرض كشف الحساب والمسحوبات التفصيلية";
+                    dlg.Size = new Size(420, 200);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.MaximizeBox = false; dlg.MinimizeBox = false;
+                    dlg.RightToLeft = RightToLeft.Yes;
+                    dlg.BackColor = Theme.BgMain;
+                    dlg.Font = Theme.FontMain;
+
+                    var lbl = new Label { Text = "👤 اختر العميل من القائمة:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+                    var cbo = new ComboBox { Location = new Point(20, 48), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10.5f) };
+
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        string code = r.Table.Columns.Contains("ClientCode") ? r["ClientCode"].ToString() : "";
+                        cbo.Items.Add(new ComboItem((int)r["ClientID"], $"{r["ClientName"]} (كود: {code})"));
+                    }
+                    cbo.DisplayMember = "Text";
+                    if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
+
+                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب العميل", 200, 100, 180, 36, Theme.Accent);
+                    btnOk.Click += (senderDlg, eDlg) => {
+                        if (cbo.SelectedItem is ComboItem ci)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            new FrmClientStatement(ci.ID, ci.Text).ShowDialog(this);
+                        }
+                    };
+
+                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ خطأ أثناء فتح شاشة كشف حساب العميل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
