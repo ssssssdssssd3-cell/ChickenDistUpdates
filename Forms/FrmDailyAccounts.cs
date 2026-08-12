@@ -360,8 +360,6 @@ namespace ChickenDist.Forms
             lblTotalBanksVal = MakeKpiCard(pnlKpis, 1, "🏛️ إجمالي رصيد الحسابات البنكية", "0.00 ج", Color.FromArgb(20, 70, 140));
             lblTotalLiquidityVal = MakeKpiCard(pnlKpis, 2, "💵 إجمالي السيولة الفعلية المتاحة", "0.00 ج", Color.FromArgb(140, 40, 90));
 
-            page.Controls.Add(pnlKpis);
-
             // Transfer Bar
             var pnlTransfer = new FlowLayoutPanel
             {
@@ -394,14 +392,16 @@ namespace ChickenDist.Forms
             btnExecuteTransfer.Click += BtnExecuteTransfer_Click;
             pnlTransfer.Controls.Add(btnExecuteTransfer);
 
-            page.Controls.Add(pnlTransfer);
-
             // Account Movements Grid
             dgAccountMovements = MakeStandardGrid();
+
+            // Add top panels first (KPIs topmost at y=0, then Transfer Bar at y=85)
+            page.Controls.Add(pnlTransfer);
+            page.Controls.Add(pnlKpis);
             page.Controls.Add(dgAccountMovements);
 
-            pnlKpis.BringToFront();
-            pnlTransfer.BringToFront();
+            // Send grid to back so it fills remaining area below top panels without overlapping headers!
+            dgAccountMovements.SendToBack();
         }
 
         // =========================================================================
@@ -441,8 +441,6 @@ namespace ChickenDist.Forms
             btnOpenAdjustments.Click += (s, e) => new FrmAdjustment(0, "تسوية جرد عام", false).ShowDialog();
             pnlCogsFilter.Controls.Add(btnOpenAdjustments);
 
-            page.Controls.Add(pnlCogsFilter);
-
             // KPI Cards for COGS & Inventory Metrics
             var pnlCogsKpis = new TableLayoutPanel
             {
@@ -462,8 +460,6 @@ namespace ChickenDist.Forms
             lblStockRetailVal = MakeKpiCard(pnlCogsKpis, 2, "🏷️ قيمة المخزون (بسعر البيع)", "0.00 ج", Color.FromArgb(120, 50, 140));
             lblGrossProfitVal = MakeKpiCard(pnlCogsKpis, 3, "📈 أرباح المبيعات (Gross Profit)", "0.00 ج", Color.FromArgb(30, 130, 60));
 
-            page.Controls.Add(pnlCogsKpis);
-
             // Inventory Adjustments & Variances Grid
             var pnlAdjHeader = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgHeader };
             var lblAdjTitle = new Label
@@ -476,14 +472,15 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 0, 0, 0)
             };
             pnlAdjHeader.Controls.Add(lblAdjTitle);
-            page.Controls.Add(pnlAdjHeader);
 
             dgInventoryAdjustments = MakeStandardGrid();
+
+            page.Controls.Add(pnlAdjHeader);
+            page.Controls.Add(pnlCogsKpis);
+            page.Controls.Add(pnlCogsFilter);
             page.Controls.Add(dgInventoryAdjustments);
 
-            pnlCogsFilter.BringToFront();
-            pnlCogsKpis.BringToFront();
-            pnlAdjHeader.BringToFront();
+            dgInventoryAdjustments.SendToBack();
         }
 
         // =========================================================================
@@ -686,11 +683,14 @@ namespace ChickenDist.Forms
 
             // Adjustments
             var dtAdj = DbHelper.Query(
-                @"SELECT it.TransID AS [رقم التسوية], it.TransDate AS [تاريخ الحركة], p.ProductName AS [الصنف], it.TransType AS [نوع الحركة], it.Quantity AS [الكمية], it.Notes AS [ملاحظات التسوية]
-                  FROM InventoryTransactions it
-                  LEFT JOIN Products p ON it.ProductID = p.ProductID
-                  WHERE it.TransType IN ('Adjustment', 'Inventory', 'InitialStock', 'Damage')
-                  ORDER BY it.TransID DESC");
+                @"SELECT sa.AdjID AS [رقم التسوية], sa.AdjDate AS [تاريخ الحركة], p.ProductName AS [الصنف],
+                         CASE WHEN sa.DiffQty > 0 THEN N'زيادة (+)'
+                              WHEN sa.DiffQty < 0 THEN N'عجز (-)'
+                              ELSE N'مطابق' END AS [نوع الحركة],
+                         sa.DiffQty AS [مقدار الفارق], sa.BookQty AS [الرصيد الدفتري], sa.ActualQty AS [الرصيد الفعلي], sa.Notes AS [ملاحظات التسوية]
+                  FROM StockAdjustments sa
+                  LEFT JOIN Products p ON sa.ProductID = p.ProductID
+                  ORDER BY sa.AdjID DESC");
             dgInventoryAdjustments.DataSource = dtAdj;
         }
 
