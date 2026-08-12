@@ -370,6 +370,12 @@ namespace ChickenDist.Core
                 ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
             END");
 
+            SafeMigrate("Purchases.IsPosted.Early", @"
+            IF OBJECT_ID('Purchases', 'U') IS NOT NULL AND COL_LENGTH('Purchases', 'IsPosted') IS NULL
+            BEGIN
+                ALTER TABLE Purchases ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
+
             SafeMigrate("Products.EnglishName", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'EnglishName')
             BEGIN

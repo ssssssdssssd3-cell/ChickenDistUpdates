@@ -403,8 +403,8 @@ namespace ChickenDist.Forms
 
         private void SetupSearchableCombo(ComboBox cbo)
         {
-            cbo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             cbo.AutoCompleteSource = AutoCompleteSource.ListItems;
+            cbo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
         }
 
         private void LoadCombos()

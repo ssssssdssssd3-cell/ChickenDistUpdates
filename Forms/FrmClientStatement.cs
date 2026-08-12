@@ -88,8 +88,8 @@ namespace ChickenDist.Forms
             {
                 Width = 230,
                 DropDownStyle = ComboBoxStyle.DropDown,
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 9.5f),

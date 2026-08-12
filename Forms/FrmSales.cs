@@ -157,8 +157,8 @@ namespace ChickenDist.Forms
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				RightToLeft = RightToLeft.Yes,
-				AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-				AutoCompleteSource = AutoCompleteSource.ListItems
+				AutoCompleteSource = AutoCompleteSource.ListItems,
+				AutoCompleteMode = AutoCompleteMode.SuggestAppend
 			};
 			cboClientFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ClientDAL.GetAll(true).Rows)
@@ -211,8 +211,8 @@ namespace ChickenDist.Forms
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				RightToLeft = RightToLeft.Yes,
-				AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-				AutoCompleteSource = AutoCompleteSource.ListItems
+				AutoCompleteSource = AutoCompleteSource.ListItems,
+				AutoCompleteMode = AutoCompleteMode.SuggestAppend
 			};
 			cboProductFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in ProductDAL.GetAll(true).Rows)

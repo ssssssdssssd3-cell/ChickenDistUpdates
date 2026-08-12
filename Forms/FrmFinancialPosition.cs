@@ -797,13 +797,13 @@ namespace ChickenDist.Forms
             dt.Columns.Add("NetValue", typeof(decimal));
 
             // المبيعات والمردودات والخصومات
-            object grossSalesObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount), 0) FROM Sales WHERE IsPosted = 1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            object grossSalesObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount), 0) FROM Sales WHERE (COL_LENGTH('Sales', 'IsPosted') IS NULL OR ISNULL(IsPosted, 1) = 1) AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal grossSales = grossSalesObj != null ? Convert.ToDecimal(grossSalesObj) : 0m;
 
             object returnsObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount), 0) FROM SalesReturns WHERE CAST(ReturnDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal returns = returnsObj != null ? Convert.ToDecimal(returnsObj) : 0m;
 
-            object discountsObj = DbHelper.Scalar("SELECT ISNULL(SUM(DiscountAmount), 0) FROM Sales WHERE IsPosted = 1 AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            object discountsObj = DbHelper.Scalar("SELECT ISNULL(SUM(DiscountAmount), 0) FROM Sales WHERE (COL_LENGTH('Sales', 'IsPosted') IS NULL OR ISNULL(IsPosted, 1) = 1) AND CAST(SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal discounts = discountsObj != null ? Convert.ToDecimal(discountsObj) : 0m;
 
             decimal netSales = grossSales - returns - discounts;
@@ -814,7 +814,7 @@ namespace ChickenDist.Forms
                 FROM SaleItems si 
                 JOIN Sales s ON si.SaleID = s.SaleID 
                 JOIN Products p ON si.ProductID = p.ProductID 
-                WHERE s.IsPosted = 1 AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+                WHERE (COL_LENGTH('Sales', 'IsPosted') IS NULL OR ISNULL(s.IsPosted, 1) = 1) AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal grossCOGS = grossCOGSObj != null ? Convert.ToDecimal(grossCOGSObj) : 0m;
 
             object returnsCOGSObj = DbHelper.Scalar(@"

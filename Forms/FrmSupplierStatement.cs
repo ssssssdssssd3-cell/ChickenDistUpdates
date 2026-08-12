@@ -60,8 +60,8 @@ namespace ChickenDist.Forms
             {
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDown,
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 9.5f),
@@ -223,8 +223,8 @@ namespace ChickenDist.Forms
                     cmbSupplierSelector.DataSource = dt;
                     cmbSupplierSelector.DisplayMember = "SupplierDisplayInfo";
                     cmbSupplierSelector.ValueMember = "SupplierID";
-                    cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                     cmbSupplierSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                    cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 }
 
                 if (_supplierID > 0)

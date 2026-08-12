@@ -464,8 +464,8 @@ namespace ChickenDist.Forms
                 cboClientSelect.DataSource = dtClients;
                 cboClientSelect.DisplayMember = "ClientName";
                 cboClientSelect.ValueMember = "ClientID";
-                cboClientSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 cboClientSelect.AutoCompleteSource = AutoCompleteSource.ListItems;
+                cboClientSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             }
             catch { }
 
@@ -476,8 +476,8 @@ namespace ChickenDist.Forms
                 cboSupplierSelect.DataSource = dtSuppliers;
                 cboSupplierSelect.DisplayMember = "SupplierName";
                 cboSupplierSelect.ValueMember = "SupplierID";
-                cboSupplierSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 cboSupplierSelect.AutoCompleteSource = AutoCompleteSource.ListItems;
+                cboSupplierSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             }
             catch { }
 
