@@ -684,10 +684,13 @@ namespace ChickenDist.Forms
             // Adjustments
             var dtAdj = DbHelper.Query(
                 @"SELECT sa.AdjID AS [رقم التسوية], sa.AdjDate AS [تاريخ الحركة], p.ProductName AS [الصنف],
-                         CASE WHEN sa.DiffQty > 0 THEN N'زيادة (+)'
-                              WHEN sa.DiffQty < 0 THEN N'عجز (-)'
+                         CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN N'زيادة (+)'
+                              WHEN (sa.ActualQty - sa.BookQty) < 0 THEN N'عجز (-)'
                               ELSE N'مطابق' END AS [نوع الحركة],
-                         sa.DiffQty AS [مقدار الفارق], sa.BookQty AS [الرصيد الدفتري], sa.ActualQty AS [الرصيد الفعلي], sa.Notes AS [ملاحظات التسوية]
+                         (sa.ActualQty - sa.BookQty) AS [مقدار الفارق],
+                         sa.BookQty AS [الرصيد الدفتري],
+                         sa.ActualQty AS [الرصيد الفعلي],
+                         sa.Notes AS [ملاحظات التسوية]
                   FROM StockAdjustments sa
                   LEFT JOIN Products p ON sa.ProductID = p.ProductID
                   ORDER BY sa.AdjID DESC");

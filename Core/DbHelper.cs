@@ -1711,6 +1711,7 @@ namespace ChickenDist.Core
                 BEGIN
                     IF COL_LENGTH('StockAdjustments', 'UnitName') IS NULL ALTER TABLE StockAdjustments ADD UnitName NVARCHAR(50) NULL;
                     IF COL_LENGTH('StockAdjustments', 'Factor') IS NULL ALTER TABLE StockAdjustments ADD Factor DECIMAL(10,3) DEFAULT 1.0;
+                    IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);
                 END");
 
                 SafeMigrate("UnitsTable", @"
