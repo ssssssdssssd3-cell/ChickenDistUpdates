@@ -235,8 +235,8 @@ namespace ChickenDist.Forms
             var pnlExpRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
             var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
             pnlExpHeader.Controls.Add(new Label { Text = "📕 تقرير المصروفات وعمليات الصرف اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
-            dtpExpTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpExpFrom = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today };
+            dtpExpTo = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpExpFrom.ValueChanged += (s, e) => LoadExpensesReport();
             dtpExpTo.ValueChanged += (s, e) => LoadExpensesReport();
             pnlExpHeader.Controls.Add(dtpExpFrom);
@@ -262,13 +262,14 @@ namespace ChickenDist.Forms
             var pnlRecRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
             var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
             pnlRecHeader.Controls.Add(new Label { Text = "📗 تقرير التوريدات والمقبوضات اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpRecFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
-            dtpRecTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpRecFrom = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today };
+            dtpRecTo = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpRecFrom.ValueChanged += (s, e) => LoadReceiptsReport();
             dtpRecTo.ValueChanged += (s, e) => LoadReceiptsReport();
             pnlRecHeader.Controls.Add(dtpRecFrom);
             pnlRecHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(5, 5, 0, 0) });
             pnlRecHeader.Controls.Add(dtpRecTo);
+
 
             lblTotalRec = new Label { Text = "إجمالي المقبوضات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(40, 160, 70), Font = Theme.FontBold, Margin = new Padding(20, 5, 0, 0) };
             pnlRecHeader.Controls.Add(lblTotalRec);
@@ -613,8 +614,8 @@ namespace ChickenDist.Forms
                   LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
                   WHERE e.ExpenseDate BETWEEN @f AND @t
                   ORDER BY e.ExpenseID DESC",
-                DbHelper.P("@f", dtpExpFrom.Value.Date),
-                DbHelper.P("@t", dtpExpTo.Value.Date.AddDays(1).AddSeconds(-1)));
+                DbHelper.P("@f", dtpExpFrom.Value),
+                DbHelper.P("@t", dtpExpTo.Value));
 
             dgExpensesReport.DataSource = dt;
 
@@ -640,8 +641,9 @@ namespace ChickenDist.Forms
                   LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
                   WHERE cb.AmountIn > 0 AND cb.TransDate BETWEEN @f AND @t
                   ORDER BY cb.CashID DESC",
-                DbHelper.P("@f", dtpRecFrom.Value.Date),
-                DbHelper.P("@t", dtpRecTo.Value.Date.AddDays(1).AddSeconds(-1)));
+                DbHelper.P("@f", dtpRecFrom.Value),
+                DbHelper.P("@t", dtpRecTo.Value));
+
 
             dgReceiptsReport.DataSource = dt;
 
