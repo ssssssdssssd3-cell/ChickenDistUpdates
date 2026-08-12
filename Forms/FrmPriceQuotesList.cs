@@ -35,11 +35,24 @@ namespace ChickenDist.Forms
             BackColor = Theme.BgMain;
             Font = Theme.FontMain;
 
+            // ── Main Layout (TableLayoutPanel) ─────────────────────
+            var mainLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                RightToLeft = RightToLeft.Yes,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));  // Row 0: Search Panel
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f)); // Row 1: DataGridView
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58f));  // Row 2: Bottom Actions
+
             // ── Panel Top (Search & Info) ──────────────────────────
             var pnlTop = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 55,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8)
             };
@@ -120,8 +133,7 @@ namespace ChickenDist.Forms
             // ── Panel Bottom (Actions) ──────────────────────────────
             var pnlBottom = new Panel
             {
-                Dock = DockStyle.Bottom,
-                Height = 58,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10)
             };
@@ -143,12 +155,12 @@ namespace ChickenDist.Forms
 
             pnlBottom.Controls.AddRange(new Control[] { btnRecall, btnConvertToSale, btnDelete, btnRefresh, btnClose });
 
-            // Docking Hierarchy: Add Top & Bottom first, then Fill grid & SendToBack
-            Controls.Add(pnlTop);
-            Controls.Add(pnlBottom);
-            Controls.Add(dgQuotes);
+            // Add controls into TableLayoutPanel rows
+            mainLayout.Controls.Add(pnlTop, 0, 0);
+            mainLayout.Controls.Add(dgQuotes, 0, 1);
+            mainLayout.Controls.Add(pnlBottom, 0, 2);
 
-            dgQuotes.SendToBack();
+            Controls.Add(mainLayout);
 
             dgQuotes.DoubleClick += (s, e) => DoRecall();
             dgQuotes.KeyDown += (s, e) =>
