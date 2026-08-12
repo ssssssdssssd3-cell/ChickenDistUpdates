@@ -19,7 +19,7 @@ namespace ChickenDist.Forms
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
         private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly;
-        private ComboBox cboCategory, cboMaxRows;
+        private ComboBox cboCategory, cboMaxRows, cboPriceType;
         private Label lblCount, lblTotalCost, lblTotalSale;
 
         private Button btnSaveAdj, btnClearAdj;
@@ -252,9 +252,37 @@ namespace ChickenDist.Forms
 
             // ── الصف 2: عدد العرض + خيارات التصفية ──────────────────────────────
             var lblLimit2 = new Label { Text = "عرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+
+            // ── قائمة نوع السعر ───────────────────────────────────────────────────
+            var lblPriceType = new Label
+            {
+                Text = "💰 الجرد بسعر:",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(0, 100, 50),
+                Font = Theme.FontBold,
+                Margin = new Padding(10, 6, 2, 0)
+            };
+            cboPriceType = new ComboBox
+            {
+                Name = "cboPriceType",
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = 110,
+                BackColor = Color.FromArgb(240, 255, 240),
+                ForeColor = Color.FromArgb(0, 90, 40),
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 3, 8, 0),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold)
+            };
+            cboPriceType.Items.Add("قطاعي");
+            cboPriceType.Items.Add("نص جملة");
+            cboPriceType.Items.Add("جملة");
+            cboPriceType.SelectedIndex = 0;
+            cboPriceType.SelectedIndexChanged += (s, e) => LoadStock();
+
             pnlRow2.Controls.AddRange(new Control[] {
                 lblLimit2, cboMaxRows,
-                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly
+                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly,
+                lblPriceType, cboPriceType
             });
 
             // ── الصف 3: أزرار العمليات ─────────────────────────────────────────
@@ -347,11 +375,13 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Factor",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentFactor",     Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseBookQty",       Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BasePurchasePrice", Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSalePrice",     Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",         Visible = false });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",  Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseBookQty",           Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BasePurchasePrice",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSalePrice",         Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseWholesalePrice",    Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSemiWholesalePrice",Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",             Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",     Visible = false });
             Theme.AdjustGridHeaders(dgStock);
 
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
@@ -592,11 +622,18 @@ namespace ChickenDist.Forms
                 if (showUninventoriedOnly && _inventoriedProductIDs.Contains(pidCheck)) continue;
                 displayedCount++;
                 decimal baseBookQty = Convert.ToDecimal(r["BookQty"]);
-                decimal basePP = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
-                decimal baseSP = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                decimal basePP = r["PurchasePrice"]     != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"])     : 0m;
+                decimal baseSP = r["SalePrice"]          != DBNull.Value ? Convert.ToDecimal(r["SalePrice"])          : 0m;
+                decimal baseWP = r.Table.Columns.Contains("WholesalePrice")     && r["WholesalePrice"]     != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"])     : baseSP;
+                decimal baseSWP= r.Table.Columns.Contains("SemiWholesalePrice") && r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : baseSP;
+
+                // اختيار السعر بناءً على القائمة المنسدلة
+                int priceTypeIdx = (cboPriceType != null && cboPriceType.SelectedIndex >= 0) ? cboPriceType.SelectedIndex : 0;
+                // 0 = قطاعي (SalePrice), 1 = نص جملة (SemiWholesalePrice), 2 = جملة (WholesalePrice)
+                decimal selectedBaseSP = priceTypeIdx == 2 ? baseWP : (priceTypeIdx == 1 ? baseSWP : baseSP);
 
                 totalCost += (baseBookQty * basePP);
-                totalSale += (baseBookQty * baseSP);
+                totalSale += (baseBookQty * selectedBaseSP);
                 int pid = Convert.ToInt32(r["ProductID"]);
 
                 string baseUnit = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "";
@@ -623,8 +660,10 @@ namespace ChickenDist.Forms
                 string unitCellText = displayUnit + (hasMultiUnits ? " 🔽" : "");
 
                 decimal displayedBookQty = baseBookQty / (curFactor > 0 ? curFactor : 1m);
-                decimal displayedPP = basePP * curFactor;
-                decimal displayedSP = baseSP * curFactor;
+                decimal displayedPP  = basePP           * curFactor;
+                decimal displayedSP  = selectedBaseSP   * curFactor; // السعر المحدد من القائمة
+                decimal displayedWP  = baseWP            * curFactor;
+                decimal displayedSWP = baseSWP           * curFactor;
 
                 string actualVal = "";
                 string diffVal   = "";
@@ -674,11 +713,13 @@ namespace ChickenDist.Forms
                 dgStock.Rows[ri].Cells["Unit2Factor"].Value       = u2Factor;
                 dgStock.Rows[ri].Cells["Unit3Factor"].Value       = u3Factor;
                 dgStock.Rows[ri].Cells["CurrentFactor"].Value     = curFactor;
-                dgStock.Rows[ri].Cells["BaseBookQty"].Value       = baseBookQty;
-                dgStock.Rows[ri].Cells["BasePurchasePrice"].Value = basePP;
-                dgStock.Rows[ri].Cells["BaseSalePrice"].Value     = baseSP;
-                dgStock.Rows[ri].Cells["HasExpiry"].Value         = r["HasExpiry"];
-                dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value = r["DefaultExpiryDays"];
+                dgStock.Rows[ri].Cells["BaseBookQty"].Value            = baseBookQty;
+                dgStock.Rows[ri].Cells["BasePurchasePrice"].Value        = basePP;
+                dgStock.Rows[ri].Cells["BaseSalePrice"].Value            = baseSP;
+                dgStock.Rows[ri].Cells["BaseWholesalePrice"].Value       = baseWP;
+                dgStock.Rows[ri].Cells["BaseSemiWholesalePrice"].Value   = baseSWP;
+                dgStock.Rows[ri].Cells["HasExpiry"].Value                = r["HasExpiry"];
+                dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value        = r["DefaultExpiryDays"];
 
                 // تمييز لون السطر والأصناف المجرودة باللون الأخضر الناصع الجلي
                 bool isInventoried = _enteredActualQty.ContainsKey(pid) || _inventoriedProductIDs.Contains(pid);

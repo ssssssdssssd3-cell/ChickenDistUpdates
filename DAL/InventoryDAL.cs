@@ -53,6 +53,8 @@ namespace ChickenDist.DAL
                     p.ProductName,
                     p.Unit,
                     p.SalePrice,
+                    COALESCE(p.WholesalePrice,   p.SalePrice) AS WholesalePrice,
+                    COALESCE(p.SemiWholesalePrice, p.SalePrice) AS SemiWholesalePrice,
                     p.PurchasePrice,
                     p.MinStockLimit,
                     p.ShelfLocation,
@@ -69,6 +71,7 @@ namespace ChickenDist.DAL
                 FROM Products p
                 {whereClause}
                 ORDER BY p.ProductName";
+
 
             DataTable dt = DbHelper.Query(sql, prms.ToArray());
             DataTable result = dt.Clone();
