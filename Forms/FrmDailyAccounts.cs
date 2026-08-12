@@ -254,8 +254,13 @@ namespace ChickenDist.Forms
 
             dgExpensesReport = MakeStandardGrid();
             dgExpensesReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgExpensesReport);
-            pnlExpRep.Controls.Add(dgExpensesReport);
-            pnlExpRep.Controls.Add(pnlExpHeader);
+
+            var tblExp = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
+            tblExp.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblExp.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblExp.Controls.Add(pnlExpHeader, 0, 0);
+            tblExp.Controls.Add(dgExpensesReport, 0, 1);
+            pnlExpRep.Controls.Add(tblExp);
             splitRep.Panel1.Controls.Add(pnlExpRep);
 
             // Panel Bottom: Receipts Report (التوريدات والمقبوضات)
@@ -282,8 +287,13 @@ namespace ChickenDist.Forms
 
             dgReceiptsReport = MakeStandardGrid();
             dgReceiptsReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
-            pnlRecRep.Controls.Add(dgReceiptsReport);
-            pnlRecRep.Controls.Add(pnlRecHeader);
+
+            var tblRec = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
+            tblRec.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblRec.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblRec.Controls.Add(pnlRecHeader, 0, 0);
+            tblRec.Controls.Add(dgReceiptsReport, 0, 1);
+            pnlRecRep.Controls.Add(tblRec);
             splitRep.Panel2.Controls.Add(pnlRecRep);
 
             page.Controls.Add(splitRep);
@@ -361,9 +371,14 @@ namespace ChickenDist.Forms
 
             pnlJourFoot.Controls.AddRange(new Control[] { lblTotalDebit, lblTotalCredit, lblBalanceStatus, btnSaveJournal, btnPrintJournal });
 
-            pnlJourForm.Controls.Add(dgJournalLines);
-            pnlJourForm.Controls.Add(pnlJourHeader);
-            pnlJourForm.Controls.Add(pnlJourFoot);
+            var tblJourForm = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Margin = new Padding(0), Padding = new Padding(0) };
+            tblJourForm.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblJourForm.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblJourForm.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblJourForm.Controls.Add(pnlJourHeader, 0, 0);
+            tblJourForm.Controls.Add(dgJournalLines, 0, 1);
+            tblJourForm.Controls.Add(pnlJourFoot, 0, 2);
+            pnlJourForm.Controls.Add(tblJourForm);
             splitJour.Panel1.Controls.Add(pnlJourForm);
 
             // Bottom: Past Journal Entries History
@@ -379,8 +394,13 @@ namespace ChickenDist.Forms
             pnlHistHeader.Controls.Add(dtpJourHistoryTo);
 
             dgJournalHistory = MakeStandardGrid();
-            pnlJourHist.Controls.Add(dgJournalHistory);
-            pnlJourHist.Controls.Add(pnlHistHeader);
+
+            var tblJourHist = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
+            tblJourHist.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+            tblJourHist.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblJourHist.Controls.Add(pnlHistHeader, 0, 0);
+            tblJourHist.Controls.Add(dgJournalHistory, 0, 1);
+            pnlJourHist.Controls.Add(tblJourHist);
             splitJour.Panel2.Controls.Add(pnlJourHist);
 
             page.Controls.Add(splitJour);
@@ -396,7 +416,7 @@ namespace ChickenDist.Forms
             // KPI Cards Top Header
             var pnlKpis = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 Height = 85,
                 ColumnCount = 3,
                 RowCount = 1,
@@ -413,7 +433,7 @@ namespace ChickenDist.Forms
             // Transfer Bar
             var pnlTransfer = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 Height = 45,
                 Name = "pnlFilter",
                 BackColor = Theme.BgSearchPanel,
@@ -445,13 +465,15 @@ namespace ChickenDist.Forms
             // Account Movements Grid
             dgAccountMovements = MakeStandardGrid();
 
-            // Add top panels first (KPIs topmost at y=0, then Transfer Bar at y=85)
-            page.Controls.Add(pnlTransfer);
-            page.Controls.Add(pnlKpis);
-            page.Controls.Add(dgAccountMovements);
+            var tblCashBank = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Margin = new Padding(0), Padding = new Padding(0) };
+            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));
+            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblCashBank.Controls.Add(pnlKpis, 0, 0);
+            tblCashBank.Controls.Add(pnlTransfer, 0, 1);
+            tblCashBank.Controls.Add(dgAccountMovements, 0, 2);
 
-            // Send grid to back so it fills remaining area below top panels without overlapping headers!
-            dgAccountMovements.SendToBack();
+            page.Controls.Add(tblCashBank);
         }
 
         // =========================================================================
@@ -464,7 +486,7 @@ namespace ChickenDist.Forms
             // Date Filter Top Bar
             var pnlCogsFilter = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 Height = 42,
                 Name = "pnlFilter",
                 BackColor = Theme.BgSearchPanel,
@@ -494,7 +516,7 @@ namespace ChickenDist.Forms
             // KPI Cards for COGS & Inventory Metrics
             var pnlCogsKpis = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 Height = 90,
                 ColumnCount = 4,
                 RowCount = 1,
@@ -511,7 +533,7 @@ namespace ChickenDist.Forms
             lblGrossProfitVal = MakeKpiCard(pnlCogsKpis, 3, "📈 أرباح المبيعات (Gross Profit)", "0.00 ج", Color.FromArgb(30, 130, 60));
 
             // Inventory Adjustments & Variances Grid
-            var pnlAdjHeader = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgHeader };
+            var pnlAdjHeader = new Panel { Dock = DockStyle.Fill, Height = 30, BackColor = Theme.BgHeader };
             var lblAdjTitle = new Label
             {
                 Text = "📋 سجل وتسويات فروق الجرد والعجز/الزيادة المخزنية المسجلة:",
@@ -525,13 +547,19 @@ namespace ChickenDist.Forms
 
             dgInventoryAdjustments = MakeStandardGrid();
 
-            page.Controls.Add(pnlAdjHeader);
-            page.Controls.Add(pnlCogsKpis);
-            page.Controls.Add(pnlCogsFilter);
-            page.Controls.Add(dgInventoryAdjustments);
+            var tblCogs = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Margin = new Padding(0), Padding = new Padding(0) };
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 90f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblCogs.Controls.Add(pnlCogsFilter, 0, 0);
+            tblCogs.Controls.Add(pnlCogsKpis, 0, 1);
+            tblCogs.Controls.Add(pnlAdjHeader, 0, 2);
+            tblCogs.Controls.Add(dgInventoryAdjustments, 0, 3);
 
-            dgInventoryAdjustments.SendToBack();
+            page.Controls.Add(tblCogs);
         }
+
 
         // =========================================================================
         // =========================================================================
