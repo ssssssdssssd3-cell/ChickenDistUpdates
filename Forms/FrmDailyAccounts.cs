@@ -75,22 +75,27 @@ namespace ChickenDist.Forms
                 Font = Theme.FontBold
             };
 
-            // Build Tab 1: Vouchers
-            var tabVouchers = new TabPage("💸 سندات الصرف والتوريد والتقارير اليومية");
-            BuildVouchersTab(tabVouchers);
-            tabMain.TabPages.Add(tabVouchers);
+            // Build Tab 1: Issue Vouchers
+            var tabCreateVoucher = new TabPage("💸 إصدار سندات الصرف والتوريد");
+            BuildCreateVoucherTab(tabCreateVoucher);
+            tabMain.TabPages.Add(tabCreateVoucher);
 
-            // Build Tab 2: Journal Entries
+            // Build Tab 2: Reports of Vouchers
+            var tabVoucherReports = new TabPage("📊 تقارير المقبوضات والمصروفات اليومية");
+            BuildVoucherReportsTab(tabVoucherReports);
+            tabMain.TabPages.Add(tabVoucherReports);
+
+            // Build Tab 3: Journal Entries
             var tabJournal = new TabPage("🔄 القيود اليومية (مدين ودائن)");
             BuildJournalTab(tabJournal);
             tabMain.TabPages.Add(tabJournal);
 
-            // Build Tab 3: Cash & Banks
+            // Build Tab 4: Cash & Banks
             var tabCashBank = new TabPage("🏛️ حركة الخزينة والبنوك والتحويلات");
             BuildCashBankTab(tabCashBank);
             tabMain.TabPages.Add(tabCashBank);
 
-            // Build Tab 4: COGS & Inventory
+            // Build Tab 5: COGS & Inventory
             var tabCogsInv = new TabPage("📦 تكلفة المبيعات والمخزون والربحية");
             BuildCogsInvTab(tabCogsInv);
             tabMain.TabPages.Add(tabCogsInv);
@@ -102,20 +107,34 @@ namespace ChickenDist.Forms
         }
 
         // =========================================================================
-        // TAB 1: VOUCHERS & DAILY REPORTS (سندات القبض والصرف والتقارير)
+        // TAB 1: ISSUE VOUCHERS (إصدار سندات الصرف والقبض)
         // =========================================================================
-        private void BuildVouchersTab(TabPage page)
+        private void BuildCreateVoucherTab(TabPage page)
         {
             page.BackColor = Theme.BgMain;
 
-            // Top Form Bar for Creating Voucher
-            var pnlCreate = new Panel
+            var pnlMain = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(20)
+            };
+
+            var pnlCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 160,
                 Name = "pnlFilter",
                 BackColor = Theme.BgSearchPanel,
-                Padding = new Padding(10, 8, 10, 8)
+                Padding = new Padding(15)
+            };
+
+            var lblHeader = new Label
+            {
+                Text = "✍️ تسجيل وإصدار سند صرف أو توريد جديد",
+                Dock = DockStyle.Top,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                ForeColor = Theme.Accent,
+                Height = 30
             };
 
             var flow1 = new FlowLayoutPanel
@@ -123,12 +142,13 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 10, 0, 0)
             };
 
             // Voucher Type
             flow1.Controls.Add(new Label { Text = "نوع السند:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(5, 6, 0, 0) });
-            cboVoucherType = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboVoucherType = new ComboBox { Width = 170, DropDownStyle = ComboBoxStyle.DropDownList };
             cboVoucherType.Items.Add("🔴 سند صرف (خرج)");
             cboVoucherType.Items.Add("🟢 سند قبض / توريد (دخول)");
             cboVoucherType.SelectedIndex = 0;
@@ -136,7 +156,7 @@ namespace ChickenDist.Forms
 
             // Entity Category
             flow1.Controls.Add(new Label { Text = "جهة المعاملة:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(15, 6, 0, 0) });
-            cboEntityCategory = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboEntityCategory = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
             cboEntityCategory.Items.Add("مورد");
             cboEntityCategory.Items.Add("عميل");
             cboEntityCategory.Items.Add("مصروف عام / بند إداري");
@@ -145,17 +165,17 @@ namespace ChickenDist.Forms
             flow1.Controls.Add(cboEntityCategory);
 
             // Entity Select
-            cboEntity = new ComboBox { Width = 180, DropDownStyle = ComboBoxStyle.DropDown, AutoCompleteMode = AutoCompleteMode.SuggestAppend, AutoCompleteSource = AutoCompleteSource.ListItems };
+            cboEntity = new ComboBox { Width = 200, DropDownStyle = ComboBoxStyle.DropDown, AutoCompleteMode = AutoCompleteMode.SuggestAppend, AutoCompleteSource = AutoCompleteSource.ListItems };
             flow1.Controls.Add(cboEntity);
 
             // Amount
             flow1.Controls.Add(new Label { Text = "المبلغ (ج):", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(15, 6, 0, 0) });
-            txtAmount = new TextBox { Width = 90, Text = "0.00", Font = Theme.FontBold };
+            txtAmount = new TextBox { Width = 110, Text = "0.00", Font = new Font("Segoe UI", 11f, FontStyle.Bold) };
             flow1.Controls.Add(txtAmount);
 
             // Payment Method
             flow1.Controls.Add(new Label { Text = "طريقة الدفع:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(15, 6, 0, 0) });
-            cboPayMethod = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboPayMethod = new ComboBox { Width = 120, DropDownStyle = ComboBoxStyle.DropDownList };
             cboPayMethod.Items.Add("نقدي (الخزنة)");
             cboPayMethod.Items.Add("بنك / تحويل");
             cboPayMethod.Items.Add("شبكة / فيزا");
@@ -164,44 +184,59 @@ namespace ChickenDist.Forms
 
             // Safe / Bank Account
             flow1.Controls.Add(new Label { Text = "الخزنة / الحساب:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(15, 6, 0, 0) });
-            cboAccountSafe = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboAccountSafe = new ComboBox { Width = 160, DropDownStyle = ComboBoxStyle.DropDownList };
             flow1.Controls.Add(cboAccountSafe);
 
             // Notes
             flow1.Controls.Add(new Label { Text = "البيان / الملاحظات:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(15, 6, 0, 0) });
-            txtNotes = new TextBox { Width = 280, Text = "" };
+            txtNotes = new TextBox { Width = 300, Text = "" };
             flow1.Controls.Add(txtNotes);
 
-            // Buttons
+            // Action Buttons
             btnSaveVoucher = Theme.MakeButton("💾 حفظ وإصدار السند (F5)", Color.FromArgb(30, 110, 50));
-            btnSaveVoucher.Size = new Size(180, 28);
+            btnSaveVoucher.Size = new Size(190, 32);
             btnSaveVoucher.Margin = new Padding(15, 2, 0, 0);
-            btnSaveVoucher.Click += BtnSaveVoucher_Click;
+            btnSaveVoucher.Click += (s, e) => SaveVoucherInternal(false);
             flow1.Controls.Add(btnSaveVoucher);
 
-            btnPrintVoucher = Theme.MakeButton("🖨️ طباعة آخر سند", Color.FromArgb(20, 80, 140));
-            btnPrintVoucher.Size = new Size(140, 28);
+            var btnSavePrint = Theme.MakeButton("🖨️ حفظ وطباعة السند (F12)", Color.FromArgb(180, 100, 20));
+            btnSavePrint.Size = new Size(190, 32);
+            btnSavePrint.Margin = new Padding(10, 2, 0, 0);
+            btnSavePrint.Click += (s, e) => SaveVoucherInternal(true);
+            flow1.Controls.Add(btnSavePrint);
+
+            btnPrintVoucher = Theme.MakeButton("🖨️ طباعة آخر سند تم إصداره", Color.FromArgb(20, 80, 140));
+            btnPrintVoucher.Size = new Size(200, 32);
             btnPrintVoucher.Margin = new Padding(10, 2, 0, 0);
             btnPrintVoucher.Click += (s, e) => PrintLastVoucher();
             flow1.Controls.Add(btnPrintVoucher);
 
-            pnlCreate.Controls.Add(flow1);
-            page.Controls.Add(pnlCreate);
+            pnlCard.Controls.Add(flow1);
+            pnlCard.Controls.Add(lblHeader);
+            pnlMain.Controls.Add(pnlCard);
+            page.Controls.Add(pnlMain);
+        }
 
-            // Reports Split View (Top: Expenses / Bottom: Collections)
+        // =========================================================================
+        // TAB 2: VOUCHER REPORTS (تقارير التوريدات والمصروفات اليومية الكاملة)
+        // =========================================================================
+        private void BuildVoucherReportsTab(TabPage page)
+        {
+            page.BackColor = Theme.BgMain;
+
             var splitRep = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 300
+                SplitterDistance = 320
             };
 
             // Panel Top: Expenses Report (المصروفات وعمليات الصرف)
             var pnlExpRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 36, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(5) };
+            var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
             pnlExpHeader.Controls.Add(new Label { Text = "📕 تقرير المصروفات وعمليات الصرف اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
-            dtpExpTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpExpFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpExpTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
             dtpExpFrom.ValueChanged += (s, e) => LoadExpensesReport();
             dtpExpTo.ValueChanged += (s, e) => LoadExpensesReport();
             pnlExpHeader.Controls.Add(dtpExpFrom);
@@ -211,17 +246,24 @@ namespace ChickenDist.Forms
             lblTotalExp = new Label { Text = "إجمالي المصروفات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(220, 60, 60), Font = Theme.FontBold, Margin = new Padding(20, 5, 0, 0) };
             pnlExpHeader.Controls.Add(lblTotalExp);
 
+            var btnPrintExp = Theme.MakeButton("🖨️ طباعة السند المحدد", Color.FromArgb(30, 80, 140));
+            btnPrintExp.Size = new Size(160, 28);
+            btnPrintExp.Margin = new Padding(20, 1, 0, 0);
+            btnPrintExp.Click += (s, e) => PrintSelectedVoucher(dgExpensesReport);
+            pnlExpHeader.Controls.Add(btnPrintExp);
+
             dgExpensesReport = MakeStandardGrid();
+            dgExpensesReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgExpensesReport);
             pnlExpRep.Controls.Add(dgExpensesReport);
             pnlExpRep.Controls.Add(pnlExpHeader);
             splitRep.Panel1.Controls.Add(pnlExpRep);
 
             // Panel Bottom: Receipts Report (التوريدات والمقبوضات)
             var pnlRecRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 36, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(5) };
+            var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
             pnlRecHeader.Controls.Add(new Label { Text = "📗 تقرير التوريدات والمقبوضات اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpRecFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
-            dtpRecTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpRecFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpRecTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
             dtpRecFrom.ValueChanged += (s, e) => LoadReceiptsReport();
             dtpRecTo.ValueChanged += (s, e) => LoadReceiptsReport();
             pnlRecHeader.Controls.Add(dtpRecFrom);
@@ -231,14 +273,21 @@ namespace ChickenDist.Forms
             lblTotalRec = new Label { Text = "إجمالي المقبوضات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(40, 160, 70), Font = Theme.FontBold, Margin = new Padding(20, 5, 0, 0) };
             pnlRecHeader.Controls.Add(lblTotalRec);
 
+            var btnPrintRec = Theme.MakeButton("🖨️ طباعة السند المحدد", Color.FromArgb(30, 80, 140));
+            btnPrintRec.Size = new Size(160, 28);
+            btnPrintRec.Margin = new Padding(20, 1, 0, 0);
+            btnPrintRec.Click += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
+            pnlRecHeader.Controls.Add(btnPrintRec);
+
             dgReceiptsReport = MakeStandardGrid();
+            dgReceiptsReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
             pnlRecRep.Controls.Add(dgReceiptsReport);
             pnlRecRep.Controls.Add(pnlRecHeader);
             splitRep.Panel2.Controls.Add(pnlRecRep);
 
             page.Controls.Add(splitRep);
-            pnlCreate.BringToFront();
         }
+
 
         // =========================================================================
         // TAB 2: JOURNAL ENTRIES (القيود اليومية المحاسبية)
@@ -702,6 +751,11 @@ namespace ChickenDist.Forms
         // =========================================================================
         private void BtnSaveVoucher_Click(object sender, EventArgs e)
         {
+            SaveVoucherInternal(false);
+        }
+
+        private void SaveVoucherInternal(bool autoPrint)
+        {
             if (!decimal.TryParse(txtAmount.Text, out decimal amt) || amt <= 0)
             {
                 MessageBox.Show("أدخل مبلغاً صالحاً أكبر من صفر", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -752,10 +806,62 @@ namespace ChickenDist.Forms
                 txtAmount.Text = "0.00";
                 txtNotes.Text = "";
                 RefreshAllTabsData();
+
+                if (autoPrint)
+                {
+                    PrintLastVoucher();
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ أثناء حفظ السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PrintSelectedVoucher(DataGridView grid)
+        {
+            if (grid == null || grid.CurrentRow == null || grid.CurrentRow.Index < 0)
+            {
+                MessageBox.Show("يرجى تحديد السند المراد طباعته من الجدول أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                object val = grid.CurrentRow.Cells[0].Value; // Column 0: رقم السند
+                if (val != null && int.TryParse(val.ToString(), out int transID) && transID > 0)
+                {
+                    new FrmPrintPayment(transID, null, true);
+                }
+                else
+                {
+                    MessageBox.Show("عفواً، تعذر العثور على رقم السند المحدد!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء فتح معاينة طباعة السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PrintLastVoucher()
+        {
+            try
+            {
+                var dt = DbHelper.Query("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC");
+                if (dt != null && dt.Rows.Count > 0 && dt.Rows[0]["CashID"] != DBNull.Value)
+                {
+                    int cashID = Convert.ToInt32(dt.Rows[0]["CashID"]);
+                    new FrmPrintPayment(cashID, null, true);
+                }
+                else
+                {
+                    MessageBox.Show("لا يوجد أي سندات مسجلة لطباعتها حالياً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء طباعة السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -822,10 +928,7 @@ namespace ChickenDist.Forms
             MessageBox.Show("✅ تم حفظ القيد المحاسبي المزدوج وتحديث الأرصدة بنجاح!", "نجاح الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void PrintLastVoucher()
-        {
-            MessageBox.Show("🖨️ جاري إرسال سند الصرف / القبض إلى الطابعة...", "طباعة السند", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+
 
         // =========================================================================
         // UTILITIES
