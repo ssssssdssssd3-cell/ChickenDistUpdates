@@ -32,6 +32,7 @@ namespace ChickenDist.Forms
         private CheckBox chkBackupOnExit;
         private ComboBox cboBackupInterval;
         private TextBox txtWhatsAppPhone;
+        private ComboBox cboWhatsAppInvoiceTemplate;
         private CheckBox chkEnableCrates;
         private TextBox txtLocalCloudPath;
         private ComboBox cboAppTheme;
@@ -923,6 +924,34 @@ namespace ChickenDist.Forms
             this.Controls.Add(btnTestWhatsApp);
             y += 38;
 
+            AddLabel("النموذج الافتراضي لإرسال الفاتورة عبر الواتساب (Default WhatsApp Template):", 20, ref y, 0);
+            cboWhatsAppInvoiceTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 330,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+            cboWhatsAppInvoiceTemplate.Items.AddRange(new object[]
+            {
+                "1️⃣ النموذج التفصيلي الشامل (رسالة نصية كاملة)",
+                "2️⃣ النموذج السريع المختصر (رسالة نصية سريعة)",
+                "3️⃣ نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+                "4️⃣ النموذج المصمم كبطاقة ملونة (صورة - Image Card)"
+            });
+            cboWhatsAppInvoiceTemplate.SelectedIndex = AppConfig.WhatsAppInvoiceTemplate switch
+            {
+                "Summary" => 1,
+                "Financial" => 2,
+                "ImageCard" => 3,
+                _ => 0
+            };
+            this.Controls.Add(cboWhatsAppInvoiceTemplate);
+            y += 38;
+
             // آخر نسخة احتياطية
             var last = BackupManager.LastBackupTime;
             string lastStr = last.HasValue
@@ -1123,6 +1152,13 @@ namespace ChickenDist.Forms
 
                 // حفظ إعدادات الواتساب وتفعيل الفوارغ والباكب عند الإغلاق والمسار السحابي
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
+                AppConfig.WhatsAppInvoiceTemplate = cboWhatsAppInvoiceTemplate.SelectedIndex switch
+                {
+                    1 => "Summary",
+                    2 => "Financial",
+                    3 => "ImageCard",
+                    _ => "Detailed"
+                };
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
                 if (cboBackupInterval.SelectedItem is ComboItem ciInterval)

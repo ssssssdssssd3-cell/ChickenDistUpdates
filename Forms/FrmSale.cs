@@ -4421,208 +4421,351 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// عرض خيارات الإرسال
-			string choice = "";
-			using (var frm = new Form())
+			// استدعاء شاشة اختيار نموذج الفاتورة والمعاينة التفاعلية
+			ShowWhatsAppTemplateModal(phone, saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, null);
+		}
+
+		private static string BuildWhatsAppTextDetailed(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance)
+		{
+			var sb = new System.Text.StringBuilder();
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+			sb.AppendLine($"📋 *فاتورة مبيعات رقم #{saleRow["SaleCode"]}*");
+			sb.AppendLine($"🏢 *{shopName}*");
+			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
+			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}");
+			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
+			sb.AppendLine($"💳 نوع البيع: {typeLabel}");
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+
+			if (items != null)
 			{
-				frm.Text = "إرسال الفاتورة عبر واتساب";
-				frm.Size = new Size(380, 160);
-				frm.StartPosition = FormStartPosition.CenterParent;
-				frm.FormBorderStyle = FormBorderStyle.FixedDialog;
-				frm.MaximizeBox = false;
-				frm.MinimizeBox = false;
-				frm.RightToLeft = RightToLeft.Yes;
-				frm.RightToLeftLayout = true;
-				frm.BackColor = Theme.BgMain;
-				frm.Font = Theme.FontMain;
-
-				var lbl = new Label { Text = "اختر طريقة إرسال الفاتورة للعميل:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
-				frm.Controls.Add(lbl);
-
-				var btnText = Theme.MakeButton("📋 إرسال كرسالة نصية", 20, 60, 150, 40, Theme.Primary);
-				var btnImage = Theme.MakeButton("🖼️ إرسال كصورة (تصميم)", 190, 60, 150, 40, Theme.Success);
-
-				btnText.Click += (s, ev) => { choice = "text"; frm.Close(); };
-				btnImage.Click += (s, ev) => { choice = "image"; frm.Close(); };
-
-				frm.Controls.Add(btnText);
-				frm.Controls.Add(btnImage);
-
-				frm.ShowDialog(this);
+				foreach (DataRow r in items.Rows)
+				{
+					string name  = r["ProductName"].ToString();
+					decimal qty   = Convert.ToDecimal(r["Quantity"]);
+					decimal price = Convert.ToDecimal(r["UnitPrice"]);
+					decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
+					sb.AppendLine($"🐥 {name}");
+					sb.AppendLine($"▪ الكمية : {qty:0.##}");
+					sb.AppendLine($"▪ السعر : {price:N2} ج.م");
+					sb.AppendLine($"▪ الإجمالي : {tot:N2} ج.م");
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
+				}
 			}
 
-			if (choice == "text")
+			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
+			sb.AppendLine($"💰 *صافي الفاتورة: {totalAmount:N2} ج.م*");
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+
+			if (AppConfig.EnableCratesTracking)
 			{
-				// بناء نص الرسالة بالتنسيق المطلوب من المستخدم
-				var sb = new System.Text.StringBuilder();
-				sb.AppendLine($"📋 فاتورة مبيعات رقم {saleRow["SaleCode"]}");
-				sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-				sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
-				sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
-				string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
-				sb.AppendLine($"💳 نوع البيع: {typeLabel}");
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
-
-				if (items != null)
+				int cratesOutValMsg = saleRow.Table.Columns.Contains("CratesOut") && saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
+				int cratesInValMsg = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
+				if (cratesOutValMsg > 0 || cratesInValMsg > 0)
 				{
-					foreach (DataRow r in items.Rows)
-					{
-						string name  = r["ProductName"].ToString();
-						decimal qty   = Convert.ToDecimal(r["Quantity"]);
-						decimal price = Convert.ToDecimal(r["UnitPrice"]);
-						decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-						sb.AppendLine($"🐥 {name}");
-						sb.AppendLine($"▪ الكمية : {qty:0.##}");
-						sb.AppendLine($"▪ السعر : {price:N2} ج");
-						sb.AppendLine($"▪ الإجمالي : {tot:N2} ج");
-						sb.AppendLine("━━━━━━━━━━━━━━━━");
-					}
+					sb.AppendLine("📦 *حركة الفوارغ*");
+					if (cratesOutValMsg > 0) sb.AppendLine($"▪ فوارغ صادرة : {cratesOutValMsg} فارغ");
+					if (cratesInValMsg > 0) sb.AppendLine($"▪ فوارغ واردة : {cratesInValMsg} فارغ");
+					sb.AppendLine("━━━━━━━━━━━━━━━━");
 				}
+			}
 
-				decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
-				sb.AppendLine("💰 صافي الفاتورة");
-				sb.AppendLine($"{totalAmount:N2} ج.م");
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
+			bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+			decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount;
+			decimal remainingFromInvoice = isCredit ? totalAmount : (totalAmount - cashPaid);
 
-				if (AppConfig.EnableCratesTracking)
+			if (saleRow["ClientID"] != DBNull.Value)
+			{
+				int clientIDVal = Convert.ToInt32(saleRow["ClientID"]);
+				decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
+				decimal currentDue = actualCurrentBalance;
+
+				sb.AppendLine("📊 *الوضع المالي للحساب*");
+				sb.AppendLine($"▪ الرصيد السابق : {prevBalance:N2} ج.م");
+				if (isCredit)
 				{
-					int cratesOutValMsg = saleRow["CratesOut"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesOut"]) : 0;
-					int cratesInValMsg = saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
-					if (cratesOutValMsg > 0 || cratesInValMsg > 0)
-					{
-						sb.AppendLine("📦 حركة الفوارغ");
-						if (cratesOutValMsg > 0) sb.AppendLine($"▪ فوارغ صادرة : {cratesOutValMsg} فارغ");
-						if (cratesInValMsg > 0) sb.AppendLine($"▪ فوارغ واردة : {cratesInValMsg} فارغ");
-						sb.AppendLine("━━━━━━━━━━━━━━━━");
-					}
+					sb.AppendLine($"▪ الفاتورة الحالية : {totalAmount:N2} ج.م");
+					sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
 				}
-
-				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
-				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount;
-				decimal remainingFromInvoice = isCredit ? totalAmount : (totalAmount - cashPaid);
-
-				if (saleRow["SaleType"].ToString() == "Cash")
+				else
 				{
-					sb.AppendLine($"💵 المدفوع نقداً : {cashPaid:N2} ج.م");
 					if (remainingFromInvoice > 0)
 					{
-						sb.AppendLine($"⚠️ المتبقي (آجل) : {remainingFromInvoice:N2} ج.م");
-						sb.AppendLine("📝 (سيتم إضافة المتبقي على حساب العميل)");
+						sb.AppendLine($"▪ متبقي الفاتورة الحالية : {remainingFromInvoice:N2} ج.م");
+						sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
 					}
 					else if (remainingFromInvoice < 0)
 					{
-						sb.AppendLine($"➕ الزيادة : {-remainingFromInvoice:N2} ج.م");
-						sb.AppendLine("📝 (سيتم خصم الزيادة من حساب العميل)");
+						sb.AppendLine($"▪ زيادة الفاتورة الحالية : {-remainingFromInvoice:N2} ج.م");
+						sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
 					}
-					else
-					{
-						sb.AppendLine("✅ (تم سداد الفاتورة بالكامل)");
-					}
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
 				}
-
-				if (saleRow["ClientID"] != DBNull.Value)
+				sb.AppendLine($"▪ مسدد اليوم : {todayPayments:N2} ج.م");
+				if (todayReturns > 0)
 				{
-					int clientIDVal = Convert.ToInt32(saleRow["ClientID"]);
-					decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
-					// استخدام الرصيد الفعلي من قاعدة البيانات بدلاً من الحساب اليدوي
-					// لضمان احتساب التوريدات التي تمت بعد تاريخ الفاتورة
-					decimal currentDue = actualCurrentBalance;
-
-					sb.AppendLine("📊 الوضع المالي");
-					sb.AppendLine($"الرصيد السابق : {prevBalance:N2} ج.م");
-					if (isCredit)
-					{
-						sb.AppendLine($"+ الفاتورة الحالية : {totalAmount:N2} ج.م");
-						sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
-					}
-					else
-					{
-						if (remainingFromInvoice > 0)
-						{
-							sb.AppendLine($"+ متبقي الفاتورة الحالية : {remainingFromInvoice:N2} ج.م");
-							sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
-						}
-						else if (remainingFromInvoice < 0)
-						{
-							sb.AppendLine($"- زيادة الفاتورة الحالية : {-remainingFromInvoice:N2} ج.م");
-							sb.AppendLine($"= إجمالي المستحق : {totalDue:N2} ج.م");
-						}
-					}
-					sb.AppendLine($"- مسدد اليوم : {todayPayments:N2} ج.م");
-					if (todayReturns > 0)
-					{
-						sb.AppendLine($"- مرتجع اليوم : {todayReturns:N2} ج.م");
-					}
-					if (lastPaymentAmt > 0)
-					{
-						sb.AppendLine($"📝 آخر توريد سابق : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
-					}
-					else
-					{
-						sb.AppendLine("📝 آخر توريد سابق : لا يوجد");
-					}
-					int currentCratesDueMsg = ClientDAL.GetClientCratesBalance(clientIDVal);
-					sb.AppendLine($"فوارغ العميل الحالية : {currentCratesDueMsg} فارغ");
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
-					sb.AppendLine($"{currentDue:N2} ج.م");
-					sb.AppendLine("🔴 الرصيد الحالي المستحق");
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
+					sb.AppendLine($"▪ مرتجع اليوم : {todayReturns:N2} ج.م");
 				}
-
-				sb.AppendLine("🙏 شكراً لتعاملكم معنا");
-
-				SendWhatsApp(phone, sb.ToString());
+				if (lastPaymentAmt > 0)
+				{
+					sb.AppendLine($"📝 آخر توريد سابق : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
+				}
+				int currentCratesDueMsg = ClientDAL.GetClientCratesBalance(clientIDVal);
+				sb.AppendLine($"▪ فوارغ العميل الحالية : {currentCratesDueMsg} فارغ");
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
+				sb.AppendLine($"🔴 *الرصيد الحالي المستحق: {currentDue:N2} ج.م*");
+				sb.AppendLine("━━━━━━━━━━━━━━━━");
 			}
-			else if (choice == "image")
+
+			sb.AppendLine("🙏 شكراً لتعاملكم معنا ✨");
+			return sb.ToString();
+		}
+
+		private static string BuildWhatsAppTextSummary(DataRow saleRow, DataTable items, decimal actualCurrentBalance)
+		{
+			var sb = new System.Text.StringBuilder();
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+			sb.AppendLine($"🧾 *فاتورة مبيعات مختصرة* #{saleRow["SaleCode"]}");
+			sb.AppendLine($"🏢 *{shopName}*");
+			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
+			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+			sb.AppendLine($"💳 نوع البيع: {typeLabel}");
+			sb.AppendLine("--------------------------------");
+
+			if (items != null)
 			{
-				try
+				decimal totalQty = 0;
+				foreach (DataRow r in items.Rows)
 				{
-					using (Bitmap bmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance))
+					totalQty += Convert.ToDecimal(r["Quantity"]);
+				}
+				sb.AppendLine($"📦 عدد الأصناف: {items.Rows.Count} | إجمالي الكمية: {totalQty:0.##}");
+			}
+
+			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
+			sb.AppendLine($"💰 *إجمالي الفاتورة: {totalAmount:N2} ج.م*");
+
+			if (saleRow["ClientID"] != DBNull.Value)
+			{
+				sb.AppendLine("--------------------------------");
+				sb.AppendLine($"🔴 *الرصيد النهائي المستحق: {actualCurrentBalance:N2} ج.م*");
+			}
+
+			sb.AppendLine("🙏 شكراً لتعاملكم معنا ✨");
+			return sb.ToString();
+		}
+
+		private static string BuildWhatsAppTextFinancial(DataRow saleRow, DataTable items, decimal prevBalance, decimal actualCurrentBalance)
+		{
+			var sb = new System.Text.StringBuilder();
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+			sb.AppendLine($"💳 *إشعار فاتورة وكشف حساب عميل*");
+			sb.AppendLine($"🏢 *{shopName}*");
+			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
+			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+			sb.AppendLine("--------------------------------");
+			sb.AppendLine($"🏷️ الفاتورة رقم: #{saleRow["SaleCode"]}");
+
+			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
+			decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? totalAmount : 0m);
+
+			sb.AppendLine($"💰 قيمة الفاتورة الحالية: {totalAmount:N2} ج.م");
+			sb.AppendLine($"💵 المسدد نقداً: {cashPaid:N2} ج.م");
+			sb.AppendLine($"📜 الرصيد السابق قبل الفاتورة: {prevBalance:N2} ج.م");
+			sb.AppendLine("--------------------------------");
+			sb.AppendLine($"✨ *صافي رصيد الحساب المالي المستحق: {actualCurrentBalance:N2} ج.م*");
+
+			if (saleRow["ClientID"] != DBNull.Value)
+			{
+				int clientIDVal = Convert.ToInt32(saleRow["ClientID"]);
+				int cratesDue = ClientDAL.GetClientCratesBalance(clientIDVal);
+				if (cratesDue != 0)
+				{
+					sb.AppendLine($"📦 رصيد الفوارغ المستحق: {cratesDue} فارغ");
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+			{
+				sb.AppendLine($"📱 للتواصل والاستفسار: {AppConfig.CompanyPhone}");
+			}
+			return sb.ToString();
+		}
+
+		private static void ShowWhatsAppTemplateModal(string phone, DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance, Form parent)
+		{
+			var dlg = new Form
+			{
+				Text = "📱 معاينة وإرسال فاتورة مبيعات عبر واتساب",
+				Size = new Size(680, 700),
+				StartPosition = FormStartPosition.CenterParent,
+				FormBorderStyle = FormBorderStyle.FixedDialog,
+				MaximizeBox = false,
+				MinimizeBox = false,
+				BackColor = Theme.BgCard,
+				Font = Theme.FontMain,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true
+			};
+
+			var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
+			var lblTpl = new Label { Text = "اختر نموذج رسالة الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
+
+			var cboTpl = new ComboBox
+			{
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				Width = 420,
+				Location = new Point(180, 12),
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				FlatStyle = FlatStyle.Flat
+			};
+			cboTpl.Items.AddRange(new object[]
+			{
+				"1️⃣ النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
+				"2️⃣ النموذج السريع المختصر (رسالة نصية سريعة)",
+				"3️⃣ نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+				"4️⃣ النموذج المصمم كبطاقة ملونة (صورة - Image Card)"
+			});
+
+			string savedTpl = AppConfig.WhatsAppInvoiceTemplate;
+			cboTpl.SelectedIndex = savedTpl switch
+			{
+				"Summary" => 1,
+				"Financial" => 2,
+				"ImageCard" => 3,
+				_ => 0
+			};
+
+			pnlTop.Controls.Add(lblTpl);
+			pnlTop.Controls.Add(cboTpl);
+
+			var pnlCenter = new Panel { Dock = DockStyle.Fill, Padding = new Padding(15) };
+
+			var txtTextPreview = new RichTextBox
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.FromArgb(241, 245, 249),
+				Font = new Font("Segoe UI", 10.5f),
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes
+			};
+
+			var picImagePreview = new PictureBox
+			{
+				Dock = DockStyle.Fill,
+				SizeMode = PictureBoxSizeMode.Zoom,
+				BackColor = Color.FromArgb(15, 23, 42),
+				BorderStyle = BorderStyle.FixedSingle,
+				Visible = false
+			};
+
+			pnlCenter.Controls.Add(txtTextPreview);
+			pnlCenter.Controls.Add(picImagePreview);
+
+			Bitmap cachedBmp = null;
+
+			Action updatePreview = () =>
+			{
+				int idx = cboTpl.SelectedIndex;
+				if (idx == 3)
+				{
+					txtTextPreview.Visible = false;
+					picImagePreview.Visible = true;
+					if (cachedBmp == null)
 					{
-						Clipboard.SetImage(bmp);
+						cachedBmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance);
 					}
+					picImagePreview.Image = cachedBmp;
+				}
+				else
+				{
+					picImagePreview.Visible = false;
+					txtTextPreview.Visible = true;
+					string textContent = idx switch
+					{
+						1 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+						2 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+						_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
+					};
+					txtTextPreview.Text = textContent;
+				}
+			};
 
-					MessageBox.Show("✅ تم تصميم الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
-						"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information,
-						MessageBoxDefaultButton.Button1,
-						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+			cboTpl.SelectedIndexChanged += (s, e) => updatePreview();
+			updatePreview();
 
-					// فتح محادثة الواتساب
-					string clean = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
-					if (clean.StartsWith("0")) clean = "20" + clean.Substring(1);
-					
-					string appUrl = $"whatsapp://send?phone={clean}";
+			var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
+
+			var btnSend = Theme.MakeButton("🚀 إرسال الفاتورة عبر الواتساب", Color.FromArgb(37, 211, 102));
+			btnSend.Size = new Size(220, 40);
+			btnSend.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+			btnSend.Dock = DockStyle.Left;
+
+			var btnSaveDefault = Theme.MakeButton("⚙️ حفظ كنموذج افتراضي", Color.FromArgb(70, 80, 100));
+			btnSaveDefault.Size = new Size(160, 40);
+			btnSaveDefault.Dock = DockStyle.Left;
+			btnSaveDefault.Margin = new Padding(10, 0, 0, 0);
+
+			var btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(100, 100, 110));
+			btnCancel.Size = new Size(90, 40);
+			btnCancel.Dock = DockStyle.Right;
+			btnCancel.Click += (s, e) => dlg.Close();
+
+			btnSaveDefault.Click += (s, e) =>
+			{
+				string tplKey = cboTpl.SelectedIndex switch
+				{
+					1 => "Summary",
+					2 => "Financial",
+					3 => "ImageCard",
+					_ => "Detailed"
+				};
+				AppConfig.WhatsAppInvoiceTemplate = tplKey;
+				MessageBox.Show("✅ تم حفظ النموذج المختار كنموذج افتراضي لفواتير الواتساب!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			};
+
+			btnSend.Click += (s, e) =>
+			{
+				int idx = cboTpl.SelectedIndex;
+				if (idx == 3)
+				{
 					try
 					{
-						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appUrl) { UseShellExecute = true });
+						if (cachedBmp != null)
+						{
+							Clipboard.SetImage(cachedBmp);
+						}
+						MessageBox.Show("✅ تم تصميم كارت الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
+							"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+						WhatsAppSender.OpenWhatsAppChat(phone);
+						dlg.Close();
 					}
-					catch
+					catch (Exception ex)
 					{
-						string waUrl = $"https://wa.me/{clean}";
-						try
-						{
-							System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(waUrl) { UseShellExecute = true });
-						}
-						catch
-						{
-							try
-							{
-								System.Diagnostics.Process.Start("explorer.exe", $"\"{waUrl}\"");
-							}
-							catch
-							{
-								string webUrl = $"https://web.whatsapp.com/send?phone={clean}";
-								System.Diagnostics.Process.Start("explorer.exe", $"\"{webUrl}\"");
-							}
-						}
+						MessageBox.Show("فشل نسخ صورة الفاتورة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}
 				}
-				catch (Exception ex)
+				else
 				{
-					MessageBox.Show("فشل تصميم الفاتورة أو نسخها للحافظة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					string messageToSend = txtTextPreview.Text.Trim();
+					SendWhatsApp(phone, messageToSend);
+					dlg.Close();
 				}
-			}
+			};
+
+			pnlFooter.Controls.Add(btnSend);
+			pnlFooter.Controls.Add(btnSaveDefault);
+			pnlFooter.Controls.Add(btnCancel);
+
+			dlg.Controls.Add(pnlCenter);
+			dlg.Controls.Add(pnlTop);
+			dlg.Controls.Add(pnlFooter);
+
+			Theme.ApplyFormRTL(dlg);
+			dlg.ShowDialog(parent);
 		}
 
 		private static void SendWhatsApp(string phone, string message)
@@ -4788,7 +4931,7 @@ namespace ChickenDist.Forms
 			}
 		}
 
-		private Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance = 0m)
+		private static Bitmap DrawInvoiceImage(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance = 0m)
 		{
 			int itemCount = items != null ? items.Rows.Count : 0;
 			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
@@ -5079,7 +5222,7 @@ namespace ChickenDist.Forms
 			return bmp;
 		}
 
-		private void DrawShoppingCartSilhouette(Graphics g, float x, float y, float size)
+		private static void DrawShoppingCartSilhouette(Graphics g, float x, float y, float size)
 		{
 			using (var brush = new SolidBrush(Color.FromArgb(0, 51, 153)))
 			using (var pen = new Pen(Color.FromArgb(0, 51, 153), size * 0.08f))

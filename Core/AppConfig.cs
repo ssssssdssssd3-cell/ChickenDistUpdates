@@ -376,6 +376,12 @@ namespace ChickenDist.Core
             set => Set("WhatsAppBackupPhone", value);
         }
 
+        public static string WhatsAppInvoiceTemplate
+        {
+            get => Get("WhatsAppInvoiceTemplate", "Detailed");
+            set => Set("WhatsAppInvoiceTemplate", value);
+        }
+
         public static int BackupIntervalHours
         {
             get => int.TryParse(Get("BackupIntervalHours", "0"), out int val) ? val : 0;
