@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
                        ISNULL(acc.AccountName, N'الخزينة الرئيسية') AS AccountName
                 FROM CashBox c
                 LEFT JOIN Employees e ON c.CreatedBy = e.EmpID
-                LEFT JOIN Accounts acc ON c.AccountID = acc.AccountID
+                LEFT JOIN SafeAccounts acc ON c.AccountID = acc.AccountID
                 WHERE c.TransID = @id", DbHelper.P("@id", transID));
 
             if (_dtTransactions.Rows.Count > 0)
