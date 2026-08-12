@@ -307,7 +307,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 30;
+        private const int CurrentSchemaVersion = 32;
 
         public static void EnsureAppSettingsTable()
         {
@@ -363,6 +363,12 @@ namespace ChickenDist.Core
         public static void EnsurePurchaseColumnsExist()
         {
             EnsureAppSettingsTable();
+
+            SafeMigrate("Sales.IsPosted.Early", @"
+            IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
+            BEGIN
+                ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
 
             SafeMigrate("Products.EnglishName", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'EnglishName')
@@ -502,13 +508,15 @@ namespace ChickenDist.Core
                         var qtyExists    = Scalar("SELECT COL_LENGTH('Products', 'Quantity')");
                         var balClExists  = Scalar("SELECT COL_LENGTH('Clients', 'Balance')");
                         var balSpExists  = Scalar("SELECT COL_LENGTH('Suppliers', 'Balance')");
+                        var postExists   = Scalar("SELECT COL_LENGTH('Sales', 'IsPosted')");
                         // Only skip migrations if ALL critical columns are present
                         if (colExists   != null && colExists   != DBNull.Value &&
                             sinvExists  != null && sinvExists  != DBNull.Value &&
                             shipExists  != null && shipExists  != DBNull.Value &&
                             qtyExists   != null && qtyExists   != DBNull.Value &&
                             balClExists != null && balClExists != DBNull.Value &&
-                            balSpExists != null && balSpExists != DBNull.Value)
+                            balSpExists != null && balSpExists != DBNull.Value &&
+                            postExists  != null && postExists  != DBNull.Value)
                         {
                             return;
                         }

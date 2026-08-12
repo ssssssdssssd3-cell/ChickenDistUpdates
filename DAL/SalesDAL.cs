@@ -15,7 +15,7 @@ namespace ChickenDist.DAL
                 SELECT TOP 1 si.UnitPrice 
                 FROM SaleItems si 
                 JOIN Sales s ON si.SaleID = s.SaleID 
-                WHERE s.ClientID = @cid AND si.ProductID = @pid AND s.IsPosted = 1 
+                WHERE s.ClientID = @cid AND si.ProductID = @pid AND (COL_LENGTH('Sales', 'IsPosted') IS NULL OR s.IsPosted = 1) 
                 ORDER BY s.SaleDate DESC, s.SaleID DESC",
                 DbHelper.P("@cid", clientID), DbHelper.P("@pid", productID));
 

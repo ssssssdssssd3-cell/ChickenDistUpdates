@@ -87,7 +87,9 @@ namespace ChickenDist.Forms
             cmbClientSelector = new ComboBox
             {
                 Width = 230,
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 9.5f),
@@ -216,8 +218,6 @@ namespace ChickenDist.Forms
                     cmbClientSelector.DataSource = dt;
                     cmbClientSelector.DisplayMember = "ClientDisplayInfo";
                     cmbClientSelector.ValueMember = "ClientID";
-                    cmbClientSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
-                    cmbClientSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 }
 
                 if (_clientID > 0)
