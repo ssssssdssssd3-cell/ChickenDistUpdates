@@ -216,8 +216,8 @@ namespace ChickenDist.Forms
                     cmbClientSelector.DataSource = dt;
                     cmbClientSelector.DisplayMember = "ClientDisplayInfo";
                     cmbClientSelector.ValueMember = "ClientID";
-                    cmbClientSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                     cmbClientSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                    cmbClientSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 }
 
                 if (_clientID > 0)

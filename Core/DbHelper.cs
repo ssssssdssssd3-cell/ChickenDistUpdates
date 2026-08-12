@@ -851,6 +851,12 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("Sales.IsPosted", @"
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
+                BEGIN
+                    ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
+                END");
+
                 // Add Purchases and Suppliers schema (tables only)
                 SafeMigrate("Purchases.Tables", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Suppliers')

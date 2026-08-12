@@ -1561,7 +1561,7 @@ namespace ChickenDist.Forms
 					object discountsObj = DbHelper.Scalar(
 						@"SELECT ISNULL(SUM(DiscountAmount), 0) 
 						  FROM Sales 
-						  WHERE IsPosted = 1 
+						  WHERE (COL_LENGTH('Sales', 'IsPosted') IS NULL OR ISNULL(IsPosted, 1) = 1) 
 							AND CAST(SaleDate AS DATE) BETWEEN @f AND @t 
 							AND (@wid IS NULL OR WarehouseID = @wid)", 
 						DbHelper.P("@f", dtpFrom.Value.Date), 
