@@ -436,7 +436,40 @@ namespace ChickenDist.Forms
                                        : "الكلاسيكي الأزرق (Classic Blue)";
             if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 0;
             this.Controls.Add(cboA4Template);
-            y += 40;
+            y += 35;
+
+            // زر معاينة قالب ورق A4/A5
+            var btnPreviewA4 = Theme.MakeButton("📄 معاينة قالب ورق A4/A5", 20, y, 220, 36, Color.FromArgb(40, 120, 180));
+            btnPreviewA4.Click += (s, e) =>
+            {
+                // حفظ قالب A4 الحالي مؤقتاً للمعاينة
+                AppConfig.A4Template = cboA4Template.SelectedIndex == 1 ? "Modern"
+                                     : cboA4Template.SelectedIndex == 2 ? "Official"
+                                     : cboA4Template.SelectedIndex == 3 ? "Simple"
+                                     : cboA4Template.SelectedIndex == 4 ? "SparePartsGrid"
+                                     : cboA4Template.SelectedIndex == 5 ? "SupermarketA4"
+                                     : cboA4Template.SelectedIndex == 6 ? "ElegantClassic"
+                                     : cboA4Template.SelectedIndex == 7 ? "CorporateModern"
+                                     : "Classic";
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
+
+                // البحث عن فاتورة مبيعات للمعاينة
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview != null && dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    new FrmPrintSale(previewSaleID, "A4", true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير مبيعات مسجلة حالياً للمعاينة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewA4);
+            y += 50;
 
             // ── قالب الباركود الافتراضي ───────────────────
             AddLabel("قالب ملصق الباركود الافتراضي (Sticker):", 20, ref y, 10);
