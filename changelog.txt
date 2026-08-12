@@ -1,3 +1,6 @@
+v2.0.405 - 2026-08-12
+- تعريب كافة مسميات ورسائل عمود (العملية) وعمود (نوع الحركة) بالكامل في كشف معاينة طباعة التوريد والتحصيل FrmPrintPayment ومنع ظهور الأكواد الإنجليزية كـ ShiftOpen أو ReturnOutcome أو SupplierPayment أو ShiftClose
+
 v2.0.404 - 2026-08-12
 - إصلاح خطأ Invalid column name 'DiffQty' في جدول تسويات الجرد FrmDailyAccounts بحساب الفرق ديناميكياً (ActualQty - BookQty) وإضافة عمود محسب تلقائي بالقاعدة DiffQty
 

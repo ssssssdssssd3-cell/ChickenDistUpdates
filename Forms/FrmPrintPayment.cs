@@ -243,7 +243,7 @@ namespace ChickenDist.Forms
                         // الخزنة
                         g.DrawString(_accountName, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[5] - 4, rowH), sfRight); xCur += colW[5];
                         // نوع الحركة
-                        g.DrawString(tType, smallFont, Brushes.DimGray, new RectangleF(xCur, y, colW[6], rowH), sfCenter); xCur += colW[6];
+                        g.DrawString(GetTransTypeArabicShort(tType), smallFont, Brushes.Black, new RectangleF(xCur, y, colW[6], rowH), sfCenter); xCur += colW[6];
                         // التاريخ
                         g.DrawString(datePart, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[7], rowH), sfCenter); xCur += colW[7];
                         // ملاحظات
@@ -344,16 +344,62 @@ namespace ChickenDist.Forms
 
         private string GetTransTypeName(string type)
         {
+            if (string.IsNullOrWhiteSpace(type)) return "---";
             return type switch
             {
                 "Deposit" => "سداد / توريد نقدي",
                 "Withdraw" => "صرف نقدي",
                 "SaleIncome" => "تحصيل مبيعات",
                 "ClientPayment" => "سداد نقدي / تحصيل",
+                "SupplierPayment" => "سداد للمورد / صرف",
                 "Expense" => "مصروفات",
+                "ShiftOpen" => "فتح وردية جديدة",
                 "ShiftClose" => "تقفيل وردية",
-                _ => type
+                "ReturnOutcome" => "صرف مرتجع مبيعات",
+                "DriverHandover" => "تقفيل حساب مندوب",
+                "Adjustment" => "تسوية حساب",
+                "Transfer" or "TransferOut" or "TransferIn" => "تحويل مالي",
+                "InitialBalance" => "رصيد افتتاحي",
+                _ => GetArabicFallback(type)
             };
+        }
+
+        private string GetTransTypeArabicShort(string type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return "---";
+            return type switch
+            {
+                "Deposit" => "توريد نقدي",
+                "Withdraw" => "صرف نقدي",
+                "SaleIncome" => "مبيعات نقدي",
+                "ClientPayment" => "تحصيل عميل",
+                "SupplierPayment" => "صرف للمورد",
+                "Expense" => "مصروفات",
+                "ShiftOpen" => "فتح وردية",
+                "ShiftClose" => "إغلاق وردية",
+                "ReturnOutcome" => "مرتجع مبيعات",
+                "DriverHandover" => "تقفيل مندوب",
+                "Adjustment" => "تسوية حساب",
+                "Transfer" or "TransferOut" or "TransferIn" => "تحويل مالي",
+                "InitialBalance" => "رصيد افتتاحي",
+                _ => GetArabicFallback(type)
+            };
+        }
+
+        private string GetArabicFallback(string type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return "---";
+            if (type.Contains("ShiftOpen")) return "فتح وردية";
+            if (type.Contains("ShiftClose")) return "تقفيل وردية";
+            if (type.Contains("Sale")) return "مبيعات";
+            if (type.Contains("Return")) return "مرتجع مبيعات";
+            if (type.Contains("Client")) return "تحصيل عميل";
+            if (type.Contains("Supplier")) return "صرف للمورد";
+            if (type.Contains("Expense")) return "مصروفات";
+            if (type.Contains("Deposit")) return "توريد نقدي";
+            if (type.Contains("Withdraw")) return "صرف نقدي";
+            if (type.Contains("Transfer")) return "تحويل مالي";
+            return type;
         }
 
         private void DrawLogoOnLeft(Graphics g, int x, int y, int maxW, int maxH)
