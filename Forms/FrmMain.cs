@@ -348,6 +348,8 @@ namespace ChickenDist.Forms
                     targetGroup = "المناديب";
                     break;
                 case "FrmCashBox":
+                case "FrmDailyAccounts":
+                case "FrmReceiptVoucher":
                 case "FrmDailyClosing":
                     targetGroup = "المالية";
                     break;
@@ -504,6 +506,7 @@ namespace ChickenDist.Forms
                 }),
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
+                    ("📄 إصدار سندات الصرف والتوريد", "CashBox", (Action)(() => NavigateTo(new FrmReceiptVoucher()))),
                     ("🏛️ الحسابات والمالية اليومية الشاملة", "CashBox", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
                     ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),

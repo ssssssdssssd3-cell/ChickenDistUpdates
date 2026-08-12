@@ -169,6 +169,16 @@ namespace ChickenDist.Forms
             btnTransfer.Click += BtnTransfer_Click;
             pnlF.Controls.Add(btnTransfer);
 
+            var btnOpenVouchers = Theme.MakeButton("📄 شاشة السندات المستقلة", Color.FromArgb(40, 120, 180));
+            btnOpenVouchers.Size = new Size(160, 32);
+            btnOpenVouchers.Margin = new Padding(10, 0, 0, 0);
+            btnOpenVouchers.Click += (s, e) =>
+            {
+                new FrmReceiptVoucher().ShowDialog();
+                LoadCashBox();
+            };
+            pnlF.Controls.Add(btnOpenVouchers);
+
             var btnPrintVoucher = Theme.MakeButton("🖨️ طباعة كشف الحركة", Color.FromArgb(16, 185, 129));
             btnPrintVoucher.Size = new Size(130, 32);
             btnPrintVoucher.Margin = new Padding(10, 0, 0, 0);
