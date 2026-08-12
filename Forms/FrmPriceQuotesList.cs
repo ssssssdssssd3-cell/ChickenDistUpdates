@@ -143,14 +143,12 @@ namespace ChickenDist.Forms
 
             pnlBottom.Controls.AddRange(new Control[] { btnRecall, btnConvertToSale, btnDelete, btnRefresh, btnClose });
 
-            // Docking Hierarchy: Add Fill FIRST, then Top & Bottom
-            Controls.Add(dgQuotes);
+            // Docking Hierarchy: Add Top & Bottom first, then Fill grid & SendToBack
             Controls.Add(pnlTop);
             Controls.Add(pnlBottom);
+            Controls.Add(dgQuotes);
 
-            dgQuotes.BringToFront();
-            pnlTop.BringToFront();
-            pnlBottom.BringToFront();
+            dgQuotes.SendToBack();
 
             dgQuotes.DoubleClick += (s, e) => DoRecall();
             dgQuotes.KeyDown += (s, e) =>
