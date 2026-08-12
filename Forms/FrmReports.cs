@@ -2730,13 +2730,14 @@ namespace ChickenDist.Forms
 			DataGridView dataGridView = GetActiveGrid();
 			if (dataGridView == null || dataGridView.Rows.Count == 0)
 			{
-				MessageBox.Show("لا توجد بيانات لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("لا توجد بيانات لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation,
+					MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 				return;
 			}
 
 			string tabText = tabReports.SelectedTab?.Text ?? "تقرير";
 			string cleanName = System.Text.RegularExpressions.Regex.Replace(tabText, @"[^\w\s\-\u0600-\u06FF]", "").Trim();
-			string defaultFileName = $"{cleanName}_{DateTime.Now:yyyy_MM_dd}.csv";
+			string defaultFileName = $"{cleanName}_{DateTime.Now:yyyy_MM_dd}.xls";
 
 			ExportToExcel(dataGridView, defaultFileName);
 		}
@@ -2747,47 +2748,24 @@ namespace ChickenDist.Forms
 			{
 				dlg.Title = "تصدير التقرير إلى Excel";
 				dlg.FileName = defaultFileName;
-				dlg.Filter = "Excel CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
+				dlg.Filter = "Excel Files (*.xls)|*.xls|All Files (*.*)|*.*";
+				dlg.DefaultExt = "xls";
 				if (dlg.ShowDialog() == DialogResult.OK)
 				{
 					try
 					{
-						var sb = new System.Text.StringBuilder();
+						ExportDataGridViewToXls(dgv, dlg.FileName,
+							tabReports.SelectedTab?.Text ?? "تقرير",
+							AppConfig.CompanyName ?? "التقرير");
 
-						// 1. Headers
-						var headers = new List<string>();
-						foreach (DataGridViewColumn col in dgv.Columns)
-						{
-							if (col.Visible)
-							{
-								headers.Add($"\"{col.HeaderText?.Replace("\"", "\"\"")}\"");
-							}
-						}
-						sb.AppendLine(string.Join(",", headers));
-
-						// 2. Rows
-						foreach (DataGridViewRow row in dgv.Rows)
-						{
-							if (row.IsNewRow) continue;
-							var cells = new List<string>();
-							foreach (DataGridViewColumn col in dgv.Columns)
-							{
-								if (col.Visible)
-								{
-									var val = row.Cells[col.Index].Value?.ToString() ?? "";
-									cells.Add($"\"{val.Replace("\"", "\"\"")}\"");
-								}
-							}
-							sb.AppendLine(string.Join(",", cells));
-						}
-
-						// Save with UTF-8 BOM encoding so Excel displays Arabic correctly
-						System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), System.Text.Encoding.UTF8);
-
-						MessageBox.Show("✅ تم تصدير التقرير بنجاح!\nيمكنك الآن فتح الملف مباشرة باستخدام برنامج Excel أو إرساله.", 
-							"تم التصدير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information,
+						var result = MessageBox.Show(
+							"✅ تم تصدير التقرير بنجاح!\nهل تريد فتح الملف الآن؟",
+							"تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information,
 							MessageBoxDefaultButton.Button1,
 							MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+						if (result == DialogResult.Yes)
+							System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
 					}
 					catch (Exception ex)
 					{
@@ -2796,6 +2774,224 @@ namespace ChickenDist.Forms
 				}
 			}
 		}
+
+		/// <summary>
+		/// Exports a DataGridView to a properly-formatted Excel SpreadsheetML (.xls) file.
+		/// Handles Arabic text correctly, no external library required.
+		/// </summary>
+		public static void ExportDataGridViewToXls(DataGridView dgv, string filePath, string sheetTitle = "", string companyName = "")
+		{
+			var xml = new System.Text.StringBuilder();
+			xml.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+			xml.AppendLine("<?mso-application progid=\"Excel.Sheet\"?>");
+			xml.AppendLine("<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\"");
+			xml.AppendLine(" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\"");
+			xml.AppendLine(" xmlns:x=\"urn:schemas-microsoft-com:office:excel\">");
+
+			// ── Styles ──────────────────────────────────────────────────────
+			xml.AppendLine("<Styles>");
+
+			// Default
+			xml.AppendLine("<Style ss:ID=\"Default\"><Alignment ss:Horizontal=\"Right\" ss:ReadingOrder=\"RightToLeft\"/></Style>");
+
+			// Title row
+			xml.AppendLine("<Style ss:ID=\"Title\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\"/>");
+			xml.AppendLine(" <Font ss:Bold=\"1\" ss:Size=\"14\" ss:Color=\"#1E3A5F\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#D6E4F0\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders><Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\" ss:Color=\"#1E3A5F\"/></Borders>");
+			xml.AppendLine("</Style>");
+
+			// Header row
+			xml.AppendLine("<Style ss:ID=\"Header\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\" ss:WrapText=\"1\"/>");
+			xml.AppendLine(" <Font ss:Bold=\"1\" ss:Size=\"11\" ss:Color=\"#FFFFFF\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#1E5799\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders>");
+			xml.AppendLine("  <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine(" </Borders>");
+			xml.AppendLine("</Style>");
+
+			// Even row
+			xml.AppendLine("<Style ss:ID=\"Even\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Right\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#F4F8FF\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders>");
+			xml.AppendLine("  <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine(" </Borders>");
+			xml.AppendLine("</Style>");
+
+			// Odd row
+			xml.AppendLine("<Style ss:ID=\"Odd\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Right\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#FFFFFF\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders>");
+			xml.AppendLine("  <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine(" </Borders>");
+			xml.AppendLine("</Style>");
+
+			// Total/Footer row
+			xml.AppendLine("<Style ss:ID=\"Total\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Right\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\"/>");
+			xml.AppendLine(" <Font ss:Bold=\"1\" ss:Size=\"11\" ss:Color=\"#1E3A5F\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#FFF3CD\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders>");
+			xml.AppendLine("  <Border ss:Position=\"Top\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\" ss:Color=\"#1E3A5F\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#AAAAAA\"/>");
+			xml.AppendLine(" </Borders>");
+			xml.AppendLine("</Style>");
+
+			// Number cell
+			xml.AppendLine("<Style ss:ID=\"Num\">");
+			xml.AppendLine(" <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\" ss:ReadingOrder=\"RightToLeft\"/>");
+			xml.AppendLine(" <Interior ss:Color=\"#FFFFFF\" ss:Pattern=\"Solid\"/>");
+			xml.AppendLine(" <Borders>");
+			xml.AppendLine("  <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine("  <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\" ss:Color=\"#D0D8E8\"/>");
+			xml.AppendLine(" </Borders>");
+			xml.AppendLine("</Style>");
+
+			xml.AppendLine("</Styles>");
+
+			// ── Worksheet ───────────────────────────────────────────────────
+			string safeTitle = string.IsNullOrWhiteSpace(sheetTitle) ? "تقرير" : sheetTitle;
+			string safeTitleAttr = safeTitle.Replace("\"", "&quot;").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+			// Sheet name must be ≤31 chars
+			string sheetName = safeTitleAttr.Length > 31 ? safeTitleAttr.Substring(0, 31) : safeTitleAttr;
+			xml.AppendLine($"<Worksheet ss:Name=\"{sheetName}\">");
+
+			// Collect visible columns
+			var visibleCols = new List<DataGridViewColumn>();
+			foreach (DataGridViewColumn col in dgv.Columns)
+				if (col.Visible) visibleCols.Add(col);
+
+			int colCount = visibleCols.Count;
+
+			xml.AppendLine("<Table ss:DefaultRowHeight=\"20\">");
+
+			// Column widths (approximate)
+			foreach (var col in visibleCols)
+			{
+				int w = Math.Max(col.Width, 60);
+				// Convert pixel width to points (roughly 0.75)
+				double pts = w * 0.75;
+				xml.AppendLine($"<Column ss:Width=\"{pts:0.0}\"/>");
+			}
+
+			// ── Row 1: Company / Title ──────────────────────────────────────
+			xml.AppendLine("<Row ss:Height=\"28\">");
+			string titleText = (!string.IsNullOrWhiteSpace(companyName) ? companyName + " - " : "") + safeTitle + " | " + DateTime.Now.ToString("yyyy/MM/dd");
+			xml.AppendLine($"<Cell ss:MergeAcross=\"{colCount - 1}\" ss:StyleID=\"Title\"><Data ss:Type=\"String\">{EscapeXml(titleText)}</Data></Cell>");
+			xml.AppendLine("</Row>");
+
+			// ── Row 2: Headers ──────────────────────────────────────────────
+			xml.AppendLine("<Row ss:Height=\"26\">");
+			foreach (var col in visibleCols)
+			{
+				string hdr = EscapeXml(col.HeaderText ?? "");
+				xml.AppendLine($"<Cell ss:StyleID=\"Header\"><Data ss:Type=\"String\">{hdr}</Data></Cell>");
+			}
+			xml.AppendLine("</Row>");
+
+			// ── Data rows ───────────────────────────────────────────────────
+			int rowIndex = 0;
+			foreach (DataGridViewRow row in dgv.Rows)
+			{
+				if (row.IsNewRow) continue;
+
+				// Detect total/summary row
+				bool isTotalRow = false;
+				if (visibleCols.Count > 0)
+				{
+					var firstCell = row.Cells[visibleCols[0].Index]?.Value?.ToString() ?? "";
+					if (firstCell.Contains("إجمالي") || firstCell.Contains("المجموع") || firstCell.Contains("الكلي"))
+						isTotalRow = true;
+				}
+
+				string rowStyle = isTotalRow ? "Total" : (rowIndex % 2 == 0 ? "Even" : "Odd");
+				xml.AppendLine("<Row ss:Height=\"20\">");
+
+				foreach (var col in visibleCols)
+				{
+					var rawVal = row.Cells[col.Index].Value;
+					string valStr = rawVal?.ToString() ?? "";
+
+					// Determine data type
+					bool isNumeric = false;
+					double numVal = 0;
+					if (rawVal != null && !(rawVal is string) && double.TryParse(valStr, System.Globalization.NumberStyles.Any,
+						System.Globalization.CultureInfo.InvariantCulture, out numVal))
+					{
+						isNumeric = true;
+					}
+					else if (!string.IsNullOrWhiteSpace(valStr))
+					{
+						// Try parsing Arabic number strings (e.g. "1,234.56" or "1234.56")
+						string cleaned = valStr.Replace(",", "");
+						if (double.TryParse(cleaned, System.Globalization.NumberStyles.Any,
+							System.Globalization.CultureInfo.InvariantCulture, out numVal) &&
+							!valStr.Any(c => char.IsLetter(c) && c < 128) && // no ASCII letters
+							!valStr.StartsWith("0") && cleaned.Length > 0)
+						{
+							isNumeric = true;
+						}
+					}
+
+					if (isNumeric)
+					{
+						string numStyle = isTotalRow ? "Total" : "Num";
+						xml.AppendLine($"<Cell ss:StyleID=\"{numStyle}\"><Data ss:Type=\"Number\">{numVal.ToString(System.Globalization.CultureInfo.InvariantCulture)}</Data></Cell>");
+					}
+					else
+					{
+						xml.AppendLine($"<Cell ss:StyleID=\"{rowStyle}\"><Data ss:Type=\"String\">{EscapeXml(valStr)}</Data></Cell>");
+					}
+				}
+
+				xml.AppendLine("</Row>");
+				rowIndex++;
+			}
+
+			xml.AppendLine("</Table>");
+
+			// Worksheet options - RTL, freeze header rows, auto-filter
+			xml.AppendLine("<WorksheetOptions xmlns=\"urn:schemas-microsoft-com:office:excel\">");
+			xml.AppendLine(" <DisplayRightToLeft/>");
+			xml.AppendLine(" <FreezePanes/>");
+			xml.AppendLine(" <SplitHorizontal>2</SplitHorizontal>");
+			xml.AppendLine(" <TopRowBottomPane>2</TopRowBottomPane>");
+			xml.AppendLine(" <ActivePane>2</ActivePane>");
+			xml.AppendLine("</WorksheetOptions>");
+
+			// AutoFilter
+			xml.AppendLine($"<AutoFilter x:Range=\"R2C1:R2C{colCount}\" xmlns=\"urn:schemas-microsoft-com:office:excel\"/>");
+
+			xml.AppendLine("</Worksheet>");
+			xml.AppendLine("</Workbook>");
+
+			// Write with UTF-8 BOM so Excel recognizes encoding
+			System.IO.File.WriteAllText(filePath, xml.ToString(), new System.Text.UTF8Encoding(true));
+		}
+
+		private static string EscapeXml(string s)
+		{
+			if (string.IsNullOrEmpty(s)) return "";
+			return s.Replace("&", "&amp;")
+			        .Replace("<", "&lt;")
+			        .Replace(">", "&gt;")
+			        .Replace("\"", "&quot;")
+			        .Replace("'", "&apos;");
+		}
+
 
 		private void FilterGrid(DataGridView dg, string query)
 		{
