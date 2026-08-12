@@ -1256,7 +1256,7 @@ namespace ChickenDist.Forms
             try
             {
                 DataTable dt = SupplierDAL.GetAll(true);
-                if (dt.Rows.Count == 0)
+                if (dt == null || dt.Rows.Count == 0)
                 {
                     MessageBox.Show("لا يوجد موردين مسجلين حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -1265,7 +1265,7 @@ namespace ChickenDist.Forms
                 using (var dlg = new Form())
                 {
                     dlg.Text = "📊 اختر المورد لعرض كشف الحساب";
-                    dlg.Size = new Size(350, 180);
+                    dlg.Size = new Size(480, 210);
                     dlg.StartPosition = FormStartPosition.CenterParent;
                     dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                     dlg.MaximizeBox = false; dlg.MinimizeBox = false;
@@ -1273,15 +1273,30 @@ namespace ChickenDist.Forms
                     dlg.BackColor = Theme.BgMain;
                     dlg.Font = Theme.FontMain;
 
-                    var lbl = new Label { Text = "اختر المورد:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
-                    var cbo = new ComboBox { Location = new Point(20, 45), Width = 290, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+                    var lbl = new Label { Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:", Location = new Point(20, 18), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+                    var cbo = new ComboBox
+                    {
+                        Location = new Point(20, 46),
+                        Width = 420,
+                        DropDownStyle = ComboBoxStyle.DropDown,
+                        AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                        AutoCompleteSource = AutoCompleteSource.ListItems,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 10.5f)
+                    };
 
                     foreach (DataRow r in dt.Rows)
-                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], r["SupplierName"].ToString()));
+                    {
+                        string code = r.Table.Columns.Contains("SupplierCode") ? r["SupplierCode"].ToString() : "";
+                        string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
+                        string display = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  📱 {phone}  |  (كود: {code})";
+                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], display));
+                    }
                     cbo.DisplayMember = "Text";
-                    cbo.SelectedIndex = 0;
+                    if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
 
-                    var btnOk = Theme.MakeButton("🔍 عرض الكشف", 180, 90, 130, 32, Theme.Accent);
+                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب المورد", 220, 105, 220, 36, Theme.Accent);
                     btnOk.Click += (senderDlg, eDlg) => {
                         if (cbo.SelectedItem is ComboItem ci)
                         {
@@ -1315,7 +1330,7 @@ namespace ChickenDist.Forms
                 using (var dlg = new Form())
                 {
                     dlg.Text = "📊 اختر العميل لعرض كشف الحساب والمسحوبات التفصيلية";
-                    dlg.Size = new Size(420, 200);
+                    dlg.Size = new Size(480, 210);
                     dlg.StartPosition = FormStartPosition.CenterParent;
                     dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                     dlg.MaximizeBox = false; dlg.MinimizeBox = false;
@@ -1323,18 +1338,30 @@ namespace ChickenDist.Forms
                     dlg.BackColor = Theme.BgMain;
                     dlg.Font = Theme.FontMain;
 
-                    var lbl = new Label { Text = "👤 اختر العميل من القائمة:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
-                    var cbo = new ComboBox { Location = new Point(20, 48), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10.5f) };
+                    var lbl = new Label { Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:", Location = new Point(20, 18), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+                    var cbo = new ComboBox
+                    {
+                        Location = new Point(20, 46),
+                        Width = 420,
+                        DropDownStyle = ComboBoxStyle.DropDown,
+                        AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                        AutoCompleteSource = AutoCompleteSource.ListItems,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 10.5f)
+                    };
 
                     foreach (DataRow r in dt.Rows)
                     {
                         string code = r.Table.Columns.Contains("ClientCode") ? r["ClientCode"].ToString() : "";
-                        cbo.Items.Add(new ComboItem((int)r["ClientID"], $"{r["ClientName"]} (كود: {code})"));
+                        string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
+                        string display = string.IsNullOrEmpty(phone) ? $"{r["ClientName"]} (كود: {code})" : $"{r["ClientName"]}  |  📱 {phone}  |  (كود: {code})";
+                        cbo.Items.Add(new ComboItem((int)r["ClientID"], display));
                     }
                     cbo.DisplayMember = "Text";
                     if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
 
-                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب العميل", 200, 100, 180, 36, Theme.Accent);
+                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب العميل", 220, 105, 220, 36, Theme.Accent);
                     btnOk.Click += (senderDlg, eDlg) => {
                         if (cbo.SelectedItem is ComboItem ci)
                         {

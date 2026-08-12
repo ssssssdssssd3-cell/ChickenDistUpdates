@@ -201,9 +201,24 @@ namespace ChickenDist.Forms
             {
                 _isLoadingCombo = true;
                 DataTable dt = ClientDAL.GetAll();
-                cmbClientSelector.DataSource = dt;
-                cmbClientSelector.DisplayMember = "ClientName";
-                cmbClientSelector.ValueMember = "ClientID";
+                if (dt != null)
+                {
+                    if (!dt.Columns.Contains("ClientDisplayInfo"))
+                    {
+                        dt.Columns.Add("ClientDisplayInfo", typeof(string));
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            string code = r.Table.Columns.Contains("ClientCode") ? r["ClientCode"].ToString() : "";
+                            string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
+                            r["ClientDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["ClientName"]} (كود: {code})" : $"{r["ClientName"]}  |  📱 {phone}  |  (كود: {code})";
+                        }
+                    }
+                    cmbClientSelector.DataSource = dt;
+                    cmbClientSelector.DisplayMember = "ClientDisplayInfo";
+                    cmbClientSelector.ValueMember = "ClientID";
+                    cmbClientSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                    cmbClientSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                }
 
                 if (_clientID > 0)
                 {

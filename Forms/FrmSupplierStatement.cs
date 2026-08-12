@@ -13,6 +13,8 @@ namespace ChickenDist.Forms
     {
         private int _supplierID;
         private string _supplierName;
+        private ComboBox cmbSupplierSelector;
+        private bool _isLoadingCombo = false;
         private DataGridView dgStatement;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnLoad, btnPrint;
@@ -22,18 +24,21 @@ namespace ChickenDist.Forms
         private decimal _totalPayments  = 0;
         private decimal _runBalance     = 0;
 
+        public FrmSupplierStatement() : this(0, "") { }
+
         public FrmSupplierStatement(int supplierID, string supplierName)
         {
             _supplierID   = supplierID;
             _supplierName = supplierName;
             InitUI();
+            LoadSuppliersCombo();
             LoadStatement();
         }
 
         private void InitUI()
         {
-            this.Text = "كشف حساب المورد - " + _supplierName;
-            this.Size = new Size(980, 640);
+            this.Text = "كشف حساب المورد - " + (!string.IsNullOrEmpty(_supplierName) ? _supplierName : "اختر المورد");
+            this.Size = new Size(1050, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -41,47 +46,69 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ===== Filter bar =====
-            var pnlFilter = new Panel
+            var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(8)
+                Height = 46,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(8, 6, 8, 6),
+                WrapContents = false
             };
 
-            pnlFilter.Controls.Add(new Label { Text = "من:", Location = new Point(745, 15), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlFilter.Controls.Add(new Label { Text = "🤝 المورد:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
+            cmbSupplierSelector = new ComboBox
+            {
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f),
+                Margin = new Padding(2, 2, 0, 0)
+            };
+            cmbSupplierSelector.SelectedIndexChanged += CmbSupplierSelector_SelectedIndexChanged;
+            pnlFilter.Controls.Add(cmbSupplierSelector);
+
+            pnlFilter.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(12, 6, 0, 0) });
             dtpFrom = new DateTimePicker
             {
-                Location = new Point(550, 11),
-                Width = 190,
+                Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
-                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
+                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
+                Margin = new Padding(2, 2, 0, 0)
             };
             dtpFrom.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpFrom);
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(510, 15), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlFilter.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(10, 6, 0, 0) });
             dtpTo = new DateTimePicker
             {
-                Location = new Point(315, 11),
-                Width = 190,
+                Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
-                Value = DateTime.Now
+                Value = DateTime.Now,
+                Margin = new Padding(2, 2, 0, 0)
             };
             dtpTo.ValueChanged += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(dtpTo);
 
-            btnLoad = Theme.MakeButton("🔍 عرض", 260, 10, 75, 30, Theme.Accent);
+            btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
+            btnLoad.Size = new Size(90, 30);
+            btnLoad.Margin = new Padding(10, 0, 0, 0);
             btnLoad.Click += (s, e) => LoadStatement();
             pnlFilter.Controls.Add(btnLoad);
 
-            btnPrint = Theme.MakeButton("🖨 طباعة", 165, 10, 85, 30, Theme.Primary);
+            btnPrint = Theme.MakeButton("🖨️ طباعة", Theme.Primary);
+            btnPrint.Size = new Size(100, 30);
+            btnPrint.Margin = new Padding(8, 0, 0, 0);
             btnPrint.Click += BtnPrint_Click;
             pnlFilter.Controls.Add(btnPrint);
 
-            var btnPay = Theme.MakeButton("💸 سداد/صرف نقدية", 10, 10, 145, 30, Color.FromArgb(140, 80, 0));
+            var btnPay = Theme.MakeButton("💸 سداد/صرف نقدية", Color.FromArgb(140, 80, 0));
+            btnPay.Size = new Size(140, 30);
+            btnPay.Margin = new Padding(8, 0, 0, 0);
             btnPay.Click += (s, e) => OpenSupplierPaymentDialog();
             pnlFilter.Controls.Add(btnPay);
 
@@ -173,6 +200,71 @@ namespace ChickenDist.Forms
             pnlFoot.SendToBack();
             dgStatement.BringToFront();
             Theme.ApplyFormRTL(this);
+        }
+
+        private void LoadSuppliersCombo()
+        {
+            try
+            {
+                _isLoadingCombo = true;
+                DataTable dt = SupplierDAL.GetAll();
+                if (dt != null)
+                {
+                    if (!dt.Columns.Contains("SupplierDisplayInfo"))
+                    {
+                        dt.Columns.Add("SupplierDisplayInfo", typeof(string));
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            string code = r.Table.Columns.Contains("SupplierCode") ? r["SupplierCode"].ToString() : "";
+                            string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
+                            r["SupplierDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  📱 {phone}  |  (كود: {code})";
+                        }
+                    }
+                    cmbSupplierSelector.DataSource = dt;
+                    cmbSupplierSelector.DisplayMember = "SupplierDisplayInfo";
+                    cmbSupplierSelector.ValueMember = "SupplierID";
+                    cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                    cmbSupplierSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                }
+
+                if (_supplierID > 0)
+                {
+                    cmbSupplierSelector.SelectedValue = _supplierID;
+                }
+                else if (dt != null && dt.Rows.Count > 0)
+                {
+                    _supplierID = Convert.ToInt32(dt.Rows[0]["SupplierID"]);
+                    _supplierName = dt.Rows[0]["SupplierName"].ToString();
+                    this.Text = "كشف حساب المورد - " + _supplierName;
+                    cmbSupplierSelector.SelectedValue = _supplierID;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadSuppliersCombo failed", ex);
+            }
+            finally
+            {
+                _isLoadingCombo = false;
+            }
+        }
+
+        private void CmbSupplierSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isLoadingCombo) return;
+            if (cmbSupplierSelector.SelectedValue != null && cmbSupplierSelector.SelectedValue != DBNull.Value)
+            {
+                if (int.TryParse(cmbSupplierSelector.SelectedValue.ToString(), out int sid) && sid > 0)
+                {
+                    if (sid != _supplierID)
+                    {
+                        _supplierID = sid;
+                        _supplierName = cmbSupplierSelector.Text;
+                        this.Text = "كشف حساب المورد - " + _supplierName;
+                        LoadStatement();
+                    }
+                }
+            }
         }
 
         private void LoadStatement()

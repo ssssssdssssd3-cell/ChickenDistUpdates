@@ -2632,7 +2632,7 @@ namespace ChickenDist.DAL
                 LEFT JOIN (
                     SELECT ri.ProductID, r.ClientID, SUM(ri.Quantity) AS ReturnQty, SUM(ri.TotalPrice) AS ReturnTotal
                     FROM ReturnItems ri
-                    JOIN Returns r ON ri.ReturnID = r.ReturnID
+                    JOIN SalesReturns r ON ri.ReturnID = r.ReturnID
                     WHERE r.IsPosted = 1
                       AND r.ReturnDate BETWEEN @f AND @t
                       AND (@clientID IS NULL OR r.ClientID = @clientID)
