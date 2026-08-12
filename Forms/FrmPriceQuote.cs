@@ -76,9 +76,9 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 110,
-                BackColor = Theme.BgCard,
                 Padding = new Padding(12, 8, 12, 8)
             };
+            Theme.StyleSearchHeaderPanel(pnlHeader);
 
             var tblHeader = new TableLayoutPanel
             {
@@ -175,7 +175,7 @@ namespace ChickenDist.Forms
             {
                 Text = "ℹ️ تنبيه: بيان التسعير هذا مجرد عرض أسعار للعميل ولا يخصم أي كميات من المخزون إلا عند تحويله لفاتورة بيع.",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.Orange,
+                ForeColor = Color.FromArgb(255, 220, 110),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -189,9 +189,9 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 44,
-                BackColor = Theme.BgCard,
                 Padding = new Padding(6, 4, 6, 4)
             };
+            Theme.StyleSearchHeaderPanel(pnlProductBar);
 
             var tblProductBar = new TableLayoutPanel
             {
@@ -363,7 +363,8 @@ namespace ChickenDist.Forms
                 Text = txt,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight,
-                ForeColor = Theme.TextMain,
+                ForeColor = Theme.TextSearchLabel,
+                Font = Theme.FontBold,
                 Margin = new Padding(2)
             };
         }
@@ -378,24 +379,26 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
                 Font = Theme.FontMain,
-                BackColor = isSelected ? Theme.Primary : Theme.BgCard,
-                ForeColor = isSelected ? Color.White : Theme.TextMain,
+                BackColor = isSelected ? Theme.Primary : Color.FromArgb(40, 60, 95),
+                ForeColor = Color.White,
                 Margin = new Padding(2)
             };
             btn.FlatAppearance.BorderSize = 1;
-            btn.FlatAppearance.BorderColor = Theme.Primary;
+            btn.FlatAppearance.BorderColor = isSelected ? Color.White : Color.FromArgb(100, 140, 200);
             return btn;
         }
 
         private void SelectTier(string tier)
         {
             _selectedTier = tier;
-            btnTierRetail.BackColor = tier == "قطاعي" ? Theme.Primary : Theme.BgCard;
-            btnTierRetail.ForeColor = tier == "قطاعي" ? Color.White : Theme.TextMain;
-            btnTierSemi.BackColor = tier == "نصف جملة" ? Theme.Primary : Theme.BgCard;
-            btnTierSemi.ForeColor = tier == "نصف جملة" ? Color.White : Theme.TextMain;
-            btnTierWholesale.BackColor = tier == "جملة" ? Theme.Primary : Theme.BgCard;
-            btnTierWholesale.ForeColor = tier == "جملة" ? Color.White : Theme.TextMain;
+            btnTierRetail.BackColor = tier == "قطاعي" ? Theme.Primary : Color.FromArgb(40, 60, 95);
+            btnTierRetail.FlatAppearance.BorderColor = tier == "قطاعي" ? Color.White : Color.FromArgb(100, 140, 200);
+
+            btnTierSemi.BackColor = tier == "نصف جملة" ? Theme.Primary : Color.FromArgb(40, 60, 95);
+            btnTierSemi.FlatAppearance.BorderColor = tier == "نصف جملة" ? Color.White : Color.FromArgb(100, 140, 200);
+
+            btnTierWholesale.BackColor = tier == "جملة" ? Theme.Primary : Color.FromArgb(40, 60, 95);
+            btnTierWholesale.FlatAppearance.BorderColor = tier == "جملة" ? Color.White : Color.FromArgb(100, 140, 200);
         }
 
         private void SetupSearchableCombo(ComboBox cbo)

@@ -53,9 +53,9 @@ namespace ChickenDist.Forms
             var pnlTop = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8)
             };
+            Theme.StyleSearchHeaderPanel(pnlTop);
 
             var lblSearch = new Label
             {
@@ -63,7 +63,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = Theme.FontBold,
-                ForeColor = Theme.TextMain,
+                ForeColor = Theme.TextSearchLabel,
                 Margin = new Padding(0, 6, 5, 0)
             };
 
