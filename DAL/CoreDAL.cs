@@ -381,8 +381,44 @@ namespace ChickenDist.DAL
             if (string.IsNullOrWhiteSpace(scannedCode)) return null;
 
             scannedCode = scannedCode.Trim();
+            int.TryParse(scannedCode, out int scannedInt);
+            string scannedPadded = scannedInt > 0 ? scannedInt.ToString("D8") : scannedCode;
+            string scannedTrimmed = scannedCode.TrimStart('0');
+            if (string.IsNullOrEmpty(scannedTrimmed)) scannedTrimmed = "0";
 
-            // 1. Parse Scale Barcode (e.g. 9900168000724 -> PLU = 00168, Weight = 0.072)
+            // 1. FIRST Priority: Direct Exact Full Barcode / Code / PartNumber Lookup
+            // If the scanned barcode matches ProductCode, InternationalCode, Unit1Barcode, Unit2Barcode, PartNumber, or ScalePLU directly
+            var dtDirect = DbHelper.Query(@"
+                SELECT TOP 1 p.*, c.CategoryName 
+                FROM Products p 
+                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                WHERE p.IsActive = 1 AND (
+                    p.ProductCode = @code OR p.ProductCode = @scannedPadded OR p.ProductCode = @scannedTrimmed OR
+                    p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR
+                    p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR
+                    p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR
+                    p.PartNumber = @code OR
+                    p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
+                    (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
+                    (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
+                )
+                ORDER BY CASE 
+                    WHEN (p.ProductCode = @code OR p.InternationalCode = @code OR p.Unit1Barcode = @code OR p.Unit2Barcode = @code OR p.PartNumber = @code) THEN 0
+                    WHEN (p.ScalePLU = @code) THEN 1
+                    ELSE 2
+                END",
+                DbHelper.P("@code", scannedCode),
+                DbHelper.P("@scannedPadded", scannedPadded),
+                DbHelper.P("@scannedTrimmed", scannedTrimmed),
+                DbHelper.P("@scannedInt", scannedInt));
+
+            if (dtDirect.Rows.Count > 0)
+            {
+                parsedWeight = 1m;
+                return dtDirect.Rows[0];
+            }
+
+            // 2. SECOND Priority: Scale Barcode Parsing (e.g. 9900168000724 -> PLU = 00168, Weight = 0.072)
             var scaleRes = BarcodeParser.Parse(scannedCode);
 
             // Fallback parsing for 13-digit scale barcodes starting with 99, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 9
@@ -438,37 +474,6 @@ namespace ChickenDist.DAL
                 {
                     return dtScale.Rows[0];
                 }
-            }
-
-            // 2. Direct barcode / code / ID lookup (fallback if PLU lookup didn't match any product)
-            parsedWeight = 1m;
-            int.TryParse(scannedCode, out int scannedInt);
-            string scannedPadded = scannedInt > 0 ? scannedInt.ToString("D8") : scannedCode;
-            string scannedTrimmed = scannedCode.TrimStart('0');
-            if (string.IsNullOrEmpty(scannedTrimmed)) scannedTrimmed = "0";
-
-            var dtDirect = DbHelper.Query(@"
-                SELECT TOP 1 p.*, c.CategoryName 
-                FROM Products p 
-                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
-                WHERE p.IsActive = 1 AND (
-                    p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
-                    p.ProductCode = @code OR p.ProductCode = @scannedPadded OR p.ProductCode = @scannedTrimmed OR
-                    p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR
-                    p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR
-                    p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR
-                    p.PartNumber = @code OR
-                    (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
-                    (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
-                )",
-                DbHelper.P("@code", scannedCode),
-                DbHelper.P("@scannedPadded", scannedPadded),
-                DbHelper.P("@scannedTrimmed", scannedTrimmed),
-                DbHelper.P("@scannedInt", scannedInt));
-
-            if (dtDirect.Rows.Count > 0)
-            {
-                return dtDirect.Rows[0];
             }
 
             return null;
