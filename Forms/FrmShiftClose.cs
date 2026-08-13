@@ -647,19 +647,45 @@ namespace ChickenDist.Forms
                     SELECT 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, sr.ReturnDate AS TransTime, 'مرتجع فاتورة' AS Details, sr.TotalAmount AS Amount
                     FROM SalesReturns sr JOIN Sales s ON sr.SaleID=s.SaleID WHERE s.ShiftID=@sid
                     UNION ALL
-                    SELECT 'مصروف/حركة' AS TransType, CAST(CashID AS NVARCHAR) AS RefCode, TransDate AS TransTime, Notes AS Details, (AmountOut - AmountIn) AS Amount
+                    SELECT 
+                        CASE 
+                            WHEN TransType = 'ClientPayment' THEN N'تحصيل من عميل'
+                            WHEN TransType = 'SupplierPayment' THEN N'صرف لمورد'
+                            WHEN TransType = 'EmpAdvance' THEN N'سلفة موظف'
+                            WHEN TransType = 'EmpPaymentOut' THEN N'راتب/مستحقات'
+                            WHEN TransType = 'EmpPaymentIn' THEN N'توريد موظف'
+                            WHEN TransType = 'ReceiptIn' THEN N'سند قبض'
+                            WHEN TransType = 'ReceiptOut' THEN N'سند صرف'
+                            WHEN AmountIn > 0 THEN N'وارد للخزنة'
+                            ELSE N'مصروفات'
+                        END AS TransType, 
+                        CAST(CashID AS NVARCHAR) AS RefCode, 
+                        TransDate AS TransTime, 
+                        Notes AS Details, 
+                        CASE WHEN AmountIn > 0 THEN AmountIn ELSE -AmountOut END AS Amount
                     FROM CashBox WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
                 foreach (DataRow r in dtSales.Rows)
                 {
-                    dgMovements.Rows.Add(
+                    decimal amt = Convert.ToDecimal(r["Amount"]);
+                    int ri = dgMovements.Rows.Add(
                         r["TransType"],
                         r["RefCode"],
                         Convert.ToDateTime(r["TransTime"]).ToString("HH:mm:ss"),
                         r["Details"],
-                        Convert.ToDecimal(r["Amount"]).ToString("N2"));
+                        amt.ToString("N2"));
+
+                    var rowStyle = dgMovements.Rows[ri].DefaultCellStyle;
+                    if (amt > 0)
+                    {
+                        rowStyle.ForeColor = Color.FromArgb(15, 120, 50);
+                    }
+                    else if (amt < 0)
+                    {
+                        rowStyle.ForeColor = Color.FromArgb(180, 20, 20);
+                    }
                 }
             }
             catch { }
