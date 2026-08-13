@@ -352,7 +352,7 @@ namespace ChickenDist.Forms
             lblVoucherCount.Text = "عدد السندات: " + count;
         }
 
-        private void ShowIssueVoucherModal(bool isDeposit)
+        private void ShowIssueVoucherModal(bool isDeposit, int defaultPartyType = 0)
         {
             if (!Session.CanAdd("CashBox"))
             {
@@ -362,8 +362,8 @@ namespace ChickenDist.Forms
 
             var dlg = new Form
             {
-                Text = isDeposit ? "🟢 إصدار سند توريد نقدي (قبض)" : "🔴 إصدار سند صرف نقدي (دفع)",
-                Size = new Size(580, 680),
+                Text = isDeposit ? "🟢 إصدار سند توريد نقدي (قبض)" : "🔴 إصدار سند صرف نقدي (دفع) / تحويل",
+                Size = new Size(620, 720),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -382,7 +382,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = isDeposit ? "🟢 نموذج إصدار سند توريد نقدي (سند قبض)" : "🔴 نموذج إصدار سند صرف نقدي",
+                Text = isDeposit ? "🟢 نموذج إصدار سند توريد نقدي (قبض)" : "🔴 نموذج إصدار سند صرف نقدي / تحويل بين الأدراج",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
@@ -401,24 +401,24 @@ namespace ChickenDist.Forms
             tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32f));
             tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68f));
 
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 0: Date
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 1: Safe
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 2: PartyType
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 3: PartySelector
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 65f)); // 4: PartyBalance Badge
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 5: Amount
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 6: Classification
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f)); // 7: Notes
-            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 8: Print Checkbox
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 0: Date
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 1: Source Safe
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 2: PartyType
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 3: Dynamic Selector
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 75f)); // 4: Multi-Balance Badge
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 5: Amount
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 6: Classification
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f)); // 7: Notes
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f)); // 8: Print Checkbox
 
             // Row 0: Date
-            tblFields.Controls.Add(new Label { Text = "تاريخ السند:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 0);
-            var dtpVoucherDate = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(0, 6, 0, 6) };
+            tblFields.Controls.Add(new Label { Text = "تاريخ السند:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 0);
+            var dtpVoucherDate = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(0, 4, 0, 4) };
             tblFields.Controls.Add(dtpVoucherDate, 1, 0);
 
-            // Row 1: Safe Account
-            tblFields.Controls.Add(new Label { Text = "الحساب / الخزنة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 1);
-            var cboSafe = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 6, 0, 6) };
+            // Row 1: Source Safe Account / Drawer
+            tblFields.Controls.Add(new Label { Text = "الدرج / الخزنة المصدر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 1);
+            var cboSafe = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 4, 0, 4) };
             try
             {
                 DataTable safes = AccountDAL.GetActiveSafeAccounts();
@@ -432,8 +432,8 @@ namespace ChickenDist.Forms
             catch { }
             tblFields.Controls.Add(cboSafe, 1, 1);
 
-            // Row 2: Party Type
-            tblFields.Controls.Add(new Label { Text = "جهة التعامل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 2);
+            // Row 2: Party Type (عميل | مورد | مصروفات تشغيل | تحويل بين الأدراج | تعامل عام)
+            tblFields.Controls.Add(new Label { Text = "جهة التعامل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 2);
             var cboPartyType = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -441,21 +441,64 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 6, 0, 6)
+                Margin = new Padding(0, 4, 0, 4)
             };
-            cboPartyType.Items.AddRange(new object[] { "تعامل عام / جهة خارجية", "عميل (تحصيل / دفع)", "مورد (سداد / استرداد)", "مصروف تشغيلي" });
-            cboPartyType.SelectedIndex = 0;
+            cboPartyType.Items.AddRange(new object[] {
+                "عميل (تحصيل / دفع)",
+                "مورد (سداد للمورد / استرداد)",
+                "مصروفات تشغيل (Operational Expenses)",
+                "تحويل نقدية بين الأدراج / الخزن (Transfer)",
+                "تعامل عام / جهة خارجية"
+            });
+            cboPartyType.SelectedIndex = Math.Min(Math.Max(0, defaultPartyType), 4);
             tblFields.Controls.Add(cboPartyType, 1, 2);
 
-            // Row 3: Dynamic Selector Controls Container
-            var lblPartyNameLbl = new Label { Text = "اسم الجهة / المتعامل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) };
+            // Row 3: Dynamic Controls Container
+            var lblPartyNameLbl = new Label { Text = "اختر العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) };
             tblFields.Controls.Add(lblPartyNameLbl, 0, 3);
 
-            var pnlPartyContainer = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 4) };
+            var pnlPartyContainer = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 2) };
 
-            var txtGeneralPartyName = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            var cboClientSelect = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
+            var txtGeneralPartyName = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Visible = false };
+            var cboClientSelect = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = true };
             var cboSupplierSelect = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
+            var cboExpenseType = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
+            var cboTargetSafe = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
+
+            // Load Expense Categories
+            cboExpenseType.Items.AddRange(new object[] {
+                "إيجارات وشواغر",
+                "كهرباء ومياه وغاز",
+                "صيانة وتجهيزات",
+                "نقل وانتقالات ومصاريف شحن",
+                "أدوات كتابية ومطبوعات",
+                "صيانة وإصلاح سيارات",
+                "إكراميات ونثريات عامة",
+                "مصروفات تسويق وإعلانات"
+            });
+            if (cboExpenseType.Items.Count > 0) cboExpenseType.SelectedIndex = 0;
+
+            // Load Target Safes
+            Action reloadTargetSafes = () =>
+            {
+                cboTargetSafe.Items.Clear();
+                try
+                {
+                    int currentSrcID = (cboSafe.SelectedItem is ComboItem si) ? si.ID : 0;
+                    DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                    foreach (DataRow row in safes.Rows)
+                    {
+                        int id = Convert.ToInt32(row["AccountID"]);
+                        if (id != currentSrcID)
+                        {
+                            cboTargetSafe.Items.Add(new ComboItem(id, row["AccountName"].ToString()));
+                        }
+                    }
+                    if (cboTargetSafe.Items.Count > 0) cboTargetSafe.SelectedIndex = 0;
+                }
+                catch { }
+            };
+            reloadTargetSafes();
 
             // Load Clients
             try
@@ -484,10 +527,12 @@ namespace ChickenDist.Forms
             pnlPartyContainer.Controls.Add(txtGeneralPartyName);
             pnlPartyContainer.Controls.Add(cboClientSelect);
             pnlPartyContainer.Controls.Add(cboSupplierSelect);
+            pnlPartyContainer.Controls.Add(cboExpenseType);
+            pnlPartyContainer.Controls.Add(cboTargetSafe);
             tblFields.Controls.Add(pnlPartyContainer, 1, 3);
 
-            // Row 4: Party Balance Badge Banner
-            tblFields.Controls.Add(new Label { Text = "رصيد الحساب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 15, 0, 0) }, 0, 4);
+            // Row 4: Multi-Balance Interactive Badge Banner
+            tblFields.Controls.Add(new Label { Text = "الأرصدة الحالية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 15, 0, 0) }, 0, 4);
 
             var pnlBalanceBadge = new Panel
             {
@@ -495,7 +540,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
                 Padding = new Padding(6),
-                Margin = new Padding(0, 4, 0, 4)
+                Margin = new Padding(0, 2, 0, 2)
             };
             var lblPartyBalance = new Label
             {
@@ -503,13 +548,13 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.Gold,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Text = "يرجى اختيار العميل أو المورد لعرض الرصيد"
+                Text = "يرجى تحديد جهة التعامل لعرض تفاصيل الرصيد"
             };
             pnlBalanceBadge.Controls.Add(lblPartyBalance);
             tblFields.Controls.Add(pnlBalanceBadge, 1, 4);
 
             // Row 5: Amount
-            tblFields.Controls.Add(new Label { Text = "المبلغ النقدي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 5);
+            tblFields.Controls.Add(new Label { Text = "المبلغ النقدي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 5);
             var nudAmount = new NumericUpDown
             {
                 Dock = DockStyle.Fill,
@@ -519,12 +564,12 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
                 ForeColor = isDeposit ? Color.LightGreen : Color.OrangeRed,
-                Margin = new Padding(0, 6, 0, 6)
+                Margin = new Padding(0, 4, 0, 4)
             };
             tblFields.Controls.Add(nudAmount, 1, 5);
 
             // Row 6: Classification
-            tblFields.Controls.Add(new Label { Text = "التصنيف المحاسبي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 6);
+            tblFields.Controls.Add(new Label { Text = "التصنيف المحاسبي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 6);
             var cboClassification = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -532,7 +577,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 6, 0, 6)
+                Margin = new Padding(0, 4, 0, 4)
             };
             if (isDeposit)
             {
@@ -552,14 +597,14 @@ namespace ChickenDist.Forms
             tblFields.Controls.Add(cboClassification, 1, 6);
 
             // Row 7: Notes
-            tblFields.Controls.Add(new Label { Text = "البيان والسبب التفصيلي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 12, 0, 0) }, 0, 7);
+            tblFields.Controls.Add(new Label { Text = "البيان والسبب التفصيلي:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0) }, 0, 7);
             var txtNotes = new TextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(0, 6, 0, 6)
+                Margin = new Padding(0, 4, 0, 4)
             };
             tblFields.Controls.Add(txtNotes, 1, 7);
 
@@ -575,43 +620,60 @@ namespace ChickenDist.Forms
             };
             tblFields.Controls.Add(chkPrint, 1, 8);
 
-            // ── Balance Updating Helper Action ──
+            // ── Multi-Balance Updating Action ──
             Action updatePartyBalance = () =>
             {
                 try
                 {
                     decimal amt = nudAmount.Value;
+                    int srcSafeID = (cboSafe.SelectedItem is ComboItem sItem) ? sItem.ID : 1;
+                    string srcSafeName = (cboSafe.SelectedItem is ComboItem sItem2) ? sItem2.Text : "الدرج الرئيسي";
+                    decimal srcBal = AccountDAL.GetCashBalance(srcSafeID);
 
-                    if (cboPartyType.SelectedIndex == 1 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int cid))
+                    int pIdx = cboPartyType.SelectedIndex;
+
+                    if (pIdx == 0 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int cid))
                     {
                         decimal curBal = ClientDAL.GetFinancialStatus(cid).Balance;
                         string curState = curBal > 0 ? "عليه (مدين)" : (curBal < 0 ? "له (دائن)" : "خالص (0.00 ج)");
-                        Color badgeColor = curBal > 0 ? Color.OrangeRed : (curBal < 0 ? Color.LightGreen : Color.Cyan);
-
-                        // If Deposit: reduces debt (curBal - amt). If Withdraw: increases debt (curBal + amt)
                         decimal afterBal = isDeposit ? (curBal - amt) : (curBal + amt);
                         string afterState = afterBal > 0 ? "عليه (مدين)" : (afterBal < 0 ? "له (دائن)" : "خالص (0.00 ج)");
 
-                        lblPartyBalance.Text = $"📊 رصيد العميل الحالي: {Math.Abs(curBal):N2} ج ({curState})\n✨ المتوقع بعد السند: {Math.Abs(afterBal):N2} ج ({afterState})";
-                        lblPartyBalance.ForeColor = badgeColor;
+                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n👤 رصيد العميل الحالي: {Math.Abs(curBal):N2} ج ({curState}) ➔ المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
+                        lblPartyBalance.ForeColor = Color.Gold;
                     }
-                    else if (cboPartyType.SelectedIndex == 2 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int sid))
+                    else if (pIdx == 1 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int sid))
                     {
                         decimal curBal = SupplierDAL.GetBalance(sid);
                         string curState = curBal > 0 ? "له للمورد (دائن)" : (curBal < 0 ? "عليه للمورد (مدين)" : "خالص (0.00 ج)");
-                        Color badgeColor = curBal > 0 ? Color.LightGreen : (curBal < 0 ? Color.OrangeRed : Color.Cyan);
-
-                        // If Withdraw: reduces supplier debt (curBal - amt). If Deposit: increases supplier debt (curBal + amt)
                         decimal afterBal = isDeposit ? (curBal + amt) : (curBal - amt);
                         string afterState = afterBal > 0 ? "له للمورد (دائن)" : (afterBal < 0 ? "عليه للمورد (مدين)" : "خالص (0.00 ج)");
 
-                        lblPartyBalance.Text = $"📊 رصيد المورد الحالي: {Math.Abs(curBal):N2} ج ({curState})\n✨ المتوقع بعد السند: {Math.Abs(afterBal):N2} ج ({afterState})";
-                        lblPartyBalance.ForeColor = badgeColor;
+                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n🏬 رصيد المورد الحالي: {Math.Abs(curBal):N2} ج ({curState}) ➔ المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
+                        lblPartyBalance.ForeColor = Color.Cyan;
+                    }
+                    else if (pIdx == 2)
+                    {
+                        string expName = cboExpenseType.Text;
+                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n📋 بند المصروف التشغيلي: {expName}";
+                        lblPartyBalance.ForeColor = Color.Orange;
+                    }
+                    else if (pIdx == 3)
+                    {
+                        int targetSafeID = (cboTargetSafe.SelectedItem is ComboItem tItem) ? tItem.ID : 0;
+                        string targetName = (cboTargetSafe.SelectedItem is ComboItem tItem2) ? tItem2.Text : "الدرج المستلم";
+                        decimal targetBal = AccountDAL.GetCashBalance(targetSafeID);
+
+                        decimal srcAfter = srcBal - amt;
+                        decimal targetAfter = targetBal + amt;
+
+                        lblPartyBalance.Text = $"📤 الدرج المصدر ({srcSafeName}): {srcBal:N2} ج (المتوقع: {srcAfter:N2} ج)\n📥 الدرج المستلم ({targetName}): {targetBal:N2} ج (المتوقع: {targetAfter:N2} ج)";
+                        lblPartyBalance.ForeColor = Color.LightGreen;
                     }
                     else
                     {
-                        lblPartyBalance.Text = "تعامل عام / لا يوجد كشف حساب مرتبط";
-                        lblPartyBalance.ForeColor = Color.Gray;
+                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nجهة تعامل عامة / لا يوجد كشف حساب مالي حي";
+                        lblPartyBalance.ForeColor = Color.White;
                     }
                 }
                 catch
@@ -620,28 +682,44 @@ namespace ChickenDist.Forms
                 }
             };
 
+            cboSafe.SelectedIndexChanged += (s, e) =>
+            {
+                reloadTargetSafes();
+                updatePartyBalance();
+            };
+
             cboPartyType.SelectedIndexChanged += (s, e) =>
             {
                 int idx = cboPartyType.SelectedIndex;
-                txtGeneralPartyName.Visible = (idx == 0 || idx == 3);
-                cboClientSelect.Visible = (idx == 1);
-                cboSupplierSelect.Visible = (idx == 2);
+                cboClientSelect.Visible = (idx == 0);
+                cboSupplierSelect.Visible = (idx == 1);
+                cboExpenseType.Visible = (idx == 2);
+                cboTargetSafe.Visible = (idx == 3);
+                txtGeneralPartyName.Visible = (idx == 4);
 
-                if (idx == 1) lblPartyNameLbl.Text = "اختر العميل:";
-                else if (idx == 2) lblPartyNameLbl.Text = "اختر المورد:";
-                else lblPartyNameLbl.Text = "اسم الجهة / المتعامل:";
+                if (idx == 0) lblPartyNameLbl.Text = "اختر العميل:";
+                else if (idx == 1) lblPartyNameLbl.Text = "اختر المورد:";
+                else if (idx == 2) lblPartyNameLbl.Text = "بند المصروف:";
+                else if (idx == 3) lblPartyNameLbl.Text = "الدرج المستلم:";
+                else lblPartyNameLbl.Text = "اسم الجهة:";
 
                 updatePartyBalance();
             };
 
             cboClientSelect.SelectedIndexChanged += (s, e) => updatePartyBalance();
             cboSupplierSelect.SelectedIndexChanged += (s, e) => updatePartyBalance();
+            cboTargetSafe.SelectedIndexChanged += (s, e) => updatePartyBalance();
+            cboExpenseType.TextChanged += (s, e) => updatePartyBalance();
             nudAmount.ValueChanged += (s, e) => updatePartyBalance();
+
+            // Initial view state trigger
+            cboPartyType.SelectedIndex = Math.Min(Math.Max(0, defaultPartyType), 4);
+            updatePartyBalance();
 
             // Bottom Save Buttons
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 8, 15, 8) };
-            var btnSave = Theme.MakeButton(isDeposit ? "💾 إصدار سند التوريد" : "💾 إصدار سند الصرف", isDeposit ? Color.FromArgb(40, 130, 70) : Color.FromArgb(170, 50, 50));
-            btnSave.Size = new Size(200, 38);
+            var btnSave = Theme.MakeButton(isDeposit ? "💾 إصدار سند التوريد" : "💾 إصدار سند الصرف / التحويل", isDeposit ? Color.FromArgb(40, 130, 70) : Color.FromArgb(170, 50, 50));
+            btnSave.Size = new Size(220, 38);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Dock = DockStyle.Left;
 
@@ -660,14 +738,9 @@ namespace ChickenDist.Forms
                     MessageBox.Show("⚠️ يرجى إدخال مبلغ أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                if (string.IsNullOrWhiteSpace(txtNotes.Text))
-                {
-                    MessageBox.Show("⚠️ يرجى كتابة البيان والسبب المحاسبي للسند.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
                 if (!(cboSafe.SelectedItem is ComboItem safeItem))
                 {
-                    MessageBox.Show("⚠️ يرجى اختيار الحساب المالي / الخزنة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("⚠️ يرجى اختيار الحساب المالي / الخزنة المصدر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -680,7 +753,8 @@ namespace ChickenDist.Forms
 
                     int newTransID = 0;
 
-                    if (partyIdx == 1 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int clientID))
+                    // 0: Client
+                    if (partyIdx == 0 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int clientID))
                     {
                         string clientName = cboClientSelect.Text;
                         decimal curBal = ClientDAL.GetFinancialStatus(clientID).Balance;
@@ -688,13 +762,11 @@ namespace ChickenDist.Forms
 
                         if (isDeposit)
                         {
-                            // قبض من عميل -> يقلل المديونية
                             ClientDAL.AddPayment(clientID, amount, $"{userNotes} (رصيد العميل قبل: {Math.Abs(curBal):N2} ج {curState})", safeID);
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                         else
                         {
-                            // صرف لعميل / ارجاع -> يزيد المديونية
                             DbHelper.RunInTransaction((con, trans) =>
                             {
                                 DbHelper.ExecuteTrans(trans,
@@ -712,7 +784,8 @@ namespace ChickenDist.Forms
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                     }
-                    else if (partyIdx == 2 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int supplierID))
+                    // 1: Supplier
+                    else if (partyIdx == 1 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int supplierID))
                     {
                         string supplierName = cboSupplierSelect.Text;
                         decimal curBal = SupplierDAL.GetBalance(supplierID);
@@ -720,13 +793,11 @@ namespace ChickenDist.Forms
 
                         if (!isDeposit)
                         {
-                            // صرف للمورد -> يقلل المستحق للمورد
                             SupplierDAL.AddSupplierPayment(supplierID, amount, $"{userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})");
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                         else
                         {
-                            // توريد من مورد -> يزيد المستحق للمورد
                             DbHelper.RunInTransaction((con, trans) =>
                             {
                                 DbHelper.ExecuteTrans(trans,
@@ -744,6 +815,28 @@ namespace ChickenDist.Forms
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                     }
+                    // 2: Operational Expenses
+                    else if (partyIdx == 2)
+                    {
+                        string expTypeStr = cboExpenseType.Text.Trim();
+                        if (string.IsNullOrWhiteSpace(expTypeStr)) expTypeStr = "مصروفات تشغيل عامة";
+                        string fullExpNotes = string.IsNullOrWhiteSpace(userNotes) ? expTypeStr : $"{expTypeStr} - {userNotes}";
+
+                        newTransID = AccountDAL.SaveExpense(0, dtpVoucherDate.Value, expTypeStr, amount, fullExpNotes, safeAccountID: safeID);
+                    }
+                    // 3: Drawer Transfer
+                    else if (partyIdx == 3)
+                    {
+                        if (!(cboTargetSafe.SelectedItem is ComboItem targetItem))
+                        {
+                            MessageBox.Show("⚠️ يرجى اختيار الدرج / الخزنة المستلمة المحول إليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        AccountDAL.TransferFunds(safeID, targetItem.ID, amount, userNotes);
+                        newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
+                    }
+                    // 4: General Party
                     else
                     {
                         string beneficiary = string.IsNullOrWhiteSpace(txtGeneralPartyName.Text) ? "تعامل عام" : txtGeneralPartyName.Text.Trim();
@@ -762,13 +855,6 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            decimal currentBalance = AccountDAL.GetCashBalance(safeID);
-                            if (amount > currentBalance)
-                            {
-                                var confirm = MessageBox.Show($"⚠️ رصيد الخزنة المقتطعة ({currentBalance:N2} ج) أقل من مبلغ الصرف المطلوب ({amount:N2} ج)!\nهل تريد متابعة الصرف واستكمال السند رغماً عن العجز الدفتري؟", "تأكيد تجاوز الرصيد", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                                if (confirm != DialogResult.Yes) return;
-                            }
-
                             newTransID = DbHelper.ExecuteInsert(@"
                                 INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID)
                                 VALUES(@d, 'Withdraw', @amt, @n, @by, @accId)",
@@ -812,7 +898,7 @@ namespace ChickenDist.Forms
                 MessageBox.Show("⛔ ليس لديك صلاحية التحويل بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            new FrmCashBox().ShowDialog();
+            ShowIssueVoucherModal(isDeposit: false, defaultPartyType: 3);
             LoadVouchers();
         }
 
@@ -830,33 +916,12 @@ namespace ChickenDist.Forms
 
         private void BtnDeleteSelected_Click(object sender, EventArgs e)
         {
-            if (!Session.CanDelete("CashBox"))
-            {
-                MessageBox.Show("⛔ ليس لديك صلاحية حذف السندات المالي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (dgVouchers.CurrentRow == null)
-            {
-                MessageBox.Show("يرجى تحديد السند المراد حذفه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            int transID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
-            string notes = dgVouchers.CurrentRow.Cells["Notes"].Value.ToString();
-
-            if (MessageBox.Show($"هل أنت أيد أنك تريد حذف السند رقم #{transID}؟\nالبيان: {notes}", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                try
-                {
-                    DbHelper.Execute("DELETE FROM CashBox WHERE CashID = @id", DbHelper.P("@id", transID));
-                    MessageBox.Show("✅ تم حذف السند بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadVouchers();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("❌ فشل حذف السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            MessageBox.Show(
+                "⛔ نعتذر! غير مسموح بحذف أو إلغاء السندات المالية بعد إصدارها وإغلاقها محاسبياً للحفاظ على الرقابة المالية وسلامة القيود والدفاتر.\n\n" +
+                "💡 لتصحيح أي قيد أو تسوية مبلغ، يرجى إصدار (سند صرف) أو (سند توريد) جديد بقيمة التسوية بدلاً من الحذف المباشر.",
+                "حظر حذف السندات المالي المحاسبي",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
     }
 }
