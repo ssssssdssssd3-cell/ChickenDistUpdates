@@ -389,8 +389,8 @@ namespace ChickenDist.Forms
             var pnlJourHist = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
             var pnlHistHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 36, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(5) };
             pnlHistHeader.Controls.Add(new Label { Text = "📑 سجل قيود اليومية السابقة | من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpJourHistoryFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-1) };
-            dtpJourHistoryTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpJourHistoryFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
+            dtpJourHistoryTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
             dtpJourHistoryFrom.ValueChanged += (s, e) => LoadJournalHistory();
             dtpJourHistoryTo.ValueChanged += (s, e) => LoadJournalHistory();
             pnlHistHeader.Controls.Add(dtpJourHistoryFrom);
@@ -497,8 +497,8 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 6, 10, 6)
             };
             pnlCogsFilter.Controls.Add(new Label { Text = "📊 فترة احتساب تكلفة المباع والأرباح | من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
-            dtpCogsFrom = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) };
-            dtpCogsTo = new DateTimePicker { Width = 110, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpCogsFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
+            dtpCogsTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
             dtpCogsFrom.ValueChanged += (s, e) => LoadCogsAndProfitability();
             dtpCogsTo.ValueChanged += (s, e) => LoadCogsAndProfitability();
             pnlCogsFilter.Controls.Add(dtpCogsFrom);

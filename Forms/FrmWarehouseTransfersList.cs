@@ -41,10 +41,10 @@ namespace ChickenDist.Forms
             };
 
             pnlTop.Controls.Add(new Label { Text = "من:", Location = new Point(1010, 18), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpFrom = new DateTimePicker { Location = new Point(870, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
+            dtpFrom = new DateTimePicker { Location = new Point(810, 14), Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddDays(-30) };
 
-            pnlTop.Controls.Add(new Label { Text = "إلى:", Location = new Point(840, 18), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpTo = new DateTimePicker { Location = new Point(700, 14), Width = 130, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            pnlTop.Controls.Add(new Label { Text = "إلى:", Location = new Point(775, 18), AutoSize = true, ForeColor = Theme.TextMain });
+            dtpTo = new DateTimePicker { Location = new Point(585, 14), Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
 
             btnLoad = Theme.MakeButton("🔍 عرض التحويلات", Color.FromArgb(17, 94, 89));
             btnLoad.Location = new Point(540, 11);

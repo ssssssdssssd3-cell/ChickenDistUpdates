@@ -56,10 +56,10 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(new Label { Text = "من تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0) });
             dtpFrom = new DateTimePicker
             {
-                Width = 160,
+                Width = 190,
                 Format = DateTimePickerFormat.Custom,
-                CustomFormat = "yyyy/MM/dd",
-                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+                CustomFormat = "yyyy/MM/dd hh:mm tt",
+                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
                 Margin = new Padding(5, 4, 0, 0)
             };
             dtpFrom.ValueChanged += (s, e) => LoadVouchers();
@@ -68,9 +68,9 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(new Label { Text = "إلى تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
             dtpTo = new DateTimePicker
             {
-                Width = 160,
+                Width = 190,
                 Format = DateTimePickerFormat.Custom,
-                CustomFormat = "yyyy/MM/dd",
+                CustomFormat = "yyyy/MM/dd hh:mm tt",
                 Value = DateTime.Now,
                 Margin = new Padding(5, 4, 0, 0)
             };

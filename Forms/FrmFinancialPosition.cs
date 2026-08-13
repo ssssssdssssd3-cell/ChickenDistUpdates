@@ -296,11 +296,11 @@ namespace ChickenDist.Forms
             layout.Controls.Add(pnlFilter, 0, 0);
 
             Label lblFrom = new Label { Text = "من تاريخ:", AutoSize = true, Location = new Point(1020, 16), ForeColor = Theme.TextMain };
-            dtpPLFrom = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 130, Location = new Point(880, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            dtpPLFrom.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            dtpPLFrom = new DateTimePicker { Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Width = 180, Location = new Point(830, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            dtpPLFrom.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0);
 
-            Label lblTo = new Label { Text = "إلى تاريخ:", AutoSize = true, Location = new Point(810, 16), ForeColor = Theme.TextMain };
-            dtpPLTo = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 130, Location = new Point(670, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            Label lblTo = new Label { Text = "إلى تاريخ:", AutoSize = true, Location = new Point(760, 16), ForeColor = Theme.TextMain };
+            dtpPLTo = new DateTimePicker { Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Width = 180, Location = new Point(570, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             dtpPLTo.Value = DateTime.Now;
 
             btnReloadPL = Theme.MakeButton("🔄 تحديث قائمة الدخل", Theme.Primary);
