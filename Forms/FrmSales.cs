@@ -431,12 +431,6 @@ namespace ChickenDist.Forms
 			btnEdit.Click += BtnEdit_Click;
 			flowLayoutPanel2.Controls.Add(btnEdit);
 
-			btnDelete = Theme.MakeButton("🗑️ إلغاء وحذف الفاتورة", Theme.Danger);
-			btnDelete.Size = new Size(190, 36);
-			btnDelete.Margin = new Padding(0, 0, 0, 8);
-			btnDelete.Click += BtnDelete_Click;
-			flowLayoutPanel2.Controls.Add(btnDelete);
-
 			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
 			btnCopy.Size = new Size(190, 36);
 			btnCopy.Margin = new Padding(0, 0, 0, 15);
@@ -880,37 +874,12 @@ namespace ChickenDist.Forms
 
 		private void BtnDelete_Click(object sender, EventArgs e)
 		{
-			if (!Session.CanDeleteSalesInvoice())
-			{
-				MessageBox.Show("عذراً، ليس لديك صلاحية حذف وإلغاء فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-				return;
-			}
-
-			if (dgSales.SelectedRows.Count == 0)
-			{
-				MessageBox.Show("من فضلك اختر الفاتورة المراد حذفها أولا\u064b.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-				return;
-			}
-			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
-			string text = dgSales.SelectedRows[0].Cells["SaleCode"].Value.ToString();
-			if (!SaleDAL.CanDeleteSale(saleID, out var reason))
-			{
-				MessageBox.Show(reason, "فشل إلغاء الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-				return;
-			}
-			DialogResult dialogResult = MessageBox.Show("هل أنت متأكد من رغبتك في حذف وإلغاء الفاتورة رقم [" + text + "] نهائيا\u064b؟\n\n⚠\ufe0f سيتم عكس جميع الحركات المالية المرتبطة بالفاتورة تلقائيا\u064b (حساب العميل أو الخزنة أو عهدة المندوب).", "تأكيد إلغاء الفاتورة", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
-			if (dialogResult == DialogResult.Yes)
-			{
-				if (SaleDAL.DeleteSale(saleID))
-				{
-					MessageBox.Show("✅ تم إلغاء وحذف الفاتورة وعكس جميع الحركات المالية المرتبطة بها بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-					LoadSales();
-				}
-				else
-				{
-					MessageBox.Show("❌ فشل عملية الحذف، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-				}
-			}
+			MessageBox.Show(
+				"⛔ نعتذر! غير مسموح بحذف الفواتير الصادرة نهائياً من قاعدة البيانات بعد اعتمادها وإغلاقها للحفاظ على السلامة المالية والرقابة المحاسبية.\n\n" +
+				"💡 لتصحيح أي فاتورة، يرجى استخدام (شاشة مرتجع المبيعات) لعمل مرتجع كلي أو جزئي أو إصدار قيد تسوية.",
+				"حظر حذف الفواتير المحاسبي",
+				MessageBoxButtons.OK,
+				MessageBoxIcon.Warning);
 		}
 
 		private void BtnEdit_Click(object sender, EventArgs e)

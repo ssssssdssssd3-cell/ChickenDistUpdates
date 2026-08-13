@@ -164,13 +164,6 @@ namespace ChickenDist.Forms
             btnPrintSelected.Click += BtnPrintSelected_Click;
             pnlActions.Controls.Add(btnPrintSelected);
 
-            var btnDeleteSelected = Theme.MakeButton("🗑️ حذف السند", Color.FromArgb(120, 40, 40));
-            btnDeleteSelected.Size = new Size(110, 38);
-            btnDeleteSelected.Font = Theme.FontBold;
-            btnDeleteSelected.Margin = new Padding(5, 0, 5, 0);
-            btnDeleteSelected.Click += BtnDeleteSelected_Click;
-            pnlActions.Controls.Add(btnDeleteSelected);
-
             // ── KPI Summary Bar ──
             pnlKPIs = new TableLayoutPanel
             {
