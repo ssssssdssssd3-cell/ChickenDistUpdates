@@ -1237,13 +1237,18 @@ namespace ChickenDist.Forms
 			pnlSummaryFlow.Controls.Add(lblNetVal);
 
 			// Footer buttons (RTL flow)
-			btnSave = Theme.MakeButton("💾 حفظ", 0, 0, 90, 26, Theme.Accent);
+			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 180, 28, Theme.Accent);
+			btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+
 			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 26, Color.FromArgb(200, 140, 50));
 			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 90, 26, Color.FromArgb(100, 100, 150));
 			Button btnTawreed = Theme.MakeButton("💵 توريد", 0, 0, 80, 26, Theme.Success);
 			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 26, Color.FromArgb(80, 120, 80));
 			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
 			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
+			btnPrint.Visible = false;
+			btnPreview.Visible = false;
+
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
 			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج (Ctrl+D)", 0, 0, 135, 26, Color.FromArgb(70, 70, 70));
 
@@ -1279,15 +1284,13 @@ namespace ChickenDist.Forms
 				AutoSize = false
 			};
 			btnWhatsApp.Margin = new Padding(2);
-			btnPrint.Margin = new Padding(2);
-			btnPreview.Margin = new Padding(2);
 			btnNew.Margin = new Padding(2);
 			btnTawreed.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
 			btnOpenDrawer.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnPreview, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -1299,7 +1302,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] طباعة | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
