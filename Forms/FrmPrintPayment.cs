@@ -54,13 +54,13 @@ namespace ChickenDist.Forms
         private void LoadSingleTrans(int transID)
         {
             _dtTransactions = DbHelper.Query(@"
-                SELECT c.TransID, c.TransDate, c.TransType, c.AmountIn, c.AmountOut, c.Notes, c.CreatedBy,
+                SELECT c.CashID AS TransID, c.TransDate, c.TransType, c.AmountIn, c.AmountOut, c.Notes, c.CreatedBy,
                        ISNULL(e.EmpName, N'---') AS CreatedByName,
                        ISNULL(acc.AccountName, N'الخزينة الرئيسية') AS AccountName
                 FROM CashBox c
                 LEFT JOIN Employees e ON c.CreatedBy = e.EmpID
                 LEFT JOIN SafeAccounts acc ON c.AccountID = acc.AccountID
-                WHERE c.TransID = @id", DbHelper.P("@id", transID));
+                WHERE c.CashID = @id", DbHelper.P("@id", transID));
 
             if (_dtTransactions.Rows.Count > 0)
             {
