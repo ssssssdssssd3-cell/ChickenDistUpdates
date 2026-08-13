@@ -415,7 +415,9 @@ namespace ChickenDist.Forms
             string[] screens = screenList.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var scr in screens)
             {
-                if (!Session.CanAccess(scr.Trim())) return false;
+                var trimmed = scr.Trim();
+                if (trimmed == "ClothingMatrix" && AppConfig.BusinessType != "Clothing") return false;
+                if (!Session.CanAccess(trimmed)) return false;
             }
             return true;
         }
