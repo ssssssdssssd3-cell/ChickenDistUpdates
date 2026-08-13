@@ -63,8 +63,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Title Bar
-            var pnlTitle = Theme.MakeTitleBar("🏛️ الحسابات والمالية اليومية الشاملة", 
-                "إدارة سندات الصرف والقبض، تقارير التوريدات والمصروفات، القيود اليومية، حركة الخزائن والبنوك، وتكلفة المباع والمخزون");
+            var pnlTitle = Theme.MakeTitleBar("🏛️ الحسابات والمالية اليومية الشاملة", "");
             pnlTitle.Dock = DockStyle.Top;
             this.Controls.Add(pnlTitle);
 
@@ -72,8 +71,8 @@ namespace ChickenDist.Forms
             tabMain = new TabControl
             {
                 Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Padding = new Point(12, 5)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Padding = new Point(8, 3)
             };
 
             // Build Tab 1: Issue Vouchers
@@ -421,10 +420,10 @@ namespace ChickenDist.Forms
             var pnlKpis = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Height = 85,
+                Height = 40,
                 ColumnCount = 3,
                 RowCount = 1,
-                Padding = new Padding(10, 5, 10, 5)
+                Padding = new Padding(4, 2, 4, 2)
             };
             pnlKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
             pnlKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
@@ -438,31 +437,31 @@ namespace ChickenDist.Forms
             var pnlTransfer = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Height = 45,
+                Height = 34,
                 Name = "pnlFilter",
                 BackColor = Theme.BgSearchPanel,
-                Padding = new Padding(8, 6, 8, 6)
+                Padding = new Padding(6, 3, 6, 3)
             };
 
-            pnlTransfer.Controls.Add(new Label { Text = "🔄 تحويل مالي بين الخزائن والحسابات | من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
-            cboTransferFrom = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
+            pnlTransfer.Controls.Add(new Label { Text = "🔄 تحويل مالي بين الخزائن والحسابات | من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 4, 0, 0) });
+            cboTransferFrom = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
             pnlTransfer.Controls.Add(cboTransferFrom);
 
-            pnlTransfer.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(10, 6, 0, 0) });
-            cboTransferTo = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
+            pnlTransfer.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(6, 4, 0, 0) });
+            cboTransferTo = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
             pnlTransfer.Controls.Add(cboTransferTo);
 
-            pnlTransfer.Controls.Add(new Label { Text = "المبلغ (ج):", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(10, 6, 0, 0) });
-            txtTransferAmount = new TextBox { Width = 90, Text = "0.00", Font = Theme.FontBold };
+            pnlTransfer.Controls.Add(new Label { Text = "المبلغ (ج):", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(6, 4, 0, 0) });
+            txtTransferAmount = new TextBox { Width = 80, Text = "0.00", Font = Theme.FontBold };
             pnlTransfer.Controls.Add(txtTransferAmount);
 
-            pnlTransfer.Controls.Add(new Label { Text = "السبب / البيان:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(10, 6, 0, 0) });
-            txtTransferNotes = new TextBox { Width = 200, Text = "تحويل بين حسابات" };
+            pnlTransfer.Controls.Add(new Label { Text = "السبب / البيان:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(6, 4, 0, 0) });
+            txtTransferNotes = new TextBox { Width = 170, Text = "تحويل بين حسابات" };
             pnlTransfer.Controls.Add(txtTransferNotes);
 
             btnExecuteTransfer = Theme.MakeButton("🔄 تنفيذ التحويل الفوري", Theme.Primary);
-            btnExecuteTransfer.Size = new Size(160, 28);
-            btnExecuteTransfer.Margin = new Padding(15, 2, 0, 0);
+            btnExecuteTransfer.Size = new Size(150, 26);
+            btnExecuteTransfer.Margin = new Padding(10, 1, 0, 0);
             btnExecuteTransfer.Click += BtnExecuteTransfer_Click;
             pnlTransfer.Controls.Add(btnExecuteTransfer);
 
@@ -470,8 +469,8 @@ namespace ChickenDist.Forms
             dgAccountMovements = MakeStandardGrid();
 
             var tblCashBank = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Margin = new Padding(0), Padding = new Padding(0) };
-            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));
-            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 45f));
+            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblCashBank.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f));
             tblCashBank.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             tblCashBank.Controls.Add(pnlKpis, 0, 0);
             tblCashBank.Controls.Add(pnlTransfer, 0, 1);
@@ -521,10 +520,10 @@ namespace ChickenDist.Forms
             var pnlCogsKpis = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Height = 90,
+                Height = 40,
                 ColumnCount = 4,
                 RowCount = 1,
-                Padding = new Padding(10, 5, 10, 5)
+                Padding = new Padding(4, 2, 4, 2)
             };
             pnlCogsKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlCogsKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
@@ -537,7 +536,7 @@ namespace ChickenDist.Forms
             lblGrossProfitVal = MakeKpiCard(pnlCogsKpis, 3, "📈 أرباح المبيعات (Gross Profit)", "0.00 ج", Color.FromArgb(30, 130, 60));
 
             // Inventory Adjustments & Variances Grid
-            var pnlAdjHeader = new Panel { Dock = DockStyle.Fill, Height = 30, BackColor = Theme.BgHeader };
+            var pnlAdjHeader = new Panel { Dock = DockStyle.Fill, Height = 24, BackColor = Theme.BgHeader };
             var lblAdjTitle = new Label
             {
                 Text = "📋 سجل وتسويات فروق الجرد والعجز/الزيادة المخزنية المسجلة:",
@@ -552,9 +551,9 @@ namespace ChickenDist.Forms
             dgInventoryAdjustments = MakeStandardGrid();
 
             var tblCogs = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Margin = new Padding(0), Padding = new Padding(0) };
-            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
-            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 90f));
-            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblCogs.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
             tblCogs.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             tblCogs.Controls.Add(pnlCogsFilter, 0, 0);
             tblCogs.Controls.Add(pnlCogsKpis, 0, 1);
@@ -994,17 +993,18 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = bg,
-                Margin = new Padding(4),
-                Padding = new Padding(8)
+                Margin = new Padding(3, 2, 3, 2),
+                Padding = new Padding(6, 2, 6, 2)
             };
 
             var lblT = new Label
             {
                 Text = title,
                 Dock = DockStyle.Top,
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Height = 24
+                ForeColor = Color.FromArgb(240, 240, 240),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Height = 16,
+                TextAlign = ContentAlignment.TopRight
             };
 
             var lblV = new Label
@@ -1012,7 +1012,7 @@ namespace ChickenDist.Forms
                 Text = val,
                 Dock = DockStyle.Fill,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
