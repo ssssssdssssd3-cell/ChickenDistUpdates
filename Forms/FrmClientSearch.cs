@@ -27,7 +27,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "🔍 بحث عن عميل";
-            this.Size = new Size(700, 520);
+            this.Size = new Size(860, 550);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -50,8 +50,8 @@ namespace ChickenDist.Forms
             var lblSearch = new Label
             {
                 Text = "ابحث بالاسم أو الهاتف أو الكود:",
-                Location = new Point(480, 22),
-                Width = 180,
+                Location = new Point(630, 22),
+                Width = 200,
                 ForeColor = Color.FromArgb(255, 220, 110),
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = Theme.FontBold
@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
             txtSearch = new TextBox
             {
                 Location = new Point(20, 18),
-                Width = 450,
+                Width = 600,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 GridColor = Color.FromArgb(230, 230, 235),
                 BorderStyle = BorderStyle.None,
-                RowTemplate = { Height = 28 }
+                RowTemplate = { Height = 32 }
             };
             dgClients.CellDoubleClick += (s, e) => SelectClient();
             dgClients.KeyDown += DgClients_KeyDown;
@@ -107,10 +107,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(12)
             };
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 14, 90, 32, Color.FromArgb(140, 40, 40));
+            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 14, 100, 34, Color.FromArgb(140, 40, 40));
             btnCancel.Click += (s, e) => this.Close();
 
-            btnSelect = Theme.MakeButton("✅ اختيار", 120, 14, 100, 32, Theme.Accent);
+            btnSelect = Theme.MakeButton("✅ اختيار", 130, 14, 120, 34, Theme.Accent);
             btnSelect.Click += (s, e) => SelectClient();
 
             pnlFooter.Controls.Add(btnCancel);
@@ -131,48 +131,63 @@ namespace ChickenDist.Forms
                 _dvClients = new DataView(_dtClients);
                 dgClients.DataSource = _dvClients;
 
-                // Setup Grid Columns
-                if (dgClients.Columns.Contains("ClientID")) dgClients.Columns["ClientID"].Visible = false;
-                if (dgClients.Columns.Contains("IsActive")) dgClients.Columns["IsActive"].Visible = false;
-                if (dgClients.Columns.Contains("DriverID")) dgClients.Columns["DriverID"].Visible = false;
-                if (dgClients.Columns.Contains("MaxCreditLimit")) dgClients.Columns["MaxCreditLimit"].Visible = false;
-                if (dgClients.Columns.Contains("Notes")) dgClients.Columns["Notes"].Visible = false;
-                if (dgClients.Columns.Contains("DefaultPriceTier")) dgClients.Columns["DefaultPriceTier"].Visible = false;
-                if (dgClients.Columns.Contains("OpeningBalance")) dgClients.Columns["OpeningBalance"].Visible = false;
-                if (dgClients.Columns.Contains("OpeningCrates")) dgClients.Columns["OpeningCrates"].Visible = false;
-                if (dgClients.Columns.Contains("CratesBalance")) dgClients.Columns["CratesBalance"].Visible = false;
+                // Hide all columns by default
+                foreach (DataGridViewColumn col in dgClients.Columns)
+                {
+                    col.Visible = false;
+                }
 
+                // Explicitly show only the required columns with correct display order
                 if (dgClients.Columns.Contains("ClientCode"))
                 {
-                    dgClients.Columns["ClientCode"].HeaderText = "كود العميل";
-                    dgClients.Columns["ClientCode"].Width = 90;
+                    var col = dgClients.Columns["ClientCode"];
+                    col.Visible = true;
+                    col.HeaderText = "كود العميل";
+                    col.Width = 90;
+                    col.DisplayIndex = 0;
                 }
                 if (dgClients.Columns.Contains("ClientName"))
                 {
-                    dgClients.Columns["ClientName"].HeaderText = "اسم العميل";
-                    dgClients.Columns["ClientName"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                    var col = dgClients.Columns["ClientName"];
+                    col.Visible = true;
+                    col.HeaderText = "اسم العميل / المؤسسة";
+                    col.Width = 230;
+                    col.DisplayIndex = 1;
+                    col.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
                 }
                 if (dgClients.Columns.Contains("Phone"))
                 {
-                    dgClients.Columns["Phone"].HeaderText = "رقم الهاتف";
-                    dgClients.Columns["Phone"].Width = 110;
+                    var col = dgClients.Columns["Phone"];
+                    col.Visible = true;
+                    col.HeaderText = "رقم الهاتف";
+                    col.Width = 120;
+                    col.DisplayIndex = 2;
                 }
                 if (dgClients.Columns.Contains("Phone2"))
                 {
-                    dgClients.Columns["Phone2"].HeaderText = "الهاتف 2";
-                    dgClients.Columns["Phone2"].Width = 110;
+                    var col = dgClients.Columns["Phone2"];
+                    col.Visible = true;
+                    col.HeaderText = "الهاتف 2";
+                    col.Width = 110;
+                    col.DisplayIndex = 3;
                 }
                 if (dgClients.Columns.Contains("Address"))
                 {
-                    dgClients.Columns["Address"].HeaderText = "العنوان";
-                    dgClients.Columns["Address"].Width = 150;
+                    var col = dgClients.Columns["Address"];
+                    col.Visible = true;
+                    col.HeaderText = "العنوان";
+                    col.Width = 160;
+                    col.DisplayIndex = 4;
                 }
                 if (dgClients.Columns.Contains("Balance"))
                 {
-                    dgClients.Columns["Balance"].HeaderText = "الرصيد الحالي";
-                    dgClients.Columns["Balance"].Width = 100;
-                    dgClients.Columns["Balance"].DefaultCellStyle.Format = "N2";
-                    dgClients.Columns["Balance"].DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                    var col = dgClients.Columns["Balance"];
+                    col.Visible = true;
+                    col.HeaderText = "الرصيد الحالي (ج)";
+                    col.Width = 120;
+                    col.DisplayIndex = 5;
+                    col.DefaultCellStyle.Format = "N2";
+                    col.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
                 }
 
                 // Grid coloring & styling
