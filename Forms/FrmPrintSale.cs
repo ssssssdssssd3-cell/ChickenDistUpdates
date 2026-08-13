@@ -1289,6 +1289,34 @@ namespace ChickenDist.Forms
                         }
                         g.DrawString($"صافي المطلوب: {netAmount:N2} جنيه", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 25), right); y += 25;
                     }
+                    else if (isAlTarek)
+                    {
+                        // صافي المطلوب + التفقيط + الشعار - يظهران دائماً في نموذج الطارق هوم
+                        if (invDiscountAmt > 0 || shippingAmt > 0)
+                        {
+                            g.DrawString($"إجمالي الأصناف: {_runningTotal:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (invDiscountAmt > 0)
+                        {
+                            g.DrawString($"الخصم: -{invDiscountAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        if (shippingAmt > 0)
+                        {
+                            g.DrawString($"الشحن: +{shippingAmt:N2} جنيه", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        }
+                        g.DrawString($"صافي المطلوب: {netAmount:N2} جنيه", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 24), right); y += 30;
+
+                        int sumTableWt = pageW - 2 * margin;
+                        string tafStrMain = TafqeetHelper.ConvertToArabicWords(netAmount);
+                        using (var pinkBrushMain = new SolidBrush(Color.FromArgb(219, 39, 119)))
+                        {
+                            g.DrawString(tafStrMain, boldSheet, pinkBrushMain, new RectangleF(margin, y, sumTableWt, 20), center);
+                            y += 24;
+                            var sloganFontMain = new Font("Arial", 12, FontStyle.Bold | FontStyle.Italic);
+                            g.DrawString("لأنك تستحق الأفضل", sloganFontMain, pinkBrushMain, new RectangleF(margin, y, sumTableWt, 22), center);
+                            y += 32;
+                        }
+                    }
                     else if (!isAlTarek)
                     {
                         g.DrawLine(new Pen(Color.DarkBlue, 1.5f), margin, y, pageW - margin, y); y += 8;
@@ -1412,17 +1440,7 @@ namespace ChickenDist.Forms
                                 }
                                 y += 30;
 
-                                // Tafqeet & Slogan in Rose/Pink
-                                string tafqeetStr = TafqeetHelper.ConvertToArabicWords(netAmount);
-                                using (var pinkBrush = new SolidBrush(Color.FromArgb(219, 39, 119)))
-                                {
-                                    g.DrawString(tafqeetStr, boldSheet, pinkBrush, new RectangleF(margin, y, sumTableW, 20), center);
-                                    y += 24;
-
-                                    var sloganFont = new Font("Arial", 12, FontStyle.Bold | FontStyle.Italic);
-                                    g.DrawString("لأنك تستحق الأفضل", sloganFont, pinkBrush, new RectangleF(margin, y, sumTableW, 22), center);
-                                    y += 28;
-                                }
+                                // التفقيط والشعار طُبعا أعلاه في قسم الإجمالي (يظهران دائماً)
                             }
                             else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase))
                             {
