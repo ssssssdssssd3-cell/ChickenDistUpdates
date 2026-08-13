@@ -478,6 +478,8 @@ namespace ChickenDist.Forms
                     ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
                     ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
                     ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("🔍 دليل الموديلات والأجهزة", "ModelLookup", (Action)(() => new FrmModelLookup().ShowDialog())),
+                    ("👗 مصفوفة المقاسات والألوان", "ClothingMatrix", (Action)(() => NavigateTo(new FrmClothingMatrix()))),
                     ("📊 تقارير المخازن",   "Reports,Products",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
                 }),
 
@@ -660,6 +662,8 @@ namespace ChickenDist.Forms
                     ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
                     ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
                     ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
+                    ("🔍 دليل الموديلات والأجهزة", "ModelLookup", (Action)(() => new FrmModelLookup().ShowDialog())),
+                    ("👗 مصفوفة المقاسات والألوان", "ClothingMatrix", (Action)(() => NavigateTo(new FrmClothingMatrix()))),
                     ("📊 تقارير المخازن",   "Reports,Products",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
                 }),
 
