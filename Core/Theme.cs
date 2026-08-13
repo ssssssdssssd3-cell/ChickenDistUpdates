@@ -191,8 +191,24 @@ namespace ChickenDist.Core
             foreach (Control c in controls)
             {
                 c.EnableDoubleBuffering();
-                // Force RTL on all controls
                 c.RightToLeft = RightToLeft.Yes;
+
+                if (c is FlowLayoutPanel flp)
+                {
+                    flp.FlowDirection = FlowDirection.RightToLeft;
+                }
+                else if (c is StatusStrip ss)
+                {
+                    ss.RightToLeft = RightToLeft.Yes;
+                }
+                else if (c is ToolStrip ts)
+                {
+                    ts.RightToLeft = RightToLeft.Yes;
+                }
+                else if (c is MenuStrip ms)
+                {
+                    ms.RightToLeft = RightToLeft.Yes;
+                }
 
                 if (c is TextBox tb)
                 {
@@ -344,10 +360,19 @@ namespace ChickenDist.Core
             if (container == null) return;
 
             container.BackColor = BgSearchPanel;
+            container.RightToLeft = RightToLeft.Yes;
+            if (container is FlowLayoutPanel flpContainer)
+            {
+                flpContainer.FlowDirection = FlowDirection.RightToLeft;
+            }
 
             foreach (Control c in container.Controls)
             {
                 c.RightToLeft = RightToLeft.Yes;
+                if (c is FlowLayoutPanel flpChild)
+                {
+                    flpChild.FlowDirection = FlowDirection.RightToLeft;
+                }
 
                 if (c is Label lbl)
                 {
@@ -602,30 +627,18 @@ namespace ChickenDist.Core
             grid.RightToLeft = RightToLeft.Yes;
         }
 
-        /// <summary>لوحة عنوان الشاشة (مدمجة وموفرة للمساحة)</summary>
+        /// <summary>لوحة عنوان الشاشة (مدمجة وموفرة للمساحة واليمين 100%)</summary>
         public static Panel MakeTitleBar(string title, string subtitle = "")
         {
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = string.IsNullOrEmpty(subtitle) ? 32 : 44,
+                Height = string.IsNullOrEmpty(subtitle) ? 30 : 42,
                 BackColor = BgCard,
-                Padding = new Padding(15, 0, 0, 0)
+                Padding = new Padding(12, 3, 12, 3),
+                RightToLeft = RightToLeft.Yes
             };
-            var lbl = new Label
-            {
-                Text = title,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = TextMain,
-                AutoSize = false,
-                Width = 650,
-                Height = 22,
-                Top = 3,
-                Left = 15,
-                RightToLeft = RightToLeft.Yes,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-            panel.Controls.Add(lbl);
+
             if (!string.IsNullOrEmpty(subtitle))
             {
                 var sub = new Label
@@ -633,16 +646,25 @@ namespace ChickenDist.Core
                     Text = subtitle,
                     Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                     ForeColor = TextSub,
-                    AutoSize = false,
-                    Width = 650,
+                    Dock = DockStyle.Top,
                     Height = 18,
-                    Top = 23,
-                    Left = 15,
                     RightToLeft = RightToLeft.Yes,
                     TextAlign = ContentAlignment.MiddleRight
                 };
                 panel.Controls.Add(sub);
             }
+
+            var lbl = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = TextMain,
+                Dock = DockStyle.Top,
+                Height = 22,
+                RightToLeft = RightToLeft.Yes,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            panel.Controls.Add(lbl);
 
             // رسم خط فاصل متدرج فخم جداً (Modern Gradient Separator) في أسفل اللوحة
             panel.Paint += (s, e) =>
