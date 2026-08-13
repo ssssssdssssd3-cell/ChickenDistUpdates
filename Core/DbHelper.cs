@@ -38,7 +38,7 @@ namespace ChickenDist.Core
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { AppLogger.Error("DbHelper.ValidateSystemDate", ex); }
             return true;
         }
 

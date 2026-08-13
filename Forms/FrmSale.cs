@@ -1413,7 +1413,7 @@ namespace ChickenDist.Forms
 			{
 				if (keyData == Keys.Down)
 				{
-					if (dgItems != null && dgItems.IsCurrentCellInEditMode && dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+					if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
 					{
 						return base.ProcessCmdKey(ref msg, keyData);
 					}
@@ -2282,7 +2282,7 @@ namespace ChickenDist.Forms
 
 		private string GetDefaultAllowedInvoiceType()
 		{
-			if (Session.Role == "Admin") return "Cash";
+			if (Session.IsAdmin) return "Cash";
 			if (Session.CanSellCash) return "Cash";
 			if (Session.CanSellCredit) return "Credit";
 			if (Session.CanSellDriverLoad) return "DriverLoad";
@@ -2292,7 +2292,7 @@ namespace ChickenDist.Forms
 
 		private void ApplyInvoiceTypePermissions()
 		{
-			if (Session.Role == "Admin")
+			if (Session.IsAdmin)
 			{
 				if (nudShippingCharge != null) nudShippingCharge.Enabled = true;
 				return;

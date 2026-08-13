@@ -240,8 +240,8 @@ namespace ChickenDist.Forms
             lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
             bool canEditPrice = _isPurchaseMode 
-                ? (Session.Role == "Admin" || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Purchases"))
-                : (Session.Role == "Admin" || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Sales"));
+                ? (Session.IsAdmin || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Purchases"))
+                : (Session.IsAdmin || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Sales"));
 
             if (!canEditPrice)
             {

@@ -10,6 +10,7 @@ namespace ChickenDist.Core
         public static string EmpName { get; set; }
         public static string UserName { get; set; }
         public static string Role { get; set; }
+        public static bool IsAdmin => !string.IsNullOrWhiteSpace(Role) && string.Equals(Role.Trim(), "Admin", StringComparison.OrdinalIgnoreCase);
         public static bool IsDriver { get; set; }
 
         public static int? DefaultSafeID { get; set; }
@@ -26,7 +27,7 @@ namespace ChickenDist.Core
                     return Convert.ToInt32(safeIdObj);
                 }
             }
-            catch { }
+            catch (Exception ex) { AppLogger.Error("Session.GetDefaultSafeID", ex); }
             return 1;
         }
 
@@ -48,7 +49,7 @@ namespace ChickenDist.Core
         public static void LoadPermissions(int empID)
         {
             _perms.Clear();
-            if (Role == "Admin")
+            if (IsAdmin)
             {
                 // المدير لديه كل الصلاحيات
                 foreach (var s in AllScreens)
@@ -93,7 +94,7 @@ namespace ChickenDist.Core
 
         public static bool CanAccess(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             if (string.IsNullOrEmpty(screen)) return true;
 
             // Handle comma-separated screen checks (e.g., "Reports,Financials")
@@ -118,86 +119,86 @@ namespace ChickenDist.Core
 
         public static bool CanEditPrice(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanEditPrice;
         }
 
         public static bool CanEditSalesInvoice(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanEditSalesInvoice;
         }
 
         public static bool CanDeleteSalesInvoice(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanDeleteSalesInvoice;
         }
 
         public static bool CanCopySalesInvoice(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanCopySalesInvoice;
         }
 
         public static bool CanViewCost(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanViewCost;
         }
 
         public static bool CanAdd(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanAdd;
         }
 
         public static bool CanEdit(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanEdit;
         }
 
         public static bool CanDelete(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanDelete;
         }
 
         public static bool CanViewDetails(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanViewDetails;
         }
 
         public static bool CanViewBalance(string screen = "CashBox")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanViewBalance;
         }
 
         public static bool CanChangeSafe(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanChangeSafe;
         }
 
         public static bool CanOrderColumns(string screen)
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanOrderColumns;
         }
 
         public static bool CanViewSalesTotals(string screen = "SalesList")
         {
-            if (Role == "Admin" || (Role != null && (Role.Contains("مدير") || Role.Contains("Admin")))) return true;
+            if (IsAdmin || (Role != null && (Role.Contains("مدير") || Role.Contains("Admin")))) return true;
             if (_perms.ContainsKey(screen)) return _perms[screen].CanViewSalesTotals;
             return true;
         }
 
         public static bool CanViewQuickItems(string screen = "Sales")
         {
-            if (Role == "Admin") return true;
+            if (IsAdmin) return true;
             if (_perms.ContainsKey(screen)) return _perms[screen].CanViewQuickItems;
             return true;
         }

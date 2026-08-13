@@ -546,8 +546,9 @@ namespace ChickenDist.Forms
                 foreach (DataGridViewRow row in grid.Rows)
                 {
                     string screen = row.Cells["Screen"].Value?.ToString();
-                    bool enable = role == "Admin" || (role == "Sales" && salesKeys.Contains(screen)) || (role == "Purchases" && purchaseKeys.Contains(screen)) || (role == "Inventory" && inventoryKeys.Contains(screen)) || (role == "Accountant" && accountantKeys.Contains(screen));
-                    if (enable) { if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true; if (role == "Admin") for (int i = 3; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cOpt && !row.Cells[i].ReadOnly) cOpt.Value = true; }
+                    bool isAdminRole = string.Equals(role?.Trim(), "Admin", StringComparison.OrdinalIgnoreCase);
+                    bool enable = isAdminRole || (role == "Sales" && salesKeys.Contains(screen)) || (role == "Purchases" && purchaseKeys.Contains(screen)) || (role == "Inventory" && inventoryKeys.Contains(screen)) || (role == "Accountant" && accountantKeys.Contains(screen));
+                    if (enable) { if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true; if (isAdminRole) for (int i = 3; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cOpt && !row.Cells[i].ReadOnly) cOpt.Value = true; }
                 }
             }
             UpdateLiveCounter();

@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
             btnToggleDetails.FlatAppearance.BorderSize = 0;
             btnToggleDetails.Click += (s, e) =>
             {
-                if (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || Session.CanAccess("ShiftDetails"))
+                if (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || Session.CanAccess("ShiftDetails"))
                 {
                     _forceShowDetails = !_forceShowDetails;
                     if (_openShift != null)
@@ -122,7 +122,7 @@ namespace ChickenDist.Forms
             btnDrawerMovementDetails.FlatAppearance.BorderSize = 0;
             btnDrawerMovementDetails.Click += (s, e) =>
             {
-                if (Session.Role == "Admin" || Session.CanAccess("ShiftDetails") || Session.CanAccess("ShiftCloseDetails") || Session.CanViewDetails("ShiftClose"))
+                if (Session.IsAdmin || Session.CanAccess("ShiftDetails") || Session.CanAccess("ShiftCloseDetails") || Session.CanViewDetails("ShiftClose"))
                 {
                     if (_openShift != null)
                     {
@@ -607,7 +607,7 @@ namespace ChickenDist.Forms
                 lblExpectedVal.Text    = expected.ToString("N2") + " ج";
                 txtActualCash.Text     = expected.ToString("N2");
 
-                bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
+                bool canViewDetails = (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
                 if (canViewDetails)
                 {
                     lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
@@ -628,7 +628,7 @@ namespace ChickenDist.Forms
         private void LoadShiftMovements(int shiftID, DateTime openTime)
         {
             dgMovements.Rows.Clear();
-            bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
+            bool canViewDetails = (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
             if (!canViewDetails)
             {
                 dgMovements.Visible = false;
@@ -725,7 +725,7 @@ namespace ChickenDist.Forms
         private void RecalcDiff()
         {
             if (_summary == null) return;
-            bool canViewDetails = (Session.Role == "Admin" || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
+            bool canViewDetails = (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
 
             if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual)) return;
 
