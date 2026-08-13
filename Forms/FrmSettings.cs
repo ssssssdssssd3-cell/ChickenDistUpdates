@@ -12,6 +12,7 @@ namespace ChickenDist.Forms
         private TextBox txtCompanyName;
         private TextBox txtCompanyPhone1;
         private TextBox txtCompanyPhone2;
+        private TextBox txtCompanyAddress;
         private TextBox txtShopLogoPath;
         private CheckBox chkPrintShopLogo;
         private ComboBox cboReceiptPrintMode;
@@ -118,6 +119,21 @@ namespace ChickenDist.Forms
             };
             txtCompanyPhone2.Text = AppConfig.CompanyPhone2;
             this.Controls.Add(txtCompanyPhone2);
+            y += 40;
+
+            // ── عنوان الشركة ──────────────────────────────────────
+            AddLabel("عنوان الشركة / المؤسسة:", 20, ref y, 0);
+            txtCompanyAddress = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11f)
+            };
+            txtCompanyAddress.Text = AppConfig.CompanyAddress;
+            this.Controls.Add(txtCompanyAddress);
             y += 40;
 
             // ── شعار الشركة ──────────────────────────────────────
@@ -388,6 +404,7 @@ namespace ChickenDist.Forms
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 AppConfig.CompanyName = string.IsNullOrWhiteSpace(txtCompanyName.Text) ? AppConfig.CompanyName : txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
 
                 // بحث عن أي فاتورة موجودة للمعاينة
                 var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
@@ -458,6 +475,7 @@ namespace ChickenDist.Forms
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
 
                 // البحث عن فاتورة مبيعات للمعاينة
                 var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
@@ -1100,6 +1118,7 @@ namespace ChickenDist.Forms
                 }
 
                 AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
                 AppConfig.BusinessType = cboBusinessType.SelectedIndex switch
                 {
                     1 => "SpareParts",
