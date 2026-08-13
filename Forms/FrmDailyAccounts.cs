@@ -72,31 +72,32 @@ namespace ChickenDist.Forms
             tabMain = new TabControl
             {
                 Dock = DockStyle.Fill,
-                Font = Theme.FontBold
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Padding = new Point(12, 5)
             };
 
             // Build Tab 1: Issue Vouchers
-            var tabCreateVoucher = new TabPage("💸 إصدار سندات الصرف والتوريد");
+            var tabCreateVoucher = new TabPage("💸 إصدار سندات");
             BuildCreateVoucherTab(tabCreateVoucher);
             tabMain.TabPages.Add(tabCreateVoucher);
 
             // Build Tab 2: Reports of Vouchers
-            var tabVoucherReports = new TabPage("📊 تقارير المقبوضات والمصروفات اليومية");
+            var tabVoucherReports = new TabPage("📊 المقبوضات والمصروفات");
             BuildVoucherReportsTab(tabVoucherReports);
             tabMain.TabPages.Add(tabVoucherReports);
 
             // Build Tab 3: Journal Entries
-            var tabJournal = new TabPage("🔄 القيود اليومية (مدين ودائن)");
+            var tabJournal = new TabPage("🔄 القيود اليومية");
             BuildJournalTab(tabJournal);
             tabMain.TabPages.Add(tabJournal);
 
             // Build Tab 4: Cash & Banks
-            var tabCashBank = new TabPage("🏛️ حركة الخزينة والبنوك والتحويلات");
+            var tabCashBank = new TabPage("🏦 الخزائن والبنوك");
             BuildCashBankTab(tabCashBank);
             tabMain.TabPages.Add(tabCashBank);
 
             // Build Tab 5: COGS & Inventory
-            var tabCogsInv = new TabPage("📦 تكلفة المبيعات والمخزون والربحية");
+            var tabCogsInv = new TabPage("📦 تكلفة المبيعات والربحية");
             BuildCogsInvTab(tabCogsInv);
             tabMain.TabPages.Add(tabCogsInv);
 
@@ -228,27 +229,31 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 320
+                SplitterDistance = 300
+            };
+            splitRep.SizeChanged += (s, e) => {
+                if (splitRep.Height > 100)
+                    splitRep.SplitterDistance = splitRep.Height / 2;
             };
 
             // Panel Top: Expenses Report (المصروفات وعمليات الصرف)
             var pnlExpRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
-            pnlExpHeader.Controls.Add(new Label { Text = "📕 تقرير المصروفات وعمليات الصرف اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today };
-            dtpExpTo = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(4) };
+            pnlExpHeader.Controls.Add(new Label { Text = "📕 المصروفات  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 4, 0, 0) });
+            dtpExpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today };
+            dtpExpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
             dtpExpFrom.ValueChanged += (s, e) => LoadExpensesReport();
             dtpExpTo.ValueChanged += (s, e) => LoadExpensesReport();
             pnlExpHeader.Controls.Add(dtpExpFrom);
-            pnlExpHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(5, 5, 0, 0) });
+            pnlExpHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 4, 0, 0) });
             pnlExpHeader.Controls.Add(dtpExpTo);
 
-            lblTotalExp = new Label { Text = "إجمالي المصروفات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(220, 60, 60), Font = Theme.FontBold, Margin = new Padding(20, 5, 0, 0) };
+            lblTotalExp = new Label { Text = "إجمالي المصروفات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(220, 60, 60), Font = Theme.FontBold, Margin = new Padding(12, 4, 0, 0) };
             pnlExpHeader.Controls.Add(lblTotalExp);
 
-            var btnPrintExp = Theme.MakeButton("🖨️ طباعة السند المحدد", Color.FromArgb(30, 80, 140));
-            btnPrintExp.Size = new Size(160, 28);
-            btnPrintExp.Margin = new Padding(20, 1, 0, 0);
+            var btnPrintExp = Theme.MakeButton("🖨️ طباعة السند", Color.FromArgb(30, 80, 140));
+            btnPrintExp.Size = new Size(130, 24);
+            btnPrintExp.Margin = new Padding(12, 1, 0, 0);
             btnPrintExp.Click += (s, e) => PrintSelectedVoucher(dgExpensesReport);
             pnlExpHeader.Controls.Add(btnPrintExp);
 
@@ -256,7 +261,7 @@ namespace ChickenDist.Forms
             dgExpensesReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgExpensesReport);
 
             var tblExp = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
-            tblExp.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblExp.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
             tblExp.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             tblExp.Controls.Add(pnlExpHeader, 0, 0);
             tblExp.Controls.Add(dgExpensesReport, 0, 1);
@@ -265,23 +270,22 @@ namespace ChickenDist.Forms
 
             // Panel Bottom: Receipts Report (التوريدات والمقبوضات)
             var pnlRecRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(6) };
-            pnlRecHeader.Controls.Add(new Label { Text = "📗 تقرير التوريدات والمقبوضات اليومية  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
-            dtpRecFrom = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today };
-            dtpRecTo = new DateTimePicker { Width = 195, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(4) };
+            pnlRecHeader.Controls.Add(new Label { Text = "📗 المقبوضات  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 4, 0, 0) });
+            dtpRecFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today };
+            dtpRecTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
             dtpRecFrom.ValueChanged += (s, e) => LoadReceiptsReport();
             dtpRecTo.ValueChanged += (s, e) => LoadReceiptsReport();
             pnlRecHeader.Controls.Add(dtpRecFrom);
-            pnlRecHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(5, 5, 0, 0) });
+            pnlRecHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 4, 0, 0) });
             pnlRecHeader.Controls.Add(dtpRecTo);
 
-
-            lblTotalRec = new Label { Text = "إجمالي المقبوضات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(40, 160, 70), Font = Theme.FontBold, Margin = new Padding(20, 5, 0, 0) };
+            lblTotalRec = new Label { Text = "إجمالي المقبوضات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(40, 160, 70), Font = Theme.FontBold, Margin = new Padding(12, 4, 0, 0) };
             pnlRecHeader.Controls.Add(lblTotalRec);
 
-            var btnPrintRec = Theme.MakeButton("🖨️ طباعة السند المحدد", Color.FromArgb(30, 80, 140));
-            btnPrintRec.Size = new Size(160, 28);
-            btnPrintRec.Margin = new Padding(20, 1, 0, 0);
+            var btnPrintRec = Theme.MakeButton("🖨️ طباعة السند", Color.FromArgb(30, 80, 140));
+            btnPrintRec.Size = new Size(130, 24);
+            btnPrintRec.Margin = new Padding(12, 1, 0, 0);
             btnPrintRec.Click += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
             pnlRecHeader.Controls.Add(btnPrintRec);
 
@@ -289,7 +293,7 @@ namespace ChickenDist.Forms
             dgReceiptsReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
 
             var tblRec = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
-            tblRec.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblRec.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
             tblRec.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             tblRec.Controls.Add(pnlRecHeader, 0, 0);
             tblRec.Controls.Add(dgReceiptsReport, 0, 1);
@@ -975,7 +979,10 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RightToLeft = RightToLeft.Yes
+                RightToLeft = RightToLeft.Yes,
+                ColumnHeadersHeight = 26,
+                RowTemplate = { Height = 24 },
+                DefaultCellStyle = { Font = new Font("Segoe UI", 8.8f) }
             };
             Theme.StyleGridHeader(grid);
             return grid;

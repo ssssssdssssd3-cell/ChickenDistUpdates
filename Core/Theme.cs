@@ -425,7 +425,7 @@ namespace ChickenDist.Core
             grid.ColumnHeadersVisible = true;
             grid.EnableHeadersVisualStyles = false;
             grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            if (grid.ColumnHeadersHeight < 36) grid.ColumnHeadersHeight = 36;
+            if (grid.ColumnHeadersHeight < 28) grid.ColumnHeadersHeight = 28;
             grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.Font = _gridHeaderFont;
@@ -588,8 +588,8 @@ namespace ChickenDist.Core
             grid.ColumnHeadersDefaultCellStyle.BackColor = Primary;
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.Font = FontBold;
-            grid.ColumnHeadersHeight = 36;
-            grid.RowTemplate.Height = 30;
+            grid.ColumnHeadersHeight = 28;
+            grid.RowTemplate.Height = 24;
             grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 247, 250);
             grid.EnableHeadersVisualStyles = false;
             grid.GridColor = Color.FromArgb(220, 220, 220);
@@ -602,25 +602,25 @@ namespace ChickenDist.Core
             grid.RightToLeft = RightToLeft.Yes;
         }
 
-        /// <summary>لوحة عنوان الشاشة</summary>
+        /// <summary>لوحة عنوان الشاشة (مدمجة وموفرة للمساحة)</summary>
         public static Panel MakeTitleBar(string title, string subtitle = "")
         {
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 70,
+                Height = string.IsNullOrEmpty(subtitle) ? 32 : 44,
                 BackColor = BgCard,
-                Padding = new Padding(20, 0, 0, 0)
+                Padding = new Padding(15, 0, 0, 0)
             };
             var lbl = new Label
             {
                 Text = title,
-                Font = FontTitle,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = TextMain,
                 AutoSize = false,
-                Width = 600,
-                Height = 40,
-                Top = 8,
+                Width = 650,
+                Height = 22,
+                Top = 3,
                 Left = 15,
                 RightToLeft = RightToLeft.Yes,
                 TextAlign = ContentAlignment.MiddleRight
@@ -631,12 +631,12 @@ namespace ChickenDist.Core
                 var sub = new Label
                 {
                     Text = subtitle,
-                    Font = FontSmall,
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                     ForeColor = TextSub,
                     AutoSize = false,
-                    Width = 600,
-                    Height = 22,
-                    Top = 46,
+                    Width = 650,
+                    Height = 18,
+                    Top = 23,
                     Left = 15,
                     RightToLeft = RightToLeft.Yes,
                     TextAlign = ContentAlignment.MiddleRight
