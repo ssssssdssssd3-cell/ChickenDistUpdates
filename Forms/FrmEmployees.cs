@@ -312,7 +312,6 @@ namespace ChickenDist.Forms
                 {
                     int id = Convert.ToInt32(r["AccountID"]);
                     string name = r["AccountName"].ToString();
-                    
                     var item = new ComboItem(id, name);
                     cboDefaultSafe.Items.Add(item);
                     clbAllowedSafes.Items.Add(item);
@@ -333,7 +332,7 @@ namespace ChickenDist.Forms
         }
     }
 
-    /// <summary>شاشة الصلاحيات الاحترافية المحدثة — قوالب جاهزة وبحث فوري وعداد مباشر</summary>
+    /// <summary>شاشة الصلاحيات الاحترافية المحدثة — 5 تبويبات وجميع الشاشات</summary>
     public class FrmPermissions : Form
     {
         private readonly int _empID;
@@ -342,6 +341,7 @@ namespace ChickenDist.Forms
         private DataGridView dgSales;
         private DataGridView dgPurchases;
         private DataGridView dgInventory;
+        private DataGridView dgFinance;
         private DataGridView dgAdmin;
         private TextBox txtSearch;
         private Label lblCounter;
@@ -351,7 +351,7 @@ namespace ChickenDist.Forms
         {
             public string Key;
             public string Name;
-            public int TabIndex; // 0: Sales & Clients, 1: Purchases & Suppliers, 2: Inventory & Products, 3: Finance & Administration
+            public int TabIndex; // 0: Sales & Clients, 1: Purchases & Suppliers, 2: Inventory & Products, 3: Finance & Safes, 4: Drivers, Maintenance & Admin
             public ScreenInfo(string key, string name, int tabIndex)
             {
                 Key = key;
@@ -361,9 +361,10 @@ namespace ChickenDist.Forms
         }
 
         private static readonly ScreenInfo[] ScreensList = {
-            // Tab 0: Sales & Clients
-            new ScreenInfo("Sales", "🛒 شاشة المبيعات الرئيسية", 0),
+            // ── Tab 0: Sales & Clients (المبيعات والعملاء) ──────────────────────────
+            new ScreenInfo("Sales", "🛒 شاشة المبيعات الرئيسية (فاتورة بيع)", 0),
             new ScreenInfo("POS", "⚡ نقطة البيع السريعة POS", 0),
+            new ScreenInfo("PriceQuote", "📋 بيان تسعير وعروض الأسعار", 0),
             new ScreenInfo("ProductSearch", "🔍 شاشة بحث الأصناف وتعديل الأسعار", 0),
             new ScreenInfo("Returns", "↩️ مرتجع المبيعات", 0),
             new ScreenInfo("Installments", "📜 عقود التقسيط الشرعي", 0),
@@ -372,22 +373,23 @@ namespace ChickenDist.Forms
             new ScreenInfo("SalesList", "📋 سجل الفواتير والمبيعات", 0),
             new ScreenInfo("SalesAudit", "🔍 سجل تعديلات وحذف الفواتير", 0),
             new ScreenInfo("AccountantPortal", "🌐 بوابة المحاسبة الميدانية", 0),
-            new ScreenInfo("Clients", "👥 إدارة وتعديل العملاء", 0),
+            new ScreenInfo("Clients", "👥 إدارة وتعديل بيانات العملاء", 0),
+            new ScreenInfo("ClientStatement", "📄 كشف حساب العميل التفصيلي", 0),
             new ScreenInfo("InactiveClients", "💤 تنشيط العملاء الراكدين", 0),
             new ScreenInfo("Vehicles", "🚚 إدارة المركبات والسيارات", 0),
-            new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 0),
 
-            // Tab 1: Purchases & Suppliers
-            new ScreenInfo("Purchases", "📥 شاشة المشتريات الرئيسية", 1),
+            // ── Tab 1: Purchases & Suppliers (المشتريات والموردين) ─────────────────
+            new ScreenInfo("Purchases", "📥 شاشة المشتريات الرئيسية (فاتورة شراء)", 1),
             new ScreenInfo("PurchaseReturn", "↩️ مرتجع المشتريات", 1),
             new ScreenInfo("PurchasesList", "📋 سجل الفواتير والمشتريات", 1),
             new ScreenInfo("Suppliers", "🏢 إدارة وتعديل الموردين", 1),
-            new ScreenInfo("SupplierStatement", "📄 كشف حساب المورد", 1),
+            new ScreenInfo("SupplierStatement", "📄 كشف حساب المورد التفصيلي", 1),
             new ScreenInfo("SupplierPayment", "💵 صرف نقدي لمورد", 1),
             new ScreenInfo("SupplierAdjustment", "⚖️ تسوية أرصدة الموردين", 1),
 
-            // Tab 2: Inventory & Products
+            // ── Tab 2: Inventory & Products (المخازن والأصناف) ─────────────────────
             new ScreenInfo("Products", "🏷️ إدارة وتعديل الأصناف والأسعار", 2),
+            new ScreenInfo("ProductCard", "💳 كارت الصنف والمواصفات", 2),
             new ScreenInfo("Categories", "🗂️ التصنيفات والأقسام", 2),
             new ScreenInfo("Units", "📏 إدارة وحدات قياس الأصناف", 2),
             new ScreenInfo("ImportProducts", "📊 استيراد الأصناف من إكسيل", 2),
@@ -401,39 +403,50 @@ namespace ChickenDist.Forms
             new ScreenInfo("WarehouseTransfersList", "📋 سجل التحويلات المخزنية", 2),
             new ScreenInfo("PriceChanges", "📉 سجل تغير وحركات الأسعار", 2),
             new ScreenInfo("PricePoster", "📢 منشور الأسعار", 2),
-            new ScreenInfo("ProductMovement", "📊 تقرير وحركة الصنف", 2),
+            new ScreenInfo("ProductMovement", "📊 تقرير وحركة الصنف التفصيلي", 2),
             new ScreenInfo("BulkPrintBarcodes", "🏷️ طباعة الباركود (مجمع)", 2),
+            new ScreenInfo("ClothingMatrix", "👔 مصفوفة مقاسات وألوان الملابس", 2),
+            new ScreenInfo("ModelLookup", "🔍 دليل الموديلات والأجهزة", 2),
+            new ScreenInfo("MultiBarcodes", "🔢 إدارة الباركودات المتعددة", 2),
 
-            // Tab 3: Finance, Drivers & Administration
-            new ScreenInfo("CashBox", "💰 حركات الخزينة والصندوق", 3),
+            // ── Tab 3: Finance, Safes & Shifts (المالية والخزائن والورديات) ────────
+            new ScreenInfo("CashBox", "💰 الخزنة والمصروفات والوارد", 3),
+            new ScreenInfo("SafeAccounts", "🏛️ إدارة حسابات الخزائن الفرعية", 3),
+            new ScreenInfo("ActualBalances", "💵 مطابقة الأرصدة الفعلية للنقدية", 3),
+            new ScreenInfo("DailyAccounts", "📊 الحسابات والمالية اليومية الشاملة", 3),
+            new ScreenInfo("ReceiptVoucher", "📄 إصدار سندات القبض والدفع", 3),
             new ScreenInfo("Reports", "📊 التقارير والإحصائيات العامة", 3),
             new ScreenInfo("Financials", "📈 التقارير المالية وقائمة الدخل", 3),
             new ScreenInfo("DailyClosing", "🔒 تقفيل يومية المبيعات", 3),
             new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
             new ScreenInfo("ShiftsHistory", "📊 تقرير وسجل الورديات السابقة", 3),
-            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 3),
-            new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 3),
-            new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 3),
-            new ScreenInfo("DriverPortal", "📱 بوابة المندوب الميداني", 3),
-            new ScreenInfo("DriverSales", "📱 مبيعات المندوب الميداني", 3),
-            new ScreenInfo("ImportPreview", "📥 استيراد مبيعات المناديب", 3),
-            new ScreenInfo("DriversMonitor", "📡 شاشة مراقبة السائقين", 3),
             new ScreenInfo("DashTreasury", "🏠 لوحة التحكم: رصيد الخزنة الحالي", 3),
             new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 3),
-            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 3),
-            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 3),
-            new ScreenInfo("DriverCustody", "💼 عهدة المناديب المالية", 3),
-            new ScreenInfo("DriverLeaderboard", "🏆 أداء وتقييم المناديب", 3),
-            new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 3),
-            new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 3),
-            new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 3)
+
+            // ── Tab 4: Drivers, Maintenance & Administration (المناديب والصيانة والإدارة) ──
+            new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 4),
+            new ScreenInfo("DriverPortal", "📱 بوابة المندوب الميداني", 4),
+            new ScreenInfo("DriverSales", "📱 مبيعات المندوب الميداني", 4),
+            new ScreenInfo("ImportPreview", "📥 استيراد مبيعات المناديب", 4),
+            new ScreenInfo("DriversMonitor", "📡 شاشة مراقبة السائقين", 4),
+            new ScreenInfo("DriverCustody", "💼 عهدة المناديب المالية", 4),
+            new ScreenInfo("DriverLeaderboard", "🏆 أداء وتقييم المناديب", 4),
+            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 4),
+            new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 4),
+            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 4),
+            new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 4),
+            new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 4),
+            new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 4),
+            new ScreenInfo("CloudSync", "☁️ التزامن السحابي والفرعي", 4),
+            new ScreenInfo("LookupManager", "📚 إدارة الجداول المرجعية", 4),
+            new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 4),
+            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 4)
         };
 
         public FrmPermissions(int empID, string empName)
         {
             _empID = empID;
             _empName = empName;
-
             InitializeComponentCustom();
             LoadPermissions();
             UpdateLiveCounter();
@@ -442,7 +455,7 @@ namespace ChickenDist.Forms
         private void InitializeComponentCustom()
         {
             this.Text = $"🔐 صلاحيات الموظف: {_empName}";
-            this.Size = new Size(1150, 750);
+            this.Size = new Size(1180, 780);
             this.MinimumSize = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterParent;
             this.RightToLeft = RightToLeft.Yes;
@@ -450,668 +463,319 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // 1. Clean Custom Header Panel (Prevents text overlap)
-            var pnlTop = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 65,
-                BackColor = Color.FromArgb(24, 32, 47),
-                Padding = new Padding(15, 10, 15, 10)
-            };
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 65, BackColor = Color.FromArgb(24, 32, 47), Padding = new Padding(15, 10, 15, 10) };
+            var lblTitleHeader = new Label { Text = $"🔐 صلاحيات الموظف: {_empName}", Font = new Font("Segoe UI", 12.5f, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(15, 8) };
+            var lblSubHeader = new Label { Text = "حدد العمليات والصلاحيات التفصيلية المسموح لهذا الموظف بإجرائها في شاشات المبيعات والمشتريات والأصناف والعملاء والمالية والإدارة.", Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(180, 195, 215), AutoSize = true, Location = new Point(15, 36) };
+            pnlTop.Controls.Add(lblTitleHeader); pnlTop.Controls.Add(lblSubHeader);
 
-            var lblTitleHeader = new Label
-            {
-                Text = $"🔐 صلاحيات الموظف: {_empName}",
-                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
-                ForeColor = Color.White,
-                AutoSize = true,
-                Location = new Point(15, 8)
-            };
-
-            var lblSubHeader = new Label
-            {
-                Text = "حدد العمليات والصلاحيات التفصيلية المسموح لهذا الموظف بإجرائها في شاشات المبيعات والمشتريات والأصناف والعملاء والمالية.",
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = Color.FromArgb(180, 195, 215),
-                AutoSize = true,
-                Location = new Point(15, 36)
-            };
-
-            pnlTop.Controls.Add(lblTitleHeader);
-            pnlTop.Controls.Add(lblSubHeader);
-
-            // 2. Presets & Search Control Bar Panel
-            var pnlControlBar = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 85,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(10, 8, 10, 8)
-            };
-
-            // Search Box
-            var lblSearch = new Label
-            {
-                Text = "🔍 تصفية وبحث فوري:",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Theme.TextSub,
-                AutoSize = true,
-                Location = new Point(960, 10)
-            };
-            txtSearch = new TextBox
-            {
-                Location = new Point(740, 7),
-                Width = 210,
-                Font = new Font("Segoe UI", 10f),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
-            };
+            var pnlControlBar = new Panel { Dock = DockStyle.Top, Height = 85, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
+            txtSearch = new TextBox { Location = new Point(740, 7), Width = 210, Font = new Font("Segoe UI", 10f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtSearch.TextChanged += (s, e) => ApplySearchFilter();
+            
+            var btnRoleAdmin = CreatePresetButton("👑 مدير كامل", Color.FromArgb(192, 57, 43), (s, e) => ApplyRolePreset("Admin")); btnRoleAdmin.Location = new Point(830, 43);
+            var btnRoleSales = CreatePresetButton("🛒 كاشير / مبيعات", Color.FromArgb(41, 128, 185), (s, e) => ApplyRolePreset("Sales")); btnRoleSales.Location = new Point(695, 43);
+            var btnRolePurchases = CreatePresetButton("📥 مسؤول مشتريات", Color.FromArgb(142, 68, 173), (s, e) => ApplyRolePreset("Purchases")); btnRolePurchases.Location = new Point(555, 43);
+            var btnRoleInventory = CreatePresetButton("📦 أمين مخزن", Color.FromArgb(39, 174, 96), (s, e) => ApplyRolePreset("Inventory")); btnRoleInventory.Location = new Point(435, 43);
+            var btnRoleAccountant = CreatePresetButton("💰 محاسب مالي", Color.FromArgb(211, 84, 0), (s, e) => ApplyRolePreset("Accountant")); btnRoleAccountant.Location = new Point(310, 43);
+            var btnClearAll = CreatePresetButton("🧹 تفريغ الكل", Color.FromArgb(127, 140, 141), (s, e) => ToggleAllPermissions(false)); btnClearAll.Location = new Point(195, 43);
+            
+            pnlControlBar.Controls.AddRange(new Control[] { new Label { Text = "🔍 تصفية وبحث فوري:", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextSub, AutoSize = true, Location = new Point(960, 10) }, txtSearch, new Label { Text = "🛡️ الأدوار والقوالب السريعة:", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextSub, AutoSize = true, Location = new Point(960, 48) }, btnRoleAdmin, btnRoleSales, btnRolePurchases, btnRoleInventory, btnRoleAccountant, btnClearAll });
 
-            // Preset Roles Title
-            var lblPresets = new Label
-            {
-                Text = "🛡️ الأدوار والقوالب السريعة:",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Theme.TextSub,
-                AutoSize = true,
-                Location = new Point(960, 48)
-            };
+            tcPerms = new TabControl { Dock = DockStyle.Fill, RightToLeftLayout = false, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Padding = new Point(12, 6) };
+            tcPerms.TabPages.Add(BuildTabPage("🛒 المبيعات والعملاء", out dgSales, 0));
+            tcPerms.TabPages.Add(BuildTabPage("📥 المشتريات والموردين", out dgPurchases, 1));
+            tcPerms.TabPages.Add(BuildTabPage("📦 المخازن والأصناف", out dgInventory, 2));
+            tcPerms.TabPages.Add(BuildTabPage("💰 المالية والخزائن والورديات", out dgFinance, 3));
+            tcPerms.TabPages.Add(BuildTabPage("🚚 المناديب والصيانة والإدارة", out dgAdmin, 4));
 
-            // Preset Buttons
-            var btnRoleAdmin = CreatePresetButton("👑 مدير كامل", Color.FromArgb(192, 57, 43), (s, e) => ApplyRolePreset("Admin"));
-            btnRoleAdmin.Location = new Point(830, 43);
-
-            var btnRoleSales = CreatePresetButton("🛒 كاشير / مبيعات", Color.FromArgb(41, 128, 185), (s, e) => ApplyRolePreset("Sales"));
-            btnRoleSales.Location = new Point(695, 43);
-
-            var btnRolePurchases = CreatePresetButton("📥 مسؤول مشتريات", Color.FromArgb(142, 68, 173), (s, e) => ApplyRolePreset("Purchases"));
-            btnRolePurchases.Location = new Point(555, 43);
-
-            var btnRoleInventory = CreatePresetButton("📦 أمين مخزن", Color.FromArgb(39, 174, 96), (s, e) => ApplyRolePreset("Inventory"));
-            btnRoleInventory.Location = new Point(435, 43);
-
-            var btnRoleAccountant = CreatePresetButton("💰 محاسب مالي", Color.FromArgb(211, 84, 0), (s, e) => ApplyRolePreset("Accountant"));
-            btnRoleAccountant.Location = new Point(310, 43);
-
-            var btnClearAll = CreatePresetButton("🧹 تفريغ الكل", Color.FromArgb(127, 140, 141), (s, e) => ToggleAllPermissions(false));
-            btnClearAll.Location = new Point(195, 43);
-
-            pnlControlBar.Controls.Add(lblSearch);
-            pnlControlBar.Controls.Add(txtSearch);
-            pnlControlBar.Controls.Add(lblPresets);
-            pnlControlBar.Controls.Add(btnRoleAdmin);
-            pnlControlBar.Controls.Add(btnRoleSales);
-            pnlControlBar.Controls.Add(btnRolePurchases);
-            pnlControlBar.Controls.Add(btnRoleInventory);
-            pnlControlBar.Controls.Add(btnRoleAccountant);
-            pnlControlBar.Controls.Add(btnClearAll);
-
-            // 3. Tab Control
-            tcPerms = new TabControl
-            {
-                Dock = DockStyle.Fill,
-                RightToLeftLayout = false,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Padding = new Point(12, 6)
-            };
-
-            var tpSales = BuildTabPage("🛒 المبيعات والعملاء", out dgSales, 0);
-            var tpPurchases = BuildTabPage("📥 المشتريات والموردين", out dgPurchases, 1);
-            var tpInventory = BuildTabPage("📦 المخازن والأصناف", out dgInventory, 2);
-            var tpAdmin = BuildTabPage("⚙️ المالية والمناديب والإدارة", out dgAdmin, 3);
-
-            tcPerms.TabPages.Add(tpSales);
-            tcPerms.TabPages.Add(tpPurchases);
-            tcPerms.TabPages.Add(tpInventory);
-            tcPerms.TabPages.Add(tpAdmin);
-
-            // 4. Bottom Footer Bar Panel
-            var pnlFooter = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 60,
-                BackColor = Color.FromArgb(24, 32, 47),
-                Padding = new Padding(15, 8, 15, 8)
-            };
-
-            lblCounter = new Label
-            {
-                Text = "📊 الصلاحيات المفعلة: 0 / 0",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(46, 204, 113),
-                AutoSize = true,
-                Anchor = AnchorStyles.Right | AnchorStyles.Top
-            };
-            lblCounter.Left = pnlFooter.Width - lblCounter.Width - 20;
-            lblCounter.Top = 15;
-
+            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Color.FromArgb(24, 32, 47), Padding = new Padding(15, 8, 15, 8) };
+            lblCounter = new Label { Text = "📊 الصلاحيات المفعلة: 0 / 0", Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(46, 204, 113), AutoSize = true };
             btnSave = Theme.MakeButton("💾 حفظ الصلاحيات [F5]", 15, 10, 215, 40, Theme.Accent);
-            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnSave.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             btnSave.Click += BtnSave_Click;
-
             var btnCancel = Theme.MakeButton("❌ إلغاء", 240, 10, 110, 40, Color.FromArgb(100, 110, 120));
-            btnCancel.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             btnCancel.Click += (s, e) => this.Close();
+            pnlFooter.Controls.AddRange(new Control[] { btnSave, btnCancel, lblCounter });
 
-            pnlFooter.Controls.Add(btnSave);
-            pnlFooter.Controls.Add(btnCancel);
-            pnlFooter.Controls.Add(lblCounter);
-
-            pnlFooter.Resize += (s, e) =>
-            {
-                lblCounter.Left = pnlFooter.Width - lblCounter.Width - 20;
-                lblCounter.Top = (pnlFooter.Height - lblCounter.Height) / 2;
-            };
-
-            // Dock Order Assembly
-            this.Controls.Add(tcPerms);
-            this.Controls.Add(pnlFooter);
-            this.Controls.Add(pnlControlBar);
-            this.Controls.Add(pnlTop);
-
-            pnlTop.SendToBack();
-            pnlControlBar.SendToBack();
-            pnlFooter.SendToBack();
-            tcPerms.BringToFront();
-
+            this.Controls.Add(tcPerms); this.Controls.Add(pnlFooter); this.Controls.Add(pnlControlBar); this.Controls.Add(pnlTop);
             this.KeyPreview = true;
-            this.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Keys.F5) { BtnSave_Click(s, e); e.Handled = true; }
-                else if (e.KeyCode == Keys.Escape) { this.Close(); }
-            };
-
+            this.KeyDown += (s, e) => { if (e.KeyCode == Keys.F5) { BtnSave_Click(s, e); e.Handled = true; } else if (e.KeyCode == Keys.Escape) this.Close(); };
             Theme.ApplyFormRTL(this);
         }
 
         private TabPage BuildTabPage(string title, out DataGridView grid, int tabIndex)
         {
             var tp = new TabPage(title) { BackColor = Theme.BgCard, Padding = new Padding(6) };
-
-            var pnlTabHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(5)
-            };
-
-            var btnSelectTab = new Button
-            {
-                Text = "✔️ تحديد كل الشاشات بهذا التبويب",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Size = new Size(190, 26),
-                Location = new Point(5, 4),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(52, 73, 94),
-                ForeColor = Color.White
-            };
-            btnSelectTab.FlatAppearance.BorderSize = 0;
+            var pnlTabHeader = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Theme.BgMain, Padding = new Padding(5) };
+            var btnSelectTab = new Button { Text = "✔️ تحديد الكل", Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), Size = new Size(100, 26), Location = new Point(5, 4), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(52, 73, 94), ForeColor = Color.White };
             btnSelectTab.Click += (s, e) => ToggleTabPermissions(tabIndex, true);
-
-            var btnClearTab = new Button
-            {
-                Text = "❌ إلغاء هذا التبويب",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Size = new Size(130, 26),
-                Location = new Point(200, 4),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(127, 140, 141),
-                ForeColor = Color.White
-            };
-            btnClearTab.FlatAppearance.BorderSize = 0;
+            var btnClearTab = new Button { Text = "❌ إلغاء", Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), Size = new Size(100, 26), Location = new Point(110, 4), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(127, 140, 141), ForeColor = Color.White };
             btnClearTab.Click += (s, e) => ToggleTabPermissions(tabIndex, false);
-
-            var lblHint = new Label
-            {
-                Text = "💡 اضغط على عنوان العمود لتحديد/إلغاء العمود بالكامل",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
-                ForeColor = Theme.TextSub,
-                AutoSize = true,
-                Location = new Point(500, 8)
-            };
-
-            pnlTabHeader.Controls.Add(btnSelectTab);
-            pnlTabHeader.Controls.Add(btnClearTab);
-            pnlTabHeader.Controls.Add(lblHint);
+            pnlTabHeader.Controls.AddRange(new Control[] { btnSelectTab, btnClearTab });
             grid = CreatePermissionsGrid();
-
-            tp.Controls.Add(grid);
-            tp.Controls.Add(pnlTabHeader);
-
-            pnlTabHeader.SendToBack();
-            grid.BringToFront();
-
+            tp.Controls.Add(grid); tp.Controls.Add(pnlTabHeader);
             return tp;
-        }
-
-        private Button CreatePresetButton(string text, Color bg, EventHandler onClick)
-        {
-            var btn = new Button
-            {
-                Text = text,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(125, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = bg,
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
-            };
-            btn.FlatAppearance.BorderSize = 0;
-            btn.Click += onClick;
-            return btn;
         }
 
         private DataGridView CreatePermissionsGrid()
         {
-            var dg = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Color.FromArgb(41, 128, 185), SelectionForeColor = Color.White },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                ColumnHeadersHeight = 42,
-                EnableHeadersVisualStyles = false,
-                RowTemplate = { Height = 34 },
-                ScrollBars = ScrollBars.Both,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
-            };
-
+            var dg = new DataGridView { Dock = DockStyle.Fill, BackgroundColor = Theme.BgCard, BorderStyle = BorderStyle.None, RowHeadersVisible = false, AllowUserToAddRows = false, RightToLeft = RightToLeft.Yes, GridColor = Theme.BorderColor, EnableHeadersVisualStyles = false };
+            dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter };
             dg.ColumnHeadersHeight = 42;
-
-            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false });
-            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 240 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 85 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة", Width = 85 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 85 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 80 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 85 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل فاتورة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 120 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 90 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 85 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 90 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 });
-            dg.Columns.Add(new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
-
-            // Live updates for counter
+            dg.Columns.AddRange(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false }, new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260 }, new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 80 }, new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 }, new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 }, new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
             dg.CellValueChanged += (s, e) => UpdateLiveCounter();
-            dg.CurrentCellDirtyStateChanged += (s, e) =>
-            {
-                if (dg.IsCurrentCellDirty)
-                {
-                    dg.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                }
-            };
-
-            // Toggle column on header click
-            dg.ColumnHeaderMouseClick += (s, e) =>
-            {
-                if (e.ColumnIndex >= 2)
-                {
-                    ToggleColumn(dg, e.ColumnIndex);
-                }
-            };
-
+            dg.CurrentCellDirtyStateChanged += (s, e) => { if (dg.IsCurrentCellDirty) dg.CommitEdit(DataGridViewDataErrorContexts.Commit); };
             return dg;
         }
 
-        private void ToggleColumn(DataGridView dg, int colIndex)
-        {
-            bool anyUnchecked = false;
-            foreach (DataGridViewRow r in dg.Rows)
-            {
-                if (r.Visible && r.Cells[colIndex] is DataGridViewCheckBoxCell cell && !r.Cells[colIndex].ReadOnly)
-                {
-                    if (!ToBool(cell.Value))
-                    {
-                        anyUnchecked = true;
-                        break;
-                    }
-                }
-            }
+        private Button CreatePresetButton(string text, Color bg, EventHandler onClick) { var btn = new Button { Text = text, Font = new Font("Segoe UI", 9f, FontStyle.Bold), Size = new Size(125, 30), FlatStyle = FlatStyle.Flat, BackColor = bg, ForeColor = Color.White, Cursor = Cursors.Hand }; btn.FlatAppearance.BorderSize = 0; btn.Click += onClick; return btn; }
 
-            foreach (DataGridViewRow r in dg.Rows)
-            {
-                if (r.Visible && r.Cells[colIndex] is DataGridViewCheckBoxCell cell && !r.Cells[colIndex].ReadOnly)
-                {
-                    cell.Value = anyUnchecked;
-                }
-            }
-            UpdateLiveCounter();
-        }
-
-        private void ToggleAllPermissions(bool check)
-        {
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
-            foreach (var grid in grids)
-            {
-                if (grid == null) continue;
-                foreach (DataGridViewRow row in grid.Rows)
-                {
-                    for (int i = 2; i < grid.Columns.Count; i++)
-                    {
-                        if (row.Cells[i] is DataGridViewCheckBoxCell cell && !row.Cells[i].ReadOnly)
-                        {
-                            cell.Value = check;
-                        }
-                    }
-                }
-            }
-            UpdateLiveCounter();
-        }
-
-        private void ToggleTabPermissions(int tabIndex, bool check)
-        {
-            DataGridView grid = null;
-            if (tabIndex == 0) grid = dgSales;
-            else if (tabIndex == 1) grid = dgPurchases;
-            else if (tabIndex == 2) grid = dgInventory;
-            else if (tabIndex == 3) grid = dgAdmin;
-
-            if (grid != null)
-            {
-                foreach (DataGridViewRow row in grid.Rows)
-                {
-                    foreach (DataGridViewCell cell in row.Cells)
-                    {
-                        if (cell.ColumnIndex >= 2 && cell is DataGridViewCheckBoxCell && !cell.ReadOnly)
-                        {
-                            cell.Value = check;
-                        }
-                    }
-                }
-            }
-            UpdateLiveCounter();
-        }
+        private void ToggleAllPermissions(bool check) { foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) { if (grid == null) continue; foreach (DataGridViewRow row in grid.Rows) { for (int i = 2; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cell && !row.Cells[i].ReadOnly) cell.Value = check; } } UpdateLiveCounter(); }
+        
+        private void ToggleTabPermissions(int tabIndex, bool check) { DataGridView grid = tabIndex == 0 ? dgSales : tabIndex == 1 ? dgPurchases : tabIndex == 2 ? dgInventory : tabIndex == 3 ? dgFinance : dgAdmin; if (grid != null) { foreach (DataGridViewRow row in grid.Rows) { foreach (DataGridViewCell cell in row.Cells) if (cell.ColumnIndex >= 2 && cell is DataGridViewCheckBoxCell && !cell.ReadOnly) cell.Value = check; } UpdateLiveCounter(); } }
 
         private void ApplyRolePreset(string role)
         {
             ToggleAllPermissions(false);
-
-            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "Clients", "InactiveClients", "Vehicles", "Maintenance", "DashSales" };
+            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "Clients", "ClientStatement", "InactiveClients", "Vehicles", "DashSales" };
             var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
-            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "DashBelowMin" };
-            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "DashTreasury", "SalesAudit" };
-
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
-            foreach (var grid in grids)
+            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "ClothingMatrix", "ModelLookup", "MultiBarcodes", "DashBelowMin" };
+            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "ClientStatement", "DashTreasury", "SalesAudit" };
+            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin })
             {
                 if (grid == null) continue;
                 foreach (DataGridViewRow row in grid.Rows)
                 {
                     string screen = row.Cells["Screen"].Value?.ToString();
-                    if (string.IsNullOrEmpty(screen)) continue;
-
-                    bool enable = false;
-                    if (role == "Admin") enable = true;
-                    else if (role == "Sales" && salesKeys.Contains(screen)) enable = true;
-                    else if (role == "Purchases" && purchaseKeys.Contains(screen)) enable = true;
-                    else if (role == "Inventory" && inventoryKeys.Contains(screen)) enable = true;
-                    else if (role == "Accountant" && accountantKeys.Contains(screen)) enable = true;
-
-                    if (enable)
-                    {
-                        if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true;
-                        if (role == "Admin")
-                        {
-                            for (int colIdx = 3; colIdx < grid.Columns.Count; colIdx++)
-                            {
-                                if (row.Cells[colIdx] is DataGridViewCheckBoxCell cOpt && !row.Cells[colIdx].ReadOnly)
-                                {
-                                    cOpt.Value = true;
-                                }
-                            }
-                        }
-                    }
+                    bool enable = role == "Admin" || (role == "Sales" && salesKeys.Contains(screen)) || (role == "Purchases" && purchaseKeys.Contains(screen)) || (role == "Inventory" && inventoryKeys.Contains(screen)) || (role == "Accountant" && accountantKeys.Contains(screen));
+                    if (enable) { if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true; if (role == "Admin") for (int i = 3; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cOpt && !row.Cells[i].ReadOnly) cOpt.Value = true; }
                 }
             }
             UpdateLiveCounter();
         }
 
-        private void ApplySearchFilter()
-        {
-            string query = txtSearch.Text.Trim();
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
-
-            foreach (var grid in grids)
-            {
-                if (grid == null) continue;
-                grid.CurrentCell = null;
-                foreach (DataGridViewRow row in grid.Rows)
-                {
-                    string name = row.Cells["ScreenName"].Value?.ToString() ?? "";
-                    string key = row.Cells["Screen"].Value?.ToString() ?? "";
-                    bool match = string.IsNullOrEmpty(query) ||
-                                 name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                 key.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-                    row.Visible = match;
-                }
-            }
-        }
+        private void ApplySearchFilter() { string q = txtSearch.Text.Trim(); foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) if (grid != null) foreach (DataGridViewRow r in grid.Rows) r.Visible = string.IsNullOrEmpty(q) || r.Cells["ScreenName"].Value.ToString().Contains(q) || r.Cells["Screen"].Value.ToString().Contains(q); }
 
         private void UpdateLiveCounter()
         {
-            int totalScreens = 0;
-            int accessedScreens = 0;
-            int specialPerms = 0;
-
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
-            foreach (var grid in grids)
+            int total = 0, access = 0, special = 0;
+            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin })
             {
                 if (grid == null) continue;
                 foreach (DataGridViewRow r in grid.Rows)
                 {
-                    totalScreens++;
-                    if (ToBool(r.Cells["CanAccess"].Value))
-                    {
-                        accessedScreens++;
-                    }
-                    for (int c = 3; c < grid.Columns.Count; c++)
-                    {
-                        if (r.Cells[c] is DataGridViewCheckBoxCell && ToBool(r.Cells[c].Value))
-                        {
-                            specialPerms++;
-                        }
-                    }
+                    total++;
+                    if (ToBool(r.Cells["CanAccess"].Value)) access++;
+                    for (int c = 3; c < grid.Columns.Count; c++) if (r.Cells[c] is DataGridViewCheckBoxCell && ToBool(r.Cells[c].Value)) special++;
                 }
             }
-
-            if (lblCounter != null)
-            {
-                lblCounter.Text = $"📊 الشاشات المسموحة: {accessedScreens} من أصل {totalScreens} | 🛡️ صلاحيات خاصة مفعلة: {specialPerms}";
-            }
+            lblCounter.Text = $"📊 الشاشات المسموحة: {access} / {total} | 🛡️ صلاحيات خاصة: {special}";
         }
 
         private void LoadPermissions()
         {
             try
             {
-            var dt = EmployeeDAL.GetPermissions(_empID);
+                var dt = EmployeeDAL.GetPermissions(_empID);
+                foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) grid.Rows.Clear();
 
-            dgSales.Rows.Clear();
-            dgPurchases.Rows.Clear();
-            dgInventory.Rows.Clear();
-            dgAdmin.Rows.Clear();
-
-            foreach (var screen in ScreensList)
-            {
-                try
+                foreach (var screen in ScreensList)
                 {
-                bool access = false, canAdd = true, canEdit = true, canDelete = true;
-                bool editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
-                bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true, viewQuickItems = true;
-
-                foreach (DataRow r in dt.Rows)
-                {
-                    if (string.Equals(r["ScreenName"].ToString(), screen.Key, StringComparison.OrdinalIgnoreCase))
+                    try
                     {
-                        access = Convert.ToBoolean(r["CanAccess"]);
-                        canAdd = r.Table.Columns.Contains("CanAdd") && r["CanAdd"] != DBNull.Value ? Convert.ToBoolean(r["CanAdd"]) : true;
-                        canEdit = r.Table.Columns.Contains("CanEdit") && r["CanEdit"] != DBNull.Value ? Convert.ToBoolean(r["CanEdit"]) : true;
-                        canDelete = r.Table.Columns.Contains("CanDelete") && r["CanDelete"] != DBNull.Value ? Convert.ToBoolean(r["CanDelete"]) : true;
-                        editPrice = Convert.ToBoolean(r["CanEditPrice"]);
-                        editInvoice = r.Table.Columns.Contains("CanEditSalesInvoice") && r["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanEditSalesInvoice"]);
-                        deleteInvoice = r.Table.Columns.Contains("CanDeleteSalesInvoice") && r["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanDeleteSalesInvoice"]);
-                        copyInvoice = r.Table.Columns.Contains("CanCopySalesInvoice") && r["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanCopySalesInvoice"]);
-                        viewCost = r.Table.Columns.Contains("CanViewCost") && r["CanViewCost"] != DBNull.Value && Convert.ToBoolean(r["CanViewCost"]);
-                        orderColumns = r.Table.Columns.Contains("CanOrderColumns") && r["CanOrderColumns"] != DBNull.Value && Convert.ToBoolean(r["CanOrderColumns"]);
-                        viewDetails = r.Table.Columns.Contains("CanViewDetails") && r["CanViewDetails"] != DBNull.Value ? Convert.ToBoolean(r["CanViewDetails"]) : true;
-                        viewBalance = r.Table.Columns.Contains("CanViewBalance") && r["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(r["CanViewBalance"]) : true;
-                        changeSafe = r.Table.Columns.Contains("CanChangeSafe") && r["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(r["CanChangeSafe"]) : true;
-                        viewSalesTotals = r.Table.Columns.Contains("CanViewSalesTotals") && r["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(r["CanViewSalesTotals"]) : true;
-                        viewQuickItems = r.Table.Columns.Contains("CanViewQuickItems") && r["CanViewQuickItems"] != DBNull.Value ? Convert.ToBoolean(r["CanViewQuickItems"]) : true;
-                        break;
+                        bool access = false, canAdd = true, canEdit = true, canDelete = true;
+                        bool editPrice = false, editInvoice = false, deleteInvoice = false, copyInvoice = false, viewCost = false, orderColumns = false;
+                        bool viewDetails = true, viewBalance = true, changeSafe = true, viewSalesTotals = true, viewQuickItems = true;
+
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            if (string.Equals(r["ScreenName"].ToString(), screen.Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                access = Convert.ToBoolean(r["CanAccess"]);
+                                canAdd = r.Table.Columns.Contains("CanAdd") && r["CanAdd"] != DBNull.Value ? Convert.ToBoolean(r["CanAdd"]) : true;
+                                canEdit = r.Table.Columns.Contains("CanEdit") && r["CanEdit"] != DBNull.Value ? Convert.ToBoolean(r["CanEdit"]) : true;
+                                canDelete = r.Table.Columns.Contains("CanDelete") && r["CanDelete"] != DBNull.Value ? Convert.ToBoolean(r["CanDelete"]) : true;
+                                editPrice = Convert.ToBoolean(r["CanEditPrice"]);
+                                editInvoice = r.Table.Columns.Contains("CanEditSalesInvoice") && r["CanEditSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanEditSalesInvoice"]);
+                                deleteInvoice = r.Table.Columns.Contains("CanDeleteSalesInvoice") && r["CanDeleteSalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanDeleteSalesInvoice"]);
+                                copyInvoice = r.Table.Columns.Contains("CanCopySalesInvoice") && r["CanCopySalesInvoice"] != DBNull.Value && Convert.ToBoolean(r["CanCopySalesInvoice"]);
+                                viewCost = r.Table.Columns.Contains("CanViewCost") && r["CanViewCost"] != DBNull.Value && Convert.ToBoolean(r["CanViewCost"]);
+                                orderColumns = r.Table.Columns.Contains("CanOrderColumns") && r["CanOrderColumns"] != DBNull.Value && Convert.ToBoolean(r["CanOrderColumns"]);
+                                viewDetails = r.Table.Columns.Contains("CanViewDetails") && r["CanViewDetails"] != DBNull.Value ? Convert.ToBoolean(r["CanViewDetails"]) : true;
+                                viewBalance = r.Table.Columns.Contains("CanViewBalance") && r["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(r["CanViewBalance"]) : true;
+                                changeSafe = r.Table.Columns.Contains("CanChangeSafe") && r["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(r["CanChangeSafe"]) : true;
+                                viewSalesTotals = r.Table.Columns.Contains("CanViewSalesTotals") && r["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(r["CanViewSalesTotals"]) : true;
+                                viewQuickItems = r.Table.Columns.Contains("CanViewQuickItems") && r["CanViewQuickItems"] != DBNull.Value ? Convert.ToBoolean(r["CanViewQuickItems"]) : true;
+                                break;
+                            }
+                        }
+
+                        DataGridView targetGrid = null;
+                        if (screen.TabIndex == 0) targetGrid = dgSales;
+                        else if (screen.TabIndex == 1) targetGrid = dgPurchases;
+                        else if (screen.TabIndex == 2) targetGrid = dgInventory;
+                        else if (screen.TabIndex == 3) targetGrid = dgFinance;
+                        else if (screen.TabIndex == 4) targetGrid = dgAdmin;
+
+                        if (targetGrid != null)
+                        {
+                            int ri = targetGrid.Rows.Add(
+                                screen.Key, 
+                                screen.Name, 
+                                access, 
+                                canAdd, 
+                                canEdit, 
+                                canDelete, 
+                                editPrice, 
+                                editInvoice, 
+                                deleteInvoice, 
+                                copyInvoice, 
+                                viewCost, 
+                                orderColumns, 
+                                viewDetails, 
+                                viewBalance, 
+                                changeSafe,
+                                viewSalesTotals,
+                                viewQuickItems
+                            );
+                            
+                            var key = screen.Key;
+
+                            // Disable Non-applicable columns per screen
+                            bool isEntityScreen = string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ProductCard", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Clients", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Suppliers", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Warehouses", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Categories", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Units", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Vehicles", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Employees", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Installments", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Maintenance", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "SafeAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Reservations", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ClearanceOffers", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "LookupManager", StringComparison.OrdinalIgnoreCase);
+
+                            if (!isEntityScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 3); // CanAdd
+                                DisableGridCell(targetGrid.Rows[ri], 4); // CanEdit
+                                DisableGridCell(targetGrid.Rows[ri], 5); // CanDelete
+                            }
+
+                            bool isPriceEditableScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "ProductSearch", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase);
+                            if (!isPriceEditableScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 6); // CanEditPrice
+                            }
+
+                            bool isInvoiceOpsScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "PurchasesList", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "Returns", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "PurchaseReturn", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase);
+                            if (!isInvoiceOpsScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 7); // EditInvoice
+                                DisableGridCell(targetGrid.Rows[ri], 8); // DeleteInvoice
+                                DisableGridCell(targetGrid.Rows[ri], 9); // CopyInvoice
+                            }
+
+                            bool isCostViewableScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "ProductCard", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "PurchasesList", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "Financials", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "Inventory", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "ProductMovement", StringComparison.OrdinalIgnoreCase);
+                            if (!isCostViewableScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 10); // ViewCost
+                            }
+
+                            bool isOrderColumnsApplicable = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                            string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                            string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                            string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
+                                                            string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase);
+                            if (!isOrderColumnsApplicable)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 11); // OrderColumns
+                            }
+
+                            bool isDetailsScreen = string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "DailyAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ActualBalances", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Financials", StringComparison.OrdinalIgnoreCase);
+                            if (!isDetailsScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 12); // ViewDetails
+                            }
+
+                            bool isBalanceScreen = string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "SafeAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ActualBalances", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "DailyAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "DashTreasury", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase);
+                            if (!isBalanceScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 13); // ViewBalance
+                            }
+
+                            bool isSafeChangeScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "SafeAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "DailyAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "ReceiptVoucher", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "SupplierPayment", StringComparison.OrdinalIgnoreCase);
+                            if (!isSafeChangeScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 14); // ChangeSafe
+                            }
+
+                            bool isSalesListScreen = string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "PurchasesList", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase);
+                            if (!isSalesListScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 15); // CanViewSalesTotals
+                            }
+
+                            bool isQuickItemsScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                      string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase);
+                            if (!isQuickItemsScreen)
+                            {
+                                DisableGridCell(targetGrid.Rows[ri], 16); // CanViewQuickItems
+                            }
+                        }
                     }
+                    catch (Exception exScreen) { AppLogger.Error("LoadPermissions screen=" + screen.Key, exScreen); }
                 }
 
-                DataGridView targetGrid = null;
-                if (screen.TabIndex == 0) targetGrid = dgSales;
-                else if (screen.TabIndex == 1) targetGrid = dgPurchases;
-                else if (screen.TabIndex == 2) targetGrid = dgInventory;
-                else if (screen.TabIndex == 3) targetGrid = dgAdmin;
-
-                if (targetGrid != null)
-                {
-                    int ri = targetGrid.Rows.Add(
-                        screen.Key, 
-                        screen.Name, 
-                        access, 
-                        canAdd, 
-                        canEdit, 
-                        canDelete, 
-                        editPrice, 
-                        editInvoice, 
-                        deleteInvoice, 
-                        copyInvoice, 
-                        viewCost, 
-                        orderColumns, 
-                        viewDetails, 
-                        viewBalance, 
-                        changeSafe,
-                        viewSalesTotals,
-                        viewQuickItems
-                    );
-                    
-                    var key = screen.Key;
-
-                    // Disable Non-applicable columns per screen
-                    bool isEntityScreen = string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Clients", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Suppliers", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Warehouses", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Categories", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Vehicles", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Employees", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Installments", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Maintenance", StringComparison.OrdinalIgnoreCase);
-
-                    if (!isEntityScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 3); // CanAdd
-                        DisableGridCell(targetGrid.Rows[ri], 4); // CanEdit
-                        DisableGridCell(targetGrid.Rows[ri], 5); // CanDelete
-                    }
-
-                    bool isPriceEditableScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                                 string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
-                                                 string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
-                                                 string.Equals(key, "ProductSearch", StringComparison.OrdinalIgnoreCase) ||
-                                                 string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase);
-                    if (!isPriceEditableScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 6); // CanEditPrice
-                    }
-
-                    bool isInvoiceOpsScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "PurchasesList", StringComparison.OrdinalIgnoreCase);
-                    if (!isInvoiceOpsScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 7); // EditInvoice
-                        DisableGridCell(targetGrid.Rows[ri], 8); // DeleteInvoice
-                        DisableGridCell(targetGrid.Rows[ri], 9); // CopyInvoice
-                    }
-
-                    bool isCostViewableScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(key, "Inventory", StringComparison.OrdinalIgnoreCase);
-                    if (!isCostViewableScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 10); // ViewCost
-                    }
-
-                    bool isOrderColumnsApplicable = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                                    string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
-                                                    string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase);
-                    if (!isOrderColumnsApplicable)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 11); // OrderColumns
-                    }
-
-                    bool isDetailsScreen = string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase);
-                    if (!isDetailsScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 12); // ViewDetails
-                    }
-
-                    bool isBalanceScreen = string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "DashTreasury", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "DailyClosing", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "ShiftClose", StringComparison.OrdinalIgnoreCase) ||
-                                           string.Equals(key, "ShiftsHistory", StringComparison.OrdinalIgnoreCase);
-                    if (!isBalanceScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 13); // ViewBalance
-                    }
-
-                    bool isSafeChangeScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "SupplierPayment", StringComparison.OrdinalIgnoreCase);
-                    if (!isSafeChangeScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 14); // ChangeSafe
-                    }
-
-                    bool isSalesListScreen = string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase);
-                    if (!isSalesListScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 15); // CanViewSalesTotals
-                    }
-
-                    bool isQuickItemsScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
-                                              string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase);
-                    if (!isQuickItemsScreen)
-                    {
-                        DisableGridCell(targetGrid.Rows[ri], 16); // CanViewQuickItems
-                    }
-                } // end if (targetGrid != null)
-                } catch (Exception exScreen) { AppLogger.Error("LoadPermissions screen=" + screen.Key, exScreen); }
-            } // end foreach screen
-
-            UpdateLiveCounter();
-            } catch (Exception ex) { AppLogger.Error("LoadPermissions", ex); }
+                UpdateLiveCounter();
+            }
+            catch (Exception ex) { AppLogger.Error("LoadPermissions", ex); }
         }
 
         private static void DisableGridCell(DataGridViewRow row, int colIdx)
@@ -1133,7 +797,7 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgAdmin };
+            var grids = new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin };
             foreach (var grid in grids)
             {
                 if (grid == null) continue;
