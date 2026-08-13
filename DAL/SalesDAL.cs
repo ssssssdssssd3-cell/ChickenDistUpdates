@@ -2613,7 +2613,13 @@ namespace ChickenDist.DAL
 
         public static DataTable GetClientItemizedStatement(DateTime from, DateTime to, int? clientID, int? warehouseID = null)
         {
-            string query = @"
+            bool hasReturnIsPosted = DbHelper.ColumnExists("SalesReturns", "IsPosted");
+            bool hasSaleIsPosted = DbHelper.ColumnExists("Sales", "IsPosted");
+
+            string returnPostedClause = hasReturnIsPosted ? "AND r.IsPosted = 1" : "";
+            string salePostedClause = hasSaleIsPosted ? "AND s.IsPosted = 1" : "";
+
+            string query = $@"
                 SELECT 
                     p.ProductCode AS [كود الصنف],
                     p.ProductName AS [اسم الصنف],
@@ -2633,12 +2639,12 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID, r.ClientID, SUM(ri.Quantity) AS ReturnQty, SUM(ri.TotalPrice) AS ReturnTotal
                     FROM ReturnItems ri
                     JOIN SalesReturns r ON ri.ReturnID = r.ReturnID
-                    WHERE r.IsPosted = 1
+                    WHERE 1=1 {returnPostedClause}
                       AND r.ReturnDate BETWEEN @f AND @t
                       AND (@clientID IS NULL OR r.ClientID = @clientID)
                     GROUP BY ri.ProductID, r.ClientID
                 ) ret ON ret.ProductID = si.ProductID AND ret.ClientID = s.ClientID
-                WHERE s.IsPosted = 1
+                WHERE 1=1 {salePostedClause}
                   AND s.SaleDate BETWEEN @f AND @t
                   AND (@clientID IS NULL OR s.ClientID = @clientID)
                   AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)

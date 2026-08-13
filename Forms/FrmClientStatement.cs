@@ -215,9 +215,23 @@ namespace ChickenDist.Forms
                             r["ClientDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["ClientName"]} (كود: {code})" : $"{r["ClientName"]}  |  📱 {phone}  |  (كود: {code})";
                         }
                     }
-                    cmbClientSelector.DataSource = dt;
-                    cmbClientSelector.DisplayMember = "ClientDisplayInfo";
-                    cmbClientSelector.ValueMember = "ClientID";
+
+                    if (cmbClientSelector != null)
+                    {
+                        cmbClientSelector.DropDownStyle = ComboBoxStyle.DropDown;
+                        try { cmbClientSelector.AutoCompleteMode = AutoCompleteMode.None; } catch { }
+
+                        cmbClientSelector.DataSource = dt;
+                        cmbClientSelector.DisplayMember = "ClientDisplayInfo";
+                        cmbClientSelector.ValueMember = "ClientID";
+
+                        try
+                        {
+                            cmbClientSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                            cmbClientSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                        }
+                        catch { }
+                    }
                 }
 
                 if (_clientID > 0)

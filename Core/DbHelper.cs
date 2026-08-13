@@ -264,6 +264,32 @@ namespace ChickenDist.Core
             _connStr = connStr;
         }
 
+        public static bool ColumnExists(string tableName, string columnName)
+        {
+            try
+            {
+                var res = Scalar("SELECT COL_LENGTH(@tbl, @col)", P("@tbl", tableName), P("@col", columnName));
+                return res != null && res != DBNull.Value;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool TableExists(string tableName)
+        {
+            try
+            {
+                var res = Scalar("SELECT OBJECT_ID(@tbl, 'U')", P("@tbl", tableName));
+                return res != null && res != DBNull.Value;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// يُرجع نسخة من الاتصال بفاصل زمني صغير (5 ثواني) لاختبار الاتصال سريعاً عند بدء التشغيل.
         /// </summary>
@@ -370,10 +396,22 @@ namespace ChickenDist.Core
                 ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
             END");
 
+            SafeMigrate("SalesReturns.IsPosted.Early", @"
+            IF OBJECT_ID('SalesReturns', 'U') IS NOT NULL AND COL_LENGTH('SalesReturns', 'IsPosted') IS NULL
+            BEGIN
+                ALTER TABLE SalesReturns ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
+
             SafeMigrate("Purchases.IsPosted.Early", @"
             IF OBJECT_ID('Purchases', 'U') IS NOT NULL AND COL_LENGTH('Purchases', 'IsPosted') IS NULL
             BEGIN
                 ALTER TABLE Purchases ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
+
+            SafeMigrate("PurchaseReturns.IsPosted.Early", @"
+            IF OBJECT_ID('PurchaseReturns', 'U') IS NOT NULL AND COL_LENGTH('PurchaseReturns', 'IsPosted') IS NULL
+            BEGIN
+                ALTER TABLE PurchaseReturns ADD IsPosted BIT NOT NULL DEFAULT 1;
             END");
 
             SafeMigrate("Products.EnglishName", @"
