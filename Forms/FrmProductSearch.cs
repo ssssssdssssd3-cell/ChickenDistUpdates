@@ -21,9 +21,11 @@ namespace ChickenDist.Forms
         private DataTable _dtProducts;
         private DataView _dvProducts;
         private int? _warehouseID;
+        private int? _clientID;
         private bool _isPurchaseMode = false;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
+        private Dictionary<int, decimal> _clientLastPrices = new Dictionary<int, decimal>();
         private Timer _searchTimer;
 
         public int SelectedProductID { get; private set; } = 0;
@@ -53,9 +55,10 @@ namespace ChickenDist.Forms
             public override string ToString() => DisplayText;
         }
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false)
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false, int? clientID = null)
         {
             _warehouseID = warehouseID;
+            _clientID = clientID;
             _isPurchaseMode = isPurchaseMode;
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
@@ -178,14 +181,15 @@ namespace ChickenDist.Forms
             };
             Theme.EnableDoubleBuffer(dgProducts);
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 22 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 55 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", FillWeight = 18 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", FillWeight = 18 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة الرئيسية", FillWeight = 20 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 26 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 22 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", FillWeight = 25 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 20 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 50 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", FillWeight = 16 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", FillWeight = 16 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة الرئيسية", FillWeight = 18 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 22 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 20 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", FillWeight = 24 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", FillWeight = 22 });
             
             dgProducts.DoubleClick += DgProducts_DoubleClick;
             dgProducts.KeyDown += DgProducts_KeyDown;
@@ -317,6 +321,14 @@ namespace ChickenDist.Forms
         {
             _dtProducts = ProductCache.GetActive();
             _dvProducts = new DataView(_dtProducts);
+            if (_clientID.HasValue && _clientID.Value > 0)
+            {
+                _clientLastPrices = SaleDAL.GetLastPricesForClient(_clientID.Value);
+            }
+            else
+            {
+                _clientLastPrices.Clear();
+            }
             LoadStockCache();
             RefreshGrid();
         }
@@ -357,6 +369,7 @@ namespace ChickenDist.Forms
                 string catName = row.Table.Columns.Contains("CategoryName") && row["CategoryName"] != DBNull.Value ? row["CategoryName"].ToString() : "";
                 string pSize = row.Table.Columns.Contains("ProductSize") && row["ProductSize"] != DBNull.Value ? row["ProductSize"].ToString() : "";
                 string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString() : "";
+                string lastPriceText = _clientLastPrices.TryGetValue(pid, out decimal lp) ? lp.ToString("N2") + " ج" : "-";
 
                 if (pendingPrice > 0m && threshold > 0m)
                 {
@@ -375,6 +388,7 @@ namespace ChickenDist.Forms
                             row["Unit"],
                             catName,
                             price.ToString("F2"), 
+                            lastPriceText,
                             oldStockAvailable.ToString("F2")
                         );
                         ColorStockCell(rowIdx, oldStockAvailable);
@@ -388,6 +402,7 @@ namespace ChickenDist.Forms
                             row["Unit"],
                             catName,
                             pendingPrice.ToString("F2"), 
+                            lastPriceText,
                             newStockAvailable.ToString("F2")
                         );
                         ColorStockCell(rowIdx2, newStockAvailable);
@@ -407,6 +422,7 @@ namespace ChickenDist.Forms
                             row["Unit"],
                             catName,
                             price.ToString("F2"), 
+                            lastPriceText,
                             totalStock.ToString("F2")
                         );
                         ColorStockCell(rowIdx, totalStock);

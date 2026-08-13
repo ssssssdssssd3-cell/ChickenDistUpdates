@@ -972,10 +972,6 @@ namespace ChickenDist.Forms
 
         private void FocusQtyCell(POSItem item)
         {
-            // لو في جلسة بحث مفتوحة: نضيف الصنف بس ومنفتحش التعديل حتى لا نعطل إعادة فتح شاشة البحث
-            if (_searchSessionActive) return;
-
-            // نستخدم BeginInvoke لتأجيل التحديد حتى بعد انتهاء معالجة حدث الضغط الحالي
             this.BeginInvoke(new Action(() =>
             {
                 try
@@ -983,10 +979,9 @@ namespace ChickenDist.Forms
                     int rowIndex = _items.IndexOf(item);
                     if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
                     {
+                        dgItems.Focus();
                         dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 = Qty
-                        // نمسح محتوى خانة الكمية ونبدأ التعديل مباشرة
-                        dgItems.Rows[rowIndex].Cells[2].Value = "";
-                        dgItems.BeginEdit(true); // يدخل وضع التعديل فوراً
+                        dgItems.BeginEdit(true); // يدخل وضع التعديل فوراً والوقوف على الكمية
                     }
                 }
                 catch { }
@@ -1571,7 +1566,8 @@ namespace ChickenDist.Forms
                 _searchSessionActive = true;
                 while (true)
                 {
-                    var frm = new FrmProductSearch();
+                    int posClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient) ? ciClient.ID : 0;
+                    var frm = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null);
                     frm.ShowDialog();
 
                     if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)

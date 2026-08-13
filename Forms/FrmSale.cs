@@ -813,7 +813,7 @@ namespace ChickenDist.Forms
 							}
 
 							txtProductCode.Clear();
-							this.BeginInvoke((MethodInvoker)delegate { txtProductCode.Focus(); });
+							FocusQtyCellInGrid(pid);
 						}
 						finally
 						{
@@ -2387,10 +2387,11 @@ namespace ChickenDist.Forms
 
 			try
 			{
+				int? saleClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient && ciClient.ID > 0) ? ciClient.ID : (int?)null;
 				_searchSessionActive = true;
 				while (true)
 				{
-					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID);
+					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID);
 					frmProductSearch.ShowDialog();
 
 					if (frmProductSearch.DialogResult == DialogResult.OK)
@@ -2398,6 +2399,7 @@ namespace ChickenDist.Forms
 						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
 						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
 						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName);
+						FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
 						if (frmProductSearch.SelectedBatchID.HasValue)
 						{
 							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
@@ -2438,6 +2440,31 @@ namespace ChickenDist.Forms
 				// إرجاع الفوكس للكومبو أو الجدول
 				this.BeginInvoke((MethodInvoker)delegate { txtProductCode.Clear(); txtProductCode.Focus(); });
 			}
+		}
+
+		private void FocusQtyCellInGrid(int productID)
+		{
+			this.BeginInvoke((MethodInvoker)delegate
+			{
+				try
+				{
+					for (int i = 0; i < dgItems.Rows.Count; i++)
+					{
+						var row = dgItems.Rows[i];
+						if (row.Tag is SaleItemDTO dto && dto.ProductID == productID)
+						{
+							dgItems.Focus();
+							if (dgItems.Columns.Contains("Quantity"))
+							{
+								dgItems.CurrentCell = row.Cells["Quantity"];
+								dgItems.BeginEdit(true);
+							}
+							break;
+						}
+					}
+				}
+				catch { }
+			});
 		}
 
 		private void BtnManualAdd_Click(object sender, EventArgs e)

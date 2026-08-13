@@ -24,6 +24,38 @@ namespace ChickenDist.DAL
             return null;
         }
 
+        public static Dictionary<int, decimal> GetLastPricesForClient(int clientID)
+        {
+            var dict = new Dictionary<int, decimal>();
+            if (clientID <= 0) return dict;
+
+            try
+            {
+                DataTable dt = DbHelper.Query(@"
+                    WITH RankedPrices AS (
+                        SELECT si.ProductID, si.UnitPrice,
+                               ROW_NUMBER() OVER(PARTITION BY si.ProductID ORDER BY s.SaleDate DESC, s.SaleID DESC) AS rn
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        WHERE s.ClientID = @cid AND (COL_LENGTH('Sales', 'IsPosted') IS NULL OR s.IsPosted = 1)
+                    )
+                    SELECT ProductID, UnitPrice FROM RankedPrices WHERE rn = 1",
+                    DbHelper.P("@cid", clientID));
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (r["ProductID"] != DBNull.Value && r["UnitPrice"] != DBNull.Value)
+                    {
+                        int pid = Convert.ToInt32(r["ProductID"]);
+                        decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                        dict[pid] = price;
+                    }
+                }
+            }
+            catch { }
+            return dict;
+        }
+
         public static DataTable GetAll(DateTime from, DateTime to)
         {
             return GetAll(from, to, null, null, null);
@@ -2764,6 +2796,38 @@ namespace ChickenDist.DAL
             if (res != null && res != DBNull.Value && decimal.TryParse(res.ToString(), out decimal price))
                 return price;
             return null;
+        }
+
+        public static Dictionary<int, decimal> GetLastPricesForClient(int clientID)
+        {
+            var dict = new Dictionary<int, decimal>();
+            if (clientID <= 0) return dict;
+
+            try
+            {
+                DataTable dt = DbHelper.Query(@"
+                    WITH RankedPrices AS (
+                        SELECT si.ProductID, si.UnitPrice,
+                               ROW_NUMBER() OVER(PARTITION BY si.ProductID ORDER BY s.SaleDate DESC, s.SaleID DESC) AS rn
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        WHERE s.ClientID = @cid AND s.IsPosted = 1
+                    )
+                    SELECT ProductID, UnitPrice FROM RankedPrices WHERE rn = 1",
+                    DbHelper.P("@cid", clientID));
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (r["ProductID"] != DBNull.Value && r["UnitPrice"] != DBNull.Value)
+                    {
+                        int pid = Convert.ToInt32(r["ProductID"]);
+                        decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                        dict[pid] = price;
+                    }
+                }
+            }
+            catch { }
+            return dict;
         }
 
         public static DataTable GetDetailedPurchases(DateTime from, DateTime to, int? warehouseID = null, int? supplierID = null, int? clientID = null, string purchaseType = null, string purchaseSource = null, string keyword = null)
