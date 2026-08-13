@@ -625,7 +625,8 @@ namespace ChickenDist.Forms
                     runningBalanceText,
                     notes + accName);
 
-                if (outAmt > 0) dgCash.Rows[ri].DefaultCellStyle.ForeColor = Color.OrangeRed;
+                if (outAmt > 0) dgCash.Rows[ri].DefaultCellStyle.ForeColor = Color.FromArgb(185, 25, 25);
+                else if (inAmt > 0) dgCash.Rows[ri].DefaultCellStyle.ForeColor = Color.FromArgb(15, 125, 45);
                 totIn += inAmt; totOut += outAmt;
             }
             if (canViewBalance)

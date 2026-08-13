@@ -144,60 +144,68 @@ namespace ChickenDist.Forms
                     g.FillRectangle(new SolidBrush(Color.FromArgb(224, 242, 254)), lMargin, y, printableW, 30);
                     g.DrawRectangle(new Pen(Color.FromArgb(186, 230, 253), 1.2f), lMargin, y, printableW, 30);
 
-                    g.DrawString($"صفحة {_pageNumber}/1   {DateTime.Now:dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin + 10, y, 250, 30), sfLeft);
                     g.DrawString($"كشف حركة ونقدية / سند توريد وتحصيل | {_accountName}", boldMain, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(lMargin + 260, y, printableW - 270, 30), sfRight);
+                    g.DrawString($"صفحة {_pageNumber}/1   {DateTime.Now:dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin + 10, y, 250, 30), sfLeft);
 
                     y += 38;
 
-                    // 4. Grid Table Headers
+                    // 4. Grid Table Headers (RTL: Columns start from Far Right)
                     // Columns: [م] [العملية / البيان] [مدين] [دائن] [رصيد] [الخزنة] [نوع الحركة] [التاريخ] [ملاحظات] [المستخدم] [الوقت]
                     int[] colW = { 24, 100, 72, 72, 75, 70, 65, 65, 115, 65, 64 };
                     string[] colNames = { "م", "العملية", "مدين", "دائن", "رصيد", "الخزنة", "نوع الحركة", "التاريخ", "ملاحظات", "المستخدم", "الوقت" };
 
-                    int xCur = lMargin;
+                    int xRight = lMargin + printableW;
                     g.FillRectangle(new SolidBrush(Color.FromArgb(241, 245, 249)), lMargin, y, printableW, 24);
                     g.DrawRectangle(Pens.Black, lMargin, y, printableW, 24);
 
+                    int xCur = xRight;
                     for (int i = 0; i < colNames.Length; i++)
                     {
+                        xCur -= colW[i];
                         g.DrawString(colNames[i], boldSmall, Brushes.Black, new RectangleF(xCur, y, colW[i], 24), sfCenter);
-                        if (i > 0)
-                        {
-                            g.DrawLine(Pens.Black, xCur, y, xCur, y + 24);
-                        }
-                        xCur += colW[i];
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 24);
                     }
                     y += 24;
 
                     // Row 1: Opening / Carried Over Balance Row if page 1
                     if (_pageNumber == 1 && _startBalance != 0)
                     {
-                        xCur = lMargin;
                         g.DrawRectangle(Pens.Black, lMargin, y, printableW, 20);
+                        xCur = xRight;
 
-                        g.DrawString("1", smallFont, Brushes.Black, new RectangleF(xCur, y, colW[0], 20), sfCenter); xCur += colW[0];
-                        g.DrawString("رصيد مرحل / سابق", boldSmall, Brushes.DarkBlue, new RectangleF(xCur, y, colW[1], 20), sfRight); xCur += colW[1];
+                        // col 0: م
+                        xCur -= colW[0];
+                        g.DrawString("1", smallFont, Brushes.Black, new RectangleF(xCur, y, colW[0], 20), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
+
+                        // col 1: العملية
+                        xCur -= colW[1];
+                        g.DrawString("رصيد مرحل / سابق", boldSmall, Brushes.DarkBlue, new RectangleF(xCur, y, colW[1], 20), sfRight);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
 
                         string startDeb = _startBalance > 0 ? _startBalance.ToString("N2") : "";
                         string startCred = _startBalance < 0 ? Math.Abs(_startBalance).ToString("N2") : "";
 
-                        DrawStringFit(g, startDeb, boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], 20), sfCenter); xCur += colW[2];
-                        DrawStringFit(g, startCred, boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], 20), sfCenter); xCur += colW[3];
-                        DrawStringFit(g, _startBalance.ToString("N2"), boldSmall, Brushes.Black, new RectangleF(xCur, y, colW[4], 20), sfCenter); xCur += colW[4];
+                        // col 2: مدين
+                        xCur -= colW[2];
+                        DrawStringFit(g, startDeb, boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], 20), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
+
+                        // col 3: دائن
+                        xCur -= colW[3];
+                        DrawStringFit(g, startCred, boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], 20), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
+
+                        // col 4: رصيد
+                        xCur -= colW[4];
+                        DrawStringFit(g, _startBalance.ToString("N2"), boldSmall, Brushes.Black, new RectangleF(xCur, y, colW[4], 20), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
 
                         for (int i = 5; i < colW.Length; i++)
                         {
-                            xCur += colW[i];
-                        }
-
-                        // vertical grid lines for row 1
-                        xCur = lMargin;
-                        for (int i = 0; i < colW.Length; i++)
-                        {
+                            xCur -= colW[i];
                             g.DrawLine(Pens.Black, xCur, y, xCur, y + 20);
-                            xCur += colW[i];
                         }
-                        g.DrawLine(Pens.Black, lMargin + printableW, y, lMargin + printableW, y + 20);
 
                         y += 20;
                     }
@@ -229,38 +237,61 @@ namespace ChickenDist.Forms
                         int rowH = 22;
                         g.DrawRectangle(Pens.Black, lMargin, y, printableW, rowH);
 
-                        xCur = lMargin;
-                        // م
-                        g.DrawString((rowNo++).ToString(), smallFont, Brushes.Black, new RectangleF(xCur, y, colW[0], rowH), sfCenter); xCur += colW[0];
-                        // العملية
-                        g.DrawString(GetTransTypeName(tType), smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[1] - 4, rowH), sfRight); xCur += colW[1];
-                        // مدين
-                        DrawStringFit(g, inAmt > 0 ? inAmt.ToString("N2") : "", boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], rowH), sfCenter); xCur += colW[2];
-                        // دائن
-                        DrawStringFit(g, outAmt > 0 ? outAmt.ToString("N2") : "", boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], rowH), sfCenter); xCur += colW[3];
-                        // رصيد
-                        DrawStringFit(g, running.ToString("N2"), boldSmall, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(xCur, y, colW[4], rowH), sfCenter); xCur += colW[4];
-                        // الخزنة
-                        g.DrawString(_accountName, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[5] - 4, rowH), sfRight); xCur += colW[5];
-                        // نوع الحركة
-                        g.DrawString(GetTransTypeArabicShort(tType), smallFont, Brushes.Black, new RectangleF(xCur, y, colW[6], rowH), sfCenter); xCur += colW[6];
-                        // التاريخ
-                        g.DrawString(datePart, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[7], rowH), sfCenter); xCur += colW[7];
-                        // ملاحظات
-                        g.DrawString(notes, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[8] - 4, rowH), sfRight); xCur += colW[8];
-                        // المستخدم
-                        g.DrawString(user, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[9], rowH), sfCenter); xCur += colW[9];
-                        // الوقت
-                        g.DrawString(timePart, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[10], rowH), sfCenter); xCur += colW[10];
+                        xCur = xRight;
+                        // col 0: م
+                        xCur -= colW[0];
+                        g.DrawString((rowNo++).ToString(), smallFont, Brushes.Black, new RectangleF(xCur, y, colW[0], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
 
-                        // Vertical lines
-                        xCur = lMargin;
-                        for (int i = 0; i < colW.Length; i++)
-                        {
-                            g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
-                            xCur += colW[i];
-                        }
-                        g.DrawLine(Pens.Black, lMargin + printableW, y, lMargin + printableW, y + rowH);
+                        // col 1: العملية
+                        xCur -= colW[1];
+                        g.DrawString(GetTransTypeName(tType), smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[1] - 4, rowH), sfRight);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 2: مدين
+                        xCur -= colW[2];
+                        DrawStringFit(g, inAmt > 0 ? inAmt.ToString("N2") : "", boldSmall, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 3: دائن
+                        xCur -= colW[3];
+                        DrawStringFit(g, outAmt > 0 ? outAmt.ToString("N2") : "", boldSmall, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 4: رصيد
+                        xCur -= colW[4];
+                        DrawStringFit(g, running.ToString("N2"), boldSmall, new SolidBrush(Color.FromArgb(15, 23, 42)), new RectangleF(xCur, y, colW[4], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 5: الخزنة
+                        xCur -= colW[5];
+                        g.DrawString(_accountName, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[5] - 4, rowH), sfRight);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 6: نوع الحركة
+                        xCur -= colW[6];
+                        g.DrawString(GetTransTypeArabicShort(tType), smallFont, Brushes.Black, new RectangleF(xCur, y, colW[6], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 7: التاريخ
+                        xCur -= colW[7];
+                        g.DrawString(datePart, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[7], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 8: ملاحظات
+                        xCur -= colW[8];
+                        g.DrawString(notes, smallFont, Brushes.Black, new RectangleF(xCur + 2, y, colW[8] - 4, rowH), sfRight);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 9: المستخدم
+                        xCur -= colW[9];
+                        g.DrawString(user, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[9], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
+
+                        // col 10: الوقت
+                        xCur -= colW[10];
+                        g.DrawString(timePart, smallFont, Brushes.Black, new RectangleF(xCur, y, colW[10], rowH), sfCenter);
+                        g.DrawLine(Pens.Black, xCur, y, xCur, y + rowH);
 
                         y += rowH;
                         _currentRowIndex++;
@@ -273,18 +304,25 @@ namespace ChickenDist.Forms
                     g.FillRectangle(new SolidBrush(Color.FromArgb(254, 226, 226)), lMargin, y, printableW, summaryH);
                     g.DrawRectangle(new Pen(Color.Red, 1.2f), lMargin, y, printableW, summaryH);
 
-                    xCur = lMargin;
+                    xCur = xRight;
+                    // col 0 + col 1 (إجمالي الحركة)
+                    xCur -= (colW[0] + colW[1]);
                     g.DrawString("إجمالي الحركة", boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[0] + colW[1], summaryH), sfCenter);
-                    xCur += colW[0] + colW[1];
                     g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
-                    DrawStringFit(g, _totalIn.ToString("N2"), boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], summaryH), sfCenter); xCur += colW[2];
+                    // col 2 (إجمالي المقبوضات/مدين)
+                    xCur -= colW[2];
+                    DrawStringFit(g, _totalIn.ToString("N2"), boldMain, Brushes.DarkRed, new RectangleF(xCur, y, colW[2], summaryH), sfCenter);
                     g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
-                    DrawStringFit(g, _totalOut.ToString("N2"), boldMain, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], summaryH), sfCenter); xCur += colW[3];
+                    // col 3 (إجمالي المدفوعات/دائن)
+                    xCur -= colW[3];
+                    DrawStringFit(g, _totalOut.ToString("N2"), boldMain, Brushes.DarkGreen, new RectangleF(xCur, y, colW[3], summaryH), sfCenter);
                     g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
-                    DrawStringFit(g, _netBalance.ToString("N2"), boldMain, Brushes.Black, new RectangleF(xCur, y, colW[4], summaryH), sfCenter); xCur += colW[4];
+                    // col 4 (الصافي / رصيد)
+                    xCur -= colW[4];
+                    DrawStringFit(g, _netBalance.ToString("N2"), boldMain, Brushes.Black, new RectangleF(xCur, y, colW[4], summaryH), sfCenter);
                     g.DrawLine(Pens.Red, xCur, y, xCur, y + summaryH);
 
                     y += summaryH + 12;

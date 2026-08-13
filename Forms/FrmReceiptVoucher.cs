@@ -184,10 +184,10 @@ namespace ChickenDist.Forms
             };
             for (int i = 0; i < 4; i++) pnlKPIs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            lblTotalIn = new Label { Text = "إجمالي المقبوضات: 0.00 ج", ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
-            lblTotalOut = new Label { Text = "إجمالي المدفوعات: 0.00 ج", ForeColor = Color.OrangeRed, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
+            lblTotalIn = new Label { Text = "إجمالي المقبوضات: 0.00 ج", ForeColor = Color.FromArgb(20, 160, 60), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
+            lblTotalOut = new Label { Text = "إجمالي المدفوعات: 0.00 ج", ForeColor = Color.FromArgb(220, 40, 40), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
             lblNetBalance = new Label { Text = "صافي الحركة: 0.00 ج", ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
-            lblVoucherCount = new Label { Text = "عدد السندات: 0", ForeColor = Color.FromArgb(180, 200, 230), Font = new Font("Segoe UI", 10f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
+            lblVoucherCount = new Label { Text = "عدد السندات: 0", ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
 
             pnlKPIs.Controls.Add(lblTotalIn, 0, 0);
             pnlKPIs.Controls.Add(lblTotalOut, 1, 0);
@@ -338,8 +338,8 @@ namespace ChickenDist.Forms
                     r.Table.Columns.Contains("CreatedByName") ? r["CreatedByName"].ToString() : "المشرف"
                 );
 
-                if (outAmt > 0) dgVouchers.Rows[ri].DefaultCellStyle.ForeColor = Color.OrangeRed;
-                else if (inAmt > 0) dgVouchers.Rows[ri].DefaultCellStyle.ForeColor = Color.LightGreen;
+                if (outAmt > 0) dgVouchers.Rows[ri].DefaultCellStyle.ForeColor = Color.FromArgb(185, 25, 25);
+                else if (inAmt > 0) dgVouchers.Rows[ri].DefaultCellStyle.ForeColor = Color.FromArgb(15, 125, 45);
 
                 sumIn += inAmt;
                 sumOut += outAmt;
