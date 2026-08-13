@@ -1080,7 +1080,8 @@ namespace ChickenDist.Forms
 					break;
 				case "DetailedSales":
 					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
-					var targetDgSales = tabReports.SelectedTab?.Controls.Find("dgDetailedSales", true).FirstOrDefault() as DataGridView ?? dataGridView;
+					var targetDgSales = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDetailedSales") ?? dataGridView;
+					if (targetDgSales != null) dataGridView = targetDgSales;
 					SetupGrid(new(string, string)[10]
 					{
 						("SaleCode", "رقم الفاتورة"),
@@ -1093,8 +1094,8 @@ namespace ChickenDist.Forms
 						("NetProfit", "الربح"),
 						("Notes", "الملاحظات"),
 						("SaleID", "معرف الفاتورة")
-					}, targetDgSales);
-					if (targetDgSales.Columns["SaleID"] != null) targetDgSales.Columns["SaleID"].Visible = false;
+					}, dataGridView);
+					if (dataGridView.Columns["SaleID"] != null) dataGridView.Columns["SaleID"].Visible = false;
 					break;
 				case "DetailedReturns":
 					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
@@ -1805,6 +1806,10 @@ namespace ChickenDist.Forms
 				}
 				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgIncomeStatement");
 			}
+			if (text == "DetailedSales")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDetailedSales");
+			}
 			if (text == "ClientProductSales")
 			{
 				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientSales");
@@ -1813,8 +1818,12 @@ namespace ChickenDist.Forms
 			{
 				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgSupplierActivity");
 			}
+			if (text == "DebtAging")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDebtAging");
+			}
 			
-			return tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
+			return FindControlByName<DataGridView>(tabReports.SelectedTab, "") ?? tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 		}
 
 		private void SetupGrid((string field, string header)[] cols, DataGridView dg)
