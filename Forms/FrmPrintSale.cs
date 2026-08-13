@@ -976,30 +976,53 @@ namespace ChickenDist.Forms
                     }
 
                     // ===== Table Header =====
-                    int xNotes    = margin;
-                    int colWNotes = 95;
-                    int xWh       = xNotes + colWNotes;
-                    int colWWh    = 110;
-                    int xTotal    = xWh + colWWh;
-                    int colWTotal = 75;
-                    int xPrice    = xTotal + colWTotal;
-                    int colWPrice = 65;
-                    int xQty      = xPrice + colWPrice;
-                    int colWQty   = 55;
-
-                    int xDiscount = xTotal;
-                    int colWDiscount = 0;
-
-                    int xIndex    = pageW - margin - 28;
-                    int colWIndex = 28;
-                    int xName     = xQty + colWQty;
-                    int colWName  = xIndex - xName;
-
-                    int xProduct  = xName;
-                    int colWProduct  = colWName;
-
                     bool isAlTarek = string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
                                      string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase);
+
+                    int xNotes, colWNotes, xWh, colWWh, xTotal, colWTotal, xDiscount, colWDiscount, xPrice, colWPrice, xQty, colWQty, xIndex, colWIndex, xName, colWName, xProduct, colWProduct;
+
+                    if (isAlTarek)
+                    {
+                        xNotes       = margin;
+                        colWNotes    = 80;
+                        xWh          = xNotes + colWNotes;
+                        colWWh       = 90;
+                        xTotal       = xWh + colWWh;
+                        colWTotal    = 70;
+                        xDiscount    = xTotal + colWTotal;
+                        colWDiscount = 55;
+                        xPrice       = xDiscount + colWDiscount;
+                        colWPrice    = 60;
+                        xQty         = xPrice + colWPrice;
+                        colWQty      = 50;
+                        xIndex       = pageW - margin - 28;
+                        colWIndex    = 28;
+                        xName        = xQty + colWQty;
+                        colWName     = xIndex - xName;
+                        xProduct     = xName;
+                        colWProduct  = colWName;
+                    }
+                    else
+                    {
+                        xNotes       = margin;
+                        colWNotes    = 95;
+                        xWh          = xNotes + colWNotes;
+                        colWWh       = 110;
+                        xTotal       = xWh + colWWh;
+                        colWTotal    = 75;
+                        xPrice       = xTotal + colWTotal;
+                        colWPrice    = 65;
+                        xQty         = xPrice + colWPrice;
+                        colWQty      = 55;
+                        xDiscount    = xTotal;
+                        colWDiscount = 0;
+                        xIndex       = pageW - margin - 28;
+                        colWIndex    = 28;
+                        xName        = xQty + colWQty;
+                        colWName     = xIndex - xName;
+                        xProduct     = xName;
+                        colWProduct  = colWName;
+                    }
 
                     if (isAlTarek)
                     {
@@ -1010,6 +1033,7 @@ namespace ChickenDist.Forms
                         DrawColHeader(g, boldSheet, "اسم الصنف", xName, colWName, y + 3);
                         DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 3);
                         DrawColHeader(g, boldSheet, "السعر", xPrice, colWPrice, y + 3);
+                        DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 3);
                         DrawColHeader(g, boldSheet, "القيمة", xTotal, colWTotal, y + 3);
                         DrawColHeader(g, boldSheet, "المخزن", xWh, colWWh, y + 3);
                         DrawColHeader(g, boldSheet, "ملاحظات", xNotes, colWNotes, y + 3);
@@ -1121,6 +1145,7 @@ namespace ChickenDist.Forms
                                 g.DrawRectangle(Pens.Black, xName, y, colWName, 20);
                                 g.DrawRectangle(Pens.Black, xQty, y, colWQty, 20);
                                 g.DrawRectangle(Pens.Black, xPrice, y, colWPrice, 20);
+                                g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, 20);
                                 g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, 20);
                                 g.DrawRectangle(Pens.Black, xWh, y, colWWh, 20);
                                 g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, 20);
@@ -1129,6 +1154,7 @@ namespace ChickenDist.Forms
                                 DrawColCell(g, normal, r["ProductName"].ToString(), xName, colWName, y + 3, right);
                                 DrawColCell(g, normal, qty.ToString("N2"), xQty, colWQty, y + 3, center);
                                 DrawColCell(g, normal, price.ToString("N2"), xPrice, colWPrice, y + 3, center);
+                                DrawColCell(g, normal, discText, xDiscount, colWDiscount, y + 3, center);
                                 DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y + 3, center);
 
                                 string whName = r.Table.Columns.Contains("WarehouseName") && r["WarehouseName"] != DBNull.Value
