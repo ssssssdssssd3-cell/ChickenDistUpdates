@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -226,12 +226,17 @@ namespace ChickenDist.Forms
             this.Controls.Add(txtNotes);
             y += 45;
 
-            // أزرار الحفظ والإلغاء
-            btnSave = Theme.MakeButton("💾 حفظ", 260, y, 180, 36, Theme.Accent);
+            // أزرار الحفظ والواتساب والإلغاء
+            btnSave = Theme.MakeButton("💾 حفظ", 330, y, 120, 36, Theme.Accent);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 60, y, 180, 36, Color.FromArgb(100, 110, 120));
+            var btnWhatsApp = Theme.MakeButton("📱 واتساب للعميل", 170, y, 150, 36, Color.FromArgb(37, 211, 102));
+            btnWhatsApp.ForeColor = Color.White;
+            btnWhatsApp.Click += (s, e) => SendMaintenanceWhatsApp();
+            this.Controls.Add(btnWhatsApp);
+
+            btnCancel = Theme.MakeButton("❌ إلغاء", 30, y, 130, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }
@@ -445,6 +450,39 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("❌ فشل الحفظ: " + ex.Message);
+            }
+        }
+
+        private void SendMaintenanceWhatsApp()
+        {
+            try
+            {
+                string clientName = txtCustomerName != null ? txtCustomerName.Text.Trim() : "";
+                string phone = txtCustomerPhone != null ? txtCustomerPhone.Text.Trim() : "";
+                string device = txtDeviceModel != null ? txtDeviceModel.Text.Trim() : "";
+                string status = cboStatus != null ? cboStatus.Text.Trim() : "";
+                decimal cost = nudCost != null ? nudCost.Value : 0m;
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"🔧 *تحديث حالة كرت الصيانة - {AppConfig.CompanyName}*");
+                sb.AppendLine($"📄 *رقم الكرت/التذكرة:* #{_ticketID}");
+                sb.AppendLine($"👤 *العميل:* {clientName}");
+                sb.AppendLine($"📱 *الجهاز/المركبة:* {device}");
+                sb.AppendLine($"⚡ *حالة الصيانة:* {status}");
+                sb.AppendLine($"💵 *إجمالي التكلفة:* {cost:N2} ج");
+                sb.AppendLine("\nشكراً لتعاملكم معنا ونتمنى لكم يوماً سعيداً! 🙏");
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    sb.ToString(),
+                    null,
+                    "📱 إرسال كرت الصيانة عبر الواتساب");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmMaintenanceCard.SendMaintenanceWhatsApp", ex);
+                MessageBox.Show("فشل إرسال كرت الصيانة عبر الواتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

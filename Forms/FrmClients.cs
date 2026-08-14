@@ -202,6 +202,9 @@ namespace ChickenDist.Forms
             btnStatement = Theme.MakeButton("📄 كشف مالي", 10, y, 95, 32, Theme.Primary); y += 44;
             btnItemizedStatement = Theme.MakeButton("📦 كشف أصناف العميل", 160, y, 140, 32, Color.FromArgb(20, 100, 160));
             btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 140, 32, Theme.Accent); y += 44;
+            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", 10, y, 290, 34, Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnWhatsApp.ForeColor = Color.White;
  
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -215,8 +218,35 @@ namespace ChickenDist.Forms
                 if (_selectedID == 0) { MessageBox.Show("اختر عميلاً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
                 new FrmClientStatement(_selectedID, txtName.Text, initialTab: 1).ShowDialog();
             };
+
+            btnWhatsApp.Click += (s, e) =>
+            {
+                if (_selectedID == 0) { MessageBox.Show("اختر عميلاً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+                string phone = txtPhone.Text.Trim();
+                string name = txtName.Text.Trim();
+                decimal bal = 0m;
+                try
+                {
+                    object balObj = DbHelper.Scalar("SELECT Balance FROM Clients WHERE ClientID = @id", DbHelper.P("@id", _selectedID));
+                    if (balObj != null && balObj != DBNull.Value) bal = Convert.ToDecimal(balObj);
+                }
+                catch { }
+
+                string msg = $"📊 *كشف حساب مالي - {AppConfig.CompanyName}*\n" +
+                             $"👤 *العميل:* {name}\n" +
+                             $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
+                             $"💵 *الرصيد المتبقي/المديونية:* {bal:N2} ج\n" +
+                             $"\nنتمنى لكم دوام التوفيق والنجاح! 🙏";
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    msg,
+                    null,
+                    "📱 إرسال كشف حساب العميل عبر الواتساب");
+            };
  
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement });
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement, btnWhatsApp });
 
             
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details

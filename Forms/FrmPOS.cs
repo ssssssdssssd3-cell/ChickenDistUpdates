@@ -2014,13 +2014,13 @@ namespace ChickenDist.Forms
 
                 string message = sb.ToString();
 
-                // 4. Open WhatsApp URL
-                string url = $"https://api.whatsapp.com/send?phone={phone}&text={Uri.EscapeDataString(message)}";
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                });
+                // Open Universal WhatsApp Options Dialog (Text vs Image)
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    message,
+                    () => ReceiptImageGenerator.GenerateSaleReceiptImage(saleID),
+                    "📱 إرسال فاتورة المبيعات عبر الواتساب");
             }
             catch (Exception ex)
             {

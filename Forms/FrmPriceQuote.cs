@@ -293,7 +293,11 @@ namespace ChickenDist.Forms
             btnPrintQuote = Theme.MakeButton("🖨️ طباعة عرض أسعار", 0, 0, 150, 40, Color.DarkGreen);
             btnPrintQuote.Click += (s, e) => PrintPriceQuote();
 
-            pnlActions.Controls.AddRange(new Control[] { btnNew, btnSuspend, btnPendingList, btnConvertToSale, btnPrintPrep, btnPrintQuote });
+            var btnWhatsApp = Theme.MakeButton("📱 واتساب للعميل", 0, 0, 150, 40, Color.FromArgb(37, 211, 102));
+            btnWhatsApp.ForeColor = Color.White;
+            btnWhatsApp.Click += (s, e) => SendQuoteWhatsApp();
+
+            pnlActions.Controls.AddRange(new Control[] { btnNew, btnSuspend, btnPendingList, btnConvertToSale, btnPrintPrep, btnPrintQuote, btnWhatsApp });
             tblBottom.Controls.Add(pnlActions, 0, 1);
             tblBottom.SetColumnSpan(pnlActions, 6);
             pnlBottom.Controls.Add(tblBottom);
@@ -1443,6 +1447,54 @@ namespace ChickenDist.Forms
         private int pageW(PrintPageEventArgs e)
         {
             return e.PageBounds.Width;
+        }
+
+        private void SendQuoteWhatsApp()
+        {
+            if (_items == null || _items.Count == 0)
+            {
+                MessageBox.Show("لا يوجد أصناف في عرض الأسعار لإرساله!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                string clientName = cboClient.Text.Trim();
+                string phone = "";
+                if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    object phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID = @id", DbHelper.P("@id", ci.ID));
+                    if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
+                }
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"📋 *عرض سعر مقدم من {AppConfig.CompanyName}*");
+                sb.AppendLine($"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}");
+                sb.AppendLine($"👤 *العميل:* {clientName}");
+                sb.AppendLine();
+                sb.AppendLine("📦 *تفاصيل عرض السعر:*");
+
+                foreach (var item in _items)
+                {
+                    sb.AppendLine($"- {item.ProductName} ({item.Quantity} {item.UnitName} × {item.UnitPrice:N2}) = {item.TotalPrice:N2} ج");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine($"💵 *إجمالي عرض السعر:* {lblTotalVal.Text}");
+                sb.AppendLine("\nنتشرف بخدمتكم دائماً! 🙏");
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    sb.ToString(),
+                    null,
+                    "📱 إرسال عرض السعر عبر الواتساب");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmPriceQuote.SendQuoteWhatsApp", ex);
+                MessageBox.Show("فشل إرسال عرض السعر عبر الواتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void FrmPriceQuote_KeyDown(object sender, KeyEventArgs e)

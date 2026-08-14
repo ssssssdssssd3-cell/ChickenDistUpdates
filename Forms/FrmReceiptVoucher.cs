@@ -164,6 +164,14 @@ namespace ChickenDist.Forms
             btnPrintSelected.Click += BtnPrintSelected_Click;
             pnlActions.Controls.Add(btnPrintSelected);
 
+            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Size = new Size(170, 38);
+            btnWhatsApp.Font = Theme.FontBold;
+            btnWhatsApp.ForeColor = Color.White;
+            btnWhatsApp.Margin = new Padding(5, 0, 5, 0);
+            btnWhatsApp.Click += BtnWhatsApp_Click;
+            pnlActions.Controls.Add(btnWhatsApp);
+
             // ── KPI Summary Bar ──
             pnlKPIs = new TableLayoutPanel
             {
@@ -905,6 +913,53 @@ namespace ChickenDist.Forms
 
             int transID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
             new FrmPrintPayment(transID, "AlTarekVoucher", true);
+        }
+
+        private void BtnWhatsApp_Click(object sender, EventArgs e)
+        {
+            if (dgVouchers.CurrentRow == null)
+            {
+                MessageBox.Show("يرجى تحديد السند من القائمة أولاً للإرسال عبر الواتساب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                int voucherID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
+                var dt = DbHelper.Query(@"
+                    SELECT v.VoucherCode, v.VoucherDate, v.VoucherType, v.Amount, v.Notes,
+                           c.ClientName, c.Phone
+                    FROM ReceiptVouchers v
+                    LEFT JOIN Clients c ON v.ClientID = c.ClientID
+                    WHERE v.VoucherID = @id", DbHelper.P("@id", voucherID));
+
+                if (dt.Rows.Count == 0) return;
+                var r = dt.Rows[0];
+                string phone = r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
+                string code = r["VoucherCode"].ToString();
+                decimal amount = Convert.ToDecimal(r["Amount"]);
+                string party = r["ClientName"] != DBNull.Value ? r["ClientName"].ToString() : "عميل عام";
+                string notes = r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+
+                string msg = $"📄 *إيصال نقدية رقم: #{code}*\n" +
+                             $"📅 *التاريخ:* {Convert.ToDateTime(r["VoucherDate"]):yyyy-MM-dd HH:mm}\n" +
+                             $"👤 *العميل:* {party}\n" +
+                             $"💵 *المبلغ:* {amount:N2} ج\n" +
+                             (!string.IsNullOrWhiteSpace(notes) ? $"📝 *الملاحظات:* {notes}\n" : "") +
+                             $"\nشكراً لتعاملكم معنا! 🙏";
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    msg,
+                    () => ReceiptImageGenerator.GenerateVoucherReceiptImage(voucherID),
+                    "📱 إرسال السند عبر الواتساب");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmReceiptVoucher.BtnWhatsApp_Click", ex);
+                MessageBox.Show("فشل تجهيز الواتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void BtnDeleteSelected_Click(object sender, EventArgs e)
