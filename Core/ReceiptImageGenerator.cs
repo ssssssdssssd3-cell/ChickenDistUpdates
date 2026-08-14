@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -227,6 +228,171 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("ReceiptImageGenerator.GenerateVoucherReceiptImage", ex);
+                return null;
+            }
+        }
+
+        public static Bitmap GenerateClientStatementImage(int clientID, string clientName, decimal balance, string extraNotes = "")
+        {
+            try
+            {
+                int width = 540;
+                int height = 360;
+                var bmp = new Bitmap(width, height);
+
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 75), Color.FromArgb(30, 58, 138), Color.FromArgb(29, 78, 216), LinearGradientMode.Vertical))
+                    {
+                        g.FillRectangle(brHeader, 0, 0, width, 75);
+                    }
+
+                    string companyName = AppConfig.CompanyName;
+                    if (string.IsNullOrWhiteSpace(companyName)) companyName = "شركة برو سوفت للأنظمة الإلكترونية";
+
+                    var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    using (var fTitle = new Font("Segoe UI", 15f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 9.5f))
+                    {
+                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 10, width, 30), sfCenter);
+                        g.DrawString("📊 كشف حساب وموقف مالي للعميل", fSub, Brushes.WhiteSmoke, new RectangleF(0, 42, width, 25), sfCenter);
+                    }
+
+                    int y = 90;
+                    var sfRight = new StringFormat { Alignment = StringAlignment.Far, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+                    using (var fBold = new Font("Segoe UI", 11f, FontStyle.Bold))
+                    using (var fNorm = new Font("Segoe UI", 10f))
+                    using (var brClient = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brBoxBg = new SolidBrush(balance > 0 ? Color.FromArgb(254, 242, 242) : Color.FromArgb(240, 253, 244)))
+                    using (var penBox = new Pen(balance > 0 ? Color.FromArgb(254, 202, 202) : Color.FromArgb(187, 247, 208)))
+                    using (var brBalText = new SolidBrush(balance > 0 ? Color.FromArgb(185, 28, 28) : Color.FromArgb(22, 101, 52)))
+                    {
+                        g.DrawString($"اسم العميل: {clientName}", fBold, brClient, 20, y);
+                        g.DrawString($"التاريخ: {DateTime.Now:yyyy/MM/dd HH:mm}", fNorm, Brushes.DarkGray, width - 20, y, sfRight);
+                        y += 35;
+
+                        // Balance Highlight Card
+                        g.FillRectangle(brBoxBg, 16, y, width - 32, 70);
+                        g.DrawRectangle(penBox, 16, y, width - 32, 70);
+
+                        using (var fBal = new Font("Segoe UI", 15f, FontStyle.Bold))
+                        {
+                            string balLabel = balance > 0 ? "الرصيد المستحق (مديونية):" : (balance < 0 ? "الرصيد المتبقي (دائن):" : "الرصيد الحالي:");
+                            g.DrawString(balLabel, fBold, brBalText, 30, y + 12);
+                            g.DrawString($"{Math.Abs(balance):N2} جنيه مصري", fBal, brBalText, width - 30, y + 12, sfRight);
+                        }
+
+                        g.DrawString(balance > 0 ? "⚠️ نرجو التكرم بسداد المبلغ المستحق في أقرب وقت" : "✅ الحساب خالص ومطابق تماماً", fNorm, brBalText, 30, y + 44);
+                        y += 90;
+
+                        if (!string.IsNullOrWhiteSpace(extraNotes))
+                        {
+                            g.DrawString($"ملاحظات: {extraNotes}", fNorm, Brushes.Black, 20, y);
+                            y += 35;
+                        }
+
+                        using (var fFooter = new Font("Segoe UI", 9.5f, FontStyle.Italic))
+                        {
+                            g.DrawString("شكراً لتعاملكم ونتمنى لكم دوام التوفيق والنجاح! 🙏", fFooter, Brushes.Gray, new RectangleF(0, y + 10, width, 25), sfCenter);
+                        }
+                    }
+                }
+
+                return bmp;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateClientStatementImage", ex);
+                return null;
+            }
+        }
+
+        public static Bitmap GenerateTextCardImage(string title, string textBody, string subtitle = "")
+        {
+            try
+            {
+                string[] lines = textBody.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                int lineCount = Math.Max(lines.Length, 5);
+
+                int width = 560;
+                int rowHeight = 24;
+                int baseHeight = 160 + (lineCount * rowHeight);
+                var bmp = new Bitmap(width, baseHeight);
+
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    // Header Gradient
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 75), Color.FromArgb(15, 23, 42), Color.FromArgb(30, 41, 59), LinearGradientMode.Vertical))
+                    {
+                        g.FillRectangle(brHeader, 0, 0, width, 75);
+                    }
+
+                    string companyName = AppConfig.CompanyName;
+                    if (string.IsNullOrWhiteSpace(companyName)) companyName = "شركة برو سوفت للأنظمة المتكاملة";
+
+                    var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    using (var fTitle = new Font("Segoe UI", 15f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 9.5f))
+                    {
+                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 10, width, 30), sfCenter);
+                        string sub = !string.IsNullOrWhiteSpace(title) ? title : (!string.IsNullOrWhiteSpace(subtitle) ? subtitle : "إشعار موثق من النظام");
+                        g.DrawString(sub, fSub, Brushes.LightGray, new RectangleF(0, 42, width, 25), sfCenter);
+                    }
+
+                    int y = 90;
+                    var sfRight = new StringFormat { Alignment = StringAlignment.Far, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+                    using (var fNorm = new Font("Segoe UI", 10f))
+                    using (var fBold = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                    using (var penLine = new Pen(Color.FromArgb(226, 232, 240)))
+                    using (var brHighlight = new SolidBrush(Color.FromArgb(15, 118, 110)))
+                    {
+                        foreach (string rawLine in lines)
+                        {
+                            string line = rawLine.Trim();
+                            if (string.IsNullOrEmpty(line))
+                            {
+                                y += 12;
+                                continue;
+                            }
+
+                            if (line.StartsWith("──") || line.StartsWith("=="))
+                            {
+                                g.DrawLine(penLine, 20, y + 10, width - 20, y + 10);
+                                y += 18;
+                                continue;
+                            }
+
+                            bool isHeaderLine = line.StartsWith("📄") || line.StartsWith("📊") || line.StartsWith("🔧") || line.StartsWith("📋") || line.StartsWith("💵");
+                            Font f = isHeaderLine ? fBold : fNorm;
+                            Brush b = isHeaderLine ? brHighlight : Brushes.Black;
+
+                            g.DrawString(line, f, b, width - 24, y, sfRight);
+                            y += rowHeight;
+                        }
+
+                        y += 10;
+                        using (var fFooter = new Font("Segoe UI", 9.5f, FontStyle.Italic))
+                        {
+                            g.DrawString("شكراً لتعاملكم معنا 🙏", fFooter, Brushes.Gray, new RectangleF(0, y, width, 25), sfCenter);
+                        }
+                    }
+                }
+
+                return bmp;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateTextCardImage", ex);
                 return null;
             }
         }

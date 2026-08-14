@@ -2594,28 +2594,6 @@ namespace ChickenDist.Forms
 				return;
 			}
 
-			var dlg = new Form
-			{
-				Width = 420, Height = 190,
-				Text = "إرسال واتساب - أرصدة العملاء",
-				StartPosition = FormStartPosition.CenterParent,
-				RightToLeft = RightToLeft.Yes,
-				RightToLeftLayout = true,
-				BackColor = Theme.BgCard,
-				Font = Theme.FontMain
-			};
-			var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
-			var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
-			var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
-			var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
-			btnSend.Click   += (s2, e2) => { dlg.DialogResult = DialogResult.OK;     dlg.Close(); };
-			btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
-			dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
-
-			if (dlg.ShowDialog() != DialogResult.OK) return;
-			string phone = txt.Text.Trim();
-			if (string.IsNullOrWhiteSpace(phone)) return;
-
 			var sb = new System.Text.StringBuilder();
 			sb.AppendLine("📋 *تقرير أرصدة وبيانات العملاء*");
 			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
@@ -2645,7 +2623,12 @@ namespace ChickenDist.Forms
 			sb.AppendLine($"📊 إجمالي مديونيات العملاء: {grandTotalBalance:N2} ج.م");
 			sb.AppendLine("──────────────────────");
 
-			SendWhatsApp(phone, sb.ToString());
+			WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+				this,
+				"",
+				sb.ToString(),
+				() => ReceiptImageGenerator.GenerateTextCardImage("تقرير أرصدة العملاء", sb.ToString()),
+				"📱 إرسال تقرير أرصدة العملاء عبر الواتساب");
 		}
 
 		private static void SendWhatsApp(string phone, string message)

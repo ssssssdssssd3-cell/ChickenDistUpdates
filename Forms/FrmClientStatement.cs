@@ -842,28 +842,13 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var dlg = new Form
+            string phone = "";
+            try
             {
-                Width = 420,
-                Height = 190,
-                Text = "إرسال كشف حساب أصناف العميل واتساب",
-                StartPosition = FormStartPosition.CenterParent,
-                RightToLeft = RightToLeft.Yes,
-                RightToLeftLayout = true,
-                BackColor = Theme.BgCard,
-                Font = Theme.FontMain
-            };
-            var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
-            var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
-            var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
-            btnSend.Click += (s2, e2) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
-            btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
-            dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
-
-            if (dlg.ShowDialog() != DialogResult.OK) return;
-            string phone = txt.Text.Trim();
-            if (string.IsNullOrWhiteSpace(phone)) return;
+                object phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID = @id", DbHelper.P("@id", _clientID));
+                if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
+            }
+            catch { }
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"📋 *كشف حساب أصناف مسحوبات العميل*");
@@ -889,7 +874,12 @@ namespace ChickenDist.Forms
             sb.AppendLine($"💰 {lblItemizedTotalAmount.Text}");
             sb.AppendLine("──────────────────────");
 
-            WhatsAppSender.OpenWhatsApp(phone, sb.ToString());
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GenerateClientStatementImage(_clientID, _clientName, _runBalance),
+                "📱 إرسال كشف حساب أصناف العميل عبر الواتساب");
         }
 
         private void BtnPrint_Click(object sender, EventArgs e)

@@ -4953,7 +4953,12 @@ namespace ChickenDist.Forms
 				}
 				sb.AppendLine("🙏 شكراً لتعاملكم معنا!");
 
-				SendWhatsApp(clientPhone, sb.ToString());
+				WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+					parent,
+					clientPhone,
+					sb.ToString(),
+					() => ReceiptImageGenerator.GenerateSaleReceiptImage(saleID),
+					"📱 إرسال فاتورة المبيعات عبر الواتساب");
 			}
 			catch (Exception ex)
 			{
