@@ -155,14 +155,14 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// نافذة حوار موحدة لاختيار طريقة إرسال الواتساب (نصية أو صورة) مع معاينة حية فورية لكلا الخيارين
+        /// نافذة حوار موحدة تقدم زري الاختيار المباشرين (إرسال نص أو إرسال صورة) مع معاينة حية
         /// </summary>
         public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب")
         {
             using (var dlg = new Form())
             {
                 dlg.Text = dialogTitle;
-                dlg.Size = new Size(680, 570);
+                dlg.Size = new Size(620, 520);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -172,58 +172,87 @@ namespace ChickenDist.Core
                 dlg.BackColor = Color.FromArgb(248, 250, 252);
                 dlg.Font = Theme.FontMain;
 
-                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر طريقة الإرسال المناسبة للعميل: رسالة نصية تفصيلية أو تصميم صورة كارت عالي الجودة");
+                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر نوع الإرسال المطلوب للعميل (رسالة نصية تفصيلية أو كارت صورة مصمم)");
                 dlg.Controls.Add(pnlHeader);
 
                 int y = 72;
 
                 // Client Phone Panel
-                var lblPhone = new Label { Text = "رقم هاتف العميل (واتساب):", Location = new Point(24, y), Width = 180, Height = 22, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                var lblPhone = new Label { Text = "📱 رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 dlg.Controls.Add(lblPhone);
 
-                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(210, y - 2), Width = 440, Font = new Font("Segoe UI", 11f, FontStyle.Bold), BackColor = Color.White, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 360, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
                 dlg.Controls.Add(txtPhone);
-                y += 36;
+                y += 38;
 
-                // Send Mode Buttons (Tab-like selectors)
-                var pnlTabs = new Panel { Location = new Point(24, y), Size = new Size(626, 42), BackColor = Color.FromArgb(226, 232, 240) };
+                // ── Direct Action Buttons (Text vs Image) ──
+                var pnlChoiceBtns = new TableLayoutPanel
+                {
+                    Location = new Point(20, y),
+                    Size = new Size(560, 52),
+                    ColumnCount = 2,
+                    RowCount = 1,
+                    BackColor = Color.Transparent
+                };
+                pnlChoiceBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+                pnlChoiceBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+
+                var btnSendText = new Button
+                {
+                    Text = "💬 إرسال واتساب (رسالة نصية)",
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(4),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(37, 211, 102),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnSendText.FlatAppearance.BorderSize = 0;
+
+                var btnSendImage = new Button
+                {
+                    Text = "🖼️ إرسال واتساب (كارت صورة)",
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(4),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(18, 140, 126),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnSendImage.FlatAppearance.BorderSize = 0;
+
+                pnlChoiceBtns.Controls.Add(btnSendText, 0, 0);
+                pnlChoiceBtns.Controls.Add(btnSendImage, 1, 0);
+                dlg.Controls.Add(pnlChoiceBtns);
+                y += 60;
+
+                // ── Preview Section with Tab switcher ──
+                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(560, 28), BackColor = Color.Transparent };
+                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى المراد إرساله:", Location = new Point(360, 3), Width = 200, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 
-                var btnTabText = new Button
-                {
-                    Text = "📝 إرسال رسالة نصية (Text Message)",
-                    Location = new Point(314, 2),
-                    Size = new Size(310, 38),
-                    FlatStyle = FlatStyle.Flat,
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    Cursor = Cursors.Hand
-                };
-                btnTabText.FlatAppearance.BorderSize = 0;
+                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(140, 0), Size = new Size(100, 26), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                btnShowText.FlatAppearance.BorderSize = 0;
 
-                var btnTabImage = new Button
-                {
-                    Text = "🖼️ إرسال كارت مصمم (Image Card)",
-                    Location = new Point(2, 2),
-                    Size = new Size(310, 38),
-                    FlatStyle = FlatStyle.Flat,
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    Cursor = Cursors.Hand
-                };
-                btnTabImage.FlatAppearance.BorderSize = 0;
+                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(30, 0), Size = new Size(105, 26), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
+                btnShowImg.FlatAppearance.BorderSize = 0;
 
-                pnlTabs.Controls.Add(btnTabText);
-                pnlTabs.Controls.Add(btnTabImage);
-                dlg.Controls.Add(pnlTabs);
-                y += 48;
+                pnlPreviewHeader.Controls.Add(lblPreviewTitle);
+                pnlPreviewHeader.Controls.Add(btnShowText);
+                pnlPreviewHeader.Controls.Add(btnShowImg);
+                dlg.Controls.Add(pnlPreviewHeader);
+                y += 32;
 
-                // Content Panels (Text vs Image Preview)
-                var pnlContent = new Panel { Location = new Point(24, y), Size = new Size(626, 300), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                // Content Box
+                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(560, 235), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
                 var txtPreview = new RichTextBox
                 {
                     Dock = DockStyle.Fill,
                     BorderStyle = BorderStyle.None,
                     Text = textMessage,
-                    Font = new Font("Segoe UI", 10f),
+                    Font = new Font("Segoe UI", 9.5f),
                     BackColor = Color.White,
                     ForeColor = Color.FromArgb(30, 41, 59),
                     RightToLeft = RightToLeft.Yes
@@ -240,78 +269,58 @@ namespace ChickenDist.Core
                 pnlContent.Controls.Add(txtPreview);
                 pnlContent.Controls.Add(picPreview);
                 dlg.Controls.Add(pnlContent);
-                y += 310;
+                y += 245;
 
-                // State & Mode Switcher
-                bool isImageMode = false;
                 Image cachedImage = null;
-
-                Action updateTabSelection = () =>
+                Action showImagePreview = () =>
                 {
-                    if (isImageMode)
-                    {
-                        btnTabImage.BackColor = Theme.Accent;
-                        btnTabImage.ForeColor = Color.White;
-                        btnTabText.BackColor = Color.FromArgb(241, 245, 249);
-                        btnTabText.ForeColor = Theme.TextMain;
+                    btnShowImg.BackColor = Theme.Accent;
+                    btnShowImg.ForeColor = Color.White;
+                    btnShowText.BackColor = Color.FromArgb(226, 232, 240);
+                    btnShowText.ForeColor = Theme.TextMain;
 
-                        txtPreview.Visible = false;
-                        picPreview.Visible = true;
+                    txtPreview.Visible = false;
+                    picPreview.Visible = true;
+
+                    if (cachedImage == null)
+                    {
+                        try
+                        {
+                            if (imageGenerator != null) cachedImage = imageGenerator();
+                        }
+                        catch { }
 
                         if (cachedImage == null)
                         {
-                            try
-                            {
-                                if (imageGenerator != null) cachedImage = imageGenerator();
-                            }
-                            catch { }
-
-                            if (cachedImage == null)
-                            {
-                                cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
-                            }
+                            cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
                         }
-
-                        picPreview.Image = cachedImage;
                     }
-                    else
-                    {
-                        btnTabText.BackColor = Theme.Primary;
-                        btnTabText.ForeColor = Color.White;
-                        btnTabImage.BackColor = Color.FromArgb(241, 245, 249);
-                        btnTabImage.ForeColor = Theme.TextMain;
 
-                        picPreview.Visible = false;
-                        txtPreview.Visible = true;
-                    }
+                    picPreview.Image = cachedImage;
                 };
 
-                btnTabText.Click += (s, e) => { isImageMode = false; updateTabSelection(); };
-                btnTabImage.Click += (s, e) => { isImageMode = true; updateTabSelection(); };
+                Action showTextPreview = () =>
+                {
+                    btnShowText.BackColor = Theme.Primary;
+                    btnShowText.ForeColor = Color.White;
+                    btnShowImg.BackColor = Color.FromArgb(226, 232, 240);
+                    btnShowImg.ForeColor = Theme.TextMain;
 
-                // Initial Tab State
-                updateTabSelection();
+                    picPreview.Visible = false;
+                    txtPreview.Visible = true;
+                };
 
-                // Action Buttons Footer
-                var btnSend = Theme.MakeButton("🚀 إرسال الآن عبر الواتساب", 410, y, 240, 44, Color.FromArgb(37, 211, 102));
-                btnSend.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
-                btnSend.ForeColor = Color.White;
-                dlg.Controls.Add(btnSend);
+                btnShowText.Click += (s, e) => showTextPreview();
+                btnShowImg.Click += (s, e) => showImagePreview();
 
-                var btnCopy = Theme.MakeButton("📋 نسخ النص / الصورة", 220, y, 180, 44, Color.FromArgb(70, 80, 100));
-                btnCopy.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-                dlg.Controls.Add(btnCopy);
-
-                var btnClose = Theme.MakeButton("❌ إلغاء", 24, y, 110, 44, Color.FromArgb(100, 116, 139));
-                btnClose.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-                btnClose.Click += (s, e) => dlg.Close();
-                dlg.Controls.Add(btnClose);
-
+                // ── Footer Buttons (Copy & Cancel) ──
+                var btnCopy = Theme.MakeButton("📋 نسخ النص للحافظة", 370, y, 210, 38, Color.FromArgb(70, 80, 100));
+                btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btnCopy.Click += (s, e) =>
                 {
                     try
                     {
-                        if (isImageMode && cachedImage != null)
+                        if (picPreview.Visible && cachedImage != null)
                         {
                             Clipboard.SetImage(cachedImage);
                             MessageBox.Show("✅ تم نسخ صورة الكارت إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -327,8 +336,14 @@ namespace ChickenDist.Core
                         MessageBox.Show("فشل النسخ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 };
+                dlg.Controls.Add(btnCopy);
 
-                btnSend.Click += (s, e) =>
+                var btnClose = Theme.MakeButton("❌ إلغاء", 20, y, 100, 38, Color.FromArgb(120, 130, 140));
+                btnClose.Click += (s, e) => dlg.Close();
+                dlg.Controls.Add(btnClose);
+
+                // ── Send Handlers ──
+                btnSendText.Click += (s, e) =>
                 {
                     string targetPhone = txtPhone.Text.Trim();
                     if (string.IsNullOrWhiteSpace(targetPhone))
@@ -338,28 +353,34 @@ namespace ChickenDist.Core
                         return;
                     }
 
-                    if (isImageMode)
-                    {
-                        if (cachedImage == null)
-                        {
-                            if (imageGenerator != null) cachedImage = imageGenerator();
-                            if (cachedImage == null) cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
-                        }
+                    OpenWhatsApp(targetPhone, txtPreview.Text);
+                    dlg.Close();
+                };
 
-                        if (cachedImage != null)
-                        {
-                            SendImage(targetPhone, cachedImage, "📄 إشعار إلكتروني");
-                            dlg.Close();
-                        }
-                        else
-                        {
-                            OpenWhatsApp(targetPhone, textMessage);
-                            dlg.Close();
-                        }
+                btnSendImage.Click += (s, e) =>
+                {
+                    string targetPhone = txtPhone.Text.Trim();
+                    if (string.IsNullOrWhiteSpace(targetPhone))
+                    {
+                        MessageBox.Show("يرجى إدخال رقم هاتف العميل أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        txtPhone.Focus();
+                        return;
+                    }
+
+                    if (cachedImage == null)
+                    {
+                        if (imageGenerator != null) cachedImage = imageGenerator();
+                        if (cachedImage == null) cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
+                    }
+
+                    if (cachedImage != null)
+                    {
+                        SendImage(targetPhone, cachedImage, "📄 إشعار إلكتروني");
+                        dlg.Close();
                     }
                     else
                     {
-                        OpenWhatsApp(targetPhone, txtPreview.Text);
+                        OpenWhatsApp(targetPhone, textMessage);
                         dlg.Close();
                     }
                 };
