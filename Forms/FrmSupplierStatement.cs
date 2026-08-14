@@ -106,6 +106,41 @@ namespace ChickenDist.Forms
             btnPrint.Click += BtnPrint_Click;
             pnlFilter.Controls.Add(btnPrint);
 
+            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Size = new Size(130, 30);
+            btnWhatsApp.Font = Theme.FontBold;
+            btnWhatsApp.ForeColor = Color.White;
+            btnWhatsApp.Margin = new Padding(8, 0, 0, 0);
+            btnWhatsApp.Click += (s, e) =>
+            {
+                string phone = "";
+                try
+                {
+                    object ph = DbHelper.Scalar("SELECT Phone FROM Suppliers WHERE SupplierID = @id", DbHelper.P("@id", _supplierID));
+                    if (ph != null && ph != DBNull.Value) phone = ph.ToString();
+                }
+                catch { }
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"📋 *كشف حساب مورد - {AppConfig.CompanyName}*");
+                sb.AppendLine($"👤 *المورد:* {_supplierName}");
+                sb.AppendLine($"📅 *الفترة:* من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+                sb.AppendLine("──────────────────────");
+                sb.AppendLine($"📥 {lblPurchases.Text}");
+                sb.AppendLine($"📤 {lblPayments.Text}");
+                sb.AppendLine($"💰 {lblBalance.Text}");
+                sb.AppendLine("──────────────────────");
+                sb.AppendLine("مع تحيات إدارة الحسابات 🙏");
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    sb.ToString(),
+                    () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", sb.ToString()),
+                    "📱 إرسال كشف حساب المورد عبر الواتساب");
+            };
+            pnlFilter.Controls.Add(btnWhatsApp);
+
             var btnPay = Theme.MakeButton("💸 سداد/صرف نقدية", Color.FromArgb(140, 80, 0));
             btnPay.Size = new Size(140, 30);
             btnPay.Margin = new Padding(8, 0, 0, 0);

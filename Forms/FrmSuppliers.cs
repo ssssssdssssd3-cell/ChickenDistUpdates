@@ -150,10 +150,40 @@ namespace ChickenDist.Forms
                 new FrmSupplierStatement(_selectedID, txtName.Text).ShowDialog();
             };
 
-            btnItemMovementReport = Theme.MakeButton("📊 حركة الأصناف", 10, y + 80, 290, 32, Color.FromArgb(70, 130, 180));
+            btnItemMovementReport = Theme.MakeButton("📊 حركة الأصناف", 160, y + 80, 140, 32, Color.FromArgb(70, 130, 180));
             btnItemMovementReport.Click += BtnItemMovementReport_Click;
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement, btnItemMovementReport });
+            var btnWhatsApp = Theme.MakeButton("📱 واتساب المورد", 10, y + 80, 140, 32, Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Font = Theme.FontBold;
+            btnWhatsApp.ForeColor = Color.White;
+            btnWhatsApp.Click += (s, e) =>
+            {
+                if (_selectedID == 0) { MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+                string phone = txtPhone.Text.Trim();
+                string name = txtName.Text.Trim();
+                decimal bal = 0m;
+                try
+                {
+                    object balObj = DbHelper.Scalar("SELECT Balance FROM Suppliers WHERE SupplierID = @id", DbHelper.P("@id", _selectedID));
+                    if (balObj != null && balObj != DBNull.Value) bal = Convert.ToDecimal(balObj);
+                }
+                catch { }
+
+                string msg = $"📊 *كشف حساب مورد - {AppConfig.CompanyName}*\n" +
+                             $"👤 *المورد:* {name}\n" +
+                             $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
+                             $"💵 *الرصيد المستحق للمورد:* {bal:N2} ج\n" +
+                             $"\nشاكرين ومقدرين حسن تعاونكم معنا! 🙏";
+
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    phone,
+                    msg,
+                    () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", msg),
+                    "📱 إرسال كشف حساب المورد عبر الواتساب");
+            };
+
+            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement, btnItemMovementReport, btnWhatsApp });
 
             tbl.Controls.Add(pnlDetails, 0, 0);
             tbl.Controls.Add(pnlGrid, 1, 0);
