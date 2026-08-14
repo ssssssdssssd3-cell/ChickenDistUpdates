@@ -4726,20 +4726,26 @@ namespace ChickenDist.Forms
 			cboTpl.SelectedIndexChanged += (s, e) => updatePreview();
 			updatePreview();
 
-			var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
+			var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 64, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
 
-			var btnSend = Theme.MakeButton("🚀 إرسال الفاتورة عبر الواتساب", Color.FromArgb(37, 211, 102));
-			btnSend.Size = new Size(220, 40);
-			btnSend.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-			btnSend.Dock = DockStyle.Left;
+			var btnSendText = Theme.MakeButton("💬 إرسال واتساب (نص)", Color.FromArgb(37, 211, 102));
+			btnSendText.Size = new Size(185, 42);
+			btnSendText.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+			btnSendText.Dock = DockStyle.Left;
 
-			var btnSaveDefault = Theme.MakeButton("⚙️ حفظ كنموذج افتراضي", Color.FromArgb(70, 80, 100));
-			btnSaveDefault.Size = new Size(160, 40);
+			var btnSendImage = Theme.MakeButton("🖼️ إرسال واتساب (صورة)", Color.FromArgb(18, 140, 126));
+			btnSendImage.Size = new Size(185, 42);
+			btnSendImage.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+			btnSendImage.Dock = DockStyle.Left;
+			btnSendImage.Margin = new Padding(8, 0, 0, 0);
+
+			var btnSaveDefault = Theme.MakeButton("⚙️ حفظ كافتراضي", Color.FromArgb(70, 80, 100));
+			btnSaveDefault.Size = new Size(130, 42);
 			btnSaveDefault.Dock = DockStyle.Left;
-			btnSaveDefault.Margin = new Padding(10, 0, 0, 0);
+			btnSaveDefault.Margin = new Padding(8, 0, 0, 0);
 
 			var btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(100, 100, 110));
-			btnCancel.Size = new Size(90, 40);
+			btnCancel.Size = new Size(80, 42);
 			btnCancel.Dock = DockStyle.Right;
 			btnCancel.Click += (s, e) => dlg.Close();
 
@@ -4756,37 +4762,45 @@ namespace ChickenDist.Forms
 				MessageBox.Show("✅ تم حفظ النموذج المختار كنموذج افتراضي لفواتير الواتساب!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			};
 
-			btnSend.Click += (s, e) =>
+			btnSendText.Click += (s, e) =>
 			{
 				int idx = cboTpl.SelectedIndex;
-				if (idx == 3)
+				string messageToSend = idx switch
 				{
-					try
-					{
-						if (cachedBmp != null)
-						{
-							Clipboard.SetImage(cachedBmp);
-						}
-						MessageBox.Show("✅ تم تصميم كارت الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
-							"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					1 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+					2 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+					_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
+				};
+				SendWhatsApp(phone, messageToSend);
+				dlg.Close();
+			};
 
-						WhatsAppSender.OpenWhatsAppChat(phone);
-						dlg.Close();
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show("فشل نسخ صورة الفاتورة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-					}
-				}
-				else
+			btnSendImage.Click += (s, e) =>
+			{
+				try
 				{
-					string messageToSend = txtTextPreview.Text.Trim();
-					SendWhatsApp(phone, messageToSend);
+					if (cachedBmp == null)
+					{
+						cachedBmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance);
+					}
+					if (cachedBmp != null)
+					{
+						Clipboard.SetImage(cachedBmp);
+					}
+					MessageBox.Show("✅ تم تصميم كارت الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
+						"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+					WhatsAppSender.OpenWhatsAppChat(phone);
 					dlg.Close();
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show("فشل نسخ صورة الفاتورة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 			};
 
-			pnlFooter.Controls.Add(btnSend);
+			pnlFooter.Controls.Add(btnSendText);
+			pnlFooter.Controls.Add(btnSendImage);
 			pnlFooter.Controls.Add(btnSaveDefault);
 			pnlFooter.Controls.Add(btnCancel);
 
