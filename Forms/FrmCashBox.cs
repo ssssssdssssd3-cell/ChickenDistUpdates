@@ -1024,23 +1024,28 @@ namespace ChickenDist.Forms
                 {
                     if (amount > currentBalance)
                     {
-                        MessageBox.Show($"رصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لصرف مبلغ ({amount:N2} ج)!");
+                        MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لصرف مبلغ ({amount:N2} ج).", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
-                    DbHelper.Execute("INSERT INTO CashBox(TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES('Withdraw', @amt, @n, @by, @accId)",
-                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
-
-                    if (!string.IsNullOrEmpty(classificationKey))
+                    DbHelper.RunInTransaction((con, trans) =>
                     {
-                        decimal adjustAmt = amount;
-                        if (classificationKey == "ShortTermLoans")
+                        AccountDAL.EnsureSufficientCashTrans(trans, targetSafeID, amount, "صرف نقدي من الحساب");
+
+                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES(GETDATE(), 'Withdraw', @amt, @n, @by, @accId)",
+                            DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+
+                        if (!string.IsNullOrEmpty(classificationKey))
                         {
-                            adjustAmt = -amount; // Repaying loan reduces the liability
+                            decimal adjustAmt = amount;
+                            if (classificationKey == "ShortTermLoans")
+                            {
+                                adjustAmt = -amount; // Repaying loan reduces the liability
+                            }
+                            DbHelper.ExecuteTrans(trans, "UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
+                                DbHelper.P("@amt", adjustAmt), DbHelper.P("@key", classificationKey));
                         }
-                        DbHelper.Execute("UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
-                            DbHelper.P("@amt", adjustAmt), DbHelper.P("@key", classificationKey));
-                    }
+                    });
                 }
                 else if (type == "Reconcile")
                 {
@@ -1171,6 +1176,14 @@ namespace ChickenDist.Forms
             int? safeAccountID = null;
             if (cboExpSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
                 safeAccountID = safeItem.ID;
+
+            int targetSafeID = safeAccountID ?? 1;
+            decimal currentBal = AccountDAL.GetCashBalance(targetSafeID);
+            if (nudExpAmount.Value > currentBal && _selectedExpID == 0)
+            {
+                MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المالي المختار هو ({currentBal:N2} ج) فقط، بينما مبلغ المصروف المطلوب تسجيله هو ({nudExpAmount.Value:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             try
             {

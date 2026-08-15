@@ -195,16 +195,11 @@ namespace ChickenDist.DAL
                     "SELECT COALESCE(MAX(PurchaseID), 0) + 1 FROM Purchases");
                 string code = nextResult != null ? nextResult.ToString() : "1";
 
-                // فحص رصيد الخزنة للمشتريات النقدية المؤكدة فقط
+                // فحص رصيد الخزنة للمشتريات النقدية المؤكدة فقط ومنع الرصيد السالب
                 if (purchaseType == "Cash" && !isDraft)
                 {
-                    var cashResult = DbHelper.ScalarTrans(trans,
-                        "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
-                    decimal cashBalance = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
-                    if (cashBalance < total)
-                        throw new Exception(
-                            $"رصيد الخزنة ({cashBalance:N2} ج) لا يكفي لهذه الفاتورة ({total:N2} ج).\n" +
-                            "يرجى تحصيل نقدية أولاً أو تسجيلها كفاتورة آجلة.");
+                    int accId = Session.GetDefaultSafeID();
+                    AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "سداد فاتورة مشتريات نقدية");
                 }
 
                 int purchaseID = DbHelper.ExecuteInsertTrans(trans,
@@ -309,14 +304,16 @@ namespace ChickenDist.DAL
                         }
                         else if (purchaseType == "Cash")
                         {
+                            int accId = Session.GetDefaultSafeID();
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy)" +
-                                " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @n, @by)",
+                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy, AccountID)" +
+                                " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @n, @by, @accId)",
                                 DbHelper.P("@dt",  DateTime.Now),
                                 DbHelper.P("@amt", total),
                                 DbHelper.P("@ref", purchaseID),
                                 DbHelper.P("@n",   "فاتورة شراء من عميل نقدي " + code),
-                                DbHelper.P("@by",  Session.EmpID));
+                                DbHelper.P("@by",  Session.EmpID),
+                                DbHelper.P("@accId", accId));
                         }
                     }
                     else
@@ -337,14 +334,16 @@ namespace ChickenDist.DAL
                         // نقدي → اخصم من الخزنة
                         if (purchaseType == "Cash")
                         {
+                            int accId = Session.GetDefaultSafeID();
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)" +
-                                " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by)",
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
+                                " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by,@accId)",
                                 DbHelper.P("@dt",  DateTime.Now),
                                 DbHelper.P("@amt", total),
                                 DbHelper.P("@ref", purchaseID),
                                 DbHelper.P("@n",   "مشتريات نقدية " + code),
-                                DbHelper.P("@by",  Session.EmpID));
+                                DbHelper.P("@by",  Session.EmpID),
+                                DbHelper.P("@accId", accId));
                         }
                     }
                 }
@@ -562,13 +561,17 @@ namespace ChickenDist.DAL
 
                     if (purchaseType == "Cash")
                     {
+                        int accId = Session.GetDefaultSafeID();
+                        AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "تعديل فاتورة مشتريات نقدية");
+
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy)" +
-                            " VALUES(GETDATE(),'PurchaseExpense',@amt,@ref,@n,@by)",
+                            "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
+                            " VALUES(GETDATE(),'PurchaseExpense',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", total),
                             DbHelper.P("@ref", purchaseID),
                             DbHelper.P("@n",   "تعديل مشتريات نقدية " + code),
-                            DbHelper.P("@by",  Session.EmpID));
+                            DbHelper.P("@by",  Session.EmpID),
+                            DbHelper.P("@accId", accId));
                     }
                 });
                 return true;

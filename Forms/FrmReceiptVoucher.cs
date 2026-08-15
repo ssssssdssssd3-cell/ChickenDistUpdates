@@ -752,6 +752,17 @@ namespace ChickenDist.Forms
                     string userNotes = txtNotes.Text.Trim();
                     int partyIdx = cboPartyType.SelectedIndex;
 
+                    // تحقق مسبق من رصيد الخزنة/الدرج لكافة سندات الصرف
+                    if (!isDeposit)
+                    {
+                        decimal safeBalance = AccountDAL.GetCashBalance(safeID);
+                        if (safeBalance < amount)
+                        {
+                            MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nالرصيد المتاح حالياً في [{safeItem.Text}] هو ({safeBalance:N2} ج) فقط، بينما مبلغ السند المطلوب صرفه هو ({amount:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة أخرى بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                    }
+
                     int newTransID = 0;
 
                     // 0: Client
@@ -770,13 +781,15 @@ namespace ChickenDist.Forms
                         {
                             DbHelper.RunInTransaction((con, trans) =>
                             {
+                                AccountDAL.EnsureSufficientCashTrans(trans, safeID, amount, "صرف نقدية لعميل");
+
                                 DbHelper.ExecuteTrans(trans,
                                     "INSERT INTO ClientTransactions(ClientID,TransType,Debit,Notes,CreatedBy) VALUES(@id,'Withdraw',@amt,@n,@by)",
                                     DbHelper.P("@id", clientID), DbHelper.P("@amt", amount),
                                     DbHelper.P("@n", "سند صرف - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO CashBox(TransType,AmountOut,Notes,CreatedBy,AccountID) VALUES('Withdraw',@amt,@n,@by,@accId)",
+                                    "INSERT INTO CashBox(TransDate,TransType,AmountOut,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Withdraw',@amt,@n,@by,@accId)",
                                     DbHelper.P("@amt", amount),
                                     DbHelper.P("@n", $"[عميل: {clientName}] {userNotes} (رصيد العميل قبل: {Math.Abs(curBal):N2} ج {curState})"),
                                     DbHelper.P("@by", Session.EmpID),
@@ -794,7 +807,7 @@ namespace ChickenDist.Forms
 
                         if (!isDeposit)
                         {
-                            SupplierDAL.AddSupplierPayment(supplierID, amount, $"{userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})");
+                            SupplierDAL.AddSupplierPayment(supplierID, amount, $"{userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})", safeAccountID: safeID);
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                         else
@@ -807,7 +820,7 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@n", "سند توريد - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES('Deposit',@amt,@n,@by,@accId)",
+                                    "INSERT INTO CashBox(TransDate,TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Deposit',@amt,@n,@by,@accId)",
                                     DbHelper.P("@amt", amount),
                                     DbHelper.P("@n", $"[مورد: {supplierName}] {userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})"),
                                     DbHelper.P("@by", Session.EmpID),
@@ -856,14 +869,19 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            newTransID = DbHelper.ExecuteInsert(@"
-                                INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID)
-                                VALUES(@d, 'Withdraw', @amt, @n, @by, @accId)",
-                                DbHelper.P("@d", dtpVoucherDate.Value),
-                                DbHelper.P("@amt", amount),
-                                DbHelper.P("@n", formattedNotes),
-                                DbHelper.P("@by", Session.EmpID),
-                                DbHelper.P("@accId", safeID));
+                            DbHelper.RunInTransaction((con, trans) =>
+                            {
+                                AccountDAL.EnsureSufficientCashTrans(trans, safeID, amount, "صرف نقدية لجهة عامة");
+
+                                newTransID = DbHelper.ExecuteInsertTrans(trans, @"
+                                    INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID)
+                                    VALUES(@d, 'Withdraw', @amt, @n, @by, @accId)",
+                                    DbHelper.P("@d", dtpVoucherDate.Value),
+                                    DbHelper.P("@amt", amount),
+                                    DbHelper.P("@n", formattedNotes),
+                                    DbHelper.P("@by", Session.EmpID),
+                                    DbHelper.P("@accId", safeID));
+                            });
                         }
                     }
 

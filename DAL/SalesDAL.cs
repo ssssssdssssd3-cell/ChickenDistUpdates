@@ -1878,12 +1878,16 @@ namespace ChickenDist.DAL
                 // بيع آجل أو حمولة مندوب → تخفيض دين العميل (Credit في ClientTransactions)
                 if (saleType == "Cash")
                 {
+                    int accId = Session.GetDefaultSafeID();
+                    AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "رد قيمة مرتجع المبيعات نقداً للعميل");
+
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by,@accId)",
                         DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
                         DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع للفاتورة رقم " + saleID) : ("مرتجع بيع عام نقدي " + (notes ?? ""))),
-                        DbHelper.P("@by", Session.EmpID));
+                        DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@accId", accId));
                 }
                 else if (clientID.HasValue)
                 {
@@ -1990,14 +1994,18 @@ namespace ChickenDist.DAL
                         }
                         else
                         {
+                            int accId = Session.GetDefaultSafeID();
+                            AccountDAL.EnsureSufficientCashTrans(trans, accId, Math.Abs(netDiff), "رد فارق استبدال أصناف نقداً للعميل");
+
                             // تم إرجاع الفارق للعميل نقداً (خروج من الخزنة)
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy) VALUES(@dt,'ExchangeDiffOut',@amt,@ref,@n,@by)",
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@dt,'ExchangeDiffOut',@amt,@ref,@n,@by,@accId)",
                                 DbHelper.P("@dt", DateTime.Now),
                                 DbHelper.P("@amt", Math.Abs(netDiff)),
                                 DbHelper.P("@ref", saleID),
                                 DbHelper.P("@n", "رد فارق استبدال أصناف للعميل نقداً"),
-                                DbHelper.P("@by", Session.EmpID));
+                                DbHelper.P("@by", Session.EmpID),
+                                DbHelper.P("@accId", accId));
                         }
                     }
                     else if (clientID.HasValue)

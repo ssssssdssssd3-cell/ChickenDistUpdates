@@ -364,14 +364,18 @@ namespace ChickenDist.DAL
                 // إذا كان هناك دفعة مقدمة، نعكس قيد الخزنة والعميل
                 if (downPayment > 0)
                 {
+                    int accId = Session.GetDefaultSafeID();
+                    AccountDAL.EnsureSufficientCashTrans(trans, accId, downPayment, "رد مقدم عقد التقسيط الملغي");
+
                     // عكس توريد الخزنة (صرف AmountOut)
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransType, AmountOut, RefID, Notes, CreatedBy, TransDate) VALUES('Adjustment', @amt, @ref, @notes, @uid, @dt)",
+                        "INSERT INTO CashBox(TransType, AmountOut, RefID, Notes, CreatedBy, TransDate, AccountID) VALUES('Adjustment', @amt, @ref, @notes, @uid, @dt, @accId)",
                         DbHelper.P("@amt", downPayment),
                         DbHelper.P("@ref", contractID),
                         DbHelper.P("@notes", $"رد مقدم عقد التقسيط الملغي"),
                         DbHelper.P("@uid", Session.EmpID),
-                        DbHelper.P("@dt", DateTime.Now));
+                        DbHelper.P("@dt", DateTime.Now),
+                        DbHelper.P("@accId", accId));
 
                     // عكس قيد سداد العميل (مدين Debit)
                     DbHelper.ExecuteTrans(trans,
