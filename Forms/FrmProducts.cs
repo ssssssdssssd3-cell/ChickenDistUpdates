@@ -234,11 +234,16 @@ namespace ChickenDist.Forms
                 LoadProducts();
             };
 
+            var btnAddToShortages = Theme.MakeButton("📓 إضافة للنواقص", Color.FromArgb(217, 119, 6));
+            btnAddToShortages.Width = 145;
+            btnAddToShortages.Click += (s, e) => AddSelectedToShortages();
+
             pnlFooter.Controls.AddRange(new Control[] { 
                 btnNew, 
                 btnEdit, 
                 btnDelete, 
                 btnQuickAdd, 
+                btnAddToShortages,
                 btnMinStock,
                 btnImportExcel, 
                 btnPrintBarcode, 
@@ -274,6 +279,21 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 18 });
             
             Theme.AdjustGridHeaders(dgProducts);
+
+            var cmsProducts = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+            cmsProducts.Items.Add("📓 إضافة الصنف لكشكول النواقص", null, (s, e) => AddSelectedToShortages());
+            cmsProducts.Items.Add("🎯 تعديل حد الطلب والنواقص", null, (s, e) => {
+                new FrmMinStockEdit().ShowDialog();
+                LoadProducts();
+            });
+            cmsProducts.Items.Add("📝 تعديل ومعاينة بطاقة الصنف", null, (s, e) => {
+                if (dgProducts.SelectedRows.Count > 0)
+                {
+                    int productID = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
+                    if (new FrmProductCard(productID).ShowDialog() == DialogResult.OK) LoadProducts();
+                }
+            });
+            dgProducts.ContextMenuStrip = cmsProducts;
 
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             dgProducts.CellDoubleClick += (s, e) => {
@@ -475,6 +495,21 @@ namespace ChickenDist.Forms
             string shelfLocation = dr["ShelfLocation"] != DBNull.Value ? dr["ShelfLocation"].ToString() : "";
 
             using (var dlg = new FrmPrintProductBarcode(_selectedID, name, code, intCode, price, shelfLocation))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void AddSelectedToShortages()
+        {
+            if (_selectedID == 0 && dgProducts.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("يرجى تحديد صنف أولاً من الجدول لإضافته لكشكول النواقص.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int pId = _selectedID > 0 ? _selectedID : Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
+            using (var dlg = new FrmAddShortageItem(pId))
             {
                 dlg.ShowDialog(this);
             }

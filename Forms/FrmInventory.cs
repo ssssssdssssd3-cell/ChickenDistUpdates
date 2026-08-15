@@ -385,7 +385,7 @@ namespace ChickenDist.Forms
             Theme.AdjustGridHeaders(dgStock);
 
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
-            var ctxStock = new ContextMenuStrip();
+            var ctxStock = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
             var itemMark = new ToolStripMenuItem("✅ تمييز تم جرده (مطابق للدفتري)");
             itemMark.Click += (s, e) => MarkSelectedRowAsInventoried();
@@ -393,10 +393,23 @@ namespace ChickenDist.Forms
             var itemHide = new ToolStripMenuItem("🗑️ إخفاء الصنف من العرض لجرده لاحقاً");
             itemHide.Click += (s, e) => HideSelectedRowForLater();
 
+            var itemShortage = new ToolStripMenuItem("📓 إضافة الصنف لكشكول النواقص");
+            itemShortage.Click += (s, e) =>
+            {
+                if (dgStock.SelectedRows.Count > 0)
+                {
+                    int pId = Convert.ToInt32(dgStock.SelectedRows[0].Cells["ProductID"].Value);
+                    using (var dlg = new FrmAddShortageItem(pId))
+                    {
+                        dlg.ShowDialog(this);
+                    }
+                }
+            };
+
             var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
             itemCard.Click += (s, e) => OpenSelectedProductCard();
 
-            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, new ToolStripSeparator(), itemCard });
+            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemCard });
             dgStock.ContextMenuStrip = ctxStock;
 
             dgStock.CellMouseDown += (s, e) =>

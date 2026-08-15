@@ -3769,6 +3769,18 @@ namespace ChickenDist.Forms
 							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
 							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID, showPreview: false);
+
+						try
+						{
+							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
+							var zeroItems = ShortageDAL.ProcessStockChangesAfterSale(soldPids);
+							if (zeroItems.Count > 0)
+							{
+								ShortageDAL.PromptZeroStockDialog(this, zeroItems);
+							}
+						}
+						catch { }
+
 						ResetForm();
 					}
 					else
@@ -3846,6 +3858,17 @@ namespace ChickenDist.Forms
 							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
 							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (printResult == DialogResult.Yes) new FrmPrintSale(num3, showPreview: false);
+
+						try
+						{
+							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
+							var zeroItems = ShortageDAL.ProcessStockChangesAfterSale(soldPids);
+							if (zeroItems.Count > 0)
+							{
+								ShortageDAL.PromptZeroStockDialog(this, zeroItems);
+							}
+						}
+						catch { }
 					}
 					if (!_isCopyMode) ResetForm();
 					else this.Close();

@@ -326,6 +326,24 @@ namespace ChickenDist.Forms
             };
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
+
+            var cmsPOS = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+            cmsPOS.Items.Add("📓 إضافة الصنف المحدد لكشكول النواقص", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
+                    if (pId > 0)
+                    {
+                        using (var dlg = new FrmAddShortageItem(pId))
+                        {
+                            dlg.ShowDialog(this);
+                        }
+                    }
+                }
+            });
+            cmsPOS.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => new FrmMinStockEdit().ShowDialog());
+            dgItems.ContextMenuStrip = cmsPOS;
+
             this.Controls.Add(dgItems);
 
             // ── لوحة العميل ───────────────────────────────────
@@ -1496,6 +1514,18 @@ namespace ChickenDist.Forms
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 }
+
+                try
+                {
+                    List<int> soldPids = _items.ConvertAll(x => x.ProductID);
+                    var zeroItems = ShortageDAL.ProcessStockChangesAfterSale(soldPids);
+                    if (zeroItems.Count > 0)
+                    {
+                        ShortageDAL.PromptZeroStockDialog(this, zeroItems);
+                    }
+                }
+                catch { }
+
                 NewInvoice();
             }
             catch (Exception ex)
