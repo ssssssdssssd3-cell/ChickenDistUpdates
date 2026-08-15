@@ -3799,7 +3799,7 @@ namespace ChickenDist.Forms
 
 				if (_invoiceType == "Installment" && !isDraft)
 				{
-					using (var frmConfig = new FrmConfigureInstallment(net))
+					using (var frmConfig = new FrmConfigureInstallment(net, paidAmount))
 					{
 						if (frmConfig.ShowDialog() != DialogResult.OK)
 						{
