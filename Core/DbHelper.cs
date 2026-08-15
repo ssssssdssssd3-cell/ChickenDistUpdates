@@ -2804,6 +2804,12 @@ namespace ChickenDist.Core
                     ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(200) NULL;
                 END");
 
+                SafeMigrate("SaleItems.Notes", @"
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'Notes') IS NULL
+                BEGIN
+                    ALTER TABLE SaleItems ADD Notes NVARCHAR(500) NULL;
+                END");
+
                 // ═══ Safety migrations: ensure core columns exist even if DB was renamed or restored ═══
                 SafeMigrate("Products.CoreColumns", @"
                 IF OBJECT_ID('Products', 'U') IS NOT NULL

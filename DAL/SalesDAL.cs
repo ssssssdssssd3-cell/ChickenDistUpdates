@@ -136,9 +136,9 @@ namespace ChickenDist.DAL
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
                           p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation,
                           p.Unit AS BaseUnitName, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor,
-                          ISNULL(ret.PrevReturnedQty, 0.0) AS PrevReturnedQty,
-                          COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI, si.KitchenNotes,
-                          COALESCE(si.Notes, N'') AS Notes
+                          COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI,
+                          COALESCE(si.KitchenNotes, N'') AS KitchenNotes,
+                          COALESCE(si.KitchenNotes, N'') AS Notes
                   FROM SaleItems si 
                   JOIN Products p ON si.ProductID = p.ProductID
                   LEFT JOIN (
