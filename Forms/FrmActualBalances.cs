@@ -359,44 +359,112 @@ namespace ChickenDist.Forms
                 pd.PrintPage += (s, pe) =>
                 {
                     Graphics g = pe.Graphics;
-                    Font fTitle = new Font("Segoe UI", 14, FontStyle.Bold);
-                    Font fSub   = new Font("Segoe UI", 10, FontStyle.Bold);
-                    Font fBody  = new Font("Segoe UI", 9);
-                    Brush b     = Brushes.Black;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                    float y = 40;
-                    g.DrawString("💵 تقرير النقدية والأرصدة الفعلية المتاحة", fTitle, b, new PointF(200, y));
-                    y += 30;
-                    g.DrawString($"حتى تاريخ: {_dtpAsOf.Value:dd/MM/yyyy}  |  تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fSub, b, new PointF(180, y));
-                    y += 40;
+                    Font fComp  = new Font("Arial", 12, FontStyle.Bold);
+                    Font fTitle = new Font("Arial", 15, FontStyle.Bold);
+                    Font fSub   = new Font("Arial", 9, FontStyle.Regular);
+                    Font fHead  = new Font("Arial", 9.5f, FontStyle.Bold);
+                    Font fBody  = new Font("Arial", 9, FontStyle.Regular);
+                    Font fBold  = new Font("Arial", 9.5f, FontStyle.Bold);
 
-                    g.DrawString("الحساب / الخزنة                     النوع             الافتتاحي           الوارد            الصادر           الرصيد الفعلي", fSub, b, new PointF(40, y));
-                    y += 25;
-                    g.DrawLine(Pens.Black, 40, y, 750, y);
-                    y += 10;
+                    var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    var sfRtlRight = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap };
 
+                    int startX = 25;
+                    int pageW = 770;
+                    float y = 25;
+
+                    string compName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+                    g.DrawString(compName, fComp, Brushes.DarkBlue, new RectangleF(startX, y, pageW, 20), sfCenter); y += 22;
+                    g.DrawString("تقرير النقدية والأرصدة الفعلية المتاحة", fTitle, Brushes.Black, new RectangleF(startX, y, pageW, 28), sfCenter); y += 28;
+                    g.DrawString($"حتى تاريخ: {_dtpAsOf.Value:dd/MM/yyyy}   |   تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fSub, Brushes.DarkSlateGray, new RectangleF(startX, y, pageW, 18), sfCenter); y += 22;
+
+                    g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 10;
+
+                    // Table Columns (RTL): الحساب/الخزنة (230), النوع (100), الافتتاحي (110), الوارد (110), الصادر (110), الرصيد الفعلي (110) = 770
+                    int[] colWidths = { 230, 100, 110, 110, 110, 110 };
+                    string[] headers = { "الحساب / الخزنة", "النوع", "الافتتاحي", "الوارد", "الصادر", "الرصيد الفعلي" };
+
+                    int headH = 28;
+                    int rowH = 25;
+
+                    var brushHeaderBg = new SolidBrush(Color.FromArgb(24, 43, 73));
+                    var brushRowAlt = new SolidBrush(Color.FromArgb(248, 250, 252));
+                    var penGrid = new Pen(Color.FromArgb(170, 185, 205), 1f);
+                    var penDark = new Pen(Color.FromArgb(24, 43, 73), 1.5f);
+
+                    g.FillRectangle(brushHeaderBg, startX, y, pageW, headH);
+                    g.DrawRectangle(penDark, startX, y, pageW, headH);
+
+                    float curX = startX + pageW;
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        curX -= colWidths[i];
+                        var hRect = new RectangleF(curX, y, colWidths[i], headH);
+                        g.DrawRectangle(penGrid, curX, y, colWidths[i], headH);
+                        g.DrawString(headers[i], fHead, Brushes.White, hRect, sfCenter);
+                    }
+                    y += headH;
+
+                    int rIdx = 0;
                     foreach (DataGridViewRow row in _dg.Rows)
                     {
+                        if (row.IsNewRow) continue;
                         string name   = row.Cells["AccountName"].Value?.ToString() ?? "";
                         string type   = row.Cells["AccountType"].Value?.ToString() ?? "";
-                        string open   = row.Cells["OpeningBalance"].Value?.ToString() ?? "";
-                        string inAmt  = row.Cells["TotalIn"].Value?.ToString() ?? "";
-                        string outAmt = row.Cells["TotalOut"].Value?.ToString() ?? "";
-                        string bal    = row.Cells["ActualBalance"].Value?.ToString() ?? "";
+                        string open   = row.Cells["OpeningBalance"].Value?.ToString() ?? "0";
+                        string inAmt  = row.Cells["TotalIn"].Value?.ToString() ?? "0";
+                        string outAmt = row.Cells["TotalOut"].Value?.ToString() ?? "0";
+                        string bal    = row.Cells["ActualBalance"].Value?.ToString() ?? "0";
 
-                        if (name.Length > 22) name = name.Substring(0, 22);
+                        Brush bgBrush = (rIdx % 2 == 1) ? brushRowAlt : Brushes.White;
+                        g.FillRectangle(bgBrush, startX, y, pageW, rowH);
+                        g.DrawRectangle(penGrid, startX, y, pageW, rowH);
 
-                        g.DrawString($"{name,-24} {type,-12} {open,10} {inAmt,10} {outAmt,10} {bal,12}", fBody, b, new PointF(40, y));
-                        y += 22;
+                        curX = startX + pageW;
+
+                        // Col 0: Name (Right aligned)
+                        curX -= colWidths[0];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[0], rowH);
+                        g.DrawString(name, fBody, Brushes.Black, new RectangleF(curX + 5, y, colWidths[0] - 10, rowH), sfRtlRight);
+
+                        // Col 1: Type
+                        curX -= colWidths[1];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[1], rowH);
+                        g.DrawString(type, fBody, Brushes.Black, new RectangleF(curX, y, colWidths[1], rowH), sfCenter);
+
+                        // Col 2: Open
+                        curX -= colWidths[2];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[2], rowH);
+                        g.DrawString(open, fBody, Brushes.Black, new RectangleF(curX, y, colWidths[2], rowH), sfCenter);
+
+                        // Col 3: In
+                        curX -= colWidths[3];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[3], rowH);
+                        g.DrawString(inAmt, fBody, Brushes.DarkGreen, new RectangleF(curX, y, colWidths[3], rowH), sfCenter);
+
+                        // Col 4: Out
+                        curX -= colWidths[4];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[4], rowH);
+                        g.DrawString(outAmt, fBody, Brushes.DarkRed, new RectangleF(curX, y, colWidths[4], rowH), sfCenter);
+
+                        // Col 5: Actual Balance
+                        curX -= colWidths[5];
+                        g.DrawRectangle(penGrid, curX, y, colWidths[5], rowH);
+                        g.DrawString(bal, fBold, Brushes.DarkBlue, new RectangleF(curX, y, colWidths[5], rowH), sfCenter);
+
+                        y += rowH;
+                        rIdx++;
                     }
 
-                    y += 15;
-                    g.DrawLine(Pens.Black, 40, y, 750, y);
-                    y += 15;
-                    g.DrawString($"إجمالي السيولة الكلية المتاحة: {_lblTotalLiquidity.Text}", fTitle, Brushes.DarkGreen, new PointF(40, y));
+                    y += 12;
+                    g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 8;
+                    g.DrawString($"💎 إجمالي السيولة الكلية المتاحة: {_lblTotalLiquidity.Text}", fTitle, Brushes.DarkGreen, new RectangleF(startX, y, pageW, 28), sfRtlRight);
                 };
 
-                using (var dlg = new PrintPreviewDialog { Document = pd, Width = 800, Height = 600 })
+                using (var dlg = new PrintPreviewDialog { Document = pd, Width = 900, Height = 700, Text = "طباعة تقرير النقدية والسيولة" })
                 {
                     dlg.ShowDialog(this);
                 }

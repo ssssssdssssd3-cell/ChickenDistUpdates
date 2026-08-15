@@ -1327,10 +1327,12 @@ namespace ChickenDist.Forms
         }
 
         private int _printStockRowIndex = 0;
+        private int _printStockPageNum = 1;
 
         private void PrintStocktakeReport()
         {
             _printStockRowIndex = 0;
+            _printStockPageNum = 1;
             var pd = new PrintDocument();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
@@ -1338,55 +1340,121 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
                 var boldBig = new Font("Arial", 16, FontStyle.Bold);
                 var bold = new Font("Arial", 10, FontStyle.Bold);
-                var normal = new Font("Arial", 9);
-                var center = new StringFormat { Alignment = StringAlignment.Center };
+                var boldHead = new Font("Arial", 9.5f, FontStyle.Bold);
+                var normal = new Font("Arial", 9.5f, FontStyle.Regular);
+                var small = new Font("Arial", 8.5f, FontStyle.Regular);
 
-                int y = 30;
-                int pageW = 800;
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRtlRight = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap };
+                var sfRtlCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
-                // Title
-                g.DrawString("ورقة عمل الجرد المخزني الفعلي", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 30), center); y += 35;
-                g.DrawString("اطبع هذه الورقة لتدوين الرصيد الفعلي يدوياً من داخل المستودع", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center); y += 25;
-                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y); y += 15;
+                int startX = 23;
+                int pageW = 780;
+                int y = 25;
 
-                g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", normal, Brushes.Black, 20, y);
-                y += 25;
-                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 10;
+                // 1. Header & Title
+                string company = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+                g.DrawString(company, bold, Brushes.DarkBlue, new RectangleF(startX, y, pageW, 22), sfCenter); y += 24;
+                g.DrawString("ورقة عمل الجرد المخزني الفعلي", boldBig, Brushes.Black, new RectangleF(startX, y, pageW, 30), sfCenter); y += 30;
+                g.DrawString("اطبع هذه الورقة لتدوين الرصيد الفعلي يدوياً من داخل المستودع", small, Brushes.DarkSlateGray, new RectangleF(startX, y, pageW, 20), sfCenter); y += 22;
 
-                // Columns: Code, Name, Unit, Book Qty, Actual Qty (Blank line for writing)
-                int[] xCols = { 20, 140, 430, 530, 670 };
+                g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 8;
+
+                string whName = cboWarehouse.SelectedItem != null ? cboWarehouse.Text : "المستودع الرئيسي";
+                g.DrawString($"المستودع: {whName}   |   تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", small, Brushes.Black, new RectangleF(startX, y, pageW, 20), sfRtlRight);
+                y += 24;
+
+                // 2. Table Grid Setup (RTL columns)
+                // Columns: الكود (80), اسم الصنف (365), الوحدة (75), الرصيد الدفتري (105), الرصيد الفعلي (155) = 780
+                int[] colWidths = { 80, 365, 75, 105, 155 };
                 string[] headers = { "الكود", "اسم الصنف", "الوحدة", "الرصيد الدفتري", "الرصيد الفعلي (يدوي)" };
 
+                int headH = 30;
+                int rowH = 28;
+
+                var brushHeaderBg = new SolidBrush(Color.FromArgb(24, 43, 73));
+                var brushRowAlt = new SolidBrush(Color.FromArgb(248, 250, 252));
+                var penGrid = new Pen(Color.FromArgb(170, 185, 205), 1f);
+                var penDark = new Pen(Color.FromArgb(24, 43, 73), 1.5f);
+
+                // Draw Table Header
+                g.FillRectangle(brushHeaderBg, startX, y, pageW, headH);
+                g.DrawRectangle(penDark, startX, y, pageW, headH);
+
+                int curX = startX + pageW;
                 for (int i = 0; i < headers.Length; i++)
-                    g.DrawString(headers[i], bold, Brushes.DarkBlue, xCols[i], y);
-                y += 22;
-                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 8;
+                {
+                    curX -= colWidths[i];
+                    var hRect = new RectangleF(curX, y, colWidths[i], headH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[i], headH);
+                    g.DrawString(headers[i], boldHead, Brushes.White, hRect, sfCenter);
+                }
+                y += headH;
 
-                int maxY = 1080; // A4 height limit
+                int maxY = 1070; // A4 page limit
 
+                // Draw Rows
                 while (_printStockRowIndex < dgStock.Rows.Count)
                 {
                     var row = dgStock.Rows[_printStockRowIndex];
-                    string code = row.Cells["ProductCode"].Value?.ToString();
-                    string name = row.Cells["ProductName"].Value?.ToString();
-                    string unit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "");
-                    string bookQty = row.Cells["BookQty"].Value?.ToString();
+                    if (row.IsNewRow) { _printStockRowIndex++; continue; }
 
-                    g.DrawString(code, normal, Brushes.Black, xCols[0], y);
-                    g.DrawString(name, normal, Brushes.Black, xCols[1], y);
-                    g.DrawString(unit, normal, Brushes.Black, xCols[2], y);
-                    g.DrawString(bookQty, bold, Brushes.Black, xCols[3], y);
+                    string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
+                    string name = row.Cells["ProductName"].Value?.ToString() ?? "";
+                    string unit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "") ?? "";
+                    string bookQty = row.Cells["BookQty"].Value?.ToString() ?? "0";
 
-                    // Draw a dotted line for manual writing
-                    g.DrawLine(new Pen(Color.Black, 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }, xCols[4], y + 14, xCols[4] + 110, y + 14);
+                    Brush bgBrush = (_printStockRowIndex % 2 == 1) ? brushRowAlt : Brushes.White;
+                    g.FillRectangle(bgBrush, startX, y, pageW, rowH);
+                    g.DrawRectangle(penGrid, startX, y, pageW, rowH);
 
-                    y += 28;
+                    curX = startX + pageW;
+
+                    // Col 0: Code
+                    curX -= colWidths[0];
+                    var rCode = new RectangleF(curX, y, colWidths[0], rowH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[0], rowH);
+                    g.DrawString(code, small, Brushes.Black, rCode, sfCenter);
+
+                    // Col 1: Name (Huge Width, Right aligned)
+                    curX -= colWidths[1];
+                    var rName = new RectangleF(curX + 6, y, colWidths[1] - 12, rowH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[1], rowH);
+                    g.DrawString(name, normal, Brushes.Black, rName, sfRtlRight);
+
+                    // Col 2: Unit
+                    curX -= colWidths[2];
+                    var rUnit = new RectangleF(curX, y, colWidths[2], rowH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[2], rowH);
+                    g.DrawString(unit, small, Brushes.Black, rUnit, sfCenter);
+
+                    // Col 3: Book Qty
+                    curX -= colWidths[3];
+                    var rBook = new RectangleF(curX, y, colWidths[3], rowH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[3], rowH);
+                    g.DrawString(bookQty, boldHead, Brushes.Black, rBook, sfCenter);
+
+                    // Col 4: Actual Qty (Manual Writing Box with clean dotted guide)
+                    curX -= colWidths[4];
+                    var rActual = new RectangleF(curX, y, colWidths[4], rowH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[4], rowH);
+
+                    // Writing area rectangle
+                    var rectWrite = new Rectangle(curX + 15, y + 4, colWidths[4] - 30, rowH - 8);
+                    g.DrawRectangle(new Pen(Color.FromArgb(200, 210, 225), 1f) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }, rectWrite);
+
+                    y += rowH;
                     _printStockRowIndex++;
 
                     if (y >= maxY && _printStockRowIndex < dgStock.Rows.Count)
                     {
+                        g.DrawString($"صفحة {_printStockPageNum}", small, Brushes.Gray, startX + pageW - 70, e.PageBounds.Height - 35);
+                        _printStockPageNum++;
                         e.HasMorePages = true;
                         return;
                     }
@@ -1396,26 +1464,30 @@ namespace ChickenDist.Forms
                 y += 15;
                 if (y < maxY)
                 {
-                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y); y += 8;
-                    g.DrawString("المسؤول عن الجرد: .......................................         التوقيع: .......................................", bold, Brushes.Black, 20, y);
+                    g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 8;
+                    g.DrawString("المسؤول عن الجرد: .......................................         توقيع لجنة الجرد: .......................................", bold, Brushes.Black, new RectangleF(startX, y, pageW, 25), sfRtlRight);
                 }
+
+                g.DrawString($"صفحة {_printStockPageNum}", small, Brushes.Gray, startX + pageW - 70, e.PageBounds.Height - 35);
             };
 
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
-                Width = 900,
+                Width = 950,
                 Height = 800,
-                Text = "طباعة ورقة الجرد المخزني (صفحات A4)"
+                Text = "طباعة ورقة عمل الجرد المخزني (تقسيم شبكي A4)"
             };
             preview.ShowDialog();
         }
 
         private int _printLogIndex = 0;
+        private int _printLogPageNum = 1;
 
         private void PrintAdjustmentsLog()
         {
             _printLogIndex = 0;
+            _printLogPageNum = 1;
             var pd = new PrintDocument();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
@@ -1423,56 +1495,114 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
                 var boldBig = new Font("Arial", 16, FontStyle.Bold);
                 var bold = new Font("Arial", 10, FontStyle.Bold);
-                var normal = new Font("Arial", 9);
-                var center = new StringFormat { Alignment = StringAlignment.Center };
+                var boldHead = new Font("Arial", 9.5f, FontStyle.Bold);
+                var normal = new Font("Arial", 9.5f, FontStyle.Regular);
+                var small = new Font("Arial", 8.5f, FontStyle.Regular);
 
-                int y = 30;
-                int pageW = 800;
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRtlRight = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap };
+
+                int startX = 23;
+                int pageW = 780;
+                int y = 25;
 
                 // Title
-                g.DrawString("تقرير سجل تسويات فروقات الجرد", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 30), center); y += 30;
-                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center); y += 25;
-                g.DrawLine(new Pen(Color.DarkBlue, 2), 20, y, pageW - 20, y); y += 15;
+                string company = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+                g.DrawString(company, bold, Brushes.DarkBlue, new RectangleF(startX, y, pageW, 22), sfCenter); y += 24;
+                g.DrawString("تقرير سجل تسويات فروقات الجرد المخزني", boldBig, Brushes.Black, new RectangleF(startX, y, pageW, 30), sfCenter); y += 30;
+                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}   |   تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", small, Brushes.DarkSlateGray, new RectangleF(startX, y, pageW, 20), sfCenter); y += 22;
 
-                g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", normal, Brushes.Black, 20, y);
-                y += 25;
-                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 10;
+                g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 10;
 
-                // Columns: Date, Name, Book, Actual, Diff, Done By
-                int[] xCols = { 20, 150, 360, 460, 560, 660 };
+                // Columns (RTL): التاريخ والوقت (130), اسم الصنف (320), الدفتري (80), الفعلي (80), الفارق (85), المسؤول (85) = 780
+                int[] colWidths = { 130, 320, 80, 80, 85, 85 };
                 string[] headers = { "التاريخ والوقت", "اسم الصنف", "الدفتري", "الفعلي", "الفارق", "المسؤول" };
 
+                int headH = 30;
+                int rowH = 26;
+
+                var brushHeaderBg = new SolidBrush(Color.FromArgb(24, 43, 73));
+                var brushRowAlt = new SolidBrush(Color.FromArgb(248, 250, 252));
+                var penGrid = new Pen(Color.FromArgb(170, 185, 205), 1f);
+                var penDark = new Pen(Color.FromArgb(24, 43, 73), 1.5f);
+
+                // Table Header
+                g.FillRectangle(brushHeaderBg, startX, y, pageW, headH);
+                g.DrawRectangle(penDark, startX, y, pageW, headH);
+
+                int curX = startX + pageW;
                 for (int i = 0; i < headers.Length; i++)
-                    g.DrawString(headers[i], bold, Brushes.DarkBlue, xCols[i], y);
-                y += 22;
-                g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 8;
+                {
+                    curX -= colWidths[i];
+                    var hRect = new RectangleF(curX, y, colWidths[i], headH);
+                    g.DrawRectangle(penGrid, curX, y, colWidths[i], headH);
+                    g.DrawString(headers[i], boldHead, Brushes.White, hRect, sfCenter);
+                }
+                y += headH;
 
                 int maxY = 1080;
 
                 while (_printLogIndex < dgLogs.Rows.Count)
                 {
                     var row = dgLogs.Rows[_printLogIndex];
-                    string date = row.Cells["AdjDate"].Value?.ToString();
-                    string name = row.Cells["ProductName"].Value?.ToString();
-                    string book = row.Cells["BookQty"].Value?.ToString();
-                    string actual = row.Cells["ActualQty"].Value?.ToString();
-                    string diff = row.Cells["DiffQty"].Value?.ToString();
-                    string user = row.Cells["CreatedBy"].Value?.ToString();
+                    if (row.IsNewRow) { _printLogIndex++; continue; }
 
-                    g.DrawString(date, normal, Brushes.Black, xCols[0], y);
-                    g.DrawString(name, normal, Brushes.Black, xCols[1], y);
-                    g.DrawString(book, normal, Brushes.Black, xCols[2], y);
-                    g.DrawString(actual, normal, Brushes.Black, xCols[3], y);
-                    g.DrawString(diff, bold, diff.StartsWith("+") ? Brushes.Green : Brushes.Red, xCols[4], y);
-                    g.DrawString(user, normal, Brushes.Black, xCols[5], y);
+                    string date = row.Cells["AdjDate"].Value?.ToString() ?? "";
+                    string name = row.Cells["ProductName"].Value?.ToString() ?? "";
+                    string book = row.Cells["BookQty"].Value?.ToString() ?? "0";
+                    string actual = row.Cells["ActualQty"].Value?.ToString() ?? "0";
+                    string diff = row.Cells["DiffQty"].Value?.ToString() ?? "0";
+                    string user = row.Cells["CreatedBy"].Value?.ToString() ?? "";
 
-                    y += 22;
+                    Brush bgBrush = (_printLogIndex % 2 == 1) ? brushRowAlt : Brushes.White;
+                    g.FillRectangle(bgBrush, startX, y, pageW, rowH);
+                    g.DrawRectangle(penGrid, startX, y, pageW, rowH);
+
+                    curX = startX + pageW;
+
+                    // Col 0: Date
+                    curX -= colWidths[0];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[0], rowH);
+                    g.DrawString(date, small, Brushes.Black, new RectangleF(curX, y, colWidths[0], rowH), sfCenter);
+
+                    // Col 1: Name
+                    curX -= colWidths[1];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[1], rowH);
+                    g.DrawString(name, normal, Brushes.Black, new RectangleF(curX + 6, y, colWidths[1] - 12, rowH), sfRtlRight);
+
+                    // Col 2: Book
+                    curX -= colWidths[2];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[2], rowH);
+                    g.DrawString(book, small, Brushes.Black, new RectangleF(curX, y, colWidths[2], rowH), sfCenter);
+
+                    // Col 3: Actual
+                    curX -= colWidths[3];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[3], rowH);
+                    g.DrawString(actual, small, Brushes.Black, new RectangleF(curX, y, colWidths[3], rowH), sfCenter);
+
+                    // Col 4: Diff
+                    curX -= colWidths[4];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[4], rowH);
+                    Brush diffBrush = diff.StartsWith("+") ? Brushes.Green : (diff.StartsWith("-") ? Brushes.Red : Brushes.Black);
+                    g.DrawString(diff, boldHead, diffBrush, new RectangleF(curX, y, colWidths[4], rowH), sfCenter);
+
+                    // Col 5: User
+                    curX -= colWidths[5];
+                    g.DrawRectangle(penGrid, curX, y, colWidths[5], rowH);
+                    g.DrawString(user, small, Brushes.Black, new RectangleF(curX, y, colWidths[5], rowH), sfCenter);
+
+                    y += rowH;
                     _printLogIndex++;
 
                     if (y >= maxY && _printLogIndex < dgLogs.Rows.Count)
                     {
+                        g.DrawString($"صفحة {_printLogPageNum}", small, Brushes.Gray, startX + pageW - 70, e.PageBounds.Height - 35);
+                        _printLogPageNum++;
                         e.HasMorePages = true;
                         return;
                     }
@@ -1482,16 +1612,18 @@ namespace ChickenDist.Forms
                 y += 15;
                 if (y < maxY)
                 {
-                    g.DrawLine(new Pen(Color.DarkBlue, 1.5f), 20, y, pageW - 20, y);
+                    g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y);
                 }
+
+                g.DrawString($"صفحة {_printLogPageNum}", small, Brushes.Gray, startX + pageW - 70, e.PageBounds.Height - 35);
             };
 
             var preview = new PrintPreviewDialog
             {
                 Document = pd,
-                Width = 900,
+                Width = 950,
                 Height = 800,
-                Text = "طباعة سجل التسويات الجردية (صفحات A4)"
+                Text = "طباعة سجل التسويات الجردية (تقسيم شبكي A4)"
             };
             preview.ShowDialog();
         }
