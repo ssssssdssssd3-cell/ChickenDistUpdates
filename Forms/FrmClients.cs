@@ -242,7 +242,7 @@ namespace ChickenDist.Forms
                     this,
                     phone,
                     msg,
-                    null,
+                    () => ReceiptImageGenerator.GenerateClientStatementImage(_selectedID, name, bal),
                     "📱 إرسال كشف حساب العميل عبر الواتساب");
             };
  

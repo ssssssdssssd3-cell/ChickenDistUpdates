@@ -157,12 +157,12 @@ namespace ChickenDist.Core
         /// <summary>
         /// نافذة حوار موحدة تقدم زري الاختيار المباشرين (إرسال نص أو إرسال صورة) مع معاينة حية
         /// </summary>
-        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب")
+        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب", Func<string> pdfGenerator = null)
         {
             using (var dlg = new Form())
             {
                 dlg.Text = dialogTitle;
-                dlg.Size = new Size(620, 520);
+                dlg.Size = new Size(680, 530);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -172,7 +172,7 @@ namespace ChickenDist.Core
                 dlg.BackColor = Color.FromArgb(248, 250, 252);
                 dlg.Font = Theme.FontMain;
 
-                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر نوع الإرسال المطلوب للعميل (رسالة نصية تفصيلية أو كارت صورة مصمم)");
+                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر نوع الإرسال المطلوب للعميل (رسالة نصية، كارت صورة، أو ملف PDF رسمي)");
                 dlg.Controls.Add(pnlHeader);
 
                 int y = 72;
@@ -181,56 +181,77 @@ namespace ChickenDist.Core
                 var lblPhone = new Label { Text = "📱 رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 dlg.Controls.Add(lblPhone);
 
-                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 360, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
+                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 420, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
                 dlg.Controls.Add(txtPhone);
                 y += 38;
 
-                // ── Direct Action Buttons (Text vs Image) ──
+                // ── Direct Action Buttons (Text vs Image vs PDF) ──
+                int btnColumns = pdfGenerator != null ? 3 : 2;
                 var pnlChoiceBtns = new TableLayoutPanel
                 {
                     Location = new Point(20, y),
-                    Size = new Size(560, 52),
-                    ColumnCount = 2,
+                    Size = new Size(620, 52),
+                    ColumnCount = btnColumns,
                     RowCount = 1,
                     BackColor = Color.Transparent
                 };
-                pnlChoiceBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
-                pnlChoiceBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+                for (int c = 0; c < btnColumns; c++)
+                {
+                    pnlChoiceBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / btnColumns));
+                }
 
                 var btnSendText = new Button
                 {
-                    Text = "💬 إرسال واتساب (رسالة نصية)",
+                    Text = "💬 إرسال (نص)",
                     Dock = DockStyle.Fill,
-                    Margin = new Padding(4),
+                    Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(37, 211, 102),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 btnSendText.FlatAppearance.BorderSize = 0;
 
                 var btnSendImage = new Button
                 {
-                    Text = "🖼️ إرسال واتساب (كارت صورة)",
+                    Text = "🖼️ إرسال (صورة)",
                     Dock = DockStyle.Fill,
-                    Margin = new Padding(4),
+                    Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(18, 140, 126),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 btnSendImage.FlatAppearance.BorderSize = 0;
 
+                Button btnSendPdf = null;
+                if (pdfGenerator != null)
+                {
+                    btnSendPdf = new Button
+                    {
+                        Text = "📄 إرسال (PDF)",
+                        Dock = DockStyle.Fill,
+                        Margin = new Padding(3),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.FromArgb(220, 38, 38),
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                        Cursor = Cursors.Hand
+                    };
+                    btnSendPdf.FlatAppearance.BorderSize = 0;
+                }
+
                 pnlChoiceBtns.Controls.Add(btnSendText, 0, 0);
                 pnlChoiceBtns.Controls.Add(btnSendImage, 1, 0);
+                if (btnSendPdf != null) pnlChoiceBtns.Controls.Add(btnSendPdf, 2, 0);
                 dlg.Controls.Add(pnlChoiceBtns);
                 y += 60;
 
                 // ── Preview Section with Tab switcher ──
-                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(560, 28), BackColor = Color.Transparent };
-                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى المراد إرساله:", Location = new Point(360, 3), Width = 200, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(620, 28), BackColor = Color.Transparent };
+                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى المراد إرساله:", Location = new Point(400, 3), Width = 210, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 
                 var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(140, 0), Size = new Size(100, 26), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
                 btnShowText.FlatAppearance.BorderSize = 0;
@@ -245,7 +266,7 @@ namespace ChickenDist.Core
                 y += 32;
 
                 // Content Box
-                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(560, 235), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(620, 235), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
                 var txtPreview = new RichTextBox
                 {
@@ -314,7 +335,7 @@ namespace ChickenDist.Core
                 btnShowImg.Click += (s, e) => showImagePreview();
 
                 // ── Footer Buttons (Copy & Cancel) ──
-                var btnCopy = Theme.MakeButton("📋 نسخ النص للحافظة", 370, y, 210, 38, Color.FromArgb(70, 80, 100));
+                var btnCopy = Theme.MakeButton("📋 نسخ النص للحافظة", 430, y, 210, 38, Color.FromArgb(70, 80, 100));
                 btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btnCopy.Click += (s, e) =>
                 {
@@ -384,6 +405,65 @@ namespace ChickenDist.Core
                         dlg.Close();
                     }
                 };
+
+                if (btnSendPdf != null)
+                {
+                    btnSendPdf.Click += (s, e) =>
+                    {
+                        string targetPhone = txtPhone.Text.Trim();
+                        if (string.IsNullOrWhiteSpace(targetPhone))
+                        {
+                            MessageBox.Show("يرجى إدخال رقم هاتف العميل أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            txtPhone.Focus();
+                            return;
+                        }
+
+                        try
+                        {
+                            string pdfPath = pdfGenerator();
+                            if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+                            {
+                                MessageBox.Show("تعذر إنشاء ملف الـ PDF!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+                            }
+
+                            // Copy file to Windows Clipboard as FileDrop
+                            var sc = new System.Collections.Specialized.StringCollection();
+                            sc.Add(pdfPath);
+                            Clipboard.SetFileDropList(sc);
+
+                            // Open WhatsApp chat
+                            OpenWhatsAppChat(targetPhone);
+
+                            // Notify user and provide open option
+                            var res = MessageBox.Show(
+                                "✅ تم إنشاء ملف الـ PDF ونسخه للحافظة بنجاح!\n\n" +
+                                $"📄 الملف: {Path.GetFileName(pdfPath)}\n\n" +
+                                "📱 تم فتح محادثة الواتساب للعميل.\n" +
+                                "👉 يمكنك الآن الضغط على (Ctrl + V) داخل شات الواتساب للصق وإرسال الملف فوراً.\n\n" +
+                                "هل ترغب في فتح ملف الـ PDF الآن؟",
+                                "تم تجهيز ملف الـ PDF للإرسال",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Information);
+
+                            if (res == DialogResult.Yes)
+                            {
+                                try
+                                {
+                                    Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
+                                }
+                                catch { }
+                            }
+
+                            dlg.Close();
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error("WhatsAppSender.btnSendPdf", ex);
+                            MessageBox.Show("فشل تجهيز ملف PDF: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    };
+                }
 
                 dlg.ShowDialog(parentForm);
             }

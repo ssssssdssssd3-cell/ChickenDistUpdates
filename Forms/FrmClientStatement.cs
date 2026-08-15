@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
@@ -25,6 +26,7 @@ namespace ChickenDist.Forms
         private bool _isLoadingCombo = false;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnLoad, btnPrint;
+        private Button btnWhatsAppFinancial, btnExportFinancialPdf, btnExportFinancialExcel;
 
         // Financial Tab Controls
         private DataGridView dgStatement;
@@ -41,7 +43,7 @@ namespace ChickenDist.Forms
         private DataTable _dtItemized;
         private TextBox txtItemSearch;
         private Label lblItemizedCount, lblItemizedTotalQty, lblItemizedTotalAmount;
-        private Button btnPrintItemized, btnWhatsAppItemized, btnExportItemizedExcel;
+        private Button btnPrintItemized, btnWhatsAppItemized, btnExportItemizedPdf, btnExportItemizedExcel;
 
         public FrmClientStatement() : this(0, "")
         {
@@ -288,15 +290,34 @@ namespace ChickenDist.Forms
             var pnlTopBar = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 38,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(8, 4, 8, 4)
+                Height = 40,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(8, 5, 8, 5)
             };
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة كشف الحساب المالي", Theme.Primary);
-            btnPrint.Size = new Size(190, 28);
+            btnPrint = Theme.MakeButton("🖨️ طباعة كشف الحساب", Color.FromArgb(30, 90, 160));
+            btnPrint.Size = new Size(160, 28);
+            btnPrint.Margin = new Padding(5, 0, 0, 0);
             btnPrint.Click += BtnPrint_Click;
             pnlTopBar.Controls.Add(btnPrint);
+
+            btnWhatsAppFinancial = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsAppFinancial.Size = new Size(165, 28);
+            btnWhatsAppFinancial.Margin = new Padding(10, 0, 0, 0);
+            btnWhatsAppFinancial.Click += BtnWhatsAppFinancial_Click;
+            pnlTopBar.Controls.Add(btnWhatsAppFinancial);
+
+            btnExportFinancialPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportFinancialPdf.Size = new Size(125, 28);
+            btnExportFinancialPdf.Margin = new Padding(10, 0, 0, 0);
+            btnExportFinancialPdf.Click += BtnExportFinancialPdf_Click;
+            pnlTopBar.Controls.Add(btnExportFinancialPdf);
+
+            btnExportFinancialExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+            btnExportFinancialExcel.Size = new Size(125, 28);
+            btnExportFinancialExcel.Margin = new Padding(10, 0, 0, 0);
+            btnExportFinancialExcel.Click += (s, e) => ExportGridToCsv(dgStatement, $"كشف_حساب_مالي_{_clientName}");
+            pnlTopBar.Controls.Add(btnExportFinancialExcel);
 
             dgStatement = new DataGridView
             {
@@ -561,13 +582,19 @@ namespace ChickenDist.Forms
             pnlTopBar.Controls.Add(btnPrintItemized);
 
             btnWhatsAppItemized = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
-            btnWhatsAppItemized.Size = new Size(170, 28);
+            btnWhatsAppItemized.Size = new Size(165, 28);
             btnWhatsAppItemized.Margin = new Padding(10, 0, 0, 0);
             btnWhatsAppItemized.Click += BtnWhatsAppItemized_Click;
             pnlTopBar.Controls.Add(btnWhatsAppItemized);
 
+            btnExportItemizedPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportItemizedPdf.Size = new Size(125, 28);
+            btnExportItemizedPdf.Margin = new Padding(10, 0, 0, 0);
+            btnExportItemizedPdf.Click += BtnExportItemizedPdf_Click;
+            pnlTopBar.Controls.Add(btnExportItemizedPdf);
+
             btnExportItemizedExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
-            btnExportItemizedExcel.Size = new Size(130, 28);
+            btnExportItemizedExcel.Size = new Size(125, 28);
             btnExportItemizedExcel.Margin = new Padding(10, 0, 0, 0);
             btnExportItemizedExcel.Click += (s, e) => ExportGridToCsv(dgItemized, $"كشف_مسحوبات_أصناف_{_clientName}");
             pnlTopBar.Controls.Add(btnExportItemizedExcel);
@@ -834,6 +861,112 @@ namespace ChickenDist.Forms
             preview.ShowDialog(this);
         }
 
+        private string GetClientPhone()
+        {
+            string phone = "";
+            try
+            {
+                if (_clientID > 0)
+                {
+                    object phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID = @id", DbHelper.P("@id", _clientID));
+                    if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
+                }
+            }
+            catch { }
+            return phone;
+        }
+
+        private void BtnExportItemizedPdf_Click(object sender, EventArgs e)
+        {
+            if (dgItemized == null || dgItemized.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            using (var sfd = new SaveFileDialog { Filter = "PDF Document (*.pdf)|*.pdf", FileName = $"كشف_حساب_أصناف_{_clientName}_{DateTime.Now:yyyyMMdd}.pdf" })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string phone = GetClientPhone();
+                        PdfReportHelper.GenerateItemizedStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgItemized, sfd.FileName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف PDF: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnExportFinancialPdf_Click(object sender, EventArgs e)
+        {
+            if (dgStatement == null || dgStatement.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد حركات مالية لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            using (var sfd = new SaveFileDialog { Filter = "PDF Document (*.pdf)|*.pdf", FileName = $"كشف_حساب_مالي_{_clientName}_{DateTime.Now:yyyyMMdd}.pdf" })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string phone = GetClientPhone();
+                        PdfReportHelper.GenerateFinancialStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalSales, _totalReturns, _totalPayments, _runBalance, sfd.FileName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف PDF: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnWhatsAppFinancial_Click(object sender, EventArgs e)
+        {
+            if (dgStatement == null || dgStatement.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد حركات مالية لعرضها وإرسالها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            string phone = GetClientPhone();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"📊 *كشف حساب العميل المالي التفصيلي*");
+            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+            sb.AppendLine($"👤 العميل: {_clientName}");
+            sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine($"💳 إجمالي مديونية الفواتير: {_totalSales:N2} ج");
+            sb.AppendLine($"💵 إجمالي التحصيلات النقدية: {_totalPayments:N2} ج");
+            if (_totalReturns > 0) sb.AppendLine($"🔄 إجمالي المرتجعات: {_totalReturns:N2} ج");
+            if (_totalClientPurchases > 0) sb.AppendLine($"📦 شراء من عميل: {_totalClientPurchases:N2} ج");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine($"📌 *صافي الرصيد الحالي: {_runBalance:N2} ج*");
+            sb.AppendLine("──────────────────────");
+
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GenerateClientStatementImage(_clientID, _clientName, _runBalance),
+                "📱 إرسال كشف حساب العميل المالي عبر الواتساب",
+                () => PdfReportHelper.GenerateFinancialStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalSales, _totalReturns, _totalPayments, _runBalance));
+        }
+
         private void BtnWhatsAppItemized_Click(object sender, EventArgs e)
         {
             if (dgItemized == null || dgItemized.Rows.Count == 0)
@@ -842,13 +975,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            string phone = "";
-            try
-            {
-                object phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID = @id", DbHelper.P("@id", _clientID));
-                if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
-            }
-            catch { }
+            string phone = GetClientPhone();
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"📋 *كشف حساب أصناف مسحوبات العميل*");
@@ -879,7 +1006,8 @@ namespace ChickenDist.Forms
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GenerateClientStatementImage(_clientID, _clientName, _runBalance),
-                "📱 إرسال كشف حساب أصناف العميل عبر الواتساب");
+                "📱 إرسال كشف حساب أصناف العميل عبر الواتساب",
+                () => PdfReportHelper.GenerateItemizedStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgItemized));
         }
 
         private void BtnPrint_Click(object sender, EventArgs e)
