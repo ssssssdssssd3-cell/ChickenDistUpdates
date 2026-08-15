@@ -297,7 +297,7 @@ namespace ChickenDist.Forms
 				LoadSales();
 			};
 			flowLayoutPanel.Controls.Add(btnNewSale);
-			// ─── منطقة المحتوى: صفان بنسب مرنة ───
+			// ─── منطقة المحتوى: صفان بنسب مرنة (الفواتير أعلاه والأصناف أسفله تحت بعض) ───
 			TableLayoutPanel tblContent = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
@@ -306,8 +306,8 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 			tblContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 40f));  // جريد الفواتير (dgSales)
-			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 60f));  // تفاصيل الأصناف والتحكم (tblDetail)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 52f));  // جريد الفواتير (dgSales)
+			tblContent.RowStyles.Add(new RowStyle(SizeType.Percent, 48f));  // شريط التحكم وتفاصيل الأصناف (tblDetail)
 
 			dgSales = MakeGrid();
 			dgSales.Margin = new Padding(10, 6, 10, 4);
@@ -380,39 +380,49 @@ namespace ChickenDist.Forms
 			});
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
 
-			// الصف 1: تفاصيل الأصناف والتحكم
+			// الصف 1: تفاصيل الأصناف والتحكم (تحت بعض بكامل العرض)
 			TableLayoutPanel tblDetail = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				ColumnCount = 2,
-				RowCount = 1,
-				Margin = new Padding(10, 4, 10, 6),
+				ColumnCount = 1,
+				RowCount = 2,
+				Margin = new Padding(10, 2, 10, 6),
 				RightToLeft = RightToLeft.Yes
 			};
-			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f)); // لوحة الأزرار
-			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));   // جريد تفاصيل الفاتورة
-			tblDetail.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+			tblDetail.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f)); // شريط الأزرار الأفقي
+			tblDetail.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // جريد تفاصيل الفاتورة
 
-			FlowLayoutPanel flowLayoutPanel2 = new FlowLayoutPanel
+			FlowLayoutPanel pnlDetailBar = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				FlowDirection = FlowDirection.TopDown,
-				BackColor = Theme.BgCard,
-				Padding = new Padding(15, 4, 15, 15),
-				WrapContents = false,
-				AutoScroll = true
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Theme.BgSearchPanel,
+				Padding = new Padding(8, 4, 8, 4),
+				Margin = new Padding(0),
+				WrapContents = false
 			};
 
+			Label lblDetailTitle = new Label
+			{
+				Text = "📋 تفاصيل الأصناف بالفاتورة المحددة:",
+				AutoSize = true,
+				ForeColor = Theme.TextSearchLabel,
+				Font = Theme.FontBold,
+				Margin = new Padding(6, 7, 15, 0)
+			};
+			pnlDetailBar.Controls.Add(lblDetailTitle);
+
 			btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Theme.Primary);
-			btnPrint.Size = new Size(190, 36);
-			btnPrint.Margin = new Padding(0, 0, 0, 8);
+			btnPrint.Size = new Size(150, 30);
+			btnPrint.Margin = new Padding(0, 0, 10, 0);
 			btnPrint.Click += BtnPrint_Click;
-			flowLayoutPanel2.Controls.Add(btnPrint);
+			pnlDetailBar.Controls.Add(btnPrint);
 
 			var btnWhatsApp = Theme.MakeButton("📱 إعادة إرسال واتساب", Color.FromArgb(37, 211, 102));
-			btnWhatsApp.Size = new Size(190, 36);
+			btnWhatsApp.Size = new Size(165, 30);
 			btnWhatsApp.ForeColor = Color.White;
-			btnWhatsApp.Margin = new Padding(0, 0, 0, 8);
+			btnWhatsApp.Margin = new Padding(0, 0, 10, 0);
 			btnWhatsApp.Click += (s, e) =>
 			{
 				if (dgSales.SelectedRows.Count == 0 || !dgSales.Columns.Contains("SaleID"))
@@ -423,32 +433,22 @@ namespace ChickenDist.Forms
 				int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
 				FrmSale.SendSaleInvoiceWhatsApp(saleID, this);
 			};
-			flowLayoutPanel2.Controls.Add(btnWhatsApp);
+			pnlDetailBar.Controls.Add(btnWhatsApp);
 
 			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
-			btnEdit.Size = new Size(190, 36);
-			btnEdit.Margin = new Padding(0, 0, 0, 8);
+			btnEdit.Size = new Size(140, 30);
+			btnEdit.Margin = new Padding(0, 0, 10, 0);
 			btnEdit.Click += BtnEdit_Click;
-			flowLayoutPanel2.Controls.Add(btnEdit);
+			pnlDetailBar.Controls.Add(btnEdit);
 
 			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
-			btnCopy.Size = new Size(190, 36);
-			btnCopy.Margin = new Padding(0, 0, 0, 15);
+			btnCopy.Size = new Size(140, 30);
+			btnCopy.Margin = new Padding(0, 0, 10, 0);
 			btnCopy.Click += BtnCopy_Click;
-			flowLayoutPanel2.Controls.Add(btnCopy);
-
-			Label value = new Label
-			{
-				Text = "تفاصيل الأصناف بالفاتورة المحددة",
-				Size = new Size(190, 60),
-				ForeColor = Theme.TextSub,
-				Font = Theme.FontBold,
-				TextAlign = ContentAlignment.TopCenter,
-				Margin = new Padding(0)
-			};
-			flowLayoutPanel2.Controls.Add(value);
+			pnlDetailBar.Controls.Add(btnCopy);
 
 			dgItems = MakeGrid();
+			dgItems.Margin = new Padding(0, 2, 0, 0);
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ProductName",
@@ -493,8 +493,8 @@ namespace ChickenDist.Forms
 				FillWeight = 55f
 			});
 
-			tblDetail.Controls.Add(flowLayoutPanel2, 0, 0);
-			tblDetail.Controls.Add(dgItems, 1, 0);
+			tblDetail.Controls.Add(pnlDetailBar, 0, 0);
+			tblDetail.Controls.Add(dgItems, 0, 1);
 
 			tblContent.Controls.Add(dgSales, 0, 0);
 			tblContent.Controls.Add(tblDetail, 0, 1);

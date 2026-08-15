@@ -154,31 +154,40 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",             HeaderText = "الملاحظات",      FillWeight = 110f });
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
 
-			// الصف 1: تفاصيل الأصناف
+			// الصف 1: تفاصيل الأصناف (تحت بعض بكامل العرض)
 			var tblDetail = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				ColumnCount = 2,
-				RowCount = 1,
-				Margin = new Padding(10, 4, 10, 6)
+				ColumnCount = 1,
+				RowCount = 2,
+				Margin = new Padding(10, 2, 10, 6),
+				RightToLeft = RightToLeft.Yes
 			};
-			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200f));
 			tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+			tblDetail.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f));
 			tblDetail.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-			var pnlDetailLabel = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(10) };
+			var pnlDetailLabel = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.RightToLeft,
+				BackColor = Theme.BgSearchPanel,
+				Padding = new Padding(8, 6, 8, 6),
+				Margin = new Padding(0),
+				WrapContents = false
+			};
 			Label lblDetailsTitle = new Label
 			{
-				Text = "تفاصيل الأصناف بالفاتورة المحددة",
-				Dock = DockStyle.Top,
-				Height = 60,
-				ForeColor = Theme.TextSub,
+				Text = "📋 تفاصيل أصناف فاتورة الشراء المحددة:",
+				AutoSize = true,
+				ForeColor = Theme.TextSearchLabel,
 				Font = Theme.FontBold,
-				TextAlign = ContentAlignment.TopCenter
+				Margin = new Padding(6, 4, 15, 0)
 			};
 			pnlDetailLabel.Controls.Add(lblDetailsTitle);
 
 			dgItems = MakeGrid();
+			dgItems.Margin = new Padding(0, 2, 0, 0);
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 130f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",     FillWeight = 50f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الوحدة", FillWeight = 50f });
@@ -186,7 +195,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 60f });
 
 			tblDetail.Controls.Add(pnlDetailLabel, 0, 0);
-			tblDetail.Controls.Add(dgItems, 1, 0);
+			tblDetail.Controls.Add(dgItems, 0, 1);
 
 			tblContent.Controls.Add(dgPurchases, 0, 0);
 			tblContent.Controls.Add(tblDetail, 0, 1);
