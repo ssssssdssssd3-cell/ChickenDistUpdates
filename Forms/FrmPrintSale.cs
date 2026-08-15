@@ -833,7 +833,9 @@ namespace ChickenDist.Forms
                         // 4. Customer Info Box & Metadata
                         if (_saleRow != null)
                         {
-                            g.DrawRectangle(new Pen(Color.Black, 1.2f), margin, y, pageW - 2 * margin, 54);
+                            int boxW = pageW - 2 * margin;
+                            int boxH = 56;
+                            g.DrawRectangle(new Pen(Color.Black, 1.2f), margin, y, boxW, boxH);
 
                             string clientName = _saleRow["ClientName"]?.ToString() ?? "";
                             string phone = _saleRow.Table.Columns.Contains("ClientPhone") ? _saleRow["ClientPhone"].ToString() : "";
@@ -844,14 +846,25 @@ namespace ChickenDist.Forms
                                 ? _saleRow["WarehouseName"].ToString()
                                 : compName;
 
-                            g.DrawString($"اسم العميل :  {clientName}", boldSheet, Brushes.Black, new RectangleF(margin + 10, y + 4, pageW - 2 * margin - 20, 20), right);
-                            g.DrawString($"رقم الهاتف :  {phone}", normal, Brushes.Black, new RectangleF(margin + 10, y + 28, 250, 18), right);
-                            g.DrawString($"العنـوان :  {(string.IsNullOrEmpty(addr) ? "الرئيسي" : addr)}", normal, Brushes.Black, new RectangleF(margin + 280, y + 28, pageW - 2 * margin - 290, 18), right);
+                            int halfW = boxW / 2;
+                            int rightColX = margin + halfW;
+                            int leftColX = margin + 10;
 
-                            g.DrawString($"الفرع / الحساب: {branchName}", normal, Brushes.Black, margin + 10, y + 4);
-                            g.DrawString($"رقم : {saleCode}  |  {saleDateStr}", boldSheet, Brushes.Black, margin + 10, y + 28);
+                            // Vertical subtle separator
+                            g.DrawLine(Pens.LightGray, margin + halfW, y + 4, margin + halfW, y + boxH - 4);
 
-                            y += 62;
+                            // Right Column (Client Information) - RTL Right Aligned
+                            g.DrawString($"اسم العميل :  {clientName}", boldSheet, Brushes.Black, new RectangleF(rightColX + 5, y + 6, halfW - 15, 20), right);
+
+                            string addrDisplay = !string.IsNullOrEmpty(addr) ? addr : "الرئيسي";
+                            string phoneDisplay = !string.IsNullOrEmpty(phone) ? $"   |   رقم الهاتف : {phone}" : "";
+                            g.DrawString($"العنـوان :  {addrDisplay}{phoneDisplay}", normal, Brushes.Black, new RectangleF(rightColX + 5, y + 30, halfW - 15, 20), right);
+
+                            // Left Column (Branch & Invoice Metadata) - LTR Left Aligned
+                            g.DrawString($"الفرع / الحساب: {branchName}", normal, Brushes.Black, new RectangleF(leftColX, y + 6, halfW - 20, 20), left);
+                            g.DrawString($"رقم : {saleCode}  |  {saleDateStr}", boldSheet, Brushes.Black, new RectangleF(leftColX, y + 30, halfW - 20, 20), left);
+
+                            y += boxH + 8;
                         }
                     }
                     else if (string.Equals(a4Template, "CommercialGrid", StringComparison.OrdinalIgnoreCase) ||
@@ -1220,6 +1233,7 @@ namespace ChickenDist.Forms
                                 DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y + 3, center);
 
                                 string itemNotes = r.Table.Columns.Contains("Notes") && r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+                                if (string.IsNullOrEmpty(itemNotes) && r.Table.Columns.Contains("KitchenNotes") && r["KitchenNotes"] != DBNull.Value) itemNotes = r["KitchenNotes"].ToString();
                                 DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y + 3, center);
                                 y += 20;
                             }
@@ -1679,8 +1693,9 @@ namespace ChickenDist.Forms
                     if (isAlTarek)
                     {
                         // Draw bottom black footer bar for Al Tarek Home
-                        int footerH = 30;
-                        int footerY = e.PageBounds.Height - margin - footerH;
+                        int footerH = 28;
+                        int safeBottom = e.MarginBounds.Bottom > 0 ? Math.Min(e.MarginBounds.Bottom - 8, e.PageBounds.Height - 45) : (e.PageBounds.Height - 50);
+                        int footerY = safeBottom - footerH;
 
                         g.FillRectangle(Brushes.Black, margin, footerY, pageW - 2 * margin, footerH);
 
@@ -1688,13 +1703,13 @@ namespace ChickenDist.Forms
                             ? $"العنوان : {AppConfig.CompanyAddress}"
                             : "العنوان : إيتاي البارود - شارع الجمهورية - بجوار مسجد المحطة";
 
-                        g.DrawString(companyFooterAddr, boldSheet, Brushes.White, new RectangleF(margin, footerY + 6, pageW - 2 * margin, 20), center);
-
                         if (_saleRow != null)
                         {
                             string saleCode = _saleRow["SaleCode"]?.ToString() ?? "";
-                            DrawSimpleBarcode(g, saleCode, margin + 5, footerY + 3, 130, 24);
+                            DrawSimpleBarcode(g, saleCode, margin + 8, footerY + 3, 120, 22);
                         }
+
+                        g.DrawString(companyFooterAddr, boldSheet, Brushes.White, new RectangleF(margin + 130, footerY + 5, pageW - 2 * margin - 140, 20), center);
                     }
                     else
                     {
