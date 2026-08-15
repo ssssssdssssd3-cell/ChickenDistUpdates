@@ -1511,17 +1511,38 @@ namespace ChickenDist.Forms
 
 						_currentDt = ReportDAL.GetSupplierItemActivityReport(dtpFrom.Value, dtpTo.Value, supplierID, producerCompany, search);
 
-						SetupGrid(new(string, string)[]
+						bool hasCompany = false;
+						if (_currentDt != null)
 						{
-							("الصنف", "الصنف"),
-							("الشركة المنتجة", "الشركة المنتجة"),
+							foreach (DataRow r in _currentDt.Rows)
+							{
+								if (r.Table.Columns.Contains("الشركة المنتجة") && !string.IsNullOrWhiteSpace(r["الشركة المنتجة"]?.ToString()))
+								{
+									hasCompany = true;
+									break;
+								}
+							}
+						}
+
+						var colList = new List<(string, string)>
+						{
+							("الصنف", "الصنف")
+						};
+						if (hasCompany)
+						{
+							colList.Add(("الشركة المنتجة", "الشركة المنتجة"));
+						}
+						colList.AddRange(new (string, string)[]
+						{
 							("المخزون الحالي", "المخزون الحالي"),
 							("الكمية المباعة", "الكمية المباعة"),
 							("قيمة المبيعات", "قيمة المبيعات"),
 							("الكمية المشتراة", "الكمية المشتراة"),
 							("قيمة المشتريات", "قيمة المشتريات"),
 							("الحالة", "الحالة")
-						}, dataGridView);
+						});
+
+						SetupGrid(colList.ToArray(), dataGridView);
 					}
 					break;
 				}
@@ -1841,13 +1862,18 @@ namespace ChickenDist.Forms
 			for (int i = 0; i < cols.Length; i++)
 			{
 				var (name, headerText) = cols[i];
+				bool isNameCol = (name == "الصنف" || name == "ProductName" || name == "اسم الصنف" || name == "البيان" || headerText == "الصنف" || headerText == "اسم الصنف");
 				var col = new DataGridViewTextBoxColumn
 				{
 					Name = name,
 					HeaderText = headerText,
-					FillWeight = 100f
+					FillWeight = isNameCol ? 350f : 100f
 				};
-				if (name == "Notes" || name == "Address")
+				if (isNameCol)
+				{
+					col.MinimumWidth = 280;
+				}
+				else if (name == "Notes" || name == "Address")
 				{
 					col.MinimumWidth = 150;
 				}
@@ -2138,6 +2164,7 @@ namespace ChickenDist.Forms
 				y += (int)szComp.Height + 3;
 
 				string titleText = tabReports.SelectedTab?.Text ?? "تقرير";
+				titleText = System.Text.RegularExpressions.Regex.Replace(titleText, @"\p{Cs}|\p{So}|\p{Sk}|\p{Cn}", "").Trim();
 				SizeF szTitle = g.MeasureString(titleText, fTitle);
 				g.DrawString(titleText, fTitle, Brushes.Black, startX + (pageW - szTitle.Width) / 2f, y);
 				y += (int)szTitle.Height + 5;
@@ -2152,34 +2179,86 @@ namespace ChickenDist.Forms
 				g.DrawLine(penDark, startX, y, startX + pageW, y);
 				y += 10;
 
-				// Compute visible columns and widths
+				// Compute visible columns and intelligent widths
 				var visCols = new List<DataGridViewColumn>();
-				int totalGridWidth = 0;
 				for (int k = 0; k < dg.Columns.Count; k++)
 				{
 					if (dg.Columns[k].Visible)
 					{
 						visCols.Add(dg.Columns[k]);
-						totalGridWidth += dg.Columns[k].Width;
 					}
 				}
-				if (totalGridWidth <= 0) totalGridWidth = 1;
 
 				int[] colWidths = new int[visCols.Count];
-				int assignedW = 0;
-				for (int i = 0; i < visCols.Count; i++)
+				if (visCols.Count > 0)
 				{
-					colWidths[i] = (visCols[i].Width * pageW) / totalGridWidth;
-					if (colWidths[i] < 30) colWidths[i] = 30;
-					assignedW += colWidths[i];
-				}
-				if (colWidths.Length > 0 && assignedW != pageW)
-				{
-					colWidths[colWidths.Length - 1] += (pageW - assignedW);
+					int nameColIndex = -1;
+					int otherColsTotalW = 0;
+
+					for (int i = 0; i < visCols.Count; i++)
+					{
+						string hText = visCols[i].HeaderText ?? "";
+						string cName = visCols[i].Name ?? "";
+						bool isNameCol = (hText == "الصنف" || hText == "اسم الصنف" || hText == "البيان" || cName == "ProductName" || cName == "ItemName" || cName == "Description");
+						if (isNameCol && nameColIndex == -1)
+						{
+							nameColIndex = i;
+							continue;
+						}
+
+						int stdW = 90;
+						if (hText.Contains("الحالة") || hText.Contains("الكود") || hText.Contains("الوحدة")) stdW = 75;
+						else if (hText.Contains("التاريخ") || hText.Contains("الرقم") || hText.Contains("السند")) stdW = 95;
+						else if (hText.Contains("الكمية") || hText.Contains("المخزون")) stdW = 85;
+						else if (hText.Contains("القيمة") || hText.Contains("المبيعات") || hText.Contains("المشتريات") || hText.Contains("الإجمالي") || hText.Contains("الرصيد")) stdW = 100;
+						else if (hText.Contains("الشركة") || hText.Contains("المورد") || hText.Contains("العميل")) stdW = 130;
+
+						if (!printDocument.DefaultPageSettings.Landscape)
+						{
+							stdW = (int)(stdW * 0.85f);
+						}
+
+						colWidths[i] = stdW;
+						otherColsTotalW += stdW;
+					}
+
+					if (nameColIndex >= 0)
+					{
+						int remainW = pageW - otherColsTotalW;
+						colWidths[nameColIndex] = Math.Max(remainW, 260);
+					}
+					else
+					{
+						int totalW = 0;
+						for (int i = 0; i < visCols.Count; i++) totalW += visCols[i].Width;
+						if (totalW <= 0) totalW = 1;
+						int assigned = 0;
+						for (int i = 0; i < visCols.Count; i++)
+						{
+							colWidths[i] = (visCols[i].Width * pageW) / totalW;
+							if (colWidths[i] < 40) colWidths[i] = 40;
+							assigned += colWidths[i];
+						}
+						if (assigned != pageW) colWidths[colWidths.Length - 1] += (pageW - assigned);
+					}
+
+					int totalAssigned = 0;
+					for (int i = 0; i < colWidths.Length; i++) totalAssigned += colWidths[i];
+					if (totalAssigned != pageW && colWidths.Length > 0)
+					{
+						if (nameColIndex >= 0 && colWidths[nameColIndex] + (pageW - totalAssigned) >= 150)
+						{
+							colWidths[nameColIndex] += (pageW - totalAssigned);
+						}
+						else
+						{
+							colWidths[0] += (pageW - totalAssigned);
+						}
+					}
 				}
 
-				int headH = 26;
-				int rowH  = 22;
+				int headH = 28;
+				int rowH  = 25;
 
 				// 2. Draw Table Header Row (RTL: right to left)
 				int curX = startX + pageW;
@@ -2226,14 +2305,16 @@ namespace ChickenDist.Forms
 					{
 						int cw = colWidths[j];
 						curX -= cw;
-						var rect = new RectangleF(curX + 2, y + 1, cw - 4, rowH - 2);
+						var rect = new RectangleF(curX + 3, y + 1, cw - 6, rowH - 2);
 						g.DrawRectangle(penGrid, curX, y, cw, rowH);
 
 						string val = dgRow.Cells[visCols[j].Index].Value?.ToString() ?? "";
+						string hText = visCols[j].HeaderText ?? "";
+						bool isTextNameCol = (hText == "الصنف" || hText == "اسم الصنف" || hText == "البيان" || hText == "اسم العميل" || hText == "المورد" || hText == "ملاحظات" || hText == "الشركة المنتجة");
 						
 						var sf = new StringFormat
 						{
-							Alignment = StringAlignment.Center,
+							Alignment = isTextNameCol ? StringAlignment.Near : StringAlignment.Center,
 							LineAlignment = StringAlignment.Center,
 							Trimming = StringTrimming.EllipsisCharacter,
 							FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
