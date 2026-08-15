@@ -854,6 +854,53 @@ namespace ChickenDist.Forms
                             y += 62;
                         }
                     }
+                    else if (string.Equals(a4Template, "CommercialGrid", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // ════════════════════════════════════════════════════════════════════════
+                        // COMMERCIAL FULL GRID A4 TEMPLATE (نموذج بيان الأسعار والأجهزة الكهربائية)
+                        // ════════════════════════════════════════════════════════════════════════
+                        DrawShopLogo(g, pageW, ref y, false);
+                        if (y < 20) y = 20;
+
+                        string compName = !string.IsNullOrEmpty(AppConfig.CompanyName) ? AppConfig.CompanyName : "الرحمة جروب لتجارة الأجهزة الكهربائية والأدوات المنزلية";
+                        string compPhone = !string.IsNullOrEmpty(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "01070909181 - 01070909185";
+
+                        g.DrawString(compName, boldBigSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 24), center);
+                        y += 24;
+
+                        if (!string.IsNullOrEmpty(compPhone))
+                        {
+                            g.DrawString(compPhone, boldSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin - 10, 20), right);
+                        }
+
+                        if (!string.IsNullOrEmpty(AppConfig.CompanyAddress))
+                        {
+                            g.DrawString(AppConfig.CompanyAddress, boldSheet, Brushes.DarkSlateGray, new RectangleF(margin, y, pageW - 2 * margin, 20), center);
+                        }
+                        y += 22;
+
+                        g.DrawLine(new Pen(Color.Black, 1.2f), margin, y, pageW - margin, y);
+                        y += 8;
+
+                        if (_saleRow != null)
+                        {
+                            string clientName = _saleRow["ClientName"]?.ToString() ?? "";
+                            string saleCode = _saleRow["SaleCode"]?.ToString() ?? "";
+                            string saleDateStr = Convert.ToDateTime(_saleRow["SaleDate"]).ToString("yyyy/MM/dd");
+                            string userName = _saleRow.Table.Columns.Contains("DriverName") && _saleRow["DriverName"].ToString() != "---" 
+                                ? _saleRow["DriverName"].ToString() 
+                                : (!string.IsNullOrEmpty(Session.UserName) ? Session.UserName : (!string.IsNullOrEmpty(Session.EmpName) ? Session.EmpName : "المسؤول"));
+
+                            g.DrawString($"اسم العميل /  {clientName}", boldSheet, Brushes.Black, new RectangleF(margin + 260, y, pageW - 2 * margin - 270, 20), right);
+                            g.DrawString($"المستخدم /  {userName}", normal, Brushes.Black, new RectangleF(margin + 10, y, 240, 20), right);
+                            y += 20;
+
+                            g.DrawString($"رقم البيان :  {saleCode}", boldSheet, Brushes.Black, new RectangleF(margin + 260, y, pageW - 2 * margin - 270, 20), right);
+                            g.DrawString($"تاريخ البيان :  {saleDateStr}", normal, Brushes.Black, new RectangleF(margin + 10, y, 240, 20), right);
+                            y += 24;
+                        }
+                    }
                     else if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
                         // Modern minimalist header
@@ -976,29 +1023,34 @@ namespace ChickenDist.Forms
                     }
 
                     // ===== Table Header =====
+                    bool isCommercial = string.Equals(a4Template, "CommercialGrid", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase);
                     bool isAlTarek = string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
                                      string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase);
 
-                    int xNotes, colWNotes, xWh, colWWh, xTotal, colWTotal, xDiscount, colWDiscount, xPrice, colWPrice, xQty, colWQty, xIndex, colWIndex, xName, colWName, xProduct, colWProduct;
+                    int xNotes, colWNotes, xTotal, colWTotal, xDiscount, colWDiscount, xPrice, colWPrice, xQty, colWQty, xUnit, colWUnit, xIndex, colWIndex, xCode, colWCode, xName, colWName, xProduct, colWProduct;
+                    int xWh = 0, colWWh = 0;
 
-                    if (isAlTarek)
+                    if (isCommercial || isAlTarek)
                     {
                         xNotes       = margin;
-                        colWNotes    = 80;
-                        xWh          = xNotes + colWNotes;
-                        colWWh       = 90;
-                        xTotal       = xWh + colWWh;
-                        colWTotal    = 70;
+                        colWNotes    = 65;
+                        xTotal       = xNotes + colWNotes;
+                        colWTotal    = 75;
                         xDiscount    = xTotal + colWTotal;
-                        colWDiscount = 55;
+                        colWDiscount = 45;
                         xPrice       = xDiscount + colWDiscount;
-                        colWPrice    = 60;
+                        colWPrice    = 65;
                         xQty         = xPrice + colWPrice;
-                        colWQty      = 50;
-                        xIndex       = pageW - margin - 28;
-                        colWIndex    = 28;
-                        xName        = xQty + colWQty;
-                        colWName     = xIndex - xName;
+                        colWQty      = 48;
+                        xUnit        = xQty + colWQty;
+                        colWUnit     = 45;
+                        xIndex       = pageW - margin - 26;
+                        colWIndex    = 26;
+                        xCode        = xIndex - 58;
+                        colWCode     = 58;
+                        xName        = xUnit + colWUnit;
+                        colWName     = xCode - xName;
                         xProduct     = xName;
                         colWProduct  = colWName;
                     }
@@ -1018,24 +1070,29 @@ namespace ChickenDist.Forms
                         colWDiscount = 0;
                         xIndex       = pageW - margin - 28;
                         colWIndex    = 28;
+                        xCode        = xIndex;
+                        colWCode     = 0;
+                        xUnit        = xQty;
+                        colWUnit     = 0;
                         xName        = xQty + colWQty;
                         colWName     = xIndex - xName;
                         xProduct     = xName;
                         colWProduct  = colWName;
                     }
 
-                    if (isAlTarek)
+                    if (isCommercial || isAlTarek)
                     {
-                        g.FillRectangle(new SolidBrush(Color.FromArgb(241, 245, 249)), margin, y, pageW - 2 * margin, 24);
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(226, 232, 240)), margin, y, pageW - 2 * margin, 24);
                         g.DrawRectangle(Pens.Black, margin, y, pageW - 2 * margin, 24);
 
                         DrawColHeader(g, boldSheet, "م", xIndex, colWIndex, y + 3);
+                        DrawColHeader(g, boldSheet, "الكود", xCode, colWCode, y + 3);
                         DrawColHeader(g, boldSheet, "اسم الصنف", xName, colWName, y + 3);
+                        DrawColHeader(g, boldSheet, "الوحدة", xUnit, colWUnit, y + 3);
                         DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 3);
-                        DrawColHeader(g, boldSheet, "السعر", xPrice, colWPrice, y + 3);
+                        DrawColHeader(g, boldSheet, "سعر البيع", xPrice, colWPrice, y + 3);
                         DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 3);
-                        DrawColHeader(g, boldSheet, "القيمة", xTotal, colWTotal, y + 3);
-                        DrawColHeader(g, boldSheet, "المخزن", xWh, colWWh, y + 3);
+                        DrawColHeader(g, boldSheet, "إجمالي البيع", xTotal, colWTotal, y + 3);
                         DrawColHeader(g, boldSheet, "ملاحظات", xNotes, colWNotes, y + 3);
                         y += 24;
                     }
@@ -1139,28 +1196,28 @@ namespace ChickenDist.Forms
                             _runningTotal += tot; 
                             _runningQtyTotal += qty;
 
-                            if (isAlTarek)
+                            if (isCommercial || isAlTarek)
                             {
                                 g.DrawRectangle(Pens.Black, xIndex, y, colWIndex, 20);
+                                g.DrawRectangle(Pens.Black, xCode, y, colWCode, 20);
                                 g.DrawRectangle(Pens.Black, xName, y, colWName, 20);
+                                g.DrawRectangle(Pens.Black, xUnit, y, colWUnit, 20);
                                 g.DrawRectangle(Pens.Black, xQty, y, colWQty, 20);
                                 g.DrawRectangle(Pens.Black, xPrice, y, colWPrice, 20);
                                 g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, 20);
                                 g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, 20);
-                                g.DrawRectangle(Pens.Black, xWh, y, colWWh, 20);
                                 g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, 20);
 
                                 DrawColCell(g, normal, (_printItemIndex + 1).ToString(), xIndex, colWIndex, y + 3, center);
+                                string pCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : (r.Table.Columns.Contains("ProductID") ? r["ProductID"].ToString() : "");
+                                DrawColCell(g, normal, pCode, xCode, colWCode, y + 3, center);
                                 DrawColCell(g, normal, r["ProductName"].ToString(), xName, colWName, y + 3, right);
+                                string unitStr = r.Table.Columns.Contains("UnitName") && !string.IsNullOrWhiteSpace(r["UnitName"]?.ToString()) ? r["UnitName"].ToString() : (r.Table.Columns.Contains("BaseUnitName") && !string.IsNullOrWhiteSpace(r["BaseUnitName"]?.ToString()) ? r["BaseUnitName"].ToString() : "قطعة");
+                                DrawColCell(g, normal, unitStr, xUnit, colWUnit, y + 3, center);
                                 DrawColCell(g, normal, qty.ToString("N2"), xQty, colWQty, y + 3, center);
                                 DrawColCell(g, normal, price.ToString("N2"), xPrice, colWPrice, y + 3, center);
                                 DrawColCell(g, normal, discText, xDiscount, colWDiscount, y + 3, center);
                                 DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y + 3, center);
-
-                                string whName = r.Table.Columns.Contains("WarehouseName") && r["WarehouseName"] != DBNull.Value
-                                    ? r["WarehouseName"].ToString()
-                                    : (AppConfig.CompanyName);
-                                DrawColCell(g, normal, whName, xWh, colWWh, y + 3, center);
 
                                 string itemNotes = r.Table.Columns.Contains("Notes") && r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
                                 DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y + 3, center);
@@ -1207,7 +1264,7 @@ namespace ChickenDist.Forms
                         }
                     }
 
-                    if (isAlTarek)
+                    if (isCommercial || isAlTarek)
                     {
                         // Items Table Total Summary Row
                         g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), margin, y, pageW - 2 * margin, 22);
@@ -1235,7 +1292,81 @@ namespace ChickenDist.Forms
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 
-                    if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
+                    if (isCommercial)
+                    {
+                        // ════════════════════════════════════════════════════════════════════════
+                        // 2-COLUMN FINANCIAL SUMMARY TABLE & SIGNATURES (نموذج بيان الأسعار والأجهزة)
+                        // ════════════════════════════════════════════════════════════════════════
+                        int boxW = 280;
+                        int boxX = margin;
+                        int boxRowH = 22;
+                        decimal discVal = invDiscountAmt > 0 ? invDiscountAmt : (invDiscountPct > 0 ? (_runningTotal * invDiscountPct / 100m) : 0m);
+
+                        int clientID = (_saleRow != null && _saleRow["ClientID"] != DBNull.Value) ? Convert.ToInt32(_saleRow["ClientID"]) : 0;
+                        decimal prevBal = 0m;
+                        decimal curBal = 0m;
+                        decimal paidAmt = (_saleRow != null && _saleRow["CashPaid"] != DBNull.Value) ? Convert.ToDecimal(_saleRow["CashPaid"]) : (_saleRow != null && _saleRow["SaleType"].ToString() == "Cash" ? netAmount : 0m);
+                        decimal remainAmt = netAmount - paidAmt;
+
+                        if (clientID > 0)
+                        {
+                            try
+                            {
+                                int saleID = Convert.ToInt32(_saleRow["SaleID"]);
+                                prevBal = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
+                                curBal = prevBal + remainAmt;
+                            }
+                            catch { }
+                        }
+
+                        string[] sumLabels = { "الإجمالي قبل الخصم", "الخصم", "الإجمالي بعد الخصم", "المدفوع", "المتبقي", "الرصيد السابق", "الرصيد الحالي" };
+                        string[] sumValues = {
+                            _runningTotal.ToString("N2"),
+                            discVal > 0 ? $"-{discVal:N2}" : "0.00",
+                            netAmount.ToString("N2"),
+                            paidAmt.ToString("N2"),
+                            remainAmt.ToString("N2"),
+                            prevBal.ToString("N2"),
+                            curBal.ToString("N2")
+                        };
+
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), boxX, y, boxW, sumLabels.Length * boxRowH);
+                        g.DrawRectangle(Pens.Black, boxX, y, boxW, sumLabels.Length * boxRowH);
+
+                        for (int si = 0; si < sumLabels.Length; si++)
+                        {
+                            int rowY = y + si * boxRowH;
+                            g.DrawRectangle(Pens.Black, boxX, rowY, boxW, boxRowH);
+                            g.DrawLine(Pens.Black, boxX + 130, rowY, boxX + 130, rowY + boxRowH);
+
+                            bool isBold = (si == 2 || si == 6);
+                            var rowF = isBold ? boldSheet : normal;
+                            Brush rowB = isBold ? Brushes.DarkBlue : Brushes.Black;
+
+                            g.DrawString(sumLabels[si], boldSheet, Brushes.Black, new RectangleF(boxX + 132, rowY + 2, 140, boxRowH - 4), right);
+                            g.DrawString(sumValues[si], rowF, rowB, new RectangleF(boxX + 5, rowY + 2, 122, boxRowH - 4), center);
+                        }
+
+                        // Right side: notes or tafqeet
+                        string tafStr = TafqeetHelper.ConvertToArabicWords(netAmount);
+                        int rightNotesX = boxX + boxW + 20;
+                        int rightNotesW = pageW - margin - rightNotesX;
+                        if (rightNotesW > 100)
+                        {
+                            g.DrawString($"فقط وقدره: {tafStr}", boldSheet, Brushes.Black, new RectangleF(rightNotesX, y + 10, rightNotesW, 40), right);
+                        }
+
+                        y += sumLabels.Length * boxRowH + 25;
+
+                        // Signatures
+                        if (y + 35 <= e.PageBounds.Height)
+                        {
+                            g.DrawString("توقيع المستلم: .......................................", boldSheet, Brushes.Black, margin + 10, y);
+                            g.DrawString("توقيع البائع: .......................................", boldSheet, Brushes.Black, new RectangleF(0, y, pageW - margin - 10, 20), right);
+                            y += 28;
+                        }
+                    }
+                    else if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
                     {
                         g.DrawLine(new Pen(Color.DarkSlateGray, 1.5f), margin, y, pageW - margin, y); y += 8;
                         if (invDiscountAmt > 0 || shippingAmt > 0)
@@ -1343,7 +1474,7 @@ namespace ChickenDist.Forms
                             y += 32;
                         }
                     }
-                    else if (!isAlTarek)
+                    else if (!isAlTarek && !isCommercial)
                     {
                         g.DrawLine(new Pen(Color.DarkBlue, 1.5f), margin, y, pageW - margin, y); y += 8;
                         if (invDiscountAmt > 0 || shippingAmt > 0)

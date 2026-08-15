@@ -129,14 +129,16 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int saleID)
         {
             return DbHelper.Query(
-                @"SELECT si.ItemID, si.ProductID, p.ProductName, si.Quantity, si.Quantity AS SoldQty, si.UnitPrice, si.TotalPrice,
+                @"SELECT si.ItemID, si.ProductID, COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR(50))) AS ProductCode,
+                          p.ProductName, si.Quantity, si.Quantity AS SoldQty, si.UnitPrice, si.TotalPrice,
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
                           p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation,
                           p.Unit AS BaseUnitName, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor,
                           ISNULL(ret.PrevReturnedQty, 0.0) AS PrevReturnedQty,
-                          si.UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI, si.KitchenNotes
+                          COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI, si.KitchenNotes,
+                          COALESCE(si.Notes, N'') AS Notes
                   FROM SaleItems si 
                   JOIN Products p ON si.ProductID = p.ProductID
                   LEFT JOIN (
