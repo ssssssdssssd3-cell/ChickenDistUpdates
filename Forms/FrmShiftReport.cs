@@ -454,49 +454,7 @@ namespace ChickenDist.Forms
         {
             if (!(cboShifts.SelectedItem is ComboItem selectedItem) || selectedItem.ID <= 0) return;
             int shiftID = selectedItem.ID;
-
-            var pd = new PrintDocument();
-            if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName))
-                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
-
-            pd.PrintPage += (s2, e2) =>
-            {
-                var g = e2.Graphics;
-                var fnt = new Font("Courier New", 9f);
-                var fntB = new Font("Courier New", 10f, FontStyle.Bold);
-                int px = 10, py = 10;
-                int pw = (int)e2.PageBounds.Width - 20;
-
-                void Ln(string t, bool bold = false, bool center = false)
-                {
-                    var sf = new System.Drawing.StringFormat();
-                    if (center) sf.Alignment = StringAlignment.Center;
-                    g.DrawString(t, bold ? fntB : fnt, Brushes.Black, center ? new RectangleF(px, py, pw, 16) : new RectangleF(px, py, pw, 16), sf);
-                    py += 18;
-                }
-                void Sep() { g.DrawLine(Pens.Black, px, py, px + pw, py); py += 6; }
-
-                Ln(AppConfig.CompanyName, true, true);
-                Ln($"تقرير تقفيل الوردية التفصيلي #{shiftID}", true, true);
-                Sep();
-                Ln($"الوردية: {cboShifts.Text}");
-                Ln($"طُبع بتاريخ: {DateTime.Now:yyyy-MM-dd HH:mm}");
-                Sep();
-                Ln($"رصيد الفتح:        {lblOpeningCashVal.Text,12}");
-                Ln($"مبيعات كاش:        {lblCashSalesVal.Text,12}");
-                Ln($"مبيعات آجل/فيزا:   {lblCreditSalesVal.Text,12}");
-                Ln($"إجمالي المرتجعات:  {lblReturnsVal.Text,12}");
-                Ln($"إجمالي المصروفات:  {lblExpensesVal.Text,12}");
-                Sep();
-                Ln($"المتوقع بالخزنة:   {lblExpectedVal.Text,12}");
-                Ln($"الفعلي بالخزنة:    {lblActualVal.Text,12}");
-                Ln($"عجز/زيادة الوردية: {lblDiffVal.Text,12}");
-                Sep();
-                Ln("نشكركم لاستخدام البرنامج", false, true);
-            };
-
-            try { pd.Print(); }
-            catch (Exception ex) { MessageBox.Show("فشل إرسال التقرير للطابعة:\n" + ex.Message, "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            FrmPrintShift.ShowPrintOptions(shiftID, btnPrint);
         }
     }
 }

@@ -920,7 +920,7 @@ namespace ChickenDist.Forms
 
                 if (MessageBox.Show("✅ تم إغلاق الوردية وتوريد النقدية وتسوية الحسابات بنجاح!\nهل تريد طباعة تقرير إغلاق الوردية الآن؟", "إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
-                    PrintShiftReport(shiftID, actual, diff);
+                    FrmPrintShift.ShowPrintOptions(shiftID, btnCloseShift);
                 }
 
                 var resStartNew = MessageBox.Show(
@@ -974,61 +974,8 @@ namespace ChickenDist.Forms
         private void BtnPrintReport_Click(object sender, EventArgs e)
         {
             if (_openShift == null) return;
-            decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual);
-            PrintShiftReport(Convert.ToInt32(_openShift["ShiftID"]), actual, actual - (_summary?.Expected ?? 0));
-        }
-
-        private void PrintShiftReport(int shiftID, decimal actual, decimal diff)
-        {
-            var pd = new PrintDocument();
-            if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName))
-                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
-
-            pd.PrintPage += (s2, e2) =>
-            {
-                var g = e2.Graphics;
-                var fnt = new Font("Courier New", 9f);
-                var fntB = new Font("Courier New", 10f, FontStyle.Bold);
-                int px = 10, py = 10;
-                int pw = (int)e2.PageBounds.Width - 20;
-
-                void Ln(string t, bool bold = false, bool center = false)
-                {
-                    var sf = new System.Drawing.StringFormat();
-                    if (center) sf.Alignment = StringAlignment.Center;
-                    g.DrawString(t, bold ? fntB : fnt, Brushes.Black, center ? new RectangleF(px, py, pw, 16) : new RectangleF(px, py, pw, 16), sf);
-                    py += 18;
-                }
-                void Sep() { g.DrawLine(Pens.Black, px, py, px + pw, py); py += 6; }
-
-                Ln(AppConfig.CompanyName, true, true);
-                Ln($"تقرير إغلاق الوردية #{shiftID}", true, true);
-                Sep();
-                if (_openShift != null)
-                {
-                    Ln($"وقت الفتح: {Convert.ToDateTime(_openShift["OpenTime"]):yyyy-MM-dd HH:mm}");
-                    Ln($"الكاشير: {_openShift["OpenedByName"]}");
-                }
-                Ln($"وقت الإغلاق: {DateTime.Now:yyyy-MM-dd HH:mm}");
-                Sep();
-                Ln($"رصيد الفتح:        {(_summary?.OpeningCash ?? 0),10:N2} ج");
-                Ln($"إجمالي المبيعات:   {(_summary?.TotalSales ?? 0),10:N2} ج");
-                Ln($"  نقدي:            {(_summary?.CashSales ?? 0),10:N2} ج");
-                Ln($"  آجل/بطاقات:      {(_summary?.CreditSales + _summary?.OtherSales ?? 0),10:N2} ج");
-                Ln($"إجمالي المرتجعات:  {(_summary?.TotalReturns ?? 0),10:N2} ج");
-                Ln($"المصروفات والسحب:  {(_summary?.Expenses ?? 0),10:N2} ج");
-                Sep();
-                Ln($"المتوقع بالخزنة:   {(_summary?.Expected ?? 0),10:N2} ج");
-                Ln($"الفعلي بالخزنة:    {actual,10:N2} ج");
-                Ln($"الفرق (عجز/زيادة): {diff,10:N2} ج");
-                Sep();
-                if (!string.IsNullOrEmpty(txtNotes?.Text?.Trim()))
-                    Ln($"ملاحظات: {txtNotes.Text.Trim()}");
-                Ln($"طُبع بتاريخ: {DateTime.Now:yyyy-MM-dd HH:mm}", false, true);
-            };
-
-            try { pd.Print(); }
-            catch (Exception ex) { MessageBox.Show("فشل إرسال التقرير للطابعة:\n" + ex.Message, "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
+            FrmPrintShift.ShowPrintOptions(shiftID, btnPrintReport);
         }
 
         private class ShiftSummary
