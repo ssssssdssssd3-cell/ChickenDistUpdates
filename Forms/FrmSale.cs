@@ -4652,18 +4652,26 @@ namespace ChickenDist.Forms
 			};
 			cboTpl.Items.AddRange(new object[]
 			{
-				"1️⃣ النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
-				"2️⃣ النموذج السريع المختصر (رسالة نصية سريعة)",
-				"3️⃣ نموذج كشف الحساب والمالية (رسالة نصية مالية)",
-				"4️⃣ النموذج المصمم كبطاقة ملونة (صورة - Image Card)"
+				"🖼️ كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
+				"🖼️ كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
+				"🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
+				"🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
+				"🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+				"💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
+				"💬 النموذج السريع الموجز (رسالة نصية سريعة)",
+				"💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
 			});
 
 			string savedTpl = AppConfig.WhatsAppInvoiceTemplate;
 			cboTpl.SelectedIndex = savedTpl switch
 			{
-				"Summary" => 1,
-				"Financial" => 2,
-				"ImageCard" => 3,
+				"ImageCardModern" => 1,
+				"ImageCardCommercial" => 2,
+				"ImageCardEmerald" => 3,
+				"ImageCardGold" => 4,
+				"Detailed" => 5,
+				"Summary" => 6,
+				"Financial" => 7,
 				_ => 0
 			};
 
@@ -4699,14 +4707,19 @@ namespace ChickenDist.Forms
 			Action updatePreview = () =>
 			{
 				int idx = cboTpl.SelectedIndex;
-				if (idx == 3)
+				if (idx < 5)
 				{
 					txtTextPreview.Visible = false;
 					picImagePreview.Visible = true;
-					if (cachedBmp == null)
+					string tplKey = idx switch
 					{
-						cachedBmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance);
-					}
+						1 => "ImageCardModern",
+						2 => "ImageCardCommercial",
+						3 => "ImageCardEmerald",
+						4 => "ImageCardGold",
+						_ => "ImageCardNavy"
+					};
+					cachedBmp = ReceiptImageGenerator.GenerateSaleReceiptImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, tplKey);
 					picImagePreview.Image = cachedBmp;
 				}
 				else
@@ -4715,15 +4728,15 @@ namespace ChickenDist.Forms
 					txtTextPreview.Visible = true;
 					string textContent = idx switch
 					{
-						1 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
-						2 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+						6 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+						7 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
 						_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
 					};
 					txtTextPreview.Text = textContent;
 				}
 			};
 
-			cboTpl.SelectedIndexChanged += (s, e) => updatePreview();
+			cboTpl.SelectedIndexChanged += (s, e) => { cachedBmp = null; updatePreview(); };
 			updatePreview();
 
 			var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 64, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
@@ -4753,10 +4766,14 @@ namespace ChickenDist.Forms
 			{
 				string tplKey = cboTpl.SelectedIndex switch
 				{
-					1 => "Summary",
-					2 => "Financial",
-					3 => "ImageCard",
-					_ => "Detailed"
+					1 => "ImageCardModern",
+					2 => "ImageCardCommercial",
+					3 => "ImageCardEmerald",
+					4 => "ImageCardGold",
+					5 => "Detailed",
+					6 => "Summary",
+					7 => "Financial",
+					_ => "ImageCardNavy"
 				};
 				AppConfig.WhatsAppInvoiceTemplate = tplKey;
 				MessageBox.Show("✅ تم حفظ النموذج المختار كنموذج افتراضي لفواتير الواتساب!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -4767,8 +4784,8 @@ namespace ChickenDist.Forms
 				int idx = cboTpl.SelectedIndex;
 				string messageToSend = idx switch
 				{
-					1 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
-					2 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+					6 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+					7 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
 					_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
 				};
 				SendWhatsApp(phone, messageToSend);
@@ -4779,9 +4796,18 @@ namespace ChickenDist.Forms
 			{
 				try
 				{
+					int idx = cboTpl.SelectedIndex;
+					string tplKey = idx switch
+					{
+						1 => "ImageCardModern",
+						2 => "ImageCardCommercial",
+						3 => "ImageCardEmerald",
+						4 => "ImageCardGold",
+						_ => "ImageCardNavy"
+					};
 					if (cachedBmp == null)
 					{
-						cachedBmp = DrawInvoiceImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance);
+						cachedBmp = ReceiptImageGenerator.GenerateSaleReceiptImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, tplKey);
 					}
 					if (cachedBmp != null)
 					{

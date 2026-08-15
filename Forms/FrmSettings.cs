@@ -951,7 +951,7 @@ namespace ChickenDist.Forms
             cboWhatsAppInvoiceTemplate = new ComboBox
             {
                 Location = new Point(20, y),
-                Width = 330,
+                Width = 350,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -960,19 +960,49 @@ namespace ChickenDist.Forms
             };
             cboWhatsAppInvoiceTemplate.Items.AddRange(new object[]
             {
-                "1️⃣ النموذج التفصيلي الشامل (رسالة نصية كاملة)",
-                "2️⃣ النموذج السريع المختصر (رسالة نصية سريعة)",
-                "3️⃣ نموذج كشف الحساب والمالية (رسالة نصية مالية)",
-                "4️⃣ النموذج المصمم كبطاقة ملونة (صورة - Image Card)"
+                "🖼️ كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
+                "🖼️ كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
+                "🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
+                "🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
+                "🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+                "💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
+                "💬 النموذج السريع الموجز (رسالة نصية سريعة)",
+                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
             });
             cboWhatsAppInvoiceTemplate.SelectedIndex = AppConfig.WhatsAppInvoiceTemplate switch
             {
-                "Summary" => 1,
-                "Financial" => 2,
-                "ImageCard" => 3,
+                "ImageCardModern" => 1,
+                "ImageCardCommercial" => 2,
+                "ImageCardEmerald" => 3,
+                "ImageCardGold" => 4,
+                "Detailed" => 5,
+                "Summary" => 6,
+                "Financial" => 7,
                 _ => 0
             };
             this.Controls.Add(cboWhatsAppInvoiceTemplate);
+
+            var btnPreviewWhatsApp = Theme.MakeButton("👁️ معاينة قالب الواتساب", 380, y, 180, 28, Color.FromArgb(37, 211, 102));
+            btnPreviewWhatsApp.Click += (s, e) =>
+            {
+                string tplKey = cboWhatsAppInvoiceTemplate.SelectedIndex switch
+                {
+                    1 => "ImageCardModern",
+                    2 => "ImageCardCommercial",
+                    3 => "ImageCardEmerald",
+                    4 => "ImageCardGold",
+                    5 => "Detailed",
+                    6 => "Summary",
+                    7 => "Financial",
+                    _ => "ImageCardNavy"
+                };
+
+                using (var dlg = new FrmWhatsAppPreviewDialog(tplKey))
+                {
+                    dlg.ShowDialog(this);
+                }
+            };
+            this.Controls.Add(btnPreviewWhatsApp);
             y += 38;
 
             // آخر نسخة احتياطية
@@ -1180,10 +1210,14 @@ namespace ChickenDist.Forms
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
                 AppConfig.WhatsAppInvoiceTemplate = cboWhatsAppInvoiceTemplate.SelectedIndex switch
                 {
-                    1 => "Summary",
-                    2 => "Financial",
-                    3 => "ImageCard",
-                    _ => "Detailed"
+                    1 => "ImageCardModern",
+                    2 => "ImageCardCommercial",
+                    3 => "ImageCardEmerald",
+                    4 => "ImageCardGold",
+                    5 => "Detailed",
+                    6 => "Summary",
+                    7 => "Financial",
+                    _ => "ImageCardNavy"
                 };
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
                 AppConfig.BackupOnExit = chkBackupOnExit.Checked;
