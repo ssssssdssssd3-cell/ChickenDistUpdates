@@ -28,6 +28,8 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeStickerSize;
         private CheckBox chkReceiptShowDiscount;
         private CheckBox chkReceiptShowClientInfo;
+        private TextBox txtReceiptHeader;
+        private TextBox txtReceiptFooter;
         private TextBox txtBackupFolder;
         private Label lblLastBackup;
         private CheckBox chkBackupOnExit;
@@ -387,6 +389,40 @@ namespace ChickenDist.Forms
             this.Controls.Add(chkReceiptShowClientInfo);
             y += 32;
 
+            // ── ترويسة ومقدمة الريسيت (بداية الفاتورة) ───────────────────
+            AddLabel("ترويسة / مقدمة فاتورة الريسيت (نص ترحيبي بأعلى الفاتورة):", 20, ref y, 10);
+            txtReceiptHeader = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                Height = 44,
+                Multiline = true,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtReceiptHeader.Text = AppConfig.ReceiptHeaderNote;
+            this.Controls.Add(txtReceiptHeader);
+            y += 50;
+
+            // ── تذييل وخاتمة الريسيت (نهاية الفاتورة) ───────────────────
+            AddLabel("تذييل / خاتمة فاتورة الريسيت (سياسة الاستبدال أو رسالة شكر بأسفل الفاتورة):", 20, ref y, 10);
+            txtReceiptFooter = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                Height = 44,
+                Multiline = true,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
+            };
+            txtReceiptFooter.Text = AppConfig.ReceiptFooterNote;
+            this.Controls.Add(txtReceiptFooter);
+            y += 52;
+
             // زر معاينة الريسيت
             var btnPreviewReceipt = Theme.MakeButton("🖨️ معاينة نموذج الريسيت", 20, y, 220, 36, Theme.Primary);
             btnPreviewReceipt.Click += (s, e) =>
@@ -401,6 +437,8 @@ namespace ChickenDist.Forms
                                           : "Standard";
                 AppConfig.ReceiptShowDiscount = chkReceiptShowDiscount.Checked;
                 AppConfig.ReceiptShowClientInfo = chkReceiptShowClientInfo.Checked;
+                AppConfig.ReceiptHeaderNote = txtReceiptHeader.Text.Trim();
+                AppConfig.ReceiptFooterNote = txtReceiptFooter.Text.Trim();
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 AppConfig.CompanyName = string.IsNullOrWhiteSpace(txtCompanyName.Text) ? AppConfig.CompanyName : txtCompanyName.Text.Trim();
@@ -1170,6 +1208,10 @@ namespace ChickenDist.Forms
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
                 AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex == 2 ? "Never" : cboPOSReceiptMode.SelectedIndex == 1 ? "Ask" : "Always";
+                AppConfig.ReceiptShowDiscount = chkReceiptShowDiscount.Checked;
+                AppConfig.ReceiptShowClientInfo = chkReceiptShowClientInfo.Checked;
+                AppConfig.ReceiptHeaderNote = txtReceiptHeader.Text.Trim();
+                AppConfig.ReceiptFooterNote = txtReceiptFooter.Text.Trim();
                 AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
                 AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
                 AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();

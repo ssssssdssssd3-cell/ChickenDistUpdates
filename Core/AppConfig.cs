@@ -157,6 +157,20 @@ namespace ChickenDist.Core
             set => Set("ReceiptShowClientInfo", value ? "true" : "false");
         }
 
+        /// <summary>نص ترويسة/مقدمة الريسيت الحراري (أعلى الفاتورة)</summary>
+        public static string ReceiptHeaderNote
+        {
+            get => Get("ReceiptHeaderNote", "");
+            set => Set("ReceiptHeaderNote", value);
+        }
+
+        /// <summary>نص تذييل/خاتمة الريسيت الحراري (أسفل الفاتورة)</summary>
+        public static string ReceiptFooterNote
+        {
+            get => Get("ReceiptFooterNote", "شكراً لتعاملكم معنا | نسعد بزيارتكم دائماً");
+            set => Set("ReceiptFooterNote", value);
+        }
+
         /// <summary>
         /// وضع طباعة رسيت البيع التلقائي من نقطة البيع
         /// Always = طباعة تلقائية بدون سؤال (الافتراضي)

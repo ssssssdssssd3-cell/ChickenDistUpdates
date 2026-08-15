@@ -125,6 +125,12 @@ namespace ChickenDist.Forms
                     {
                         // MiniMarket template: optimized for grocery lists
                         g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center); y += 18;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DimGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         g.DrawString("فاتورة مبيعات مبسطة", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center); y += 16;
                         g.DrawLine(new Pen(Color.Black, 1.2f), lMargin, y, pageW - rMargin, y); y += 6;
                         
@@ -184,6 +190,12 @@ namespace ChickenDist.Forms
                         g.FillRectangle(Brushes.DarkSlateGray, lMargin, y, printableW, 26);
                         g.DrawString(AppConfig.CompanyName, bold, Brushes.White, new RectangleF(lMargin, y + 4, printableW, 20), center);
                         y += 32;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         
                         g.DrawString("فاتورة مبيعات", boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 25), center);
                         y += 24;
@@ -266,6 +278,12 @@ namespace ChickenDist.Forms
                     {
                         // Compact format: smaller fonts, tight layout, single-line items
                         g.DrawString(AppConfig.CompanyName, bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center); y += 16;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, small, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, small, Brushes.DimGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 2;
+                        }
                         g.DrawString("فاتورة مبيعات مبسطة", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center); y += 14;
                         g.DrawLine(Pens.Gray, lMargin, y, pageW - rMargin, y); y += 4;
                         
@@ -312,6 +330,12 @@ namespace ChickenDist.Forms
                     {
                         // Elegant format: stylish headers, decorative lines, fancy layout
                         g.DrawString("❀ " + AppConfig.CompanyName + " ❀", boldBig, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DimGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         g.DrawString("ـ ــ ـــ فاتورة مبيعات ـــ ــ ـ", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
                         g.DrawString("✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
                         
@@ -357,6 +381,12 @@ namespace ChickenDist.Forms
                     {
                         // GridReceipt: Highly readable, columns and rows separated clearly by clean lines
                         g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 25), center); y += 22;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DimGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
                         g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 6;
 
@@ -441,6 +471,12 @@ namespace ChickenDist.Forms
                     {
                         // FancyReceipt: Ornamented borders, elegant labels and divider lines
                         g.DrawString("*** " + AppConfig.CompanyName + " ***", boldBig, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         g.DrawString("==========================", small, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
                         g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
 
@@ -486,6 +522,12 @@ namespace ChickenDist.Forms
                         // STANDARD (DEFAULT) LAYOUT — جدول أعمدة واضح مع خطوط طول وعرض
                         // ==========================================
                         g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 25), center); y += 22;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
+                        {
+                            var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
+                            g.DrawString(AppConfig.ReceiptHeaderNote, normal, Brushes.DimGray, new RectangleF(lMargin, y, printableW, headerSize.Height + 2), center);
+                            y += (int)headerSize.Height + 4;
+                        }
                         g.DrawString("فاتورة مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
                         g.DrawLine(Pens.Black, lMargin, y, pageW - rMargin, y); y += 6;
 
@@ -753,10 +795,35 @@ namespace ChickenDist.Forms
                         y += 34;
                         g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
                     }
-                    string footerText = string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase) 
-                        ? "نشكركم لزيارتكم الكريمة وثقتكم بنا" 
-                        : "شكراً لتعاملكم معنا";
-                    g.DrawString(footerText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
+                    // تذييل الفاتورة المخصص (ReceiptFooterNote)
+                    string footerText = !string.IsNullOrWhiteSpace(AppConfig.ReceiptFooterNote)
+                        ? AppConfig.ReceiptFooterNote
+                        : (string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase) 
+                            ? "نشكركم لزيارتكم الكريمة وثقتكم بنا" 
+                            : "شكراً لتعاملكم معنا");
+
+                    var footerSize = g.MeasureString(footerText, small, printableW);
+                    g.DrawString(footerText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, footerSize.Height + 4), center);
+                    y += (int)footerSize.Height + 4;
+
+                    // عنوان الشركة ورقم الهاتف في أسفل الفاتورة
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) || !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+                    {
+                        g.DrawLine(Pens.LightGray, lMargin + 15, y, pageW - rMargin - 15, y); y += 4;
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress))
+                        {
+                            string addrText = "📍 " + AppConfig.CompanyAddress.Trim();
+                            var addrSize = g.MeasureString(addrText, small, printableW);
+                            g.DrawString(addrText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, addrSize.Height + 2), center);
+                            y += (int)addrSize.Height + 4;
+                        }
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+                        {
+                            string phoneText = "📞 " + AppConfig.CompanyPhone.Trim();
+                            g.DrawString(phoneText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
+                            y += 18;
+                        }
+                    }
                 }
                 else
                 {
