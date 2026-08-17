@@ -37,6 +37,16 @@ namespace ChickenDist.Forms
         private CheckBox chkOnlyWithTransactions;
         private Button btnAddCategory;
 
+        // Header and layout elements
+        private Panel pnlTopCard;
+        private Panel pnlBottom;
+        private Label lblSelect;
+        private Label lblQty;
+        private Label lblCat;
+        private Label lblPrinter;
+        private Label lblTemplate;
+        private Label lblEncoding;
+
         private bool _isSelectingCombo = false;
 
         // Print state tracking
@@ -55,9 +65,9 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "🏷️ طباعة باركود الأصناف (مجمع)";
-            this.Size = new Size(1020, 680);
-            this.MinimumSize = new Size(900, 600);
-            this.StartPosition = FormStartPosition.CenterParent;
+            this.Size = new Size(1150, 750);
+            this.MinimumSize = new Size(950, 600);
+            this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
             this.RightToLeft = RightToLeft.Yes;
@@ -65,74 +75,68 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmBulkPrintBarcodes_KeyDown;
 
-            // ── 1. Title Header ──────────────────────────────────────────────
+            // ── 1. Title Header (شريط العنوان المدمج) ────────────────────────
             var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
 
-            // ── 2. Top Selection Panel (Search & Add) ────────────────────────
-            var pnlSelection = new Panel
+            // ── 2. Top Card: Single compact unified panel for item add, category add & badges ──
+            pnlTopCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
-                BackColor = Color.FromArgb(248, 250, 252),
-                Padding = new Padding(12, 10, 12, 10)
+                Height = 74,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10, 4, 10, 4)
             };
 
-            var lblSelect = new Label
+            // Row 1 Controls: Individual Product Selection & Search
+            lblSelect = new Label
             {
-                Text = "اختر الصنف:",
-                Location = new Point(915, 18),
+                Text = "🏷️ الصنف:",
                 AutoSize = true,
-                ForeColor = Color.FromArgb(30, 41, 59),
-                Font = Theme.FontBold
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
 
             cboProduct = new ComboBox
             {
-                Location = new Point(480, 14),
-                Width = 430,
                 DropDownStyle = ComboBoxStyle.DropDown,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10.5f)
+                Font = new Font("Segoe UI", 10f)
             };
             cboProduct.SelectedIndexChanged += CboProduct_SelectedIndexChanged;
 
             btnSearchProduct = new Button
             {
                 Text = "🔍 بحث متقدم (F3)",
-                Location = new Point(310, 13),
-                Width = 160,
-                Height = 34,
+                Height = 28,
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
             btnSearchProduct.Click += BtnSearchProduct_Click;
 
-            var lblQty = new Label
+            lblQty = new Label
             {
                 Text = "الكمية:",
-                Location = new Point(255, 18),
                 AutoSize = true,
-                ForeColor = Color.FromArgb(30, 41, 59),
-                Font = Theme.FontBold
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
 
             nudQty = new NumericUpDown
             {
-                Location = new Point(175, 14),
-                Width = 75,
+                Height = 26,
                 Minimum = 1,
                 Maximum = 1000,
                 Value = 1,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 TextAlign = HorizontalAlignment.Center
             };
             nudQty.KeyDown += (s, e) =>
@@ -146,56 +150,86 @@ namespace ChickenDist.Forms
 
             btnAdd = new Button
             {
-                Text = "➕ إضافة",
-                Location = new Point(50, 13),
-                Width = 115,
-                Height = 34,
+                Text = "➕ إضافة للقائمة",
+                Height = 28,
                 BackColor = Theme.Success,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             btnAdd.FlatAppearance.BorderSize = 0;
             btnAdd.Click += BtnAdd_Click;
 
-            pnlSelection.Controls.AddRange(new Control[] {
-                lblSelect, cboProduct, btnSearchProduct, lblQty, nudQty, btnAdd
-            });
-
-            // ── 3. Grid Header & Badge Bar ───────────────────────────────────
-            var pnlGridHeader = new Panel
+            // Row 2 Controls: Category Filter + Summary Badges + Clear All
+            lblCat = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(12, 6, 12, 6)
+                Text = "📂 تصنيف كامل:",
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
+
+            cboCategoryFilter = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+
+            chkOnlyWithStock = new CheckBox
+            {
+                Text = "ليها رصيد",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(5, 150, 105),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Checked = false
+            };
+
+            chkOnlyWithTransactions = new CheckBox
+            {
+                Text = "تم التعامل",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 64, 175),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Checked = false
+            };
+
+            btnAddCategory = new Button
+            {
+                Text = "➕ إضافة التصنيف",
+                Height = 26,
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnAddCategory.FlatAppearance.BorderSize = 0;
+            btnAddCategory.Click += BtnAddCategory_Click;
 
             lblTotalProductsCount = new Label
             {
-                Text = "📦 الأصناف المضافة: 0",
-                Location = new Point(810, 8),
+                Text = "📦 الأصناف: 0",
                 AutoSize = true,
                 ForeColor = Theme.Primary,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
 
             lblTotalLabelsCount = new Label
             {
-                Text = "🏷️ إجمالي الملصقات: 0 ملصق",
-                Location = new Point(580, 8),
+                Text = "🏷️ الملصقات: 0",
                 AutoSize = true,
                 ForeColor = Color.FromArgb(217, 119, 6),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
 
             btnClearAll = new Button
             {
                 Text = "🗑️ مسح الكل",
-                Location = new Point(12, 4),
-                Width = 110,
-                Height = 28,
+                Height = 26,
                 BackColor = Color.FromArgb(239, 68, 68),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -212,44 +246,79 @@ namespace ChickenDist.Forms
                 }
             };
 
-            pnlGridHeader.Controls.AddRange(new Control[] { lblTotalProductsCount, lblTotalLabelsCount, btnClearAll });
+            pnlTopCard.Controls.AddRange(new Control[] {
+                lblSelect, cboProduct, btnSearchProduct, lblQty, nudQty, btnAdd,
+                lblCat, cboCategoryFilter, chkOnlyWithStock, chkOnlyWithTransactions, btnAddCategory,
+                lblTotalProductsCount, lblTotalLabelsCount, btnClearAll
+            });
 
-            // ── 4. Main Items DataGridView ────────────────────────────────────
+            // ── 3. Main Items DataGridView (مع تلوين تبادلي لراحة العين وتكبير المساحة) ──
             dgItems = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Color.FromArgb(226, 232, 240),
+                GridColor = Theme.BorderColor,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.White,
-                    ForeColor = Color.FromArgb(15, 23, 42),
+                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(42, 46, 56) : Color.White,
+                    ForeColor = Theme.TextMain,
                     SelectionBackColor = Theme.Primary,
                     SelectionForeColor = Color.White,
-                    Font = Theme.FontMain
-                },
-                ColumnHeadersHeight = 36,
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-                {
-                    BackColor = Theme.Primary,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9.5f),
                     Alignment = DataGridViewContentAlignment.MiddleCenter
                 },
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(34, 38, 46) : Color.FromArgb(240, 246, 252),
+                    ForeColor = Theme.TextMain,
+                    SelectionBackColor = Theme.Primary,
+                    SelectionForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                },
+                ColumnHeadersHeight = 32,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(30, 41, 59),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                },
+                RowTemplate = { Height = 27 },
                 EnableHeadersVisualStyles = false
             };
             Theme.EnableDoubleBuffer(dgItems);
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 160 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود / الكود", ReadOnly = true, FillWeight = 90 });
+            
+            var colProdName = new DataGridViewTextBoxColumn
+            {
+                Name = "ProductName",
+                HeaderText = "اسم الصنف",
+                ReadOnly = true,
+                FillWeight = 190
+            };
+            colProdName.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            colProdName.DefaultCellStyle.Padding = new Padding(0, 0, 8, 0);
+            dgItems.Columns.Add(colProdName);
+
+            var colProdCode = new DataGridViewTextBoxColumn
+            {
+                Name = "ProductCode",
+                HeaderText = "الباركود / الكود",
+                ReadOnly = true,
+                FillWeight = 95
+            };
+            colProdCode.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colProdCode.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            dgItems.Columns.Add(colProdCode);
 
             var colPrice = new DataGridViewTextBoxColumn
             {
@@ -257,8 +326,8 @@ namespace ChickenDist.Forms
                 HeaderText = "سعر البيع المطبوع",
                 FillWeight = 85
             };
-            colPrice.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
-            colPrice.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            colPrice.DefaultCellStyle.BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(50, 56, 68) : Color.FromArgb(248, 250, 252);
+            colPrice.DefaultCellStyle.ForeColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(147, 197, 253) : Color.FromArgb(29, 78, 216);
             colPrice.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgItems.Columns.Add(colPrice);
@@ -267,10 +336,10 @@ namespace ChickenDist.Forms
             {
                 Name = "PrintQty",
                 HeaderText = "عدد الملصقات",
-                FillWeight = 85
+                FillWeight = 80
             };
-            colPrintQty.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
-            colPrintQty.DefaultCellStyle.ForeColor = Color.FromArgb(180, 83, 9);
+            colPrintQty.DefaultCellStyle.BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(60, 50, 25) : Color.FromArgb(254, 243, 199);
+            colPrintQty.DefaultCellStyle.ForeColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(253, 224, 71) : Color.FromArgb(180, 83, 9);
             colPrintQty.DefaultCellStyle.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             colPrintQty.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgItems.Columns.Add(colPrintQty);
@@ -290,38 +359,32 @@ namespace ChickenDist.Forms
             dgItems.CellClick += DgItems_CellClick;
             dgItems.CellValueChanged += (s, e) => UpdateSummaryBadges();
 
-            var pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 4, 12, 4) };
+            var pnlGridContainer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(8, 2, 8, 2),
+                BackColor = Theme.BgMain
+            };
             pnlGridContainer.Controls.Add(dgItems);
 
-            // ── 5. Bottom Settings & Action Panel ─────────────────────────────
-            var pnlBottom = new Panel
+            // ── 4. Bottom Settings & Action Panel (مضغوط ومرتب صفين خفيفين) ──
+            pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 150,
-                BackColor = Color.FromArgb(248, 250, 252),
-                Padding = new Padding(12, 8, 12, 8)
+                Height = 60,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10, 4, 10, 4)
             };
 
-            var pnlSettings = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 85,
-                BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(10, 8, 10, 8)
-            };
-
-            Color labelDark = Color.FromArgb(30, 41, 59);
-
-            var lblPrinter = new Label { Text = "🖨️ طابعة الملصقات:", Location = new Point(840, 12), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
+            // Settings Controls
+            lblPrinter = new Label { Text = "🖨️ طابعة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboPrinters = new ComboBox
             {
-                Location = new Point(570, 8),
-                Width = 265,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.White,
-                ForeColor = labelDark,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9f)
             };
             try
             {
@@ -336,36 +399,14 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            chkPrintPrice = new CheckBox
-            {
-                Text = "طباعة السعر على الملصق",
-                Location = new Point(340, 10),
-                AutoSize = true,
-                ForeColor = labelDark,
-                Font = Theme.FontBold,
-                Checked = true
-            };
-
-            chkPrintCompanyName = new CheckBox
-            {
-                Text = "طباعة اسم المؤسسة",
-                Location = new Point(140, 10),
-                AutoSize = true,
-                ForeColor = labelDark,
-                Font = Theme.FontBold,
-                Checked = true
-            };
-
-            var lblTemplate = new Label { Text = "📐 شكل الملصق:", Location = new Point(840, 48), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
+            lblTemplate = new Label { Text = "📐 الشكل:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboBarcodeTemplate = new ComboBox
             {
-                Location = new Point(570, 44),
-                Width = 265,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.White,
-                ForeColor = labelDark,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9f)
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
@@ -380,125 +421,194 @@ namespace ChickenDist.Forms
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
 
-            var lblEncoding = new Label { Text = "🔒 التشفير:", Location = new Point(445, 48), AutoSize = true, ForeColor = labelDark, Font = Theme.FontBold };
+            lblEncoding = new Label { Text = "🔒 التشفير:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboBarcodeEncoding = new ComboBox
             {
-                Location = new Point(140, 44),
-                Width = 300,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.White,
-                ForeColor = labelDark,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9f)
             };
             cboBarcodeEncoding.Items.AddRange(new object[]
             {
-                "Code 128 (موصى به - سريع وسهل القراءة)",
+                "Code 128 (موصى به)",
                 "Code 39 (أحادي عريض)"
             });
             cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
 
-            pnlSettings.Controls.AddRange(new Control[] {
-                lblPrinter, cboPrinters, chkPrintPrice, chkPrintCompanyName,
-                lblTemplate, cboBarcodeTemplate, lblEncoding, cboBarcodeEncoding
-            });
+            chkPrintPrice = new CheckBox
+            {
+                Text = "طباعة السعر",
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Checked = true
+            };
 
-            // Action Buttons Bar
-            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Color.Transparent };
-            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة (Ctrl+P)", 370, 8, 220, 40, Theme.Success);
-            btnPrint.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            chkPrintCompanyName = new CheckBox
+            {
+                Text = "طباعة اسم المؤسسة",
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Checked = true
+            };
+
+            // Action Buttons
+            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة (Ctrl+P)", Theme.Success);
+            btnPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnPrint.Height = 36;
             btnPrint.Click += (s, e) => StartPrintJob(false);
 
-            btnPreview = Theme.MakeButton("معاينة 👁️", 230, 8, 125, 40, Theme.Accent);
-            btnPreview.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnPreview = Theme.MakeButton("معاينة 👁️", Theme.Accent);
+            btnPreview.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnPreview.Height = 36;
             btnPreview.Click += (s, e) => StartPrintJob(true);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 90, 8, 125, 40, Color.FromArgb(70, 80, 95));
-            btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnCancel = Theme.MakeButton("إلغاء ↩", Color.FromArgb(100, 116, 139));
+            btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnCancel.Height = 36;
             btnCancel.Click += (s, e) => CloseOrNavigateBack();
 
-            pnlActions.Controls.AddRange(new Control[] { btnPrint, btnPreview, btnCancel });
-
-            pnlBottom.Controls.Add(pnlActions);
-            pnlBottom.Controls.Add(pnlSettings);
-
-            // ── 2b. Category Filter Panel ────────────────────────────────────
-            var pnlCategoryFilter = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 50,
-                BackColor = Color.FromArgb(235, 245, 255),
-                Padding = new Padding(12, 8, 12, 8)
-            };
-
-            var lblCat = new Label
-            {
-                Text = "📂 إضافة تصنيف كامل:",
-                Location = new Point(880, 14),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(30, 41, 59),
-                Font = Theme.FontBold
-            };
-
-            cboCategoryFilter = new ComboBox
-            {
-                Location = new Point(555, 11),
-                Width = 320,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10f)
-            };
-
-            chkOnlyWithStock = new CheckBox
-            {
-                Text = "ليها رصيد فقط",
-                Location = new Point(410, 14),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(5, 150, 105),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Checked = false
-            };
-
-            chkOnlyWithTransactions = new CheckBox
-            {
-                Text = "تم التعامل عليها فقط",
-                Location = new Point(245, 14),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(30, 64, 175),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Checked = false
-            };
-
-            btnAddCategory = new Button
-            {
-                Text = "➕ إضافة التصنيف",
-                Location = new Point(100, 10),
-                Width = 140,
-                Height = 30,
-                BackColor = Color.FromArgb(37, 99, 235),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
-            };
-            btnAddCategory.FlatAppearance.BorderSize = 0;
-            btnAddCategory.Click += BtnAddCategory_Click;
-
-            pnlCategoryFilter.Controls.AddRange(new Control[] {
-                lblCat, cboCategoryFilter, chkOnlyWithStock, chkOnlyWithTransactions, btnAddCategory
+            pnlBottom.Controls.AddRange(new Control[] {
+                lblPrinter, cboPrinters, lblTemplate, cboBarcodeTemplate, lblEncoding, cboBarcodeEncoding,
+                chkPrintPrice, chkPrintCompanyName,
+                btnPrint, btnPreview, btnCancel
             });
 
-            // Add Control Tree in correct Z-Order for WinForms Top-to-Bottom Docking
-            this.Controls.Add(pnlGridContainer);  // Fill
-            this.Controls.Add(pnlBottom);         // Bottom
-            this.Controls.Add(pnlGridHeader);     // Top (4th from top)
-            this.Controls.Add(pnlCategoryFilter); // Top (3rd from top)
-            this.Controls.Add(pnlSelection);      // Top (2nd from top)
-            this.Controls.Add(pnlTop);            // Top (1st at top)
+            // ── 5. Add controls in Z-Order ──
+            this.Controls.Add(pnlGridContainer); // Fill
+            this.Controls.Add(pnlBottom);        // Bottom
+            this.Controls.Add(pnlTopCard);       // Top
+            this.Controls.Add(pnlTop);           // Top
+
+            this.Resize += (s, e) => { LayoutTopCard(); LayoutBottomBar(); };
+            LayoutTopCard();
+            LayoutBottomBar();
 
             Theme.ApplyFormRTL(this);
+        }
+
+        private void LayoutTopCard()
+        {
+            if (pnlTopCard == null || cboProduct == null) return;
+            int w = pnlTopCard.ClientSize.Width;
+            if (w < 400) return;
+
+            int rightMargin = 10;
+            int leftMargin = 10;
+            int curX = w - rightMargin;
+
+            // ── Row 1 (Y = 6, H = 28) ──
+            lblSelect.Location = new Point(curX - lblSelect.PreferredWidth, 10);
+            curX -= lblSelect.PreferredWidth + 6;
+
+            int leftControlsW = 120 + 8 + 60 + 6 + 45 + 8 + 130 + 10;
+            int comboW = Math.Max(180, curX - (leftMargin + leftControlsW));
+
+            cboProduct.Location = new Point(curX - comboW, 7);
+            cboProduct.Width = comboW;
+            curX -= comboW + 10;
+
+            btnSearchProduct.Location = new Point(curX - 130, 6);
+            btnSearchProduct.Width = 130;
+            curX -= 130 + 8;
+
+            lblQty.Location = new Point(curX - lblQty.PreferredWidth, 10);
+            curX -= lblQty.PreferredWidth + 6;
+
+            nudQty.Location = new Point(curX - 60, 7);
+            nudQty.Width = 60;
+            curX -= 60 + 8;
+
+            btnAdd.Location = new Point(curX - 120, 6);
+            btnAdd.Width = 120;
+
+            // ── Row 2 (Y = 38, H = 28) ──
+            curX = w - rightMargin;
+
+            lblCat.Location = new Point(curX - lblCat.PreferredWidth, 42);
+            curX -= lblCat.PreferredWidth + 6;
+
+            int catComboW = Math.Min(220, Math.Max(140, (w - 600) / 3));
+            cboCategoryFilter.Location = new Point(curX - catComboW, 39);
+            cboCategoryFilter.Width = catComboW;
+            curX -= catComboW + 8;
+
+            chkOnlyWithStock.Location = new Point(curX - chkOnlyWithStock.PreferredSize.Width, 42);
+            curX -= chkOnlyWithStock.PreferredSize.Width + 6;
+
+            chkOnlyWithTransactions.Location = new Point(curX - chkOnlyWithTransactions.PreferredSize.Width, 42);
+            curX -= chkOnlyWithTransactions.PreferredSize.Width + 6;
+
+            btnAddCategory.Location = new Point(curX - 115, 38);
+            btnAddCategory.Width = 115;
+
+            // Badges & Clear button from left edge
+            btnClearAll.Location = new Point(leftMargin, 38);
+            btnClearAll.Width = 90;
+
+            lblTotalLabelsCount.Location = new Point(leftMargin + 98, 42);
+            lblTotalProductsCount.Location = new Point(lblTotalLabelsCount.Right + 12, 42);
+        }
+
+        private void LayoutBottomBar()
+        {
+            if (pnlBottom == null || btnPrint == null) return;
+            int w = pnlBottom.ClientSize.Width;
+            if (w < 400) return;
+
+            int leftMargin = 10;
+            int rightMargin = 10;
+
+            // Action buttons on Left side (in RTL)
+            int btnY = 11;
+            btnCancel.Location = new Point(leftMargin, btnY);
+            btnCancel.Width = 80;
+
+            btnPreview.Location = new Point(btnCancel.Right + 6, btnY);
+            btnPreview.Width = 95;
+
+            btnPrint.Location = new Point(btnPreview.Right + 6, btnY);
+            btnPrint.Width = 190;
+
+            int actionRight = btnPrint.Right + 16;
+
+            // Settings on Right side
+            int curX = w - rightMargin;
+
+            // Row 1 (Y = 6, H = 22): Printer, Template, Encoding
+            lblPrinter.Location = new Point(curX - lblPrinter.PreferredWidth, 8);
+            curX -= lblPrinter.PreferredWidth + 4;
+
+            int availSettingW = Math.Max(300, curX - actionRight);
+            int printerW = Math.Min(180, Math.Max(110, availSettingW / 3));
+            cboPrinters.Location = new Point(curX - printerW, 6);
+            cboPrinters.Width = printerW;
+            curX -= printerW + 10;
+
+            lblTemplate.Location = new Point(curX - lblTemplate.PreferredWidth, 8);
+            curX -= lblTemplate.PreferredWidth + 4;
+
+            int templateW = Math.Min(180, Math.Max(110, availSettingW / 3));
+            cboBarcodeTemplate.Location = new Point(curX - templateW, 6);
+            cboBarcodeTemplate.Width = templateW;
+            curX -= templateW + 10;
+
+            lblEncoding.Location = new Point(curX - lblEncoding.PreferredWidth, 8);
+            curX -= lblEncoding.PreferredWidth + 4;
+
+            int encW = Math.Min(150, Math.Max(90, availSettingW / 3));
+            cboBarcodeEncoding.Location = new Point(curX - encW, 6);
+            cboBarcodeEncoding.Width = encW;
+
+            // Row 2 (Y = 33): Checkboxes
+            curX = w - rightMargin;
+            chkPrintPrice.Location = new Point(curX - chkPrintPrice.PreferredSize.Width, 34);
+            curX -= chkPrintPrice.PreferredSize.Width + 16;
+
+            chkPrintCompanyName.Location = new Point(curX - chkPrintCompanyName.PreferredSize.Width, 34);
         }
 
         private void FrmBulkPrintBarcodes_KeyDown(object sender, KeyEventArgs e)
