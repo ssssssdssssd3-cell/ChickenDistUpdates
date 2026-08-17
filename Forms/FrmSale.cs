@@ -1257,6 +1257,7 @@ namespace ChickenDist.Forms
 			btnPreview.Visible = false;
 
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
+			Button btnPrepSlip = Theme.MakeButton("📋 إذن تحضير (F9)", 0, 0, 130, 26, Color.FromArgb(41, 128, 185));
 			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج (Ctrl+D)", 0, 0, 135, 26, Color.FromArgb(70, 70, 70));
 
 			btnSave.Anchor = AnchorStyles.None;
@@ -1267,6 +1268,7 @@ namespace ChickenDist.Forms
 			btnPrint.Anchor = AnchorStyles.None;
 			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
+			btnPrepSlip.Anchor = AnchorStyles.None;
 			btnOpenDrawer.Anchor = AnchorStyles.None;
 
 			btnSave.Click += BtnSave_Click;
@@ -1277,6 +1279,7 @@ namespace ChickenDist.Forms
 			btnPrint.Click += BtnPrint_Click;
 			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
+			btnPrepSlip.Click += (s, e) => PrintPreparationSlip();
 			btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
 			var pnlFooterButtons = new FlowLayoutPanel
@@ -1291,13 +1294,14 @@ namespace ChickenDist.Forms
 				AutoSize = false
 			};
 			btnWhatsApp.Margin = new Padding(2);
+			btnPrepSlip.Margin = new Padding(2);
 			btnNew.Margin = new Padding(2);
 			btnTawreed.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
 			btnOpenDrawer.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -1309,7 +1313,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -1408,7 +1412,7 @@ namespace ChickenDist.Forms
 
 			if      (e.KeyCode == Keys.F2)  { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F9)  { btnPrint.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F9)  { PrintPreparationSlip(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { txtProductCode.Focus(); txtProductCode.SelectAll(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
@@ -4163,8 +4167,13 @@ namespace ChickenDist.Forms
 			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: false);
 
+			var itemPrep = new ToolStripMenuItem("📋 طباعة إذن التحضير والتجميع (F9)");
+			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
+
 			menu.Items.Add(itemReceipt);
 			menu.Items.Add(itemA4);
+			menu.Items.Add(new ToolStripSeparator());
+			menu.Items.Add(itemPrep);
 
 			if (sender is Control ctrl)
 			{
@@ -4215,8 +4224,13 @@ namespace ChickenDist.Forms
 			var itemA4 = new ToolStripMenuItem("📄 معاينة فاتورة ورق (A4/A5)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: true);
 
+			var itemPrep = new ToolStripMenuItem("📋 معاينة إذن التحضير والتجميع (F9)");
+			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
+
 			menu.Items.Add(itemReceipt);
 			menu.Items.Add(itemA4);
+			menu.Items.Add(new ToolStripSeparator());
+			menu.Items.Add(itemPrep);
 
 			if (sender is Control ctrl)
 			{
@@ -4225,6 +4239,361 @@ namespace ChickenDist.Forms
 			else
 			{
 				menu.Show(Cursor.Position);
+			}
+		}
+
+		/// <summary>
+		/// طباعة إذن تحضير وتجميع بضاعة من المخزن للأصناف الموجودة في الفاتورة الحالية
+		/// </summary>
+		public void PrintPreparationSlip()
+		{
+			if (_items == null || _items.Count == 0)
+			{
+				MessageBox.Show("لا توجد أصناف في الفاتورة لطباعة إذن التحضير!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			var res = MessageBox.Show("هل تريد طباعة إذن التحضير على طابعة ريسيت حراري (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع طباعة إذن التحضير", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+			if (res == DialogResult.Cancel) return;
+
+			bool isReceipt = (res == DialogResult.Yes);
+
+			var pd = new System.Drawing.Printing.PrintDocument();
+			if (isReceipt)
+			{
+				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Receipt", 300, 1000);
+				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(10, 10, 10, 10);
+				AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+			}
+			else
+			{
+				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A4", 827, 1169);
+				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(25, 25, 25, 25);
+				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+			}
+
+			string whName = cboWarehouse != null && cboWarehouse.SelectedItem != null ? cboWarehouse.Text : "المخزن الرئيسي";
+			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.Text : (cboClient?.Text?.Trim() ?? "عميل نقدي");
+			if (string.IsNullOrEmpty(clientName) || clientName.StartsWith("--")) clientName = "عميل نقدي";
+			string empName = Session.EmpName;
+			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+			string companyPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
+			string companyAddress = !string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) ? AppConfig.CompanyAddress : "";
+			string invoiceCode = _editSaleID > 0 ? $"فاتورة رقم {_editSaleID}" : "فاتورة مبيعات جديدة";
+			string saleTypeStr = FormatInvoiceTypeArabic(_invoiceType);
+
+			Image logoImg = null;
+			try
+			{
+				string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+				if (!System.IO.File.Exists(logoPath)) logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.jpg");
+				if (System.IO.File.Exists(logoPath)) logoImg = Image.FromFile(logoPath);
+			}
+			catch { }
+
+			int itemIdx = 0;
+			int rowNum = 0;
+			decimal totalQty = 0m;
+
+			pd.BeginPrint += (s, e) =>
+			{
+				itemIdx = 0;
+				rowNum = 0;
+				totalQty = 0m;
+			};
+
+			pd.PrintPage += (s, e) =>
+			{
+				var g = e.Graphics;
+				float titleSize  = isReceipt ? 12f : 16f;
+				float headerSize = isReceipt ? 9f  : 11f;
+				float bodySize   = isReceipt ? 8.5f: 10f;
+
+				using var fontCompany = new Font("Arial", isReceipt ? 11f : 14f, FontStyle.Bold);
+				using var fontTitle   = new Font("Arial", titleSize,  FontStyle.Bold);
+				using var fontHeader  = new Font("Arial", headerSize, FontStyle.Bold);
+				using var fontBody    = new Font("Arial", bodySize,   FontStyle.Regular);
+				using var fontBold    = new Font("Arial", bodySize,   FontStyle.Bold);
+
+				using var brushDarkBlue = new SolidBrush(Color.FromArgb(20, 60, 120));
+				using var brushHeaderBg = new SolidBrush(Color.FromArgb(28, 45, 78));
+				using var brushRowAlt   = new SolidBrush(Color.FromArgb(245, 248, 253));
+				using var brushTotBg    = new SolidBrush(Color.FromArgb(235, 245, 255));
+				using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
+				using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
+
+				int y     = e.MarginBounds.Top;
+				int left  = e.MarginBounds.Left;
+				int right = e.MarginBounds.Right;
+				int width = e.MarginBounds.Width;
+
+				// ── 1. ترويسة الصفحة الأولى ──
+				if (itemIdx == 0)
+				{
+					if (logoImg != null && !isReceipt)
+					{
+						g.DrawImage(logoImg, right - 70, y, 65, 50);
+					}
+
+					SizeF szComp = g.MeasureString(companyName, fontCompany);
+					g.DrawString(companyName, fontCompany, brushDarkBlue, left + (width - szComp.Width) / 2, y);
+					y += (int)szComp.Height + 2;
+
+					if (!string.IsNullOrWhiteSpace(companyPhone))
+					{
+						string phStr = $"تليفون: {companyPhone}" + (!string.IsNullOrWhiteSpace(companyAddress) ? $" | {companyAddress}" : "");
+						SizeF szPh = g.MeasureString(phStr, fontBody);
+						g.DrawString(phStr, fontBody, Brushes.DarkGray, left + (width - szPh.Width) / 2, y);
+						y += (int)szPh.Height + 4;
+					}
+
+					string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
+					SizeF szT  = g.MeasureString(tit, fontTitle);
+					g.DrawString(tit, fontTitle, Brushes.Black, left + (width - szT.Width) / 2, y);
+					y += (int)szT.Height + (isReceipt ? 4 : 6);
+
+					g.DrawLine(penDark, left, y, right, y);
+					y += (isReceipt ? 4 : 8);
+
+					string dateStr = dtpDate.Value.ToString("dd/MM/yyyy HH:mm");
+					if (!isReceipt)
+					{
+						g.DrawString($"المخزن المصدر: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"المخزن المصدر: {whName}", fontHeader).Width, y);
+						g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
+						y += 20;
+
+						g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
+						g.DrawString($"المرجع / الفاتورة: {invoiceCode} ({saleTypeStr})", fontBody, Brushes.Black, left, y);
+						y += 20;
+
+						g.DrawString($"الموظف المسؤول: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف المسؤول: {empName}", fontBody).Width, y);
+						g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, left, y);
+						y += 22;
+
+						if (!string.IsNullOrWhiteSpace(txtNotes.Text))
+						{
+							g.DrawString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, right - g.MeasureString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody).Width, y);
+							y += 20;
+						}
+					}
+					else
+					{
+						g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, left, y); y += 18;
+						g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
+						g.DrawString($"المرجع: {invoiceCode} | الموظف: {empName}", fontBody, Brushes.Black, left, y); y += 18;
+						g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, left, y); y += 18;
+						if (!string.IsNullOrWhiteSpace(txtNotes.Text))
+						{
+							g.DrawString($"ملاحظة: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, left, y); y += 18;
+						}
+					}
+
+					g.DrawLine(penGrid, left, y, right, y);
+					y += (isReceipt ? 4 : 8);
+				}
+
+				// ── 2. إعداد أبعاد أعمدة الجدول الشبكي ──
+				int colNumW  = isReceipt ? 18 : (int)(width * 0.05);
+				int colCodeW = isReceipt ? 35 : (int)(width * 0.13);
+				int colLocW  = isReceipt ? 45 : (int)(width * 0.20);
+				int colUnitW = isReceipt ? 30 : (int)(width * 0.11);
+				int colQtyW  = isReceipt ? 30 : (int)(width * 0.13);
+				int colProdW = width - colNumW - colCodeW - colLocW - colUnitW - colQtyW;
+				int rowH     = isReceipt ? 22 : 26;
+
+				var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
+				var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
+
+				// رأس الجدول
+				if (!isReceipt)
+				{
+					g.FillRectangle(brushHeaderBg, left, y, width, rowH);
+					g.DrawRectangle(penDark, left, y, width, rowH);
+
+					int curX = right;
+
+					// #
+					curX -= colNumW;
+					g.DrawRectangle(penGrid, curX, y, colNumW, rowH);
+					g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, rowH), sfCenter);
+
+					// Code
+					curX -= colCodeW;
+					g.DrawRectangle(penGrid, curX, y, colCodeW, rowH);
+					g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
+
+					// Product
+					curX -= colProdW;
+					g.DrawRectangle(penGrid, curX, y, colProdW, rowH);
+					g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, rowH), sfCenter);
+
+					// Qty
+					curX -= colQtyW;
+					g.DrawRectangle(penGrid, curX, y, colQtyW, rowH);
+					g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
+
+					// Unit
+					curX -= colUnitW;
+					g.DrawRectangle(penGrid, curX, y, colUnitW, rowH);
+					g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
+
+					// Shelf Location
+					curX -= colLocW;
+					g.DrawRectangle(penGrid, curX, y, colLocW, rowH);
+					g.DrawString("مكان التخزين / الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, rowH), sfCenter);
+
+					y += rowH;
+				}
+				else
+				{
+					g.DrawString("الصنف",  fontHeader, Brushes.Black, right - colNumW - colProdW, y);
+					g.DrawString("الكمية",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
+					g.DrawString("الوحدة",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW, y);
+					g.DrawString("الرف",   fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW - colLocW, y);
+					y += rowH;
+					g.DrawLine(penGrid, left, y, right, y);
+					y += 4;
+				}
+
+				// ── 3. سطور أصناف التحضير ──
+				while (itemIdx < _items.Count)
+				{
+					var item  = _items[itemIdx];
+					string loc = !string.IsNullOrWhiteSpace(item.ShelfLocation) ? item.ShelfLocation : "";
+					if (string.IsNullOrWhiteSpace(loc) && item.ProductID > 0)
+					{
+						var ciLoc = GetProductComboItem(item.ProductID);
+						if (ciLoc != null && !string.IsNullOrWhiteSpace(ciLoc.ShelfLocation)) loc = ciLoc.ShelfLocation;
+					}
+					if (string.IsNullOrWhiteSpace(loc)) loc = "---";
+
+					string unit = !string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "قطعة";
+					string code = !string.IsNullOrWhiteSpace(item.ProductCode) ? item.ProductCode : (!string.IsNullOrWhiteSpace(item.PartNumber) ? item.PartNumber : item.ProductID.ToString());
+					string qty  = item.Quantity % 1 == 0 ? item.Quantity.ToString("N0") : item.Quantity.ToString("N2");
+					totalQty += item.Quantity;
+					rowNum++;
+
+					if (!isReceipt)
+					{
+						if (rowNum % 2 == 0)
+							g.FillRectangle(brushRowAlt, left, y, width, rowH);
+
+						g.DrawRectangle(penGrid, left, y, width, rowH);
+
+						int curX = right;
+
+						// #
+						curX -= colNumW;
+						g.DrawRectangle(penGrid, curX, y, colNumW, rowH);
+						g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, new RectangleF(curX, y, colNumW, rowH), sfCenter);
+
+						// Code
+						curX -= colCodeW;
+						g.DrawRectangle(penGrid, curX, y, colCodeW, rowH);
+						g.DrawString(code, fontBody, Brushes.Gray, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
+
+						// Product
+						curX -= colProdW;
+						g.DrawRectangle(penGrid, curX, y, colProdW, rowH);
+						g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y, colProdW - 8, rowH), sfRight);
+
+						// Qty
+						curX -= colQtyW;
+						g.DrawRectangle(penGrid, curX, y, colQtyW, rowH);
+						g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
+
+						// Unit
+						curX -= colUnitW;
+						g.DrawRectangle(penGrid, curX, y, colUnitW, rowH);
+						g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
+
+						// Shelf Location
+						curX -= colLocW;
+						g.DrawRectangle(penGrid, curX, y, colLocW, rowH);
+						g.DrawString(loc, fontBold, brushDarkBlue, new RectangleF(curX, y, colLocW, rowH), sfCenter);
+					}
+					else
+					{
+						int tx = y;
+						g.DrawString(item.ProductName, fontBody,   Brushes.Black,  right - colNumW - colProdW,                              tx);
+						g.DrawString(qty,              fontBold,   Brushes.Black,  right - colNumW - colProdW - colQtyW,                    tx);
+						g.DrawString(unit,             fontBody,   brushDarkBlue,  right - colNumW - colProdW - colQtyW - colUnitW,         tx);
+						g.DrawString(loc,              fontBold,   brushDarkBlue,  right - colNumW - colProdW - colQtyW - colUnitW - colLocW,tx);
+						g.DrawString(rowNum.ToString(),fontBody,   Brushes.Black,  left,                                                   tx);
+						g.DrawLine(penGrid, left, y + rowH, right, y + rowH);
+					}
+
+					y += rowH;
+					itemIdx++;
+
+					if (y > e.MarginBounds.Bottom - (isReceipt ? 40 : 70) && itemIdx < _items.Count)
+					{
+						e.HasMorePages = true;
+						return;
+					}
+				}
+
+				// ── 4. الإجماليات والتوقيعات ──
+				if (!isReceipt)
+				{
+					g.FillRectangle(brushTotBg, left, y, width, rowH);
+					g.DrawRectangle(penDark, left, y, width, rowH);
+
+					string totStr = $"إجمالي الأصناف: {_items.Count} صنف  |  إجمالي كميات التحضير: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
+					g.DrawString(totStr, fontHeader, Brushes.Black, new RectangleF(left, y, width, rowH), sfCenter);
+					y += rowH + 15;
+				}
+				else
+				{
+					y += 6;
+					g.DrawLine(penDark, left, y, right, y);
+					y += 6;
+					string totStr = $"إجمالي الأصناف: {_items.Count}  |  إجمالي الكميات: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
+					g.DrawString(totStr, fontHeader, Brushes.Black, left, y);
+					y += 18;
+				}
+
+				// توقيعات المسؤول والمستلم
+				y += (isReceipt ? 6 : 14);
+				g.DrawLine(penDark, left, y, right, y);
+				y += (isReceipt ? 6 : 12);
+				string sig1 = "مسؤول التحضير بالمخزن: ..................................";
+				string sig2 = "توقيع المستلم / السائق: ..................................";
+				if (!isReceipt)
+				{
+					g.DrawString(sig1, fontHeader, Brushes.Black, right - g.MeasureString(sig1, fontHeader).Width, y);
+					g.DrawString(sig2, fontHeader, Brushes.Black, left, y);
+				}
+				else
+				{
+					g.DrawString(sig1, fontHeader, Brushes.Black, left, y);
+				}
+
+				logoImg?.Dispose();
+				e.HasMorePages = false;
+			};
+
+			try
+			{
+				pd.Print();
+			}
+			catch (Exception ex)
+			{
+				AppLogger.Error("FrmSale.PrintPreparationSlip", ex);
+				MessageBox.Show("خطأ في طباعة إذن التحضير: " + ex.Message, "خطأ في الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private string FormatInvoiceTypeArabic(string type)
+		{
+			switch (type)
+			{
+				case "Credit": return "آجل";
+				case "Cash": return "نقدي";
+				case "Visa": return "فيزا";
+				case "DriverLoad": return "تحميل مندوب";
+				case "Installment": return "تقسيط";
+				default: return type ?? "نقدي";
 			}
 		}
 
