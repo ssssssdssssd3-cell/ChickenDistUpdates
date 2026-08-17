@@ -145,7 +145,10 @@ namespace ChickenDist.Core
         public static bool CanViewCost(string screen = "Sales")
         {
             if (IsAdmin) return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanViewCost;
+            if (_perms.ContainsKey(screen) && _perms[screen].CanViewCost) return true;
+            if (screen == "PriceQuote" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
+            if (screen == "Sales" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
+            return false;
         }
 
         public static bool CanAdd(string screen)
@@ -274,7 +277,7 @@ namespace ChickenDist.Core
 
 
         public static readonly string[] AllScreens = {
-            "Sales", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
+            "Sales", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
             "Clients", "InactiveClients", "Vehicles",
             "Purchases", "PurchaseReturn", "PurchasesList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",

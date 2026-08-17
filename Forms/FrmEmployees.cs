@@ -698,6 +698,7 @@ namespace ChickenDist.Forms
 
                             bool isCostViewableScreen = string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "ProductCard", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "SalesList", StringComparison.OrdinalIgnoreCase) ||

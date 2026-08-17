@@ -159,7 +159,8 @@ namespace ChickenDist.DAL
             return DbHelper.Query(@"
                 SELECT qi.QuoteItemID, qi.QuoteID, qi.ProductID, qi.ProductName, qi.Quantity, qi.UnitPrice,
                        qi.TotalPrice, qi.DiscountPct, qi.DiscountAmt, qi.UnitName, qi.Factor, qi.ShelfLocation,
-                       p.ProductCode, p.PartNumber, COALESCE(qi.ShelfLocation, p.ShelfLocation, N'') AS ProductShelfLocation
+                       p.ProductCode, p.PartNumber, COALESCE(qi.ShelfLocation, p.ShelfLocation, N'') AS ProductShelfLocation,
+                       COALESCE(p.PurchasePrice, 0) AS PurchasePrice
                 FROM PriceQuoteItems qi
                 LEFT JOIN Products p ON qi.ProductID = p.ProductID
                 WHERE qi.QuoteID = @id", DbHelper.P("@id", quoteID));

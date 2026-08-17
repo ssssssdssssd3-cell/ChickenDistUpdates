@@ -25,7 +25,7 @@ namespace ChickenDist.Forms
         private Button btnSearchProduct, btnManualAdd;
         private DataGridView dgItems;
 
-        private Label lblTotalVal, lblNetVal;
+        private Label lblTotalVal, lblNetVal, lblCostSummary;
         private TextBox txtDiscount;
         private TextBox txtNotes;
 
@@ -258,12 +258,25 @@ namespace ChickenDist.Forms
             txtDiscount.TextChanged += (s, e) => RecalculateTotals();
 
             lblNetVal = new Label { Text = "الصافي: 0.00 ج", Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Theme.Success, AutoSize = true, Anchor = AnchorStyles.Left };
+            lblCostSummary = new Label { Text = "", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(41, 128, 185), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(10, 3, 0, 0), Visible = Session.CanViewCost("PriceQuote") };
+            
+            var pnlNetBox = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+            pnlNetBox.Controls.Add(lblNetVal);
+            pnlNetBox.Controls.Add(lblCostSummary);
+
             txtNotes = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
             tblBottom.Controls.Add(lblTotalVal, 0, 0);
             tblBottom.Controls.Add(new Label { Text = "خصم (ج):", AutoSize = true, Anchor = AnchorStyles.Right }, 1, 0);
             tblBottom.Controls.Add(txtDiscount, 2, 0);
-            tblBottom.Controls.Add(lblNetVal, 3, 0);
+            tblBottom.Controls.Add(pnlNetBox, 3, 0);
             tblBottom.Controls.Add(new Label { Text = "ملاحظات:", AutoSize = true, Anchor = AnchorStyles.Right }, 4, 0);
             tblBottom.Controls.Add(txtNotes, 5, 0);
 
@@ -327,6 +340,8 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 35 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", FillWeight = 35 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 40, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", FillWeight = 35, ReadOnly = true, Visible = Session.CanViewCost("PriceQuote") });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", FillWeight = 40, ReadOnly = true, Visible = Session.CanViewCost("PriceQuote") });
 
             var btnDel = new DataGridViewButtonColumn
             {
@@ -443,12 +458,13 @@ namespace ChickenDist.Forms
             // Cache products for fast lookup
             try
             {
-                DataTable dtP = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, WholesalePrice, SemiWholesalePrice, Unit, ShelfLocation, PartNumber FROM Products WHERE IsActive=1");
+                DataTable dtP = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, WholesalePrice, SemiWholesalePrice, Unit, ShelfLocation, PartNumber, COALESCE(PurchasePrice, 0) AS PurchasePrice FROM Products WHERE IsActive=1");
                 _productCache.Clear();
                 foreach (DataRow r in dtP.Rows)
                 {
                     decimal price = Convert.ToDecimal(r["SalePrice"]);
-                    var ci = new ComboItem(Convert.ToInt32(r["ProductID"]), r["ProductName"].ToString(), r["ProductName"].ToString(), price, 0m, 0m);
+                    decimal purchasePrice = Convert.ToDecimal(r["PurchasePrice"]);
+                    var ci = new ComboItem(Convert.ToInt32(r["ProductID"]), r["ProductName"].ToString(), r["ProductName"].ToString(), price, 0m, purchasePrice);
                     ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
                     ci.ShelfLocation = r["ShelfLocation"]?.ToString() ?? "";
                     ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
@@ -572,6 +588,7 @@ namespace ChickenDist.Forms
             string unit = pRow["Unit"]?.ToString() ?? "";
 
             decimal price = overridePrice ?? Convert.ToDecimal(pRow["SalePrice"]);
+            decimal purchasePrice = pRow.Table.Columns.Contains("PurchasePrice") && pRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["PurchasePrice"]) : 0m;
             if (_selectedTier == "نصف جملة" && pRow.Table.Columns.Contains("SemiWholesalePrice") && pRow["SemiWholesalePrice"] != DBNull.Value)
                 price = Convert.ToDecimal(pRow["SemiWholesalePrice"]);
             else if (_selectedTier == "جملة" && pRow.Table.Columns.Contains("WholesalePrice") && pRow["WholesalePrice"] != DBNull.Value)
@@ -594,6 +611,7 @@ namespace ChickenDist.Forms
                     UnitName = unit,
                     Quantity = qty,
                     UnitPrice = price,
+                    PurchasePrice = purchasePrice,
                     Factor = 1.0m
                 };
                 _items.Add(dto);
@@ -607,6 +625,7 @@ namespace ChickenDist.Forms
             foreach (var item in _items)
             {
                 decimal total = item.Quantity * item.UnitPrice - item.DiscountAmt;
+                decimal costTotal = item.Quantity * item.PurchasePrice;
                 dgItems.Rows.Add(
                     item.ProductCode,
                     item.ProductName,
@@ -614,7 +633,9 @@ namespace ChickenDist.Forms
                     item.UnitName,
                     item.Quantity.ToString("F2"),
                     item.UnitPrice.ToString("N2"),
-                    total.ToString("N2")
+                    total.ToString("N2"),
+                    item.PurchasePrice.ToString("N2"),
+                    costTotal.ToString("N2")
                 );
             }
             RecalculateTotals();
@@ -656,9 +677,11 @@ namespace ChickenDist.Forms
         private void RecalculateTotals()
         {
             decimal gross = 0m;
+            decimal totalCost = 0m;
             foreach (var item in _items)
             {
                 gross += (item.Quantity * item.UnitPrice) - item.DiscountAmt;
+                totalCost += (item.Quantity * item.PurchasePrice);
             }
             lblTotalVal.Text = $"الإجمالي: {gross:N2} ج";
 
@@ -666,6 +689,12 @@ namespace ChickenDist.Forms
             decimal.TryParse(txtDiscount.Text, out disc);
             decimal net = Math.Max(0m, gross - disc);
             lblNetVal.Text = $"الصافي: {net:N2} ج";
+
+            if (lblCostSummary != null && Session.CanViewCost("PriceQuote"))
+            {
+                decimal profit = net - totalCost;
+                lblCostSummary.Text = $"[ التكلفة: {totalCost:N2} ج | الربح التقديري: {profit:N2} ج ]";
+            }
         }
 
         private int? GetSelectedClientID()
@@ -769,6 +798,7 @@ namespace ChickenDist.Forms
             _items.Clear();
             foreach (DataRow r in dtItems.Rows)
             {
+                decimal purchasePrice = r.Table.Columns.Contains("PurchasePrice") && r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
                 _items.Add(new SaleItemDTO
                 {
                     ProductID = Convert.ToInt32(r["ProductID"]),
@@ -778,6 +808,7 @@ namespace ChickenDist.Forms
                     UnitName = r["UnitName"]?.ToString() ?? "",
                     Quantity = Convert.ToDecimal(r["Quantity"]),
                     UnitPrice = Convert.ToDecimal(r["UnitPrice"]),
+                    PurchasePrice = purchasePrice,
                     Factor = Convert.ToDecimal(r["Factor"])
                 });
             }
