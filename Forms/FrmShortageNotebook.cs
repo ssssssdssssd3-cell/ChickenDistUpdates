@@ -45,18 +45,17 @@ namespace ChickenDist.Forms
 
         // Filter Strip
         private Panel pnlFilterCard;
-        private Label lblSearch;
+        private FlowLayoutPanel flowFilters;
         private TextBox txtSearch;
-        private Label lblSup;
         private ComboBox cboSupplierFilter;
-        private Label lblCat;
         private ComboBox cboCategoryFilter;
-        private Label lblBrand;
         private ComboBox cboBrandFilter;
-        private Label lblCondition;
         private ComboBox cboStockCondition;
-        private Label lblStatus;
         private ComboBox cboStatusFilter;
+        private ComboBox cboWarehouseFilter;
+        private DateTimePicker dtpDateFrom;
+        private DateTimePicker dtpDateTo;
+        private CheckBox chkUseDateFilter;
         private Button btnResetFilters;
 
         // Main Data Grid
@@ -221,104 +220,144 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlActionToolbar);
 
             // ══════════════════════════════════════════════════════════════
-            // 4. FILTER PANEL (شريط الفلاتر والبحث المتجاوب من اليمين لليسار)
+            // 4. FILTER PANEL (شريط فلاتر مضغوط - صف واحد)
             // ══════════════════════════════════════════════════════════════
             pnlFilterCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 84,
+                Height = 42,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 6, 15, 6)
+                Padding = new Padding(6, 5, 6, 5)
             };
 
-            lblSearch = new Label { Text = "🔍 بحث سريع:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            txtSearch = new TextBox
+            flowFilters = new FlowLayoutPanel
             {
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                BorderStyle = BorderStyle.FixedSingle
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                AutoScroll = false,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
             };
+
+            // Helper to create compact filter group (label + control)
+            Control MakeFilterGroup(string labelText, Control ctrl, int ctrlWidth)
+            {
+                var grp = new Panel { AutoSize = false, Width = ctrlWidth + 5, Height = 30, Margin = new Padding(2, 0, 2, 0) };
+                var lbl = new Label
+                {
+                    Text = labelText, AutoSize = false, Width = ctrlWidth + 5, Height = 14,
+                    Location = new Point(0, 0), ForeColor = Theme.TextGray,
+                    Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight
+                };
+                ctrl.Location = new Point(0, 14);
+                ctrl.Width = ctrlWidth + 5;
+                ctrl.Height = 22;
+                if (ctrl is ComboBox cb) { cb.DropDownStyle = ComboBoxStyle.DropDownList; cb.FlatStyle = FlatStyle.Flat; }
+                grp.Controls.Add(lbl);
+                grp.Controls.Add(ctrl);
+                return grp;
+            }
+
+            // Search box
+            txtSearch = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             txtSearch.TextChanged += (s, e) => LoadData();
 
-            lblSup = new Label { Text = "🏢 المورد:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            cboSupplierFilter = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                FlatStyle = FlatStyle.Flat
-            };
+            // Supplier
+            cboSupplierFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             cboSupplierFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblCat = new Label { Text = "📁 القسم / التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            cboCategoryFilter = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                FlatStyle = FlatStyle.Flat
-            };
+            // Category
+            cboCategoryFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             cboCategoryFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblBrand = new Label { Text = "🏭 الشركة / الماركة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            cboBrandFilter = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                FlatStyle = FlatStyle.Flat
-            };
+            // Brand
+            cboBrandFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             cboBrandFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblCondition = new Label { Text = "🎯 نوع النواقص:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            cboStockCondition = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                FlatStyle = FlatStyle.Flat
-            };
+            // Stock Condition
+            cboStockCondition = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             cboStockCondition.Items.AddRange(new object[]
             {
-                "الكل (جميع الأصناف الناقصة والمسجلة)",
-                "⚠️ وصل أو نزل عن حد الطلب (<= MinStock)",
-                "🔴 رصيد صفر أو سالب فقط (نفد بالكامل)",
-                "🟡 تحت حد الطلب ومتبقي رصيد (0 < Stock <= Min)"
+                "الكل", "⚠️ تحت حد الطلب", "🔴 رصيد صفر", "🟡 بين الصفر والحد"
             });
             cboStockCondition.SelectedIndex = 0;
             cboStockCondition.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblStatus = new Label { Text = "📊 الحالة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            cboStatusFilter = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                FlatStyle = FlatStyle.Flat
-            };
+            // Status
+            cboStatusFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             cboStatusFilter.Items.AddRange(new object[] { "الكل", "جديد", "تم الطلب", "تم التوفير", "ملغي" });
             cboStatusFilter.SelectedIndex = 0;
             cboStatusFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            btnResetFilters = Theme.MakeButton("🧹 تفريغ الفلاتر", 0, 0, 115, 28, Color.FromArgb(100, 116, 139));
-            btnResetFilters.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            // Warehouse
+            cboWarehouseFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboWarehouseFilter.SelectedIndexChanged += (s, e) => LoadData();
+
+            // Date filter toggle
+            chkUseDateFilter = new CheckBox
+            {
+                Text = "📅 تاريخ:", AutoSize = true, ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Margin = new Padding(2, 6, 4, 0), Checked = false
+            };
+            chkUseDateFilter.CheckedChanged += (s, e) =>
+            {
+                dtpDateFrom.Enabled = chkUseDateFilter.Checked;
+                dtpDateTo.Enabled = chkUseDateFilter.Checked;
+                LoadData();
+            };
+
+            dtpDateFrom = new DateTimePicker
+            {
+                Format = DateTimePickerFormat.Short,
+                Value = DateTime.Today,
+                Width = 105, Height = 22,
+                Font = new Font("Segoe UI", 8.5f),
+                Enabled = false,
+                Margin = new Padding(2, 5, 2, 0)
+            };
+            dtpDateFrom.ValueChanged += (s, e) => { if (chkUseDateFilter.Checked) LoadData(); };
+
+            dtpDateTo = new DateTimePicker
+            {
+                Format = DateTimePickerFormat.Short,
+                Value = DateTime.Today,
+                Width = 105, Height = 22,
+                Font = new Font("Segoe UI", 8.5f),
+                Enabled = false,
+                Margin = new Padding(2, 5, 2, 0)
+            };
+            dtpDateTo.ValueChanged += (s, e) => { if (chkUseDateFilter.Checked) LoadData(); };
+
+            // Reset button
+            btnResetFilters = Theme.MakeButton("🧹", 0, 0, 36, 30, Color.FromArgb(100, 116, 139));
+            btnResetFilters.Font = new Font("Segoe UI", 10f);
+            btnResetFilters.Margin = new Padding(2, 4, 4, 0);
             btnResetFilters.Click += (s, e) => ResetFilters();
 
-            pnlFilterCard.Controls.AddRange(new Control[] {
-                lblSearch, txtSearch,
-                lblSup, cboSupplierFilter,
-                lblCat, cboCategoryFilter,
-                lblBrand, cboBrandFilter,
-                lblCondition, cboStockCondition,
-                lblStatus, cboStatusFilter,
-                btnResetFilters
-            });
+            var lblTo = new Label { Text = "→", AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 9f), Margin = new Padding(0, 8, 0, 0) };
+
+            flowFilters.Controls.Add(btnResetFilters);
+            flowFilters.Controls.Add(MakeFilterGroup("الحالة", cboStatusFilter, 90));
+            flowFilters.Controls.Add(MakeFilterGroup("نوع النقص", cboStockCondition, 130));
+            flowFilters.Controls.Add(MakeFilterGroup("المخزن", cboWarehouseFilter, 110));
+            flowFilters.Controls.Add(MakeFilterGroup("الماركة", cboBrandFilter, 100));
+            flowFilters.Controls.Add(MakeFilterGroup("القسم", cboCategoryFilter, 110));
+            flowFilters.Controls.Add(MakeFilterGroup("المورد", cboSupplierFilter, 115));
+            flowFilters.Controls.Add(MakeFilterGroup("بحث سريع", txtSearch, 150));
+            // Date filter group inline
+            var pnlDate = new Panel { Width = 295, Height = 30, Margin = new Padding(2, 0, 2, 0) };
+            var lblDateLbl = new Label { Text = "📅 من - إلى:", AutoSize = false, Width = 285, Height = 14, Location = new Point(0, 0), ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
+            dtpDateFrom.Location = new Point(150, 14); dtpDateFrom.Width = 100;
+            dtpDateTo.Location = new Point(45, 14); dtpDateTo.Width = 100;
+            var lblArrow = new Label { Text = "←", Location = new Point(130, 16), AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8f) };
+            chkUseDateFilter.Location = new Point(258, 15);
+            pnlDate.Controls.AddRange(new Control[] { lblDateLbl, dtpDateFrom, lblArrow, dtpDateTo, chkUseDateFilter });
+            flowFilters.Controls.Add(pnlDate);
+
+            pnlFilterCard.Controls.Add(flowFilters);
             this.Controls.Add(pnlFilterCard);
 
             // ══════════════════════════════════════════════════════════════
@@ -414,6 +453,9 @@ namespace ChickenDist.Forms
             cms.Items.Add("✏️ تعديل الكمية المطلوبة لهذا الصنف", null, (s, e) => EditSelectedRequestedQty());
             cms.Items.Add("📝 تغيير حالة الصنف (جديد / تم الطلب / تم التوفير)", null, (s, e) => BtnChangeStatus_Click(null, null));
             cms.Items.Add("🛒 فتح فاتورة شراء لهذا الصنف/المورد", null, (s, e) => BtnCreatePurchase_Click(null, null));
+            cms.Items.Add(new ToolStripSeparator());
+            cms.Items.Add("📊 مقارنة الموردين لهذا الصنف", null, (s, e) => ShowSupplierComparison());
+            cms.Items.Add(new ToolStripSeparator());
             cms.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
@@ -454,71 +496,10 @@ namespace ChickenDist.Forms
             pnlFilterCard.SendToBack();
             pnlGridWrapper.BringToFront();
 
-            this.Resize += (s, e) => LayoutFilterControls();
-            LayoutFilterControls();
-
             Theme.ApplyFormRTL(this);
         }
 
-        /// <summary>
-        /// ترتيب عناصر الفلاتر بدقة متناهية من اليمين إلى اليسار
-        /// </summary>
-        private void LayoutFilterControls()
-        {
-            if (pnlFilterCard == null || txtSearch == null) return;
-            int totalW = pnlFilterCard.ClientSize.Width;
-            if (totalW <= 100) return;
-
-            // Row 1: Search, Supplier, Category, Brand
-            // Each block width
-            int gap = 12;
-            int margin = 15;
-            int availW = totalW - (margin * 2) - (gap * 3);
-            int colW = Math.Max(160, availW / 4);
-
-            int currentRight = margin;
-
-            // 1. Search (أقصى اليمين)
-            lblSearch.Location = new Point(totalW - currentRight - 70, 10);
-            txtSearch.Location = new Point(totalW - currentRight - 70 - (colW - 75), 8);
-            txtSearch.Width = colW - 75;
-            currentRight += colW + gap;
-
-            // 2. Supplier
-            lblSup.Location = new Point(totalW - currentRight - 55, 10);
-            cboSupplierFilter.Location = new Point(totalW - currentRight - 55 - (colW - 60), 8);
-            cboSupplierFilter.Width = colW - 60;
-            currentRight += colW + gap;
-
-            // 3. Category
-            lblCat.Location = new Point(totalW - currentRight - 95, 10);
-            cboCategoryFilter.Location = new Point(totalW - currentRight - 95 - (colW - 100), 8);
-            cboCategoryFilter.Width = colW - 100;
-            currentRight += colW + gap;
-
-            // 4. Brand (أقصى اليسار في الصف الأول)
-            lblBrand.Location = new Point(totalW - currentRight - 95, 10);
-            cboBrandFilter.Location = new Point(totalW - currentRight - 95 - (colW - 100), 8);
-            cboBrandFilter.Width = colW - 100;
-
-            // Row 2: Condition, Status, Reset
-            int currentRight2 = margin;
-
-            // 1. Condition
-            lblCondition.Location = new Point(totalW - currentRight2 - 80, 46);
-            cboStockCondition.Location = new Point(totalW - currentRight2 - 80 - 270, 44);
-            cboStockCondition.Width = 270;
-            currentRight2 += 360 + gap;
-
-            // 2. Status
-            lblStatus.Location = new Point(totalW - currentRight2 - 50, 46);
-            cboStatusFilter.Location = new Point(totalW - currentRight2 - 50 - 150, 44);
-            cboStatusFilter.Width = 150;
-            currentRight2 += 210 + gap;
-
-            // 3. Reset Button
-            btnResetFilters.Location = new Point(totalW - currentRight2 - 120, 42);
-        }
+        // (LayoutFilterControls removed - now using FlowLayoutPanel)
 
         private Panel CreateKpiCard(string title, string initialValue, Color accentColor, Color bgTint, out Label valLabel)
         {
@@ -570,33 +551,38 @@ namespace ChickenDist.Forms
             {
                 // Suppliers
                 cboSupplierFilter.Items.Clear();
-                cboSupplierFilter.Items.Add(new ComboItem(0, "-- كل الموردين --"));
+                cboSupplierFilter.Items.Add(new ComboItem(0, "كل الموردين"));
                 var dtSup = DbHelper.Query("SELECT SupplierID, SupplierName FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName");
                 foreach (DataRow r in dtSup.Rows)
-                {
                     cboSupplierFilter.Items.Add(new ComboItem(Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
-                }
                 cboSupplierFilter.SelectedIndex = 0;
 
                 // Categories
                 cboCategoryFilter.Items.Clear();
-                cboCategoryFilter.Items.Add(new ComboItem(0, "-- كل الأقسام / التصنيفات --"));
+                cboCategoryFilter.Items.Add(new ComboItem(0, "كل الأقسام"));
                 var dtCat = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories ORDER BY CategoryName");
                 foreach (DataRow r in dtCat.Rows)
-                {
                     cboCategoryFilter.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
-                }
                 cboCategoryFilter.SelectedIndex = 0;
 
-                // Brands / Producing Companies
+                // Brands
                 cboBrandFilter.Items.Clear();
-                cboBrandFilter.Items.Add("-- كل الشركات / الماركات --");
+                cboBrandFilter.Items.Add("كل الماركات");
                 var brands = ShortageDAL.GetAvailableBrands();
-                foreach (string b in brands)
-                {
-                    cboBrandFilter.Items.Add(b);
-                }
+                foreach (string b in brands) cboBrandFilter.Items.Add(b);
                 cboBrandFilter.SelectedIndex = 0;
+
+                // Warehouses
+                cboWarehouseFilter.Items.Clear();
+                cboWarehouseFilter.Items.Add(new ComboItem(0, "كل المخازن"));
+                try
+                {
+                    var dtWh = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseName");
+                    foreach (DataRow r in dtWh.Rows)
+                        cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                }
+                catch { /* Warehouses table may not exist */ }
+                cboWarehouseFilter.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -610,8 +596,12 @@ namespace ChickenDist.Forms
             if (cboSupplierFilter.Items.Count > 0) cboSupplierFilter.SelectedIndex = 0;
             if (cboCategoryFilter.Items.Count > 0) cboCategoryFilter.SelectedIndex = 0;
             if (cboBrandFilter.Items.Count > 0) cboBrandFilter.SelectedIndex = 0;
+            if (cboWarehouseFilter.Items.Count > 0) cboWarehouseFilter.SelectedIndex = 0;
             cboStockCondition.SelectedIndex = 0;
             cboStatusFilter.SelectedIndex = 0;
+            chkUseDateFilter.Checked = false;
+            dtpDateFrom.Value = DateTime.Today;
+            dtpDateTo.Value = DateTime.Today;
             LoadData();
         }
 
@@ -721,6 +711,195 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmShortageNotebook.LoadData", ex);
+            }
+        }
+
+        private void ShowSupplierComparison()
+        {
+            if (dgShortages.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("يرجى تحديد صنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var selRow = dgShortages.SelectedRows[0];
+            int productID = selRow.Cells["ProductID"].Value != DBNull.Value ? Convert.ToInt32(selRow.Cells["ProductID"].Value) : 0;
+            if (productID <= 0)
+            {
+                MessageBox.Show("هذا الصنف ليس مسجلاً في النظام (تم إضافته يدوياً).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string productName = selRow.Cells["ProductName"].Value.ToString();
+
+            try
+            {
+                // Fetch all purchase history for this product grouped by supplier
+                string sql = @"
+                    SELECT 
+                        s.SupplierName,
+                        COUNT(pd.PurchaseDetailID) AS PurchaseCount,
+                        MIN(pd.UnitPrice) AS MinPrice,
+                        MAX(pd.UnitPrice) AS MaxPrice,
+                        AVG(pd.UnitPrice) AS AvgPrice,
+                        MAX(p.PurchaseDate) AS LastPurchaseDate,
+                        SUM(pd.Quantity) AS TotalQtyPurchased,
+                        (SELECT TOP 1 pd2.UnitPrice FROM PurchaseDetails pd2
+                         INNER JOIN Purchases p2 ON pd2.PurchaseID=p2.PurchaseID
+                         WHERE pd2.ProductID=pd.ProductID AND p2.SupplierID=p.SupplierID
+                         ORDER BY p2.PurchaseDate DESC) AS LastPrice
+                    FROM PurchaseDetails pd
+                    INNER JOIN Purchases p ON pd.PurchaseID = p.PurchaseID
+                    INNER JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                    WHERE pd.ProductID = @pid
+                    GROUP BY s.SupplierName, p.SupplierID, pd.ProductID
+                    ORDER BY AvgPrice ASC";
+
+                var dt = DbHelper.Query(sql, DbHelper.P("@pid", productID));
+
+                // Build dialog
+                using (var dlg = new Form())
+                {
+                    dlg.Text = $"📊 مقارنة الموردين - {productName}";
+                    dlg.Size = new Size(780, 480);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.BackColor = Theme.BgMain;
+                    dlg.RightToLeft = RightToLeft.Yes;
+                    dlg.RightToLeftLayout = true;
+                    dlg.Font = Theme.FontMain;
+
+                    var lblTitle = new Label
+                    {
+                        Text = $"📊 مقارنة أسعار الموردين للصنف: {productName}",
+                        Dock = DockStyle.Top,
+                        Height = 38,
+                        ForeColor = Theme.Primary,
+                        Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                        TextAlign = ContentAlignment.MiddleRight,
+                        Padding = new Padding(10, 0, 10, 0),
+                        BackColor = Theme.BgCard
+                    };
+                    dlg.Controls.Add(lblTitle);
+
+                    var grid = new DataGridView
+                    {
+                        Dock = DockStyle.Fill,
+                        ReadOnly = true,
+                        AllowUserToAddRows = false,
+                        AllowUserToDeleteRows = false,
+                        RowHeadersVisible = false,
+                        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                        BackgroundColor = Theme.BgCard,
+                        BorderStyle = BorderStyle.None,
+                        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                        GridColor = Theme.BorderColor,
+                        RightToLeft = RightToLeft.Yes,
+                        ColumnHeadersHeight = 36,
+                        ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                        {
+                            BackColor = Theme.Primary, ForeColor = Color.White,
+                            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                            Alignment = DataGridViewContentAlignment.MiddleCenter
+                        },
+                        DefaultCellStyle = new DataGridViewCellStyle
+                        {
+                            BackColor = Theme.BgCard, ForeColor = Theme.TextMain,
+                            SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White,
+                            Alignment = DataGridViewContentAlignment.MiddleCenter,
+                            Font = Theme.FontMain
+                        },
+                        RowTemplate = { Height = 30 },
+                        EnableHeadersVisualStyles = false
+                    };
+
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "اسم المورد", FillWeight = 140 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseCount", HeaderText = "عدد المشتريات", FillWeight = 80 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalQty", HeaderText = "إجمالي الكمية", FillWeight = 90 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastPrice", HeaderText = "آخر سعر شراء", FillWeight = 90 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "AvgPrice", HeaderText = "متوسط السعر", FillWeight = 90 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "MinPrice", HeaderText = "أقل سعر", FillWeight = 80 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "MaxPrice", HeaderText = "أعلى سعر", FillWeight = 80 });
+                    grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastDate", HeaderText = "آخر عملية شراء", FillWeight = 110 });
+
+                    if (dt.Rows.Count == 0)
+                    {
+                        var lblNoData = new Label
+                        {
+                            Text = "⚠️ لا توجد سجلات شراء لهذا الصنف في النظام بعد.",
+                            Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter,
+                            ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 10f)
+                        };
+                        dlg.Controls.Add(lblNoData);
+                    }
+                    else
+                    {
+                        decimal bestAvg = decimal.MaxValue;
+                        int bestRowIndex = -1;
+
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            DataRow r = dt.Rows[i];
+                            decimal avg = r["AvgPrice"] != DBNull.Value ? Convert.ToDecimal(r["AvgPrice"]) : 0m;
+                            decimal lastP = r["LastPrice"] != DBNull.Value ? Convert.ToDecimal(r["LastPrice"]) : 0m;
+                            decimal minP = r["MinPrice"] != DBNull.Value ? Convert.ToDecimal(r["MinPrice"]) : 0m;
+                            decimal maxP = r["MaxPrice"] != DBNull.Value ? Convert.ToDecimal(r["MaxPrice"]) : 0m;
+                            string lastDate = r["LastPurchaseDate"] != DBNull.Value ? Convert.ToDateTime(r["LastPurchaseDate"]).ToString("yyyy/MM/dd") : "-";
+
+                            int ri = grid.Rows.Add(
+                                r["SupplierName"].ToString(),
+                                r["PurchaseCount"].ToString(),
+                                Convert.ToDecimal(r["TotalQtyPurchased"]).ToString("N2"),
+                                lastP.ToString("N2"),
+                                avg.ToString("N2"),
+                                minP.ToString("N2"),
+                                maxP.ToString("N2"),
+                                lastDate
+                            );
+
+                            if (avg < bestAvg && avg > 0)
+                            {
+                                bestAvg = avg;
+                                bestRowIndex = ri;
+                            }
+                        }
+
+                        // Highlight best supplier (lowest avg price)
+                        if (bestRowIndex >= 0)
+                        {
+                            var bestRow = grid.Rows[bestRowIndex];
+                            foreach (DataGridViewCell cell in bestRow.Cells)
+                            {
+                                cell.Style.BackColor = Color.FromArgb(220, 252, 231); // green tint
+                                cell.Style.ForeColor = Color.FromArgb(5, 120, 60);
+                                cell.Style.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                            }
+                            bestRow.Cells["SupplierName"].Value = "🏆 " + bestRow.Cells["SupplierName"].Value;
+                        }
+
+                        dlg.Controls.Add(grid);
+                    }
+
+                    var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 40, BackColor = Theme.BgCard };
+                    var btnClose = Theme.MakeButton("✖ إغلاق", 10, 5, 110, 30, Color.FromArgb(100, 116, 139));
+                    btnClose.Click += (s2, e2) => dlg.Close();
+                    pnlBottom.Controls.Add(btnClose);
+
+                    var lblHint = new Label
+                    {
+                        Text = "🏆 الصف المظلل بالأخضر = أفضل مورد بأقل متوسط سعر شراء",
+                        Location = new Point(130, 12), AutoSize = true,
+                        ForeColor = Color.FromArgb(5, 120, 60),
+                        Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+                    };
+                    pnlBottom.Controls.Add(lblHint);
+                    dlg.Controls.Add(pnlBottom);
+
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء تحميل بيانات مقارنة الموردين:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
