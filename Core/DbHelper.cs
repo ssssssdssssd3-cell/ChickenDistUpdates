@@ -333,7 +333,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 32;
+        private const int CurrentSchemaVersion = 33;
 
         public static void EnsureAppSettingsTable()
         {
@@ -394,6 +394,42 @@ namespace ChickenDist.Core
             IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
             BEGIN
                 ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
+
+            SafeMigrate("Sales.VisaAndPaymentColumns.Early", @"
+            IF OBJECT_ID('Sales', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Sales', 'CashPaid') IS NULL
+                    ALTER TABLE Sales ADD CashPaid DECIMAL(10,2) NULL;
+                IF COL_LENGTH('Sales', 'VisaPaid') IS NULL
+                    ALTER TABLE Sales ADD VisaPaid DECIMAL(10,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Sales', 'VisaAccountID') IS NULL
+                    ALTER TABLE Sales ADD VisaAccountID INT NULL;
+                IF COL_LENGTH('Sales', 'ShiftID') IS NULL
+                    ALTER TABLE Sales ADD ShiftID INT NULL;
+                IF COL_LENGTH('Sales', 'ShippingCharge') IS NULL
+                    ALTER TABLE Sales ADD ShippingCharge DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Sales', 'CratesOut') IS NULL
+                    ALTER TABLE Sales ADD CratesOut INT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Sales', 'CratesIn') IS NULL
+                    ALTER TABLE Sales ADD CratesIn INT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Sales', 'OrderType') IS NULL
+                    ALTER TABLE Sales ADD OrderType NVARCHAR(50) NULL;
+                IF COL_LENGTH('Sales', 'TableNumber') IS NULL
+                    ALTER TABLE Sales ADD TableNumber NVARCHAR(50) NULL;
+            END");
+
+            SafeMigrate("Purchases.VisaAndPaymentColumns.Early", @"
+            IF OBJECT_ID('Purchases', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Purchases', 'PaidAmount') IS NULL
+                    ALTER TABLE Purchases ADD PaidAmount DECIMAL(18,2) NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases', 'VisaPaid') IS NULL
+                    ALTER TABLE Purchases ADD VisaPaid DECIMAL(10,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases', 'VisaAccountID') IS NULL
+                    ALTER TABLE Purchases ADD VisaAccountID INT NULL;
+                IF COL_LENGTH('Purchases', 'ShiftID') IS NULL
+                    ALTER TABLE Purchases ADD ShiftID INT NULL;
             END");
 
             SafeMigrate("SalesReturns.IsPosted.Early", @"
@@ -546,21 +582,25 @@ namespace ChickenDist.Core
                     // Double check critical columns to handle database restore / rename cases
                     try
                     {
-                        var colExists    = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
-                        var sinvExists   = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
-                        var shipExists   = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
-                        var qtyExists    = Scalar("SELECT COL_LENGTH('Products', 'Quantity')");
-                        var balClExists  = Scalar("SELECT COL_LENGTH('Clients', 'Balance')");
-                        var balSpExists  = Scalar("SELECT COL_LENGTH('Suppliers', 'Balance')");
-                        var postExists   = Scalar("SELECT COL_LENGTH('Sales', 'IsPosted')");
+                        var colExists      = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
+                        var sinvExists     = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
+                        var shipExists     = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
+                        var qtyExists      = Scalar("SELECT COL_LENGTH('Products', 'Quantity')");
+                        var balClExists    = Scalar("SELECT COL_LENGTH('Clients', 'Balance')");
+                        var balSpExists    = Scalar("SELECT COL_LENGTH('Suppliers', 'Balance')");
+                        var postExists     = Scalar("SELECT COL_LENGTH('Sales', 'IsPosted')");
+                        var visaPaidExists = Scalar("SELECT COL_LENGTH('Sales', 'VisaPaid')");
+                        var visaAccExists  = Scalar("SELECT COL_LENGTH('Sales', 'VisaAccountID')");
                         // Only skip migrations if ALL critical columns are present
-                        if (colExists   != null && colExists   != DBNull.Value &&
-                            sinvExists  != null && sinvExists  != DBNull.Value &&
-                            shipExists  != null && shipExists  != DBNull.Value &&
-                            qtyExists   != null && qtyExists   != DBNull.Value &&
-                            balClExists != null && balClExists != DBNull.Value &&
-                            balSpExists != null && balSpExists != DBNull.Value &&
-                            postExists  != null && postExists  != DBNull.Value)
+                        if (colExists      != null && colExists      != DBNull.Value &&
+                            sinvExists     != null && sinvExists     != DBNull.Value &&
+                            shipExists     != null && shipExists     != DBNull.Value &&
+                            qtyExists      != null && qtyExists      != DBNull.Value &&
+                            balClExists    != null && balClExists    != DBNull.Value &&
+                            balSpExists    != null && balSpExists    != DBNull.Value &&
+                            postExists     != null && postExists     != DBNull.Value &&
+                            visaPaidExists != null && visaPaidExists != DBNull.Value &&
+                            visaAccExists  != null && visaAccExists  != DBNull.Value)
                         {
                             return;
                         }

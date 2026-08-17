@@ -675,9 +675,9 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT 
                     CASE 
-                        WHEN @pType = 'Monthly' THEN FORMAT(p.PurchaseDate, 'yyyy-MM (MMMM yyyy)')
-                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 'yyyy-MM-dd') + N')'
-                        ELSE FORMAT(p.PurchaseDate, 'yyyy-MM-dd')
+                        WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), p.PurchaseDate, 120), 1, 7)
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 120) + N')'
+                        ELSE CONVERT(VARCHAR(10), p.PurchaseDate, 120)
                     END AS PeriodName,
                     COUNT(DISTINCT p.PurchaseID) AS InvoiceCount,
                     ISNULL(SUM(CASE WHEN p.PurchaseType = 'Cash' THEN p.TotalAmount ELSE 0 END), 0) AS CashPurchases,
@@ -691,9 +691,9 @@ namespace ChickenDist.DAL
                   AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
                 GROUP BY 
                     CASE 
-                        WHEN @pType = 'Monthly' THEN FORMAT(p.PurchaseDate, 'yyyy-MM (MMMM yyyy)')
-                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 'yyyy-MM-dd') + N')'
-                        ELSE FORMAT(p.PurchaseDate, 'yyyy-MM-dd')
+                        WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), p.PurchaseDate, 120), 1, 7)
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 120) + N')'
+                        ELSE CONVERT(VARCHAR(10), p.PurchaseDate, 120)
                     END
                 ORDER BY MIN(p.PurchaseDate) DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
