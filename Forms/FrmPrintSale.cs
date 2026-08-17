@@ -19,6 +19,21 @@ namespace ChickenDist.Forms
         private string _printFormat;
         private bool _showPreview;
 
+        public static string FormatSaleType(string saleType)
+        {
+            if (string.IsNullOrEmpty(saleType)) return "نقدي";
+            switch (saleType)
+            {
+                case "Cash": return "نقدي";
+                case "Credit": return "آجل";
+                case "Visa": return "فيزا / شبكة";
+                case "Mixed": return "مختلط (كاش + فيزا)";
+                case "Installment": return "تقسيط شرعي";
+                case "DriverLoad": return "تحميل مندوب";
+                default: return saleType;
+            }
+        }
+
         public FrmPrintSale(int saleID, string format = null, bool showPreview = false)
         {
             _saleID = saleID;
@@ -35,6 +50,7 @@ namespace ChickenDist.Forms
         {
             var dt = DbHelper.Query(@"
                 SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
+                       ISNULL(s.VisaPaid, 0) AS VisaPaid,
                        COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
                        COALESCE(s.ShippingCharge, 0) AS ShippingCharge,
@@ -139,7 +155,7 @@ namespace ChickenDist.Forms
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
                             g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
                             
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             g.DrawString($"العميل: {_saleRow["ClientName"]} ({typeLabel})", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 18;
                         }
                         
@@ -208,7 +224,7 @@ namespace ChickenDist.Forms
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 18;
                             g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
                             
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             string driverText = _saleRow["DriverName"].ToString() != "---" ? $" | مندوب: {_saleRow["DriverName"]}" : "";
                             g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
                             g.DrawString($"طريقة الدفع: {typeLabel}{driverText}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 20;
@@ -536,9 +552,7 @@ namespace ChickenDist.Forms
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
                             g.DrawString($"التاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
 
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل"
-                                             : _saleRow["SaleType"].ToString() == "Cash"   ? "نقدي"
-                                             : "تحميل مندوب";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             string driverText = _saleRow["DriverName"].ToString() != "---" ? $" | مندوب: {_saleRow["DriverName"]}" : "";
                             g.DrawString($"العميل: {_saleRow["ClientName"]}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
                             g.DrawString($"طريقة الدفع: {typeLabel}{driverText}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 16;
@@ -1027,7 +1041,7 @@ namespace ChickenDist.Forms
 
                         if (_saleRow != null)
                         {
-                            string payType = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string payType = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, margin, y);
                             g.DrawString($"تاريخ المعاملة: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy HH:mm}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
                             y += 20;
@@ -1050,7 +1064,7 @@ namespace ChickenDist.Forms
                             g.DrawLine(new Pen(Color.Black, 1f), margin + 270, y, margin + 270, y + 50);
                             g.DrawLine(new Pen(Color.Black, 1f), margin, y + 25, pageW - margin, y + 25);
 
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             string driverText = _saleRow["DriverName"].ToString() != "---" ? _saleRow["DriverName"].ToString() : "---";
 
                             // Top-Right: Client
@@ -1075,7 +1089,7 @@ namespace ChickenDist.Forms
 
                         if (_saleRow != null)
                         {
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             g.DrawString($"فاتورة رقم: {_saleRow["SaleCode"]} | تاريخ: {Convert.ToDateTime(_saleRow["SaleDate"]):dd/MM/yyyy} | العميل: {_saleRow["ClientName"]} ({typeLabel})", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
                             y += 18;
                         }
@@ -1095,7 +1109,7 @@ namespace ChickenDist.Forms
                             g.DrawString($"رقم الفاتورة: {_saleRow["SaleCode"]}", normal, Brushes.Black, margin, y);
                             y += 20;
 
-                            string typeLabel = _saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+                            string typeLabel = FormatSaleType(_saleRow["SaleType"]?.ToString());
                             string driverText = _saleRow["DriverName"].ToString() != "---" ? $"  |  المندوب: {_saleRow["DriverName"]}" : "";
                             g.DrawString($"العميل: {_saleRow["ClientName"]}{driverText}   |   النوع: {typeLabel}", normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right);
                             y += 25;

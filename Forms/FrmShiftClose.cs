@@ -552,9 +552,10 @@ namespace ChickenDist.Forms
                 var dt = DbHelper.Query(@"
                     SELECT
                         ISNULL(SUM(TotalAmount), 0) AS TotalSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END), 0) AS CashSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END), 0) AS CreditSales,
-                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
+                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                     FROM Sales 
                     WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
@@ -576,6 +577,7 @@ namespace ChickenDist.Forms
 
                 decimal ts  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["TotalSales"])   : 0;
                 decimal cs  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["CashSales"])    : 0;
+                decimal vs  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["VisaSales"])    : 0;
                 decimal cr  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["CreditSales"])  : 0;
                 decimal os  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["OtherSales"])   : 0;
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]): 0;
@@ -592,6 +594,7 @@ namespace ChickenDist.Forms
                 {
                     TotalSales = ts,
                     CashSales = cs,
+                    VisaSales = vs,
                     CreditSales = cr,
                     OtherSales = os,
                     TotalReturns = tr,
@@ -836,6 +839,7 @@ namespace ChickenDist.Forms
                         ClosedBy = @emp,
                         TotalSales = @ts,
                         CashSales = @cs,
+                        VisaSales = @vs,
                         OtherSales = @os,
                         TotalReturns = @tr,
                         ExpectedCash = @exp,
@@ -850,6 +854,7 @@ namespace ChickenDist.Forms
                     DbHelper.P("@emp", Session.EmpID),
                     DbHelper.P("@ts", _summary?.TotalSales ?? 0),
                     DbHelper.P("@cs", _summary?.CashSales ?? 0),
+                    DbHelper.P("@vs", _summary?.VisaSales ?? 0),
                     DbHelper.P("@os", _summary?.OtherSales ?? 0),
                     DbHelper.P("@tr", _summary?.TotalReturns ?? 0),
                     DbHelper.P("@exp", _summary?.Expected ?? 0),
@@ -980,7 +985,7 @@ namespace ChickenDist.Forms
 
         private class ShiftSummary
         {
-            public decimal TotalSales, CashSales, CreditSales, OtherSales, TotalReturns, Expenses, OpeningCash, Expected;
+            public decimal TotalSales, CashSales, VisaSales, CreditSales, OtherSales, TotalReturns, Expenses, OpeningCash, Expected;
         }
     }
 }

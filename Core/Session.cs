@@ -34,6 +34,7 @@ namespace ChickenDist.Core
         public static string AllowedSafeIDs { get; set; }
         public static bool CanSellCash { get; set; }
         public static bool CanSellCredit { get; set; }
+        public static bool CanSellVisa { get; set; }
         public static bool CanSellDriverLoad { get; set; }
         public static bool CanSellInstallment { get; set; }
         public static bool CanEditShippingCharge { get; set; }
@@ -264,7 +265,7 @@ namespace ChickenDist.Core
         {
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
             DefaultSafeID = null; AllowedSafeIDs = "";
-            CanSellCash = true; CanSellCredit = true; CanSellDriverLoad = true; CanSellInstallment = true;
+            CanSellCash = true; CanSellCredit = true; CanSellVisa = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
             CanSelectDriver = true;
             CurrentShiftID = null;

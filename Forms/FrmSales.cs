@@ -145,7 +145,7 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				RightToLeft = RightToLeft.Yes
 			};
-			cboTypeFilter.Items.AddRange(new object[5] { "الكل", "نقدي (Cash)", "آجل (Credit)", "تقسيط شرعي", "تحميل مندوب" });
+			cboTypeFilter.Items.AddRange(new object[] { "الكل", "نقدي (Cash)", "آجل (Credit)", "فيزا (Visa)", "مختلط (Mixed)", "تقسيط شرعي", "تحميل مندوب" });
 			cboTypeFilter.SelectedIndex = 0;
 			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("نوع الفاتورة:", cboTypeFilter, 115));
@@ -709,7 +709,15 @@ namespace ChickenDist.Forms
 				if (chkOnlyShipping != null && chkOnlyShipping.Checked && shippingAmt <= 0)
 					continue;
 
-				if ((!(text != "الكل") || ((!text.Contains("نقدي") || !(text5 != "Cash")) && (!text.Contains("آجل") || !(text5 != "Credit")) && (!text.Contains("تقسيط") || !(text5 != "Installment")) && (!text.Contains("تحميل") || !(text5 != "DriverLoad")))) && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
+				bool typeMatch = (text == "الكل") ||
+					(text.Contains("نقدي") && text5 == "Cash") ||
+					(text.Contains("آجل") && text5 == "Credit") ||
+					(text.Contains("فيزا") && text5 == "Visa") ||
+					(text.Contains("مختلط") && text5 == "Mixed") ||
+					(text.Contains("تقسيط") && text5 == "Installment") ||
+					(text.Contains("تحميل") && text5 == "DriverLoad");
+
+				if (typeMatch && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
 					decimal num = Convert.ToDecimal(row["TotalAmount"]);
 					decimal returnAmt = row.Table.Columns.Contains("ReturnAmount") && row["ReturnAmount"] != DBNull.Value
@@ -726,7 +734,11 @@ namespace ChickenDist.Forms
 						case "Installment": credit += num; break;
 						case "DriverLoad":  driver += num; break;
 					}
-					string text8 = (text5 == "Credit") ? "آجل" : (text5 == "Cash") ? "نقدي" : (text5 == "Installment") ? "تقسيط شرعي" : "تحميل مندوب";
+					string text8 = (text5 == "Credit") ? "آجل" :
+					               (text5 == "Cash") ? "نقدي" :
+					               (text5 == "Visa") ? "فيزا / شبكة" :
+					               (text5 == "Mixed") ? "مختلط (كاش + فيزا)" :
+					               (text5 == "Installment") ? "تقسيط شرعي" : "تحميل مندوب";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 					int addedIdx = dgSales.Rows.Add(
 						row["SaleID"], row["SaleCode"],

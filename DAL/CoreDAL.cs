@@ -54,7 +54,7 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive,
-            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment, bool canEditShippingCharge = true, bool canSelectDriver = true)
+            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment, bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true)
         {
             // التحقق من عدم تكرار اسم المستخدم
             if (!string.IsNullOrWhiteSpace(username))
@@ -76,15 +76,16 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver) " +
-                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
                     DbHelper.P("@asids", string.IsNullOrEmpty(allowedSafeIDs) ? (object)DBNull.Value : (object)allowedSafeIDs),
                     DbHelper.P("@csc", canSellCash), DbHelper.P("@ccr", canSellCredit),
                     DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment),
-                    DbHelper.P("@cesc", canEditShippingCharge), DbHelper.P("@csd", canSelectDriver));
+                    DbHelper.P("@cesc", canEditShippingCharge), DbHelper.P("@csd", canSelectDriver),
+                    DbHelper.P("@csv", canSellVisa));
             else
             {
                 var prmsList = new System.Collections.Generic.List<SqlParameter>
@@ -103,11 +104,12 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cins", canSellInstallment),
                     DbHelper.P("@cesc", canEditShippingCharge),
                     DbHelper.P("@csd", canSelectDriver),
+                    DbHelper.P("@csv", canSellVisa),
                     DbHelper.P("@id", id)
                 };
 
                 string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
-                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd";
+                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv";
 
                 if (hashedPassword != null)
                 {

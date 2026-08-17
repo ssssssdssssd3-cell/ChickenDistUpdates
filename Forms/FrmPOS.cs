@@ -19,10 +19,13 @@ namespace ChickenDist.Forms
         private TextBox txtBarcode;
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
-        private Label _lPaid;
+        private Label _lPaid, _lVisaPaid;
         private Button _btnPrint, _btnWhatsApp, btnOpenDrawer;
-        private TextBox txtPaid;
+        private TextBox txtPaid, txtVisaPaid;
         private Button btnPay, btnNew, btnCancel, btnSearchProduct, btnCustomizeCols;
+        private Button btnTypeCash, btnTypeVisa, btnTypeCredit, btnTypeMixed;
+        private Panel pnlPaymentTypes;
+        private string _selectedSaleType = "Cash";
         private ComboBox cboClient;
         private Panel pnlClient;
         private FlowLayoutPanel flowQuickItems;
@@ -440,15 +443,76 @@ namespace ChickenDist.Forms
             pnlTotals = new Panel { Location = new Point(10, 495), Size = new Size(1070, 200), BackColor = Theme.BgCard };
             pnlTotals.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlTotals);
 
-            // ترتيب RTL: الإجمالي (يمين) → المدفوع (وسط) → الباقي (يسار)
+            // ترتيب RTL: الإجمالي (يمين) → المدفوع ونوع الدفع (وسط) → الباقي (يسار)
             lblTotal     = new Label { Text = "الإجمالي: 0.00 ج",  Location = new Point(700, 45), Size = new Size(340, 40), ForeColor = Theme.Success, Font = new Font("Segoe UI", 20f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
             lblItemCount = new Label { Text = "عدد الأصناف: 0",    Location = new Point(700, 10), Size = new Size(340, 30), ForeColor = Theme.TextSub,  Font = new Font("Segoe UI", 11f),              TextAlign = ContentAlignment.MiddleRight };
 
-            _lPaid = new Label { Text = "المدفوع:", Location = new Point(370, 50), Size = new Size(80, 28), ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f) };
-            txtPaid = new TextBox { Location = new Point(255, 46), Size = new Size(110, 34), Font = new Font("Segoe UI", 16f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black, BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
+            // ── شريط اختيار نوع الدفع (كاش - فيزا - آجل - مختلط) ──
+            pnlPaymentTypes = new Panel { Size = new Size(400, 36), BackColor = Color.Transparent };
+            
+            btnTypeCash = new Button
+            {
+                Text = "💵 كاش (F7)",
+                Size = new Size(95, 34),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                BackColor = Theme.Primary,
+                ForeColor = Color.White
+            };
+            btnTypeCash.FlatAppearance.BorderSize = 0;
+            btnTypeCash.Click += (s, e) => SetPaymentType("Cash");
+
+            btnTypeVisa = new Button
+            {
+                Text = "💳 فيزا (F8)",
+                Size = new Size(95, 34),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                BackColor = Color.FromArgb(45, 52, 70),
+                ForeColor = Color.FromArgb(180, 195, 215)
+            };
+            btnTypeVisa.FlatAppearance.BorderSize = 0;
+            btnTypeVisa.Click += (s, e) => SetPaymentType("Visa");
+
+            btnTypeCredit = new Button
+            {
+                Text = "📑 آجل (F9)",
+                Size = new Size(95, 34),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                BackColor = Color.FromArgb(45, 52, 70),
+                ForeColor = Color.FromArgb(180, 195, 215)
+            };
+            btnTypeCredit.FlatAppearance.BorderSize = 0;
+            btnTypeCredit.Click += (s, e) => SetPaymentType("Credit");
+
+            btnTypeMixed = new Button
+            {
+                Text = "🔀 مختلط (F10)",
+                Size = new Size(105, 34),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                BackColor = Color.FromArgb(45, 52, 70),
+                ForeColor = Color.FromArgb(180, 195, 215)
+            };
+            btnTypeMixed.FlatAppearance.BorderSize = 0;
+            btnTypeMixed.Click += (s, e) => SetPaymentType("Mixed");
+
+            pnlPaymentTypes.Controls.AddRange(new Control[] { btnTypeCash, btnTypeVisa, btnTypeCredit, btnTypeMixed });
+
+            _lPaid = new Label { Text = "المدفوع كاش:", Location = new Point(370, 50), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold) };
+            txtPaid = new TextBox { Location = new Point(255, 46), Size = new Size(110, 34), Font = new Font("Segoe UI", 15f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black, BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center };
             txtPaid.TextChanged += (s, e) => RecalcChange();
 
-            lblChange = new Label { Text = "الباقي: 0.00 ج", Location = new Point(20, 45), Size = new Size(230, 40), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 20f, FontStyle.Bold) };
+            _lVisaPaid = new Label { Text = "المدفوع فيزا:", Location = new Point(160, 50), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), Visible = false };
+            txtVisaPaid = new TextBox { Location = new Point(50, 46), Size = new Size(105, 34), Font = new Font("Segoe UI", 15f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black, BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center, Visible = false };
+            txtVisaPaid.TextChanged += (s, e) => RecalcChange();
+
+            lblChange = new Label { Text = "الباقي: 0.00 ج", Location = new Point(20, 45), Size = new Size(230, 40), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 18f, FontStyle.Bold) };
 
             // ── أزرار الأسفل ──────────────────────────────────
             btnPay = Theme.MakeButton("💰 إتمام البيع (F5)", Theme.Success, new Point(20, 130), new Size(250, 55));
@@ -497,8 +561,11 @@ namespace ChickenDist.Forms
 
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);
+            pnlTotals.Controls.Add(pnlPaymentTypes);
             pnlTotals.Controls.Add(_lPaid);
             pnlTotals.Controls.Add(txtPaid);
+            pnlTotals.Controls.Add(_lVisaPaid);
+            pnlTotals.Controls.Add(txtVisaPaid);
             pnlTotals.Controls.Add(lblChange);
             pnlTotals.Controls.Add(btnPay);
             pnlTotals.Controls.Add(btnNew);
@@ -575,13 +642,41 @@ namespace ChickenDist.Forms
             lblTotal.Size         = new Size(340, 40);
             lblItemCount.Location = new Point(totW - 360, 10);
             lblItemCount.Size     = new Size(340, 28);
-            // المدفوع: الوسط
+
+            // نوع الدفع وحقول المدفوع: الوسط
             int midX = totW / 2;
-            if (_lPaid   != null) _lPaid.Location   = new Point(midX + 10, 50);
-            if (txtPaid  != null) txtPaid.Location  = new Point(midX - 105, 46);
+            if (pnlPaymentTypes != null)
+            {
+                pnlPaymentTypes.Location = new Point(midX - 210, 8);
+                pnlPaymentTypes.Size = new Size(420, 36);
+                if (btnTypeCash != null) { btnTypeCash.Location = new Point(315, 0); btnTypeCash.Size = new Size(100, 34); }
+                if (btnTypeVisa != null) { btnTypeVisa.Location = new Point(210, 0); btnTypeVisa.Size = new Size(100, 34); }
+                if (btnTypeCredit != null) { btnTypeCredit.Location = new Point(105, 0); btnTypeCredit.Size = new Size(100, 34); }
+                if (btnTypeMixed != null) { btnTypeMixed.Location = new Point(0, 0); btnTypeMixed.Size = new Size(100, 34); }
+            }
+
+            if (_selectedSaleType == "Mixed")
+            {
+                if (_lPaid != null) _lPaid.Location = new Point(midX + 115, 56);
+                if (txtPaid != null) { txtPaid.Location = new Point(midX + 15, 52); txtPaid.Size = new Size(95, 34); }
+                if (_lVisaPaid != null) _lVisaPaid.Location = new Point(midX - 45, 56);
+                if (txtVisaPaid != null) { txtVisaPaid.Location = new Point(midX - 150, 52); txtVisaPaid.Size = new Size(100, 34); }
+            }
+            else if (_selectedSaleType == "Visa")
+            {
+                if (_lVisaPaid != null) _lVisaPaid.Location = new Point(midX + 20, 56);
+                if (txtVisaPaid != null) { txtVisaPaid.Location = new Point(midX - 110, 52); txtVisaPaid.Size = new Size(125, 34); }
+            }
+            else
+            {
+                if (_lPaid != null) _lPaid.Location = new Point(midX + 20, 56);
+                if (txtPaid != null) { txtPaid.Location = new Point(midX - 110, 52); txtPaid.Size = new Size(125, 34); }
+            }
+
             // الباقي: أقصى اليسار
-            lblChange.Location = new Point(20, 45);
-            lblChange.Size     = new Size(Math.Max(100, midX - 130), 40);
+            lblChange.Location = new Point(20, 48);
+            lblChange.Size     = new Size(Math.Max(120, midX - 165), 40);
+
             // الأزرار: توزيع ديناميكي من اليمين ليسار لتفادي أي تداخل
             var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
             var btnSuspendCtrl = pnlTotals.Controls["btnSuspend"];
@@ -644,9 +739,143 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F3) { SuspendCurrentOrder(); e.Handled = true; }
             else if (e.KeyCode == Keys.F4) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
+            else if (e.KeyCode == Keys.F7) { SetPaymentType("Cash"); e.Handled = true; }
+            else if (e.KeyCode == Keys.F8) { SetPaymentType("Visa"); e.Handled = true; }
+            else if (e.KeyCode == Keys.F9) { SetPaymentType("Credit"); e.Handled = true; }
+            else if (e.KeyCode == Keys.F10) { SetPaymentType("Mixed"); e.Handled = true; }
             else if (e.KeyCode == Keys.Escape && _items.Count == 0) { this.Close(); e.Handled = true; }
             else if (e.KeyCode == Keys.F12) { txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; }
             else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
+        }
+
+        private void SetPaymentType(string type)
+        {
+            if (type == "Credit")
+            {
+                if (!Session.IsAdmin && !Session.CanSellCredit)
+                {
+                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (!(cboClient.SelectedItem is ComboItem ci) || ci.ID <= 0)
+                {
+                    MessageBox.Show("⚠️ تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    cboClient.Focus();
+                    return;
+                }
+
+                DataRow clientRow = ClientDAL.GetByID(ci.ID);
+                if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
+                {
+                    string ptype = clientRow["DefaultPaymentType"].ToString();
+                    if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+                    {
+                        MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+            else if (type == "Visa" || type == "Mixed")
+            {
+                if (!Session.IsAdmin && !Session.CanSellVisa)
+                {
+                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+            else if (type == "Cash")
+            {
+                if (!Session.IsAdmin && !Session.CanSellCash)
+                {
+                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
+            _selectedSaleType = type;
+            UpdatePaymentTypeButtons();
+            LayoutPanels();
+            RecalcChange();
+        }
+
+        private void UpdatePaymentTypeButtons()
+        {
+            var activeColor = Theme.Primary;
+            var inactiveColor = Color.FromArgb(45, 52, 70);
+            var activeText = Color.White;
+            var inactiveText = Color.FromArgb(180, 195, 215);
+
+            if (btnTypeCash != null)
+            {
+                btnTypeCash.BackColor = _selectedSaleType == "Cash" ? activeColor : inactiveColor;
+                btnTypeCash.ForeColor = _selectedSaleType == "Cash" ? activeText : inactiveText;
+            }
+
+            if (btnTypeVisa != null)
+            {
+                btnTypeVisa.BackColor = _selectedSaleType == "Visa" ? Color.FromArgb(142, 68, 173) : inactiveColor;
+                btnTypeVisa.ForeColor = _selectedSaleType == "Visa" ? activeText : inactiveText;
+            }
+
+            if (btnTypeCredit != null)
+            {
+                btnTypeCredit.BackColor = _selectedSaleType == "Credit" ? Color.FromArgb(230, 126, 34) : inactiveColor;
+                btnTypeCredit.ForeColor = _selectedSaleType == "Credit" ? activeText : inactiveText;
+            }
+
+            if (btnTypeMixed != null)
+            {
+                btnTypeMixed.BackColor = _selectedSaleType == "Mixed" ? Color.FromArgb(22, 160, 133) : inactiveColor;
+                btnTypeMixed.ForeColor = _selectedSaleType == "Mixed" ? activeText : inactiveText;
+            }
+
+            decimal total = 0;
+            foreach (var item in _items) total += item.Total;
+            if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
+                decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
+                total -= Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
+            }
+
+            if (_selectedSaleType == "Cash")
+            {
+                if (_lPaid != null) { _lPaid.Visible = true; _lPaid.Text = "المدفوع كاش:"; }
+                if (txtPaid != null) { txtPaid.Visible = true; txtPaid.Text = total.ToString("N2"); }
+                if (_lVisaPaid != null) _lVisaPaid.Visible = false;
+                if (txtVisaPaid != null) { txtVisaPaid.Visible = false; txtVisaPaid.Text = "0"; }
+            }
+            else if (_selectedSaleType == "Visa")
+            {
+                if (_lPaid != null) _lPaid.Visible = false;
+                if (txtPaid != null) { txtPaid.Visible = false; txtPaid.Text = "0"; }
+                if (_lVisaPaid != null) { _lVisaPaid.Visible = true; _lVisaPaid.Text = "المدفوع فيزا:"; }
+                if (txtVisaPaid != null) { txtVisaPaid.Visible = true; txtVisaPaid.Text = total.ToString("N2"); }
+            }
+            else if (_selectedSaleType == "Credit")
+            {
+                if (_lPaid != null) { _lPaid.Visible = true; _lPaid.Text = "المسدد مقدماً:"; }
+                if (txtPaid != null) { txtPaid.Visible = true; txtPaid.Text = "0"; }
+                if (_lVisaPaid != null) _lVisaPaid.Visible = false;
+                if (txtVisaPaid != null) { txtVisaPaid.Visible = false; txtVisaPaid.Text = "0"; }
+            }
+            else if (_selectedSaleType == "Mixed")
+            {
+                if (_lPaid != null) { _lPaid.Visible = true; _lPaid.Text = "كاش:"; }
+                if (txtPaid != null) { txtPaid.Visible = true; }
+                if (_lVisaPaid != null) { _lVisaPaid.Visible = true; _lVisaPaid.Text = "فيزا:"; }
+                if (txtVisaPaid != null) { txtVisaPaid.Visible = true; }
+
+                if (txtPaid != null && txtVisaPaid != null)
+                {
+                    if (!decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal cp) || cp == 0)
+                    {
+                        txtPaid.Text = (total / 2m).ToString("N2");
+                        txtVisaPaid.Text = (total - (total / 2m)).ToString("N2");
+                    }
+                }
+            }
         }
 
         // ── مسح الباركود ──────────────────────────────────────
@@ -1040,7 +1269,8 @@ namespace ChickenDist.Forms
 
             lblTotal.Text = $"الإجمالي: {(total - loyaltyDiscount):N2} ج";
             lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {_items.ConvertAll(i => i.Qty).FindAll(q => q > 0).Count}";
-            txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
+            if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
+            else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
         }
 
@@ -1082,7 +1312,7 @@ namespace ChickenDist.Forms
 
             // Loyalty redemption
             decimal loyaltyDiscount = 0;
-            if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
             {
                 var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
                 decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
@@ -1090,10 +1320,52 @@ namespace ChickenDist.Forms
                 total -= loyaltyDiscount;
             }
 
-            if (!decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal paid)) paid = 0;
-            decimal change = paid - total;
-            lblChange.Text = $"الباقي: {change:N2} ج";
-            lblChange.ForeColor = change >= 0 ? Theme.Accent : Theme.Danger;
+            decimal cashPaid = 0;
+            decimal visaPaid = 0;
+            if (txtPaid != null && decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal cp)) cashPaid = cp;
+            if (txtVisaPaid != null && decimal.TryParse(txtVisaPaid.Text.Replace(",", ""), out decimal vp)) visaPaid = vp;
+
+            if (_selectedSaleType == "Cash")
+            {
+                decimal change = cashPaid - total;
+                lblChange.Text = $"الباقي: {change:N2} ج";
+                lblChange.ForeColor = change >= 0 ? Theme.Accent : Theme.Danger;
+            }
+            else if (_selectedSaleType == "Visa")
+            {
+                decimal change = visaPaid - total;
+                lblChange.Text = $"الباقي: {change:N2} ج";
+                lblChange.ForeColor = change >= 0 ? Theme.Accent : Theme.Danger;
+            }
+            else if (_selectedSaleType == "Credit")
+            {
+                decimal remainingCredit = total - cashPaid;
+                if (remainingCredit <= 0)
+                {
+                    lblChange.Text = $"الباقي: {Math.Abs(remainingCredit):N2} ج";
+                    lblChange.ForeColor = Theme.Accent;
+                }
+                else
+                {
+                    lblChange.Text = $"المتبقي آجل: {remainingCredit:N2} ج";
+                    lblChange.ForeColor = Color.FromArgb(243, 156, 18);
+                }
+            }
+            else if (_selectedSaleType == "Mixed")
+            {
+                decimal totalPaid = cashPaid + visaPaid;
+                decimal change = totalPaid - total;
+                if (change >= 0)
+                {
+                    lblChange.Text = $"الباقي: {change:N2} ج";
+                    lblChange.ForeColor = Theme.Accent;
+                }
+                else
+                {
+                    lblChange.Text = $"المتبقي عجز: {Math.Abs(change):N2} ج";
+                    lblChange.ForeColor = Theme.Danger;
+                }
+            }
         }
 
         private bool CheckAvailableStock(int productID, int? batchID, decimal qtyInFactor, out decimal available, out string errorMessage)
@@ -1293,6 +1565,46 @@ namespace ChickenDist.Forms
                     if (!ShiftDAL.GetActiveShiftID().HasValue)
                     {
                         MessageBox.Show("❌ عفوًا: لا يمكن إتمام عملية البيع بدون وجود وردية مفتوحة!", "إلزام فتح الوردية", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        _isSaving = false;
+                        return;
+                    }
+                }
+
+                int clientID = 0;
+                if (cboClient != null && cboClient.SelectedItem is ComboItem ci) clientID = ci.ID;
+
+                // ── التحقق من متطلبات طريقة الدفع وصلاحيات الموظف ──
+                if (_selectedSaleType == "Credit")
+                {
+                    if (clientID <= 0)
+                    {
+                        MessageBox.Show("⚠️ تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        if (cboClient != null) cboClient.Focus();
+                        _isSaving = false;
+                        return;
+                    }
+                    if (!Session.IsAdmin && !Session.CanSellCredit)
+                    {
+                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        _isSaving = false;
+                        return;
+                    }
+                }
+                else if (_selectedSaleType == "Visa" || _selectedSaleType == "Mixed")
+                {
+                    if (!Session.IsAdmin && !Session.CanSellVisa)
+                    {
+                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        _isSaving = false;
+                        return;
+                    }
+                }
+                else if (_selectedSaleType == "Cash")
+                {
+                    if (!Session.IsAdmin && !Session.CanSellCash)
+                    {
+                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        _isSaving = false;
                         return;
                     }
                 }
@@ -1300,19 +1612,50 @@ namespace ChickenDist.Forms
                 decimal total = 0;
                 foreach (var item in _items) total += item.Total;
 
-                int clientID = 0;
-                if (cboClient.SelectedItem is ComboItem ci) clientID = ci.ID;
-
                 // Loyalty
                 decimal loyaltyDiscount = 0;
                 decimal pointsToRedeem = 0;
-                if (chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && clientID > 0)
+                if (chkRedeemPoints != null && chkRedeemPoints.Checked && AppConfig.LoyaltyEnabled && clientID > 0)
                 {
                     var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", clientID));
                     decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
                     loyaltyDiscount = Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
                     pointsToRedeem = loyaltyDiscount / AppConfig.LoyaltyRedemptionRate;
                     total -= loyaltyDiscount;
+                }
+
+                // حساب المدفوع كاش وفيزا حسب نوع الدفع المختار
+                decimal cashPaidVal = 0;
+                decimal visaPaidVal = 0;
+
+                if (_selectedSaleType == "Cash")
+                {
+                    cashPaidVal = (txtPaid != null && decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal cp)) ? cp : total;
+                    visaPaidVal = 0;
+                }
+                else if (_selectedSaleType == "Visa")
+                {
+                    cashPaidVal = 0;
+                    visaPaidVal = (txtVisaPaid != null && decimal.TryParse(txtVisaPaid.Text.Replace(",", ""), out decimal vp)) ? vp : total;
+                }
+                else if (_selectedSaleType == "Credit")
+                {
+                    cashPaidVal = (txtPaid != null && decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal cp)) ? cp : 0;
+                    visaPaidVal = 0;
+                }
+                else if (_selectedSaleType == "Mixed")
+                {
+                    if (txtPaid != null && decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal cp)) cashPaidVal = cp;
+                    if (txtVisaPaid != null && decimal.TryParse(txtVisaPaid.Text.Replace(",", ""), out decimal vp)) visaPaidVal = vp;
+
+                    decimal totalPaid = cashPaidVal + visaPaidVal;
+                    if (totalPaid < total && clientID <= 0)
+                    {
+                        MessageBox.Show("⚠️ إجمالي المدفوع (كاش + فيزا) أقل من قيمة الفاتورة!\nيلزم اختيار عميل مسجل لتسجيل باقي المبلغ كآجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        if (cboClient != null) cboClient.Focus();
+                        _isSaving = false;
+                        return;
+                    }
                 }
 
                 // Extract restaurant fields if active
@@ -1346,14 +1689,17 @@ namespace ChickenDist.Forms
                     decimal totalDisc = loyaltyDiscount + sumItemDiscounts;
 
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
-                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge,OrderType,TableNumber)
-                          VALUES (@sc,GETDATE(),'Cash',@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,0,@ot,@tn)",
-                        DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
+                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,VisaPaid,ShippingCharge,OrderType,TableNumber)
+                          VALUES (@sc,GETDATE(),@stype,@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,@vpaid,0,@ot,@tn)",
+                        DbHelper.P("@sc", saleCode),
+                        DbHelper.P("@stype", _selectedSaleType),
+                        DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
                         DbHelper.P("@did", selectedDriver.HasValue ? (object)selectedDriver.Value : DBNull.Value),
                         DbHelper.P("@tot", total), DbHelper.P("@disc", totalDisc),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
-                        DbHelper.P("@paid", decimal.TryParse(txtPaid.Text.Replace(",",""), out decimal pd) ? pd : total),
+                        DbHelper.P("@paid", cashPaidVal),
+                        DbHelper.P("@vpaid", visaPaidVal),
                         DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                         DbHelper.P("@tn", string.IsNullOrEmpty(tableNum) ? DBNull.Value : (object)tableNum));
 
@@ -1434,14 +1780,20 @@ namespace ChickenDist.Forms
                             DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", warehouseID), DbHelper.P("@q", baseQty2));
                     }
 
-                    // 3. CashBox entry
-                    decimal cashPaidVal = decimal.TryParse(txtPaid.Text.Replace(",", ""), out decimal pdVal) ? pdVal : total;
-                    DbHelper.ExecuteInsertTrans(trans,
-                        "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,1)",
-                        DbHelper.P("@desc", $"فاتورة POS #{saleCode}"), DbHelper.P("@amt", cashPaidVal),
-                        DbHelper.P("@ref", saleID), DbHelper.P("@emp", Session.EmpID));
+                    // 3. CashBox entry (نقدية الدرج الفعلي فقط — لا يتم إدخال الفيزا في درج النقدية الورقية)
+                    if (cashPaidVal > 0)
+                    {
+                        int defaultSafe = Session.GetDefaultSafeID();
+                        DbHelper.ExecuteInsertTrans(trans,
+                            "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,@aid)",
+                            DbHelper.P("@desc", $"فاتورة POS #{saleCode} (نقدية درج)"),
+                            DbHelper.P("@amt", cashPaidVal),
+                            DbHelper.P("@ref", saleID),
+                            DbHelper.P("@emp", Session.EmpID),
+                            DbHelper.P("@aid", defaultSafe > 0 ? defaultSafe : 1));
+                    }
 
-                    // Client ledger statement entries
+                    // Client ledger statement entries (كشف حساب العميل)
                     if (clientID > 0)
                     {
                         DbHelper.ExecuteTrans(trans,
@@ -1449,7 +1801,7 @@ namespace ChickenDist.Forms
                             DbHelper.P("@cid", clientID),
                             DbHelper.P("@amt", total),
                             DbHelper.P("@ref", saleID),
-                            DbHelper.P("@notes", $"فاتورة POS #{saleCode}"),
+                            DbHelper.P("@notes", $"فاتورة POS #{saleCode} [{_selectedSaleType}]"),
                             DbHelper.P("@by", Session.EmpID));
 
                         if (cashPaidVal > 0)
@@ -1460,6 +1812,17 @@ namespace ChickenDist.Forms
                                 DbHelper.P("@amt", cashPaidVal),
                                 DbHelper.P("@ref", saleID),
                                 DbHelper.P("@notes", $"سداد نقدي فاتورة POS #{saleCode}"),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+
+                        if (visaPaidVal > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions (ClientID, TransDate, TransType, Credit, RefID, Notes, CreatedBy) VALUES (@cid, GETDATE(), 'Payment', @amt, @ref, @notes, @by)",
+                                DbHelper.P("@cid", clientID),
+                                DbHelper.P("@amt", visaPaidVal),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@notes", $"سداد فيزا فاتورة POS #{saleCode}"),
                                 DbHelper.P("@by", Session.EmpID));
                         }
                     }
@@ -1543,15 +1906,18 @@ namespace ChickenDist.Forms
             _isSaving = false;
             _items.Clear();
             _loadedDraftSaleID = 0;
+            _selectedSaleType = "Cash";
+            UpdatePaymentTypeButtons();
             if (cboClient != null)
             {
                 cboClient.Tag = null;
                 LoadClients();
             }
             RefreshGrid();
-            txtPaid.Text = "0";
-            txtBarcode.Clear();
-            chkRedeemPoints.Checked = false;
+            if (txtPaid != null) txtPaid.Text = "0";
+            if (txtVisaPaid != null) txtVisaPaid.Text = "0";
+            if (txtBarcode != null) txtBarcode.Clear();
+            if (chkRedeemPoints != null) chkRedeemPoints.Checked = false;
             if (AppConfig.IsRestaurant)
             {
                 if (txtTableNum != null) txtTableNum.Clear();

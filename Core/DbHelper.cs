@@ -792,6 +792,15 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("Sales.VisaPaid", @"
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Sales', 'VisaPaid') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD VisaPaid DECIMAL(10,2) NOT NULL DEFAULT 0;
+                    END
+                END");
+
                 // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***
                 SafeMigrate("SaleItems.Discount", @"
                 IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
@@ -2102,6 +2111,10 @@ namespace ChickenDist.Core
                     IF COL_LENGTH('Employees', 'CanSellInstallment') IS NULL
                     BEGIN
                         ALTER TABLE Employees ADD CanSellInstallment BIT NOT NULL DEFAULT 1;
+                    END
+                    IF COL_LENGTH('Employees', 'CanSellVisa') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellVisa BIT NOT NULL DEFAULT 1;
                     END
                 END");
 
