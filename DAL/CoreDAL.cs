@@ -1488,6 +1488,29 @@ namespace ChickenDist.DAL
             return DbHelper.Query("SELECT AccountID, AccountName, AccountType, AccountNumber, OpeningBalance FROM SafeAccounts WHERE IsActive = 1 ORDER BY AccountID");
         }
 
+        public static DataTable GetActiveVisaAccounts()
+        {
+            try
+            {
+                var dt = DbHelper.Query("SELECT AccountID, AccountName, AccountType, AccountNumber, OpeningBalance FROM SafeAccounts WHERE IsActive = 1 AND AccountType IN ('Visa', 'Bank') ORDER BY AccountID");
+                if (dt.Rows.Count == 0)
+                {
+                    DbHelper.Execute(@"
+                        IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountType = 'Visa')
+                        BEGIN
+                            INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                            VALUES (N'ماكينة فيزا 1', N'Visa', N'VISA-01', 0.00, 1);
+                        END");
+                    dt = DbHelper.Query("SELECT AccountID, AccountName, AccountType, AccountNumber, OpeningBalance FROM SafeAccounts WHERE IsActive = 1 AND AccountType IN ('Visa', 'Bank') ORDER BY AccountID");
+                }
+                return dt;
+            }
+            catch
+            {
+                return new DataTable();
+            }
+        }
+
         public static DataTable GetCashBox(DateTime from, DateTime to, int? accountID = null)
         {
             string sql = @"SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,

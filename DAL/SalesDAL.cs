@@ -155,7 +155,8 @@ namespace ChickenDist.DAL
         public static int SaveSale(int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
+            int? visaAccountID = null, decimal? visaPaid = null)
         {
             int? activeShiftID = ShiftDAL.GetActiveShiftID();
             if (!activeShiftID.HasValue && !isDraft)
@@ -167,13 +168,15 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : "Cash";
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                 int targetWarehouse = warehouseID ?? 1;
 
+                decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
+
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,VisaPaid,VisaAccountID,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@vp,@vaid,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -181,6 +184,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@discAmt", Math.Round(discountAmount, 2)), DbHelper.P("@discPct", Math.Round(discountPct, 2)),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@vp", vPaidVal),
+                    DbHelper.P("@vaid", visaAccountID.HasValue ? (object)visaAccountID.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                     DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
@@ -431,6 +436,39 @@ namespace ChickenDist.DAL
                                 "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
                                 DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
                                 DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
+                    
+                    // فيزا: أضف لحساب ماكينة الفيزا وسجل في حساب العميل دائماً
+                    if (typeStr == "Visa" || (visaPaid.HasValue && visaPaid.Value > 0))
+                    {
+                        decimal actualVisaPaid = (visaPaid.HasValue && visaPaid.Value > 0) ? visaPaid.Value : total;
+                        int targetVisaAcc = visaAccountID.HasValue && visaAccountID.Value > 0 
+                            ? visaAccountID.Value 
+                            : (safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : 1);
+
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('Sale',@amt,@ref,@n,@by,@accId)",
+                            DbHelper.P("@amt", actualVisaPaid), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@n", "سداد فيزا " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", targetVisaAcc));
+
+                        if (clientID.HasValue)
+                        {
+                            if (typeStr == "Visa")
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع فيزا " + code),
+                                    DbHelper.P("@by", Session.EmpID));
+                            }
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualVisaPaid),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد فيزا فاتورة " + code),
                                 DbHelper.P("@by", Session.EmpID));
                         }
                     }
@@ -705,7 +743,8 @@ namespace ChickenDist.DAL
         public static bool UpdateSale(int saleID, int saleType, int? clientID, int? driverID, decimal total, string notes,
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
-            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null)
+            int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
+            int? visaAccountID = null, decimal? visaPaid = null)
         {
             bool success = false;
 
@@ -785,7 +824,7 @@ namespace ChickenDist.DAL
                     "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType IN ('Sale', 'Payment')",
                     DbHelper.P("@id", saleID));
                 DbHelper.ExecuteTrans(trans,
-                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('SaleIncome', 'ClientPayment')",
+                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('Sale', 'SaleIncome', 'ClientPayment')",
                     DbHelper.P("@id", saleID));
                 if (oldTypeStr == "DriverLoad")
                 {
@@ -806,14 +845,15 @@ namespace ChickenDist.DAL
                 if (dtCode.Rows.Count > 0) code = dtCode.Rows[0]["SaleCode"].ToString();
 
                 // 6. تحديث رأس الفاتورة
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 4 ? "Visa" : "Cash";
                 int targetWarehouse = warehouseID ?? 1;
+                decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
 
                 DbHelper.ExecuteTrans(trans,
                     @"UPDATE Sales 
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
-                          CashPaid=@cp, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping,
+                          CashPaid=@cp, VisaPaid=@vp, VisaAccountID=@vaid, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping,
                           OrderType=@ot, TableNumber=@tn
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
@@ -827,6 +867,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wid", targetWarehouse),
                     DbHelper.P("@pt", priceTier),
                     DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@vp", vPaidVal),
+                    DbHelper.P("@vaid", visaAccountID.HasValue ? (object)visaAccountID.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut),
                     DbHelper.P("@ci", cratesIn),
                     DbHelper.P("@shipping", shippingCharge),
@@ -946,6 +988,37 @@ namespace ChickenDist.DAL
                                 "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
                                 DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
                                 DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد تعديل فاتورة بيع نقدي " + code),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
+                    else if (typeStr == "Visa" || (visaPaid.HasValue && visaPaid.Value > 0))
+                    {
+                        decimal actualVisaPaid = (visaPaid.HasValue && visaPaid.Value > 0) ? visaPaid.Value : total;
+                        int targetVisaAcc = visaAccountID.HasValue && visaAccountID.Value > 0 
+                            ? visaAccountID.Value 
+                            : (safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : 1);
+
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('Sale',@amt,@ref,@n,@by,@accId)",
+                            DbHelper.P("@amt", actualVisaPaid), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@n", "تعديل سداد فيزا " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", targetVisaAcc));
+
+                        if (clientID.HasValue)
+                        {
+                            if (typeStr == "Visa")
+                            {
+                                DbHelper.ExecuteTrans(trans,
+                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل فاتورة بيع فيزا " + code),
+                                    DbHelper.P("@by", Session.EmpID));
+                            }
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
+                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualVisaPaid),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد تعديل فيزا فاتورة " + code),
                                 DbHelper.P("@by", Session.EmpID));
                         }
                     }

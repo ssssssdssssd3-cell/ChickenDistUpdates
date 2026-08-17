@@ -44,6 +44,8 @@ namespace ChickenDist.Forms
         private Button btnSuspend, btnRecall, btnModelLookup;
         private int _loadedDraftSaleID = 0;
         private bool _isSaving = false;
+        private int? _selectedVisaAccountID = null;
+        private string _selectedVisaAccountName = "";
 
         // ── البيانات ──────────────────────────────────────────
         private List<POSItem> _items = new List<POSItem>();
@@ -474,7 +476,24 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(180, 195, 215)
             };
             btnTypeVisa.FlatAppearance.BorderSize = 0;
-            btnTypeVisa.Click += (s, e) => SetPaymentType("Visa");
+            btnTypeVisa.Click += (s, e) =>
+            {
+                if (_selectedSaleType == "Visa")
+                {
+                    decimal vTotal = 0;
+                    foreach (var it in _items) vTotal += it.Total;
+                    if (FrmSelectVisaAccount.SelectVisaAccount(this, vTotal, _selectedVisaAccountID, out int vId, out string vName))
+                    {
+                        _selectedVisaAccountID = vId;
+                        _selectedVisaAccountName = vName;
+                        UpdatePaymentTypeButtons();
+                    }
+                }
+                else
+                {
+                    SetPaymentType("Visa");
+                }
+            };
 
             btnTypeCredit = new Button
             {
@@ -783,6 +802,16 @@ namespace ChickenDist.Forms
                     MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+
+                if (_selectedVisaAccountID == null || _selectedVisaAccountID <= 0)
+                {
+                    var dtVisa = AccountDAL.GetActiveVisaAccounts();
+                    if (dtVisa.Rows.Count == 1)
+                    {
+                        _selectedVisaAccountID = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
+                        _selectedVisaAccountName = dtVisa.Rows[0]["AccountName"].ToString();
+                    }
+                }
             }
             else if (type == "Cash")
             {
@@ -816,6 +845,14 @@ namespace ChickenDist.Forms
             {
                 btnTypeVisa.BackColor = _selectedSaleType == "Visa" ? Color.FromArgb(142, 68, 173) : inactiveColor;
                 btnTypeVisa.ForeColor = _selectedSaleType == "Visa" ? activeText : inactiveText;
+                if (_selectedSaleType == "Visa" && !string.IsNullOrEmpty(_selectedVisaAccountName))
+                {
+                    btnTypeVisa.Text = $"💳 {_selectedVisaAccountName}";
+                }
+                else
+                {
+                    btnTypeVisa.Text = "💳 فيزا (F8)";
+                }
             }
 
             if (btnTypeCredit != null)
@@ -1658,6 +1695,35 @@ namespace ChickenDist.Forms
                     }
                 }
 
+                // تحديد حساب / ماكينة الفيزا إن وُجد سداد بالفيزا
+                if (visaPaidVal > 0)
+                {
+                    if (_selectedVisaAccountID == null || _selectedVisaAccountID <= 0)
+                    {
+                        if (!FrmSelectVisaAccount.SelectVisaAccount(this, visaPaidVal, _selectedVisaAccountID, out int chosenVid, out string chosenVname))
+                        {
+                            _isSaving = false;
+                            return;
+                        }
+                        _selectedVisaAccountID = chosenVid;
+                        _selectedVisaAccountName = chosenVname;
+                    }
+                    else
+                    {
+                        var dtActiveVisa = AccountDAL.GetActiveVisaAccounts();
+                        if (dtActiveVisa.Rows.Count > 1 && string.IsNullOrEmpty(_selectedVisaAccountName))
+                        {
+                            if (!FrmSelectVisaAccount.SelectVisaAccount(this, visaPaidVal, _selectedVisaAccountID, out int chosenVid, out string chosenVname))
+                            {
+                                _isSaving = false;
+                                return;
+                            }
+                            _selectedVisaAccountID = chosenVid;
+                            _selectedVisaAccountName = chosenVname;
+                        }
+                    }
+                }
+
                 // Extract restaurant fields if active
                 string orderType = null;
                 string tableNum = null;
@@ -1689,8 +1755,8 @@ namespace ChickenDist.Forms
                     decimal totalDisc = loyaltyDiscount + sumItemDiscounts;
 
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
-                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,VisaPaid,ShippingCharge,OrderType,TableNumber)
-                          VALUES (@sc,GETDATE(),@stype,@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,@vpaid,0,@ot,@tn)",
+                        @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,VisaPaid,VisaAccountID,ShippingCharge,OrderType,TableNumber)
+                          VALUES (@sc,GETDATE(),@stype,@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,@vpaid,@vaid,0,@ot,@tn)",
                         DbHelper.P("@sc", saleCode),
                         DbHelper.P("@stype", _selectedSaleType),
                         DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
@@ -1700,6 +1766,7 @@ namespace ChickenDist.Forms
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
                         DbHelper.P("@paid", cashPaidVal),
                         DbHelper.P("@vpaid", visaPaidVal),
+                        DbHelper.P("@vaid", _selectedVisaAccountID.HasValue ? (object)_selectedVisaAccountID.Value : DBNull.Value),
                         DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                         DbHelper.P("@tn", string.IsNullOrEmpty(tableNum) ? DBNull.Value : (object)tableNum));
 
@@ -1780,7 +1847,7 @@ namespace ChickenDist.Forms
                             DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", warehouseID), DbHelper.P("@q", baseQty2));
                     }
 
-                    // 3. CashBox entry (نقدية الدرج الفعلي فقط — لا يتم إدخال الفيزا في درج النقدية الورقية)
+                    // 3. CashBox entry (نقدية الدرج الفعلي والفيزا بحسابها المحدد)
                     if (cashPaidVal > 0)
                     {
                         int defaultSafe = Session.GetDefaultSafeID();
@@ -1791,6 +1858,17 @@ namespace ChickenDist.Forms
                             DbHelper.P("@ref", saleID),
                             DbHelper.P("@emp", Session.EmpID),
                             DbHelper.P("@aid", defaultSafe > 0 ? defaultSafe : 1));
+                    }
+
+                    if (visaPaidVal > 0 && _selectedVisaAccountID.HasValue)
+                    {
+                        DbHelper.ExecuteInsertTrans(trans,
+                            "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,@aid)",
+                            DbHelper.P("@desc", $"فاتورة POS #{saleCode} (سداد فيزا: {_selectedVisaAccountName})"),
+                            DbHelper.P("@amt", visaPaidVal),
+                            DbHelper.P("@ref", saleID),
+                            DbHelper.P("@emp", Session.EmpID),
+                            DbHelper.P("@aid", _selectedVisaAccountID.Value));
                     }
 
                     // Client ledger statement entries (كشف حساب العميل)
@@ -1907,6 +1985,8 @@ namespace ChickenDist.Forms
             _items.Clear();
             _loadedDraftSaleID = 0;
             _selectedSaleType = "Cash";
+            _selectedVisaAccountID = null;
+            _selectedVisaAccountName = "";
             UpdatePaymentTypeButtons();
             if (cboClient != null)
             {

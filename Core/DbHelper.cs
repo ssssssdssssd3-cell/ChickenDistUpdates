@@ -799,6 +799,17 @@ namespace ChickenDist.Core
                     BEGIN
                         ALTER TABLE Sales ADD VisaPaid DECIMAL(10,2) NOT NULL DEFAULT 0;
                     END
+                    IF COL_LENGTH('Sales', 'VisaAccountID') IS NULL
+                    BEGIN
+                        ALTER TABLE Sales ADD VisaAccountID INT NULL;
+                    END
+                END");
+
+                SafeMigrate("SafeAccounts.DefaultVisa", @"
+                IF OBJECT_ID('SafeAccounts', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountType = 'Visa')
+                BEGIN
+                    INSERT INTO SafeAccounts (AccountName, AccountType, AccountNumber, OpeningBalance, IsActive)
+                    VALUES (N'ماكينة فيزا 1', N'Visa', N'VISA-01', 0.00, 1);
                 END");
 
                 // *** الأعمدة الحرجة: DiscountPct و DiscountAmt في SaleItems ***

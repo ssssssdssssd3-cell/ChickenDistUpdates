@@ -19,15 +19,15 @@ namespace ChickenDist.Forms
         private string _printFormat;
         private bool _showPreview;
 
-        public static string FormatSaleType(string saleType)
+        public static string FormatSaleType(string saleType, string visaAccountName = null)
         {
             if (string.IsNullOrEmpty(saleType)) return "نقدي";
             switch (saleType)
             {
                 case "Cash": return "نقدي";
                 case "Credit": return "آجل";
-                case "Visa": return "فيزا / شبكة";
-                case "Mixed": return "مختلط (كاش + فيزا)";
+                case "Visa": return !string.IsNullOrEmpty(visaAccountName) ? $"فيزا ({visaAccountName})" : "فيزا / شبكة";
+                case "Mixed": return !string.IsNullOrEmpty(visaAccountName) ? $"مختلط (كاش + فيزا {visaAccountName})" : "مختلط (كاش + فيزا)";
                 case "Installment": return "تقسيط شرعي";
                 case "DriverLoad": return "تحميل مندوب";
                 default: return saleType;
@@ -50,17 +50,18 @@ namespace ChickenDist.Forms
         {
             var dt = DbHelper.Query(@"
                 SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
-                       ISNULL(s.VisaPaid, 0) AS VisaPaid,
+                       ISNULL(s.VisaPaid, 0) AS VisaPaid, s.VisaAccountID, sa.AccountName AS VisaAccountName,
                        COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
                        COALESCE(s.ShippingCharge, 0) AS ShippingCharge,
-                       CASE WHEN s.ClientID IS NULL AND s.SaleType = 'Cash' THEN N'عميل نقدي' ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
+                       CASE WHEN s.ClientID IS NULL AND (s.SaleType = 'Cash' OR s.SaleType = 'Visa') THEN (CASE WHEN s.SaleType = 'Visa' THEN N'عميل فيزا' ELSE N'عميل نقدي' END) ELSE COALESCE(c.ClientName, N'---') END AS ClientName,
                        COALESCE(c.Phone, N'') AS ClientPhone,
                        COALESCE(c.Address, N'') AS ClientAddress,
                        COALESCE(e.EmpName, N'---') AS DriverName
                  FROM Sales s
                  LEFT JOIN Clients c ON s.ClientID = c.ClientID
                  LEFT JOIN Employees e ON s.DriverID = e.EmpID
+                 LEFT JOIN SafeAccounts sa ON s.VisaAccountID = sa.AccountID
                  WHERE s.SaleID = @id", DbHelper.P("@id", _saleID));
             if (dt.Rows.Count > 0)
                 _saleRow = dt.Rows[0];
