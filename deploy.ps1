@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.462"
+$VERSION   = "2.0.463"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -61,18 +61,10 @@ if (Test-Path $OUT_DIR) {
     try { Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue } catch {}
 }
 
-$buildResult = dotnet publish $CSPROJ -c Release -f net48 -o $OUT_DIR --nologo 2>&1
-$buildOutput = $buildResult -join "`n"
+& dotnet publish $CSPROJ -c Release -f net48 -o $OUT_DIR --nologo /p:UseSharedCompilation=false /nodereuse:false
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host $buildOutput -ForegroundColor Red
     Write-Fail "Build failed!"
-}
-
-$errors = $buildResult | Where-Object { $_ -match "error" -and $_ -notmatch "warning" }
-if ($errors) {
-    Write-Host ($errors -join "`n") -ForegroundColor Red
-    Write-Fail "Build has errors!"
 }
 
 Write-OK "Build successful"

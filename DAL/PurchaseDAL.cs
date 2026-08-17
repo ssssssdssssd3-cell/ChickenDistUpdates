@@ -349,6 +349,16 @@ namespace ChickenDist.DAL
                 }
             });
 
+            if (returnedID > 0 && !isDraft)
+            {
+                try
+                {
+                    List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
+                    ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
+                }
+                catch { }
+            }
+
             return returnedID;
         }
 
@@ -574,6 +584,14 @@ namespace ChickenDist.DAL
                             DbHelper.P("@accId", accId));
                     }
                 });
+
+                try
+                {
+                    List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
+                    ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
+                }
+                catch { }
+
                 return true;
             }
             catch (Exception ex)

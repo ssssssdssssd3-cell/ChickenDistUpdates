@@ -14,13 +14,14 @@ namespace ChickenDist.Forms
     {
         private DataTable _dtCurrentShortages;
 
-        // Header / Action Controls
-        private Panel pnlTop;
-        private Panel pnlTitleText;
-        private FlowLayoutPanel flowActions;
+        // Top Header
+        private Panel pnlHeaderBanner;
+        private Label lblHeaderTitle;
+        private Label lblHeaderSubtitle;
 
-        // KPI Controls
+        // KPI Metric Cards
         private Panel pnlKpiContainer;
+        private TableLayoutPanel tblKpi;
         private Panel pnlKpiTotal;
         private Panel pnlKpiZero;
         private Panel pnlKpiBelowMin;
@@ -31,7 +32,18 @@ namespace ChickenDist.Forms
         private Label lblKpiBelowMinVal;
         private Label lblKpiCostVal;
 
-        // Filter Controls
+        // Action Toolbar
+        private Panel pnlActionToolbar;
+        private FlowLayoutPanel flowActions;
+        private Button btnAddManual;
+        private Button btnChangeStatus;
+        private Button btnCreatePurchase;
+        private Button btnMinStockEdit;
+        private Button btnPrint;
+        private Button btnExportExcel;
+        private Button btnRefresh;
+
+        // Filter Strip
         private Panel pnlFilterCard;
         private Label lblSearch;
         private TextBox txtSearch;
@@ -47,18 +59,9 @@ namespace ChickenDist.Forms
         private ComboBox cboStatusFilter;
         private Button btnResetFilters;
 
-        // Data Table
+        // Main Data Grid
         private Panel pnlGridWrapper;
         private DataGridView dgShortages;
-
-        // Action Buttons
-        private Button btnAddManual;
-        private Button btnChangeStatus;
-        private Button btnCreatePurchase;
-        private Button btnMinStockEdit;
-        private Button btnPrint;
-        private Button btnExportExcel;
-        private Button btnRefresh;
 
         public FrmShortageNotebook()
         {
@@ -70,9 +73,9 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "📓 كشكول النواقص وأوامر التوريد";
-            this.Size = new Size(1320, 800);
-            this.MinimumSize = new Size(1000, 600);
+            this.Text = "📓 كشكول النواقص والطلبات الخاصة";
+            this.Size = new Size(1340, 820);
+            this.MinimumSize = new Size(1024, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
@@ -80,85 +83,127 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
 
             // ══════════════════════════════════════════════════════════════
-            // 1. TOP HEADER & ACTION BAR
+            // 1. TOP HEADER BANNER (شريط ترويسة رئيسي أنيق ومستقل)
             // ══════════════════════════════════════════════════════════════
-            pnlTop = new Panel
+            pnlHeaderBanner = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                Height = 52,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 8, 15, 8)
+                Padding = new Padding(15, 6, 15, 6)
             };
 
-            // Title & Subtitle (Right side)
-            pnlTitleText = new Panel
-            {
-                Dock = DockStyle.Right,
-                Width = 430,
-                BackColor = Color.Transparent
-            };
-
-            var lblMainTitle = new Label
+            lblHeaderTitle = new Label
             {
                 Text = "📓 كشكول النواقص والطلبات الخاصة",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
-                Location = new Point(5, 6)
+                Location = new Point(15, 6)
             };
 
-            var lblSubTitle = new Label
+            lblHeaderSubtitle = new Label
             {
-                Text = "متابعة شاملة للأصناف الناقصة، المنتهية، وتجاوز حد الطلب مع فلترة دقيقة وتوريد فوري",
+                Text = "متابعة شاملة للأصناف الناقصة وحد الطلب مع إمكانية تعديل الكميات المطلوبة فورياً وتوريدها",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Theme.TextGray,
                 AutoSize = true,
-                Location = new Point(5, 33)
+                Location = new Point(15, 29)
             };
 
-            pnlTitleText.Controls.Add(lblMainTitle);
-            pnlTitleText.Controls.Add(lblSubTitle);
-            pnlTop.Controls.Add(pnlTitleText);
+            pnlHeaderBanner.Controls.Add(lblHeaderTitle);
+            pnlHeaderBanner.Controls.Add(lblHeaderSubtitle);
+            this.Controls.Add(pnlHeaderBanner);
 
-            // Action Buttons Flow (Left side)
+            // ══════════════════════════════════════════════════════════════
+            // 2. KPI SUMMARY METRIC CARDS (كروت الإحصائيات من اليمين لليسار)
+            // ══════════════════════════════════════════════════════════════
+            pnlKpiContainer = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 68,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(15, 4, 15, 4)
+            };
+
+            tblKpi = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 4,
+                RowCount = 1,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
+                RightToLeft = RightToLeft.Yes
+            };
+            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22f)); // Right: Total Items
+            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f)); // Zero Stock
+            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f)); // Below Min
+            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f)); // Left: Total Cost
+
+            pnlKpiTotal = CreateKpiCard("📋 إجمالي الأصناف الناقصة", "0 صنف", Color.FromArgb(30, 41, 59), Color.FromArgb(241, 245, 249), out lblKpiTotalVal);
+            pnlKpiZero = CreateKpiCard("🔴 أصناف نفدت بالكامل (رصيد 0)", "0 صنف", Color.FromArgb(220, 38, 38), Color.FromArgb(254, 242, 242), out lblKpiZeroVal);
+            pnlKpiBelowMin = CreateKpiCard("⚠️ أصناف بلغت أو تحت حد الطلب", "0 صنف", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199), out lblKpiBelowMinVal);
+            pnlKpiCost = CreateKpiCard("💰 تكلفة التوفير التقديرية", "0.00 ج", Color.FromArgb(13, 148, 136), Color.FromArgb(240, 253, 250), out lblKpiCostVal);
+
+            tblKpi.Controls.Add(pnlKpiTotal, 0, 0);
+            tblKpi.Controls.Add(pnlKpiZero, 1, 0);
+            tblKpi.Controls.Add(pnlKpiBelowMin, 2, 0);
+            tblKpi.Controls.Add(pnlKpiCost, 3, 0);
+
+            pnlKpiContainer.Controls.Add(tblKpi);
+            this.Controls.Add(pnlKpiContainer);
+
+            // ══════════════════════════════════════════════════════════════
+            // 3. ACTION TOOLBAR (شريط الأزرار الرئيسي - يبدأ من اليمين)
+            // ══════════════════════════════════════════════════════════════
+            pnlActionToolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 46,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15, 4, 15, 4)
+            };
+
             flowActions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 4, 10, 0),
-                AutoScroll = false
+                Padding = new Padding(0, 2, 0, 0),
+                AutoScroll = false,
+                RightToLeft = RightToLeft.Yes
             };
 
-            btnAddManual = Theme.MakeButton("➕ إضافة طلب/نقص", 0, 0, 140, 36, Theme.Success);
+            btnAddManual = Theme.MakeButton("➕ إضافة طلب/نقص يدوي", 0, 0, 160, 34, Theme.Success);
             btnAddManual.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnAddManual.Click += BtnAddManual_Click;
 
-            btnChangeStatus = Theme.MakeButton("📝 تغيير الحالة", 0, 0, 110, 36, Color.FromArgb(41, 128, 185));
+            btnChangeStatus = Theme.MakeButton("📝 تغيير الحالة", 0, 0, 110, 34, Color.FromArgb(41, 128, 185));
             btnChangeStatus.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnChangeStatus.Click += BtnChangeStatus_Click;
 
-            btnCreatePurchase = Theme.MakeButton("🛒 أمر شراء / مشتريات", 0, 0, 145, 36, Theme.Primary);
+            btnCreatePurchase = Theme.MakeButton("🛒 فتح فاتورة شراء", 0, 0, 140, 34, Theme.Primary);
             btnCreatePurchase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCreatePurchase.Click += BtnCreatePurchase_Click;
 
-            btnMinStockEdit = Theme.MakeButton("🎯 حد الطلب", 0, 0, 105, 36, Color.FromArgb(13, 148, 136));
+            btnMinStockEdit = Theme.MakeButton("🎯 تعديل حد الطلب", 0, 0, 130, 34, Color.FromArgb(13, 148, 136));
             btnMinStockEdit.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnMinStockEdit.Click += (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
             };
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 95, 36, Color.FromArgb(142, 68, 173));
+            btnPrint = Theme.MakeButton("🖨️ طباعة الكشكول", 0, 0, 125, 34, Color.FromArgb(142, 68, 173));
             btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrint.Click += BtnPrint_Click;
 
-            btnExportExcel = Theme.MakeButton("📊 إكسل", 0, 0, 90, 36, Color.FromArgb(46, 117, 89));
+            btnExportExcel = Theme.MakeButton("📊 تصدير إكسل", 0, 0, 110, 34, Color.FromArgb(46, 117, 89));
             btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnExportExcel.Click += BtnExportExcel_Click;
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 36, Color.FromArgb(70, 80, 95));
+            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 34, Color.FromArgb(70, 80, 95));
             btnRefresh.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnRefresh.Click += (s, e) => { LoadDropdowns(); LoadData(); };
 
@@ -172,60 +217,21 @@ namespace ChickenDist.Forms
                 btnRefresh
             });
 
-            pnlTop.Controls.Add(flowActions);
-            this.Controls.Add(pnlTop);
+            pnlActionToolbar.Controls.Add(flowActions);
+            this.Controls.Add(pnlActionToolbar);
 
             // ══════════════════════════════════════════════════════════════
-            // 2. KPI SUMMARY METRIC TILES
-            // ══════════════════════════════════════════════════════════════
-            pnlKpiContainer = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 72,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(15, 6, 15, 6)
-            };
-
-            var tableKpi = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 4,
-                RowCount = 1,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0),
-                Margin = new Padding(0)
-            };
-            tableKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22f));
-            tableKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f));
-            tableKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f));
-            tableKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
-
-            pnlKpiTotal = CreateKpiCard("📋 إجمالي الأصناف الناقصة", "0 صنف", Color.FromArgb(30, 41, 59), Color.FromArgb(241, 245, 249), out lblKpiTotalVal);
-            pnlKpiZero = CreateKpiCard("🔴 أصناف نفدت بالكامل (رصيد 0)", "0 صنف", Color.FromArgb(220, 38, 38), Color.FromArgb(254, 242, 242), out lblKpiZeroVal);
-            pnlKpiBelowMin = CreateKpiCard("⚠️ أصناف بلغت أو تجاوزت حد الطلب", "0 صنف", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199), out lblKpiBelowMinVal);
-            pnlKpiCost = CreateKpiCard("💰 تكلفة التوفير التقديرية", "0.00 ج", Color.FromArgb(13, 148, 136), Color.FromArgb(240, 253, 250), out lblKpiCostVal);
-
-            tableKpi.Controls.Add(pnlKpiTotal, 0, 0);
-            tableKpi.Controls.Add(pnlKpiZero, 1, 0);
-            tableKpi.Controls.Add(pnlKpiBelowMin, 2, 0);
-            tableKpi.Controls.Add(pnlKpiCost, 3, 0);
-
-            pnlKpiContainer.Controls.Add(tableKpi);
-            this.Controls.Add(pnlKpiContainer);
-
-            // ══════════════════════════════════════════════════════════════
-            // 3. ADVANCED MULTI-DIMENSIONAL FILTER STRIP
+            // 4. FILTER PANEL (شريط الفلاتر والبحث المتجاوب من اليمين لليسار)
             // ══════════════════════════════════════════════════════════════
             pnlFilterCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 88,
+                Height = 84,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15, 6, 15, 6)
             };
 
-            // Controls
-            lblSearch = new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblSearch = new Label { Text = "🔍 بحث سريع:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             txtSearch = new TextBox
             {
                 BackColor = Theme.BgInput,
@@ -246,7 +252,7 @@ namespace ChickenDist.Forms
             };
             cboSupplierFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblCat = new Label { Text = "📁 القسم:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblCat = new Label { Text = "📁 القسم / التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboCategoryFilter = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -257,7 +263,7 @@ namespace ChickenDist.Forms
             };
             cboCategoryFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            lblBrand = new Label { Text = "🏭 الشركة/الماركة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblBrand = new Label { Text = "🏭 الشركة / الماركة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboBrandFilter = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -300,7 +306,7 @@ namespace ChickenDist.Forms
             cboStatusFilter.SelectedIndex = 0;
             cboStatusFilter.SelectedIndexChanged += (s, e) => LoadData();
 
-            btnResetFilters = Theme.MakeButton("🧹 تفريغ الفلاتر", 0, 0, 115, 30, Color.FromArgb(100, 116, 139));
+            btnResetFilters = Theme.MakeButton("🧹 تفريغ الفلاتر", 0, 0, 115, 28, Color.FromArgb(100, 116, 139));
             btnResetFilters.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnResetFilters.Click += (s, e) => ResetFilters();
 
@@ -316,13 +322,13 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlFilterCard);
 
             // ══════════════════════════════════════════════════════════════
-            // 4. MAIN DATA GRID
+            // 5. MAIN DATA GRID (الجدول الرئيسي مع إمكانية تعديل الكمية مباشرة)
             // ══════════════════════════════════════════════════════════════
             pnlGridWrapper = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 6, 15, 12)
+                Padding = new Padding(15, 4, 15, 12)
             };
 
             dgShortages = new DataGridView
@@ -333,7 +339,7 @@ namespace ChickenDist.Forms
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
-                ReadOnly = true,
+                ReadOnly = false, // Editable for DeficitQty column
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
@@ -349,7 +355,7 @@ namespace ChickenDist.Forms
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(38, 44, 58) : Color.FromArgb(245, 248, 252),
+                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(38, 44, 58) : Color.FromArgb(246, 249, 253),
                     ForeColor = Theme.TextMain,
                     SelectionBackColor = Theme.Primary,
                     SelectionForeColor = Color.White,
@@ -368,28 +374,46 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false
             };
 
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageID", Visible = false });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierID", Visible = false });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 65 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 210 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "القسم / التصنيف", FillWeight = 95 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الشركة / الماركة", FillWeight = 95 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "المورد", FillWeight = 110 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock", HeaderText = "الرصيد الحالي", FillWeight = 85 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "MinStockLimit", HeaderText = "حد الطلب", FillWeight = 75 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "DeficitQty", HeaderText = "المطلوب توفيره", FillWeight = 90 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", FillWeight = 80 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 95 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 80 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Source", HeaderText = "المصدر", FillWeight = 90 });
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120 });
+            // Grid Columns
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageID", Visible = false, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierID", Visible = false, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 65, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 210, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "القسم / التصنيف", FillWeight = 95, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الشركة / الماركة", FillWeight = 95, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "المورد", FillWeight = 110, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock", HeaderText = "الرصيد الحالي", FillWeight = 80, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "MinStockLimit", HeaderText = "حد الطلب", FillWeight = 75, ReadOnly = true });
+
+            // EDITABLE COLUMN: DeficitQty (الكمية المطلوبة)
+            var colDeficit = new DataGridViewTextBoxColumn
+            {
+                Name = "DeficitQty",
+                HeaderText = "الكمية المطلوبة ✏️",
+                FillWeight = 95,
+                ReadOnly = false,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(45, 55, 72) : Color.FromArgb(254, 243, 199), // Soft amber editable highlight
+                    ForeColor = Color.Black,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                }
+            };
+            dgShortages.Columns.Add(colDeficit);
+
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", FillWeight = 80, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 95, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 80, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Source", HeaderText = "المصدر", FillWeight = 90, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120, ReadOnly = true });
 
             // Context Menu
             var cms = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cms.Items.Add("➕ إضافة طلب/نقص جديد للكشكول", null, (s, e) => BtnAddManual_Click(null, null));
+            cms.Items.Add("✏️ تعديل الكمية المطلوبة لهذا الصنف", null, (s, e) => EditSelectedRequestedQty());
             cms.Items.Add("📝 تغيير حالة الصنف (جديد / تم الطلب / تم التوفير)", null, (s, e) => BtnChangeStatus_Click(null, null));
-            cms.Items.Add("🛒 إنشاء أمر / فاتورة شراء لهذا الصنف", null, (s, e) => BtnCreatePurchase_Click(null, null));
+            cms.Items.Add("🛒 فتح فاتورة شراء لهذا الصنف/المورد", null, (s, e) => BtnCreatePurchase_Click(null, null));
             cms.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
@@ -398,19 +422,25 @@ namespace ChickenDist.Forms
                 if (dgShortages.SelectedRows.Count > 0)
                 {
                     int pId = Convert.ToInt32(dgShortages.SelectedRows[0].Cells["ProductID"].Value);
-                    if (pId > 0)
-                    {
-                        if (new FrmProductCard(pId).ShowDialog() == DialogResult.OK) LoadData();
-                    }
+                    if (pId > 0 && new FrmProductCard(pId).ShowDialog() == DialogResult.OK) LoadData();
                 }
             });
-            cms.Items.Add("🖨️ طباعة قائمة النواقص المحددة", null, (s, e) => BtnPrint_Click(null, null));
+            cms.Items.Add("🖨️ طباعة قائمة النواقص", null, (s, e) => BtnPrint_Click(null, null));
             dgShortages.ContextMenuStrip = cms;
 
+            // Cell End Edit for Inline Quantity Editing
+            dgShortages.CellEndEdit += DgShortages_CellEndEdit;
             dgShortages.CellDoubleClick += (s, e) => {
-                if (dgShortages.SelectedRows.Count > 0)
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
-                    BtnChangeStatus_Click(null, null);
+                    if (dgShortages.Columns[e.ColumnIndex].Name == "DeficitQty")
+                    {
+                        // Allow typing
+                    }
+                    else
+                    {
+                        BtnChangeStatus_Click(null, null);
+                    }
                 }
             };
 
@@ -418,8 +448,9 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlGridWrapper);
 
             // Reorder controls for proper docking
-            pnlTop.SendToBack();
+            pnlHeaderBanner.SendToBack();
             pnlKpiContainer.SendToBack();
+            pnlActionToolbar.SendToBack();
             pnlFilterCard.SendToBack();
             pnlGridWrapper.BringToFront();
 
@@ -429,43 +460,64 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        /// <summary>
+        /// ترتيب عناصر الفلاتر بدقة متناهية من اليمين إلى اليسار
+        /// </summary>
         private void LayoutFilterControls()
         {
             if (pnlFilterCard == null || txtSearch == null) return;
-            int totalW = pnlFilterCard.ClientSize.Width - 30;
-            int colW = Math.Max(180, (totalW - 60) / 4);
+            int totalW = pnlFilterCard.ClientSize.Width;
+            if (totalW <= 100) return;
 
-            // Row 1 (Y = 8): Search, Supplier, Category, Brand
-            int x = 15;
-            lblSearch.Location = new Point(x, 12);
-            txtSearch.Location = new Point(x + 60, 8);
-            txtSearch.Width = colW - 65;
+            // Row 1: Search, Supplier, Category, Brand
+            // Each block width
+            int gap = 12;
+            int margin = 15;
+            int availW = totalW - (margin * 2) - (gap * 3);
+            int colW = Math.Max(160, availW / 4);
 
-            x += colW + 15;
-            lblSup.Location = new Point(x, 12);
-            cboSupplierFilter.Location = new Point(x + 55, 8);
+            int currentRight = margin;
+
+            // 1. Search (أقصى اليمين)
+            lblSearch.Location = new Point(totalW - currentRight - 70, 10);
+            txtSearch.Location = new Point(totalW - currentRight - 70 - (colW - 75), 8);
+            txtSearch.Width = colW - 75;
+            currentRight += colW + gap;
+
+            // 2. Supplier
+            lblSup.Location = new Point(totalW - currentRight - 55, 10);
+            cboSupplierFilter.Location = new Point(totalW - currentRight - 55 - (colW - 60), 8);
             cboSupplierFilter.Width = colW - 60;
+            currentRight += colW + gap;
 
-            x += colW + 15;
-            lblCat.Location = new Point(x, 12);
-            cboCategoryFilter.Location = new Point(x + 55, 8);
-            cboCategoryFilter.Width = colW - 60;
+            // 3. Category
+            lblCat.Location = new Point(totalW - currentRight - 95, 10);
+            cboCategoryFilter.Location = new Point(totalW - currentRight - 95 - (colW - 100), 8);
+            cboCategoryFilter.Width = colW - 100;
+            currentRight += colW + gap;
 
-            x += colW + 15;
-            lblBrand.Location = new Point(x, 12);
-            cboBrandFilter.Location = new Point(x + 105, 8);
-            cboBrandFilter.Width = colW - 110;
+            // 4. Brand (أقصى اليسار في الصف الأول)
+            lblBrand.Location = new Point(totalW - currentRight - 95, 10);
+            cboBrandFilter.Location = new Point(totalW - currentRight - 95 - (colW - 100), 8);
+            cboBrandFilter.Width = colW - 100;
 
-            // Row 2 (Y = 46): Stock Condition, Status, Reset
-            lblCondition.Location = new Point(15, 48);
-            cboStockCondition.Location = new Point(115, 44);
+            // Row 2: Condition, Status, Reset
+            int currentRight2 = margin;
+
+            // 1. Condition
+            lblCondition.Location = new Point(totalW - currentRight2 - 80, 46);
+            cboStockCondition.Location = new Point(totalW - currentRight2 - 80 - 270, 44);
             cboStockCondition.Width = 270;
+            currentRight2 += 360 + gap;
 
-            lblStatus.Location = new Point(400, 48);
-            cboStatusFilter.Location = new Point(455, 44);
-            cboStatusFilter.Width = 140;
+            // 2. Status
+            lblStatus.Location = new Point(totalW - currentRight2 - 50, 46);
+            cboStatusFilter.Location = new Point(totalW - currentRight2 - 50 - 150, 44);
+            cboStatusFilter.Width = 150;
+            currentRight2 += 210 + gap;
 
-            btnResetFilters.Location = new Point(610, 42);
+            // 3. Reset Button
+            btnResetFilters.Location = new Point(totalW - currentRight2 - 120, 42);
         }
 
         private Panel CreateKpiCard(string title, string initialValue, Color accentColor, Color bgTint, out Label valLabel)
@@ -475,7 +527,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(33, 38, 52) : bgTint,
                 Margin = new Padding(4, 2, 4, 2),
-                Padding = new Padding(8, 5, 8, 5)
+                Padding = new Padding(8, 4, 8, 4)
             };
 
             var lblTitle = new Label
@@ -528,7 +580,7 @@ namespace ChickenDist.Forms
 
                 // Categories
                 cboCategoryFilter.Items.Clear();
-                cboCategoryFilter.Items.Add(new ComboItem(0, "-- كل الأقسام --"));
+                cboCategoryFilter.Items.Add(new ComboItem(0, "-- كل الأقسام / التصنيفات --"));
                 var dtCat = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories ORDER BY CategoryName");
                 foreach (DataRow r in dtCat.Rows)
                 {
@@ -669,6 +721,117 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmShortageNotebook.LoadData", ex);
+            }
+        }
+
+        private void DgShortages_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            if (dgShortages.Columns[e.ColumnIndex].Name == "DeficitQty")
+            {
+                var row = dgShortages.Rows[e.RowIndex];
+                if (decimal.TryParse(row.Cells["DeficitQty"].Value?.ToString(), out decimal newQty))
+                {
+                    if (newQty <= 0) newQty = 1;
+                    row.Cells["DeficitQty"].Value = newQty.ToString("N2");
+
+                    int sId = row.Cells["ShortageID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ShortageID"].Value) : 0;
+                    int? pId = row.Cells["ProductID"].Value != DBNull.Value ? (int?)Convert.ToInt32(row.Cells["ProductID"].Value) : null;
+
+                    // Save to Database
+                    ShortageDAL.UpdateRequestedQty(sId, pId, newQty);
+
+                    // Recalculate Row Cost
+                    decimal buyPrice = decimal.TryParse(row.Cells["PurchasePrice"].Value?.ToString(), out decimal p) ? p : 0m;
+                    decimal rowCost = newQty * buyPrice;
+                    row.Cells["TotalCost"].Value = rowCost.ToString("N2");
+
+                    // Recalculate Total KPI Cost
+                    RecalculateTotalKpiCost();
+                }
+                else
+                {
+                    row.Cells["DeficitQty"].Value = "1.00";
+                }
+            }
+        }
+
+        private void RecalculateTotalKpiCost()
+        {
+            decimal totalCost = 0m;
+            foreach (DataGridViewRow r in dgShortages.Rows)
+            {
+                if (decimal.TryParse(r.Cells["TotalCost"].Value?.ToString(), out decimal c))
+                {
+                    totalCost += c;
+                }
+            }
+            lblKpiCostVal.Text = $"{totalCost:N2} ج";
+        }
+
+        private void EditSelectedRequestedQty()
+        {
+            if (dgShortages.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("يرجى تحديد صنف أولاً من الجدول لتعديل الكمية المطلوبة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var row = dgShortages.SelectedRows[0];
+            string pName = row.Cells["ProductName"].Value.ToString();
+            decimal currentQty = decimal.TryParse(row.Cells["DeficitQty"].Value?.ToString(), out decimal q) ? q : 1;
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "تعديل الكمية المطلوبة للصنف";
+                dlg.Size = new Size(380, 210);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.BackColor = Theme.BgMain;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+
+                var lbl = new Label { Text = $"الصنف: [{pName}]\nأدخل الكمية المطلوبة لتوفيرها:", Location = new Point(20, 15), Size = new Size(320, 38), ForeColor = Theme.TextMain, Font = Theme.FontMain };
+                dlg.Controls.Add(lbl);
+
+                var nud = new NumericUpDown
+                {
+                    Location = new Point(20, 60),
+                    Width = 320,
+                    Minimum = 1,
+                    Maximum = 100000,
+                    Value = currentQty > 0 ? currentQty : 1,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold)
+                };
+                dlg.Controls.Add(nud);
+
+                var btnSave = Theme.MakeButton("💾 حفظ الكمية", 20, 110, 150, 36, Theme.Success);
+                btnSave.Click += (s2, e2) =>
+                {
+                    row.Cells["DeficitQty"].Value = nud.Value.ToString("N2");
+                    int sId = row.Cells["ShortageID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ShortageID"].Value) : 0;
+                    int? pId = row.Cells["ProductID"].Value != DBNull.Value ? (int?)Convert.ToInt32(row.Cells["ProductID"].Value) : null;
+                    ShortageDAL.UpdateRequestedQty(sId, pId, nud.Value);
+
+                    decimal buyPrice = decimal.TryParse(row.Cells["PurchasePrice"].Value?.ToString(), out decimal p) ? p : 0m;
+                    row.Cells["TotalCost"].Value = (nud.Value * buyPrice).ToString("N2");
+                    RecalculateTotalKpiCost();
+
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+                dlg.Controls.Add(btnSave);
+
+                var btnCancel = Theme.MakeButton("❌ إلغاء", 190, 110, 150, 36, Theme.Danger);
+                btnCancel.Click += (s2, e2) => dlg.Close();
+                dlg.Controls.Add(btnCancel);
+
+                dlg.ShowDialog(this);
             }
         }
 
