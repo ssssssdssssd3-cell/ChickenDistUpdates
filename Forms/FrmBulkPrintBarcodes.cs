@@ -31,6 +31,12 @@ namespace ChickenDist.Forms
         private Label lblTotalProductsCount;
         private Label lblTotalLabelsCount;
 
+        // Category filter controls
+        private ComboBox cboCategoryFilter;
+        private CheckBox chkOnlyWithStock;
+        private CheckBox chkOnlyWithTransactions;
+        private Button btnAddCategory;
+
         private bool _isSelectingCombo = false;
 
         // Print state tracking
@@ -41,6 +47,7 @@ namespace ChickenDist.Forms
         public FrmBulkPrintBarcodes()
         {
             InitializeComponent();
+            LoadCategories();
             LoadProducts();
             UpdateSummaryBadges();
         }
@@ -415,10 +422,79 @@ namespace ChickenDist.Forms
             pnlBottom.Controls.Add(pnlActions);
             pnlBottom.Controls.Add(pnlSettings);
 
+            // ── 2b. Category Filter Panel ────────────────────────────────────
+            var pnlCategoryFilter = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 50,
+                BackColor = Color.FromArgb(235, 245, 255),
+                Padding = new Padding(12, 8, 12, 8)
+            };
+
+            var lblCat = new Label
+            {
+                Text = "📂 إضافة تصنيف كامل:",
+                Location = new Point(880, 14),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = Theme.FontBold
+            };
+
+            cboCategoryFilter = new ComboBox
+            {
+                Location = new Point(555, 11),
+                Width = 320,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f)
+            };
+
+            chkOnlyWithStock = new CheckBox
+            {
+                Text = "ليها رصيد فقط",
+                Location = new Point(410, 14),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(5, 150, 105),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Checked = false
+            };
+
+            chkOnlyWithTransactions = new CheckBox
+            {
+                Text = "تم التعامل عليها فقط",
+                Location = new Point(245, 14),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 64, 175),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Checked = false
+            };
+
+            btnAddCategory = new Button
+            {
+                Text = "➕ إضافة التصنيف",
+                Location = new Point(100, 10),
+                Width = 140,
+                Height = 30,
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            btnAddCategory.FlatAppearance.BorderSize = 0;
+            btnAddCategory.Click += BtnAddCategory_Click;
+
+            pnlCategoryFilter.Controls.AddRange(new Control[] {
+                lblCat, cboCategoryFilter, chkOnlyWithStock, chkOnlyWithTransactions, btnAddCategory
+            });
+
             // Add Control Tree in correct Z-Order for WinForms Top-to-Bottom Docking
             this.Controls.Add(pnlGridContainer);  // Fill
             this.Controls.Add(pnlBottom);         // Bottom
-            this.Controls.Add(pnlGridHeader);     // Top (3rd from top)
+            this.Controls.Add(pnlGridHeader);     // Top (4th from top)
+            this.Controls.Add(pnlCategoryFilter); // Top (3rd from top)
             this.Controls.Add(pnlSelection);      // Top (2nd from top)
             this.Controls.Add(pnlTop);            // Top (1st at top)
 
@@ -441,6 +517,124 @@ namespace ChickenDist.Forms
             {
                 CloseOrNavigateBack();
                 e.Handled = true;
+            }
+        }
+
+        private void LoadCategories()
+        {
+            try
+            {
+                cboCategoryFilter.Items.Clear();
+                cboCategoryFilter.Items.Add(new CategoryFilterItem { ID = 0, Name = "-- اختر التصنيف --" });
+                var dt = DbHelper.Query("SELECT CategoryID, CategoryName FROM Categories WHERE IsActive=1 ORDER BY CategoryName");
+                foreach (DataRow r in dt.Rows)
+                {
+                    cboCategoryFilter.Items.Add(new CategoryFilterItem
+                    {
+                        ID = Convert.ToInt32(r["CategoryID"]),
+                        Name = r["CategoryName"].ToString()
+                    });
+                }
+                cboCategoryFilter.SelectedIndex = 0;
+            }
+            catch { cboCategoryFilter.Items.Add(new CategoryFilterItem { ID = 0, Name = "-- اختر التصنيف --" }); cboCategoryFilter.SelectedIndex = 0; }
+        }
+
+        private void BtnAddCategory_Click(object sender, EventArgs e)
+        {
+            var cat = cboCategoryFilter.SelectedItem as CategoryFilterItem;
+            if (cat == null || cat.ID == 0)
+            {
+                MessageBox.Show("يرجى اختيار تصنيف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                bool onlyStock  = chkOnlyWithStock.Checked;
+                bool onlyTxn    = chkOnlyWithTransactions.Checked;
+
+                string stockJoin = (onlyStock)
+                    ? @"INNER JOIN (
+                            SELECT ProductID, SUM(CurrentQty) AS StockQty 
+                            FROM vw_CurrentStockByWarehouse 
+                            GROUP BY ProductID
+                            HAVING SUM(CurrentQty) > 0
+                        ) stk ON p.ProductID = stk.ProductID"
+                    : "";
+
+                string txnJoin = (onlyTxn)
+                    ? @"INNER JOIN (
+                            SELECT DISTINCT ProductID FROM SaleDetails
+                            UNION
+                            SELECT DISTINCT ProductID FROM PurchaseDetails
+                        ) txn ON p.ProductID = txn.ProductID"
+                    : "";
+
+                string sql = $@"
+                    SELECT p.ProductID, p.ProductName, 
+                           COALESCE(p.InternationalCode, p.ProductCode, N'') AS BarcodeCode,
+                           p.ProductCode,
+                           COALESCE(p.SalePrice, 0) AS SalePrice,
+                           COALESCE(p.ShelfLocation, N'') AS ShelfLocation
+                    FROM Products p
+                    {stockJoin}
+                    {txnJoin}
+                    WHERE p.IsActive = 1
+                      AND p.CategoryID = {cat.ID}
+                    ORDER BY p.ProductName";
+
+                var dt = DbHelper.Query(sql);
+
+                if (dt.Rows.Count == 0)
+                {
+                    string filters = "";
+                    if (onlyStock) filters += " (ليها رصيد)";
+                    if (onlyTxn)   filters += " (تم التعامل عليها)";
+                    MessageBox.Show($"لا توجد أصناف في تصنيف '{cat.Name}'{filters}.", "نتيجة البحث", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                int added = 0;
+                int updated = 0;
+                foreach (DataRow r in dt.Rows)
+                {
+                    int pid    = Convert.ToInt32(r["ProductID"]);
+                    string name = r["ProductName"].ToString();
+                    string code = r["BarcodeCode"].ToString();
+                    if (string.IsNullOrWhiteSpace(code)) code = r["ProductCode"].ToString();
+                    decimal price = Convert.ToDecimal(r["SalePrice"]);
+                    string shelf  = r["ShelfLocation"].ToString();
+
+                    // Check if already in grid
+                    bool found = false;
+                    foreach (DataGridViewRow row in dgItems.Rows)
+                    {
+                        if (Convert.ToInt32(row.Cells["ProductID"].Value) == pid)
+                        {
+                            found = true;
+                            updated++;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        dgItems.Rows.Add(pid, name, code, price.ToString("F2"), 1, shelf);
+                        added++;
+                    }
+                }
+
+                UpdateSummaryBadges();
+
+                string msg = $"تم إضافة {added} صنف من تصنيف '{cat.Name}'";
+                if (updated > 0) msg += $" ({updated} صنف كان موجوداً مسبقاً وتم تجاهله)";
+                msg += ".";
+                MessageBox.Show(msg, "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء تحميل أصناف التصنيف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1015,6 +1209,13 @@ namespace ChickenDist.Forms
         private void CloseOrNavigateBack()
         {
             this.Close();
+        }
+
+        private class CategoryFilterItem
+        {
+            public int ID { get; set; }
+            public string Name { get; set; }
+            public override string ToString() => Name;
         }
     }
 }
