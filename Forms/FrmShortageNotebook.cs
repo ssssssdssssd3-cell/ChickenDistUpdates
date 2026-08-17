@@ -19,19 +19,6 @@ namespace ChickenDist.Forms
         private Label lblHeaderTitle;
         private Label lblHeaderSubtitle;
 
-        // KPI Metric Cards
-        private Panel pnlKpiContainer;
-        private TableLayoutPanel tblKpi;
-        private Panel pnlKpiTotal;
-        private Panel pnlKpiZero;
-        private Panel pnlKpiBelowMin;
-        private Panel pnlKpiCost;
-
-        private Label lblKpiTotalVal;
-        private Label lblKpiZeroVal;
-        private Label lblKpiBelowMinVal;
-        private Label lblKpiCostVal;
-
         // Action Toolbar
         private Panel pnlActionToolbar;
         private FlowLayoutPanel flowActions;
@@ -87,81 +74,41 @@ namespace ChickenDist.Forms
             pnlHeaderBanner = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 52,
+                Height = 44,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 6, 15, 6)
+                Padding = new Padding(15, 4, 15, 4)
             };
 
             lblHeaderTitle = new Label
             {
                 Text = "📓 كشكول النواقص والطلبات الخاصة",
-                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
-                Location = new Point(15, 6)
+                Location = new Point(15, 4)
             };
 
             lblHeaderSubtitle = new Label
             {
                 Text = "متابعة شاملة للأصناف الناقصة وحد الطلب مع إمكانية تعديل الكميات المطلوبة فورياً وتوريدها",
-                Font = new Font("Segoe UI", 8.5f),
+                Font = new Font("Segoe UI", 8.25f),
                 ForeColor = Theme.TextGray,
                 AutoSize = true,
-                Location = new Point(15, 29)
+                Location = new Point(15, 23)
             };
 
             pnlHeaderBanner.Controls.Add(lblHeaderTitle);
             pnlHeaderBanner.Controls.Add(lblHeaderSubtitle);
-            this.Controls.Add(pnlHeaderBanner);
 
             // ══════════════════════════════════════════════════════════════
-            // 2. KPI SUMMARY METRIC CARDS (كروت الإحصائيات من اليمين لليسار)
-            // ══════════════════════════════════════════════════════════════
-            pnlKpiContainer = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 68,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(15, 4, 15, 4)
-            };
-
-            tblKpi = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 4,
-                RowCount = 1,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0),
-                Margin = new Padding(0),
-                RightToLeft = RightToLeft.Yes
-            };
-            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22f)); // Right: Total Items
-            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f)); // Zero Stock
-            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f)); // Below Min
-            tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f)); // Left: Total Cost
-
-            pnlKpiTotal = CreateKpiCard("📋 إجمالي الأصناف الناقصة", "0 صنف", Color.FromArgb(30, 41, 59), Color.FromArgb(241, 245, 249), out lblKpiTotalVal);
-            pnlKpiZero = CreateKpiCard("🔴 أصناف نفدت بالكامل (رصيد 0)", "0 صنف", Color.FromArgb(220, 38, 38), Color.FromArgb(254, 242, 242), out lblKpiZeroVal);
-            pnlKpiBelowMin = CreateKpiCard("⚠️ أصناف بلغت أو تحت حد الطلب", "0 صنف", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199), out lblKpiBelowMinVal);
-            pnlKpiCost = CreateKpiCard("💰 تكلفة التوفير التقديرية", "0.00 ج", Color.FromArgb(13, 148, 136), Color.FromArgb(240, 253, 250), out lblKpiCostVal);
-
-            tblKpi.Controls.Add(pnlKpiTotal, 0, 0);
-            tblKpi.Controls.Add(pnlKpiZero, 1, 0);
-            tblKpi.Controls.Add(pnlKpiBelowMin, 2, 0);
-            tblKpi.Controls.Add(pnlKpiCost, 3, 0);
-
-            pnlKpiContainer.Controls.Add(tblKpi);
-            this.Controls.Add(pnlKpiContainer);
-
-            // ══════════════════════════════════════════════════════════════
-            // 3. ACTION TOOLBAR (شريط الأزرار الرئيسي - يبدأ من اليمين)
+            // 2. ACTION TOOLBAR (شريط الأزرار الرئيسي - يبدأ من اليمين)
             // ══════════════════════════════════════════════════════════════
             pnlActionToolbar = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 46,
+                Height = 44,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 4, 15, 4)
+                Padding = new Padding(15, 2, 15, 4)
             };
 
             flowActions = new FlowLayoutPanel
@@ -170,40 +117,40 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 2, 0, 0),
+                Padding = new Padding(0, 1, 0, 0),
                 AutoScroll = false,
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnAddManual = Theme.MakeButton("➕ إضافة طلب/نقص يدوي", 0, 0, 160, 34, Theme.Success);
-            btnAddManual.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnAddManual = Theme.MakeButton("➕ إضافة طلب/نقص", 0, 0, 145, 32, Theme.Success);
+            btnAddManual.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnAddManual.Click += BtnAddManual_Click;
 
-            btnChangeStatus = Theme.MakeButton("📝 تغيير الحالة", 0, 0, 110, 34, Color.FromArgb(41, 128, 185));
-            btnChangeStatus.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnChangeStatus = Theme.MakeButton("📝 تغيير الحالة", 0, 0, 110, 32, Color.FromArgb(41, 128, 185));
+            btnChangeStatus.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnChangeStatus.Click += BtnChangeStatus_Click;
 
-            btnCreatePurchase = Theme.MakeButton("🛒 فتح فاتورة شراء", 0, 0, 140, 34, Theme.Primary);
-            btnCreatePurchase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnCreatePurchase = Theme.MakeButton("🛒 فتح فاتورة شراء", 0, 0, 135, 32, Theme.Primary);
+            btnCreatePurchase.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCreatePurchase.Click += BtnCreatePurchase_Click;
 
-            btnMinStockEdit = Theme.MakeButton("🎯 تعديل حد الطلب", 0, 0, 130, 34, Color.FromArgb(13, 148, 136));
-            btnMinStockEdit.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnMinStockEdit = Theme.MakeButton("🎯 تعديل حد الطلب", 0, 0, 125, 32, Color.FromArgb(13, 148, 136));
+            btnMinStockEdit.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnMinStockEdit.Click += (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
             };
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة الكشكول", 0, 0, 125, 34, Color.FromArgb(142, 68, 173));
-            btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnPrint = Theme.MakeButton("🖨️ طباعة الكشكول", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
+            btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnPrint.Click += BtnPrint_Click;
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير إكسل", 0, 0, 110, 34, Color.FromArgb(46, 117, 89));
-            btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnExportExcel = Theme.MakeButton("📊 تصدير إكسل", 0, 0, 110, 32, Color.FromArgb(46, 117, 89));
+            btnExportExcel.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnExportExcel.Click += BtnExportExcel_Click;
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 34, Color.FromArgb(70, 80, 95));
-            btnRefresh.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 32, Color.FromArgb(70, 80, 95));
+            btnRefresh.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnRefresh.Click += (s, e) => { LoadDropdowns(); LoadData(); };
 
             flowActions.Controls.AddRange(new Control[] {
@@ -217,67 +164,80 @@ namespace ChickenDist.Forms
             });
 
             pnlActionToolbar.Controls.Add(flowActions);
-            this.Controls.Add(pnlActionToolbar);
 
             // ══════════════════════════════════════════════════════════════
-            // 4. FILTER PANEL (شريط فلاتر مضغوط - صف واحد)
+            // 3. FILTER PANEL (شريط فلاتر أنيق ومريح وغير مضغوط)
             // ══════════════════════════════════════════════════════════════
             pnlFilterCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 42,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 58),
                 BackColor = Theme.BgCard,
-                Padding = new Padding(6, 5, 6, 5)
+                Padding = new Padding(12, 4, 12, 6)
             };
 
             flowFilters = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
+                WrapContents = true,
                 BackColor = Color.Transparent,
                 AutoScroll = false,
                 Padding = new Padding(0),
-                Margin = new Padding(0)
+                Margin = new Padding(0),
+                RightToLeft = RightToLeft.Yes
             };
 
             // Helper to create compact filter group (label + control)
             Control MakeFilterGroup(string labelText, Control ctrl, int ctrlWidth)
             {
-                var grp = new Panel { AutoSize = false, Width = ctrlWidth + 5, Height = 30, Margin = new Padding(2, 0, 2, 0) };
+                var grp = new Panel { AutoSize = false, Width = ctrlWidth, Height = 48, Margin = new Padding(3, 2, 3, 2) };
                 var lbl = new Label
                 {
-                    Text = labelText, AutoSize = false, Width = ctrlWidth + 5, Height = 14,
+                    Text = labelText, AutoSize = false, Width = ctrlWidth, Height = 16,
                     Location = new Point(0, 0), ForeColor = Theme.TextGray,
-                    Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight
+                    Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight
                 };
-                ctrl.Location = new Point(0, 14);
-                ctrl.Width = ctrlWidth + 5;
-                ctrl.Height = 22;
-                if (ctrl is ComboBox cb) { cb.DropDownStyle = ComboBoxStyle.DropDownList; cb.FlatStyle = FlatStyle.Flat; }
+                ctrl.Location = new Point(0, 18);
+                ctrl.Width = ctrlWidth;
+                ctrl.Height = 26;
+                if (ctrl is ComboBox cb)
+                {
+                    cb.DropDownStyle = ComboBoxStyle.DropDownList;
+                    cb.FlatStyle = FlatStyle.Flat;
+                    cb.Font = new Font("Segoe UI", 9f);
+                }
+                else if (ctrl is TextBox tb)
+                {
+                    tb.Font = new Font("Segoe UI", 9f);
+                }
                 grp.Controls.Add(lbl);
                 grp.Controls.Add(ctrl);
                 return grp;
             }
 
             // Search box
-            txtSearch = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
+            txtSearch = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f), BorderStyle = BorderStyle.FixedSingle };
             txtSearch.TextChanged += (s, e) => LoadData();
 
             // Supplier
-            cboSupplierFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboSupplierFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboSupplierFilter.SelectedIndexChanged += (s, e) => LoadData();
 
             // Category
-            cboCategoryFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboCategoryFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboCategoryFilter.SelectedIndexChanged += (s, e) => LoadData();
 
             // Brand
-            cboBrandFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboBrandFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboBrandFilter.SelectedIndexChanged += (s, e) => LoadData();
 
             // Stock Condition
-            cboStockCondition = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboStockCondition = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboStockCondition.Items.AddRange(new object[]
             {
                 "الكل", "⚠️ تحت حد الطلب", "🔴 رصيد صفر", "🟡 بين الصفر والحد"
@@ -286,21 +246,21 @@ namespace ChickenDist.Forms
             cboStockCondition.SelectedIndexChanged += (s, e) => LoadData();
 
             // Status
-            cboStatusFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboStatusFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboStatusFilter.Items.AddRange(new object[] { "الكل", "جديد", "تم الطلب", "تم التوفير", "ملغي" });
             cboStatusFilter.SelectedIndex = 0;
             cboStatusFilter.SelectedIndexChanged += (s, e) => LoadData();
 
             // Warehouse
-            cboWarehouseFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboWarehouseFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboWarehouseFilter.SelectedIndexChanged += (s, e) => LoadData();
 
             // Date filter toggle
             chkUseDateFilter = new CheckBox
             {
-                Text = "📅 تاريخ:", AutoSize = true, ForeColor = Theme.TextMain,
+                Text = "تفعيل", AutoSize = true, ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                Margin = new Padding(2, 6, 4, 0), Checked = false
+                Checked = false
             };
             chkUseDateFilter.CheckedChanged += (s, e) =>
             {
@@ -313,10 +273,8 @@ namespace ChickenDist.Forms
             {
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today,
-                Width = 105, Height = 22,
                 Font = new Font("Segoe UI", 8.5f),
-                Enabled = false,
-                Margin = new Padding(2, 5, 2, 0)
+                Enabled = false
             };
             dtpDateFrom.ValueChanged += (s, e) => { if (chkUseDateFilter.Checked) LoadData(); };
 
@@ -324,44 +282,41 @@ namespace ChickenDist.Forms
             {
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today,
-                Width = 105, Height = 22,
                 Font = new Font("Segoe UI", 8.5f),
-                Enabled = false,
-                Margin = new Padding(2, 5, 2, 0)
+                Enabled = false
             };
             dtpDateTo.ValueChanged += (s, e) => { if (chkUseDateFilter.Checked) LoadData(); };
 
             // Reset button
-            btnResetFilters = Theme.MakeButton("🧹", 0, 0, 36, 30, Color.FromArgb(100, 116, 139));
-            btnResetFilters.Font = new Font("Segoe UI", 10f);
-            btnResetFilters.Margin = new Padding(2, 4, 4, 0);
+            btnResetFilters = Theme.MakeButton("🧹 مسح", 0, 0, 70, 26, Color.FromArgb(100, 116, 139));
+            btnResetFilters.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnResetFilters.Margin = new Padding(3, 18, 3, 2);
             btnResetFilters.Click += (s, e) => ResetFilters();
 
-            var lblTo = new Label { Text = "→", AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 9f), Margin = new Padding(0, 8, 0, 0) };
-
-            flowFilters.Controls.Add(btnResetFilters);
-            flowFilters.Controls.Add(MakeFilterGroup("الحالة", cboStatusFilter, 90));
-            flowFilters.Controls.Add(MakeFilterGroup("نوع النقص", cboStockCondition, 130));
-            flowFilters.Controls.Add(MakeFilterGroup("المخزن", cboWarehouseFilter, 110));
-            flowFilters.Controls.Add(MakeFilterGroup("الماركة", cboBrandFilter, 100));
-            flowFilters.Controls.Add(MakeFilterGroup("القسم", cboCategoryFilter, 110));
-            flowFilters.Controls.Add(MakeFilterGroup("المورد", cboSupplierFilter, 115));
-            flowFilters.Controls.Add(MakeFilterGroup("بحث سريع", txtSearch, 150));
             // Date filter group inline
-            var pnlDate = new Panel { Width = 295, Height = 30, Margin = new Padding(2, 0, 2, 0) };
-            var lblDateLbl = new Label { Text = "📅 من - إلى:", AutoSize = false, Width = 285, Height = 14, Location = new Point(0, 0), ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
-            dtpDateFrom.Location = new Point(150, 14); dtpDateFrom.Width = 100;
-            dtpDateTo.Location = new Point(45, 14); dtpDateTo.Width = 100;
-            var lblArrow = new Label { Text = "←", Location = new Point(130, 16), AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8f) };
-            chkUseDateFilter.Location = new Point(258, 15);
-            pnlDate.Controls.AddRange(new Control[] { lblDateLbl, dtpDateFrom, lblArrow, dtpDateTo, chkUseDateFilter });
+            var pnlDate = new Panel { Width = 260, Height = 48, Margin = new Padding(3, 2, 3, 2) };
+            var lblDateLbl = new Label { Text = "📅 الفترة (من - إلى):", AutoSize = false, Width = 260, Height = 16, Location = new Point(0, 0), ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
+            chkUseDateFilter.Location = new Point(195, 20);
+            dtpDateFrom.Location = new Point(100, 18); dtpDateFrom.Width = 90; dtpDateFrom.Height = 24;
+            var lblArrow = new Label { Text = "←", Location = new Point(82, 21), AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8f) };
+            dtpDateTo.Location = new Point(0, 18); dtpDateTo.Width = 80; dtpDateTo.Height = 24;
+            pnlDate.Controls.AddRange(new Control[] { lblDateLbl, chkUseDateFilter, dtpDateFrom, lblArrow, dtpDateTo });
+
+            // إضافة الفلاتر بالترتيب الصحيح من اليمين لليسار
+            flowFilters.Controls.Add(MakeFilterGroup("🔍 بحث سريع", txtSearch, 175));
+            flowFilters.Controls.Add(MakeFilterGroup("المورد", cboSupplierFilter, 125));
+            flowFilters.Controls.Add(MakeFilterGroup("القسم", cboCategoryFilter, 115));
+            flowFilters.Controls.Add(MakeFilterGroup("الماركة", cboBrandFilter, 105));
+            flowFilters.Controls.Add(MakeFilterGroup("المخزن", cboWarehouseFilter, 105));
+            flowFilters.Controls.Add(MakeFilterGroup("نوع النقص", cboStockCondition, 125));
+            flowFilters.Controls.Add(MakeFilterGroup("الحالة", cboStatusFilter, 90));
             flowFilters.Controls.Add(pnlDate);
+            flowFilters.Controls.Add(btnResetFilters);
 
             pnlFilterCard.Controls.Add(flowFilters);
-            this.Controls.Add(pnlFilterCard);
 
             // ══════════════════════════════════════════════════════════════
-            // 5. MAIN DATA GRID (الجدول الرئيسي مع إمكانية تعديل الكمية مباشرة)
+            // 4. MAIN DATA GRID (الجدول الرئيسي مع إمكانية تعديل الكمية مباشرة)
             // ══════════════════════════════════════════════════════════════
             pnlGridWrapper = new Panel
             {
@@ -487,62 +442,19 @@ namespace ChickenDist.Forms
             };
 
             pnlGridWrapper.Controls.Add(dgShortages);
-            this.Controls.Add(pnlGridWrapper);
 
-            // Reorder controls for proper docking
+            this.Controls.Add(pnlGridWrapper);
+            this.Controls.Add(pnlFilterCard);
+            this.Controls.Add(pnlActionToolbar);
+            this.Controls.Add(pnlHeaderBanner);
+
+            // Reorder controls for proper top-to-bottom docking
             pnlHeaderBanner.SendToBack();
-            pnlKpiContainer.SendToBack();
             pnlActionToolbar.SendToBack();
             pnlFilterCard.SendToBack();
             pnlGridWrapper.BringToFront();
 
             Theme.ApplyFormRTL(this);
-        }
-
-        // (LayoutFilterControls removed - now using FlowLayoutPanel)
-
-        private Panel CreateKpiCard(string title, string initialValue, Color accentColor, Color bgTint, out Label valLabel)
-        {
-            var pnl = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(33, 38, 52) : bgTint,
-                Margin = new Padding(4, 2, 4, 2),
-                Padding = new Padding(8, 4, 8, 4)
-            };
-
-            var lblTitle = new Label
-            {
-                Text = title,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(203, 213, 225) : Color.FromArgb(71, 85, 105),
-                Dock = DockStyle.Top,
-                Height = 18,
-                TextAlign = ContentAlignment.TopRight
-            };
-
-            valLabel = new Label
-            {
-                Text = initialValue,
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = accentColor,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-
-            pnl.Controls.Add(valLabel);
-            pnl.Controls.Add(lblTitle);
-
-            pnl.Paint += (s, e) =>
-            {
-                using (var pen = new Pen(Color.FromArgb(180, accentColor), 1.5f))
-                {
-                    var rect = new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1);
-                    e.Graphics.DrawRectangle(pen, rect);
-                }
-            };
-
-            return pnl;
         }
 
         private void LoadDropdowns()
@@ -702,11 +614,10 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // Update KPI Cards
-                lblKpiTotalVal.Text = $"{dgShortages.Rows.Count} صنف";
-                lblKpiZeroVal.Text = $"{zeroCount} صنف";
-                lblKpiBelowMinVal.Text = $"{belowMinCount} صنف";
-                lblKpiCostVal.Text = $"{totalDeficitCost:N2} ج";
+                if (lblHeaderSubtitle != null)
+                {
+                    lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}) | تكلفة التوفير التقديرية: {totalDeficitCost:N2} ج";
+                }
             }
             catch (Exception ex)
             {
@@ -939,14 +850,21 @@ namespace ChickenDist.Forms
         private void RecalculateTotalKpiCost()
         {
             decimal totalCost = 0m;
+            int zeroCount = 0;
+            int belowMinCount = 0;
             foreach (DataGridViewRow r in dgShortages.Rows)
             {
+                if (decimal.TryParse(r.Cells["CurrentStock"].Value?.ToString(), out decimal st) && st <= 0) zeroCount++;
+                if (decimal.TryParse(r.Cells["MinStockLimit"].Value?.ToString(), out decimal ml) && decimal.TryParse(r.Cells["CurrentStock"].Value?.ToString(), out decimal cs) && ml > 0 && cs <= ml) belowMinCount++;
                 if (decimal.TryParse(r.Cells["TotalCost"].Value?.ToString(), out decimal c))
                 {
                     totalCost += c;
                 }
             }
-            lblKpiCostVal.Text = $"{totalCost:N2} ج";
+            if (lblHeaderSubtitle != null)
+            {
+                lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}) | تكلفة التوفير التقديرية: {totalCost:N2} ج";
+            }
         }
 
         private void EditSelectedRequestedQty()
@@ -1254,7 +1172,17 @@ namespace ChickenDist.Forms
                         y += 10;
                         g.DrawLine(new Pen(Color.Black, 1.2f), leftMargin, y, rightMargin, y);
                         y += 6;
-                        g.DrawString($"إجمالي الأصناف: {lblKpiTotalVal.Text}   |   رصيد صفر: {lblKpiZeroVal.Text}   |   تحت حد الطلب: {lblKpiBelowMinVal.Text}   |   التكلفة التقديرية: {lblKpiCostVal.Text}", fontBold, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 20), sfCenter);
+                        int pTotalCount = dgShortages.Rows.Count;
+                        int pZeroCount = 0;
+                        int pBelowMinCount = 0;
+                        decimal pTotalCost = 0m;
+                        foreach (DataGridViewRow r in dgShortages.Rows)
+                        {
+                            if (decimal.TryParse(r.Cells["CurrentStock"].Value?.ToString(), out decimal st) && st <= 0) pZeroCount++;
+                            if (decimal.TryParse(r.Cells["MinStockLimit"].Value?.ToString(), out decimal ml) && decimal.TryParse(r.Cells["CurrentStock"].Value?.ToString(), out decimal cs) && ml > 0 && cs <= ml) pBelowMinCount++;
+                            if (decimal.TryParse(r.Cells["TotalCost"].Value?.ToString(), out decimal tc)) pTotalCost += tc;
+                        }
+                        g.DrawString($"إجمالي الأصناف: {pTotalCount} صنف   |   رصيد صفر: {pZeroCount} صنف   |   تحت حد الطلب: {pBelowMinCount} صنف   |   التكلفة التقديرية: {pTotalCost:N2} ج", fontBold, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 20), sfCenter);
                     };
 
                     using (var dlg = new PrintPreviewDialog { Document = pd, Width = 900, Height = 650, StartPosition = FormStartPosition.CenterParent })
