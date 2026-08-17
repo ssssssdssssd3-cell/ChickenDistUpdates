@@ -441,13 +441,13 @@ namespace ChickenDist.Core
                             if (alt) g.FillRectangle(brAlt, tLeft, y, tWidth, rowH);
                             g.DrawRectangle(pThin, tLeft, y, tWidth, rowH);
 
-                            string dtStr   = dgr.Cells["TransDate"]?.Value?.ToString() ?? "";
-                            string typeStr = dgr.Cells["TransType"]?.Value?.ToString() ?? "";
-                            string debit   = dgr.Cells["Debit"]?.Value?.ToString() ?? "";
-                            string credit  = dgr.Cells["Credit"]?.Value?.ToString() ?? "";
-                            string bal     = dgr.Cells["Balance"]?.Value?.ToString() ?? "";
-                            string user    = dgStatement.Columns.Contains("CreatedBy") ? (dgr.Cells["CreatedBy"]?.Value?.ToString() ?? "") : "";
-                            string details = dgr.Cells["Details"]?.Value?.ToString() ?? "";
+                            string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                            string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : "";
+                            string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
+                            string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
+                            string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                            string user    = dgStatement.Columns.Contains("CreatedByName") ? (dgr.Cells["CreatedByName"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("CreatedBy") ? (dgr.Cells["CreatedBy"]?.Value?.ToString() ?? "") : "");
+                            string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
 
                             string[] rowVals = { dtStr, typeStr, debit, credit, bal, user, details };
 

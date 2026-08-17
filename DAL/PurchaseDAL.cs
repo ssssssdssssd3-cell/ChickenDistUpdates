@@ -636,6 +636,371 @@ namespace ChickenDist.DAL
             }
             return list;
         }
+
+        // ══════════════════════════════════════════════════════════════════════════════
+        // مجموعة تقارير المشتريات الشاملة (11 تقرير تفصيلي متكامل)
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        /// <summary>1. تقرير المشتريات اليومية الشامل</summary>
+        public static DataTable GetDailyPurchasesSummary(DateTime from, DateTime to, int? supplierID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    CAST(p.PurchaseDate AS DATE) AS PurchaseDay,
+                    COUNT(DISTINCT p.PurchaseID) AS InvoiceCount,
+                    ISNULL(SUM(p.TotalAmount + ISNULL(p.DiscountAmount, 0) - ISNULL(p.TaxAmount, 0) - ISNULL(p.ShippingCost, 0)), 0) AS GrossPurchases,
+                    ISNULL(SUM(p.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(p.TaxAmount), 0) AS TotalTax,
+                    ISNULL(SUM(p.ShippingCost), 0) AS TotalShipping,
+                    ISNULL(SUM(p.TotalAmount), 0) AS TotalPurchases,
+                    ISNULL((SELECT SUM(pr.TotalAmount) FROM PurchaseReturns pr WHERE CAST(pr.ReturnDate AS DATE) = CAST(p.PurchaseDate AS DATE) AND (@supID IS NULL OR pr.SupplierID = @supID)), 0) AS TotalReturns,
+                    (ISNULL(SUM(p.TotalAmount), 0) - ISNULL((SELECT SUM(pr.TotalAmount) FROM PurchaseReturns pr WHERE CAST(pr.ReturnDate AS DATE) = CAST(p.PurchaseDate AS DATE) AND (@supID IS NULL OR pr.SupplierID = @supID)), 0)) AS NetPurchases
+                FROM Purchases p
+                WHERE p.IsPosted = 1
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
+                GROUP BY CAST(p.PurchaseDate AS DATE)
+                ORDER BY PurchaseDay DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
+        }
+
+        /// <summary>2. تقرير المشتريات خلال فترة (يومي / أسبوعي / شهري ومقارنة الفترات)</summary>
+        public static DataTable GetPurchasesByPeriod(DateTime from, DateTime to, string periodType = "Daily", int? supplierID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    CASE 
+                        WHEN @pType = 'Monthly' THEN FORMAT(p.PurchaseDate, 'yyyy-MM (MMMM yyyy)')
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 'yyyy-MM-dd') + N')'
+                        ELSE FORMAT(p.PurchaseDate, 'yyyy-MM-dd')
+                    END AS PeriodName,
+                    COUNT(DISTINCT p.PurchaseID) AS InvoiceCount,
+                    ISNULL(SUM(CASE WHEN p.PurchaseType = 'Cash' THEN p.TotalAmount ELSE 0 END), 0) AS CashPurchases,
+                    ISNULL(SUM(CASE WHEN p.PurchaseType != 'Cash' THEN p.TotalAmount ELSE 0 END), 0) AS CreditPurchases,
+                    ISNULL(SUM(p.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(p.TaxAmount), 0) AS TotalTax,
+                    ISNULL(SUM(p.TotalAmount), 0) AS TotalPurchases
+                FROM Purchases p
+                WHERE p.IsPosted = 1
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
+                GROUP BY 
+                    CASE 
+                        WHEN @pType = 'Monthly' THEN FORMAT(p.PurchaseDate, 'yyyy-MM (MMMM yyyy)')
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, p.PurchaseDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, p.PurchaseDate), p.PurchaseDate), 'yyyy-MM-dd') + N')'
+                        ELSE FORMAT(p.PurchaseDate, 'yyyy-MM-dd')
+                    END
+                ORDER BY MIN(p.PurchaseDate) DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@pType", periodType),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
+        }
+
+        /// <summary>3. تقرير تفاصيل المشتريات وسطور الفواتير (Line-by-line Items)</summary>
+        public static DataTable GetDetailedPurchaseItems(DateTime from, DateTime to, int? supplierID = null, string keyword = null)
+        {
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
+            return DbHelper.Query(
+                @"SELECT 
+                    p.PurchaseCode AS PurchaseCode,
+                    ISNULL(p.SupplierInvoiceNo, N'-') AS SupplierInvoiceNo,
+                    p.PurchaseDate AS PurchaseDate,
+                    ISNULL(s.SupplierName, ISNULL(c.ClientName, N'مورد عام')) AS SupplierName,
+                    COALESCE(pr.ProductCode, pr.PartNumber, CAST(pr.ProductID AS NVARCHAR)) AS ProductCode,
+                    pr.ProductName AS ProductName,
+                    ISNULL(cat.CategoryName, N'عام') AS CategoryName,
+                    pi.Quantity AS Quantity,
+                    COALESCE(pi.UnitName, pr.Unit, N'قطعة') AS UnitName,
+                    pi.UnitPrice AS UnitPrice,
+                    ISNULL(pi.DiscountAmt, 0) AS DiscountAmt,
+                    pi.TotalPrice AS TotalPrice,
+                    CASE p.PurchaseType
+                        WHEN 'Cash' THEN N'نقدي'
+                        WHEN 'Credit' THEN N'آجل'
+                        ELSE p.PurchaseType
+                    END AS PurchaseTypeArabic,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName,
+                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName
+                FROM PurchaseItems pi
+                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                JOIN Products pr ON pi.ProductID = pr.ProductID
+                LEFT JOIN Categories cat ON pr.CategoryID = cat.CategoryID
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                LEFT JOIN Employees e ON p.CreatedBy = e.EmpID
+                LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
+                WHERE p.IsPosted = 1
+                  AND p.PurchaseDate BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
+                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR p.SupplierInvoiceNo LIKE N'%' + @kw + N'%')
+                ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>4. تقرير المشتريات حسب المورد</summary>
+        public static DataTable GetPurchasesBySupplier(DateTime from, DateTime to)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    ISNULL(s.SupplierName, N'مورد عام') AS SupplierName,
+                    ISNULL(s.Phone, N'---') AS Phone,
+                    COUNT(DISTINCT p.PurchaseID) AS InvoiceCount,
+                    ISNULL(SUM(p.TotalAmount), 0) AS TotalPurchases,
+                    ISNULL((SELECT SUM(pr.TotalAmount) FROM PurchaseReturns pr WHERE pr.SupplierID = s.SupplierID AND CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS TotalReturns,
+                    (ISNULL(SUM(p.TotalAmount), 0) - ISNULL((SELECT SUM(pr.TotalAmount) FROM PurchaseReturns pr WHERE pr.SupplierID = s.SupplierID AND CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t), 0)) AS NetPurchases,
+                    ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID AND st.TransType = 'Payment' AND CAST(st.TransDate AS DATE) BETWEEN @f AND @t), 0) AS TotalPaid,
+                    (s.OpeningBalance + 
+                     ISNULL((SELECT SUM(st.Credit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0) - 
+                     ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)
+                    ) AS CurrentBalance
+                FROM Suppliers s
+                LEFT JOIN Purchases p ON s.SupplierID = p.SupplierID AND p.IsPosted = 1 AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance
+                HAVING (ISNULL(SUM(p.TotalAmount), 0) > 0 OR EXISTS (SELECT 1 FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID AND CAST(st.TransDate AS DATE) BETWEEN @f AND @t))
+                ORDER BY TotalPurchases DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t));
+        }
+
+        /// <summary>5. تقرير المشتريات حسب الصنف وتكلفة الشراء ومتوسط الأسعار</summary>
+        public static DataTable GetPurchasesByProduct(DateTime from, DateTime to, int? supplierID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    pr.ProductCode,
+                    pr.ProductName,
+                    pr.Unit,
+                    ISNULL(cat.CategoryName, N'عام') AS CategoryName,
+                    SUM(pi.Quantity) AS TotalQtyPurchased,
+                    SUM(pi.TotalPrice) AS TotalCost,
+                    AVG(pi.UnitPrice) AS AvgPurchasePrice,
+                    (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 JOIN Purchases p2 ON pi2.PurchaseID = p2.PurchaseID WHERE pi2.ProductID = pr.ProductID AND p2.IsPosted = 1 ORDER BY p2.PurchaseDate DESC) AS LastPurchasePrice,
+                    MIN(pi.UnitPrice) AS MinPurchasePrice,
+                    MAX(pi.UnitPrice) AS MaxPurchasePrice
+                FROM PurchaseItems pi
+                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                JOIN Products pr ON pi.ProductID = pr.ProductID
+                LEFT JOIN Categories cat ON pr.CategoryID = cat.CategoryID
+                WHERE p.IsPosted = 1
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
+                GROUP BY pr.ProductID, pr.ProductCode, pr.ProductName, pr.Unit, cat.CategoryName
+                ORDER BY TotalCost DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
+        }
+
+        /// <summary>6. تقرير المشتريات حسب المجموعة / القسم</summary>
+        public static DataTable GetPurchasesByCategory(DateTime from, DateTime to)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    ISNULL(cat.CategoryName, N'بدون قسم / عام') AS CategoryName,
+                    COUNT(DISTINCT pi.ProductID) AS DistinctProductsCount,
+                    SUM(pi.Quantity) AS TotalQtyPurchased,
+                    ISNULL(SUM(pi.DiscountAmt), 0) AS TotalDiscounts,
+                    SUM(pi.TotalPrice) AS TotalPurchasesAmount,
+                    COUNT(DISTINCT p.PurchaseID) AS InvoicesCount
+                FROM PurchaseItems pi
+                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                JOIN Products pr ON pi.ProductID = pr.ProductID
+                LEFT JOIN Categories cat ON pr.CategoryID = cat.CategoryID
+                WHERE p.IsPosted = 1
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                GROUP BY ISNULL(cat.CategoryName, N'بدون قسم / عام')
+                ORDER BY TotalPurchasesAmount DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t));
+        }
+
+        /// <summary>7. تقرير مرتجعات المشتريات التفصيلي</summary>
+        public static DataTable GetDetailedPurchaseReturns(DateTime from, DateTime to, int? supplierID = null, string keyword = null)
+        {
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
+            return DbHelper.Query(
+                @"SELECT 
+                    pr.ReturnDate AS ReturnDate,
+                    CAST(pr.ReturnID AS NVARCHAR) AS ReturnCode,
+                    ISNULL(p.PurchaseCode, N'مرتجع عام') AS OriginalPurchaseCode,
+                    ISNULL(s.SupplierName, N'مورد عام') AS SupplierName,
+                    COALESCE(prod.ProductCode, prod.PartNumber, CAST(prod.ProductID AS NVARCHAR)) AS ProductCode,
+                    prod.ProductName AS ProductName,
+                    pri.Quantity AS ReturnedQty,
+                    COALESCE(pri.UnitName, prod.Unit, N'قطعة') AS UnitName,
+                    pri.UnitPrice AS UnitPrice,
+                    pri.TotalPrice AS TotalReturnAmount,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName,
+                    ISNULL(pr.Notes, N'---') AS Notes
+                FROM PurchaseReturnItems pri
+                JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                JOIN Products prod ON pri.ProductID = prod.ProductID
+                LEFT JOIN Purchases p ON pr.PurchaseID = p.PurchaseID
+                LEFT JOIN Suppliers s ON pr.SupplierID = s.SupplierID
+                LEFT JOIN Employees e ON pr.CreatedBy = e.EmpID
+                WHERE pr.ReturnDate BETWEEN @f AND @t
+                  AND (@supID IS NULL OR pr.SupplierID = @supID)
+                  AND (@kw IS NULL OR prod.ProductName LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%')
+                ORDER BY pr.ReturnDate DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>8. تقرير المدفوعات للموردين والتسويات</summary>
+        public static DataTable GetSupplierPaymentsReport(DateTime from, DateTime to, int? supplierID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    s.SupplierName,
+                    ISNULL(s.Phone, N'---') AS Phone,
+                    ISNULL(pur.TotalPurchases, 0) AS TotalPurchases,
+                    ISNULL(pay.TotalPaid, 0) AS TotalPaid,
+                    (s.OpeningBalance + 
+                     ISNULL((SELECT SUM(st.Credit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0) - 
+                     ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)
+                    ) AS CurrentBalance,
+                    lp.LastPaymentAmount,
+                    lp.LastPaymentDate
+                FROM Suppliers s
+                LEFT JOIN (
+                    SELECT SupplierID, SUM(TotalAmount) AS TotalPurchases
+                    FROM Purchases
+                    WHERE IsPosted = 1 AND CAST(PurchaseDate AS DATE) BETWEEN @f AND @t
+                    GROUP BY SupplierID
+                ) pur ON s.SupplierID = pur.SupplierID
+                LEFT JOIN (
+                    SELECT SupplierID, SUM(Debit) AS TotalPaid
+                    FROM SupplierTransactions
+                    WHERE TransType = 'Payment' AND CAST(TransDate AS DATE) BETWEEN @f AND @t
+                    GROUP BY SupplierID
+                ) pay ON s.SupplierID = pay.SupplierID
+                OUTER APPLY (
+                    SELECT TOP 1 Debit AS LastPaymentAmount, TransDate AS LastPaymentDate
+                    FROM SupplierTransactions
+                    WHERE SupplierID = s.SupplierID AND TransType = 'Payment'
+                    ORDER BY TransDate DESC, TransID DESC
+                ) lp
+                WHERE (@supID IS NULL OR s.SupplierID = @supID)
+                  AND (ISNULL(pur.TotalPurchases, 0) > 0 OR ISNULL(pay.TotalPaid, 0) > 0 OR lp.LastPaymentAmount IS NOT NULL)
+                ORDER BY TotalPaid DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
+        }
+
+        /// <summary>9. كشف حساب المورد الشامل (Ledger Statement)</summary>
+        public static DataTable GetSupplierStatement(int supplierID, DateTime from, DateTime to)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date.AddDays(1).AddTicks(-1);
+
+            return DbHelper.Query(
+                @"SELECT 
+                    st.TransID,
+                    st.TransDate,
+                    st.TransType,
+                    st.Debit,
+                    st.Credit,
+                    st.RefID,
+                    st.Notes,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName
+                FROM SupplierTransactions st
+                LEFT JOIN Employees e ON st.CreatedBy = e.EmpID
+                WHERE st.SupplierID = @supID
+                  AND st.TransDate BETWEEN @f AND @t
+                ORDER BY st.TransDate ASC, st.TransID ASC",
+                DbHelper.P("@supID", supplierID),
+                DbHelper.P("@f", f), DbHelper.P("@t", t));
+        }
+
+        /// <summary>10. تقرير أسعار الشراء وتغير الأسعار لمراقبة التكلفة</summary>
+        public static DataTable GetPurchasePricesTracking(DateTime from, DateTime to, string keyword = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @";WITH RankedPurchases AS (
+                    SELECT 
+                        pi.ProductID,
+                        p.SupplierID,
+                        pi.UnitPrice,
+                        p.PurchaseDate,
+                        ROW_NUMBER() OVER(PARTITION BY pi.ProductID ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC) AS rn
+                    FROM PurchaseItems pi
+                    JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                    WHERE p.IsPosted = 1
+                      AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                )
+                SELECT 
+                    pr.ProductCode,
+                    pr.ProductName,
+                    ISNULL(s.SupplierName, N'---') AS SupplierName,
+                    cur.UnitPrice AS LastPrice,
+                    prev.UnitPrice AS PreviousPrice,
+                    CASE 
+                        WHEN prev.UnitPrice > 0 THEN ROUND(((cur.UnitPrice - prev.UnitPrice) / prev.UnitPrice) * 100, 2)
+                        ELSE 0 
+                    END AS ChangePercentage,
+                    cur.PurchaseDate AS LastPurchaseDate
+                FROM RankedPurchases cur
+                JOIN Products pr ON cur.ProductID = pr.ProductID
+                LEFT JOIN Suppliers s ON cur.SupplierID = s.SupplierID
+                LEFT JOIN RankedPurchases prev ON cur.ProductID = prev.ProductID AND prev.rn = 2
+                WHERE cur.rn = 1
+                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%')
+                ORDER BY cur.PurchaseDate DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>11. تقرير المشتريات الآجلة والمديونيات المستحقة</summary>
+        public static DataTable GetCreditPurchasesReport(DateTime from, DateTime to, int? supplierID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    p.PurchaseCode,
+                    p.PurchaseDate,
+                    ISNULL(p.SupplierInvoiceNo, N'-') AS SupplierInvoiceNo,
+                    ISNULL(s.SupplierName, N'مورد عام') AS SupplierName,
+                    ISNULL(s.Phone, N'---') AS Phone,
+                    p.TotalAmount AS TotalInvoiceAmount,
+                    ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0) AS PaidAmount,
+                    (p.TotalAmount - ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0)) AS RemainingAmount,
+                    (s.OpeningBalance + 
+                     ISNULL((SELECT SUM(st.Credit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0) - 
+                     ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)
+                    ) AS SupplierTotalBalance,
+                    ISNULL(p.Notes, N'---') AS Notes
+                FROM Purchases p
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                WHERE p.IsPosted = 1
+                  AND p.PurchaseType = 'Credit'
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID)
+                ORDER BY p.PurchaseDate DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════════

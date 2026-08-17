@@ -2115,6 +2115,380 @@ namespace ChickenDist.DAL
 
     public static class ReportDAL
     {
+        /// <summary>1. تقرير المبيعات اليومية الشامل مع الخصومات والضرائب والمرتجعات والربحية</summary>
+        public static DataTable GetDailySalesSummary(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @";WITH SaleCosts AS (
+                    SELECT s.SaleID,
+                           s.SaleDate,
+                           s.TotalAmount,
+                           s.DiscountAmount,
+                           s.WarehouseID,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                    GROUP BY s.SaleID, s.SaleDate, s.TotalAmount, s.DiscountAmount, s.WarehouseID
+                ),
+                DayReturns AS (
+                    SELECT CAST(ReturnDate AS DATE) AS ReturnDay,
+                           ISNULL(SUM(TotalAmount), 0) AS ReturnsTotal
+                    FROM SalesReturns
+                    WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
+                      AND CAST(ReturnDate AS DATE) BETWEEN @f AND @t
+                    GROUP BY CAST(ReturnDate AS DATE)
+                )
+                SELECT 
+                    CAST(s.SaleDate AS DATE) AS SaleDay,
+                    COUNT(s.SaleID) AS InvoiceCount,
+                    ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
+                    ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
+                    ISNULL(MAX(r.ReturnsTotal), 0) AS TotalReturns,
+                    (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) AS NetSales,
+                    ISNULL(SUM(s.SaleCost), 0) AS TotalCost,
+                    ((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) - ISNULL(SUM(s.SaleCost), 0)) AS GrossProfit,
+                    CASE 
+                        WHEN (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) > 0 
+                        THEN ROUND((((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) - ISNULL(SUM(s.SaleCost), 0)) / (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0))) * 100, 2)
+                        ELSE 0 
+                    END AS ProfitMarginPct
+                FROM SaleCosts s
+                LEFT JOIN DayReturns r ON CAST(s.SaleDate AS DATE) = r.ReturnDay
+                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY CAST(s.SaleDate AS DATE)
+                ORDER BY SaleDay DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>2. تقرير المبيعات خلال فترة (تجميع ومقارنة: يومي / أسبوعي / شهري)</summary>
+        public static DataTable GetSalesByPeriod(DateTime from, DateTime to, string periodType = "Daily", int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @";WITH SaleCosts AS (
+                    SELECT s.SaleID,
+                           s.SaleDate,
+                           s.SaleType,
+                           s.TotalAmount,
+                           s.CashPaid,
+                           s.VisaPaid,
+                           s.DiscountAmount,
+                           s.WarehouseID,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                    GROUP BY s.SaleID, s.SaleDate, s.SaleType, s.TotalAmount, s.CashPaid, s.VisaPaid, s.DiscountAmount, s.WarehouseID
+                )
+                SELECT 
+                    CASE 
+                        WHEN @pType = 'Monthly' THEN FORMAT(s.SaleDate, 'yyyy-MM (MMMM yyyy)')
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 'yyyy-MM-dd') + N')'
+                        ELSE FORMAT(s.SaleDate, 'yyyy-MM-dd')
+                    END AS PeriodName,
+                    COUNT(DISTINCT s.SaleID) AS InvoiceCount,
+                    ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' THEN ISNULL(s.CashPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                    ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN ISNULL(s.VisaPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                    ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                    ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
+                    ISNULL(SUM(s.SaleCost), 0) AS TotalCost,
+                    (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(SUM(s.SaleCost), 0)) AS NetProfit,
+                    CASE WHEN ISNULL(SUM(s.TotalAmount), 0) > 0 
+                         THEN ROUND(((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(SUM(s.SaleCost), 0)) / ISNULL(SUM(s.TotalAmount), 0)) * 100, 2) 
+                         ELSE 0 END AS ProfitMarginPct
+                FROM SaleCosts s
+                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY 
+                    CASE 
+                        WHEN @pType = 'Monthly' THEN FORMAT(s.SaleDate, 'yyyy-MM (MMMM yyyy)')
+                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + FORMAT(DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 'yyyy-MM-dd') + N')'
+                        ELSE FORMAT(s.SaleDate, 'yyyy-MM-dd')
+                    END
+                ORDER BY MIN(s.SaleDate) DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@pType", periodType),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>3. تقرير تفاصيل المبيعات وسطور الفواتير (Line-by-line Items)</summary>
+        public static DataTable GetDetailedSaleItems(DateTime from, DateTime to, int? warehouseID = null, string keyword = null)
+        {
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
+            return DbHelper.Query(
+                @"SELECT 
+                    s.SaleCode AS SaleCode,
+                    s.SaleDate AS SaleDate,
+                    ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                    COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
+                    p.ProductName AS ProductName,
+                    ISNULL(cat.CategoryName, N'عام') AS CategoryName,
+                    si.Quantity AS Quantity,
+                    COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName,
+                    si.UnitPrice AS UnitPrice,
+                    ISNULL(si.DiscountAmt, 0) AS DiscountAmt,
+                    si.TotalPrice AS TotalPrice,
+                    ISNULL(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)), 0) AS ItemCost,
+                    (si.TotalPrice - ISNULL(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)), 0)) AS ItemProfit,
+                    CASE s.SaleType
+                        WHEN 'Cash' THEN N'نقدي'
+                        WHEN 'Visa' THEN N'فيزا'
+                        WHEN 'Credit' THEN N'آجل'
+                        WHEN 'Installment' THEN N'تقسيط'
+                        WHEN 'Mixed' THEN N'مختلط'
+                        ELSE s.SaleType
+                    END AS SaleTypeArabic,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName,
+                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName
+                FROM SaleItems si
+                JOIN Sales s ON si.SaleID = s.SaleID
+                JOIN Products p ON si.ProductID = p.ProductID
+                LEFT JOIN Categories cat ON p.CategoryID = cat.CategoryID
+                LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                LEFT JOIN Employees e ON s.CreatedBy = e.EmpID
+                LEFT JOIN Warehouses w ON s.WarehouseID = w.WarehouseID
+                WHERE s.IsPosted = 1
+                  AND s.SaleDate BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR p.ProductCode LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%')
+                ORDER BY s.SaleDate DESC, s.SaleID DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>4. تقرير المبيعات حسب المجموعة / القسم</summary>
+        public static DataTable GetSalesByCategory(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    ISNULL(cat.CategoryName, N'بدون قسم / عام') AS CategoryName,
+                    COUNT(DISTINCT si.ProductID) AS DistinctProductsCount,
+                    SUM(si.Quantity) AS TotalQtySold,
+                    ISNULL(SUM(si.DiscountAmt), 0) AS TotalDiscounts,
+                    SUM(si.TotalPrice) AS TotalSalesAmount,
+                    ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost,
+                    (SUM(si.TotalPrice) - ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0)) AS NetProfit,
+                    CASE 
+                        WHEN SUM(si.TotalPrice) > 0 
+                        THEN ROUND(((SUM(si.TotalPrice) - ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0)) / SUM(si.TotalPrice)) * 100, 2)
+                        ELSE 0 
+                    END AS ProfitMarginPct
+                FROM SaleItems si
+                JOIN Sales s ON si.SaleID = s.SaleID
+                JOIN Products p ON si.ProductID = p.ProductID
+                LEFT JOIN Categories cat ON p.CategoryID = cat.CategoryID
+                WHERE s.IsPosted = 1
+                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY ISNULL(cat.CategoryName, N'بدون قسم / عام')
+                ORDER BY TotalSalesAmount DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>5. تقرير المبيعات حسب المستخدم / الكاشير</summary>
+        public static DataTable GetSalesByUser(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    ISNULL(e.EmpName, N'غير محدد') AS EmployeeName,
+                    COUNT(DISTINCT s.SaleID) AS InvoiceCount,
+                    ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' THEN ISNULL(s.CashPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                    ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN ISNULL(s.VisaPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                    ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                    ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
+                    ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.CreatedBy = e.EmpID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS TotalReturns,
+                    (ISNULL(SUM(s.TotalAmount), 0) - ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.CreatedBy = e.EmpID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0)) AS NetSales
+                FROM Employees e
+                JOIN Sales s ON s.CreatedBy = e.EmpID
+                WHERE s.IsPosted = 1
+                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY e.EmpID, e.EmpName
+                ORDER BY TotalSales DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>6. تقرير طرق الدفع والتحصيل</summary>
+        public static DataTable GetSalesByPaymentMethod(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    CASE 
+                        WHEN s.SaleType = 'Cash' THEN N'نقدي (كاش)'
+                        WHEN s.SaleType = 'Visa' THEN N'فيزا / دفع إلكتروني (' + ISNULL(sa.AccountName, N'ماكينة عامة') + N')'
+                        WHEN s.SaleType = 'Credit' THEN N'آجل (حساب عميل)'
+                        WHEN s.SaleType = 'Installment' THEN N'تقسيط'
+                        WHEN s.SaleType = 'DriverLoad' THEN N'حملة مندوب'
+                        WHEN s.SaleType = 'Mixed' THEN N'سداد مختلط (كاش + فيزا)'
+                        ELSE s.SaleType
+                    END AS PaymentMethodName,
+                    COUNT(s.SaleID) AS InvoiceCount,
+                    ISNULL(SUM(ISNULL(s.CashPaid, CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END)), 0) AS CashAmount,
+                    ISNULL(SUM(ISNULL(s.VisaPaid, CASE WHEN s.SaleType = 'Visa' THEN s.TotalAmount ELSE 0 END)), 0) AS VisaAmount,
+                    ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditAmount,
+                    ISNULL(SUM(s.TotalAmount), 0) AS TotalAmount
+                FROM Sales s
+                LEFT JOIN SafeAccounts sa ON s.VisaAccountID = sa.AccountID
+                WHERE s.IsPosted = 1
+                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                GROUP BY 
+                    CASE 
+                        WHEN s.SaleType = 'Cash' THEN N'نقدي (كاش)'
+                        WHEN s.SaleType = 'Visa' THEN N'فيزا / دفع إلكتروني (' + ISNULL(sa.AccountName, N'ماكينة عامة') + N')'
+                        WHEN s.SaleType = 'Credit' THEN N'آجل (حساب عميل)'
+                        WHEN s.SaleType = 'Installment' THEN N'تقسيط'
+                        WHEN s.SaleType = 'DriverLoad' THEN N'حملة مندوب'
+                        WHEN s.SaleType = 'Mixed' THEN N'سداد مختلط (كاش + فيزا)'
+                        ELSE s.SaleType
+                    END
+                ORDER BY TotalAmount DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>7. تقرير الخصومات والتخفيضات</summary>
+        public static DataTable GetSalesDiscounts(DateTime from, DateTime to, int? warehouseID = null, string keyword = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    s.SaleCode AS SaleCode,
+                    s.SaleDate AS SaleDate,
+                    ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName,
+                    (s.TotalAmount + ISNULL(s.DiscountAmount, 0)) AS TotalBeforeDiscount,
+                    ISNULL(s.DiscountAmount, 0) AS DiscountAmount,
+                    ISNULL(s.DiscountPct, 0) AS DiscountPct,
+                    s.TotalAmount AS TotalAfterDiscount,
+                    ISNULL(s.Notes, N'---') AS Notes
+                FROM Sales s
+                LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                LEFT JOIN Employees e ON s.CreatedBy = e.EmpID
+                WHERE s.IsPosted = 1
+                  AND (ISNULL(s.DiscountAmount, 0) > 0 OR ISNULL(s.DiscountPct, 0) > 0)
+                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                  AND (@kw IS NULL OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%' OR e.EmpName LIKE N'%' + @kw + N'%')
+                ORDER BY s.SaleDate DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>8. تقرير المرتجعات التفصيلي للأصناف</summary>
+        public static DataTable GetDetailedSalesReturns(DateTime from, DateTime to, int? warehouseID = null, string keyword = null)
+        {
+            DateTime f = from;
+            DateTime t = to;
+            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+
+            return DbHelper.Query(
+                @"SELECT 
+                    sr.ReturnDate AS ReturnDate,
+                    CAST(sr.ReturnID AS NVARCHAR) AS ReturnCode,
+                    ISNULL(s.SaleCode, N'مرتجع مباشر') AS OriginalSaleCode,
+                    ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                    COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
+                    p.ProductName AS ProductName,
+                    ri.Quantity AS ReturnedQty,
+                    COALESCE(ri.UnitName, p.Unit, N'قطعة') AS UnitName,
+                    ri.UnitPrice AS UnitPrice,
+                    ri.TotalPrice AS TotalReturnAmount,
+                    ISNULL(e.EmpName, N'---') AS CreatedByName,
+                    ISNULL(sr.Notes, N'---') AS Notes
+                FROM ReturnItems ri
+                JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                JOIN Products p ON ri.ProductID = p.ProductID
+                LEFT JOIN Sales s ON sr.SaleID = s.SaleID
+                LEFT JOIN Clients c ON sr.ClientID = c.ClientID
+                LEFT JOIN Employees e ON sr.CreatedBy = e.EmpID
+                WHERE sr.ReturnDate BETWEEN @f AND @t
+                  AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%')
+                ORDER BY sr.ReturnDate DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
+
+        /// <summary>9. تقرير الأرباح الشامل وربحية المبيعات</summary>
+        public static DataTable GetSalesProfitability(DateTime from, DateTime to, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @";WITH SaleTotals AS (
+                    SELECT CAST(s.SaleDate AS DATE) AS SaleDay,
+                           ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
+                           ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                           ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost
+                    FROM Sales s
+                    LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
+                    LEFT JOIN Products p ON si.ProductID = p.ProductID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY CAST(s.SaleDate AS DATE)
+                ),
+                ReturnTotals AS (
+                    SELECT CAST(sr.ReturnDate AS DATE) AS ReturnDay,
+                           ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns,
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                    FROM SalesReturns sr
+                    LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY CAST(sr.ReturnDate AS DATE)
+                )
+                SELECT 
+                    s.SaleDay,
+                    s.GrossSales,
+                    s.TotalDiscounts,
+                    ISNULL(r.TotalReturns, 0) AS TotalReturns,
+                    (s.TotalSales - ISNULL(r.TotalReturns, 0)) AS NetSales,
+                    s.TotalCost,
+                    ISNULL(r.ReturnsCost, 0) AS ReturnsCost,
+                    (s.TotalCost - ISNULL(r.ReturnsCost, 0)) AS NetCost,
+                    ((s.TotalSales - ISNULL(r.TotalReturns, 0)) - (s.TotalCost - ISNULL(r.ReturnsCost, 0))) AS NetProfit,
+                    CASE 
+                        WHEN (s.TotalSales - ISNULL(r.TotalReturns, 0)) > 0 
+                        THEN ROUND((((s.TotalSales - ISNULL(r.TotalReturns, 0)) - (s.TotalCost - ISNULL(r.ReturnsCost, 0))) / (s.TotalSales - ISNULL(r.TotalReturns, 0))) * 100, 2)
+                        ELSE 0 
+                    END AS MarginPct
+                FROM SaleTotals s
+                LEFT JOIN ReturnTotals r ON s.SaleDay = r.ReturnDay
+                ORDER BY s.SaleDay DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
         public static DataTable SalesByDay(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
@@ -2273,6 +2647,7 @@ namespace ChickenDist.DAL
                     GROUP BY ProductID
                 )
                 SELECT 
+                    p.ProductCode,
                     p.ProductName,
                     p.Unit,
                     ISNULL(stk.CurrentStock, 0.0) AS CurrentStock,
@@ -2284,7 +2659,12 @@ namespace ChickenDist.DAL
                     (ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) AS NetQty,
                     (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) AS NetAmount,
                     (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) AS TotalCost,
-                    ((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit
+                    ((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit,
+                    CASE 
+                        WHEN (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) > 0 
+                        THEN ROUND((((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) / (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0))) * 100, 2)
+                        ELSE 0 
+                    END AS ProfitMargin
                 FROM Products p
                 LEFT JOIN SaleTotals st ON p.ProductID = st.ProductID
                 LEFT JOIN ReturnTotals rt ON p.ProductID = rt.ProductID

@@ -563,22 +563,22 @@ namespace ChickenDist.Forms
                         string st = r["Status"].ToString();
 
                         int ri = dgShortages.Rows.Add(
-                            r["ProductID"],
-                            r["ShortageID"],
-                            r["SupplierID"],
-                            r["ProductCode"],
-                            r["ProductName"],
-                            r["CategoryName"],
-                            r["Brand"],
-                            r["SupplierName"],
+                            r.Table.Columns.Contains("ProductID") ? r["ProductID"] : null,
+                            r.Table.Columns.Contains("ShortageID") ? r["ShortageID"] : null,
+                            r.Table.Columns.Contains("SupplierID") ? r["SupplierID"] : null,
+                            r.Table.Columns.Contains("ProductCode") ? r["ProductCode"] : "",
+                            r.Table.Columns.Contains("ProductName") ? r["ProductName"] : "",
+                            r.Table.Columns.Contains("CategoryName") ? r["CategoryName"] : "عام",
+                            r.Table.Columns.Contains("Brand") ? r["Brand"] : "-",
+                            r.Table.Columns.Contains("SupplierName") ? r["SupplierName"] : "---",
                             stock.ToString("N2"),
                             minLimit.ToString("N2"),
                             deficit.ToString("N2"),
                             buyPrice.ToString("N2"),
                             totalCost.ToString("N2"),
                             st,
-                            r["Source"],
-                            r["Notes"]
+                            r.Table.Columns.Contains("Source") ? r["Source"] : "آلي",
+                            r.Table.Columns.Contains("Notes") ? r["Notes"] : "-"
                         );
 
                         var row = dgShortages.Rows[ri];
@@ -649,21 +649,21 @@ namespace ChickenDist.Forms
                 string sql = @"
                     SELECT 
                         s.SupplierName,
-                        COUNT(pd.PurchaseDetailID) AS PurchaseCount,
-                        MIN(pd.UnitPrice) AS MinPrice,
-                        MAX(pd.UnitPrice) AS MaxPrice,
-                        AVG(pd.UnitPrice) AS AvgPrice,
+                        COUNT(pi.ItemID) AS PurchaseCount,
+                        MIN(pi.UnitPrice) AS MinPrice,
+                        MAX(pi.UnitPrice) AS MaxPrice,
+                        AVG(pi.UnitPrice) AS AvgPrice,
                         MAX(p.PurchaseDate) AS LastPurchaseDate,
-                        SUM(pd.Quantity) AS TotalQtyPurchased,
-                        (SELECT TOP 1 pd2.UnitPrice FROM PurchaseDetails pd2
-                         INNER JOIN Purchases p2 ON pd2.PurchaseID=p2.PurchaseID
-                         WHERE pd2.ProductID=pd.ProductID AND p2.SupplierID=p.SupplierID
+                        SUM(pi.Quantity) AS TotalQtyPurchased,
+                        (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2
+                         INNER JOIN Purchases p2 ON pi2.PurchaseID=p2.PurchaseID
+                         WHERE pi2.ProductID=pi.ProductID AND p2.SupplierID=p.SupplierID
                          ORDER BY p2.PurchaseDate DESC) AS LastPrice
-                    FROM PurchaseDetails pd
-                    INNER JOIN Purchases p ON pd.PurchaseID = p.PurchaseID
+                    FROM PurchaseItems pi
+                    INNER JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
                     INNER JOIN Suppliers s ON p.SupplierID = s.SupplierID
-                    WHERE pd.ProductID = @pid
-                    GROUP BY s.SupplierName, p.SupplierID, pd.ProductID
+                    WHERE pi.ProductID = @pid
+                    GROUP BY s.SupplierName, p.SupplierID, pi.ProductID
                     ORDER BY AvgPrice ASC";
 
                 var dt = DbHelper.Query(sql, DbHelper.P("@pid", productID));

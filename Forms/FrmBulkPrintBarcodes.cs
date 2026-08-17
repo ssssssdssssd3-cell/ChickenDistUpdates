@@ -675,9 +675,9 @@ namespace ChickenDist.Forms
 
                 string txnJoin = (onlyTxn)
                     ? @"INNER JOIN (
-                            SELECT DISTINCT ProductID FROM SaleDetails
+                            SELECT DISTINCT ProductID FROM SaleItems
                             UNION
-                            SELECT DISTINCT ProductID FROM PurchaseDetails
+                            SELECT DISTINCT ProductID FROM PurchaseItems
                         ) txn ON p.ProductID = txn.ProductID"
                     : "";
 
