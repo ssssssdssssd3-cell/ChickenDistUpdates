@@ -34,6 +34,7 @@ namespace ChickenDist.Forms
         private decimal _openingCash = 0;
         private decimal _totalSales = 0;
         private decimal _cashSales = 0;
+        private decimal _visaSales = 0;
         private decimal _creditSales = 0;
         private decimal _otherSales = 0;
         private decimal _totalReturns = 0;
@@ -144,6 +145,7 @@ namespace ChickenDist.Forms
                     if (_shiftRow["OpeningCash"] != DBNull.Value) _openingCash = Convert.ToDecimal(_shiftRow["OpeningCash"]);
                     if (_shiftRow["TotalSales"] != DBNull.Value) _totalSales = Convert.ToDecimal(_shiftRow["TotalSales"]);
                     if (_shiftRow["CashSales"] != DBNull.Value) _cashSales = Convert.ToDecimal(_shiftRow["CashSales"]);
+                    if (_shiftRow["VisaSales"] != DBNull.Value) _visaSales = Convert.ToDecimal(_shiftRow["VisaSales"]);
                     if (_shiftRow["OtherSales"] != DBNull.Value) _otherSales = Convert.ToDecimal(_shiftRow["OtherSales"]);
                     if (_shiftRow["TotalReturns"] != DBNull.Value) _totalReturns = Convert.ToDecimal(_shiftRow["TotalReturns"]);
                     if (_shiftRow["ExpectedCash"] != DBNull.Value) _expectedCash = Convert.ToDecimal(_shiftRow["ExpectedCash"]);
@@ -153,14 +155,19 @@ namespace ChickenDist.Forms
                     if (_shiftRow["RemainingInDrawer"] != DBNull.Value) _remainingInDrawer = Convert.ToDecimal(_shiftRow["RemainingInDrawer"]);
                 }
 
+                int drawerSafeID = _shiftRow != null && _shiftRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_shiftRow["SafeAccountID"]) : 1;
+
                 // حساب المصروفات والمقبوضات للوردية
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
-                    DbHelper.P("@dt", _openTime));
+                    WHERE TransDate >= @dt 
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@dt", _openTime),
+                    DbHelper.P("@accId", drawerSafeID));
 
                 if (dtExp.Rows.Count > 0)
                 {
@@ -174,9 +181,10 @@ namespace ChickenDist.Forms
                     var dtSales = DbHelper.Query(@"
                         SELECT
                             ISNULL(SUM(TotalAmount), 0) AS TotalSales,
-                            ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END), 0) AS CashSales,
-                            ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END), 0) AS CreditSales,
-                            ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
+                            ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                            ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                            ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                            ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                         FROM Sales 
                         WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
                         DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime));
@@ -185,6 +193,7 @@ namespace ChickenDist.Forms
                     {
                         _totalSales = Convert.ToDecimal(dtSales.Rows[0]["TotalSales"]);
                         _cashSales = Convert.ToDecimal(dtSales.Rows[0]["CashSales"]);
+                        _visaSales = Convert.ToDecimal(dtSales.Rows[0]["VisaSales"]);
                         _creditSales = Convert.ToDecimal(dtSales.Rows[0]["CreditSales"]);
                         _otherSales = Convert.ToDecimal(dtSales.Rows[0]["OtherSales"]);
                     }
@@ -201,7 +210,8 @@ namespace ChickenDist.Forms
                         _totalReturns = Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]);
                     }
 
-                    _expectedCash = _openingCash + _cashSales - _totalReturns - _totalExpenses + _totalCollections;
+                    // السيولة الفعلية المتوقعة بالدرج = رصيد البداية + مبيعات الكاش + التوريدات والتحويلات للدرج - المرتجعات - المصروفات
+                    _expectedCash = _openingCash + _cashSales + _totalCollections - _totalReturns - _totalExpenses;
                     if (_actualCash == 0) _actualCash = _expectedCash;
                     _difference = _actualCash - _expectedCash;
                 }
@@ -431,13 +441,16 @@ namespace ChickenDist.Forms
             var financialRows = new List<(string seq, string title, decimal amt, string note, Color col, bool bold, Color bg)>
             {
                 ("1", "رصيد بداية الوردية (الافتتاحي)", _openingCash, "النقدية المسجلة بالدرج عند بدء الوردية", Color.Black, false, Color.White),
-                ("2", "إجمالي مبيعات الوردية", _totalSales, $"نقدي: {_cashSales:N2} ج  •  آجل وفيزا: {(_creditSales + _otherSales):N2} ج", Color.FromArgb(15, 118, 110), false, colRowAlt),
-                ("3", "إجمالي مرتجعات المبيعات ↩", _totalReturns, "مرتجع كاش مخصوم من نقدية الدرج", _totalReturns > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White),
-                ("4", "سندات قبض وتحصيلات نقدية ➕", _totalCollections, "مقبوضات وتحصيلات واردة بالدرج خلال الوردية", _totalCollections > 0 ? Color.FromArgb(21, 128, 61) : Color.Black, false, colRowAlt),
-                ("5", "مصروفات وسحوبات ونثريات ➖", _totalExpenses, "نثريات ومصروفات مسحوبة من الدرج", _totalExpenses > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White),
-                ("6", "النقدية المتوقعة بالدرج (الدفترية)", _expectedCash, "الرصيد المحاسبي الواجب توفره بالخزنة", colPrimary, true, Color.FromArgb(238, 242, 255)),
-                ("7", "النقدية الفعلية المحصورة بالدرج", _actualCash, "المبلغ الفعلي المعدود بمعرفة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)),
-                ("8", "الفرق المحاسبي (عجز / زيادة)", _difference, _difference == 0 ? "مطابق تماماً بدون أي فروقات ✔" : (_difference < 0 ? $"عجز نقدي قدره {_difference:N2} ج 🔴" : $"زيادة نقدية قدرها {_difference:N2} ج 🟢"), _difference == 0 ? Color.FromArgb(21, 128, 61) : (_difference < 0 ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6)), true, _difference == 0 ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242))
+                ("2", "مبيعات نقدية (كاش الدرج) 🛒", _cashSales, "السيولة النقدية المحصلة بالدرج من المبيعات", Color.FromArgb(15, 118, 110), true, colRowAlt),
+                ("3", "مبيعات فيزا وماكينات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا (لا تدخل بسيولة الدرج)", Color.FromArgb(109, 40, 217), false, Color.White),
+                ("4", "مبيعات آجل / متبقي 📑", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل", Color.FromArgb(52, 152, 219), false, colRowAlt),
+                ("5", "إجمالي مبيعات الوردية (الكل)", _totalSales, $"كاش: {_cashSales:N2} ج | فيزا: {_visaSales:N2} ج | آجل: {(_creditSales + _otherSales):N2} ج", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)),
+                ("6", "توريدات وإيداعات وتحويلات للدرج ➕", _totalCollections, "سندات قبض وتحويلات واردة للدرج (تشمل التحويل من الفيزا)", _totalCollections > 0 ? Color.FromArgb(21, 128, 61) : Color.Black, false, Color.White),
+                ("7", "إجمالي مرتجعات المبيعات الكاش ↩ ➖", _totalReturns, "مرتجع كاش مخصوم ومردود من نقدية الدرج", _totalReturns > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, colRowAlt),
+                ("8", "مصروفات وسحوبات ونثريات من الدرج ➖", _totalExpenses, "نثريات ومصروفات وسندات صرف مسحوبة من الدرج", _totalExpenses > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White),
+                ("9", "النقدية المتوقعة بالدرج (السيولة باليد)", _expectedCash, "الرصيد المحاسبي والسيولة الفعلية الواجب توفرها بالدرج", colPrimary, true, Color.FromArgb(238, 242, 255)),
+                ("10", "النقدية الفعلية المحصورة بالدرج", _actualCash, "المبلغ الفعلي المعدود بمعرفة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)),
+                ("11", "الفرق المحاسبي (عجز / زيادة)", _difference, _difference == 0 ? "مطابق تماماً بدون أي فروقات ✔" : (_difference < 0 ? $"عجز نقدي قدره {_difference:N2} ج 🔴" : $"زيادة نقدية قدرها {_difference:N2} ج 🟢"), _difference == 0 ? Color.FromArgb(21, 128, 61) : (_difference < 0 ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6)), true, _difference == 0 ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242))
             };
 
             foreach (var r in financialRows)
@@ -614,16 +627,17 @@ namespace ChickenDist.Forms
             }
 
             DrawRecGridRow("رصيد بداية الوردية:", _openingCash);
-            DrawRecGridRow("إجمالي المبيعات:", _totalSales);
-            DrawRecGridRow("  • مبيعات نقدي:", _cashSales);
-            DrawRecGridRow("  • مبيعات آجل/فيزا:", _creditSales + _otherSales);
-            DrawRecGridRow("إجمالي المرتجعات ↩:", _totalReturns);
-            DrawRecGridRow("سندات تحصيل ➕:", _totalCollections);
-            DrawRecGridRow("المصروفات والسحب ➖:", _totalExpenses);
+            DrawRecGridRow("إجمالي المبيعات:", _totalSales, true);
+            DrawRecGridRow("  • مبيعات كاش بالدرج:", _cashSales);
+            DrawRecGridRow("  • مبيعات فيزا (إلكتروني):", _visaSales);
+            DrawRecGridRow("  • مبيعات آجل:", _creditSales + _otherSales);
+            DrawRecGridRow("توريدات وإيداعات الدرج ➕:", _totalCollections);
+            DrawRecGridRow("مرتجعات كاش ↩ ➖:", _totalReturns);
+            DrawRecGridRow("المصروفات والسحب من الدرج ➖:", _totalExpenses);
             y += 3;
 
-            DrawRecGridRow("المتوقع بالخزنة:", _expectedCash, true, true);
-            DrawRecGridRow("الفعلي بالخزنة:", _actualCash, true, true);
+            DrawRecGridRow("المتوقع بالدرج (السيولة):", _expectedCash, true, true);
+            DrawRecGridRow("الفعلي بالدرج:", _actualCash, true, true);
             
             string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
             int diffRh = 24;

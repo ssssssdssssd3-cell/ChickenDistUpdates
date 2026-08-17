@@ -27,7 +27,9 @@ namespace ChickenDist.Forms
         
         private Label lblOpeningCashVal;
         private Label lblCashSalesVal;
+        private Label lblVisaSalesVal;
         private Label lblCreditSalesVal;
+        private Label lblCashInVal;
         private Label lblReturnsVal;
         private Label lblExpensesVal;
         private Label lblExpectedVal;
@@ -242,23 +244,25 @@ namespace ChickenDist.Forms
             pnlStatus.Controls.Add(tblStatus);
             tblMain.Controls.Add(pnlStatus, 0, 0);
 
-            // ب) كروت المؤشرات KPI (6 كروت)
+            // ب) كروت المؤشرات KPI (8 كروت)
             pnlKpiContainer = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 6) };
             TableLayoutPanel tblKpi = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 6,
+                ColumnCount = 8,
                 RowCount = 1,
                 RightToLeft = RightToLeft.Yes
             };
-            for (int i = 0; i < 6; i++) tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+            for (int i = 0; i < 8; i++) tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
 
             lblOpeningCashVal = MakeKpiCard(tblKpi, "💵 رصيد البداية", "0.00 ج", Theme.TextMain, 0);
             lblCashSalesVal   = MakeKpiCard(tblKpi, "🛒 مبيعات كاش", "0.00 ج", Theme.Success, 1);
-            lblCreditSalesVal = MakeKpiCard(tblKpi, "💳 مبيعات آجل/فيزا", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
-            lblReturnsVal     = MakeKpiCard(tblKpi, "↩ مرتجعات", "0.00 ج", Theme.Danger, 3);
-            lblExpensesVal    = MakeKpiCard(tblKpi, "💸 مصروفات/خارج", "0.00 ج", Color.FromArgb(230, 126, 34), 4);
-            lblExpectedVal    = MakeKpiCard(tblKpi, "💰 المتوقع بالخزنة", "0.00 ج", Theme.Accent, 5);
+            lblVisaSalesVal   = MakeKpiCard(tblKpi, "💳 مبيعات فيزا", "0.00 ج", Color.FromArgb(142, 68, 173), 2);
+            lblCreditSalesVal = MakeKpiCard(tblKpi, "📑 مبيعات آجل", "0.00 ج", Color.FromArgb(52, 152, 219), 3);
+            lblCashInVal      = MakeKpiCard(tblKpi, "➕ توريدات للدرج", "0.00 ج", Color.FromArgb(16, 185, 129), 4);
+            lblReturnsVal     = MakeKpiCard(tblKpi, "↩ مرتجعات كاش", "0.00 ج", Theme.Danger, 5);
+            lblExpensesVal    = MakeKpiCard(tblKpi, "💸 مصروفات وسحب", "0.00 ج", Color.FromArgb(230, 126, 34), 6);
+            lblExpectedVal    = MakeKpiCard(tblKpi, "💰 المتوقع بالدرج", "0.00 ج", Theme.Accent, 7);
 
             pnlKpiContainer.Controls.Add(tblKpi);
             tblMain.Controls.Add(pnlKpiContainer, 0, 1);
@@ -548,6 +552,7 @@ namespace ChickenDist.Forms
             try
             {
                 DateTime openTime = _openShift != null ? Convert.ToDateTime(_openShift["OpenTime"]) : DateTime.Today;
+                int drawerSafeID = _openShift != null && _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
 
                 var dt = DbHelper.Query(@"
                     SELECT
@@ -572,8 +577,11 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
-                    DbHelper.P("@dt", openTime));
+                    WHERE TransDate >= @dt 
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@dt", openTime),
+                    DbHelper.P("@accId", drawerSafeID));
 
                 decimal ts  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["TotalSales"])   : 0;
                 decimal cs  = dt.Rows.Count  > 0 ? Convert.ToDecimal(dt.Rows[0]["CashSales"])    : 0;
@@ -588,7 +596,9 @@ namespace ChickenDist.Forms
                 if (_openShift != null && _openShift["OpeningCash"] != DBNull.Value)
                     oc = Convert.ToDecimal(_openShift["OpeningCash"]);
 
-                decimal expected = oc + cs - tr - ex + cin;
+                // مبيعات الفيزا تذهب لحساب الفيزا/البنك ولا تضاف لنقدية الدرج الفعلية
+                // إذا تم تحويل نقدية من الفيزا للدرج تظهر تلقائياً ضمن توريدات الدرج (cin)
+                decimal expected = oc + cs + cin - tr - ex;
 
                 _summary = new ShiftSummary
                 {
@@ -599,12 +609,15 @@ namespace ChickenDist.Forms
                     OtherSales = os,
                     TotalReturns = tr,
                     Expenses = ex,
+                    TotalCashIn = cin,
                     OpeningCash = oc,
                     Expected = expected
                 };
 
                 lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
+                lblVisaSalesVal.Text   = vs.ToString("N2") + " ج";
                 lblCreditSalesVal.Text = (cr + os).ToString("N2") + " ج";
+                lblCashInVal.Text      = cin.ToString("N2") + " ج";
                 lblReturnsVal.Text     = tr.ToString("N2") + " ج";
                 lblExpensesVal.Text    = ex.ToString("N2") + " ج";
                 lblExpectedVal.Text    = expected.ToString("N2") + " ج";
@@ -614,14 +627,14 @@ namespace ChickenDist.Forms
                 if (canViewDetails)
                 {
                     lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
-                    lblCashSalesVal.Visible = lblCreditSalesVal.Visible =
-                    lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = true;
+                    lblCashSalesVal.Visible = lblVisaSalesVal.Visible = lblCreditSalesVal.Visible =
+                    lblCashInVal.Visible = lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = true;
                 }
                 else
                 {
                     lblOpeningCashVal.Text = "غير مصرح";
-                    lblCashSalesVal.Visible = lblCreditSalesVal.Visible =
-                    lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = false;
+                    lblCashSalesVal.Visible = lblVisaSalesVal.Visible = lblCreditSalesVal.Visible =
+                    lblCashInVal.Visible = lblReturnsVal.Visible = lblExpensesVal.Visible = lblExpectedVal.Visible = false;
                 }
                 RecalcDiff();
             }
@@ -641,10 +654,29 @@ namespace ChickenDist.Forms
             dgMovements.Visible = true;
             try
             {
+                int drawerSafeID = _openShift != null && _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
+
                 var dtSales = DbHelper.Query(@"
-                    SELECT 'مبيعات' AS TransType, s.SaleCode AS RefCode, s.SaleDate AS TransTime, ISNULL(c.ClientName, N'عميل نقدي') AS Details, s.TotalAmount AS Amount
+                    SELECT 
+                        CASE 
+                            WHEN s.SaleType = 'Cash' THEN N'مبيعات نقدي (كاش)'
+                            WHEN s.SaleType = 'Visa' THEN N'مبيعات فيزا/شبكة'
+                            WHEN s.SaleType = 'Credit' THEN N'مبيعات آجل'
+                            WHEN s.SaleType = 'Mixed' THEN N'مبيعات مختلط (كاش+فيزا)'
+                            ELSE N'مبيعات'
+                        END AS TransType, 
+                        s.SaleCode AS RefCode, 
+                        s.SaleDate AS TransTime, 
+                        ISNULL(c.ClientName, N'عميل نقدي') + 
+                        CASE 
+                            WHEN s.SaleType = 'Visa' THEN N' (فيزا - ' + ISNULL(sa.AccountName, N'حساب فيزا') + N')'
+                            WHEN s.SaleType = 'Mixed' THEN N' (كاش: ' + CAST(ISNULL(s.CashPaid,0) AS NVARCHAR) + N' + فيزا: ' + CAST(ISNULL(s.VisaPaid,0) AS NVARCHAR) + N')'
+                            ELSE N''
+                        END AS Details, 
+                        s.TotalAmount AS Amount
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    LEFT JOIN SafeAccounts sa ON s.VisaAccountID = sa.AccountID
                     WHERE s.ShiftID=@sid AND s.IsPosted=1
                     UNION ALL
                     SELECT 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, sr.ReturnDate AS TransTime, 'مرتجع فاتورة' AS Details, sr.TotalAmount AS Amount
@@ -652,23 +684,28 @@ namespace ChickenDist.Forms
                     UNION ALL
                     SELECT 
                         CASE 
-                            WHEN TransType = 'ClientPayment' THEN N'تحصيل من عميل'
-                            WHEN TransType = 'SupplierPayment' THEN N'صرف لمورد'
-                            WHEN TransType = 'EmpAdvance' THEN N'سلفة موظف'
-                            WHEN TransType = 'EmpPaymentOut' THEN N'راتب/مستحقات'
-                            WHEN TransType = 'EmpPaymentIn' THEN N'توريد موظف'
-                            WHEN TransType = 'ReceiptIn' THEN N'سند قبض'
-                            WHEN TransType = 'ReceiptOut' THEN N'سند صرف'
-                            WHEN AmountIn > 0 THEN N'وارد للخزنة'
-                            ELSE N'مصروفات'
+                            WHEN TransType = 'ClientPayment' THEN N'تحصيل من عميل (+)'
+                            WHEN TransType = 'SupplierPayment' THEN N'صرف لمورد (-)'
+                            WHEN TransType = 'EmpAdvance' THEN N'سلفة موظف (-)'
+                            WHEN TransType = 'EmpPaymentOut' THEN N'راتب/مستحقات (-)'
+                            WHEN TransType = 'EmpPaymentIn' THEN N'توريد موظف (+)'
+                            WHEN TransType = 'ReceiptIn' THEN N'سند قبض (+)'
+                            WHEN TransType = 'ReceiptOut' THEN N'سند صرف (-)'
+                            WHEN TransType = 'Transfer' AND AmountIn > 0 THEN N'تحويل وارد للدرج (+)'
+                            WHEN TransType = 'Transfer' AND AmountOut > 0 THEN N'تحويل صادر من الدرج (-)'
+                            WHEN AmountIn > 0 THEN N'وارد للدرج (+)'
+                            ELSE N'مصروفات (-)'
                         END AS TransType, 
                         CAST(CashID AS NVARCHAR) AS RefCode, 
                         TransDate AS TransTime, 
                         Notes AS Details, 
                         CASE WHEN AmountIn > 0 THEN AmountIn ELSE -AmountOut END AS Amount
-                    FROM CashBox WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
+                    FROM CashBox 
+                    WHERE TransDate >= @dt 
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@accId", drawerSafeID));
 
                 foreach (DataRow r in dtSales.Rows)
                 {
@@ -780,8 +817,8 @@ namespace ChickenDist.Forms
         private void ClearSummary()
         {
             _summary = null;
-            lblOpeningCashVal.Text = lblCashSalesVal.Text = lblCreditSalesVal.Text =
-            lblReturnsVal.Text = lblExpensesVal.Text = lblExpectedVal.Text = lblDiffVal.Text = "---";
+            lblOpeningCashVal.Text = lblCashSalesVal.Text = lblVisaSalesVal.Text = lblCreditSalesVal.Text =
+            lblCashInVal.Text = lblReturnsVal.Text = lblExpensesVal.Text = lblExpectedVal.Text = lblDiffVal.Text = "---";
             dgMovements.Rows.Clear();
         }
 
@@ -985,7 +1022,7 @@ namespace ChickenDist.Forms
 
         private class ShiftSummary
         {
-            public decimal TotalSales, CashSales, VisaSales, CreditSales, OtherSales, TotalReturns, Expenses, OpeningCash, Expected;
+            public decimal TotalSales, CashSales, VisaSales, CreditSales, OtherSales, TotalReturns, Expenses, TotalCashIn, OpeningCash, Expected;
         }
     }
 }

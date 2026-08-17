@@ -306,6 +306,10 @@ namespace ChickenDist.Forms
                 case "FrmAccountantPortal":
                 case "FrmReservations":
                 case "FrmClearanceOffers":
+                case "FrmShiftClose":
+                case "FrmShiftReport":
+                case "FrmOpenShift":
+                case "FrmShiftDrawerDetails":
                     targetGroup = "المبيعات";
                     break;
                 case "FrmPurchase":
@@ -356,7 +360,7 @@ namespace ChickenDist.Forms
                 case "FrmReports":
                     if (_currentChild is FrmReports rptForm)
                     {
-                        if (rptForm.TargetModule == "Sales") targetGroup = "المبيعات";
+                        if (rptForm.TargetModule == "Sales" || rptForm.TargetModule == "ShiftsHistory" || rptForm.TargetModule == "ShiftClose") targetGroup = "المبيعات";
                         else if (rptForm.TargetModule == "Purchases") targetGroup = "المشتريات";
                         else if (rptForm.TargetModule == "Stores") targetGroup = "المخازن";
                         else if (rptForm.TargetModule == "Clients") targetGroup = "العملاء";
@@ -435,6 +439,8 @@ namespace ChickenDist.Forms
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), AppConfig.IsRestaurant ? new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
@@ -447,6 +453,8 @@ namespace ChickenDist.Forms
                 } : new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
@@ -514,8 +522,6 @@ namespace ChickenDist.Forms
                     ("🏛️ الحسابات والمالية اليومية الشاملة", "CashBox", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
                     ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),
-                    ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
-                    ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
@@ -631,6 +637,8 @@ namespace ChickenDist.Forms
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "Sales", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
@@ -695,8 +703,6 @@ namespace ChickenDist.Forms
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
                     ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
-                    ("🔄 إدارة الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
-                    ("📊 سجل وتقارير الورديات", "Reports,ShiftClose", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),

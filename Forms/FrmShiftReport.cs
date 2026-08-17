@@ -13,7 +13,7 @@ namespace ChickenDist.Forms
     {
         private ComboBox cboShifts;
         private Label lblShiftHeader;
-        private Label lblOpeningCashVal, lblCashSalesVal, lblCreditSalesVal, lblReturnsVal, lblExpensesVal, lblExpectedVal, lblActualVal, lblDiffVal;
+        private Label lblOpeningCashVal, lblCashSalesVal, lblVisaSalesVal, lblCreditSalesVal, lblCashInVal, lblReturnsVal, lblExpensesVal, lblExpectedVal, lblDiffVal;
         private DataGridView dgMovements;
         private Button btnPrint, btnClose, btnRefresh;
 
@@ -126,25 +126,26 @@ namespace ChickenDist.Forms
             tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 95f));  // كروت المؤشرات
             tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // جدول الحركات
 
-            // كروت المؤشرات KPI (8 كروت)
+            // كروت المؤشرات KPI (9 كروت)
             Panel pnlKpis = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 6) };
             TableLayoutPanel tblKpis = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 8,
+                ColumnCount = 9,
                 RowCount = 1,
                 RightToLeft = RightToLeft.Yes
             };
-            for (int i = 0; i < 8; i++) tblKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+            for (int i = 0; i < 9; i++) tblKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 11.11f));
 
             lblOpeningCashVal = MakeCard(tblKpis, "💵 فتح الوردية", "0.00 ج", Theme.TextMain, 0);
             lblCashSalesVal   = MakeCard(tblKpis, "🛒 مبيعات كاش", "0.00 ج", Theme.Success, 1);
-            lblCreditSalesVal = MakeCard(tblKpis, "💳 آجل/فيزا", "0.00 ج", Color.FromArgb(52, 152, 219), 2);
-            lblReturnsVal     = MakeCard(tblKpis, "↩ مرتجعات", "0.00 ج", Theme.Danger, 3);
-            lblExpensesVal    = MakeCard(tblKpis, "💸 مصروفات", "0.00 ج", Color.FromArgb(230, 126, 34), 4);
-            lblExpectedVal    = MakeCard(tblKpis, "💰 المتوقع", "0.00 ج", Theme.Accent, 5);
-            lblActualVal      = MakeCard(tblKpis, "💵 الفعلي", "0.00 ج", Color.FromArgb(155, 89, 182), 6);
-            lblDiffVal        = MakeCard(tblKpis, "⚖️ عجز/زيادة", "0.00 ج", Theme.Success, 7);
+            lblVisaSalesVal   = MakeCard(tblKpis, "💳 مبيعات فيزا", "0.00 ج", Color.FromArgb(142, 68, 173), 2);
+            lblCreditSalesVal = MakeCard(tblKpis, "📑 مبيعات آجل", "0.00 ج", Color.FromArgb(52, 152, 219), 3);
+            lblCashInVal      = MakeCard(tblKpis, "➕ توريدات الدرج", "0.00 ج", Color.FromArgb(16, 185, 129), 4);
+            lblReturnsVal     = MakeCard(tblKpis, "↩ مرتجعات كاش", "0.00 ج", Theme.Danger, 5);
+            lblExpensesVal    = MakeCard(tblKpis, "💸 مصروفات", "0.00 ج", Color.FromArgb(230, 126, 34), 6);
+            lblExpectedVal    = MakeCard(tblKpis, "💰 المتوقع بالدرج", "0.00 ج", Theme.Accent, 7);
+            lblDiffVal        = MakeCard(tblKpis, "⚖️ عجز/زيادة", "0.00 ج", Theme.Success, 8);
 
             pnlKpis.Controls.Add(tblKpis);
             tblMain.Controls.Add(pnlKpis, 0, 0);
@@ -329,13 +330,16 @@ namespace ChickenDist.Forms
                     ? $"🟢 الوردية مفتوحة | الكاشير: {openedBy} | الخزنة: {safeName}"
                     : $"🔴 الوردية مغلقة | فتح: {openedBy} | أغلقت بواسطة: {closedBy} | الخزنة: {safeName}";
 
+                int drawerSafeID = sRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(sRow["SafeAccountID"]) : 1;
+
                 // 1. مبيعات الوردية
                 var dtSales = DbHelper.Query(@"
                     SELECT
                         ISNULL(SUM(TotalAmount), 0) AS TotalSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END), 0) AS CashSales,
-                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN TotalAmount ELSE 0 END), 0) AS CreditSales,
-                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
+                        ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                        ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                        ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                     FROM Sales WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
@@ -347,17 +351,21 @@ namespace ChickenDist.Forms
                     WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
-                // 3. مصروفات الوردية
+                // 3. مصروفات وتوريدات الوردية
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleReturn', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
-                    DbHelper.P("@dt", openTime));
+                    WHERE TransDate >= @dt 
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@dt", openTime),
+                    DbHelper.P("@accId", drawerSafeID));
 
                 decimal ts  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["TotalSales"])   : 0;
                 decimal cs  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CashSales"])    : 0;
+                decimal vs  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["VisaSales"])    : 0;
                 decimal cr  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CreditSales"])  : 0;
                 decimal os  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["OtherSales"])   : 0;
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]) : 0;
@@ -371,11 +379,12 @@ namespace ChickenDist.Forms
 
                 lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
                 lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
+                lblVisaSalesVal.Text   = vs.ToString("N2") + " ج";
                 lblCreditSalesVal.Text = (cr + os).ToString("N2") + " ج";
+                lblCashInVal.Text      = cin.ToString("N2") + " ج";
                 lblReturnsVal.Text     = tr.ToString("N2") + " ج";
                 lblExpensesVal.Text    = ex.ToString("N2") + " ج";
                 lblExpectedVal.Text    = expected.ToString("N2") + " ج";
-                lblActualVal.Text      = actual.ToString("N2") + " ج";
 
                 if (diff == 0)
                 {

@@ -1402,8 +1402,12 @@ namespace ChickenDist.DAL
                     s.OpeningCash,
                     CASE 
                         WHEN s.Status = 'Closed' THEN s.CashSales 
-                        ELSE ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
+                        ELSE ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
                     END AS CashSales,
+                    CASE 
+                        WHEN s.Status = 'Closed' THEN s.VisaSales 
+                        ELSE ISNULL((SELECT SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
+                    END AS VisaSales,
                     CASE 
                         WHEN s.Status = 'Closed' THEN s.TotalSales 
                         ELSE ISNULL((SELECT SUM(TotalAmount) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) 
@@ -1412,10 +1416,10 @@ namespace ChickenDist.DAL
                     CASE 
                         WHEN s.Status = 'Closed' THEN s.ExpectedCash 
                         ELSE (s.OpeningCash + 
-                              ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) -
+                              ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) -
                               ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr JOIN Sales sl ON sr.SaleID = sl.SaleID WHERE (sl.ShiftID = s.ShiftID OR (sl.ShiftID IS NULL AND sl.SaleDate >= s.OpenTime))), 0) -
-                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND TransType NOT IN ('Sale', 'SaleReturn')), 0) +
-                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND TransType NOT IN ('Sale', 'SaleReturn')), 0)
+                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0) +
+                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0)
                              )
                     END AS ExpectedCash,
                     s.ActualCash,
