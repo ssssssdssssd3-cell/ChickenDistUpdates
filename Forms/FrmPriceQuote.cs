@@ -1498,10 +1498,17 @@ namespace ChickenDist.Forms
                     if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
                 }
 
+                string quoteCode = _quoteCode ?? "";
+                string tier = !string.IsNullOrEmpty(_selectedTier) ? _selectedTier : "قطاعي";
+                decimal disc = 0m;
+                if (txtDiscount != null) decimal.TryParse(txtDiscount.Text, out disc);
+                string notes = txtNotes != null ? txtNotes.Text.Trim() : "";
+
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine($"📋 *عرض سعر مقدم من {AppConfig.CompanyName}*");
                 sb.AppendLine($"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}");
                 sb.AppendLine($"👤 *العميل:* {clientName}");
+                if (!string.IsNullOrEmpty(quoteCode)) sb.AppendLine($"🔖 *رقم العرض:* #{quoteCode}");
                 sb.AppendLine();
                 sb.AppendLine("📦 *تفاصيل عرض السعر:*");
 
@@ -1512,14 +1519,18 @@ namespace ChickenDist.Forms
 
                 sb.AppendLine();
                 sb.AppendLine($"💵 *إجمالي عرض السعر:* {lblTotalVal.Text}");
+                if (disc > 0) sb.AppendLine($"✂️ *الخصم:* {disc:N2} ج");
+                if (disc > 0 && lblNetVal != null) sb.AppendLine($"💰 *الصافي المطلوب:* {lblNetVal.Text}");
                 sb.AppendLine("\nنتشرف بخدمتكم دائماً! 🙏");
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     sb.ToString(),
-                    null,
-                    "📱 إرسال عرض السعر عبر الواتساب");
+                    () => ReceiptImageGenerator.GenerateTextCardImage("عرض أسعار", sb.ToString()),
+                    "📱 إرسال عرض السعر عبر الواتساب",
+                    () => PdfReportHelper.GeneratePriceQuotePdf(clientName, phone, quoteCode, tier, _items, disc, notes),
+                    () => ReceiptImageGenerator.GeneratePriceQuoteImages(clientName, phone, quoteCode, tier, _items, disc, notes));
             }
             catch (Exception ex)
             {

@@ -765,6 +765,539 @@ namespace ChickenDist.Core
             }
         }
 
+        /// <summary>
+        /// توليد صور كشف حساب العميل المالي التفصيلي (حتى صورتين بجودة عالية ووضوح كامل للجداول)
+        /// </summary>
+        public static List<Bitmap> GenerateDetailedClientStatementImages(string clientName, string phone, DateTime fromDate, DateTime toDate, DataGridView dgStatement, decimal totalSales, decimal totalReturns, decimal totalPayments, decimal balance)
+        {
+            var pages = new List<Bitmap>();
+            try
+            {
+                var rows = new List<string[]>();
+                if (dgStatement != null)
+                {
+                    int idx = 1;
+                    foreach (DataGridViewRow dgr in dgStatement.Rows)
+                    {
+                        if (dgr.IsNewRow) continue;
+                        string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                        string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 1 ? dgr.Cells[1].Value?.ToString() ?? "" : "");
+                        string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
+                        string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
+                        string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                        string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
+
+                        // Format numbers nicely
+                        if (decimal.TryParse(debit, out decimal dVal) && dVal > 0) debit = dVal.ToString("N2");
+                        if (decimal.TryParse(credit, out decimal cVal) && cVal > 0) credit = cVal.ToString("N2");
+                        if (decimal.TryParse(bal, out decimal bVal)) bal = bVal.ToString("N2");
+
+                        rows.Add(new[] { idx.ToString(), dtStr, typeStr, details, debit, credit, bal });
+                        idx++;
+                    }
+                }
+
+                int totalRowCount = rows.Count;
+                int maxRowsPerPage = totalRowCount > 25 ? 25 : Math.Max(totalRowCount, 1);
+                int totalPages = totalRowCount > 25 ? 2 : 1;
+
+                int width = 880;
+                int[] colW = { 40, 130, 105, 240, 105, 105, 115 }; // Total = 840
+                string[] colHeaders = { "م", "التاريخ والوقت", "نوع الحركة", "تفاصيل البيان / الفاتورة", "مدين (+)", "دائن (-)", "الرصيد (ج)" };
+
+                for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
+                {
+                    int startRow = pageIdx * 25;
+                    int takeCount = pageIdx == 0 && totalPages > 1 ? 25 : (totalRowCount - startRow);
+                    if (takeCount < 0) takeCount = 0;
+
+                    int pageRowCount = takeCount;
+                    int rowH = 30;
+                    int dynamicHeight = 220 + (pageRowCount * rowH) + (pageIdx == totalPages - 1 ? 160 : 70);
+                    dynamicHeight = Math.Max(dynamicHeight, 450);
+
+                    var bmp = new Bitmap(width, dynamicHeight);
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                        g.Clear(Color.White);
+
+                        using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 85), Color.FromArgb(15, 45, 90), Color.FromArgb(30, 64, 175), LinearGradientMode.Vertical))
+                        using (var brNavy = new SolidBrush(Color.FromArgb(15, 45, 90)))
+                        using (var brAlt = new SolidBrush(Color.FromArgb(248, 250, 252)))
+                        using (var brRed = new SolidBrush(Color.FromArgb(185, 28, 28)))
+                        using (var brGreen = new SolidBrush(Color.FromArgb(22, 101, 52)))
+                        using (var penBorder = new Pen(Color.FromArgb(15, 45, 90), 2f))
+                        using (var penGrid = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                        using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
+                        using (var fSub = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                        using (var fBold = new Font("Segoe UI", 10f, FontStyle.Bold))
+                        using (var fNorm = new Font("Segoe UI", 9.5f))
+                        using (var fSmall = new Font("Segoe UI", 8.5f))
+                        {
+                            // Outer Border
+                            g.DrawRectangle(penBorder, 10, 10, width - 20, dynamicHeight - 20);
+
+                            // Header Banner
+                            g.FillRectangle(brHeader, 12, 12, width - 24, 75);
+                            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للأنظمة والتجارة";
+                            g.DrawString(comp, fTitle, Brushes.White, new RectangleF(20, 18, width - 40, 32), SfCenter);
+                            g.DrawString("📋 كشف حساب مالي تفصيلي للمعاملات والمديونية", fSub, Brushes.LightCyan, new RectangleF(20, 50, width - 40, 24), SfCenter);
+
+                            int y = 96;
+
+                            // Meta Card
+                            g.FillRectangle(brAlt, 20, y, 840, 58);
+                            g.DrawRectangle(penGrid, 20, y, 840, 58);
+                            g.DrawLine(penGrid, width / 2, y, width / 2, y + 58);
+
+                            g.DrawString($"👤 العميل: {clientName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | 📱 {phone}" : ""), fBold, brNavy, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
+                            g.DrawString($"📅 الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
+
+                            g.DrawString($"🕒 تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
+                            if (totalPages > 1)
+                            {
+                                g.DrawString($"📄 صفحة {pageIdx + 1} من {totalPages}", fBold, brNavy, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
+                            }
+
+                            y += 66;
+
+                            // Table Header
+                            int tLeft = 20;
+                            int thH = 34;
+                            g.FillRectangle(brNavy, tLeft, y, 840, thH);
+                            g.DrawRectangle(penBorder, tLeft, y, 840, thH);
+
+                            int curX = tLeft + 840;
+                            for (int c = 0; c < colHeaders.Length; c++)
+                            {
+                                curX -= colW[c];
+                                g.DrawString(colHeaders[c], fBold, Brushes.White, new RectangleF(curX, y + 4, colW[c], thH - 6), SfCenter);
+                                if (c > 0) g.DrawLine(Pens.White, curX, y, curX, y + thH);
+                            }
+                            y += thH;
+
+                            // Rows
+                            bool alt = false;
+                            for (int r = 0; r < takeCount; r++)
+                            {
+                                int actualRowIdx = startRow + r;
+                                if (actualRowIdx >= totalRowCount) break;
+
+                                var rowData = rows[actualRowIdx];
+                                if (alt) g.FillRectangle(brAlt, tLeft, y, 840, rowH);
+                                g.DrawRectangle(penGrid, tLeft, y, 840, rowH);
+
+                                curX = tLeft + 840;
+                                for (int c = 0; c < rowData.Length; c++)
+                                {
+                                    curX -= colW[c];
+                                    var sf = (c == 3) ? SfRtlRight : SfCenter;
+                                    Brush brush = Brushes.Black;
+                                    Font font = fNorm;
+
+                                    if (c == 4 && !string.IsNullOrEmpty(rowData[c])) { brush = brRed; font = fBold; }
+                                    else if (c == 5 && !string.IsNullOrEmpty(rowData[c])) { brush = brGreen; font = fBold; }
+                                    else if (c == 6) { brush = brNavy; font = fBold; }
+                                    else if (c == 0) { font = fSmall; }
+
+                                    g.DrawString(rowData[c], font, brush, new RectangleF(curX + 3, y + 4, colW[c] - 6, rowH - 6), sf);
+                                    if (c > 0) g.DrawLine(penGrid, curX, y, curX, y + rowH);
+                                }
+
+                                y += rowH;
+                                alt = !alt;
+                            }
+
+                            // Summary Box (Only on Last Page)
+                            if (pageIdx == totalPages - 1)
+                            {
+                                y += 12;
+                                g.FillRectangle(brAlt, tLeft, y, 840, 78);
+                                g.DrawRectangle(penBorder, tLeft, y, 840, 78);
+
+                                g.DrawString($"🔴 إجمالي المبيعات: {totalSales:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
+                                g.DrawString($"🟢 إجمالي التحصيلات: {totalPayments:N2} ج" + (totalReturns > 0 ? $" | 🔄 مرتجع: {totalReturns:N2} ج" : ""), fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
+
+                                // Final Balance Highlight Box
+                                string balTitle = balance > 0 ? "الرصيد المستحق (مديونية مطلوبة):" : (balance < 0 ? "الرصيد المتبقي (دائن لصالح العميل):" : "الرصيد النهائي:");
+                                Brush balBr = balance > 0 ? brRed : (balance < 0 ? brGreen : brNavy);
+                                using (var fBalNum = new Font("Segoe UI", 15f, FontStyle.Bold))
+                                {
+                                    g.DrawString(balTitle, fBold, balBr, new RectangleF(tLeft + 20, y + 8, 520, 24), SfRtlLeft);
+                                    g.DrawString($"{Math.Abs(balance):N2} جنيه مصري", fBalNum, balBr, new RectangleF(tLeft + 20, y + 36, 520, 36), SfRtlLeft);
+                                }
+
+                                y += 88;
+                            }
+
+                            // Footer
+                            g.DrawString("شكراً لتعاملكم ونتمنى لكم دوام التوفيق والنجاح 🙏", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
+                        }
+                    }
+                    pages.Add(bmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateDetailedClientStatementImages", ex);
+            }
+
+            if (pages.Count == 0)
+            {
+                var fallback = GenerateClientStatementImage(0, clientName, balance);
+                if (fallback != null) pages.Add(fallback);
+            }
+
+            return pages;
+        }
+
+        /// <summary>
+        /// توليد صور كشف حساب المورد المالي التفصيلي (حتى صورتين بجودة عالية)
+        /// </summary>
+        public static List<Bitmap> GenerateDetailedSupplierStatementImages(string supplierName, string phone, DateTime fromDate, DateTime toDate, DataGridView dgStatement, decimal totalPurchases, decimal totalPayments, decimal balance)
+        {
+            var pages = new List<Bitmap>();
+            try
+            {
+                var rows = new List<string[]>();
+                if (dgStatement != null)
+                {
+                    int idx = 1;
+                    foreach (DataGridViewRow dgr in dgStatement.Rows)
+                    {
+                        if (dgr.IsNewRow) continue;
+                        string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                        string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 1 ? dgr.Cells[1].Value?.ToString() ?? "" : "");
+                        string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Paid") ? dgr.Cells["Paid"]?.Value?.ToString() ?? "" : "");
+                        string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Purchases") ? dgr.Cells["Purchases"]?.Value?.ToString() ?? "" : "");
+                        string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                        string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
+
+                        if (decimal.TryParse(debit, out decimal dVal) && dVal > 0) debit = dVal.ToString("N2");
+                        if (decimal.TryParse(credit, out decimal cVal) && cVal > 0) credit = cVal.ToString("N2");
+                        if (decimal.TryParse(bal, out decimal bVal)) bal = bVal.ToString("N2");
+
+                        rows.Add(new[] { idx.ToString(), dtStr, typeStr, details, debit, credit, bal });
+                        idx++;
+                    }
+                }
+
+                int totalRowCount = rows.Count;
+                int totalPages = totalRowCount > 25 ? 2 : 1;
+                int width = 880;
+                int[] colW = { 40, 130, 105, 240, 105, 105, 115 };
+                string[] colHeaders = { "م", "التاريخ والوقت", "نوع الحركة", "تفاصيل البيان / الفاتورة", "مدين (سداد)", "دائن (مشتريات)", "الرصيد (ج)" };
+
+                for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
+                {
+                    int startRow = pageIdx * 25;
+                    int takeCount = pageIdx == 0 && totalPages > 1 ? 25 : (totalRowCount - startRow);
+                    if (takeCount < 0) takeCount = 0;
+
+                    int pageRowCount = takeCount;
+                    int rowH = 30;
+                    int dynamicHeight = 220 + (pageRowCount * rowH) + (pageIdx == totalPages - 1 ? 160 : 70);
+                    dynamicHeight = Math.Max(dynamicHeight, 450);
+
+                    var bmp = new Bitmap(width, dynamicHeight);
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                        g.Clear(Color.White);
+
+                        using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 85), Color.FromArgb(120, 53, 15), Color.FromArgb(180, 83, 9), LinearGradientMode.Vertical))
+                        using (var brAmber = new SolidBrush(Color.FromArgb(120, 53, 15)))
+                        using (var brAlt = new SolidBrush(Color.FromArgb(254, 252, 232)))
+                        using (var brRed = new SolidBrush(Color.FromArgb(185, 28, 28)))
+                        using (var brGreen = new SolidBrush(Color.FromArgb(22, 101, 52)))
+                        using (var penBorder = new Pen(Color.FromArgb(180, 83, 9), 2f))
+                        using (var penGrid = new Pen(Color.FromArgb(226, 232, 240), 1f))
+                        using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
+                        using (var fSub = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                        using (var fBold = new Font("Segoe UI", 10f, FontStyle.Bold))
+                        using (var fNorm = new Font("Segoe UI", 9.5f))
+                        using (var fSmall = new Font("Segoe UI", 8.5f))
+                        {
+                            g.DrawRectangle(penBorder, 10, 10, width - 20, dynamicHeight - 20);
+
+                            g.FillRectangle(brHeader, 12, 12, width - 24, 75);
+                            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للأنظمة والتجارة";
+                            g.DrawString(comp, fTitle, Brushes.White, new RectangleF(20, 18, width - 40, 32), SfCenter);
+                            g.DrawString("📋 كشف حساب مالي تفصيلي للمورد", fSub, Brushes.LightYellow, new RectangleF(20, 50, width - 40, 24), SfCenter);
+
+                            int y = 96;
+
+                            // Meta Card
+                            g.FillRectangle(brAlt, 20, y, 840, 58);
+                            g.DrawRectangle(penGrid, 20, y, 840, 58);
+                            g.DrawLine(penGrid, width / 2, y, width / 2, y + 58);
+
+                            g.DrawString($"👤 المورد: {supplierName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | 📱 {phone}" : ""), fBold, brAmber, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
+                            g.DrawString($"📅 الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
+
+                            g.DrawString($"🕒 تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
+                            if (totalPages > 1)
+                            {
+                                g.DrawString($"📄 صفحة {pageIdx + 1} من {totalPages}", fBold, brAmber, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
+                            }
+
+                            y += 66;
+
+                            // Table Header
+                            int tLeft = 20;
+                            int thH = 34;
+                            g.FillRectangle(brAmber, tLeft, y, 840, thH);
+                            g.DrawRectangle(penBorder, tLeft, y, 840, thH);
+
+                            int curX = tLeft + 840;
+                            for (int c = 0; c < colHeaders.Length; c++)
+                            {
+                                curX -= colW[c];
+                                g.DrawString(colHeaders[c], fBold, Brushes.White, new RectangleF(curX, y + 4, colW[c], thH - 6), SfCenter);
+                                if (c > 0) g.DrawLine(Pens.White, curX, y, curX, y + thH);
+                            }
+                            y += thH;
+
+                            // Rows
+                            bool alt = false;
+                            for (int r = 0; r < takeCount; r++)
+                            {
+                                int actualRowIdx = startRow + r;
+                                if (actualRowIdx >= totalRowCount) break;
+
+                                var rowData = rows[actualRowIdx];
+                                if (alt) g.FillRectangle(brAlt, tLeft, y, 840, rowH);
+                                g.DrawRectangle(penGrid, tLeft, y, 840, rowH);
+
+                                curX = tLeft + 840;
+                                for (int c = 0; c < rowData.Length; c++)
+                                {
+                                    curX -= colW[c];
+                                    var sf = (c == 3) ? SfRtlRight : SfCenter;
+                                    Brush brush = Brushes.Black;
+                                    Font font = fNorm;
+
+                                    if (c == 4 && !string.IsNullOrEmpty(rowData[c])) { brush = brGreen; font = fBold; }
+                                    else if (c == 5 && !string.IsNullOrEmpty(rowData[c])) { brush = brRed; font = fBold; }
+                                    else if (c == 6) { brush = brAmber; font = fBold; }
+                                    else if (c == 0) { font = fSmall; }
+
+                                    g.DrawString(rowData[c], font, brush, new RectangleF(curX + 3, y + 4, colW[c] - 6, rowH - 6), sf);
+                                    if (c > 0) g.DrawLine(penGrid, curX, y, curX, y + rowH);
+                                }
+
+                                y += rowH;
+                                alt = !alt;
+                            }
+
+                            // Summary Box (Only on Last Page)
+                            if (pageIdx == totalPages - 1)
+                            {
+                                y += 12;
+                                g.FillRectangle(brAlt, tLeft, y, 840, 78);
+                                g.DrawRectangle(penBorder, tLeft, y, 840, 78);
+
+                                g.DrawString($"📥 إجمالي المشتريات: {totalPurchases:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
+                                g.DrawString($"📤 إجمالي المسدد: {totalPayments:N2} ج", fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
+
+                                string balTitle = balance > 0 ? "الرصيد المستحق للمورد:" : (balance < 0 ? "رصيد دائن لصالحنا:" : "الرصيد النهائي:");
+                                Brush balBr = balance > 0 ? brRed : brGreen;
+                                using (var fBalNum = new Font("Segoe UI", 15f, FontStyle.Bold))
+                                {
+                                    g.DrawString(balTitle, fBold, balBr, new RectangleF(tLeft + 20, y + 8, 520, 24), SfRtlLeft);
+                                    g.DrawString($"{Math.Abs(balance):N2} جنيه مصري", fBalNum, balBr, new RectangleF(tLeft + 20, y + 36, 520, 36), SfRtlLeft);
+                                }
+
+                                y += 88;
+                            }
+
+                            g.DrawString("مع تحيات إدارة الحسابات 🙏", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
+                        }
+                    }
+                    pages.Add(bmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateDetailedSupplierStatementImages", ex);
+            }
+
+            return pages;
+        }
+
+        /// <summary>
+        /// توليد صورة بيان تسعير وعرض أسعار بضائع تفصيلي (حتى صورتين بجودة عالية)
+        /// </summary>
+        public static List<Bitmap> GeneratePriceQuoteImages(string clientName, string phone, string quoteCode, string tier, List<SaleItemDTO> items, decimal discount, string notes)
+        {
+            var pages = new List<Bitmap>();
+            try
+            {
+                if (items == null || items.Count == 0) return pages;
+
+                int totalRowCount = items.Count;
+                int totalPages = totalRowCount > 25 ? 2 : 1;
+                int width = 880;
+
+                int[] colW = { 40, 110, 270, 100, 70, 75, 85, 90 }; // Total = 840
+                string[] colHeaders = { "م", "الكود", "اسم الصنف", "موقع الرف", "الوحدة", "الكمية", "السعر (ج)", "الإجمالي (ج)" };
+
+                decimal gross = 0m;
+                foreach (var it in items) gross += (it.Quantity * it.UnitPrice) - it.DiscountAmt;
+                decimal net = Math.Max(0m, gross - discount);
+
+                for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
+                {
+                    int startRow = pageIdx * 25;
+                    int takeCount = pageIdx == 0 && totalPages > 1 ? 25 : (totalRowCount - startRow);
+                    if (takeCount < 0) takeCount = 0;
+
+                    int pageRowCount = takeCount;
+                    int rowH = 30;
+                    int dynamicHeight = 220 + (pageRowCount * rowH) + (pageIdx == totalPages - 1 ? 160 : 70);
+                    dynamicHeight = Math.Max(dynamicHeight, 450);
+
+                    var bmp = new Bitmap(width, dynamicHeight);
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                        g.Clear(Color.White);
+
+                        using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 85), Color.FromArgb(6, 78, 59), Color.FromArgb(16, 185, 129), LinearGradientMode.Vertical))
+                        using (var brGreenDark = new SolidBrush(Color.FromArgb(6, 78, 59)))
+                        using (var brAlt = new SolidBrush(Color.FromArgb(240, 253, 244)))
+                        using (var brNavy = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                        using (var penBorder = new Pen(Color.FromArgb(16, 185, 129), 2f))
+                        using (var penGrid = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                        using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
+                        using (var fSub = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                        using (var fBold = new Font("Segoe UI", 10f, FontStyle.Bold))
+                        using (var fNorm = new Font("Segoe UI", 9.5f))
+                        using (var fSmall = new Font("Segoe UI", 8.5f))
+                        {
+                            g.DrawRectangle(penBorder, 10, 10, width - 20, dynamicHeight - 20);
+
+                            g.FillRectangle(brHeader, 12, 12, width - 24, 75);
+                            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للأنظمة والتجارة";
+                            g.DrawString(comp, fTitle, Brushes.White, new RectangleF(20, 18, width - 40, 32), SfCenter);
+                            g.DrawString($"📋 بيان تسعير وعرض أسعار رسمي" + (!string.IsNullOrEmpty(quoteCode) ? $" (رقم: #{quoteCode})" : ""), fSub, Brushes.LightYellow, new RectangleF(20, 50, width - 40, 24), SfCenter);
+
+                            int y = 96;
+
+                            // Meta Card
+                            g.FillRectangle(brAlt, 20, y, 840, 58);
+                            g.DrawRectangle(penGrid, 20, y, 840, 58);
+                            g.DrawLine(penGrid, width / 2, y, width / 2, y + 58);
+
+                            g.DrawString($"👤 العميل: {clientName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | 📱 {phone}" : ""), fBold, brGreenDark, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
+                            g.DrawString($"🏷️ فئة التسعير: {tier} | 🕒 التاريخ: {DateTime.Now:yyyy/MM/dd HH:mm}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
+
+                            g.DrawString("📌 بيان تقديري استرشادي - أسعار سارية حتى انتهاء الكميات", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
+                            if (totalPages > 1)
+                            {
+                                g.DrawString($"📄 صفحة {pageIdx + 1} من {totalPages}", fBold, brGreenDark, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
+                            }
+
+                            y += 66;
+
+                            // Table Header
+                            int tLeft = 20;
+                            int thH = 34;
+                            g.FillRectangle(brGreenDark, tLeft, y, 840, thH);
+                            g.DrawRectangle(penBorder, tLeft, y, 840, thH);
+
+                            int curX = tLeft + 840;
+                            for (int c = 0; c < colHeaders.Length; c++)
+                            {
+                                curX -= colW[c];
+                                g.DrawString(colHeaders[c], fBold, Brushes.White, new RectangleF(curX, y + 4, colW[c], thH - 6), SfCenter);
+                                if (c > 0) g.DrawLine(Pens.White, curX, y, curX, y + thH);
+                            }
+                            y += thH;
+
+                            // Rows
+                            bool alt = false;
+                            for (int r = 0; r < takeCount; r++)
+                            {
+                                int actualRowIdx = startRow + r;
+                                if (actualRowIdx >= totalRowCount) break;
+
+                                var it = items[actualRowIdx];
+                                if (alt) g.FillRectangle(brAlt, tLeft, y, 840, rowH);
+                                g.DrawRectangle(penGrid, tLeft, y, 840, rowH);
+
+                                decimal lineTot = (it.Quantity * it.UnitPrice) - it.DiscountAmt;
+                                string[] rowData = {
+                                    (actualRowIdx + 1).ToString(),
+                                    it.ProductCode ?? "",
+                                    it.ProductName ?? "",
+                                    it.ShelfLocation ?? "",
+                                    it.UnitName ?? "",
+                                    it.Quantity.ToString("G"),
+                                    it.UnitPrice.ToString("N2"),
+                                    lineTot.ToString("N2")
+                                };
+
+                                curX = tLeft + 840;
+                                for (int c = 0; c < rowData.Length; c++)
+                                {
+                                    curX -= colW[c];
+                                    var sf = (c == 2) ? SfRtlRight : SfCenter;
+                                    Brush brush = Brushes.Black;
+                                    Font font = fNorm;
+
+                                    if (c == 7) { brush = brGreenDark; font = fBold; }
+                                    else if (c == 2) { font = fBold; }
+                                    else if (c == 0) { font = fSmall; }
+
+                                    g.DrawString(rowData[c], font, brush, new RectangleF(curX + 3, y + 4, colW[c] - 6, rowH - 6), sf);
+                                    if (c > 0) g.DrawLine(penGrid, curX, y, curX, y + rowH);
+                                }
+
+                                y += rowH;
+                                alt = !alt;
+                            }
+
+                            // Summary Box (Only on Last Page)
+                            if (pageIdx == totalPages - 1)
+                            {
+                                y += 12;
+                                g.FillRectangle(brAlt, tLeft, y, 840, 78);
+                                g.DrawRectangle(penBorder, tLeft, y, 840, 78);
+
+                                g.DrawString($"📦 إجمالي البضاعة: {gross:N2} ج" + (discount > 0 ? $" | ✂️ الخصم: {discount:N2} ج" : ""), fBold, brNavy, new RectangleF(tLeft + 480, y + 8, 340, 26), SfRtlRight);
+                                if (!string.IsNullOrWhiteSpace(notes))
+                                {
+                                    g.DrawString($"📝 ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 480, y + 42, 340, 26), SfRtlRight);
+                                }
+
+                                using (var fBalNum = new Font("Segoe UI", 16f, FontStyle.Bold))
+                                {
+                                    g.DrawString("الصافي الإجمالي للمطالبة:", fBold, brGreenDark, new RectangleF(tLeft + 20, y + 8, 440, 24), SfRtlLeft);
+                                    g.DrawString($"{net:N2} جنيه مصري", fBalNum, brGreenDark, new RectangleF(tLeft + 20, y + 36, 440, 36), SfRtlLeft);
+                                }
+
+                                y += 88;
+                            }
+
+                            g.DrawString("نشكركم على ثقتكم الغالية ونتشرف بخدمتكم دائماً 🙏", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
+                        }
+                    }
+                    pages.Add(bmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GeneratePriceQuoteImages", ex);
+            }
+
+            return pages;
+        }
+
         private static string CleanEmoji(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;

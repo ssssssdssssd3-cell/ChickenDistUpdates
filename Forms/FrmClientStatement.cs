@@ -950,13 +950,45 @@ namespace ChickenDist.Forms
             sb.AppendLine($"👤 العميل: {_clientName}");
             sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
             sb.AppendLine("──────────────────────");
+            sb.AppendLine("📝 *تفاصيل الحركات والمعاملات:*");
+
+            int lineCount = 0;
+            foreach (DataGridViewRow dgr in dgStatement.Rows)
+            {
+                if (dgr.IsNewRow) continue;
+                string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : "";
+                string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
+                string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
+                string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
+
+                string amountStr = "";
+                if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"🔴 مدين: {d:N2} ج";
+                else if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"🟢 دائن: {c:N2} ج";
+
+                sb.AppendLine($"• {dtStr} | {typeStr}" + (!string.IsNullOrWhiteSpace(details) ? $" ({details})" : ""));
+                if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | 💰 الرصيد: {bal} ج");
+                else sb.AppendLine($"   💰 الرصيد: {bal} ج");
+
+                lineCount++;
+                if (lineCount >= 40 && dgStatement.Rows.Count > 45)
+                {
+                    sb.AppendLine($"... ومتبقي {dgStatement.Rows.Count - 40} حركة أخرى (راجع كارت الصورة أو ملف الـ PDF المرفق)");
+                    break;
+                }
+            }
+
+            sb.AppendLine("──────────────────────");
             sb.AppendLine($"💳 إجمالي مديونية الفواتير: {_totalSales:N2} ج");
             sb.AppendLine($"💵 إجمالي التحصيلات النقدية: {_totalPayments:N2} ج");
             if (_totalReturns > 0) sb.AppendLine($"🔄 إجمالي المرتجعات: {_totalReturns:N2} ج");
             if (_totalClientPurchases > 0) sb.AppendLine($"📦 شراء من عميل: {_totalClientPurchases:N2} ج");
             sb.AppendLine("──────────────────────");
-            sb.AppendLine($"📌 *صافي الرصيد الحالي: {_runBalance:N2} ج*");
+            string balStatus = _runBalance > 0 ? "مديونية مستحقة" : (_runBalance < 0 ? "رصيد دائن لصالح العميل" : "الحساب خالص تماماً");
+            sb.AppendLine($"📌 *الصافي النهائي: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
             sb.AppendLine("──────────────────────");
+            sb.AppendLine("نشكركم على حسن تعاونكم معنا 🙏");
 
             WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                 this,
@@ -964,7 +996,8 @@ namespace ChickenDist.Forms
                 sb.ToString(),
                 () => ReceiptImageGenerator.GenerateClientStatementImage(_clientID, _clientName, _runBalance),
                 "📱 إرسال كشف حساب العميل المالي عبر الواتساب",
-                () => PdfReportHelper.GenerateFinancialStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalSales, _totalReturns, _totalPayments, _runBalance));
+                () => PdfReportHelper.GenerateFinancialStatementPdf(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalSales, _totalReturns, _totalPayments, _runBalance),
+                () => ReceiptImageGenerator.GenerateDetailedClientStatementImages(_clientName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalSales, _totalReturns, _totalPayments, _runBalance));
         }
 
         private void BtnWhatsAppItemized_Click(object sender, EventArgs e)

@@ -113,6 +113,12 @@ namespace ChickenDist.Forms
             btnWhatsApp.Margin = new Padding(8, 0, 0, 0);
             btnWhatsApp.Click += (s, e) =>
             {
+                if (dgStatement == null || dgStatement.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا توجد حركات مالية لعرضها وإرسالها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+
                 string phone = "";
                 try
                 {
@@ -122,13 +128,46 @@ namespace ChickenDist.Forms
                 catch { }
 
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"📋 *كشف حساب مورد - {AppConfig.CompanyName}*");
-                sb.AppendLine($"👤 *المورد:* {_supplierName}");
-                sb.AppendLine($"📅 *الفترة:* من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+                sb.AppendLine($"📋 *كشف حساب مورد تفصيلي*");
+                sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+                sb.AppendLine($"👤 المورد: {_supplierName}");
+                sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
                 sb.AppendLine("──────────────────────");
-                sb.AppendLine($"📥 {lblPurchases.Text}");
-                sb.AppendLine($"📤 {lblPayments.Text}");
-                sb.AppendLine($"💰 {lblBalance.Text}");
+                sb.AppendLine("📝 *تفاصيل الحركات والمعاملات:*");
+
+                int lineCount = 0;
+                foreach (DataGridViewRow dgr in dgStatement.Rows)
+                {
+                    if (dgr.IsNewRow) continue;
+                    string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                    string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 1 ? dgr.Cells[1].Value?.ToString() ?? "" : "");
+                    string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Paid") ? dgr.Cells["Paid"]?.Value?.ToString() ?? "" : "");
+                    string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Purchases") ? dgr.Cells["Purchases"]?.Value?.ToString() ?? "" : "");
+                    string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                    string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
+
+                    string amountStr = "";
+                    if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"🟢 مسدد: {d:N2} ج";
+                    else if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"🔴 مشتريات: {c:N2} ج";
+
+                    sb.AppendLine($"• {dtStr} | {typeStr}" + (!string.IsNullOrWhiteSpace(details) ? $" ({details})" : ""));
+                    if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | 💰 الرصيد: {bal} ج");
+                    else sb.AppendLine($"   💰 الرصيد: {bal} ج");
+
+                    lineCount++;
+                    if (lineCount >= 40 && dgStatement.Rows.Count > 45)
+                    {
+                        sb.AppendLine($"... ومتبقي {dgStatement.Rows.Count - 40} حركة أخرى (راجع كارت الصورة أو ملف الـ PDF المرفق)");
+                        break;
+                    }
+                }
+
+                sb.AppendLine("──────────────────────");
+                sb.AppendLine($"📥 إجمالي المشتريات: {_totalPurchases:N2} ج");
+                sb.AppendLine($"📤 إجمالي المسدد: {_totalPayments:N2} ج");
+                sb.AppendLine("──────────────────────");
+                string balStatus = _runBalance > 0 ? "رصيد مستحق للمورد" : (_runBalance < 0 ? "رصيد دائن لصالحنا" : "الحساب خالص ومطابق تماماً");
+                sb.AppendLine($"💰 *صافي الرصيد: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
                 sb.AppendLine("──────────────────────");
                 sb.AppendLine("مع تحيات إدارة الحسابات 🙏");
 
@@ -137,7 +176,9 @@ namespace ChickenDist.Forms
                     phone,
                     sb.ToString(),
                     () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", sb.ToString()),
-                    "📱 إرسال كشف حساب المورد عبر الواتساب");
+                    "📱 إرسال كشف حساب المورد عبر الواتساب",
+                    () => PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance),
+                    () => ReceiptImageGenerator.GenerateDetailedSupplierStatementImages(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance));
             };
             pnlFilter.Controls.Add(btnWhatsApp);
 

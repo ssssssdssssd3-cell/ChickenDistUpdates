@@ -155,14 +155,14 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// نافذة حوار موحدة تقدم زري الاختيار المباشرين (إرسال نص أو إرسال صورة) مع معاينة حية
+        /// نافذة حوار موحدة تقدم زري الاختيار المباشرين (إرسال نص أو إرسال صورة) مع معاينة حية ودعم الصفحات المتعددة وملفات الـ PDF
         /// </summary>
-        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب", Func<string> pdfGenerator = null)
+        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب", Func<string> pdfGenerator = null, Func<System.Collections.Generic.List<Bitmap>> multiImageGenerator = null)
         {
             using (var dlg = new Form())
             {
                 dlg.Text = dialogTitle;
-                dlg.Size = new Size(680, 530);
+                dlg.Size = new Size(700, 560);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -172,7 +172,7 @@ namespace ChickenDist.Core
                 dlg.BackColor = Color.FromArgb(248, 250, 252);
                 dlg.Font = Theme.FontMain;
 
-                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر نوع الإرسال المطلوب للعميل (رسالة نصية، كارت صورة، أو ملف PDF رسمي)");
+                var pnlHeader = Theme.MakeTitleBar(dialogTitle, "اختر نوع الإرسال المطلوب للعميل (رسالة نصية تفصيلية، كارت صورة عالي الدقة، أو ملف PDF رسمي)");
                 dlg.Controls.Add(pnlHeader);
 
                 int y = 72;
@@ -181,7 +181,7 @@ namespace ChickenDist.Core
                 var lblPhone = new Label { Text = "📱 رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 dlg.Controls.Add(lblPhone);
 
-                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 420, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
+                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 440, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
                 dlg.Controls.Add(txtPhone);
                 y += 38;
 
@@ -190,7 +190,7 @@ namespace ChickenDist.Core
                 var pnlChoiceBtns = new TableLayoutPanel
                 {
                     Location = new Point(20, y),
-                    Size = new Size(620, 52),
+                    Size = new Size(640, 52),
                     ColumnCount = btnColumns,
                     RowCount = 1,
                     BackColor = Color.Transparent
@@ -202,7 +202,7 @@ namespace ChickenDist.Core
 
                 var btnSendText = new Button
                 {
-                    Text = "💬 إرسال (نص)",
+                    Text = "💬 إرسال (نص تفصيلي)",
                     Dock = DockStyle.Fill,
                     Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
@@ -215,7 +215,7 @@ namespace ChickenDist.Core
 
                 var btnSendImage = new Button
                 {
-                    Text = "🖼️ إرسال (صورة)",
+                    Text = "🖼️ إرسال (صورة تفصيلية)",
                     Dock = DockStyle.Fill,
                     Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
@@ -231,7 +231,7 @@ namespace ChickenDist.Core
                 {
                     btnSendPdf = new Button
                     {
-                        Text = "📄 إرسال (PDF)",
+                        Text = "📄 إرسال (ملف PDF)",
                         Dock = DockStyle.Fill,
                         Margin = new Padding(3),
                         FlatStyle = FlatStyle.Flat,
@@ -249,24 +249,36 @@ namespace ChickenDist.Core
                 dlg.Controls.Add(pnlChoiceBtns);
                 y += 60;
 
-                // ── Preview Section with Tab switcher ──
-                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(620, 28), BackColor = Color.Transparent };
-                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى المراد إرساله:", Location = new Point(400, 3), Width = 210, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                // ── Preview Section with Tab switcher & Multi-Page Controls ──
+                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(640, 30), BackColor = Color.Transparent };
+                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى:", Location = new Point(500, 4), Width = 135, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 
-                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(140, 0), Size = new Size(100, 26), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(380, 0), Size = new Size(110, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
                 btnShowText.FlatAppearance.BorderSize = 0;
 
-                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(30, 0), Size = new Size(105, 26), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
+                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(260, 0), Size = new Size(115, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
                 btnShowImg.FlatAppearance.BorderSize = 0;
+
+                var pnlPageNav = new Panel { Location = new Point(0, 0), Size = new Size(250, 28), BackColor = Color.Transparent, Visible = false };
+                var btnPrevPage = new Button { Text = "▶ سابقة", Location = new Point(160, 0), Size = new Size(80, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
+                btnPrevPage.FlatAppearance.BorderSize = 0;
+                var lblPageInd = new Label { Text = "صفحة 1 من 1", Location = new Point(70, 5), Size = new Size(85, 20), TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Theme.Primary };
+                var btnNextPage = new Button { Text = "تالية ◀", Location = new Point(0, 0), Size = new Size(65, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
+                btnNextPage.FlatAppearance.BorderSize = 0;
+
+                pnlPageNav.Controls.Add(btnPrevPage);
+                pnlPageNav.Controls.Add(lblPageInd);
+                pnlPageNav.Controls.Add(btnNextPage);
 
                 pnlPreviewHeader.Controls.Add(lblPreviewTitle);
                 pnlPreviewHeader.Controls.Add(btnShowText);
                 pnlPreviewHeader.Controls.Add(btnShowImg);
+                pnlPreviewHeader.Controls.Add(pnlPageNav);
                 dlg.Controls.Add(pnlPreviewHeader);
-                y += 32;
+                y += 34;
 
                 // Content Box
-                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(620, 235), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(640, 250), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
                 var txtPreview = new RichTextBox
                 {
@@ -290,9 +302,66 @@ namespace ChickenDist.Core
                 pnlContent.Controls.Add(txtPreview);
                 pnlContent.Controls.Add(picPreview);
                 dlg.Controls.Add(pnlContent);
-                y += 245;
+                y += 258;
 
-                Image cachedImage = null;
+                System.Collections.Generic.List<Image> cachedImages = null;
+                int currentImageIndex = 0;
+
+                Action ensureImagesLoaded = () =>
+                {
+                    if (cachedImages == null)
+                    {
+                        cachedImages = new System.Collections.Generic.List<Image>();
+                        try
+                        {
+                            if (multiImageGenerator != null)
+                            {
+                                var list = multiImageGenerator();
+                                if (list != null && list.Count > 0)
+                                {
+                                    foreach (var b in list) if (b != null) cachedImages.Add(b);
+                                }
+                            }
+                        }
+                        catch { }
+
+                        if (cachedImages.Count == 0 && imageGenerator != null)
+                        {
+                            try
+                            {
+                                var single = imageGenerator();
+                                if (single != null) cachedImages.Add(single);
+                            }
+                            catch { }
+                        }
+
+                        if (cachedImages.Count == 0)
+                        {
+                            var textCard = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
+                            if (textCard != null) cachedImages.Add(textCard);
+                        }
+                    }
+                };
+
+                Action updateImageDisplay = () =>
+                {
+                    ensureImagesLoaded();
+                    if (cachedImages.Count > 0)
+                    {
+                        if (currentImageIndex < 0) currentImageIndex = 0;
+                        if (currentImageIndex >= cachedImages.Count) currentImageIndex = cachedImages.Count - 1;
+
+                        picPreview.Image = cachedImages[currentImageIndex];
+                        lblPageInd.Text = $"صفحة {currentImageIndex + 1} من {cachedImages.Count}";
+                        pnlPageNav.Visible = cachedImages.Count > 1;
+                        btnPrevPage.Enabled = currentImageIndex > 0;
+                        btnNextPage.Enabled = currentImageIndex < cachedImages.Count - 1;
+                    }
+                };
+
+                btnPrevPage.Click += (s, e) => { if (currentImageIndex > 0) { currentImageIndex--; updateImageDisplay(); } };
+                btnNextPage.Click += (s, e) => { if (cachedImages != null && currentImageIndex < cachedImages.Count - 1) { currentImageIndex++; updateImageDisplay(); } };
+
                 Action showImagePreview = () =>
                 {
                     btnShowImg.BackColor = Theme.Accent;
@@ -302,22 +371,7 @@ namespace ChickenDist.Core
 
                     txtPreview.Visible = false;
                     picPreview.Visible = true;
-
-                    if (cachedImage == null)
-                    {
-                        try
-                        {
-                            if (imageGenerator != null) cachedImage = imageGenerator();
-                        }
-                        catch { }
-
-                        if (cachedImage == null)
-                        {
-                            cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
-                        }
-                    }
-
-                    picPreview.Image = cachedImage;
+                    updateImageDisplay();
                 };
 
                 Action showTextPreview = () =>
@@ -327,6 +381,7 @@ namespace ChickenDist.Core
                     btnShowImg.BackColor = Color.FromArgb(226, 232, 240);
                     btnShowImg.ForeColor = Theme.TextMain;
 
+                    pnlPageNav.Visible = false;
                     picPreview.Visible = false;
                     txtPreview.Visible = true;
                 };
@@ -335,16 +390,20 @@ namespace ChickenDist.Core
                 btnShowImg.Click += (s, e) => showImagePreview();
 
                 // ── Footer Buttons (Copy & Cancel) ──
-                var btnCopy = Theme.MakeButton("📋 نسخ النص للحافظة", 430, y, 210, 38, Color.FromArgb(70, 80, 100));
+                var btnCopy = Theme.MakeButton("📋 نسخ المعروض للحافظة", 440, y, 220, 38, Color.FromArgb(70, 80, 100));
                 btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btnCopy.Click += (s, e) =>
                 {
                     try
                     {
-                        if (picPreview.Visible && cachedImage != null)
+                        if (picPreview.Visible)
                         {
-                            Clipboard.SetImage(cachedImage);
-                            MessageBox.Show("✅ تم نسخ صورة الكارت إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            ensureImagesLoaded();
+                            if (cachedImages != null && cachedImages.Count > currentImageIndex)
+                            {
+                                Clipboard.SetImage(cachedImages[currentImageIndex]);
+                                MessageBox.Show($"✅ تم نسخ [صورة الصفحة {currentImageIndex + 1}] إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
                         }
                         else
                         {
@@ -359,7 +418,7 @@ namespace ChickenDist.Core
                 };
                 dlg.Controls.Add(btnCopy);
 
-                var btnClose = Theme.MakeButton("❌ إلغاء", 20, y, 100, 38, Color.FromArgb(120, 130, 140));
+                var btnClose = Theme.MakeButton("❌ إغلاق", 20, y, 100, 38, Color.FromArgb(120, 130, 140));
                 btnClose.Click += (s, e) => dlg.Close();
                 dlg.Controls.Add(btnClose);
 
@@ -388,16 +447,44 @@ namespace ChickenDist.Core
                         return;
                     }
 
-                    if (cachedImage == null)
+                    ensureImagesLoaded();
+                    if (cachedImages != null && cachedImages.Count > 0)
                     {
-                        if (imageGenerator != null) cachedImage = imageGenerator();
-                        if (cachedImage == null) cachedImage = ReceiptImageGenerator.GenerateTextCardImage(dialogTitle, textMessage);
-                    }
+                        if (cachedImages.Count == 1)
+                        {
+                            SendImage(targetPhone, cachedImages[0], "📄 إشعار إلكتروني");
+                            dlg.Close();
+                        }
+                        else
+                        {
+                            // 2 or more images
+                            try
+                            {
+                                Clipboard.SetImage(cachedImages[0]);
+                                OpenWhatsAppChat(targetPhone);
 
-                    if (cachedImage != null)
-                    {
-                        SendImage(targetPhone, cachedImage, "📄 إشعار إلكتروني");
-                        dlg.Close();
+                                var res = MessageBox.Show(
+                                    $"✅ تم نسخ [الصفحة الأولى] إلى الحافظة بنجاح!\n\n" +
+                                    "📱 تم فتح محادثة الواتساب للعميل:\n" +
+                                    "1. اضغط (Ctrl + V) داخل شات الواتساب للصق الصفحة الأولى وإرسالها.\n" +
+                                    "2. اضغط زر (موافق) هنا لنسخ [الصفحة الثانية] فوراً ولصقها أيضاً.\n\n" +
+                                    "هل ترغب في نسخ الصفحة الثانية الآن؟",
+                                    "إرسال الكشف التفصيلي (صفحة 1 من 2)",
+                                    MessageBoxButtons.OKCancel,
+                                    MessageBoxIcon.Information);
+
+                                if (res == DialogResult.OK && cachedImages.Count > 1)
+                                {
+                                    Clipboard.SetImage(cachedImages[1]);
+                                    MessageBox.Show("✅ تم نسخ [الصفحة الثانية] للحافظة!\n\nاضغط الآن (Ctrl + V) داخل شات الواتساب للصقها.", "تم نسخ الصفحة الثانية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLogger.Error("WhatsAppSender.SendMultiImages", ex);
+                            }
+                            dlg.Close();
+                        }
                     }
                     else
                     {
