@@ -1249,6 +1249,7 @@ namespace ChickenDist.Forms
                         if (savedCount > 0)
                         {
                             MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
                             LoadStock();
                             LoadLogs();
                         }

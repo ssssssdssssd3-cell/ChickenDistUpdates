@@ -598,6 +598,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pid", id), DbHelper.P("@old", oldPrice), DbHelper.P("@new", price), DbHelper.P("@uid", Session.EmpID));
                 }
 
+                ProductCache.Invalidate();
                 return id;
             }
         }
@@ -616,6 +617,7 @@ namespace ChickenDist.DAL
             DbHelper.Execute("UPDATE Products SET MinStockLimit=@msl WHERE ProductID=@id",
                 DbHelper.P("@msl", minStockLimit),
                 DbHelper.P("@id", productID));
+            ProductCache.Invalidate();
         }
 
         public static int BulkUpdateMinStockLimit(Dictionary<int, decimal> updates)
@@ -633,12 +635,14 @@ namespace ChickenDist.DAL
                     count++;
                 }
             });
+            ProductCache.Invalidate();
             return count;
         }
 
         public static void Delete(int id)
         {
             DbHelper.Execute("UPDATE Products SET IsActive=0 WHERE ProductID=@id", DbHelper.P("@id", id));
+            ProductCache.Invalidate();
         }
 
         /// <summary>

@@ -10,8 +10,6 @@
     <ApplicationDefaultFont>Segoe UI, 9.75pt</ApplicationDefaultFont>
     <StartupObject>ChickenDist.Program</StartupObject>
     <CodePage>65001</CodePage>
-    <Utf8Output>true</Utf8Output>
-    <AppConfig>app.config</AppConfig>
   </PropertyGroup>
   <!-- استثناء مجلد ChickenDist الفرعي القديم من الـ Compile لتفادي التعارض -->
   <ItemGroup>
@@ -35,7 +33,6 @@
     <EmbeddedResource Include="pro_soft_logo.png" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
     <EmbeddedResource Include="QRCoder.dll" />
-    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.4.3" />
