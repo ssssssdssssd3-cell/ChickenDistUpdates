@@ -186,10 +186,10 @@ namespace ChickenDist.Forms
 			pnlHeader = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = AppConfig.EnableCratesTracking ? 140 : 108,
+				Height = AppConfig.EnableCratesTracking ? 144 : 114,
 				Width = 1024,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(12, 8, 12, 8)
+				Padding = new Padding(10, 6, 10, 6)
 			};
 
 			var tblHeaderMain = new TableLayoutPanel
@@ -200,8 +200,8 @@ namespace ChickenDist.Forms
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
 			};
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75f)); // Left: Invoice details
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // Right: Invoice options (Type & Tier)
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f)); // Right: Invoice details
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f)); // Left: Invoice options (Type & Tier)
 			tblHeaderMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
 			var tblDetails = new TableLayoutPanel
@@ -438,7 +438,7 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(cboWarehouse, 3, 1);
 
 			// Row 2: Safe Account & Notes
-			lblSafeAccount = MakeLabel("حساب الدفع :", 0, 0);
+			lblSafeAccount = MakeLabel("الخزينة :", 0, 0);
 			lblSafeAccount.Dock = DockStyle.Fill;
 			lblSafeAccount.TextAlign = ContentAlignment.MiddleRight;
 			lblSafeAccount.Margin = new Padding(2);
@@ -545,26 +545,26 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Fill,
 				FlowDirection = FlowDirection.TopDown,
 				BackColor = Color.Transparent,
-				Padding = new Padding(10, 0, 10, 0),
+				Padding = new Padding(4, 0, 4, 0),
 				WrapContents = false
 			};
 
 			// Group 1: Invoice Type Card
 			var pnlTypeGroup = new Panel
 			{
-				Width = 390,
-				Height = 44,
-				BackColor = Color.FromArgb(43, 50, 70),
+				Width = 430,
+				Height = 50,
+				BackColor = Color.FromArgb(30, 41, 59),
 				Padding = new Padding(6, 2, 6, 2),
 				Margin = new Padding(0, 0, 0, 4)
 			};
 			var lblTypeHeader = new Label
 			{
-				Text = "نوع الفاتورة :",
-				Font = Theme.FontSmall,
-				ForeColor = Theme.TextSub,
+				Text = "💳 نوع الدفع / الفاتورة :",
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				ForeColor = Color.FromArgb(226, 232, 240),
 				Dock = DockStyle.Top,
-				Height = 15,
+				Height = 16,
 				TextAlign = ContentAlignment.TopRight
 			};
 			pnlTypeGroup.Controls.Add(lblTypeHeader);
@@ -578,26 +578,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 			
-			btnTypeCredit = new Button { Text = "آجل", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
-			btnTypeCredit.FlatAppearance.BorderSize = 0;
-			btnTypeCredit.Click += delegate {
-				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
-				{
-					DataRow clientRow = ClientDAL.GetByID(ci.ID);
-					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
-					{
-						string ptype = clientRow["DefaultPaymentType"].ToString();
-						if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
-						{
-							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-							return;
-						}
-					}
-				}
-				SetInvoiceType("Credit");
-			};
-
-			btnTypeCash = new Button { Text = "نقدي", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCash = new Button { Text = "💵 نقدي", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -616,42 +597,61 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Cash");
 			};
 
-			btnTypeVisa = new Button { Text = "فيزا", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCredit = new Button { Text = "⏳ آجل", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCredit.FlatAppearance.BorderSize = 0;
+			btnTypeCredit.Click += delegate {
+				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+				{
+					DataRow clientRow = ClientDAL.GetByID(ci.ID);
+					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
+					{
+						string ptype = clientRow["DefaultPaymentType"].ToString();
+						if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+						{
+							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							return;
+						}
+					}
+				}
+				SetInvoiceType("Credit");
+			};
+
+			btnTypeVisa = new Button { Text = "💳 فيزا", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeVisa.FlatAppearance.BorderSize = 0;
 			btnTypeVisa.Click += delegate { SetInvoiceType("Visa"); };
 
-			btnTypeDriverLoad = new Button { Text = "تحميل", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
-			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
-			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
-
-			btnTypeInstallment = new Button { Text = "تقسيط", Width = 65, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeInstallment = new Button { Text = "📅 تقسيط", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
-			pnlTypeButtonsFlow.Controls.Add(btnTypeInstallment);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeDriverLoad);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeVisa);
+			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
+			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
+
 			pnlTypeButtonsFlow.Controls.Add(btnTypeCash);
 			pnlTypeButtonsFlow.Controls.Add(btnTypeCredit);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeVisa);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeInstallment);
+			pnlTypeButtonsFlow.Controls.Add(btnTypeDriverLoad);
 			pnlTypeGroup.Controls.Add(pnlTypeButtonsFlow);
 			pnlTypeButtonsFlow.BringToFront();
 
 			// Group 2: Price Tiers Card
 			var pnlTierGroup = new Panel
 			{
-				Width = 320,
-				Height = 44,
-				BackColor = Color.FromArgb(43, 50, 70),
+				Width = 430,
+				Height = 48,
+				BackColor = Color.FromArgb(30, 41, 59),
 				Padding = new Padding(6, 2, 6, 2),
 				Margin = new Padding(0, 0, 0, 4)
 			};
 			var lblTierHeader = new Label
 			{
-				Text = "فئة السعر :",
-				Font = Theme.FontSmall,
-				ForeColor = Theme.TextSub,
+				Text = "🏷️ فئة السعر :",
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				ForeColor = Color.FromArgb(226, 232, 240),
 				Dock = DockStyle.Top,
-				Height = 15,
+				Height = 16,
 				TextAlign = ContentAlignment.TopRight
 			};
 			pnlTierGroup.Controls.Add(lblTierHeader);
@@ -665,21 +665,21 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 
-			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierRetail.FlatAppearance.BorderSize = 0;
 			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
 
-			btnTierSemi = new Button { Text = "🟣 نصف", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierSemi = new Button { Text = "🟣 نصف جملة", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierSemi.FlatAppearance.BorderSize = 0;
 			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
 
-			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 95, Height = 24, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
 			btnTierWholesale.FlatAppearance.BorderSize = 0;
 			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
 
-			pnlTierButtonsFlow.Controls.Add(btnTierWholesale);
-			pnlTierButtonsFlow.Controls.Add(btnTierSemi);
 			pnlTierButtonsFlow.Controls.Add(btnTierRetail);
+			pnlTierButtonsFlow.Controls.Add(btnTierSemi);
+			pnlTierButtonsFlow.Controls.Add(btnTierWholesale);
 			pnlTierGroup.Controls.Add(pnlTierButtonsFlow);
 			pnlTierButtonsFlow.BringToFront();
 
@@ -1258,7 +1258,6 @@ namespace ChickenDist.Forms
 
 			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
 			Button btnPrepSlip = Theme.MakeButton("📋 إذن تحضير (F9)", 0, 0, 130, 26, Color.FromArgb(41, 128, 185));
-			Button btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج (Ctrl+D)", 0, 0, 135, 26, Color.FromArgb(70, 70, 70));
 
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
@@ -1269,7 +1268,6 @@ namespace ChickenDist.Forms
 			btnPreview.Anchor = AnchorStyles.None;
 			btnWhatsApp.Anchor = AnchorStyles.None;
 			btnPrepSlip.Anchor = AnchorStyles.None;
-			btnOpenDrawer.Anchor = AnchorStyles.None;
 
 			btnSave.Click += BtnSave_Click;
 			btnHold.Click += BtnHold_Click;
@@ -1280,7 +1278,6 @@ namespace ChickenDist.Forms
 			btnPreview.Click += BtnPreview_Click;
 			btnWhatsApp.Click += BtnWhatsApp_Click;
 			btnPrepSlip.Click += (s, e) => PrintPreparationSlip();
-			btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
 			var pnlFooterButtons = new FlowLayoutPanel
 			{
@@ -1299,9 +1296,8 @@ namespace ChickenDist.Forms
 			btnTawreed.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
-			btnOpenDrawer.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnTawreed, btnLoadHold, btnHold, btnOpenDrawer, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnTawreed, btnLoadHold, btnHold, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -1313,7 +1309,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+D] فتح الدرج | [Ctrl+1/2/3] تغيير الوحدة",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -2090,7 +2086,8 @@ namespace ChickenDist.Forms
 						continue; // Filter out if not allowed
 					}
 
-					var comboItem = new ComboItem(accID, row["AccountName"].ToString());
+					string safeName = row["AccountName"].ToString().Replace(" / الدرج", "").Replace("/ الدرج", "").Replace("/الدرج", "").Replace(" / درج", "").Trim();
+					var comboItem = new ComboItem(accID, safeName);
 					int addedIdx = cboSafeAccount.Items.Add(comboItem);
 
 					if (accID == defaultSafeID)
@@ -2280,30 +2277,33 @@ namespace ChickenDist.Forms
 		private void SetInvoiceType(string type)
 		{
 			_invoiceType = type;
-			if (btnTypeCredit != null)
-			{
-				btnTypeCredit.BackColor = ((_invoiceType == "Credit") ? Theme.Accent : Theme.BgInput);
-				btnTypeCredit.ForeColor = ((_invoiceType == "Credit") ? Color.White : Theme.TextMain);
-			}
+			Color inactiveBg = Color.FromArgb(51, 65, 85);
+			Color inactiveFg = Color.FromArgb(203, 213, 225);
+
 			if (btnTypeCash != null)
 			{
-				btnTypeCash.BackColor = ((_invoiceType == "Cash") ? Theme.Accent : Theme.BgInput);
-				btnTypeCash.ForeColor = ((_invoiceType == "Cash") ? Color.White : Theme.TextMain);
+				btnTypeCash.BackColor = ((_invoiceType == "Cash") ? Color.FromArgb(16, 185, 129) : inactiveBg);
+				btnTypeCash.ForeColor = ((_invoiceType == "Cash") ? Color.White : inactiveFg);
+			}
+			if (btnTypeCredit != null)
+			{
+				btnTypeCredit.BackColor = ((_invoiceType == "Credit") ? Color.FromArgb(37, 99, 235) : inactiveBg);
+				btnTypeCredit.ForeColor = ((_invoiceType == "Credit") ? Color.White : inactiveFg);
 			}
 			if (btnTypeVisa != null)
 			{
-				btnTypeVisa.BackColor = ((_invoiceType == "Visa") ? Color.FromArgb(142, 68, 173) : Theme.BgInput);
-				btnTypeVisa.ForeColor = ((_invoiceType == "Visa") ? Color.White : Theme.TextMain);
-			}
-			if (btnTypeDriverLoad != null)
-			{
-				btnTypeDriverLoad.BackColor = ((_invoiceType == "DriverLoad") ? Theme.Accent : Theme.BgInput);
-				btnTypeDriverLoad.ForeColor = ((_invoiceType == "DriverLoad") ? Color.White : Theme.TextMain);
+				btnTypeVisa.BackColor = ((_invoiceType == "Visa") ? Color.FromArgb(142, 68, 173) : inactiveBg);
+				btnTypeVisa.ForeColor = ((_invoiceType == "Visa") ? Color.White : inactiveFg);
 			}
 			if (btnTypeInstallment != null)
 			{
-				btnTypeInstallment.BackColor = ((_invoiceType == "Installment") ? Theme.Accent : Theme.BgInput);
-				btnTypeInstallment.ForeColor = ((_invoiceType == "Installment") ? Color.White : Theme.TextMain);
+				btnTypeInstallment.BackColor = ((_invoiceType == "Installment") ? Color.FromArgb(14, 165, 233) : inactiveBg);
+				btnTypeInstallment.ForeColor = ((_invoiceType == "Installment") ? Color.White : inactiveFg);
+			}
+			if (btnTypeDriverLoad != null)
+			{
+				btnTypeDriverLoad.BackColor = ((_invoiceType == "DriverLoad") ? Color.FromArgb(217, 119, 6) : inactiveBg);
+				btnTypeDriverLoad.ForeColor = ((_invoiceType == "DriverLoad") ? Color.White : inactiveFg);
 			}
 			ToggleType();
 		}
