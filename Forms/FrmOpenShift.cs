@@ -221,40 +221,12 @@ namespace ChickenDist.Forms
             if (!(cboSafeAccount.SelectedItem is ComboItem safeItem) || safeItem.ID <= 0) return;
             try
             {
-                DbHelper.EnsureShiftSchema();
-                var dtPrev = DbHelper.Query(@"
-                    SELECT TOP 1 ShiftID, ActualCash, TransferToSafeID, RemainingInDrawer
-                    FROM Shifts
-                    WHERE SafeAccountID = @safeID AND Status = 'Closed'
-                    ORDER BY ShiftID DESC",
-                    DbHelper.P("@safeID", safeItem.ID));
-
-                decimal remainingInDrawer = 0m;
-                if (dtPrev.Rows.Count > 0)
-                {
-                    DataRow prevRow = dtPrev.Rows[0];
-                    if (prevRow.Table.Columns.Contains("RemainingInDrawer") && prevRow["RemainingInDrawer"] != DBNull.Value)
-                    {
-                        remainingInDrawer = Convert.ToDecimal(prevRow["RemainingInDrawer"]);
-                    }
-                    else if (prevRow["ActualCash"] != DBNull.Value)
-                    {
-                        remainingInDrawer = Convert.ToDecimal(prevRow["ActualCash"]);
-                    }
-                }
-                else
-                {
-                    // Fallback to safe current cash balance
-                    try
-                    {
-                        remainingInDrawer = AccountDAL.GetCashBalance(safeItem.ID);
-                    }
-                    catch { }
-                }
+                // اعتماد الرصيد الفعلي الحالي المتاح في الخزينة المختارة مباشرة
+                decimal actualSafeBalance = AccountDAL.GetCashBalance(safeItem.ID);
 
                 // الرصيد الافتتاحي للخزنة لا يمكن أن يكون سالباً نهائياً
-                if (remainingInDrawer < 0m) remainingInDrawer = 0m;
-                txtOpeningCash.Text = remainingInDrawer.ToString("N2");
+                if (actualSafeBalance < 0m) actualSafeBalance = 0m;
+                txtOpeningCash.Text = actualSafeBalance.ToString("N2");
             }
             catch { }
         }
@@ -273,10 +245,17 @@ namespace ChickenDist.Forms
             {
                 safeAccountID = safeItem.ID;
             }
+            if (safeAccountID <= 0)
+            {
+                safeAccountID = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
+            }
 
             try
             {
                 DbHelper.EnsureShiftSchema();
+                decimal currentSafeBalance = AccountDAL.GetCashBalance(safeAccountID);
+                if (currentSafeBalance < 0) currentSafeBalance = 0;
+
                 int shiftID = DbHelper.ExecuteInsert(
                     @"INSERT INTO Shifts (ShiftDate, OpenTime, OpenedBy, OpeningCash, SafeAccountID, Status, Notes)
                       VALUES (CAST(GETDATE() AS DATE), GETDATE(), @emp, @cash, @safe, 'Open', @notes)",
@@ -290,16 +269,46 @@ namespace ChickenDist.Forms
                     Session.CurrentShiftID = shiftID;
                     if (safeAccountID > 0) Session.DefaultSafeID = safeAccountID;
 
-                    // تسجيل سطر بيان فتح الوردية في حركة الخزينة
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                          VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid)",
-                        DbHelper.P("@acc", safeAccountID > 0 ? safeAccountID : (Session.DefaultSafeID ?? 1)),
-                        DbHelper.P("@notes", $"فتح وردية جديدة #{shiftID} - رصيد افتتاحي بالخزينة: {openingCash:N2} ج (الموظف: {Session.EmpName})"),
-                        DbHelper.P("@uid", Session.EmpID));
+                    // مزامنة وربط رصيد الخزينة بالوردية بدقة 100%
+                    decimal diff = openingCash - currentSafeBalance;
+                    if (diff > 0)
+                    {
+                        // تسوية زيادة لتطابق الخزينة النقدية الفعلية الافتتاحية
+                        DbHelper.Execute(
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                              VALUES (GETDATE(), 'ShiftOpen', @amt, 0, @acc, @notes, @uid, @ref)",
+                            DbHelper.P("@amt", diff),
+                            DbHelper.P("@acc", safeAccountID),
+                            DbHelper.P("@notes", $"تسوية رصيد الخزينة عند فتح الوردية #{shiftID} (رصيد افتتاحي: {openingCash:N2} ج)"),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID));
+                    }
+                    else if (diff < 0)
+                    {
+                        // تسوية تخفيض لتطابق الخزينة النقدية الفعلية الافتتاحية
+                        DbHelper.Execute(
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                              VALUES (GETDATE(), 'ShiftOpen', 0, @amt, @acc, @notes, @uid, @ref)",
+                            DbHelper.P("@amt", Math.Abs(diff)),
+                            DbHelper.P("@acc", safeAccountID),
+                            DbHelper.P("@notes", $"تسوية رصيد الخزينة عند فتح الوردية #{shiftID} (رصيد افتتاحي: {openingCash:N2} ج)"),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID));
+                    }
+                    else
+                    {
+                        // الرصيد مطابق - تسجيل حركة إثبات فتح الوردية
+                        DbHelper.Execute(
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                              VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid, @ref)",
+                            DbHelper.P("@acc", safeAccountID),
+                            DbHelper.P("@notes", $"فتح وردية جديدة #{shiftID} - رصيد الخزينة المعتمد: {openingCash:N2} ج (الموظف: {Session.EmpName})"),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID));
+                    }
 
                     CreatedShiftID = shiftID;
-                    MessageBox.Show($"تم فتح الوردية رقم #{shiftID} بنجاح برصيد افتتاحي {openingCash:N2} ج.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم فتح الوردية رقم #{shiftID} بنجاح واعتماد رصيد الخزينة {openingCash:N2} ج.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }

@@ -536,6 +536,10 @@ namespace ChickenDist.Forms
                     lblShiftStatus.Text = "🔴  لا توجد وردية مفتوحة حالياً";
                     lblShiftStatus.ForeColor = Theme.Danger;
                     lblShiftInfo.Text = "اضغط على (فتح وردية جديدة) لبدء يوم عمل جديد وتسجيل النقدية.";
+                    int defaultSafeID = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
+                    decimal liveSafeBal = AccountDAL.GetCashBalance(defaultSafeID);
+                    if (liveSafeBal < 0) liveSafeBal = 0;
+                    txtOpeningCash.Text = liveSafeBal.ToString("N2");
                     txtOpeningCash.Enabled = true;
 
                     ClearSummary();
