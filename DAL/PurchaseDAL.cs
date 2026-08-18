@@ -305,6 +305,8 @@ namespace ChickenDist.DAL
                         else if (purchaseType == "Cash")
                         {
                             int accId = Session.GetDefaultSafeID();
+                            AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة شراء نقدي من عميل");
+
                             DbHelper.ExecuteTrans(trans,
                                 "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy, AccountID)" +
                                 " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @n, @by, @accId)",
@@ -335,6 +337,8 @@ namespace ChickenDist.DAL
                         if (purchaseType == "Cash")
                         {
                             int accId = Session.GetDefaultSafeID();
+                            AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة مشتريات نقدية");
+
                             DbHelper.ExecuteTrans(trans,
                                 "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
                                 " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by,@accId)",

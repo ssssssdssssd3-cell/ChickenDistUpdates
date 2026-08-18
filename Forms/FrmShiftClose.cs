@@ -621,7 +621,7 @@ namespace ChickenDist.Forms
                 lblReturnsVal.Text     = tr.ToString("N2") + " ج";
                 lblExpensesVal.Text    = ex.ToString("N2") + " ج";
                 lblExpectedVal.Text    = expected.ToString("N2") + " ج";
-                txtActualCash.Text     = expected.ToString("N2");
+                txtActualCash.Text     = Math.Max(0m, expected).ToString("N2");
 
                 bool canViewDetails = (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
                 if (canViewDetails)
@@ -836,9 +836,9 @@ namespace ChickenDist.Forms
         private void BtnCloseShift_Click(object sender, EventArgs e)
         {
             if (_openShift == null) return;
-            if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual))
+            if (!decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual) || actual < 0)
             {
-                MessageBox.Show("الرجاء إدخال المبلغ الفعلي الموجود بالدرج أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("الرجاء إدخال المبلغ الفعلي الموجود بالخزنة بشكل صحيح (لا يمكن أن يكون سالباً).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -850,7 +850,7 @@ namespace ChickenDist.Forms
                 decimal diff = actual - (_summary?.Expected ?? 0);
 
                 int sourceAccountID = _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
-                string sourceDrawerName = _openShift["SafeName"] != DBNull.Value ? _openShift["SafeName"].ToString() : "درج الكاشير";
+                string sourceDrawerName = _openShift["SafeName"] != DBNull.Value ? _openShift["SafeName"].ToString().Replace(" / الدرج", "").Replace("/الدرج", "").Trim() : "الخزينة";
 
                 int targetSafeID = 0;
                 string targetSafeName = "";
@@ -868,7 +868,7 @@ namespace ChickenDist.Forms
                     if (transferred < 0) transferred = 0;
                 }
 
-                decimal remainingInDrawer = actual - transferred;
+                decimal remainingInDrawer = Math.Max(0m, actual - transferred);
 
                 DbHelper.Execute(@"
                     UPDATE Shifts SET 

@@ -8,7 +8,7 @@ using ChickenDist.DAL;
 namespace ChickenDist.Forms
 {
     /// <summary>
-    /// نافذة فتح وردية جديدة — تسجيل الرصيد الافتتاحي وتحديد درج الكاشير / الخزنة
+    /// نافذة فتح وردية جديدة — تسجيل الرصيد الافتتاحي وتحديد الخزينة
     /// </summary>
     public class FrmOpenShift : Form
     {
@@ -30,7 +30,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔓 فتح وردية جديدة - الكاشير والخزنة";
+            this.Text = "🔓 فتح وردية جديدة - الخزينة والكاشير";
             this.Size = new Size(530, 450);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
             };
             Label lblSub = new Label
             {
-                Text = "قم بتسجيل النقدية الافتتاحية واختيار حساب الدرج أو الخزنة لبدء الوردية",
+                Text = "قم بتسجيل النقدية الافتتاحية واختيار حساب الخزينة لبدء الوردية",
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = Color.FromArgb(220, 235, 252),
                 Dock = DockStyle.Top,
@@ -103,17 +103,28 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 Text = "0.00",
                 TextAlign = HorizontalAlignment.Center,
-                ReadOnly = true,
-                BackColor = Color.FromArgb(240, 243, 246),
-                ForeColor = Color.DarkGreen,
+                ReadOnly = false,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(16, 185, 129),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            this.Shown += (s, e) => { txtNotes?.Focus(); };
+            txtOpeningCash.KeyPress += (s, e) =>
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
+                {
+                    e.Handled = true;
+                }
+                if (e.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                {
+                    e.Handled = true;
+                }
+            };
+            this.Shown += (s, e) => { txtOpeningCash?.Focus(); txtOpeningCash?.SelectAll(); };
             tbl.Controls.Add(lblCashTitle, 0, 2);
             tbl.Controls.Add(txtOpeningCash, 1, 2);
 
-            // 4. الخزنة أو الدرج المرتبط (Safe / Drawer Account)
-            Label lblSafeTitle = new Label { Text = "🏦 الدرج / الخزنة المرتبطة:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            // 4. الخزينة المرتبطة
+            Label lblSafeTitle = new Label { Text = "🏦 الخزينة المرتبطة:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             cboSafeAccount = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -186,7 +197,7 @@ namespace ChickenDist.Forms
                 {
                     DataRow r = safes.Rows[i];
                     int id = Convert.ToInt32(r["AccountID"]);
-                    string name = r["AccountName"].ToString();
+                    string name = r["AccountName"].ToString().Replace(" / الدرج", "").Replace("/ الدرج", "").Replace("/الدرج", "").Replace(" / درج", "").Trim();
                     var item = new ComboItem(id, name);
                     int added = cboSafeAccount.Items.Add(item);
                     if (id == defaultSafeID)
@@ -218,10 +229,10 @@ namespace ChickenDist.Forms
                     ORDER BY ShiftID DESC",
                     DbHelper.P("@safeID", safeItem.ID));
 
+                decimal remainingInDrawer = 0m;
                 if (dtPrev.Rows.Count > 0)
                 {
                     DataRow prevRow = dtPrev.Rows[0];
-                    decimal remainingInDrawer = 0m;
                     if (prevRow.Table.Columns.Contains("RemainingInDrawer") && prevRow["RemainingInDrawer"] != DBNull.Value)
                     {
                         remainingInDrawer = Convert.ToDecimal(prevRow["RemainingInDrawer"]);
@@ -230,8 +241,20 @@ namespace ChickenDist.Forms
                     {
                         remainingInDrawer = Convert.ToDecimal(prevRow["ActualCash"]);
                     }
-                    txtOpeningCash.Text = remainingInDrawer.ToString("N2");
                 }
+                else
+                {
+                    // Fallback to safe current cash balance
+                    try
+                    {
+                        remainingInDrawer = AccountDAL.GetCashBalance(safeItem.ID);
+                    }
+                    catch { }
+                }
+
+                // الرصيد الافتتاحي للخزنة لا يمكن أن يكون سالباً نهائياً
+                if (remainingInDrawer < 0m) remainingInDrawer = 0m;
+                txtOpeningCash.Text = remainingInDrawer.ToString("N2");
             }
             catch { }
         }
@@ -240,7 +263,7 @@ namespace ChickenDist.Forms
         {
             if (!decimal.TryParse(txtOpeningCash.Text.Trim(), out decimal openingCash) || openingCash < 0)
             {
-                MessageBox.Show("يرجى إدخال مبلغ الرصيد الافتتاحي بشكل صحيح.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى إدخال مبلغ الرصيد الافتتاحي بشكل صحيح (يجب أن يكون صفراً أو موجباً ولا يمكن أن يكون سالباً).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtOpeningCash.Focus();
                 return;
             }
@@ -267,12 +290,12 @@ namespace ChickenDist.Forms
                     Session.CurrentShiftID = shiftID;
                     if (safeAccountID > 0) Session.DefaultSafeID = safeAccountID;
 
-                    // تسجيل سطر بيان فتح الوردية في حركة الدرج
+                    // تسجيل سطر بيان فتح الوردية في حركة الخزينة
                     DbHelper.Execute(
                         @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
                           VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid)",
                         DbHelper.P("@acc", safeAccountID > 0 ? safeAccountID : (Session.DefaultSafeID ?? 1)),
-                        DbHelper.P("@notes", $"فتح وردية جديدة #{shiftID} - رصيد افتتاحي بالدرج: {openingCash:N2} ج (الموظف: {Session.EmpName})"),
+                        DbHelper.P("@notes", $"فتح وردية جديدة #{shiftID} - رصيد افتتاحي بالخزينة: {openingCash:N2} ج (الموظف: {Session.EmpName})"),
                         DbHelper.P("@uid", Session.EmpID));
 
                     CreatedShiftID = shiftID;
