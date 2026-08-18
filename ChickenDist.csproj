@@ -61,6 +61,6 @@
 
   <!-- Run Obfuscar automatically after build in Release mode -->
   <Target Name="RunObfuscar" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
-    <Exec Command="$(Obfuscar) &quot;$(ProjectDir)obfuscar.xml&quot;" />
+    <Exec Command="&quot;$(UserProfile)\.nuget\packages\obfuscar\2.2.38\tools\Obfuscar.Console.exe&quot; &quot;$(ProjectDir)obfuscar.xml&quot;" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

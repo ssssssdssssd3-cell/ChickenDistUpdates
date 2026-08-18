@@ -714,21 +714,8 @@ namespace ChickenDist.Forms
 			};
 			lblShiftSummaryBar.Click += (s, e) =>
 			{
-				if (Session.CurrentShiftID == null)
-				{
-					using (var dlg = new FrmOpenShift())
-					{
-						if (dlg.ShowDialog(this) == DialogResult.OK)
-						{
-							UpdateShiftSummaryLabel();
-						}
-					}
-				}
-				else
-				{
-					new FrmShiftClose().ShowDialog(this);
-					UpdateShiftSummaryLabel();
-				}
+				new FrmShiftClose().ShowDialog(this);
+				UpdateShiftSummaryLabel();
 			};
 			pnlShiftGroup.Controls.Add(lblShiftSummaryBar);
 			lblShiftSummaryBar.BringToFront();
@@ -2130,7 +2117,22 @@ namespace ChickenDist.Forms
 						  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
 				}
 
-				if (dt.Rows.Count > 0)
+				if (dt.Rows.Count == 0)
+				{
+					ShiftDAL.EnsureActiveShift(Session.EmpID);
+					try
+					{
+						dt = DbHelper.Query(
+							@"SELECT TOP 1 s.ShiftID, s.OpenTime, s.OpeningCash, s.SafeAccountID, e.EmpName, sa.AccountName AS SafeName
+							  FROM Shifts s
+							  JOIN Employees e ON s.OpenedBy = e.EmpID
+							  LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+							  WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+					}
+					catch {}
+				}
+
+				if (dt != null && dt.Rows.Count > 0)
 				{
 					DataRow r = dt.Rows[0];
 					int shiftId = Convert.ToInt32(r["ShiftID"]);

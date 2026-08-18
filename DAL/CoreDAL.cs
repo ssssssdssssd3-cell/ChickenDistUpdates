@@ -1482,6 +1482,148 @@ namespace ChickenDist.DAL
             catch {}
             return null;
         }
+
+        /// <summary>
+        /// يضمن وجود وردية نشطة ومفتوحة تلقائياً، وإذا لم تكن هناك وردية مفتوحة يقوم بفتح وردية جديدة فوراً برصيد الخزينة الفعلي.
+        /// </summary>
+        public static int EnsureActiveShift(int empID = 0, int? safeAccountID = null, decimal? customOpeningCash = null)
+        {
+            try
+            {
+                DbHelper.EnsureShiftSchema();
+
+                // 1. التحقق من وجود وردية مفتوحة حالياً
+                object o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                if (o != null && o != DBNull.Value)
+                {
+                    int sid = Convert.ToInt32(o);
+                    Session.CurrentShiftID = sid;
+                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", sid)); } catch {}
+                    return sid;
+                }
+
+                // 2. لا توجد وردية مفتوحة -> فتح وردية جديدة تلقائياً فوراً
+                if (empID <= 0) empID = Session.EmpID > 0 ? Session.EmpID : 1;
+                int safeID = safeAccountID.HasValue && safeAccountID.Value > 0 
+                    ? safeAccountID.Value 
+                    : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+
+                decimal openingCash = 0m;
+                if (customOpeningCash.HasValue)
+                {
+                    openingCash = Math.Max(0m, customOpeningCash.Value);
+                }
+                else
+                {
+                    try
+                    {
+                        decimal liveBal = AccountDAL.GetCashBalance(safeID);
+                        openingCash = Math.Max(0m, liveBal);
+                    }
+                    catch
+                    {
+                        openingCash = 0m;
+                    }
+                }
+
+                string stationName = Environment.MachineName;
+                string cashierName = Session.EmpName ?? "كاشير";
+                string branchName = "الفرع الرئيسي";
+
+                int newShiftID = DbHelper.ExecuteInsert(
+                    @"INSERT INTO Shifts (ShiftDate, OpenTime, OpenedBy, OpeningCash, SafeAccountID, Status, Notes, POSStationName, BranchName, CashierName, ApprovalStatus)
+                      VALUES (CAST(GETDATE() AS DATE), GETDATE(), @emp, @cash, @safe, 'Open', @notes, @pos, @branch, @cashier, 'Open')",
+                    DbHelper.P("@emp", empID),
+                    DbHelper.P("@cash", openingCash),
+                    DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value),
+                    DbHelper.P("@notes", "فتح وردية تلقائي"),
+                    DbHelper.P("@pos", stationName),
+                    DbHelper.P("@branch", branchName),
+                    DbHelper.P("@cashier", cashierName));
+
+                if (newShiftID > 0)
+                {
+                    Session.CurrentShiftID = newShiftID;
+                    if (safeID > 0) Session.DefaultSafeID = safeID;
+
+                    // تسجيل قيد إثبات فتح الوردية
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
+                          VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid, @ref)",
+                        DbHelper.P("@acc", safeID > 0 ? safeID : 1),
+                        DbHelper.P("@notes", $"فتح وردية عمل جديدة #{newShiftID} تلقائياً ({cashierName} - {stationName}) - رصيد افتتاحي: {openingCash:N2} ج"),
+                        DbHelper.P("@uid", empID),
+                        DbHelper.P("@ref", newShiftID));
+
+                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", newShiftID)); } catch {}
+
+                    return newShiftID;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShiftDAL.EnsureActiveShift", ex);
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// اعتماد إغلاق الوردية من قبل المدير / المحاسب وقفل أي تعديل لاحق
+        /// </summary>
+        public static bool ApproveShift(int shiftID, int managerEmpID, string managerName, string notes = "")
+        {
+            try
+            {
+                DbHelper.EnsureShiftSchema();
+                DbHelper.Execute(@"
+                    UPDATE Shifts
+                    SET ApprovalStatus = 'Approved',
+                        ApprovedBy = @mgrId,
+                        ApprovedByName = @mgrName,
+                        ApprovalTime = GETDATE(),
+                        ApprovalNotes = @notes
+                    WHERE ShiftID = @sid",
+                    DbHelper.P("@sid", shiftID),
+                    DbHelper.P("@mgrId", managerEmpID),
+                    DbHelper.P("@mgrName", managerName ?? "المدير العام"),
+                    DbHelper.P("@notes", notes ?? "تم اعتماد تقفيل الوردية"));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShiftDAL.ApproveShift", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// رفض تقفيل الوردية للمراجعة وإعادة التدقيق
+        /// </summary>
+        public static bool RejectShift(int shiftID, int managerEmpID, string managerName, string reason)
+        {
+            try
+            {
+                DbHelper.EnsureShiftSchema();
+                DbHelper.Execute(@"
+                    UPDATE Shifts
+                    SET ApprovalStatus = 'Rejected',
+                        ApprovedBy = @mgrId,
+                        ApprovedByName = @mgrName,
+                        ApprovalTime = GETDATE(),
+                        ApprovalNotes = @notes
+                    WHERE ShiftID = @sid",
+                    DbHelper.P("@sid", shiftID),
+                    DbHelper.P("@mgrId", managerEmpID),
+                    DbHelper.P("@mgrName", managerName ?? "المدير العام"),
+                    DbHelper.P("@notes", reason ?? "تم رفض تقفيل الوردية للمراجعة"));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShiftDAL.RejectShift", ex);
+                return false;
+            }
+        }
     }
 
     // =================== Account DAL ===================

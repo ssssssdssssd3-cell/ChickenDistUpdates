@@ -3291,7 +3291,6 @@ namespace ChickenDist.Core
                         );
                     END
                     ELSE
-                    BEGIN
                         IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
                             ALTER TABLE Shifts ADD SafeAccountID INT NULL;
                         IF COL_LENGTH('Shifts','TransferToSafeID') IS NULL
@@ -3300,6 +3299,52 @@ namespace ChickenDist.Core
                             ALTER TABLE Shifts ADD TransferredAmount DECIMAL(18,2) NULL;
                         IF COL_LENGTH('Shifts','RemainingInDrawer') IS NULL
                             ALTER TABLE Shifts ADD RemainingInDrawer DECIMAL(18,2) NULL;
+                        IF COL_LENGTH('Shifts','POSStationName') IS NULL
+                            ALTER TABLE Shifts ADD POSStationName NVARCHAR(100) NULL;
+                        IF COL_LENGTH('Shifts','BranchName') IS NULL
+                            ALTER TABLE Shifts ADD BranchName NVARCHAR(100) NULL;
+                        IF COL_LENGTH('Shifts','CashierName') IS NULL
+                            ALTER TABLE Shifts ADD CashierName NVARCHAR(100) NULL;
+                        IF COL_LENGTH('Shifts','WalletSales') IS NULL
+                            ALTER TABLE Shifts ADD WalletSales DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','BankSales') IS NULL
+                            ALTER TABLE Shifts ADD BankSales DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','CreditSales') IS NULL
+                            ALTER TABLE Shifts ADD CreditSales DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','CashReturns') IS NULL
+                            ALTER TABLE Shifts ADD CashReturns DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','VisaReturns') IS NULL
+                            ALTER TABLE Shifts ADD VisaReturns DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','OtherReturns') IS NULL
+                            ALTER TABLE Shifts ADD OtherReturns DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','InvoiceCount') IS NULL
+                            ALTER TABLE Shifts ADD InvoiceCount INT NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','TotalDiscounts') IS NULL
+                            ALTER TABLE Shifts ADD TotalDiscounts DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','TotalTaxes') IS NULL
+                            ALTER TABLE Shifts ADD TotalTaxes DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','NetSales') IS NULL
+                            ALTER TABLE Shifts ADD NetSales DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','CashExpenses') IS NULL
+                            ALTER TABLE Shifts ADD CashExpenses DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','CashWithdrawals') IS NULL
+                            ALTER TABLE Shifts ADD CashWithdrawals DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','CashIn') IS NULL
+                            ALTER TABLE Shifts ADD CashIn DECIMAL(18,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Shifts','DeficitReason') IS NULL
+                            ALTER TABLE Shifts ADD DeficitReason NVARCHAR(500) NULL;
+                        IF COL_LENGTH('Shifts','DenominationsJson') IS NULL
+                            ALTER TABLE Shifts ADD DenominationsJson NVARCHAR(MAX) NULL;
+                        IF COL_LENGTH('Shifts','ApprovalStatus') IS NULL
+                            ALTER TABLE Shifts ADD ApprovalStatus NVARCHAR(50) NULL DEFAULT 'PendingApproval';
+                        IF COL_LENGTH('Shifts','ApprovedBy') IS NULL
+                            ALTER TABLE Shifts ADD ApprovedBy INT NULL;
+                        IF COL_LENGTH('Shifts','ApprovedByName') IS NULL
+                            ALTER TABLE Shifts ADD ApprovedByName NVARCHAR(100) NULL;
+                        IF COL_LENGTH('Shifts','ApprovalTime') IS NULL
+                            ALTER TABLE Shifts ADD ApprovalTime DATETIME NULL;
+                        IF COL_LENGTH('Shifts','ApprovalNotes') IS NULL
+                            ALTER TABLE Shifts ADD ApprovalNotes NVARCHAR(500) NULL;
                     END
 
                     -- تصحيح وربط كافة حركات الخزينة غير المعينة بالخزينة الرئيسية

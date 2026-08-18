@@ -26,6 +26,7 @@ namespace ChickenDist.Forms
         public FrmMain()
         {
             InitializeComponent();
+            try { ShiftDAL.EnsureActiveShift(Session.EmpID); } catch {}
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}

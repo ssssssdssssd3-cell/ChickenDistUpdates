@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.480"
+$VERSION   = "2.0.482"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -68,6 +68,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-OK "Build successful"
+
+# Step 2.5: Ensure Obfuscar is executed
+Write-Step "Obfuscating Assembly"
+$obfuscarExe = "$env:USERPROFILE\.nuget\packages\obfuscar\2.2.38\tools\Obfuscar.Console.exe"
+if (Test-Path $obfuscarExe) {
+    & $obfuscarExe "$PROJECT_DIR\obfuscar.xml"
+    Write-OK "Obfuscar completed successfully"
+}
 
 # Step 3: Verify Output
 Write-Step "Checking EXE"
