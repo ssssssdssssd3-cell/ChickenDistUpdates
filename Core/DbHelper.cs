@@ -3300,7 +3300,15 @@ namespace ChickenDist.Core
                             ALTER TABLE Shifts ADD TransferredAmount DECIMAL(18,2) NULL;
                         IF COL_LENGTH('Shifts','RemainingInDrawer') IS NULL
                             ALTER TABLE Shifts ADD RemainingInDrawer DECIMAL(18,2) NULL;
-                    END");
+                    END
+
+                    -- تصحيح وربط كافة حركات الخزينة غير المعينة بالخزينة الرئيسية
+                    UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL OR AccountID <= 0;
+
+                    -- تنظيف وتوحيد مسميات الحسابات وأنواعها
+                    UPDATE SafeAccounts SET AccountName = REPLACE(REPLACE(REPLACE(AccountName, ' / الدرج', ''), '/ الدرج', ''), '/الدرج', '') WHERE AccountName LIKE '%الدرج%';
+                    UPDATE SafeAccounts SET AccountType = 'Cash' WHERE AccountType IS NULL OR AccountType = '' OR AccountType = 'General';
+                ");
             }
             catch (Exception ex)
             {

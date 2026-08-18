@@ -406,7 +406,7 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@ref", saleID),
                                 DbHelper.P("@notes", $"مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
                                 DbHelper.P("@uid", Session.EmpID),
-                                DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
+                                DbHelper.P("@accId", safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID())));
                         }
 
                         InstallmentDAL.AddAuditLogTrans(trans, "Create", contractID, "", $"إنشاء عقد التقسيط بقيمة: {total:N2} ج");
@@ -420,7 +420,7 @@ namespace ChickenDist.DAL
                             "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", actualPaid), DbHelper.P("@ref", saleID),
                             DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
-                            DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
+                            DbHelper.P("@accId", safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID())));
 
                         // تسجيل الفاتورة وسداد العميل دائماً في ClientTransactions (يظهر في كشف الحساب)
                         if (clientID.HasValue)

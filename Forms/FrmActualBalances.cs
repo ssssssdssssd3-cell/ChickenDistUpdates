@@ -154,7 +154,7 @@ namespace ChickenDist.Forms
             };
 
             _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountID", HeaderText = "ID", Visible = false });
-            _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountName", HeaderText = "اسم الخزنة / الدرج / الحساب", FillWeight = 160 });
+            _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountName", HeaderText = "اسم الخزينة / الحساب", FillWeight = 160 });
             _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountType", HeaderText = "نوع الحساب", FillWeight = 100 });
             _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountNumber", HeaderText = "رقم الحساب/الماكينة", FillWeight = 110 });
             _dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "OpeningBalance", HeaderText = "الرصيد الافتتاحي", FillWeight = 100 });
@@ -219,7 +219,7 @@ namespace ChickenDist.Forms
                 Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock      = DockStyle.Top,
-                Height    = 22
+                Height = 22
             };
 
             var lblVal = new Label
@@ -255,7 +255,7 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(CASE WHEN cb.TransDate <= @toDate THEN cb.AmountOut ELSE 0 END), 0) AS TotalOut,
                         MAX(CASE WHEN cb.TransDate <= @toDate THEN cb.TransDate ELSE NULL END) AS LastTransDate
                     FROM SafeAccounts sa
-                    LEFT JOIN CashBox cb ON sa.AccountID = cb.AccountID
+                    LEFT JOIN CashBox cb ON (sa.AccountID = cb.AccountID OR (sa.AccountID = 1 AND (cb.AccountID IS NULL OR cb.AccountID <= 0)))
                     WHERE sa.IsActive = 1
                     GROUP BY sa.AccountID, sa.AccountName, sa.AccountType, sa.AccountNumber, sa.OpeningBalance
                     ORDER BY sa.AccountID ASC";
@@ -268,7 +268,7 @@ namespace ChickenDist.Forms
                 foreach (DataRow r in dt.Rows)
                 {
                     int accID = Convert.ToInt32(r["AccountID"]);
-                    string name = r["AccountName"].ToString();
+                    string name = r["AccountName"].ToString().Replace(" / الدرج", "").Replace("/ الدرج", "").Replace("/الدرج", "").Replace(" / درج", "").Trim();
                     string type = r["AccountType"]?.ToString() ?? "Cash";
                     string num = r["AccountNumber"] != DBNull.Value ? r["AccountNumber"].ToString() : "-";
                     decimal opening = Convert.ToDecimal(r["OpeningBalance"]);
@@ -282,10 +282,10 @@ namespace ChickenDist.Forms
 
                     string typeArabic = type switch
                     {
-                        "Cash" => "💵 خزنة نقدية / درج",
+                        "Cash" => "💵 خزنة نقدية",
                         "Bank" => "🏦 حساب بنكي",
                         "Visa" => "💳 ماكينة فيزا / شبكة",
-                        _ => "💰 حساب مالي"
+                        _ => "💵 خزنة نقدية"
                     };
 
                     if (type == "Bank") totalBank += actualBalance;
