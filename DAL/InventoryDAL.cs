@@ -17,8 +17,37 @@ namespace ChickenDist.DAL
             string whereClause = " WHERE p.IsActive = 1 ";
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                whereClause += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term OR p.ScalePLU LIKE @term) ";
-                prms.Add(DbHelper.P("@term", "%" + searchTerm + "%"));
+                string term = searchTerm.Trim();
+                string trimmedTerm = term.TrimStart('0');
+                var parseRes = BarcodeParser.Parse(term);
+
+                whereClause += @" AND (
+                    p.ProductName LIKE @term OR 
+                    p.ProductCode LIKE @term OR 
+                    p.ProductCode = @exactTerm OR 
+                    p.ProductCode = @trimmedTerm OR 
+                    p.ScalePLU LIKE @term OR 
+                    p.ScalePLU = @exactTerm OR 
+                    p.ScalePLU = @trimmedTerm OR 
+                    p.Unit1Barcode LIKE @term OR 
+                    p.Unit1Barcode = @exactTerm OR 
+                    p.Unit1Barcode = @trimmedTerm OR 
+                    p.Unit2Barcode LIKE @term OR 
+                    p.Unit2Barcode = @exactTerm OR 
+                    p.Unit2Barcode = @trimmedTerm";
+
+                if (parseRes != null && parseRes.IsScaleBarcode && !string.IsNullOrEmpty(parseRes.ItemCode))
+                {
+                    whereClause += " OR p.ScalePLU = @scaleItemCode OR p.ProductCode = @scaleItemCode OR p.ScalePLU = @scaleTrimmed OR p.ProductCode = @scaleTrimmed ";
+                    prms.Add(DbHelper.P("@scaleItemCode", parseRes.ItemCode));
+                    prms.Add(DbHelper.P("@scaleTrimmed", parseRes.TrimmedItemCode));
+                }
+
+                whereClause += ") ";
+
+                prms.Add(DbHelper.P("@term", "%" + term + "%"));
+                prms.Add(DbHelper.P("@exactTerm", term));
+                prms.Add(DbHelper.P("@trimmedTerm", string.IsNullOrEmpty(trimmedTerm) ? term : trimmedTerm));
             }
 
             if (categoryID.HasValue)

@@ -410,6 +410,8 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSemiWholesalePrice",Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",             Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Barcode",         Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Barcode",         Visible = false });
             Theme.AdjustGridHeaders(dgStock);
 
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
@@ -761,6 +763,8 @@ namespace ChickenDist.Forms
                 dgStock.Rows[ri].Cells["BaseSemiWholesalePrice"].Value   = baseSWP;
                 dgStock.Rows[ri].Cells["HasExpiry"].Value                = r["HasExpiry"];
                 dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value        = r["DefaultExpiryDays"];
+                dgStock.Rows[ri].Cells["Unit1Barcode"].Value            = r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                dgStock.Rows[ri].Cells["Unit2Barcode"].Value            = r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
 
                 // تمييز لون السطر والأصناف المجرودة باللون الأخضر الناصع الجلي
                 bool isInventoried = _enteredActualQty.ContainsKey(pid) || _inventoriedProductIDs.Contains(pid);
@@ -931,6 +935,68 @@ namespace ChickenDist.Forms
         }
 
         /// <summary>
+        /// مطابقة الصنف بالجدول بأي من أكواده (المحلي، كود الميزان، الباركود الدولي، أو باركود الأجزاء والوحدات)
+        /// </summary>
+        private bool MatchRowWithBarcode(DataGridViewRow r, string code)
+        {
+            if (r.IsNewRow) return false;
+            string c = code.Trim();
+            if (string.IsNullOrEmpty(c)) return false;
+            string cTrimmed = c.TrimStart('0');
+
+            string pCode    = r.Cells["ProductCode"].Value?.ToString() ?? "";
+            string scalePlu = r.Cells["ScalePLU"].Value?.ToString() ?? "";
+            string u1Bar    = r.Cells["Unit1Barcode"] != null ? (r.Cells["Unit1Barcode"].Value?.ToString() ?? "") : "";
+            string u2Bar    = r.Cells["Unit2Barcode"] != null ? (r.Cells["Unit2Barcode"].Value?.ToString() ?? "") : "";
+            string pName    = r.Cells["ProductName"].Value?.ToString() ?? "";
+
+            // 1) مطابقة مباشرة تامة
+            if (pCode.Equals(c, StringComparison.OrdinalIgnoreCase) ||
+                scalePlu.Equals(c, StringComparison.OrdinalIgnoreCase) ||
+                u1Bar.Equals(c, StringComparison.OrdinalIgnoreCase) ||
+                u2Bar.Equals(c, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 2) مطابقة بدون الأصفار على اليسار (مثلاً "000105" مع "105")
+            if (!string.IsNullOrEmpty(cTrimmed))
+            {
+                if (pCode.TrimStart('0').Equals(cTrimmed, StringComparison.OrdinalIgnoreCase) ||
+                    scalePlu.TrimStart('0').Equals(cTrimmed, StringComparison.OrdinalIgnoreCase) ||
+                    u1Bar.TrimStart('0').Equals(cTrimmed, StringComparison.OrdinalIgnoreCase) ||
+                    u2Bar.TrimStart('0').Equals(cTrimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // 3) تحليل باركود الميزان المتغير EAN-13
+            var parseRes = BarcodeParser.Parse(c);
+            if (parseRes != null && parseRes.IsScaleBarcode && !string.IsNullOrEmpty(parseRes.ItemCode))
+            {
+                string itemCode = parseRes.ItemCode;
+                string itemTrimmed = parseRes.TrimmedItemCode;
+
+                if (scalePlu.Equals(itemCode, StringComparison.OrdinalIgnoreCase) ||
+                    pCode.Equals(itemCode, StringComparison.OrdinalIgnoreCase) ||
+                    scalePlu.TrimStart('0').Equals(itemTrimmed, StringComparison.OrdinalIgnoreCase) ||
+                    pCode.TrimStart('0').Equals(itemTrimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // 4) مطابقة الاسم إذا كان الاستعلام نصياً بطول 3 أشار وأكثر
+            if (c.Length >= 3 && pName.Equals(c, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// معالجة قراءة الباركود/الأسكانر في شاشة الجرد وإبراز الصنف أو تعديل رصيده الفعلي فوراً
         /// </summary>
         private void HandleBarcodeScan(string inputCode)
@@ -940,24 +1006,17 @@ namespace ChickenDist.Forms
 
             DataGridViewRow targetRow = null;
 
-            // 1) البحث عن الصنف في جدول الجرد المعروض حالياً
+            // 1) البحث في الأسطر المعروضة حالياً بالجدول
             foreach (DataGridViewRow r in dgStock.Rows)
             {
-                if (r.IsNewRow) continue;
-                string pCode = r.Cells["ProductCode"].Value?.ToString() ?? "";
-                string scalePlu = r.Cells["ScalePLU"].Value?.ToString() ?? "";
-                string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
-
-                if (pCode.Equals(code, StringComparison.OrdinalIgnoreCase) ||
-                    scalePlu.Equals(code, StringComparison.OrdinalIgnoreCase) ||
-                    (!string.IsNullOrEmpty(code) && code.Length >= 3 && pName.Equals(code, StringComparison.OrdinalIgnoreCase)))
+                if (MatchRowWithBarcode(r, code))
                 {
                     targetRow = r;
                     break;
                 }
             }
 
-            // 2) إذا لم يكن الصنف معروضاً حالياً، نبحث عنه من قاعدة البيانات ونعرضه
+            // 2) إذا لم يكن معروضاً حالياً، يتم تنفيذ البحث بقاعدة البيانات وجلب الصنف لشبكة الجرد
             if (targetRow == null)
             {
                 txtSearch.Text = code;
@@ -966,14 +1025,7 @@ namespace ChickenDist.Forms
 
                 foreach (DataGridViewRow r in dgStock.Rows)
                 {
-                    if (r.IsNewRow) continue;
-                    string pCode = r.Cells["ProductCode"].Value?.ToString() ?? "";
-                    string scalePlu = r.Cells["ScalePLU"].Value?.ToString() ?? "";
-                    string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
-
-                    if (pCode.Equals(code, StringComparison.OrdinalIgnoreCase) ||
-                        scalePlu.Equals(code, StringComparison.OrdinalIgnoreCase) ||
-                        pName.IndexOf(code, StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (MatchRowWithBarcode(r, code))
                     {
                         targetRow = r;
                         break;
@@ -1035,6 +1087,10 @@ namespace ChickenDist.Forms
                     dgStock.CurrentCell = targetRow.Cells[actualColIdx];
                     dgStock.BeginEdit(true);
                 }
+            }
+            else
+            {
+                Theme.ShowMsg($"⚠️ لم يتم العثور على أي صنف مطابق للباركود أو الكود الممسوح: ({code})", "تنبيه الأسكانر");
             }
         }
 
