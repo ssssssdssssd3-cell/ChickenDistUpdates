@@ -1009,10 +1009,12 @@ namespace ChickenDist.Forms
                     formattedNotes = $"[{cleanClassName}] {notes}";
                 }
 
+                int? currentShiftID = Session.CurrentShiftID > 0 ? (int?)Session.CurrentShiftID : null;
+
                 if (type == "Deposit")
                 {
-                    DbHelper.Execute("INSERT INTO CashBox(TransType, AmountIn, Notes, CreatedBy, AccountID) VALUES('Deposit', @amt, @n, @by, @accId)",
-                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                    DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @n, @by, @accId, @sid)",
+                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
 
                     if (!string.IsNullOrEmpty(classificationKey))
                     {
@@ -1032,8 +1034,8 @@ namespace ChickenDist.Forms
                     {
                         AccountDAL.EnsureSufficientCashTrans(trans, targetSafeID, amount, "صرف نقدي من الحساب");
 
-                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES(GETDATE(), 'Withdraw', @amt, @n, @by, @accId)",
-                            DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Withdraw', @amt, @n, @by, @accId, @sid)",
+                            DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
 
                         if (!string.IsNullOrEmpty(classificationKey))
                         {
@@ -1058,13 +1060,13 @@ namespace ChickenDist.Forms
 
                     if (diff > 0)
                     {
-                        DbHelper.Execute("INSERT INTO CashBox(TransType, AmountIn, Notes, CreatedBy, AccountID) VALUES('Deposit', @amt, @n, @by, @accId)",
-                            DbHelper.P("@amt", diff), DbHelper.P("@n", "تسوية حساب (زيادة) | " + notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                        DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @n, @by, @accId, @sid)",
+                            DbHelper.P("@amt", diff), DbHelper.P("@n", "تسوية حساب (زيادة) | " + notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
                     }
                     else
                     {
-                        DbHelper.Execute("INSERT INTO CashBox(TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES('Withdraw', @amt, @n, @by, @accId)",
-                            DbHelper.P("@amt", Math.Abs(diff)), DbHelper.P("@n", "تسوية حساب (عجز) | " + notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID));
+                        DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Withdraw', @amt, @n, @by, @accId, @sid)",
+                            DbHelper.P("@amt", Math.Abs(diff)), DbHelper.P("@n", "تسوية حساب (عجز) | " + notes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
                     }
                 }
 

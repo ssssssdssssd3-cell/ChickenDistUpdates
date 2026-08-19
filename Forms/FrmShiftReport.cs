@@ -344,7 +344,7 @@ namespace ChickenDist.Forms
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
                 // 2. مرتجعات الوردية
-                var dtR = DbHelper.Query(@"
+                var dtReturns = DbHelper.Query(@"
                     SELECT ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns
                     FROM SalesReturns sr
                     JOIN Sales s ON sr.SaleID = s.SaleID
@@ -357,9 +357,10 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt 
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),
                     DbHelper.P("@accId", drawerSafeID));
 
@@ -368,7 +369,7 @@ namespace ChickenDist.Forms
                 decimal vs  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["VisaSales"])    : 0;
                 decimal cr  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CreditSales"])  : 0;
                 decimal os  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["OtherSales"])   : 0;
-                decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]) : 0;
+                decimal tr  = dtReturns.Rows.Count > 0 ? Convert.ToDecimal(dtReturns.Rows[0]["TotalReturns"]) : 0;
                 decimal ex  = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalExpenses"]) : 0;
                 decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]) : 0;
                 decimal oc  = sRow["OpeningCash"] != DBNull.Value ? Convert.ToDecimal(sRow["OpeningCash"]) : 0;
@@ -431,7 +432,7 @@ namespace ChickenDist.Forms
                         Notes AS Details, 
                         CASE WHEN AmountIn > 0 THEN AmountIn ELSE -AmountOut END AS Amount
                     FROM CashBox 
-                    WHERE TransDate >= @dt AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt)) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 

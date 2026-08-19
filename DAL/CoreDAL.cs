@@ -1805,6 +1805,14 @@ namespace ChickenDist.DAL
         {
             int targetAccID = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : Session.GetDefaultSafeID();
 
+            // ضبط التوقيت والتاريخ لضمان تسجيل الساعات والدقائق الفعلية إذا اختار المستخدم اليوم الحالي
+            if (date.TimeOfDay == TimeSpan.Zero || date.Date == DateTime.Today)
+            {
+                date = date.Date.Add(DateTime.Now.TimeOfDay);
+            }
+
+            int? currentShiftID = Session.CurrentShiftID > 0 ? (int?)Session.CurrentShiftID : null;
+
             if (id == 0)
             {
                 int newID = -1;
@@ -1813,15 +1821,15 @@ namespace ChickenDist.DAL
                     EnsureSufficientCashTrans(trans, targetAccID, amount, "تسجيل المصروف");
 
                     newID = DbHelper.ExecuteInsertTrans(trans,
-                        "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy,SafeAccountID) VALUES(@d,@t,@a,@n,@s,@v,@by,@accId)",
+                        "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy,SafeAccountID,ShiftID) VALUES(@d,@t,@a,@n,@s,@v,@by,@accId,@sid)",
                         DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
                         DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@by", Session.EmpID),
-                        DbHelper.P("@accId", targetAccID));
+                        DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID));
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@d,'Expense',@a,@ref,@n,@by,@accId)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@d,'Expense',@a,@ref,@n,@by,@accId,@sid)",
                         DbHelper.P("@d", date), DbHelper.P("@a", amount), DbHelper.P("@ref", newID),
                         DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@by", Session.EmpID),
-                        DbHelper.P("@accId", targetAccID));
+                        DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID));
                 });
                 return newID;
             }
@@ -1838,14 +1846,14 @@ namespace ChickenDist.DAL
                 }
 
                 DbHelper.ExecuteTrans(trans,
-                    "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v,SafeAccountID=@accId WHERE ExpenseID=@id",
+                    "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v,SafeAccountID=@accId,ShiftID=ISNULL(ShiftID,@sid) WHERE ExpenseID=@id",
                     DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@accId", targetAccID), DbHelper.P("@id", id));
+                    DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@id", id));
 
                 DbHelper.ExecuteTrans(trans,
-                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, Notes=@n, AccountID=@accId WHERE RefID=@ref AND TransType='Expense'",
+                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, Notes=@n, AccountID=@accId, ShiftID=ISNULL(ShiftID,@sid) WHERE RefID=@ref AND TransType='Expense'",
                     DbHelper.P("@d", date), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@accId", targetAccID), DbHelper.P("@ref", id));
+                    DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@ref", id));
             });
             return id;
         }

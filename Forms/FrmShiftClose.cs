@@ -788,9 +788,10 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt 
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),
                     DbHelper.P("@accId", drawerSafeID));
 
@@ -953,8 +954,8 @@ namespace ChickenDist.Forms
                         END AS FilterCategory
                     FROM CashBox cb
                     LEFT JOIN Employees e ON cb.CreatedBy = e.EmpID
-                    WHERE cb.TransDate >= @dt 
-                      AND (cb.AccountID = @accId OR cb.AccountID = 1 OR cb.AccountID IS NULL)
+                    WHERE (cb.ShiftID = @sid OR (cb.ShiftID IS NULL AND cb.TransDate >= @dt))
+                      AND (cb.AccountID = @accId OR cb.AccountID = 1 OR cb.AccountID IS NULL OR @accId = 0)
                       AND cb.TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     
                     ORDER BY TransTime DESC",

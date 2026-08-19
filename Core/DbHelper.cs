@@ -3349,10 +3349,18 @@ namespace ChickenDist.Core
                             ALTER TABLE Shifts ADD ApprovalNotes NVARCHAR(500) NULL;
                     END
 
-                    -- تصحيح وربط كافة حركات الخزينة غير المعينة بالخزينة الرئيسية
-                    IF OBJECT_ID('CashBox','U') IS NOT NULL AND COL_LENGTH('CashBox','AccountID') IS NOT NULL
+                    -- تصحيح وربط كافة حركات الخزينة غير المعينة بالخزينة الرئيسية وإضافة ShiftID
+                    IF OBJECT_ID('CashBox','U') IS NOT NULL
                     BEGIN
-                        UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL OR AccountID <= 0;
+                        IF COL_LENGTH('CashBox','ShiftID') IS NULL
+                            ALTER TABLE CashBox ADD ShiftID INT NULL;
+                        IF COL_LENGTH('CashBox','AccountID') IS NOT NULL
+                            UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL OR AccountID <= 0;
+                    END
+
+                    IF OBJECT_ID('Expenses','U') IS NOT NULL AND COL_LENGTH('Expenses','ShiftID') IS NULL
+                    BEGIN
+                        ALTER TABLE Expenses ADD ShiftID INT NULL;
                     END
 
                     -- تنظيف وتوحيد مسميات الحسابات وأنواعها

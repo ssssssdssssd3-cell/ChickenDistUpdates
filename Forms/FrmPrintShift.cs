@@ -189,9 +189,10 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE TransDate >= @dt 
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
+                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    DbHelper.P("@sid", _shiftID),
                     DbHelper.P("@dt", _openTime),
                     DbHelper.P("@accId", drawerSafeID));
 
