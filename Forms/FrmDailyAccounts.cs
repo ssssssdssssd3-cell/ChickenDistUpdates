@@ -140,7 +140,7 @@ namespace ChickenDist.Forms
             var flow1 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0, 10, 0, 0)

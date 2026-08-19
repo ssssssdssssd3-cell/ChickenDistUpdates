@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(8),
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.RightToLeft,
 				WrapContents = true
 			};
 			Label label = new Label

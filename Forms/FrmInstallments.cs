@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
             var pnlDashboard = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 BackColor = Theme.BgMain,
                 Padding = new Padding(10, 5, 10, 5)

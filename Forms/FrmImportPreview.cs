@@ -450,7 +450,7 @@ namespace ChickenDist.Forms
             var statsFlow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 RightToLeft = RightToLeft.Yes
             };
 

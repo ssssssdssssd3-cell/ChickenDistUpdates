@@ -116,7 +116,7 @@ namespace ChickenDist.Forms
             var pnlBtns = new FlowLayoutPanel
             {
                 Dock          = DockStyle.Bottom,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 AutoSize      = true,
                 BackColor     = Theme.BgCard,
                 Padding       = new Padding(0, 10, 0, 0)

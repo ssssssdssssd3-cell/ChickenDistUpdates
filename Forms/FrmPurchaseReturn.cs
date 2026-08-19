@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
                 Height = 85,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(10, 8, 10, 8),
                 WrapContents = true
@@ -245,7 +245,7 @@ namespace ChickenDist.Forms
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
                 Height = 42,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(5, 5, 5, 5),
                 Visible = false
