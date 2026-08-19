@@ -1062,51 +1062,36 @@ namespace ChickenDist.Forms
                 var g = ev.Graphics;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                var titleFont  = new Font("Arial", 14, FontStyle.Bold);
-                var subTitleFont = new Font("Arial", 9, FontStyle.Bold);
-                var headerFont = new Font("Arial", 9, FontStyle.Bold);
-                var dataFont   = new Font("Arial", 8.5f, FontStyle.Regular);
-                var boldDataFont = new Font("Arial", 8.5f, FontStyle.Bold);
-                var itemFont   = new Font("Arial", 8f, FontStyle.Regular);
+                var titleFont      = new Font("Arial", 13, FontStyle.Bold);
+                var subTitleFont   = new Font("Arial", 8.5f, FontStyle.Bold);
+                var cardHeaderFont = new Font("Arial", 8.5f, FontStyle.Bold);
+                var cardTitleFont  = new Font("Arial", 8.5f, FontStyle.Regular);
+                var boldDataFont   = new Font("Arial", 8.5f, FontStyle.Bold);
+                var itemFont       = new Font("Arial", 8f, FontStyle.Regular);
                 var itemHeaderFont = new Font("Arial", 8f, FontStyle.Bold);
 
-                var headerBgBrush = new SolidBrush(Color.FromArgb(15, 45, 90));
-                var gridPen = new Pen(Color.FromArgb(180, 190, 205), 1f);
-                var borderPen = new Pen(Color.FromArgb(15, 45, 90), 1.5f);
-                var subGridPen = new Pen(Color.FromArgb(200, 210, 225), 1f);
+                var cardHeaderBrush = new SolidBrush(Color.FromArgb(238, 243, 250));
+                var totalsBgBrush   = new SolidBrush(Color.FromArgb(242, 247, 243));
+                var gridPen         = new Pen(Color.FromArgb(180, 190, 205), 1f);
+                var borderPen       = new Pen(Color.FromArgb(20, 50, 100), 1.5f);
+                var subGridPen      = new Pen(Color.FromArgb(205, 215, 230), 1f);
 
                 int y = 25;
                 int leftMargin = 20;
                 int rightMargin = 805;
                 int tableWidth = rightMargin - leftMargin;
 
-                // Title Block
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var sfLeft   = new StringFormat { Alignment = StringAlignment.Near,   LineAlignment = StringAlignment.Center };
+
+                // 1) Title Header Block
                 g.FillRectangle(new SolidBrush(Color.FromArgb(240, 244, 250)), leftMargin, y, tableWidth, 45);
                 g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 45);
 
-                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
-
                 g.DrawString($"كشف حساب العميل التفصيلي: {_clientName}", titleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 22), sfCenter);
-                g.DrawString($"الفترة من: {dtpFrom.Value:yyyy/MM/dd HH:mm}  إلى: {dtpTo.Value:yyyy/MM/dd HH:mm}   |   تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 25, tableWidth, 16), sfCenter);
+                g.DrawString($"الفترة من: {dtpFrom.Value:yyyy/MM/dd HH:mm}  إلى: {dtpTo.Value:yyyy/MM/dd HH:mm}   |   تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}   (صفحة {pageNumber})", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 25, tableWidth, 16), sfCenter);
                 y += 55;
-
-                int[] xCols = { 20, 135, 220, 295, 370, 465, 805 };
-                string[] headers = { "التاريخ والوقت", "النوع", "مدين", "دائن", "الرصيد الجاري", "البيان التفصيلي والأصناف" };
-
-                int headerY = y;
-                g.FillRectangle(headerBgBrush, leftMargin, y, tableWidth, 26);
-                g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 26);
-
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    float cx = xCols[i];
-                    float cw = xCols[i + 1] - xCols[i];
-                    g.DrawString(headers[i], headerFont, Brushes.White, new RectangleF(cx, y, cw, 26), sfCenter);
-                    if (i > 0)
-                        g.DrawLine(Pens.White, xCols[i], y, xCols[i], y + 26);
-                }
-                y += 26;
 
                 ev.HasMorePages = false;
                 while (currentRowIndex < dgStatement.Rows.Count)
@@ -1145,89 +1130,105 @@ namespace ChickenDist.Forms
                     }
 
                     int itemsCount = dtItems != null ? dtItems.Rows.Count : 0;
-                    int rowHeight = 22 + (itemsCount > 0 ? (18 + itemsCount * 17) : 0);
+                    int cardHeaderHeight = 24;
+                    int itemsHeaderHeight = itemsCount > 0 ? 20 : 0;
+                    int itemsTableHeight = itemsCount > 0 ? (itemsCount * 18) : 0;
+                    int totalsFooterHeight = 24;
+                    int cardTotalHeight = cardHeaderHeight + itemsHeaderHeight + itemsTableHeight + totalsFooterHeight;
 
-                    if (y + rowHeight > ev.PageBounds.Height - 90)
+                    if (y + cardTotalHeight > ev.PageBounds.Height - 80)
                     {
                         ev.HasMorePages = true;
                         return;
                     }
 
-                    if (currentRowIndex % 2 == 1 && itemsCount == 0)
-                    {
-                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 254)), leftMargin, y, tableWidth, 22);
-                    }
-
                     string dateStr = row.Cells["TransDate"].Value?.ToString() ?? "";
                     string typeStr = row.Cells["TransType"].Value?.ToString() ?? "";
-                    string debStr  = row.Cells["Debit"].Value?.ToString() ?? "";
-                    string credStr = row.Cells["Credit"].Value?.ToString() ?? "";
-                    string balStr  = row.Cells["Balance"].Value?.ToString() ?? "";
+                    string debStr  = row.Cells["Debit"].Value?.ToString() ?? "0.00";
+                    string credStr = row.Cells["Credit"].Value?.ToString() ?? "0.00";
+                    string balStr  = row.Cells["Balance"].Value?.ToString() ?? "0.00";
                     
                     string baseNotes = row.Cells["BaseNotes"].Value?.ToString() ?? "";
                     string createdBy = row.Cells["CreatedByName"].Value?.ToString();
                     if (!string.IsNullOrEmpty(createdBy) && createdBy != "---")
                         baseNotes += $" (بواسطة: {createdBy})";
 
-                    g.DrawString(dateStr, dataFont, Brushes.Black, new RectangleF(xCols[0], y, xCols[1] - xCols[0], 22), sfCenter);
-                    g.DrawString(typeStr, boldDataFont, Brushes.DarkSlateGray, new RectangleF(xCols[1], y, xCols[2] - xCols[1], 22), sfCenter);
-                    g.DrawString(debStr,  boldDataFont, Brushes.DarkRed, new RectangleF(xCols[2], y, xCols[3] - xCols[2], 22), sfCenter);
-                    g.DrawString(credStr, boldDataFont, Brushes.DarkGreen, new RectangleF(xCols[3], y, xCols[4] - xCols[3], 22), sfCenter);
-                    g.DrawString(balStr,  boldDataFont, Brushes.DarkBlue, new RectangleF(xCols[4], y, xCols[5] - xCols[4], 22), sfCenter);
-                    g.DrawString(baseNotes, dataFont, Brushes.Black, new RectangleF(xCols[5] + 5, y + 2, xCols[6] - xCols[5] - 10, 20), sfRight);
+                    // ── [1] Toplevel Card Header (التاريخ + نوع الحركة + البيان والملاحظات) ───────
+                    g.FillRectangle(cardHeaderBrush, leftMargin, y, tableWidth, cardHeaderHeight);
+                    g.DrawRectangle(gridPen, leftMargin, y, tableWidth, cardHeaderHeight);
 
-                    y += 22;
+                    g.DrawString($"📅 {dateStr}", cardTitleFont, Brushes.Black, new RectangleF(leftMargin + 5, y, 140, cardHeaderHeight), sfLeft);
+                    g.DrawString($"🏷️ {typeStr}", cardHeaderFont, Brushes.DarkSlateGray, new RectangleF(leftMargin + 150, y, 110, cardHeaderHeight), sfCenter);
+                    g.DrawString($"📝 البيان: {baseNotes}", cardTitleFont, Brushes.DarkBlue, new RectangleF(leftMargin + 270, y, tableWidth - 275, cardHeaderHeight), sfRight);
 
+                    y += cardHeaderHeight;
+
+                    // ── [2] Items Table Breakdown (الأصناف والبنود إن وجد) ──────────────────────
                     if (itemsCount > 0)
                     {
-                        int subLeft = xCols[0] + 15;
-                        int subWidth = tableWidth - 30;
-                        int subHeaderY = y;
+                        int subLeft = leftMargin + 10;
+                        int subWidth = tableWidth - 20;
 
-                        g.FillRectangle(new SolidBrush(Color.FromArgb(235, 240, 250)), subLeft, subHeaderY, subWidth, 18);
-                        g.DrawRectangle(subGridPen, subLeft, subHeaderY, subWidth, 18);
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(232, 238, 248)), subLeft, y, subWidth, itemsHeaderHeight);
+                        g.DrawRectangle(subGridPen, subLeft, y, subWidth, itemsHeaderHeight);
 
-                        float[] subCols = { subLeft, subLeft + 280, subLeft + 350, subLeft + 420, subLeft + 500, subLeft + subWidth };
-                        string[] subHeaders = { "اسم الصنف", "الكمية", "الوحدة", "السعر", "الإجمالي" };
+                        float[] subCols = { subLeft, subLeft + (subWidth * 0.45f), subLeft + (subWidth * 0.60f), subLeft + (subWidth * 0.72f), subLeft + (subWidth * 0.85f), subLeft + subWidth };
+                        string[] subHeaders = { "اسم الصنف", "الكمية", "الوحدة", "سعر الوحدة", "الإجمالي" };
 
                         for (int k = 0; k < subHeaders.Length; k++)
                         {
-                            g.DrawString(subHeaders[k], itemHeaderFont, Brushes.DarkSlateGray, new RectangleF(subCols[k], subHeaderY, subCols[k + 1] - subCols[k], 18), sfCenter);
-                            if (k > 0) g.DrawLine(subGridPen, subCols[k], subHeaderY, subCols[k], subHeaderY + 18);
+                            g.DrawString(subHeaders[k], itemHeaderFont, Brushes.DarkSlateGray, new RectangleF(subCols[k], y, subCols[k + 1] - subCols[k], itemsHeaderHeight), sfCenter);
+                            if (k > 0) g.DrawLine(subGridPen, subCols[k], y, subCols[k], y + itemsHeaderHeight);
                         }
-                        y += 18;
+                        y += itemsHeaderHeight;
 
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
-                            string pName = itemRow["ProductName"].ToString();
-                            string pQty  = Convert.ToDecimal(itemRow["Quantity"]).ToString("N2");
-                            string pUnit = itemRow["Unit"].ToString();
+                            string pName  = itemRow["ProductName"].ToString();
+                            string pQty   = Convert.ToDecimal(itemRow["Quantity"]).ToString("N2");
+                            string pUnit  = itemRow["Unit"].ToString();
                             string pPrice = Convert.ToDecimal(itemRow["UnitPrice"]).ToString("N2");
-                            string pTot  = Convert.ToDecimal(itemRow["Total"]).ToString("N2");
+                            string pTot   = Convert.ToDecimal(itemRow["Total"]).ToString("N2");
 
-                            g.FillRectangle(new SolidBrush(Color.FromArgb(252, 253, 255)), subLeft, y, subWidth, 17);
-                            g.DrawRectangle(subGridPen, subLeft, y, subWidth, 17);
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(254, 255, 255)), subLeft, y, subWidth, 18);
+                            g.DrawRectangle(subGridPen, subLeft, y, subWidth, 18);
 
-                            g.DrawString(pName, itemFont, Brushes.Black, new RectangleF(subCols[0] + 5, y, subCols[1] - subCols[0] - 10, 17), sfRight);
-                            g.DrawString(pQty, itemFont, Brushes.Black, new RectangleF(subCols[1], y, subCols[2] - subCols[1], 17), sfCenter);
-                            g.DrawString(pUnit, itemFont, Brushes.Black, new RectangleF(subCols[2], y, subCols[3] - subCols[2], 17), sfCenter);
-                            g.DrawString(pPrice, itemFont, Brushes.Black, new RectangleF(subCols[3], y, subCols[4] - subCols[3], 17), sfCenter);
-                            g.DrawString(pTot, itemFont, Brushes.DarkBlue, new RectangleF(subCols[4], y, subCols[5] - subCols[4], 17), sfCenter);
+                            g.DrawString(pName, itemFont, Brushes.Black, new RectangleF(subCols[0] + 5, y, subCols[1] - subCols[0] - 10, 18), sfRight);
+                            g.DrawString(pQty, itemFont, Brushes.Black, new RectangleF(subCols[1], y, subCols[2] - subCols[1], 18), sfCenter);
+                            g.DrawString(pUnit, itemFont, Brushes.Black, new RectangleF(subCols[2], y, subCols[3] - subCols[2], 18), sfCenter);
+                            g.DrawString(pPrice, itemFont, Brushes.Black, new RectangleF(subCols[3], y, subCols[4] - subCols[3], 18), sfCenter);
+                            g.DrawString(pTot, itemFont, Brushes.DarkBlue, new RectangleF(subCols[4], y, subCols[5] - subCols[4], 18), sfCenter);
 
                             for (int k = 1; k < subCols.Length - 1; k++)
-                                g.DrawLine(subGridPen, subCols[k], y, subCols[k], y + 17);
+                                g.DrawLine(subGridPen, subCols[k], y, subCols[k], y + 18);
 
-                            y += 17;
+                            y += 18;
                         }
                     }
 
-                    g.DrawLine(gridPen, leftMargin, y, rightMargin, y);
+                    // ── [3] Totals & Balance Footer Line (تحته الإجمالي والمبالغ مباشرة) ──────
+                    g.FillRectangle(totalsBgBrush, leftMargin, y, tableWidth, totalsFooterHeight);
+                    g.DrawRectangle(borderPen, leftMargin, y, tableWidth, totalsFooterHeight);
+
+                    float colW = tableWidth / 3f;
+                    g.DrawString($"🔴 مدين (قيمة الفاتورة): {debStr}", boldDataFont, Brushes.DarkRed, new RectangleF(leftMargin + (colW * 2), y, colW, totalsFooterHeight), sfCenter);
+                    g.DrawString($"🟢 دائن (المسدد/المقبوض): {credStr}", boldDataFont, Brushes.DarkGreen, new RectangleF(leftMargin + colW, y, colW, totalsFooterHeight), sfCenter);
+                    g.DrawString($"💰 الرصيد الجاري المتبقي: {balStr}", boldDataFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, colW, totalsFooterHeight), sfCenter);
+
+                    g.DrawLine(borderPen, leftMargin + colW, y, leftMargin + colW, y + totalsFooterHeight);
+                    g.DrawLine(borderPen, leftMargin + (colW * 2), y, leftMargin + (colW * 2), y + totalsFooterHeight);
+
+                    y += totalsFooterHeight + 8; // مسافة بين الكروت
                     currentRowIndex++;
                 }
 
-                g.DrawLine(borderPen, leftMargin, y + 5, rightMargin, y + 5);
-                g.DrawString(lblDebit.Text + "   |   " + lblCredit.Text + "   |   " + lblBalance.Text,
-                    subTitleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 10, tableWidth, 22), sfCenter);
+                // ── [4] Grand Summary Box at End of Report ───────────────────────────
+                g.DrawLine(borderPen, leftMargin, y, rightMargin, y);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(235, 242, 252)), leftMargin, y + 4, tableWidth, 26);
+                g.DrawRectangle(borderPen, leftMargin, y + 4, tableWidth, 26);
+
+                string grandSummary = $"{lblDebit.Text}   |   {lblCredit.Text}   |   {lblBalance.Text}";
+                g.DrawString(grandSummary, boldDataFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 26), sfCenter);
             };
 
             var preview = new PrintPreviewDialog { Document = pd, Width = 1000, Height = 750 };
