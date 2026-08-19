@@ -761,7 +761,7 @@ namespace ChickenDist.Forms
                     SELECT
                         COUNT(SaleID) AS InvoiceCount,
                         ISNULL(SUM(TotalAmount), 0) AS GrossSales,
-                        ISNULL(SUM(Discount), 0) AS TotalDiscounts,
+                        ISNULL(SUM(DiscountAmount), 0) AS TotalDiscounts,
                         ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END), 0) AS CashSales,
                         ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
                         ISNULL(SUM(CASE WHEN SaleType IN ('Wallet','Instapay','VodafoneCash') THEN TotalAmount ELSE 0 END), 0) AS WalletSales,

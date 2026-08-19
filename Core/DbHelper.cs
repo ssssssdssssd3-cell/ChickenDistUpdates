@@ -3290,7 +3290,9 @@ namespace ChickenDist.Core
                             SafeAccountID INT NULL
                         );
                     END
-                    ELSE
+
+                    IF OBJECT_ID('Shifts','U') IS NOT NULL
+                    BEGIN
                         IF COL_LENGTH('Shifts','SafeAccountID') IS NULL
                             ALTER TABLE Shifts ADD SafeAccountID INT NULL;
                         IF COL_LENGTH('Shifts','TransferToSafeID') IS NULL
@@ -3348,11 +3350,17 @@ namespace ChickenDist.Core
                     END
 
                     -- تصحيح وربط كافة حركات الخزينة غير المعينة بالخزينة الرئيسية
-                    UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL OR AccountID <= 0;
+                    IF OBJECT_ID('CashBox','U') IS NOT NULL AND COL_LENGTH('CashBox','AccountID') IS NOT NULL
+                    BEGIN
+                        UPDATE CashBox SET AccountID = 1 WHERE AccountID IS NULL OR AccountID <= 0;
+                    END
 
                     -- تنظيف وتوحيد مسميات الحسابات وأنواعها
-                    UPDATE SafeAccounts SET AccountName = REPLACE(REPLACE(REPLACE(AccountName, ' / الدرج', ''), '/ الدرج', ''), '/الدرج', '') WHERE AccountName LIKE '%الدرج%';
-                    UPDATE SafeAccounts SET AccountType = 'Cash' WHERE AccountType IS NULL OR AccountType = '' OR AccountType = 'General';
+                    IF OBJECT_ID('SafeAccounts','U') IS NOT NULL
+                    BEGIN
+                        UPDATE SafeAccounts SET AccountName = REPLACE(REPLACE(REPLACE(AccountName, ' / الدرج', ''), '/ الدرج', ''), '/الدرج', '') WHERE AccountName LIKE '%الدرج%';
+                        UPDATE SafeAccounts SET AccountType = 'Cash' WHERE AccountType IS NULL OR AccountType = '' OR AccountType = 'General';
+                    END
                 ");
             }
             catch (Exception ex)
