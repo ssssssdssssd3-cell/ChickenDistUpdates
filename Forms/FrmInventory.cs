@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(6, 5, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 AutoScroll = true
             };
@@ -125,7 +125,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(240, 244, 248),
                 Padding = new Padding(6, 4, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 AutoScroll = true
             };
@@ -138,7 +138,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(230, 236, 244),
                 Padding = new Padding(6, 5, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.LeftToRight,
+                FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 AutoScroll = true
             };
@@ -464,7 +464,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(235, 240, 246),
                 Padding = new Padding(10, 5, 10, 5),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.LeftToRight
+                FlowDirection = FlowDirection.RightToLeft
             };
 
             lblCount = new Label
@@ -512,7 +512,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10, 10, 10, 10),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.LeftToRight
+                FlowDirection = FlowDirection.RightToLeft
             };
             
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
