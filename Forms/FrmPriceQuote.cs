@@ -1270,13 +1270,12 @@ namespace ChickenDist.Forms
 
                 // ── Table Column Headers & Grid Borders ──────
                 int colNumW   = isReceipt ? 16 : (int)(width * 0.05);
-                int colCodeW  = isReceipt ? 35 : (int)(width * 0.12);
-                int colLocW   = isReceipt ? 35 : (int)(width * 0.15);
-                int colUnitW  = isReceipt ? 25 : (int)(width * 0.09);
-                int colQtyW   = isReceipt ? 25 : (int)(width * 0.09);
-                int colPriceW = isReceipt ? 35 : (int)(width * 0.11);
-                int colTotW   = isReceipt ? 40 : (int)(width * 0.12);
-                int colProdW  = width - colNumW - colCodeW - colLocW - colUnitW - colQtyW - colPriceW - colTotW;
+                int colCodeW  = isReceipt ? 35 : (int)(width * 0.14);
+                int colUnitW  = isReceipt ? 25 : (int)(width * 0.10);
+                int colQtyW   = isReceipt ? 25 : (int)(width * 0.10);
+                int colPriceW = isReceipt ? 35 : (int)(width * 0.13);
+                int colTotW   = isReceipt ? 40 : (int)(width * 0.14);
+                int colProdW  = width - colNumW - colCodeW - colUnitW - colQtyW - colPriceW - colTotW;
                 int rowH      = isReceipt ? 20 : 25;
 
                 var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
@@ -1303,11 +1302,6 @@ namespace ChickenDist.Forms
                     curX -= colProdW;
                     g.DrawRectangle(penGrid, curX, y, colProdW, rowH);
                     g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, rowH), sfCenter);
-
-                    // Shelf Location
-                    curX -= colLocW;
-                    g.DrawRectangle(penGrid, curX, y, colLocW, rowH);
-                    g.DrawString("مكان التخزين", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, rowH), sfCenter);
 
                     // Unit
                     curX -= colUnitW;
@@ -1378,11 +1372,6 @@ namespace ChickenDist.Forms
                         curX -= colProdW;
                         g.DrawRectangle(penGrid, curX, y, colProdW, rowH);
                         g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y, colProdW - 8, rowH), sfRight);
-
-                        // Shelf Location
-                        curX -= colLocW;
-                        g.DrawRectangle(penGrid, curX, y, colLocW, rowH);
-                        g.DrawString(loc, fontBody, brushDarkBlue, new RectangleF(curX, y, colLocW, rowH), sfCenter);
 
                         // Unit
                         curX -= colUnitW;
