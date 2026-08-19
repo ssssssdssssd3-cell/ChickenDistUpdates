@@ -54,24 +54,24 @@ namespace ChickenDist.Forms
 				WrapContents = true
 			};
 
-			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 10, 0) };
 			dtpFrom = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
 			dtpFrom.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
 
-			Label lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+			Label lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			dtpTo = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
 			dtpTo.ValueChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
 
-			Label lblType = new Label { Text = "النوع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+			Label lblType = new Label { Text = "النوع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			cboTypeFilter = new ComboBox { Width = 110, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			cboTypeFilter.Items.AddRange(new object[] { "الكل", "نقدي (Cash)", "آجل (Credit)" });
 			cboTypeFilter.SelectedIndex = 0;
 			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
 			filterPanel.Controls.AddRange(new Control[] { lblType, cboTypeFilter });
 
-			Label lblSupplier = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+			Label lblSupplier = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			cboSupplierFilter = new ComboBox { Width = 130, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			cboSupplierFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in SupplierDAL.GetAll(true).Rows)
@@ -81,12 +81,12 @@ namespace ChickenDist.Forms
 			cboSupplierFilter.SelectedIndexChanged += delegate { LoadPurchases(); };
 			filterPanel.Controls.AddRange(new Control[] { lblSupplier, cboSupplierFilter });
 
-			Label lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+			Label lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			txtProductSearch = new TextBox { Width = 120, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			txtProductSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { LoadPurchases(); e.Handled = true; e.SuppressKeyPress = true; } };
 			filterPanel.Controls.AddRange(new Control[] { lblProduct, txtProductSearch });
 
-			Label lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
+			Label lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			txtSearch = new TextBox { Width = 140, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			txtSearch.TextChanged += delegate { FilterData(); };
 			filterPanel.Controls.AddRange(new Control[] { lblSearch, txtSearch });

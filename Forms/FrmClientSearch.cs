@@ -44,6 +44,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Top,
                 Height = 65,
                 BackColor = Theme.BgSearchPanel,
+                RightToLeft = RightToLeft.No,
                 Padding = new Padding(12)
             };
 

@@ -2908,8 +2908,8 @@ namespace ChickenDist.Forms
                 var txtSearch = new TextBox { Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.BgInput };
                 var lblSearch = new Label { Text = "🔍 بحث (طاولة / عميل):", Width = 165, Height = 28, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain };
                 var flowSearch = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-                flowSearch.Controls.Add(txtSearch);
                 flowSearch.Controls.Add(lblSearch);
+                flowSearch.Controls.Add(txtSearch);
                 pnlSearch.Controls.Add(flowSearch);
                 dlg.Controls.Add(pnlSearch);
 

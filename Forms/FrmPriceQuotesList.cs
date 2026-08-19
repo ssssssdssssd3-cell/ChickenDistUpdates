@@ -87,8 +87,8 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 6, 0, 0)
             };
 
-            pnlTop.Controls.Add(txtSearch);
             pnlTop.Controls.Add(lblSearch);
+            pnlTop.Controls.Add(txtSearch);
             pnlTop.Controls.Add(lblCount);
 
             // ── DataGridView ────────────────────────────────────────

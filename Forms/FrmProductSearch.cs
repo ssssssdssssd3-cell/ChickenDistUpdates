@@ -85,7 +85,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── Top panel (Filters) ──────────────────────────────────────────
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 145, Name = "pnlSearch", BackColor = Theme.BgSearchPanel, Padding = new Padding(12, 8, 12, 8) };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 145, Name = "pnlSearch", BackColor = Theme.BgSearchPanel, RightToLeft = RightToLeft.No, Padding = new Padding(12, 8, 12, 8) };
             
             Color labelColor = Color.FromArgb(255, 220, 110);
             Color inputBg = Color.White;

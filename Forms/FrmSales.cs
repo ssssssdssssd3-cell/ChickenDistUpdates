@@ -94,6 +94,7 @@ namespace ChickenDist.Forms
 					AutoSize = true,
 					AutoSizeMode = AutoSizeMode.GrowAndShrink,
 					BackColor = Color.Transparent,
+					RightToLeft = RightToLeft.No,
 					Margin = new Padding(4, 0, 0, 0),
 					Padding = new Padding(0)
 				};

@@ -45,6 +45,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Top,
                 Height = 60,
                 BackColor = Theme.BgCard,
+                RightToLeft = RightToLeft.No,
                 Padding = new Padding(10, 10, 10, 10)
             };
 
@@ -100,7 +101,7 @@ namespace ChickenDist.Forms
 
             txtSearch = new TextBox
             {
-                Location = new Point(980, 16),
+                Location = new Point(785, 16),
                 Width = 135,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -109,7 +110,7 @@ namespace ChickenDist.Forms
             txtSearch.TextChanged += (s, e) => LoadReservations();
             pnlFilter.Controls.Add(txtSearch);
 
-            btnRefresh = Theme.MakeButton("🔄", 1120, 15, 40, 36, Color.FromArgb(70, 80, 95));
+            btnRefresh = Theme.MakeButton("🔄", 735, 15, 40, 36, Color.FromArgb(70, 80, 95));
             btnRefresh.Click += (s, e) => LoadReservations();
             pnlFilter.Controls.Add(btnRefresh);
 
