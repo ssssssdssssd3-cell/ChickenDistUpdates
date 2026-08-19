@@ -710,8 +710,10 @@ namespace ChickenDist.Forms
 
                 string actualVal = "";
                 string diffVal   = "";
-                if (_enteredActualQty.TryGetValue(pid, out decimal savedActual))
+                decimal savedActual = 0m;
+                if (_enteredActualQty.TryGetValue(pid, out decimal savedBaseActual))
                 {
+                    savedActual = savedBaseActual / (curFactor > 0 ? curFactor : 1m);
                     actualVal = savedActual.ToString("N3");
                     decimal diff = savedActual - displayedBookQty;
                     diffVal = (diff > 0 ? "+" : "") + diff.ToString("N3");
@@ -749,6 +751,17 @@ namespace ChickenDist.Forms
 
                 dgStock.Rows[ri].Cells["PurchasePrice"].Tag = displayedPP;
                 dgStock.Rows[ri].Cells["SalePrice"].Tag = displayedSP;
+
+                // ألوان متميزة وخاصة للأعمدة التفاعلية (الوحدة، سعر الشراء، سعر البيع)
+                dgStock.Rows[ri].Cells["Unit"].Style.BackColor          = Color.FromArgb(225, 238, 254); // لون سماوي متميز
+                dgStock.Rows[ri].Cells["Unit"].Style.ForeColor          = Color.FromArgb(15, 45, 90);
+                dgStock.Rows[ri].Cells["Unit"].Style.Font               = new Font("Segoe UI", 9f, FontStyle.Bold);
+
+                dgStock.Rows[ri].Cells["PurchasePrice"].Style.BackColor = Color.FromArgb(255, 248, 225); // لون بيج/أصفر خفيف لسعر الشراء
+                dgStock.Rows[ri].Cells["PurchasePrice"].Style.ForeColor = Color.FromArgb(120, 60, 0);
+
+                dgStock.Rows[ri].Cells["SalePrice"].Style.BackColor     = Color.FromArgb(235, 250, 238); // لون أخضر فاتح لسعر البيع
+                dgStock.Rows[ri].Cells["SalePrice"].Style.ForeColor     = Color.FromArgb(0, 80, 30);
 
                 dgStock.Rows[ri].Cells["BaseUnit"].Value          = baseUnit;
                 dgStock.Rows[ri].Cells["Unit1Name"].Value         = unit1;
@@ -889,12 +902,13 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrWhiteSpace(cellText) &&
                     decimal.TryParse(cellText, numStyles, inv, out decimal actualQty))
                 {
+                    decimal curFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
                     decimal diff = actualQty - bookQty;
                     row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
                     row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
                     if (rowPid > 0)
                     {
-                        _enteredActualQty[rowPid] = actualQty;
+                        _enteredActualQty[rowPid] = actualQty * curFactor;
                         _inventoriedProductIDs.Add(rowPid);
                     }
                     Color invColor = GetInventoriedRowColor();
@@ -1153,6 +1167,7 @@ namespace ChickenDist.Forms
             var numStyles = System.Globalization.NumberStyles.Any;
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
+            int rowPid = row.Cells["ProductID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ProductID"].Value) : 0;
             decimal baseBookQty = row.Cells["BaseBookQty"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : 0m;
             decimal basePP = row.Cells["BasePurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BasePurchasePrice"].Value) : 0m;
             decimal baseSP = row.Cells["BaseSalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseSalePrice"].Value) : 0m;
@@ -1170,13 +1185,33 @@ namespace ChickenDist.Forms
             row.Cells["PurchasePrice"].Tag = newPP;
             row.Cells["SalePrice"].Tag = newSP;
 
-            // Recalculate ActualQty & DiffQty
-            string actualText = row.Cells["ActualQty"].Value?.ToString();
-            if (!string.IsNullOrWhiteSpace(actualText) && decimal.TryParse(actualText, numStyles, inv, out decimal actualVal))
+            // Recalculate and convert ActualQty & DiffQty
+            if (rowPid > 0 && _enteredActualQty.ContainsKey(rowPid))
             {
-                decimal diff = actualVal - newBookQty;
+                decimal baseActual = _enteredActualQty[rowPid];
+                decimal newActualVal = baseActual / factor;
+                row.Cells["ActualQty"].Value = newActualVal.ToString("N3");
+
+                decimal diff = newActualVal - newBookQty;
                 row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
                 row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
+            }
+            else
+            {
+                string actualText = row.Cells["ActualQty"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(actualText) && decimal.TryParse(actualText, numStyles, inv, out decimal actualVal))
+                {
+                    decimal oldFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
+                    decimal baseActual = actualVal * oldFactor;
+                    if (rowPid > 0) _enteredActualQty[rowPid] = baseActual;
+
+                    decimal newActualVal = baseActual / factor;
+                    row.Cells["ActualQty"].Value = newActualVal.ToString("N3");
+
+                    decimal diff = newActualVal - newBookQty;
+                    row.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                    row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
+                }
             }
         }
 

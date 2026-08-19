@@ -56,36 +56,33 @@ namespace ChickenDist.Forms
                 WrapContents = false
             };
 
-            Lbl("من:"); dtpFrom = Dtp(-30);
-            Lbl("إلى:"); dtpTo   = Dtp(0);
+            dtpFrom = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
+            dtpFrom.ValueChanged += (s, e) => LoadAuditLogs();
 
-            Lbl("العملية:");
+            dtpTo = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(4, 0, 4, 0) };
+            dtpTo.ValueChanged += (s, e) => LoadAuditLogs();
+
             cboActionType = new ComboBox { Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(4, 0, 4, 0) };
             cboActionType.Items.AddRange(new string[] { "الكل", "CREATE", "EDIT", "DELETE" });
             cboActionType.SelectedIndex = 0;
 
-            Lbl("بحث كود/ملاحظات:");
             txtSearch = new TextBox { Width = 140, Margin = new Padding(4, 0, 4, 0) };
 
-            btnLoad = MkBtn("🔍 عرض السجل", Theme.Accent, 130, 30);
+            btnLoad = MkBtn("🔍 عرض السجل", Theme.Accent, 120, 30);
             btnLoad.Click += (s, e) => LoadAuditLogs();
 
-            void Lbl(string t) => pnlFilter.Controls.Add(new Label
-                { Text = t, AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 4, 0, 0) });
-            DateTimePicker Dtp(int addDays)
-            {
-                var d = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = addDays == 0 ? DateTime.Now : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
-                d.ValueChanged += (s, e) => LoadAuditLogs();
-                pnlFilter.Controls.Add(d);
-                return d;
-            }
+            var btnPrint = MkBtn("🖨️ طباعة", Color.FromArgb(40, 100, 180), 95, 30);
+            btnPrint.Click += BtnPrint_Click;
 
-            pnlFilter.Controls.AddRange(new Control[] { cboActionType, txtSearch, btnLoad });
-            pnlFilter.Controls.Add(cboActionType);
-            // تصحيح الترتيب
+            var btnExportExcel = MkBtn("📥 إكسيل", Color.FromArgb(0, 120, 80), 95, 30);
+            btnExportExcel.Click += BtnExportExcel_Click;
+
+            var btnExportPdf = MkBtn("📄 PDF", Color.FromArgb(200, 40, 40), 85, 30);
+            btnExportPdf.Click += BtnExportPdf_Click;
+
             pnlFilter.Controls.Clear();
             pnlFilter.Controls.AddRange(new Control[] {
-                btnLoad, txtSearch,
+                btnLoad, btnPrint, btnExportExcel, btnExportPdf, txtSearch,
                 new Label { Text = "بحث كود/ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4,4,0,0) },
                 cboActionType,
                 new Label { Text = "العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12,4,0,0) },
@@ -526,6 +523,219 @@ namespace ChickenDist.Forms
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 55  });
             dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "PriceTier",   HeaderText = "الفئة",      FillWeight = 40  });
             return dg;
+        }
+
+        private void BtnExportExcel_Click(object sender, EventArgs e)
+        {
+            if (dgAudit.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات متاحة للتصدير في السجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var sfd = new SaveFileDialog
+            {
+                Title = "تصدير سجل التعديلات والعمليات إلى Excel",
+                Filter = "Excel Files (*.xls)|*.xls",
+                FileName = $"سجل_تعديلات_الفواتير_{DateTime.Now:yyyyMMdd_HHmm}.xls"
+            })
+            {
+                if (sfd.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        FrmReports.ExportDataGridViewToXls(dgAudit, sfd.FileName, "سجل تعديلات وعمليات الفواتير", AppConfig.CompanyName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف Excel بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            System.Diagnostics.Process.Start(sfd.FileName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف Excel:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnExportPdf_Click(object sender, EventArgs e)
+        {
+            if (dgAudit.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات متاحة للتصدير في السجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var sfd = new SaveFileDialog
+            {
+                Title = "تصدير سجل التعديلات والعمليات إلى PDF",
+                Filter = "PDF Document (*.pdf)|*.pdf",
+                FileName = $"سجل_تعديلات_الفواتير_{DateTime.Now:yyyyMMdd_HHmm}.pdf"
+            })
+            {
+                if (sfd.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        var pages = GenerateAuditPagesBitmaps();
+                        PdfReportHelper.SaveBitmapsAsPdf(pages, sfd.FileName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            System.Diagnostics.Process.Start(sfd.FileName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف PDF:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnPrint_Click(object sender, EventArgs e)
+        {
+            if (dgAudit.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات متاحة للطباعة في السجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                var pd = new System.Drawing.Printing.PrintDocument();
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+
+                int rowIndex = 0;
+                int pageNumber = 0;
+
+                pd.PrintPage += (s, pe) =>
+                {
+                    pageNumber++;
+                    RenderAuditPage(pe.Graphics, pe.MarginBounds, ref rowIndex, pageNumber, false);
+                    pe.HasMorePages = (rowIndex < dgAudit.Rows.Count);
+                };
+
+                using (var dlg = new PrintPreviewDialog { Document = pd, Width = 950, Height = 700, StartPosition = FormStartPosition.CenterScreen })
+                {
+                    ((Form)dlg).Text = "معاينة طباعة سجل تعديلات وعمليات الفواتير";
+                    dlg.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشل إعداد طباعة السجل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private System.Collections.Generic.List<Bitmap> GenerateAuditPagesBitmaps()
+        {
+            var list = new System.Collections.Generic.List<Bitmap>();
+            int pageW = 1240;
+            int pageH = 1754;
+            int rowIndex = 0;
+            int pageNum = 0;
+
+            while (rowIndex < dgAudit.Rows.Count)
+            {
+                pageNum++;
+                Bitmap bmp = new Bitmap(pageW, pageH);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.White);
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    Rectangle bounds = new Rectangle(60, 60, pageW - 120, pageH - 120);
+                    RenderAuditPage(g, bounds, ref rowIndex, pageNum, true);
+                }
+                list.Add(bmp);
+            }
+            return list;
+        }
+
+        private void RenderAuditPage(Graphics g, Rectangle bounds, ref int rowIndex, int pageNum, bool isPdf)
+        {
+            float scale = isPdf ? 1.4f : 1.0f;
+            using (Font fHeader = new Font("Segoe UI", 16f * scale, FontStyle.Bold))
+            using (Font fSub = new Font("Segoe UI", 10f * scale, FontStyle.Regular))
+            using (Font fCol = new Font("Segoe UI", 9.5f * scale, FontStyle.Bold))
+            using (Font fCell = new Font("Segoe UI", 9f * scale, FontStyle.Regular))
+            using (Font fFoot = new Font("Segoe UI", 8.5f * scale, FontStyle.Italic))
+            using (StringFormat sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center })
+            using (StringFormat sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            {
+                float curY = bounds.Top;
+
+                // Header Title Banner
+                g.FillRectangle(new SolidBrush(Theme.Primary), bounds.Left, curY, bounds.Width, 45 * scale);
+                g.DrawString("سجل تعديلات وعمليات الفواتير", fHeader, Brushes.White, new RectangleF(bounds.Left, curY, bounds.Width, 45 * scale), sfCenter);
+                curY += 50 * scale;
+
+                // Period Info Subtitle
+                string periodStr = $"الفترة من: {dtpFrom.Value:yyyy/MM/dd}  إلى: {dtpTo.Value:yyyy/MM/dd} | نوع العملية: {cboActionType.SelectedItem}";
+                g.DrawString(periodStr, fSub, Brushes.DarkSlateGray, new RectangleF(bounds.Left, curY, bounds.Width, 24 * scale), sfRight);
+                curY += 30 * scale;
+
+                // Columns Definition (RTL Layout)
+                float tableW = bounds.Width;
+                float[] colWidths = new float[] { tableW * 0.12f, tableW * 0.18f, tableW * 0.11f, tableW * 0.15f, tableW * 0.12f, tableW * 0.12f, tableW * 0.20f };
+                string[] colHeaders = new string[] { "رقم الفاتورة", "التاريخ والوقت", "العملية", "المستخدم", "الإجمالي القديم", "الإجمالي الجديد", "الملاحظات/السبب" };
+
+                // Draw Table Header Row
+                g.FillRectangle(new SolidBrush(Color.FromArgb(240, 243, 246)), bounds.Left, curY, tableW, 28 * scale);
+                g.DrawRectangle(Pens.Gray, bounds.Left, curY, tableW, 28 * scale);
+
+                float curX = bounds.Right;
+                for (int c = 0; c < colHeaders.Length; c++)
+                {
+                    curX -= colWidths[c];
+                    g.DrawString(colHeaders[c], fCol, Brushes.Black, new RectangleF(curX, curY, colWidths[c], 28 * scale), sfCenter);
+                    g.DrawLine(Pens.LightGray, curX, curY, curX, curY + 28 * scale);
+                }
+                curY += 28 * scale;
+
+                // Draw Rows
+                float rowH = 26 * scale;
+                int totalRows = dgAudit.Rows.Count;
+
+                while (rowIndex < totalRows && (curY + rowH) < (bounds.Bottom - 40 * scale))
+                {
+                    var r = dgAudit.Rows[rowIndex];
+
+                    string code = r.Cells["SaleCode"].Value?.ToString() ?? "";
+                    string date = r.Cells["EditDate"].Value?.ToString() ?? "";
+                    string act  = r.Cells["ActionType"].Value?.ToString()?.Replace("✅ ", "")?.Replace("🗑 ", "")?.Replace("✏ ", "") ?? "";
+                    string user = r.Cells["UserName"].Value?.ToString() ?? "";
+                    string oldT = r.Cells["OldTotal"].Value?.ToString() ?? "";
+                    string newT = r.Cells["NewTotal"].Value?.ToString() ?? "";
+                    string note = r.Cells["Notes"].Value?.ToString() ?? "";
+
+                    string[] vals = new string[] { code, date, act, user, oldT, newT, note };
+
+                    if (rowIndex % 2 == 1)
+                    {
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), bounds.Left, curY, tableW, rowH);
+                    }
+                    g.DrawRectangle(Pens.LightGray, bounds.Left, curY, tableW, rowH);
+
+                    curX = bounds.Right;
+                    for (int c = 0; c < vals.Length; c++)
+                    {
+                        curX -= colWidths[c];
+                        g.DrawString(vals[c], fCell, Brushes.Black, new RectangleF(curX + 2, curY, colWidths[c] - 4, rowH), sfCenter);
+                        g.DrawLine(Pens.LightGray, curX, curY, curX, curY + rowH);
+                    }
+
+                    curY += rowH;
+                    rowIndex++;
+                }
+
+                // Footer Page Info
+                float footY = bounds.Bottom - 24 * scale;
+                g.DrawLine(Pens.Gray, bounds.Left, footY, bounds.Right, footY);
+                g.DrawString($"صفحة {pageNum}", fFoot, Brushes.Gray, new RectangleF(bounds.Left, footY + 4, bounds.Width / 2, 20 * scale), sfRight);
+                g.DrawString($"تاريخ الاستخراج: {DateTime.Now:yyyy-MM-dd HH:mm}", fFoot, Brushes.Gray, new RectangleF(bounds.Left + bounds.Width / 2, footY + 4, bounds.Width / 2, 20 * scale), sfCenter);
+            }
         }
 
         private Button MkBtn(string text, Color back, int w, int h)
