@@ -560,7 +560,7 @@ namespace ChickenDist.DAL
             // فلتر البحث النصي
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                sql += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.PartNumber LIKE @term OR p.Brand LIKE @term OR p.ProducerCompany LIKE @term OR sn.Notes LIKE @term) ";
+                sql += " AND (p.ProductName LIKE @term OR p.ProductCode LIKE @term OR p.Brand LIKE @term OR p.ProducerCompany LIKE @term OR sn.Notes LIKE @term) ";
                 prms.Add(DbHelper.P("@term", "%" + searchTerm.Trim() + "%"));
             }
 
@@ -579,7 +579,7 @@ namespace ChickenDist.DAL
             }
 
             // فلتر الشركة المنتجة / الماركة
-            if (!string.IsNullOrWhiteSpace(brand) && brand != "-- كل الشركات / الماركات --")
+            if (!string.IsNullOrWhiteSpace(brand) && brand != "-- كل الشركات / الماركات --" && brand != "كل الماركات" && brand != "كل الشركات" && !brand.StartsWith("كل "))
             {
                 sql += " AND (p.Brand = @brand OR p.ProducerCompany = @brand) ";
                 prms.Add(DbHelper.P("@brand", brand.Trim()));

@@ -524,6 +524,7 @@ namespace ChickenDist.Forms
             int? supId = (cboSupplierFilter.SelectedItem is ComboItem cis && cis.ID > 0) ? cis.ID : (int?)null;
             int? catId = (cboCategoryFilter.SelectedItem is ComboItem cic && cic.ID > 0) ? cic.ID : (int?)null;
             string brand = cboBrandFilter.SelectedItem?.ToString();
+            if (cboBrandFilter.SelectedIndex == 0 || (brand != null && brand.StartsWith("كل "))) brand = null;
             string status = cboStatusFilter.SelectedItem?.ToString() ?? "الكل";
 
             string stockCond = "ALL";

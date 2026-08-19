@@ -18,7 +18,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
-        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly;
+        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkAutoIncrementScan;
         private ComboBox cboCategory, cboMaxRows, cboPriceType;
         private Label lblCount, lblTotalCost, lblTotalSale;
 
@@ -166,10 +166,27 @@ namespace ChickenDist.Forms
             cboLocation = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
             cboLocation.SelectedIndexChanged += (s, e) => LoadStock();
 
-            var lblSch = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
+            var lblSch = new Label { Text = "بحث/أسكانر:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
             txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 3, 2, 0) };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
-            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { _searchTimer.Stop(); LoadStock(); } };
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    _searchTimer.Stop();
+                    string val = txtSearch.Text.Trim();
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        HandleBarcodeScan(val);
+                    }
+                    else
+                    {
+                        LoadStock();
+                    }
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
             btnSearch.Size = new Size(65, 26);
@@ -242,6 +259,17 @@ namespace ChickenDist.Forms
             };
             chkUninventoriedOnly.CheckedChanged += (s, e) => LoadStock();
 
+            chkAutoIncrementScan = new CheckBox
+            {
+                Text = "⚡ زيادة (+1) بالأسكانر",
+                ForeColor = Color.FromArgb(0, 120, 80),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(6, 5, 6, 0),
+                RightToLeft = RightToLeft.Yes,
+                Checked = false
+            };
+
             // الصف 1: المخزن، التصنيف، المكان، البحث
             pnlRow1.Controls.AddRange(new Control[] {
                 lblWh, cboWarehouse,
@@ -281,7 +309,7 @@ namespace ChickenDist.Forms
 
             pnlRow2.Controls.AddRange(new Control[] {
                 lblLimit2, cboMaxRows,
-                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly,
+                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly, chkAutoIncrementScan,
                 lblPriceType, cboPriceType
             });
 
@@ -898,6 +926,114 @@ namespace ChickenDist.Forms
                 {
                     MessageBox.Show("تاريخ غير صالح. يرجى إدخال التاريخ بالصيغة الصحيحة (شهر وسنة مثل 0326 أو yyyy-MM-dd).", "تاريخ غير صالح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     cell.Value = "";
+                }
+            }
+        }
+
+        /// <summary>
+        /// معالجة قراءة الباركود/الأسكانر في شاشة الجرد وإبراز الصنف أو تعديل رصيده الفعلي فوراً
+        /// </summary>
+        private void HandleBarcodeScan(string inputCode)
+        {
+            if (string.IsNullOrWhiteSpace(inputCode) || dgStock == null) return;
+            string code = inputCode.Trim();
+
+            DataGridViewRow targetRow = null;
+
+            // 1) البحث عن الصنف في جدول الجرد المعروض حالياً
+            foreach (DataGridViewRow r in dgStock.Rows)
+            {
+                if (r.IsNewRow) continue;
+                string pCode = r.Cells["ProductCode"].Value?.ToString() ?? "";
+                string scalePlu = r.Cells["ScalePLU"].Value?.ToString() ?? "";
+                string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
+
+                if (pCode.Equals(code, StringComparison.OrdinalIgnoreCase) ||
+                    scalePlu.Equals(code, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(code) && code.Length >= 3 && pName.Equals(code, StringComparison.OrdinalIgnoreCase)))
+                {
+                    targetRow = r;
+                    break;
+                }
+            }
+
+            // 2) إذا لم يكن الصنف معروضاً حالياً، نبحث عنه من قاعدة البيانات ونعرضه
+            if (targetRow == null)
+            {
+                txtSearch.Text = code;
+                _searchTimer.Stop();
+                LoadStock();
+
+                foreach (DataGridViewRow r in dgStock.Rows)
+                {
+                    if (r.IsNewRow) continue;
+                    string pCode = r.Cells["ProductCode"].Value?.ToString() ?? "";
+                    string scalePlu = r.Cells["ScalePLU"].Value?.ToString() ?? "";
+                    string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
+
+                    if (pCode.Equals(code, StringComparison.OrdinalIgnoreCase) ||
+                        scalePlu.Equals(code, StringComparison.OrdinalIgnoreCase) ||
+                        pName.IndexOf(code, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        targetRow = r;
+                        break;
+                    }
+                }
+            }
+
+            // 3) التركيز والتحديد وإدخال/زيادة الرصيد الفعلي فوراً
+            if (targetRow != null)
+            {
+                dgStock.ClearSelection();
+                targetRow.Selected = true;
+                if (targetRow.Index >= 0 && targetRow.Index < dgStock.Rows.Count)
+                {
+                    dgStock.FirstDisplayedScrollingRowIndex = targetRow.Index;
+                }
+
+                int pid = Convert.ToInt32(targetRow.Cells["ProductID"].Value);
+                var numStyles = System.Globalization.NumberStyles.Any;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                decimal.TryParse(targetRow.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
+
+                if (chkAutoIncrementScan != null && chkAutoIncrementScan.Checked)
+                {
+                    // نمط الزيادة التلقائية (+1) مع كل مسح أسكانر
+                    decimal currentActual = 0m;
+                    string existingText = targetRow.Cells["ActualQty"].Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(existingText) && decimal.TryParse(existingText, numStyles, inv, out decimal val))
+                    {
+                        currentActual = val;
+                    }
+                    else
+                    {
+                        currentActual = bookQty;
+                    }
+
+                    currentActual += 1m;
+                    targetRow.Cells["ActualQty"].Value = currentActual.ToString("N3");
+
+                    decimal diff = currentActual - bookQty;
+                    targetRow.Cells["DiffQty"].Value = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                    targetRow.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
+
+                    if (pid > 0)
+                    {
+                        _enteredActualQty[pid] = currentActual;
+                        _inventoriedProductIDs.Add(pid);
+                    }
+
+                    Color invColor = GetInventoriedRowColor();
+                    targetRow.DefaultCellStyle.BackColor = invColor;
+                    targetRow.Cells["ActualQty"].Style.BackColor = invColor;
+                    dgStock.InvalidateRow(targetRow.Index);
+                }
+                else
+                {
+                    // التركيز المباشر على خلية "الرصيد الفعلي" في وضع التعديل الفوري
+                    int actualColIdx = dgStock.Columns["ActualQty"].Index;
+                    dgStock.CurrentCell = targetRow.Cells[actualColIdx];
+                    dgStock.BeginEdit(true);
                 }
             }
         }
