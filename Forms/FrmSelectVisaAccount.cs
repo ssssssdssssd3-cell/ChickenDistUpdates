@@ -101,7 +101,6 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Top,
                 Height = 24
             };
-            pnlCenter.Controls.Add(lblSelectPrompt);
 
             flowAccounts = new FlowLayoutPanel
             {
@@ -109,9 +108,9 @@ namespace ChickenDist.Forms
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(0, 5, 0, 5)
+                Padding = new Padding(5),
+                RightToLeft = RightToLeft.No
             };
-            pnlCenter.Controls.Add(flowAccounts);
 
             // Combo selection row
             var pnlComboRow = new Panel
@@ -156,6 +155,9 @@ namespace ChickenDist.Forms
 
             pnlComboRow.Controls.Add(cboAccounts);
             pnlComboRow.Controls.Add(btnAddNew);
+
+            pnlCenter.Controls.Add(flowAccounts);
+            pnlCenter.Controls.Add(lblSelectPrompt);
             pnlCenter.Controls.Add(pnlComboRow);
 
             this.Controls.Add(pnlCenter);

@@ -1,3 +1,8 @@
+v2.0.485 - 2026-08-19
+- إصلاح عدم ظهور ماكينات الفيزا في نافذة التحصيل عبر الفيزا/الدفع الإلكتروني (FrmSelectVisaAccount):
+  * تصحيح محاذاة أزرار ماكينات الفيزا وإلغاء مضاعفة اتجاه الرسم RTL على FlowLayoutPanel لمنع رسم الأزرار في إحداثيات سالبة خارج الشاشة.
+  * تصحيح ترتيب التوزع والظهور Docking لعناصر النافذة بوضوح.
+
 v2.0.484 - 2026-08-19
 - إصلاحات الأخطاء المسجلة في سجل النظام وملفات قاعدة البيانات (app.log):
   * تصحيح واستكمال سكربت هيكلة وتحديث جدول الورديات (EnsureShiftSchema): معالجة خطأ الصياغة البرمجية لضمان إضافة كافة الحقول المحاسبية الجديدة لجدول Shifts (WalletSales, CreditSales, CashReturns, TotalDiscounts, NetSales, InvoiceCount, CashExpenses, CashIn, DeficitReason, DenominationsJson, ApprovalStatus).
