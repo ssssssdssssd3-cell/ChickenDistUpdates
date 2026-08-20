@@ -1603,6 +1603,22 @@ namespace ChickenDist.Forms
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Price"].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
                 {
+                    if (item.Cost > 0 && newPrice < item.Cost)
+                    {
+                        MessageBox.Show($"❌ غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
+                        return;
+                    }
+
+                    decimal testNetTotal = (item.Qty * newPrice) - item.DiscountAmt;
+                    decimal testNetUnit = item.Qty > 0 ? (testNetTotal / item.Qty) : newPrice;
+                    if (item.Cost > 0 && testNetUnit < item.Cost)
+                    {
+                        MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
+                        return;
+                    }
+
                     item.Price = newPrice;
                     item.Total = (item.Qty * newPrice) - item.DiscountAmt;
                     this.BeginInvoke(new Action(RefreshGrid));
@@ -1616,6 +1632,15 @@ namespace ChickenDist.Forms
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Discount"].Value?.ToString(), out decimal newDisc) && newDisc >= 0)
                 {
+                    decimal netTotal = (item.Qty * item.Price) - newDisc;
+                    decimal netUnitPrice = item.Qty > 0 ? (netTotal / item.Qty) : item.Price;
+                    if (item.Cost > 0 && netUnitPrice < item.Cost)
+                    {
+                        MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        dgItems.Rows[e.RowIndex].Cells["Discount"].Value = item.DiscountAmt.ToString("N2");
+                        return;
+                    }
+
                     item.DiscountAmt = newDisc;
                     item.Total = (item.Qty * item.Price) - newDisc;
                     this.BeginInvoke(new Action(RefreshGrid));
@@ -1828,6 +1853,21 @@ namespace ChickenDist.Forms
                         else
                         {
                             MessageBox.Show($"تحذير: الصنف {item.Name} سيؤدي لظهور رصيد بالسالب!\n{errMsg}", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+                }
+
+                // ── التحقق من عدم بيع أي صنف بأقل من سعر التكلفة ──
+                foreach (var item in _items)
+                {
+                    if (item.Cost > 0)
+                    {
+                        decimal netUnit = item.Qty > 0 ? (item.Total / item.Qty) : item.Price;
+                        if (netUnit < item.Cost - 0.001m)
+                        {
+                            MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                            _isSaving = false;
+                            return;
                         }
                     }
                 }

@@ -2907,6 +2907,26 @@ namespace ChickenDist.Forms
 				// FIX: تغيير >= 0 إلى > 0 لمنع حفظ الفاتورة بسعر صفر
 				if (decimal.TryParse(dataGridViewRow.Cells["UnitPrice"].Value?.ToString(), out var result2) && result2 > 0m)
 				{
+					// التحقق من عدم البيع بأقل من سعر التكلفة
+					if (saleItemDTO.PurchasePrice > 0m && result2 < saleItemDTO.PurchasePrice)
+					{
+						MessageBox.Show($"❌ غير مسموح ببيع الصنف '{saleItemDTO.ProductName}' بسعر ({result2:N2}) أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						dataGridViewRow.Cells["UnitPrice"].Value = saleItemDTO.UnitPrice.ToString("F2");
+						return;
+					}
+
+					// التحقق أيضاً مع الخصم الحالي
+					decimal testGross = saleItemDTO.Quantity * result2;
+					decimal testDisc = saleItemDTO.DiscountPct > 0 ? (testGross * saleItemDTO.DiscountPct / 100m) : saleItemDTO.DiscountAmt;
+					decimal testNet = testGross - testDisc;
+					decimal testNetUnit = saleItemDTO.Quantity > 0 ? (testNet / saleItemDTO.Quantity) : result2;
+					if (saleItemDTO.PurchasePrice > 0m && testNetUnit < saleItemDTO.PurchasePrice)
+					{
+						MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({testNetUnit:N2}) أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						dataGridViewRow.Cells["UnitPrice"].Value = saleItemDTO.UnitPrice.ToString("F2");
+						return;
+					}
+
 					saleItemDTO.UnitPrice = result2;
 					// Recalculate discount amount based on percentage
 					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
@@ -2922,9 +2942,20 @@ namespace ChickenDist.Forms
 			{
 				if (decimal.TryParse(dataGridViewRow.Cells[e.ColumnIndex].Value?.ToString(), out var resultPct) && resultPct >= 0m && resultPct <= 100m)
 				{
-					saleItemDTO.DiscountPct = resultPct;
 					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
-					saleItemDTO.DiscountAmt = Math.Round(gross * resultPct / 100m, 2);
+					decimal testDisc = Math.Round(gross * resultPct / 100m, 2);
+					decimal testNet = gross - testDisc;
+					decimal netUnitPrice = saleItemDTO.Quantity > 0 ? (testNet / saleItemDTO.Quantity) : saleItemDTO.UnitPrice;
+
+					if (saleItemDTO.PurchasePrice > 0m && netUnitPrice < saleItemDTO.PurchasePrice)
+					{
+						MessageBox.Show($"❌ نسبة الخصم تجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({netUnitPrice:N2}) أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountPct.ToString("F2");
+						return;
+					}
+
+					saleItemDTO.DiscountPct = resultPct;
+					saleItemDTO.DiscountAmt = testDisc;
 				}
 				else
 				{
@@ -2943,6 +2974,16 @@ namespace ChickenDist.Forms
 						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 						return;
 					}
+
+					decimal testNet = gross - resultAmt;
+					decimal netUnitPrice = saleItemDTO.Quantity > 0 ? (testNet / saleItemDTO.Quantity) : saleItemDTO.UnitPrice;
+					if (saleItemDTO.PurchasePrice > 0m && netUnitPrice < saleItemDTO.PurchasePrice)
+					{
+						MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({netUnitPrice:N2}) أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
+						return;
+					}
+
 					saleItemDTO.DiscountAmt = resultAmt;
 					if (gross > 0m)
 					{
@@ -3275,6 +3316,14 @@ namespace ChickenDist.Forms
 			if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
 			{
 				MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+				else RefreshGrid();
+				return;
+			}
+
+			if (manualPrice.HasValue && product.PurchasePrice > 0m && manualPrice.Value < product.PurchasePrice)
+			{
+				MessageBox.Show($"❌ غير مسموح بإدخال سعر ({manualPrice.Value:N2}) أقل من سعر التكلفة ({product.PurchasePrice:N2}) للصنف '{product.Name}'.", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 				else RefreshGrid();
 				return;
@@ -3935,6 +3984,31 @@ namespace ChickenDist.Forms
 				}
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
+
+			// ─── التحقق من عدم بيع أي صنف بأقل من سعر التكلفة ───
+			foreach (SaleItemDTO itemCheck in _items)
+			{
+				if (itemCheck.PurchasePrice > 0m)
+				{
+					decimal itemNet = itemCheck.TotalPrice;
+					if (discountPct > 0m)
+					{
+						itemNet -= (itemNet * (discountPct / 100m));
+					}
+					else if (discountAmount > 0m && gross > 0m)
+					{
+						itemNet -= (itemNet * (discountAmount / gross));
+					}
+
+					decimal netUnit = itemCheck.Quantity > 0 ? (itemNet / itemCheck.Quantity) : itemCheck.UnitPrice;
+					if (netUnit < itemCheck.PurchasePrice - 0.001m)
+					{
+						MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{itemCheck.ProductName}' بعد الخصومات ({netUnit:N2}) يقل عن سعر التكلفة ({itemCheck.PurchasePrice:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+						return;
+					}
+				}
+			}
+
 			// ─── إضافة الشحن إلى الإجمالي ───
 			decimal shippingAtSave = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 			net += shippingAtSave;
