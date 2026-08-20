@@ -461,6 +461,7 @@ namespace ChickenDist.DAL
             string sql = $@"
                 SELECT 
                     sa.AdjID,
+                    COALESCE(NULLIF(sa.BatchCode, ''), 'ADJ-' + CONVERT(VARCHAR(10), sa.AdjDate, 112) + '-' + REPLACE(CONVERT(VARCHAR(8), sa.AdjDate, 108), ':', '')) AS BatchCode,
                     sa.AdjDate,
                     w.WarehouseName,
                     p.ProductCode,

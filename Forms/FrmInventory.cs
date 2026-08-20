@@ -377,10 +377,15 @@ namespace ChickenDist.Forms
             btnZeroOutWarehouse.Margin = new Padding(2, 2, 6, 0);
             btnZeroOutWarehouse.Click += BtnZeroOutWarehouse_Click;
 
+            var btnSessionsTabStock = Theme.MakeButton("📋 استرجاع عمليات الجرد", Color.FromArgb(70, 40, 130));
+            btnSessionsTabStock.Size = new Size(160, 28);
+            btnSessionsTabStock.Margin = new Padding(2, 2, 6, 0);
+            btnSessionsTabStock.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory, lblInventoryStart,
                 btnSaveAdj, btnClearAdj,
-                btnPrintIncreaseBarcodes, btnZeroOutWarehouse,
+                btnPrintIncreaseBarcodes, btnZeroOutWarehouse, btnSessionsTabStock,
                 btnScaleReport, btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
             });
 
@@ -552,20 +557,45 @@ namespace ChickenDist.Forms
             btnVarianceReportLogs.Size = new Size(180, 30);
             btnVarianceReportLogs.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
-            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs });
+            var btnSessions = Theme.MakeButton("📋 استرجاع عمليات وجلسات الجرد", Color.FromArgb(70, 40, 130));
+            btnSessions.Size = new Size(210, 30);
+            btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
+
+            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs, btnSessions });
             tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdjDate", HeaderText = "التاريخ والوقت", FillWeight = 50 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "BatchCode",   HeaderText = "رقم العملية", FillWeight = 45 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdjDate",     HeaderText = "التاريخ والوقت", FillWeight = 50 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الكود", FillWeight = 30 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 80 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty", HeaderText = "الرصيد الدفتري", FillWeight = 40 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty", HeaderText = "الرصيد الفعلي", FillWeight = 40 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty", HeaderText = "الفارق", FillWeight = 35 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات التسوية", FillWeight = 70 });
-            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", HeaderText = "بواسطة", FillWeight = 50 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",        HeaderText = "الوحدة", FillWeight = 30 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", FillWeight = 40 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", FillWeight = 40 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",     HeaderText = "الفارق", FillWeight = 35 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",       HeaderText = "ملاحظات التسوية", FillWeight = 70 });
+            dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy",   HeaderText = "بواسطة", FillWeight = 50 });
             Theme.AdjustGridHeaders(dgLogs);
+
+            var cmsLogs = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+            cmsLogs.Items.Add("📋 استرجاع وعرض تفاصيل عملية الجرد كاملة", null, (s, e) =>
+            {
+                if (dgLogs.SelectedRows.Count > 0)
+                {
+                    string bcode = dgLogs.SelectedRows[0].Cells["BatchCode"].Value?.ToString() ?? "";
+                    new FrmInventorySessions(bcode).ShowDialog(this);
+                }
+            });
+            cmsLogs.Items.Add("🏷️ طباعة باركود الزيادات لهذه العملية", null, (s, e) =>
+            {
+                if (dgLogs.SelectedRows.Count > 0)
+                {
+                    string bcode = dgLogs.SelectedRows[0].Cells["BatchCode"].Value?.ToString() ?? "";
+                    new FrmInventorySessions(bcode).ShowDialog(this);
+                }
+            });
+            dgLogs.ContextMenuStrip = cmsLogs;
+
             tabLogs.Controls.Add(dgLogs);
             
             pnlTop.BringToFront();
@@ -828,6 +858,7 @@ namespace ChickenDist.Forms
             {
                 decimal diff = Convert.ToDecimal(r["DiffQty"]);
                 int ri = dgLogs.Rows.Add(
+                    r["BatchCode"],
                     Convert.ToDateTime(r["AdjDate"]).ToString("dd/MM/yyyy HH:mm"),
                     r["ProductCode"],
                     r["ProductName"],
@@ -1353,6 +1384,7 @@ namespace ChickenDist.Forms
                 if (MessageBox.Show(msg, "تأكيد حفظ التسويات والأسعار", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     int savedCount = 0;
+                    string sessionBatchCode = "ADJ-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
                     try
                     {
                         DbHelper.RunInTransaction((con, trans) =>
@@ -1450,8 +1482,8 @@ namespace ChickenDist.Forms
                                         string expText = exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "بدون";
                                         string logNotes = $"[تسوية صلاحية: {expText}] " + rowNotes;
                                         DbHelper.ExecuteTrans(trans,
-                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac)",
+                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
+                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
                                             DbHelper.P("@pid", pid),
                                             DbHelper.P("@wid", wid),
                                             DbHelper.P("@bq", baseBook),
@@ -1459,7 +1491,8 @@ namespace ChickenDist.Forms
                                             DbHelper.P("@notes", logNotes),
                                             DbHelper.P("@by", Session.EmpID),
                                             DbHelper.P("@un", displayUnit),
-                                            DbHelper.P("@fac", factor));
+                                            DbHelper.P("@fac", factor),
+                                            DbHelper.P("@bcode", sessionBatchCode));
                                     }
                                     else
                                     {
@@ -1471,8 +1504,8 @@ namespace ChickenDist.Forms
                                         DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", baseActual));
                                         
                                         DbHelper.ExecuteTrans(trans,
-                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac)",
+                                            @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
+                                              VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
                                             DbHelper.P("@pid", pid),
                                             DbHelper.P("@wid", wid),
                                             DbHelper.P("@bq", baseBook),
@@ -1480,7 +1513,8 @@ namespace ChickenDist.Forms
                                             DbHelper.P("@notes", rowNotes),
                                             DbHelper.P("@by", Session.EmpID),
                                             DbHelper.P("@un", displayUnit),
-                                            DbHelper.P("@fac", factor));
+                                            DbHelper.P("@fac", factor),
+                                            DbHelper.P("@bcode", sessionBatchCode));
                                     }
 
                                     _enteredActualQty.Remove(pid);

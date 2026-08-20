@@ -675,6 +675,13 @@ namespace ChickenDist.Core
                 IF COL_LENGTH('Products', 'ScalePLU') IS NULL
                     ALTER TABLE Products ADD ScalePLU NVARCHAR(50) NULL;
             END");
+
+            SafeMigrate("StockAdjustments.BatchCode", @"
+            IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('StockAdjustments', 'BatchCode') IS NULL
+                    ALTER TABLE StockAdjustments ADD BatchCode NVARCHAR(50) NULL;
+            END");
         }
 
         public static void EnsureScalePLUColumnExists()

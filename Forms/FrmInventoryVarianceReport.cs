@@ -93,6 +93,16 @@ namespace ChickenDist.Forms
             btnExport.Click += BtnExport_Click;
             pnlTop.Controls.Add(btnExport);
 
+            var btnPrintSurplusBarcodes = Theme.MakeButton("🏷️ طباعة باركود الزيادات", Color.FromArgb(39, 174, 96));
+            btnPrintSurplusBarcodes.Size = new Size(160, 32);
+            btnPrintSurplusBarcodes.Click += BtnPrintSurplusBarcodes_Click;
+            pnlTop.Controls.Add(btnPrintSurplusBarcodes);
+
+            var btnSessions = Theme.MakeButton("📋 استرجاع عمليات الجرد", Color.FromArgb(70, 40, 130));
+            btnSessions.Size = new Size(160, 32);
+            btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
+            pnlTop.Controls.Add(btnSessions);
+
             // 2. Metrics Cards Panel
             var pnlCards = new TableLayoutPanel
             {
@@ -519,6 +529,50 @@ namespace ChickenDist.Forms
                 Text = "معاينة طباعة تقرير فروق وتسويات الجرد (A4)"
             };
             preview.ShowDialog();
+        }
+
+        private void BtnPrintSurplusBarcodes_Click(object sender, EventArgs e)
+        {
+            if (_dtData == null || _dtData.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات معروضة في التقرير حالياً. اضغط عرض التقرير أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var itemsToPrint = new List<BarcodePrintItem>();
+            foreach (DataRow r in _dtData.Rows)
+            {
+                decimal diff = Convert.ToDecimal(r["DiffQty"]);
+                if (diff > 0)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    string name = r["ProductName"].ToString();
+                    string code = r["ProductCode"].ToString();
+                    string shelf = r["ShelfLocation"] != DBNull.Value ? r["ShelfLocation"].ToString() : "";
+                    decimal salePrice = Convert.ToDecimal(r["SalePrice"]);
+
+                    int qty = (int)Math.Ceiling(diff);
+                    if (qty <= 0) qty = 1;
+
+                    itemsToPrint.Add(new BarcodePrintItem
+                    {
+                        ProductID = pid,
+                        ProductName = name,
+                        ProductCode = code,
+                        Price = salePrice,
+                        PrintQty = qty,
+                        ShelfLocation = shelf
+                    });
+                }
+            }
+
+            if (itemsToPrint.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف بها زيادة بالكميات (+فائض) في نتائج التقرير الحالي.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            new FrmBulkPrintBarcodes(itemsToPrint).ShowDialog(this);
         }
     }
 }
