@@ -1664,7 +1664,8 @@ namespace ChickenDist.Forms
 					cboProduct.Items.AddRange(allItems.ToArray());
 					cboProduct.SelectedIndex = 0;
 					cboProduct.EndUpdate();
-					txtProductCode?.Focus();
+					// ننقل التركيز لخلية الكمية مباشرة بعد مسح الباركود
+					FocusQtyCellInGrid(foundItem.ID);
 				}
 				finally
 				{
@@ -3142,6 +3143,8 @@ namespace ChickenDist.Forms
                         cell.Style.ForeColor = Color.White;
                     }
                 }
+                // تعيين Tag للسطر لضمان عمل FocusQtyCellInGrid بشكل صحيح
+                dgItems.Rows[rIndex].Tag = item;
 			}
 			CalculateNet();
 		}

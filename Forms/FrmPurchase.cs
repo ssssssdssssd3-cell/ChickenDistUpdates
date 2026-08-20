@@ -1658,7 +1658,7 @@ namespace ChickenDist.Forms
                     cboProduct.Items.Clear();
                     cboProduct.Items.AddRange(allItems.ToArray());
                     cboProduct.SelectedIndex = 0;
-                    cboProduct.Focus();
+                    // لا نستدعي cboProduct.Focus() لأن SelectQuantityCell ستضع التركيز على خلية الكمية
                 }
                 finally
                 {
@@ -1669,19 +1669,23 @@ namespace ChickenDist.Forms
 
         private void SelectQuantityCell(int prodId)
         {
-            if (_isScanningBarcode) return;
-            if (dgItems.Rows.Count > 0)
+            // لا نمنع التركيز على الكمية حتى عند الباركود
+            this.BeginInvoke((MethodInvoker)delegate
             {
-                foreach (DataGridViewRow row in dgItems.Rows)
+                if (dgItems.Rows.Count > 0)
                 {
-                    if (row.Cells["ProductID"].Value != null && Convert.ToInt32(row.Cells["ProductID"].Value) == prodId)
+                    foreach (DataGridViewRow row in dgItems.Rows)
                     {
-                        dgItems.CurrentCell = row.Cells["Quantity"];
-                        dgItems.BeginEdit(true);
-                        break;
+                        if (row.Cells["ProductID"].Value != null && Convert.ToInt32(row.Cells["ProductID"].Value) == prodId)
+                        {
+                            dgItems.Focus();
+                            dgItems.CurrentCell = row.Cells["Quantity"];
+                            dgItems.BeginEdit(true);
+                            break;
+                        }
                     }
                 }
-            }
+            });
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -1961,6 +1965,12 @@ namespace ChickenDist.Forms
                 {
                     item.DiscountPct = d;
                     item.DiscountAmt = 0m; // مسح القيمة المباشرة عند وجود نسبة
+                    // تحديث إجمالي السطر وهامش الربح بناءً على صافي سعر الشراء
+                    decimal netBuy = item.NetUnitPrice;
+                    decimal sell = item.SuggestedSalePrice ?? 0m;
+                    decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
+                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
+                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
                 else
                     dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");

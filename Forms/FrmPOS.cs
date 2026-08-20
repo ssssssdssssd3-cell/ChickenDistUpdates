@@ -1021,8 +1021,8 @@ namespace ChickenDist.Forms
                 {
                     AddProductByCode(code);
                     txtBarcode.Clear();
+                    // لا نعيد التركيز لـ txtBarcode — FocusQtyCell ستضع التركيز على خلية الكمية
                 }
-                txtBarcode.Focus();
             }
             else if (e.KeyCode == Keys.Down)
             {
@@ -1359,7 +1359,7 @@ namespace ChickenDist.Forms
                     if (rowIndex >= 0 && rowIndex < dgItems.Rows.Count)
                     {
                         dgItems.Focus();
-                        dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells[2]; // Cell 2 = Qty
+                        dgItems.CurrentCell = dgItems.Rows[rowIndex].Cells["Qty"]; // استخدام الاسم للأمان
                         dgItems.BeginEdit(true); // يدخل وضع التعديل فوراً والوقوف على الكمية
                     }
                 }

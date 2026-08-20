@@ -240,6 +240,119 @@ namespace ChickenDist.DAL
             }
         }
 
+        public static bool UpdateSupplier(int shortageID, int? productID, int supplierID, string supplierName)
+        {
+            EnsureTable();
+            try
+            {
+                if (shortageID > 0)
+                {
+                    DbHelper.Execute("UPDATE ShortageNotebook SET SupplierID = @supId, SupplierName = @supName WHERE ShortageID = @sid",
+                        DbHelper.P("@supId", supplierID),
+                        DbHelper.P("@supName", supplierName ?? ""),
+                        DbHelper.P("@sid", shortageID));
+                    return true;
+                }
+                else if (productID.HasValue && productID.Value > 0)
+                {
+                    var count = DbHelper.Scalar("SELECT COUNT(1) FROM ShortageNotebook WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
+                        DbHelper.P("@pid", productID.Value));
+
+                    if (Convert.ToInt32(count) > 0)
+                    {
+                        DbHelper.Execute("UPDATE ShortageNotebook SET SupplierID = @supId, SupplierName = @supName WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
+                            DbHelper.P("@supId", supplierID),
+                            DbHelper.P("@supName", supplierName ?? ""),
+                            DbHelper.P("@pid", productID.Value));
+                        return true;
+                    }
+                    else
+                    {
+                        return AddOrUpdateShortage(
+                            productID: productID.Value,
+                            productName: "",
+                            requestedQty: 1,
+                            currentStock: InventoryDAL.GetProductStock(productID.Value),
+                            minStockLimit: 0,
+                            notes: "تم تخصيص المورد يدوياً",
+                            source: "كشكول النواقص",
+                            status: "جديد",
+                            supplierID: supplierID,
+                            supplierName: supplierName
+                        );
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShortageDAL.UpdateSupplier", ex);
+                return false;
+            }
+        }
+
+        public static bool UpdatePurchasePrice(int productID, decimal newPrice)
+        {
+            try
+            {
+                if (productID > 0 && newPrice >= 0)
+                {
+                    DbHelper.Execute("UPDATE Products SET PurchasePrice = @pp WHERE ProductID = @pid",
+                        DbHelper.P("@pp", newPrice),
+                        DbHelper.P("@pid", productID));
+                    ProductCache.Invalidate();
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShortageDAL.UpdatePurchasePrice", ex);
+                return false;
+            }
+        }
+
+        public static bool DeleteShortages(IEnumerable<int> shortageIDs, IEnumerable<int> productIDs)
+        {
+            EnsureTable();
+            try
+            {
+                if (shortageIDs != null)
+                {
+                    foreach (int sId in shortageIDs)
+                    {
+                        if (sId > 0)
+                        {
+                            DbHelper.Execute("DELETE FROM ShortageNotebook WHERE ShortageID = @sid", DbHelper.P("@sid", sId));
+                        }
+                    }
+                }
+
+                if (productIDs != null)
+                {
+                    foreach (int pId in productIDs)
+                    {
+                        if (pId > 0)
+                        {
+                            // حذف من كشكول النواقص أو وسمه كملغي
+                            DbHelper.Execute("DELETE FROM ShortageNotebook WHERE ProductID = @pid", DbHelper.P("@pid", pId));
+                            DbHelper.Execute(@"
+                                INSERT INTO ShortageNotebook (ProductID, ProductName, CurrentStock, MinStockLimit, RequestedQty, Status, Source, Notes, CreatedBy)
+                                SELECT ProductID, ProductName, 0, 0, 0, N'ملغي', N'يدوي (محذوف)', N'تم استبعاد الصنف من النواقص بواسطة المستخدم', @by
+                                FROM Products WHERE ProductID = @pid",
+                                DbHelper.P("@pid", pId), DbHelper.P("@by", Session.EmpID));
+                        }
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ShortageDAL.DeleteShortages", ex);
+                return false;
+            }
+        }
+
         /// <summary>
         /// فحص الأصناف بعد المشتريات:
         /// إذا زاد رصيد الصنف عن حد الطلب (وكان رصيده > 0) يتم تحويل حالته في كشكول النواقص إلى "تم التوفير" لإزالته من النواقص النشطة تلقائياً
@@ -257,42 +370,29 @@ namespace ChickenDist.DAL
 
                 try
                 {
-                    var dt = DbHelper.Query(@"
-                        SELECT p.MinStockLimit, ISNULL(stk.TotalStock, 0) AS CurrentStock
-                        FROM Products p
-                        OUTER APPLY (
-                            SELECT SUM(Quantity) AS TotalStock 
-                            FROM ProductBatches 
-                            WHERE ProductID = p.ProductID
-                        ) stk
-                        WHERE p.ProductID = @pid",
-                        DbHelper.P("@pid", pid));
+                    decimal currentStock = InventoryDAL.GetProductStock(pid);
+                    var minLimitObj = DbHelper.Scalar("SELECT MinStockLimit FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                    decimal minLimit = minLimitObj != null && minLimitObj != DBNull.Value ? Convert.ToDecimal(minLimitObj) : 0m;
 
-                    if (dt.Rows.Count > 0)
+                    if (currentStock > minLimit && currentStock > 0)
                     {
-                        decimal currentStock = Convert.ToDecimal(dt.Rows[0]["CurrentStock"]);
-                        decimal minLimit = dt.Rows[0]["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["MinStockLimit"]) : 0m;
-
-                        if (currentStock > minLimit && currentStock > 0)
-                        {
-                            DbHelper.Execute(@"
-                                UPDATE ShortageNotebook 
-                                SET Status = N'تم التوفير',
-                                    CurrentStock = @stock,
-                                    Notes = N'تم توفير الصنف وتوريده بالمشتريات (رصيد حالي: ' + CAST(@stock AS NVARCHAR(20)) + N')'
-                                WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
-                                DbHelper.P("@stock", currentStock),
-                                DbHelper.P("@pid", pid));
-                        }
-                        else
-                        {
-                            DbHelper.Execute(@"
-                                UPDATE ShortageNotebook
-                                SET CurrentStock = @stock
-                                WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
-                                DbHelper.P("@stock", currentStock),
-                                DbHelper.P("@pid", pid));
-                        }
+                        DbHelper.Execute(@"
+                            UPDATE ShortageNotebook 
+                            SET Status = N'تم التوفير',
+                                CurrentStock = @stock,
+                                Notes = N'تم توفير الصنف وتوريده بالمشتريات (رصيد حالي: ' + CAST(@stock AS NVARCHAR(20)) + N')'
+                            WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
+                            DbHelper.P("@stock", currentStock),
+                            DbHelper.P("@pid", pid));
+                    }
+                    else
+                    {
+                        DbHelper.Execute(@"
+                            UPDATE ShortageNotebook
+                            SET CurrentStock = @stock
+                            WHERE ProductID = @pid AND Status IN (N'جديد', N'تم الطلب')",
+                            DbHelper.P("@stock", currentStock),
+                            DbHelper.P("@pid", pid));
                     }
                 }
                 catch (Exception ex)
@@ -323,18 +423,13 @@ namespace ChickenDist.DAL
 
                 try
                 {
+                    decimal currentStock = InventoryDAL.GetProductStock(pid);
                     var dt = DbHelper.Query(@"
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.MinStockLimit, p.CategoryID, c.CategoryName,
                                COALESCE(p.Brand, p.ProducerCompany) AS Brand,
-                               ISNULL(stk.TotalStock, 0) AS CurrentStock,
                                lastSup.SupplierID, lastSup.SupplierName
                         FROM Products p
                         LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
-                        OUTER APPLY (
-                            SELECT SUM(pb.Quantity) AS TotalStock
-                            FROM ProductBatches pb
-                            WHERE pb.ProductID = p.ProductID
-                        ) stk
                         OUTER APPLY (
                             SELECT TOP 1 pu.SupplierID, sup.SupplierName
                             FROM PurchaseItems pi
@@ -349,7 +444,6 @@ namespace ChickenDist.DAL
                     if (dt.Rows.Count > 0)
                     {
                         var r = dt.Rows[0];
-                        decimal currentStock = Convert.ToDecimal(r["CurrentStock"]);
                         decimal minStockLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
                         string pName = r["ProductName"].ToString();
                         string pCode = r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : "";
@@ -504,8 +598,8 @@ namespace ChickenDist.DAL
                         WHEN p.MinStockLimit > ISNULL(stk.TotalStock, 0) THEN (p.MinStockLimit - ISNULL(stk.TotalStock, 0))
                         ELSE 1.000 
                     END AS DeficitQty,
-                    COALESCE(lastSup.SupplierID, sn.SupplierID) AS SupplierID,
-                    COALESCE(lastSup.SupplierName, sn.SupplierName, N'---') AS SupplierName,
+                    COALESCE(sn.SupplierID, lastSup.SupplierID) AS SupplierID,
+                    COALESCE(sn.SupplierName, lastSup.SupplierName, N'---') AS SupplierName,
                     COALESCE(sn.Status, CASE WHEN ISNULL(stk.TotalStock, 0) <= 0 THEN N'جديد' ELSE N'تحت الحد' END) AS Status,
                     COALESCE(sn.Source, CASE WHEN ISNULL(stk.TotalStock, 0) <= 0 THEN N'آلي (رصيد صفر)' ELSE N'آلي (حد الطلب)' END) AS Source,
                     COALESCE(sn.Notes, N'-') AS Notes,
@@ -514,9 +608,11 @@ namespace ChickenDist.DAL
                 FROM Products p
                 LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                 OUTER APPLY (
-                    SELECT SUM(pb.Quantity) AS TotalStock
-                    FROM ProductBatches pb
-                    WHERE pb.ProductID = p.ProductID
+                    SELECT COALESCE(
+                        (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
+                        (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                        0
+                    ) AS TotalStock
                 ) stk
                 OUTER APPLY (
                     SELECT TOP 1 pu.SupplierID, sup.SupplierName
@@ -536,7 +632,7 @@ namespace ChickenDist.DAL
                         GROUP BY ProductID
                     ) s2 ON s1.ShortageID = s2.MaxID
                 ) sn ON p.ProductID = sn.ProductID
-                WHERE p.IsActive = 1 ";
+                WHERE p.IsActive = 1 AND COALESCE(sn.Status, N'جديد') <> N'ملغي' ";
 
             // شروط نوع النواقص والمخزون
             if (stockCondition == "ZERO_ONLY")
@@ -567,7 +663,7 @@ namespace ChickenDist.DAL
             // فلتر المورد
             if (supplierID.HasValue && supplierID.Value > 0)
             {
-                sql += " AND (lastSup.SupplierID = @supId OR sn.SupplierID = @supId) ";
+                sql += " AND (sn.SupplierID = @supId OR (sn.SupplierID IS NULL AND lastSup.SupplierID = @supId)) ";
                 prms.Add(DbHelper.P("@supId", supplierID.Value));
             }
 
@@ -594,7 +690,38 @@ namespace ChickenDist.DAL
 
             sql += " ORDER BY ISNULL(stk.TotalStock, 0) ASC, p.ProductName ASC ";
 
-            return DbHelper.Query(sql, prms.ToArray());
+            DataTable dt = DbHelper.Query(sql, prms.ToArray());
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                try
+                {
+                    List<int> pids = new List<int>();
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        if (r["ProductID"] != DBNull.Value) pids.Add(Convert.ToInt32(r["ProductID"]));
+                    }
+                    var stockDict = InventoryDAL.GetStockSummaryForProducts(pids);
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        if (r["ProductID"] != DBNull.Value)
+                        {
+                            int pid = Convert.ToInt32(r["ProductID"]);
+                            if (stockDict.TryGetValue(pid, out decimal realStock))
+                            {
+                                r["CurrentStock"] = realStock;
+                                decimal minLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
+                                if (r["ShortageID"] == DBNull.Value || Convert.ToInt32(r["ShortageID"]) == 0)
+                                {
+                                    r["DeficitQty"] = minLimit > realStock ? (minLimit - realStock) : 1.000m;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return dt;
         }
 
         public static List<string> GetAvailableBrands()

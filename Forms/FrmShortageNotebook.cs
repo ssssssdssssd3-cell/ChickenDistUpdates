@@ -130,6 +130,14 @@ namespace ChickenDist.Forms
             btnChangeStatus.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnChangeStatus.Click += BtnChangeStatus_Click;
 
+            var btnChangeSupplier = Theme.MakeButton("🏢 تغيير المورد", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
+            btnChangeSupplier.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnChangeSupplier.Click += (s, e) => ChangeSelectedSupplier();
+
+            var btnDeleteShortage = Theme.MakeButton("🗑️ حذف من الكشكول", 0, 0, 135, 32, Color.FromArgb(192, 57, 43));
+            btnDeleteShortage.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnDeleteShortage.Click += (s, e) => DeleteSelectedShortages();
+
             btnCreatePurchase = Theme.MakeButton("🛒 فتح فاتورة شراء", 0, 0, 135, 32, Theme.Primary);
             btnCreatePurchase.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCreatePurchase.Click += BtnCreatePurchase_Click;
@@ -156,6 +164,8 @@ namespace ChickenDist.Forms
             flowActions.Controls.AddRange(new Control[] {
                 btnAddManual,
                 btnChangeStatus,
+                btnChangeSupplier,
+                btnDeleteShortage,
                 btnCreatePurchase,
                 btnMinStockEdit,
                 btnPrint,
@@ -397,7 +407,22 @@ namespace ChickenDist.Forms
             };
             dgShortages.Columns.Add(colDeficit);
 
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", FillWeight = 80, ReadOnly = true });
+            var colPurchasePrice = new DataGridViewTextBoxColumn
+            {
+                Name = "PurchasePrice",
+                HeaderText = "سعر الشراء ✏️",
+                FillWeight = 85,
+                ReadOnly = false,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(45, 55, 72) : Color.FromArgb(240, 253, 244),
+                    ForeColor = AppConfig.AppTheme == "Dark" ? Color.White : Color.FromArgb(22, 101, 52),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                }
+            };
+            dgShortages.Columns.Add(colPurchasePrice);
+
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 95, ReadOnly = true });
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 80, ReadOnly = true });
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Source", HeaderText = "المصدر", FillWeight = 90, ReadOnly = true });
@@ -406,7 +431,10 @@ namespace ChickenDist.Forms
             // Context Menu
             var cms = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
             cms.Items.Add("✏️ تعديل الكمية المطلوبة لهذا الصنف", null, (s, e) => EditSelectedRequestedQty());
+            cms.Items.Add("🏢 تغيير المورد للأصناف المحددة", null, (s, e) => ChangeSelectedSupplier());
             cms.Items.Add("📝 تغيير حالة الصنف (جديد / تم الطلب / تم التوفير)", null, (s, e) => BtnChangeStatus_Click(null, null));
+            cms.Items.Add("🗑️ حذف الأصناف المحددة من كشكول النواقص (Del)", null, (s, e) => DeleteSelectedShortages());
+            cms.Items.Add(new ToolStripSeparator());
             cms.Items.Add("🛒 فتح فاتورة شراء لهذا الصنف/المورد", null, (s, e) => BtnCreatePurchase_Click(null, null));
             cms.Items.Add(new ToolStripSeparator());
             cms.Items.Add("📊 مقارنة الموردين لهذا الصنف", null, (s, e) => ShowSupplierComparison());
@@ -425,12 +453,22 @@ namespace ChickenDist.Forms
             cms.Items.Add("🖨️ طباعة قائمة النواقص", null, (s, e) => BtnPrint_Click(null, null));
             dgShortages.ContextMenuStrip = cms;
 
-            // Cell End Edit for Inline Quantity Editing
+            // Delete Key shortcut
+            dgShortages.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Delete)
+                {
+                    DeleteSelectedShortages();
+                    e.Handled = true;
+                }
+            };
+
+            // Cell End Edit for Inline Quantity & Price Editing
             dgShortages.CellEndEdit += DgShortages_CellEndEdit;
             dgShortages.CellDoubleClick += (s, e) => {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
-                    if (dgShortages.Columns[e.ColumnIndex].Name == "DeficitQty")
+                    string col = dgShortages.Columns[e.ColumnIndex].Name;
+                    if (col == "DeficitQty" || col == "PurchasePrice")
                     {
                         // Allow typing
                     }
@@ -818,8 +856,9 @@ namespace ChickenDist.Forms
         private void DgShortages_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            string colName = dgShortages.Columns[e.ColumnIndex].Name;
 
-            if (dgShortages.Columns[e.ColumnIndex].Name == "DeficitQty")
+            if (colName == "DeficitQty")
             {
                 var row = dgShortages.Rows[e.RowIndex];
                 if (decimal.TryParse(row.Cells["DeficitQty"].Value?.ToString(), out decimal newQty))
@@ -844,6 +883,146 @@ namespace ChickenDist.Forms
                 else
                 {
                     row.Cells["DeficitQty"].Value = "1.00";
+                }
+            }
+            else if (colName == "PurchasePrice")
+            {
+                var row = dgShortages.Rows[e.RowIndex];
+                if (decimal.TryParse(row.Cells["PurchasePrice"].Value?.ToString(), out decimal newBuyPrice) && newBuyPrice >= 0)
+                {
+                    row.Cells["PurchasePrice"].Value = newBuyPrice.ToString("N2");
+                    int? pId = row.Cells["ProductID"].Value != DBNull.Value ? (int?)Convert.ToInt32(row.Cells["ProductID"].Value) : null;
+                    if (pId.HasValue && pId.Value > 0)
+                    {
+                        ShortageDAL.UpdatePurchasePrice(pId.Value, newBuyPrice);
+                    }
+
+                    decimal deficit = decimal.TryParse(row.Cells["DeficitQty"].Value?.ToString(), out decimal d) ? d : 1m;
+                    decimal rowCost = deficit * newBuyPrice;
+                    row.Cells["TotalCost"].Value = rowCost.ToString("N2");
+
+                    RecalculateTotalKpiCost();
+                }
+                else
+                {
+                    row.Cells["PurchasePrice"].Value = "0.00";
+                }
+            }
+        }
+
+        private void DeleteSelectedShortages()
+        {
+            if (dgShortages.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("يرجى تحديد صنف أو أكثر من الجدول لحذفها من كشكول النواقص.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int count = dgShortages.SelectedRows.Count;
+            string msg = count == 1 
+                ? $"هل أنت متأكد من حذف الصنف [{dgShortages.SelectedRows[0].Cells["ProductName"].Value}] من كشكول النواقص؟"
+                : $"هل أنت متأكد من حذف ({count}) أصناف محددة من كشكول النواقص؟";
+
+            if (MessageBox.Show(msg, "تأكيد الحذف من النواقص", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                List<int> shortageIDs = new List<int>();
+                List<int> productIDs = new List<int>();
+
+                foreach (DataGridViewRow row in dgShortages.SelectedRows)
+                {
+                    if (row.Cells["ShortageID"].Value != null && row.Cells["ShortageID"].Value != DBNull.Value)
+                    {
+                        int sid = Convert.ToInt32(row.Cells["ShortageID"].Value);
+                        if (sid > 0) shortageIDs.Add(sid);
+                    }
+                    if (row.Cells["ProductID"].Value != null && row.Cells["ProductID"].Value != DBNull.Value)
+                    {
+                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                        if (pid > 0) productIDs.Add(pid);
+                    }
+                }
+
+                bool ok = ShortageDAL.DeleteShortages(shortageIDs, productIDs);
+                if (ok)
+                {
+                    LoadData();
+                    MessageBox.Show($"✅ تم حذف ({count}) صنف من كشكول النواقص بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void ChangeSelectedSupplier()
+        {
+            if (dgShortages.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("يرجى تحديد صنف أو أكثر من الجدول لتغيير المورد المطلوب منه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var suppliersDt = DbHelper.Query("SELECT SupplierID, SupplierName FROM Suppliers WHERE IsActive = 1 ORDER BY SupplierName");
+            if (suppliersDt == null || suppliersDt.Rows.Count == 0)
+            {
+                MessageBox.Show("لا يوجد موردين نشطين في النظام للاختيار بينهم.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "🏢 تغيير المورد للأصناف المحددة";
+                dlg.Size = new Size(420, 220);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = Theme.BgCard;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.Font = Theme.FontMain;
+
+                var lbl = new Label
+                {
+                    Text = $"اختر المورد الجديد لـ ({dgShortages.SelectedRows.Count}) صنف محدد:",
+                    Location = new Point(15, 18),
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold
+                };
+
+                var cbo = new ComboBox
+                {
+                    Location = new Point(15, 55),
+                    Width = 370,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 10.5f)
+                };
+
+                foreach (DataRow r in suppliersDt.Rows)
+                {
+                    cbo.Items.Add(new ComboItem(Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+                }
+                if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
+
+                var btnOk = Theme.MakeButton("✅ حفظ وتطبيق المورد", 15, 115, 180, 36, Theme.Success);
+                btnOk.Click += (s, e) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+
+                var btnCancel = Theme.MakeButton("❌ إلغاء", 205, 115, 110, 36, Color.FromArgb(120, 40, 40));
+                btnCancel.Click += (s, e) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+
+                dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk, btnCancel });
+
+                if (dlg.ShowDialog(this) == DialogResult.OK && cbo.SelectedItem is ComboItem selSup && selSup.ID > 0)
+                {
+                    foreach (DataGridViewRow row in dgShortages.SelectedRows)
+                    {
+                        int sId = row.Cells["ShortageID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ShortageID"].Value) : 0;
+                        int? pId = row.Cells["ProductID"].Value != DBNull.Value ? (int?)Convert.ToInt32(row.Cells["ProductID"].Value) : null;
+                        ShortageDAL.UpdateSupplier(sId, pId, selSup.ID, selSup.Text);
+                    }
+                    LoadData();
+                    MessageBox.Show($"✅ تم تحديث المورد إلى [{selSup.Text}] بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }

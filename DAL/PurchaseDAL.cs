@@ -24,6 +24,21 @@ namespace ChickenDist.DAL
         public DateTime? ExpiryDate { get; set; } = null;
         public string IMEI { get; set; } = "";
 
+        /// <summary>صافي سعر شراء الوحدة بعد الخصم (تكلفة الوحدة الصافية)</summary>
+        public decimal NetUnitPrice
+        {
+            get
+            {
+                if (Quantity > 0)
+                    return Math.Round(TotalPrice / Quantity, 4);
+                if (DiscountPct > 0m)
+                    return Math.Round(UnitPrice * (1m - DiscountPct / 100m), 4);
+                if (DiscountAmt > 0m)
+                    return Math.Round(Math.Max(0m, UnitPrice - DiscountAmt), 4);
+                return UnitPrice;
+            }
+        }
+
         /// <summary>صافي قيمة الصنف بعد خصم الصنف</summary>
         public decimal TotalPrice
         {
