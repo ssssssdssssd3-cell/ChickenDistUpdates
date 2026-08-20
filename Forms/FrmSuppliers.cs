@@ -51,7 +51,8 @@ namespace ChickenDist.Forms
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.BgSearchPanel, Padding = new Padding(8) };
             Theme.StyleSearchHeaderPanel(pnlSearch);
-            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 280, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Text = "بحث بالاسم أو الهاتف...", Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
+            var lblSearch = new Label { Text = "🔍 بحث الموردين:", Dock = DockStyle.Right, AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextSearchLabel, Margin = new Padding(0, 6, 8, 0) };
+            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 260, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Text = "بحث بالاسم أو الهاتف...", Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
             txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف...") txtSearch.Text = ""; };
             txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف..."; };
             txtSearch.TextChanged += (s, e) =>
@@ -60,6 +61,7 @@ namespace ChickenDist.Forms
                 if (searchVal == "بحث بالاسم أو الهاتف...") searchVal = "";
                 LoadSuppliers(searchVal);
             };
+            pnlSearch.Controls.Add(lblSearch);
             pnlSearch.Controls.Add(txtSearch);
 
             dgSuppliers = new DataGridView
