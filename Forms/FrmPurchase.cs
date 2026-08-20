@@ -167,12 +167,12 @@ namespace ChickenDist.Forms
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None
             };
             // عرض الأعمدة بالنسبة
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // col0: label
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f)); // col1: control
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col2: label
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // col3: control
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // col4: label
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f)); // col5: control / buttons
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // col0: label (جهة الشراء:)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));  // col1: control (cboPurchaseSource)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115)); // col2: label (* اسم المورد:)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));  // col3: control (pnlSupplier)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105)); // col4: label (نوع الفاتورة:)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));  // col5: control / buttons
             // ارتفاع الصفوف
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
@@ -601,23 +601,15 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8, 4, 8, 4)
             };
 
-            var pnlTotals = new Panel
-            {
-                Width = 780,
-                Dock  = DockStyle.Right,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0)
-            };
-
             var tblTotals = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true,
                 BackColor = Color.Transparent,
                 Padding = new Padding(4, 4, 4, 4),
                 RightToLeft = RightToLeft.Yes,
-                AutoScroll = false
+                AutoScroll = true
             };
 
             // 1. إجمالي الأصناف
@@ -798,16 +790,15 @@ namespace ChickenDist.Forms
             tblTotals.Controls.Add(lblNetTitle);
             tblTotals.Controls.Add(lblNetVal);
 
-            pnlTotals.Controls.Add(tblTotals);
+            pnlFooter.Controls.Add(tblTotals);
 
-            // ── قسم الأزرار (في الجانب الأيسر) ───────────────────────────────
             // ── قسم الأزرار (في الجانب الأيسر) ───────────────────────────────
             var pnlSideButtons = new Panel
             {
                 Dock = DockStyle.Left,
                 Width = 140,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 10, 8, 10)
+                Padding = new Padding(8, 8, 8, 8)
             };
 
             btnSave     = Theme.MakeButton("💾 حفظ [F5]",    0, 0, 124, 36, Theme.Accent);
@@ -865,24 +856,50 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var flowBtns = new FlowLayoutPanel
+            var tblSideBtns = new TableLayoutPanel
             {
-                FlowDirection = FlowDirection.TopDown,
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                Height = 255,
+                RowCount = 6,
+                ColumnCount = 1,
                 BackColor = Color.Transparent,
-                WrapContents = false,
+                Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            foreach (var b in new[] { btnSave, btnHold, btnLoadHold, btnSarf, btnNew, btnPrint })
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+            btnSave.Dock = DockStyle.Fill;
+            btnHold.Dock = DockStyle.Fill;
+            btnLoadHold.Dock = DockStyle.Fill;
+            btnSarf.Dock = DockStyle.Fill;
+            btnNew.Dock = DockStyle.Fill;
+            btnPrint.Dock = DockStyle.Fill;
+
+            tblSideBtns.Controls.Add(btnSave, 0, 0);
+            tblSideBtns.Controls.Add(btnHold, 0, 1);
+            tblSideBtns.Controls.Add(btnLoadHold, 0, 2);
+            tblSideBtns.Controls.Add(btnSarf, 0, 3);
+            tblSideBtns.Controls.Add(btnNew, 0, 4);
+            tblSideBtns.Controls.Add(btnPrint, 0, 5);
+
+            var lblHotkeys = new Label
             {
-                b.Margin = new Padding(0, 0, 0, 5);
-                flowBtns.Controls.Add(b);
-            }
+                Text = "[F2] جديد\n[F5] حفظ\n[F7] تعليق\n[F8] معلقات\n[F12] بحث صنف",
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 9f),
+                Dock = DockStyle.Bottom,
+                Height = 90,
+                TextAlign = ContentAlignment.BottomCenter,
+                Margin = new Padding(0)
+            };
 
-            pnlSideButtons.Controls.Add(flowBtns);
-
-            // ── تجميع الذيل ───────────────────────────────────────────────────
-            pnlFooter.Controls.Add(pnlTotals);
+            pnlSideButtons.Controls.Add(tblSideBtns);
+            pnlSideButtons.Controls.Add(lblHotkeys);
 
             // ── تجميع عناصر النموذج ────────────────────────────────────────────
             var pnlScrollWrapper = new Panel
@@ -900,19 +917,6 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes // تفعيل الـ RTL على المحتوى الداخلي لتنسيق الحقول والجدول باللغة العربية
             };
-
-            var lblHotkeys = new Label
-            {
-                Text = "[F2] جديد\n[F5] حفظ\n[F7] تعليق\n[F8] معلقات\n[F12] بحث صنف",
-                ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9f),
-                Dock = DockStyle.Bottom,
-                Height = 100,
-                TextAlign = ContentAlignment.BottomCenter,
-                Margin = new Padding(0, 10, 0, 0)
-            };
-
-            pnlSideButtons.Controls.Add(lblHotkeys);
 
             pnlFormContent.Controls.Add(pnlItems);
             pnlFormContent.Controls.Add(pnlSideButtons);
