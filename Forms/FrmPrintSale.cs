@@ -707,8 +707,8 @@ namespace ChickenDist.Forms
                     g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), right); y += 22;
 
                     bool isReceiptCredit = _saleRow["SaleType"].ToString() == "Credit";
-                    decimal receiptCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount;
-                    decimal receiptRemaining = isReceiptCredit ? netAmount : (netAmount - receiptCashPaid);
+                    decimal receiptCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : (isReceiptCredit ? 0m : netAmount);
+                    decimal receiptRemaining = netAmount - receiptCashPaid;
 
                     if (_saleRow["SaleType"].ToString() == "Cash")
                     {
@@ -774,7 +774,7 @@ namespace ChickenDist.Forms
                                 returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
                             }
 
-                            decimal remainingFromInvoice = isReceiptCredit ? netAmount : (netAmount - receiptCashPaid);
+                            decimal remainingFromInvoice = netAmount - receiptCashPaid;
                             currentBalance = previousBalance + remainingFromInvoice - paymentToday - returnToday;
 
                             g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
@@ -1656,8 +1656,8 @@ namespace ChickenDist.Forms
                                 returnToday  = Convert.ToDecimal(dtPay.Rows[0]["TotalReturn"]);
                             }
 
-                            decimal sheetCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount;
-                            decimal remainingFromInvoice = isCredit ? netAmount : (netAmount - sheetCashPaid);
+                            decimal sheetCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : (isCredit ? 0m : netAmount);
+                            decimal remainingFromInvoice = isCredit ? (netAmount - sheetCashPaid) : (netAmount - sheetCashPaid);
                             currentBalance = previousBalance + remainingFromInvoice - paymentToday - returnToday;
 
                             if (!isAlTarek) g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;

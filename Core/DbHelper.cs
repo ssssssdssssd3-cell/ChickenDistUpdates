@@ -1898,11 +1898,11 @@ namespace ChickenDist.Core
                 WHERE p.IsActive = 1 AND w.IsActive = 1');");
 
                 // ===== عمود كلمة المرور الأصلية للموظفين (للمراجعة الإدارية فقط) =====
-                Execute(@"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'PlainPassword')
-                BEGIN
-                    ALTER TABLE Employees ADD PlainPassword NVARCHAR(200) NULL;
-                END");
-                Execute(@"UPDATE Employees SET PlainPassword = NULL WHERE PlainPassword IS NOT NULL");
+                //Execute(@"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'PlainPassword')
+                //BEGIN
+                //    ALTER TABLE Employees ADD PlainPassword NVARCHAR(200) NULL;
+                //END");
+                //Execute(@"UPDATE Employees SET PlainPassword = NULL WHERE PlainPassword IS NOT NULL");
 
                 // ===== Installment Module Migration =====
                 string sqlInstallments = @"
@@ -2950,7 +2950,7 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("EnsureDatabaseSchema overall process failed", ex);
-                MessageBox.Show("فشل تطبيق بعض ترحيلات قاعدة البيانات:\n" + ex.Message, "تنبيه في التهيئة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                System.Diagnostics.Debug.WriteLine("فشل تطبيق بعض ترحيلات قاعدة البيانات:\n" + ex.Message);
                 // لا نعيد رمي الاستثناء حتى لا يتعطل تشغيل التطبيق بالكامل في حال وجود أخطاء طفيفة
             }
         }
@@ -3070,8 +3070,7 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("DbHelper.Query failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
-                MessageBox.Show("حدث خطأ أثناء قراءة البيانات.\nيرجى مراجعة المسؤول أو ملف app.log للتفاصيل.",
-                    "خطأ في قاعدة البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء قراءة البيانات. " + ex.Message);
             }
             return dt;
         }
@@ -3091,8 +3090,7 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("DbHelper.Execute failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
-                MessageBox.Show("حدث خطأ أثناء تنفيذ العملية.\nيرجى مراجعة المسؤول أو ملف app.log للتفاصيل.",
-                    "خطأ في قاعدة البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء تنفيذ العملية. " + ex.Message);
                 return -1;
             }
         }
@@ -3113,8 +3111,7 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("DbHelper.ExecuteInsert failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
-                MessageBox.Show("حدث خطأ أثناء حفظ البيانات.\nيرجى مراجعة المسؤول أو ملف app.log للتفاصيل.",
-                    "خطأ في قاعدة البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء حفظ البيانات. " + ex.Message);
                 return -1;
             }
         }
@@ -3250,7 +3247,7 @@ namespace ChickenDist.Core
                                       $"إصدار قاعدة البيانات المحدث: {dbVersionStr}\n\n" +
                                       $"لقد تم تحديث البرنامج سابقاً. يرجى فتح البرنامج من الأيقونة الجديدة المحدثة (في مجلد Updates أو الاختصار الجديد).";
 
-                    MessageBox.Show(errorMsg, "تنبيه توافق الإصدار", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    System.Diagnostics.Debug.WriteLine(errorMsg);
                     return false;
                 }
             }

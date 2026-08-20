@@ -303,8 +303,10 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty", HeaderText = "الكمية", FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "MinStock", HeaderText = "الحد الأدنى", FillWeight = 45 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 55 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalValue", HeaderText = "القيمة", FillWeight = 65 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCostValue", HeaderText = "قيمة التكلفة", FillWeight = 65 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalSaleValue", HeaderText = "قيمة البيع", FillWeight = 65 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLoc", HeaderText = "مكان الرف", FillWeight = 50 });
             dgStock.CellFormatting += DgStock_CellFormatting;
 
@@ -479,16 +481,19 @@ namespace ChickenDist.Forms
                 string search = txtProductSearch?.Text?.Trim() ?? "";
                 var dt = InventoryDAL.GetStock(_currentWarehouseID, search, maxRows: 1000);
 
-                decimal totalValue    = 0m;
+                decimal totalSaleValue = 0m;
+                decimal totalCostValue = 0m;
                 int     totalProducts = 0;
                 int     lowStockCount = 0;
 
                 foreach (DataRow row in dt.Rows)
                 {
                     decimal qty      = Convert.ToDecimal(row["BookQty"]);
-                    decimal price    = row["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["SalePrice"]) : 0m;
+                    decimal salePrice = row["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["SalePrice"]) : 0m;
+                    decimal costPrice = row.Table.Columns.Contains("PurchasePrice") && row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
                     decimal minStock = row["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row["MinStockLimit"]) : 0m;
-                    decimal val      = qty * price;
+                    decimal saleVal  = qty * salePrice;
+                    decimal costVal  = qty * costPrice;
                     bool    isLow    = minStock > 0 && qty < minStock;
 
                     if (lowStockOnly && !isLow) continue;
@@ -503,8 +508,10 @@ namespace ChickenDist.Forms
                         row["Unit"],
                         qty.ToString("N2"),
                         minStock > 0 ? minStock.ToString("N2") : "—",
-                        price.ToString("N2") + " ج",
-                        val.ToString("N2") + " ج",
+                        costPrice.ToString("N2") + " ج",
+                        salePrice.ToString("N2") + " ج",
+                        costVal.ToString("N2") + " ج",
+                        saleVal.ToString("N2") + " ج",
                         row["ShelfLocation"]);
 
                     // تلوين الأصناف ناقصة المخزون بالأحمر
@@ -515,15 +522,17 @@ namespace ChickenDist.Forms
                         lowStockCount++;
                     }
 
-                    totalValue += val;
+                    totalSaleValue += saleVal;
+                    totalCostValue += costVal;
                     totalProducts++;
                 }
 
                 // شريط الإجماليات
                 lblTotals.Text =
-                    $"  إجمالي الأصناف المعروضة: {totalProducts}  |" +
-                    $"  إجمالي القيمة (بسعر البيع): {totalValue:N2} ج  |" +
-                    $"  🔴 أصناف بها عجز: {lowStockCount}";
+                    $"  إجمالي الأصناف: {totalProducts}  |" +
+                    $"  التكلفة: {totalCostValue:N2} ج  |" +
+                    $"  البيع: {totalSaleValue:N2} ج  |" +
+                    $"  🔴 عجز: {lowStockCount}";
             }
             catch (Exception ex)
             {

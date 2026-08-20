@@ -1453,6 +1453,12 @@ namespace ChickenDist.Forms
                                     else
                                     {
                                         // Normal adjustment
+                                        DbHelper.ExecuteTrans(trans, @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                            UPDATE ProductStock SET Quantity = @aq WHERE ProductID=@pid AND WarehouseID=@wid
+                                        ELSE
+                                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @aq)",
+                                        DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", baseActual));
+                                        
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
                                               VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac)",

@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "2.0.495";
+        public const string CurrentVersion = "2.0.496";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -229,18 +229,20 @@ namespace ChickenDist.Core
                                     worker.ReportProgress(ce.ProgressPercentage, null);
 
                                 // DownloadFileAsync + AutoResetEvent لتحويل async -> sync في background thread
-                                var done = new System.Threading.AutoResetEvent(false);
-                                Exception innerEx = null;
-                                client.DownloadFileCompleted += (cs, ce) =>
+                                using (var done = new System.Threading.AutoResetEvent(false))
                                 {
-                                    innerEx = ce.Error;
-                                    done.Set();
-                                };
-                                string cacheBustedDownloadUrl = downloadUrl + (downloadUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
-                                client.DownloadFileAsync(new Uri(cacheBustedDownloadUrl), newExePath);
-                                done.WaitOne(); // ننتظر في الـ background thread — لا يجمد الـ UI
+                                    Exception innerEx = null;
+                                    client.DownloadFileCompleted += (cs, ce) =>
+                                    {
+                                        innerEx = ce.Error;
+                                        done.Set();
+                                    };
+                                    string cacheBustedDownloadUrl = downloadUrl + (downloadUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
+                                    client.DownloadFileAsync(new Uri(cacheBustedDownloadUrl), newExePath);
+                                    done.WaitOne(); // ننتظر في الـ background thread — لا يجمد الـ UI
 
-                                if (innerEx != null) throw innerEx;
+                                    if (innerEx != null) throw innerEx;
+                                }
                             }
 
                             downloadSuccess = true;

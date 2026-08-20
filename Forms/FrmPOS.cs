@@ -249,7 +249,7 @@ namespace ChickenDist.Forms
             dgItems.Columns["Code"].ReadOnly = true;
             dgItems.Columns["Name"].ReadOnly = true;
             dgItems.Columns["Qty"].ReadOnly = false;
-            dgItems.Columns["Price"].ReadOnly = false;
+            dgItems.Columns["Price"].ReadOnly = !Session.CanEditPrice("POS");
             dgItems.Columns["Discount"].ReadOnly = false;
             dgItems.Columns["Total"].ReadOnly = true;
 
@@ -1714,6 +1714,25 @@ namespace ChickenDist.Forms
                     if (rbDelivery.Checked && cboDeliveryDriver.SelectedItem is ComboItem driverItem && driverItem.ID > 0)
                     {
                         selectedDriver = driverItem.ID;
+                    }
+                }
+
+                // ── التحقق من المخزون الحي قبل الحفظ ──
+                bool allowNegativeStock = AppConfig.Get("AllowNegativeStock", "False") == "True";
+                foreach (var item in _items)
+                {
+                    if (!CheckAvailableStock(item.ProductID, item.BatchID, item.Qty * item.Factor, out decimal avail, out string errMsg))
+                    {
+                        if (!allowNegativeStock)
+                        {
+                            MessageBox.Show($"عذراً، الصنف {item.Name} رصيده لا يكفي لإتمام البيع!\n{errMsg}", "منع البيع", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            _isSaving = false;
+                            return;
+                        }
+                        else
+                        {
+                            MessageBox.Show($"تحذير: الصنف {item.Name} سيؤدي لظهور رصيد بالسالب!\n{errMsg}", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
                     }
                 }
 

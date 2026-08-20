@@ -1705,26 +1705,24 @@ namespace ChickenDist.Forms
 
             dto.UnitName = newUnit;
 
-            if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
+            if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
+            {
+                // 3. الوحدة الكبرى (الأساسية)
+                dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
+                dto.UnitPrice = prod.PurchasePrice * dto.Factor;
+                dto.SuggestedSalePrice = prod.Price * dto.Factor;
+            }
+            else if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
             {
                 // 1. الوحدة الوسطى
                 dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
-                if (prod.Unit2PurchasePrice > 0) dto.UnitPrice = prod.Unit2PurchasePrice;
-                if (prod.Unit2SalePrice > 0) dto.SuggestedSalePrice = prod.Unit2SalePrice;
+                dto.UnitPrice = prod.PurchasePrice * dto.Factor;
+                dto.SuggestedSalePrice = prod.Price * dto.Factor;
             }
             else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
             {
                 // 2. الوحدة الصغرى (التجزئة)
                 dto.Factor = 1m;
-                if (prod.Unit1PurchasePrice > 0) dto.UnitPrice = prod.Unit1PurchasePrice;
-                else dto.UnitPrice = prod.PurchasePrice;
-                if (prod.Unit1SalePrice > 0) dto.SuggestedSalePrice = prod.Unit1SalePrice;
-                else dto.SuggestedSalePrice = prod.Price;
-            }
-            else if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
-            {
-                // 3. الوحدة الكبرى (الأساسية)
-                dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
                 dto.UnitPrice = prod.PurchasePrice;
                 dto.SuggestedSalePrice = prod.Price;
             }

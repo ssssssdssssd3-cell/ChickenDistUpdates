@@ -789,7 +789,7 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
                     WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
+                      AND (AccountID = @accId OR AccountID IS NULL OR @accId = 0)
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),

@@ -119,7 +119,7 @@ namespace ChickenDist.Forms
 
             _lblTotalInvoice = MakeSummaryLabel("إجمالي فواتير البيع: --", Theme.Accent);
             _lblTotalPayment = MakeSummaryLabel("إجمالي التوريد: --",     Theme.Success);
-            _lblTotalBalance = MakeSummaryLabel("إجمالي المديونية: --",   Color.FromArgb(231, 76, 60));
+            _lblTotalBalance = MakeSummaryLabel("إجمالي أرصدة عملاء اليوم: --",   Color.FromArgb(231, 76, 60));
 
             var summaryFlow = new FlowLayoutPanel
             {
@@ -368,7 +368,7 @@ namespace ChickenDist.Forms
                 // ── Summary labels ─────────────────────────────────────────────
                 _lblTotalInvoice.Text = $"إجمالي فواتير البيع: {_grandInvoice:N2} ج.م";
                 _lblTotalPayment.Text = $"إجمالي آخر توريد: {_grandPayment:N2} ج.م";
-                _lblTotalBalance.Text = $"إجمالي المديونية: {_grandBalance:N2} ج.م";
+                _lblTotalBalance.Text = $"إجمالي أرصدة عملاء اليوم: {_grandBalance:N2} ج.م";
             }
             catch (Exception ex)
             {
@@ -424,7 +424,7 @@ namespace ChickenDist.Forms
                 g.DrawString(title, fTitle, Brushes.DarkBlue, new RectangleF(20, y, pgW, tsz.Height), sfTitle);
                 y += (int)tsz.Height + 4;
 
-                string sub = $"إجمالي فواتير البيع: {_grandInvoice:N2}   |   إجمالي التوريد: {_grandPayment:N2}   |   إجمالي المديونية: {_grandBalance:N2}   ج.م";
+                string sub = $"إجمالي فواتير البيع: {_grandInvoice:N2}   |   إجمالي التوريد: {_grandPayment:N2}   |   إجمالي أرصدة عملاء اليوم: {_grandBalance:N2}   ج.م";
                 var sfSub = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var ssz = g.MeasureString(sub, fHead);
                 g.DrawString(sub, fHead, Brushes.DarkGray, new RectangleF(20, y, pgW, ssz.Height), sfSub);

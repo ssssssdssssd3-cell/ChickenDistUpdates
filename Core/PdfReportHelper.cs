@@ -26,9 +26,10 @@ namespace ChickenDist.Core
             double pdfPageWidth = 595.28;
             double pdfPageHeight = 841.89;
 
-            var stream = new MemoryStream();
-            var offsets = new List<long>();
-            var enc = Encoding.ASCII;
+            using (var stream = new MemoryStream())
+            {
+                var offsets = new List<long>();
+                var enc = Encoding.ASCII;
 
             // 1. Header
             byte[] header = enc.GetBytes("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
@@ -144,6 +145,7 @@ namespace ChickenDist.Core
 
             // Write to file
             File.WriteAllBytes(outputPdfPath, stream.ToArray());
+            }
         }
 
         private static ImageCodecInfo GetEncoder(ImageFormat format)
@@ -329,6 +331,9 @@ namespace ChickenDist.Core
             }
 
             SaveBitmapsAsPdf(pages, outputFilePath);
+            sfCenter.Dispose();
+            sfRight.Dispose();
+            sfLeft.Dispose();
             return outputFilePath;
         }
 
@@ -494,6 +499,9 @@ namespace ChickenDist.Core
             }
 
             SaveBitmapsAsPdf(pages, outputFilePath);
+            sfCenter.Dispose();
+            sfRight.Dispose();
+            sfLeft.Dispose();
             return outputFilePath;
         }
 
@@ -658,6 +666,9 @@ namespace ChickenDist.Core
             }
 
             SaveBitmapsAsPdf(pages, outputFilePath);
+            sfCenter.Dispose();
+            sfRight.Dispose();
+            sfLeft.Dispose();
             return outputFilePath;
         }
 
@@ -826,6 +837,9 @@ namespace ChickenDist.Core
             }
 
             SaveBitmapsAsPdf(pages, outputFilePath);
+            sfCenter.Dispose();
+            sfRight.Dispose();
+            sfLeft.Dispose();
             return outputFilePath;
         }
 

@@ -3664,9 +3664,19 @@ namespace ChickenDist.Forms
 				if (quantityToCheckBase > 0 && quantityToCheckBase > productStock)
 				{
 					decimal availableInSelectedUnit = productStock / item.Factor;
-					MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
-						"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-					return;
+					bool allowNegativeStock = AppConfig.Get("AllowNegativeStock", "False") == "True";
+
+					if (!allowNegativeStock)
+					{
+						MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
+							"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+						return;
+					}
+					else
+					{
+						MessageBox.Show($"تحذير: الصنف '{item.ProductName}' سيؤدي لظهور رصيد بالسالب!\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
+							"تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					}
 				}
 			}
 

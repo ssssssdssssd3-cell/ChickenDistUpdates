@@ -71,12 +71,9 @@ namespace ChickenDist
                 return; // إنهاء التطبيق فوراً
             }
 
-            // استخراج صفحات الويب المدمجة في الخلفية لتسريع فتح البرنامج وعدم تعطيل شاشة تسجيل الدخول
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                ExtractDriverSalesHtml();
-                ExtractAccountantOrdersHtml();
-            });
+            // استخراج صفحات الويب المدمجة لتسريع فتح البرنامج وعدم تعطيل شاشة تسجيل الدخول
+            ExtractDriverSalesHtml();
+            ExtractAccountantOrdersHtml();
 
             // Show Login
             var login = new FrmLogin();

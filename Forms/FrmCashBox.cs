@@ -561,7 +561,7 @@ namespace ChickenDist.Forms
                 runningBalance = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
 
                 var prevTransObj = DbHelper.Scalar(
-                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId AND CAST(TransDate AS DATE) < @fromDate",
+                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE AccountID = @accId AND TransDate < @fromDate",
                     DbHelper.P("@accId", selectedAccountID.Value),
                     DbHelper.P("@fromDate", dtpCashFrom.Value.Date));
                 runningBalance += prevTransObj != DBNull.Value && prevTransObj != null ? Convert.ToDecimal(prevTransObj) : 0m;
@@ -572,7 +572,7 @@ namespace ChickenDist.Forms
                 runningBalance = openingObj != DBNull.Value && openingObj != null ? Convert.ToDecimal(openingObj) : 0m;
 
                 var prevTransObj = DbHelper.Scalar(
-                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE CAST(TransDate AS DATE) < @fromDate",
+                    "SELECT ISNULL(SUM(AmountIn)-SUM(AmountOut),0) FROM CashBox WHERE TransDate < @fromDate",
                     DbHelper.P("@fromDate", dtpCashFrom.Value.Date));
                 runningBalance += prevTransObj != DBNull.Value && prevTransObj != null ? Convert.ToDecimal(prevTransObj) : 0m;
             }
