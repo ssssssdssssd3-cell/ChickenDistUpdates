@@ -650,6 +650,11 @@ namespace ChickenDist.Forms
             btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnRecall.Click += (s, e) => RecallDraftSale();
 
+            var btnIncompletePOS = Theme.MakeButton("📂 فواتير\nلم تكتمل", Color.FromArgb(70, 40, 130), new Point(0, 130), new Size(130, 55));
+            btnIncompletePOS.Name = "btnIncompletePOS";
+            btnIncompletePOS.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnIncompletePOS.Click += (s, e) => OpenIncompletePOSDialog();
+
             if (!AppConfig.IsRestaurant)
             {
                 btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(140, 55));
@@ -674,6 +679,7 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnOpenDrawer);
             pnlTotals.Controls.Add(btnSuspend);
             pnlTotals.Controls.Add(btnRecall);
+            pnlTotals.Controls.Add(btnIncompletePOS);
 
             if (AppConfig.IsRestaurant)
             {
@@ -803,6 +809,14 @@ namespace ChickenDist.Forms
                 currentX -= 145;
                 btnRecallCtrl.Location = new Point(currentX, 130);
                 btnRecallCtrl.Size = new Size(140, 55);
+            }
+
+            var btnIncompleteCtrl = pnlTotals.Controls["btnIncompletePOS"];
+            if (btnIncompleteCtrl != null)
+            {
+                currentX -= 135;
+                btnIncompleteCtrl.Location = new Point(currentX, 130);
+                btnIncompleteCtrl.Size = new Size(130, 55);
             }
 
             var btnModelLookupCtrl = pnlTotals.Controls["btnModelLookup"];
@@ -1390,6 +1404,7 @@ namespace ChickenDist.Forms
             if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
             else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
+            AutoSavePOSDraft();
         }
 
         private void SetupPosSerialCombo(int rIndex, POSItem item)
@@ -2060,6 +2075,7 @@ namespace ChickenDist.Forms
 
         private void NewInvoice()
         {
+            DraftManager.DeleteDraft($"POS_User_{Session.EmpID}");
             _isSaving = false;
             _items.Clear();
             _loadedDraftSaleID = 0;
@@ -2091,6 +2107,133 @@ namespace ChickenDist.Forms
                     txtBarcode.SelectAll();
                 }
             }));
+        }
+
+        private void OpenIncompletePOSDialog()
+        {
+            using (var frm = new FrmIncompleteInvoices("POS"))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
+                {
+                    RestorePOSFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                }
+            }
+        }
+
+        private void RestorePOSFromDraft(string json, int draftId)
+        {
+            try
+            {
+                var data = DraftManager.Deserialize<SaleDraftData>(json);
+                if (data == null) return;
+
+                if (_items.Count > 0)
+                {
+                    if (MessageBox.Show("توجد فاتورة حالية في الكاشير، هل تريد استبدالها بالفاتورة المسترجعة؟", "تأكيد الاسترجاع", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                        return;
+                }
+
+                NewInvoice();
+
+                if (data.ClientID > 0)
+                {
+                    for (int i = 0; i < cboClient.Items.Count; i++)
+                    {
+                        if (cboClient.Items[i] is ComboItem ci && ci.ID == data.ClientID)
+                        {
+                            cboClient.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(data.InvoiceType))
+                {
+                    SetPaymentType(data.InvoiceType);
+                }
+
+                _items.Clear();
+                if (data.Items != null)
+                {
+                    foreach (var itm in data.Items)
+                    {
+                        _items.Add(new POSItem
+                        {
+                            ProductID = itm.ProductID,
+                            Code = itm.ProductCode,
+                            Name = itm.ProductName,
+                            UnitName = itm.Unit,
+                            Qty = itm.Quantity,
+                            Price = itm.UnitPrice,
+                            DiscountAmt = itm.LineDiscount,
+                            Factor = itm.Factor > 0 ? itm.Factor : 1.0m,
+                            BatchID = itm.BatchID,
+                            ExpiryDate = !string.IsNullOrEmpty(itm.ExpiryDate) && DateTime.TryParse(itm.ExpiryDate, out DateTime exp) ? (DateTime?)exp : null,
+                            IMEI = itm.IMEI
+                        });
+                    }
+                }
+
+                RefreshGrid();
+                DraftManager.MarkRecovered(draftId);
+                MessageBox.Show($"✅ تم استرجاع فاتورة الكاشير بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء استرجاع فاتورة الكاشير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void AutoSavePOSDraft()
+        {
+            if (_items == null || _items.Count == 0 || _isSaving) return;
+
+            try
+            {
+                int clientId = 0;
+                string clientName = "عميل نقدي";
+                if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    clientId = ci.ID;
+                    clientName = ci.Text;
+                }
+
+                decimal total = 0;
+                foreach (var itm in _items) total += itm.Total;
+
+                var data = new SaleDraftData
+                {
+                    ClientID = clientId,
+                    ClientName = clientName,
+                    InvoiceType = _selectedSaleType,
+                    DiscountVal = 0,
+                    Notes = "مسودة POS تم حفظها تلقائياً",
+                    Items = new List<SaleDraftItem>()
+                };
+
+                foreach (var itm in _items)
+                {
+                    data.Items.Add(new SaleDraftItem
+                    {
+                        ProductID = itm.ProductID,
+                        ProductCode = itm.Code,
+                        ProductName = itm.Name,
+                        Unit = itm.UnitName,
+                        Quantity = itm.Qty,
+                        UnitPrice = itm.Price,
+                        LineDiscount = itm.DiscountAmt,
+                        Factor = itm.Factor,
+                        LineTotal = itm.Total,
+                        BatchID = itm.BatchID,
+                        ExpiryDate = itm.ExpiryDate?.ToString("yyyy-MM-dd"),
+                        IMEI = itm.IMEI
+                    });
+                }
+
+                string draftKey = $"POS_User_{Session.EmpID}";
+                DraftManager.SaveDraft("POS", draftKey, Session.EmpID, clientId, clientName, _selectedSaleType, total, _items.Count, data);
+            }
+            catch { }
         }
 
         // ── طباعة الإيصال ─────────────────────────────────────

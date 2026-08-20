@@ -1359,7 +1359,12 @@ namespace ChickenDist.Forms
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnTawreed, btnLoadHold, btnHold, btnSave });
+
+			var btnIncomplete = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 135, 26, Color.FromArgb(70, 40, 130));
+			btnIncomplete.Margin = new Padding(2);
+			btnIncomplete.Click += (s, e) => OpenIncompleteSalesDialog();
+
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnIncomplete, btnTawreed, btnLoadHold, btnHold, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -3605,6 +3610,7 @@ namespace ChickenDist.Forms
 				lblProfitVal.ForeColor = profit >= 0 ? Theme.Success : Color.FromArgb(220, 60, 60);
 			}
             _isDirty = true;
+			AutoSaveSaleDraft();
 		}
 
 		private void BtnSave_Click(object sender, EventArgs e)
@@ -4310,6 +4316,143 @@ namespace ChickenDist.Forms
 			dlg.Controls.Add(dgDrafts);
 			dlg.Controls.Add(pnlBottom);
 			dlg.ShowDialog();
+		}
+
+		private void OpenIncompleteSalesDialog()
+		{
+			using (var frm = new FrmIncompleteInvoices("Sale"))
+			{
+				if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
+				{
+					RestoreSaleFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+				}
+			}
+		}
+
+		private void RestoreSaleFromDraft(string json, int draftId)
+		{
+			try
+			{
+				var data = DraftManager.Deserialize<SaleDraftData>(json);
+				if (data == null) return;
+
+				if (_isDirty && _items.Count > 0)
+				{
+					if (MessageBox.Show("توجد فاتورة حالية قيد التسجيل، سيتم استبدالها بالمسودة المسترجعة.\nهل ترغب بالمتابعة؟", "تأكيد الاسترجاع", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+						return;
+				}
+
+				ResetForm();
+
+				if (data.ClientID > 0)
+				{
+					for (int i = 0; i < cboClient.Items.Count; i++)
+					{
+						if (cboClient.Items[i] is ComboItem ci && ci.ID == data.ClientID)
+						{
+							cboClient.SelectedIndex = i;
+							break;
+						}
+					}
+				}
+
+				if (!string.IsNullOrEmpty(data.InvoiceType))
+				{
+					SetInvoiceType(data.InvoiceType);
+				}
+
+				txtNotes.Text = data.Notes ?? "";
+				txtInvoiceDiscount.Text = data.DiscountVal.ToString("G29");
+				if (!string.IsNullOrEmpty(data.DiscountType) && cboInvoiceDiscountType.Items.Contains(data.DiscountType))
+				{
+					cboInvoiceDiscountType.SelectedItem = data.DiscountType;
+				}
+
+				_items.Clear();
+				if (data.Items != null)
+				{
+					foreach (var itm in data.Items)
+					{
+						decimal stock = _stockCache.TryGetValue(itm.ProductID, out var st) ? st : 0m;
+						_items.Add(new SaleItemDTO
+						{
+							ProductID = itm.ProductID,
+							ProductCode = itm.ProductCode,
+							ProductName = itm.ProductName,
+							UnitName = itm.Unit,
+							Quantity = itm.Quantity,
+							UnitPrice = itm.UnitPrice,
+							DiscountAmt = itm.LineDiscount,
+							Factor = itm.Factor > 0 ? itm.Factor : 1.0m,
+							BatchID = itm.BatchID,
+							ExpiryDate = !string.IsNullOrEmpty(itm.ExpiryDate) && DateTime.TryParse(itm.ExpiryDate, out DateTime exp) ? (DateTime?)exp : null,
+							IMEI = itm.IMEI,
+							StockQty = stock
+						});
+					}
+				}
+
+				RefreshGrid();
+				DraftManager.MarkRecovered(draftId);
+				MessageBox.Show($"✅ تم استرجاع الفاتورة غير المكتملة بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("حدث خطأ أثناء استرجاع الفاتورة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private void AutoSaveSaleDraft()
+		{
+			if (_items == null || _items.Count == 0 || _editSaleID > 0) return;
+
+			try
+			{
+				int clientId = 0;
+				string clientName = "عميل نقدي";
+				if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+				{
+					clientId = ci.ID;
+					clientName = ci.Text;
+				}
+
+				decimal.TryParse(txtInvoiceDiscount?.Text, out decimal discVal);
+				decimal.TryParse(lblNetVal?.Text?.Replace(" ج", "")?.Replace(",", "")?.Trim(), out decimal netTotal);
+
+				var data = new SaleDraftData
+				{
+					ClientID = clientId,
+					ClientName = clientName,
+					InvoiceType = _invoiceType,
+					DiscountVal = discVal,
+					DiscountType = cboInvoiceDiscountType?.SelectedItem?.ToString() ?? "قيمة",
+					Notes = txtNotes?.Text,
+					Items = new List<SaleDraftItem>()
+				};
+
+				foreach (var itm in _items)
+				{
+					data.Items.Add(new SaleDraftItem
+					{
+						ProductID = itm.ProductID,
+						ProductCode = itm.ProductCode,
+						ProductName = itm.ProductName,
+						Unit = itm.UnitName,
+						Quantity = itm.Quantity,
+						UnitPrice = itm.UnitPrice,
+						LineDiscount = itm.DiscountAmt,
+						Factor = itm.Factor,
+						LineTotal = itm.TotalPrice,
+						BatchID = itm.BatchID,
+						ExpiryDate = itm.ExpiryDate?.ToString("yyyy-MM-dd"),
+						IMEI = itm.IMEI
+					});
+				}
+
+				string draftKey = $"Sale_User_{Session.EmpID}";
+				DraftManager.SaveDraft("Sale", draftKey, Session.EmpID, clientId, clientName, _invoiceType, netTotal, _items.Count, data);
+			}
+			catch { }
 		}
 
 		private void FrmSale_FormClosing(object sender, FormClosingEventArgs e)

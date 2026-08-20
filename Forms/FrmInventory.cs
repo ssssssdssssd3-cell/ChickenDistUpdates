@@ -382,10 +382,15 @@ namespace ChickenDist.Forms
             btnSessionsTabStock.Margin = new Padding(2, 2, 6, 0);
             btnSessionsTabStock.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
 
+            var btnIncompleteTabStock = Theme.MakeButton("📂 فواتير لم تكتمل", Color.FromArgb(70, 40, 130));
+            btnIncompleteTabStock.Size = new Size(140, 28);
+            btnIncompleteTabStock.Margin = new Padding(2, 2, 6, 0);
+            btnIncompleteTabStock.Click += (s, e) => OpenIncompleteInventoryDialog();
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory, lblInventoryStart,
                 btnSaveAdj, btnClearAdj,
-                btnPrintIncreaseBarcodes, btnZeroOutWarehouse, btnSessionsTabStock,
+                btnPrintIncreaseBarcodes, btnZeroOutWarehouse, btnSessionsTabStock, btnIncompleteTabStock,
                 btnScaleReport, btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
             });
 
@@ -561,7 +566,11 @@ namespace ChickenDist.Forms
             btnSessions.Size = new Size(210, 30);
             btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
 
-            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs, btnSessions });
+            var btnIncompleteLogs = Theme.MakeButton("📂 فواتير وعمليات لم تكتمل", Color.FromArgb(70, 40, 130));
+            btnIncompleteLogs.Size = new Size(180, 30);
+            btnIncompleteLogs.Click += (s, e) => OpenIncompleteInventoryDialog();
+
+            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs, btnSessions, btnIncompleteLogs });
             tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
@@ -957,6 +966,7 @@ namespace ChickenDist.Forms
                     row.DefaultCellStyle.BackColor = invColor;
                     row.Cells["ActualQty"].Style.BackColor = invColor;
                     dgStock.InvalidateRow(e.RowIndex);
+                    AutoSaveInventoryDraft();
                 }
                 else
                 {
@@ -967,6 +977,7 @@ namespace ChickenDist.Forms
                     row.DefaultCellStyle.BackColor = Color.Empty;
                     row.Cells["ActualQty"].Style.BackColor = Color.FromArgb(255, 255, 225);
                     dgStock.InvalidateRow(e.RowIndex);
+                    AutoSaveInventoryDraft();
                 }
             }
             else if (dgStock.Columns[e.ColumnIndex].Name == "ExpiryDate")
@@ -1135,6 +1146,7 @@ namespace ChickenDist.Forms
                     targetRow.DefaultCellStyle.BackColor = invColor;
                     targetRow.Cells["ActualQty"].Style.BackColor = invColor;
                     dgStock.InvalidateRow(targetRow.Index);
+                    AutoSaveInventoryDraft();
                 }
                 else
                 {
@@ -1266,6 +1278,116 @@ namespace ChickenDist.Forms
             if (btnAddExpiryRow != null) btnAddExpiryRow.Enabled = false;
         }
 
+        private void OpenIncompleteInventoryDialog()
+        {
+            using (var frm = new FrmIncompleteInvoices("Inventory"))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
+                {
+                    RestoreInventoryFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                }
+            }
+        }
+
+        private void RestoreInventoryFromDraft(string json, int draftId)
+        {
+            try
+            {
+                var data = DraftManager.Deserialize<InventoryDraftData>(json);
+                if (data == null) return;
+
+                if (data.WarehouseID > 0)
+                {
+                    for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    {
+                        if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == data.WarehouseID)
+                        {
+                            cboWarehouse.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (data.EnteredActualQty != null && data.EnteredActualQty.Count > 0)
+                {
+                    foreach (var kvp in data.EnteredActualQty)
+                    {
+                        _enteredActualQty[kvp.Key] = kvp.Value;
+                        _inventoriedProductIDs.Add(kvp.Key);
+                    }
+                }
+
+                LoadStock();
+                DraftManager.MarkRecovered(draftId);
+                MessageBox.Show($"✅ تم استرجاع مسودة الجرد بنجاح وتحديث ({_enteredActualQty.Count}) صنف!", "استرجاع مسودة الجرد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء استرجاع مسودة الجرد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void AutoSaveInventoryDraft()
+        {
+            if (_enteredActualQty == null || _enteredActualQty.Count == 0) return;
+
+            try
+            {
+                int wid = 1;
+                string wName = "المخزن الرئيسي";
+                if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    wid = ci.ID;
+                    wName = ci.Text;
+                }
+
+                var data = new InventoryDraftData
+                {
+                    WarehouseID = wid,
+                    WarehouseName = wName,
+                    Notes = "جرد مخزن تم حفظه لحظياً",
+                    EnteredActualQty = new System.Collections.Generic.Dictionary<int, decimal>(_enteredActualQty)
+                };
+
+                if (dgStock != null && dgStock.Rows.Count > 0)
+                {
+                    var inv = System.Globalization.CultureInfo.InvariantCulture;
+                    var numStyles = System.Globalization.NumberStyles.Any;
+                    foreach (DataGridViewRow r in dgStock.Rows)
+                    {
+                        if (r.Cells["ProductID"].Value == null) continue;
+                        int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+                        if (_enteredActualQty.ContainsKey(pid))
+                        {
+                            string code = r.Cells["ProductCode"].Value?.ToString() ?? "";
+                            string name = r.Cells["ProductName"].Value?.ToString() ?? "";
+                            string unit = r.Cells["Unit"].Value?.ToString() ?? "";
+                            decimal.TryParse(r.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bq);
+                            decimal.TryParse(r.Cells["ActualQty"].Value?.ToString(), numStyles, inv, out decimal aq);
+                            decimal.TryParse(r.Cells["SalePrice"].Value?.ToString(), numStyles, inv, out decimal sp);
+                            string shelf = r.Cells["ShelfLocation"].Value?.ToString() ?? "";
+
+                            data.ItemsDetails.Add(new InventoryDraftItemDetail
+                            {
+                                ProductID = pid,
+                                ProductCode = code,
+                                ProductName = name,
+                                Unit = unit,
+                                BookQty = bq,
+                                ActualQty = aq,
+                                DiffQty = aq - bq,
+                                SalePrice = sp,
+                                ShelfLocation = shelf
+                            });
+                        }
+                    }
+                }
+
+                string draftKey = $"Inventory_Wh_{wid}";
+                DraftManager.SaveDraft("Inventory", draftKey, Session.EmpID, wid, wName, "جرد مخزن", 0, _enteredActualQty.Count, data);
+            }
+            catch { }
+        }
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
@@ -1526,6 +1648,7 @@ namespace ChickenDist.Forms
 
                         if (savedCount > 0)
                         {
+                            DraftManager.DeleteDraft($"Inventory_Wh_{wid}");
                             ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
                             LoadStock();
                             LoadLogs();

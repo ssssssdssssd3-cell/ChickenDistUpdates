@@ -25,6 +25,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
     <EmbeddedResource Include="Forms\driver_sales.html" />
     <EmbeddedResource Include="Forms\accountant_orders.html" />
     <EmbeddedResource Include="MobileApp\index.html" />

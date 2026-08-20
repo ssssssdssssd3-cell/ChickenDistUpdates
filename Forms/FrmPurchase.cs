@@ -912,8 +912,8 @@ namespace ChickenDist.Forms
             var tblSideBtns = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 255,
-                RowCount = 6,
+                Height = 298,
+                RowCount = 7,
                 ColumnCount = 1,
                 BackColor = Color.Transparent,
                 Margin = new Padding(0),
@@ -925,6 +925,11 @@ namespace ChickenDist.Forms
             tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            tblSideBtns.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+            var btnIncompletePurchases = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 124, 36, Color.FromArgb(70, 40, 130));
+            btnIncompletePurchases.Dock = DockStyle.Fill;
+            btnIncompletePurchases.Click += (s, e) => OpenIncompletePurchasesDialog();
 
             btnSave.Dock = DockStyle.Fill;
             btnHold.Dock = DockStyle.Fill;
@@ -936,9 +941,10 @@ namespace ChickenDist.Forms
             tblSideBtns.Controls.Add(btnSave, 0, 0);
             tblSideBtns.Controls.Add(btnHold, 0, 1);
             tblSideBtns.Controls.Add(btnLoadHold, 0, 2);
-            tblSideBtns.Controls.Add(btnSarf, 0, 3);
-            tblSideBtns.Controls.Add(btnNew, 0, 4);
-            tblSideBtns.Controls.Add(btnPrint, 0, 5);
+            tblSideBtns.Controls.Add(btnIncompletePurchases, 0, 3);
+            tblSideBtns.Controls.Add(btnSarf, 0, 4);
+            tblSideBtns.Controls.Add(btnNew, 0, 5);
+            tblSideBtns.Controls.Add(btnPrint, 0, 6);
 
             var lblHotkeys = new Label
             {
@@ -2068,12 +2074,15 @@ namespace ChickenDist.Forms
             {
                 lblItemCount.Text = "📦 عدد الأصناف: " + _items.Count;
             }
+
+            AutoSavePurchaseDraft();
         }
 
         // ══════════════════════════════════════════════════════════════════════
         // مسح الفاتورة (جديدة)
         private void ClearInvoice()
         {
+            DraftManager.DeleteDraft($"Purchase_User_{Session.EmpID}");
             _items.Clear();
             RefreshGrid();
             if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
@@ -2578,6 +2587,160 @@ namespace ChickenDist.Forms
                 MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void OpenIncompletePurchasesDialog()
+        {
+            using (var frm = new FrmIncompleteInvoices("Purchase"))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
+                {
+                    RestorePurchaseFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                }
+            }
+        }
+
+        private void RestorePurchaseFromDraft(string json, int draftId)
+        {
+            try
+            {
+                var data = DraftManager.Deserialize<PurchaseDraftData>(json);
+                if (data == null) return;
+
+                if (_isDirty && _items.Count > 0)
+                {
+                    if (MessageBox.Show("توجد فاتورة حالية قيد التسجيل، سيتم استبدالها بالمسودة المسترجعة.\nهل ترغب بالمتابعة؟", "تأكيد الاسترجاع", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                        return;
+                }
+
+                ClearInvoice();
+
+                if (data.SupplierID > 0)
+                {
+                    for (int i = 0; i < cboSupplier.Items.Count; i++)
+                    {
+                        if (cboSupplier.Items[i] is ComboItem ci && ci.ID == data.SupplierID)
+                        {
+                            cboSupplier.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (data.WarehouseID > 0)
+                {
+                    for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    {
+                        if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == data.WarehouseID)
+                        {
+                            cboWarehouse.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(data.PaymentType))
+                {
+                    _purchaseType = data.PaymentType;
+                    ToggleType();
+                }
+
+                txtNotes.Text = data.Notes ?? "";
+                if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Text = data.SupplierInvoiceNo ?? "";
+                txtInvoiceDiscount.Text = data.DiscountVal.ToString("G29");
+                if (txtShippingCost != null) txtShippingCost.Text = data.ShippingCost.ToString("G29");
+
+                _items.Clear();
+                if (data.Items != null)
+                {
+                    foreach (var itm in data.Items)
+                    {
+                        _items.Add(new PurchaseItemDTO
+                        {
+                            ProductID = itm.ProductID,
+                            ProductCode = itm.ProductCode,
+                            ProductName = itm.ProductName,
+                            UnitName = itm.Unit,
+                            Quantity = itm.Quantity,
+                            UnitPrice = itm.UnitPrice,
+                            DiscountAmt = itm.LineDiscount,
+                            Factor = itm.Factor > 0 ? itm.Factor : 1.0m,
+                            ExpiryDate = !string.IsNullOrEmpty(itm.ExpiryDate) && DateTime.TryParse(itm.ExpiryDate, out DateTime exp) ? (DateTime?)exp : null,
+                            IMEI = itm.IMEI
+                        });
+                    }
+                }
+
+                RefreshGrid();
+                RecalcTotals();
+                DraftManager.MarkRecovered(draftId);
+                MessageBox.Show($"✅ تم استرجاع فاتورة المشتريات غير المكتملة بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء استرجاع الفاتورة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void AutoSavePurchaseDraft()
+        {
+            if (_items == null || _items.Count == 0 || _editPurchaseID > 0) return;
+
+            try
+            {
+                int suppId = 0;
+                string suppName = "مورد غير محدد";
+                if (cboSupplier != null && cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
+                {
+                    suppId = ci.ID;
+                    suppName = ci.Text;
+                }
+
+                int whId = 1;
+                if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0)
+                {
+                    whId = wci.ID;
+                }
+
+                decimal.TryParse(txtInvoiceDiscount?.Text, out decimal discVal);
+                decimal.TryParse(txtShippingCost?.Text, out decimal shipping);
+                decimal.TryParse(lblNetVal?.Text?.Replace(" ج", "")?.Replace(",", "")?.Trim(), out decimal netTotal);
+
+                var data = new PurchaseDraftData
+                {
+                    SupplierID = suppId,
+                    SupplierName = suppName,
+                    SupplierInvoiceNo = txtSupplierInvoiceNo?.Text,
+                    WarehouseID = whId,
+                    PaymentType = _purchaseType,
+                    DiscountVal = discVal,
+                    ShippingCost = shipping,
+                    Notes = txtNotes?.Text,
+                    Items = new List<PurchaseDraftItem>()
+                };
+
+                foreach (var itm in _items)
+                {
+                    data.Items.Add(new PurchaseDraftItem
+                    {
+                        ProductID = itm.ProductID,
+                        ProductCode = itm.ProductCode,
+                        ProductName = itm.ProductName,
+                        Unit = itm.UnitName,
+                        Quantity = itm.Quantity,
+                        UnitPrice = itm.UnitPrice,
+                        LineDiscount = itm.DiscountAmt,
+                        Factor = itm.Factor,
+                        LineTotal = itm.TotalPrice,
+                        ExpiryDate = itm.ExpiryDate?.ToString("yyyy-MM-dd"),
+                        IMEI = itm.IMEI
+                    });
+                }
+
+                string draftKey = $"Purchase_User_{Session.EmpID}";
+                DraftManager.SaveDraft("Purchase", draftKey, Session.EmpID, suppId, suppName, _purchaseType, netTotal, _items.Count, data);
+            }
+            catch { }
         }
 
         // ══════════════════════════════════════════════════════════════════════
