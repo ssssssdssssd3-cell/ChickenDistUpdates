@@ -1310,10 +1310,52 @@ namespace ChickenDist.Forms
                 targetQty += existing.Qty;
             }
 
-            if (!CheckAvailableStock(productID, batchID, targetQty * factor, out decimal available, out string err))
+            bool isService = false;
+            var isServiceObj = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", productID));
+            if (isServiceObj != null && isServiceObj != DBNull.Value && Convert.ToBoolean(isServiceObj))
             {
-                MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                isService = true;
+            }
+
+            if (!isService)
+            {
+                decimal availableStock = 0m;
+                if (batchID.HasValue)
+                {
+                    var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
+                    availableStock = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
+                }
+                else
+                {
+                    availableStock = InventoryDAL.GetProductStock(productID, 1);
+                }
+
+                if (availableStock <= 0m)
+                {
+                    MessageBox.Show($"❌ عجز: الصنف '{name}' ليس لديه رصيد متاح في المخزن حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                decimal maxAvailInUnit = availableStock / (factor > 0 ? factor : 1m);
+
+                // إذا كان المطلوب أكبر من المتاح، نضبط الكمية لتكون المتاح بالكامل
+                if (targetQty > maxAvailInUnit)
+                {
+                    if (existing != null)
+                    {
+                        if (existing.Qty >= maxAvailInUnit)
+                        {
+                            MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:G29}) للصنف '{name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            return;
+                        }
+                        targetQty = maxAvailInUnit;
+                    }
+                    else
+                    {
+                        qty = maxAvailInUnit;
+                        targetQty = qty;
+                    }
+                }
             }
 
             if (existing != null)
@@ -1586,12 +1628,24 @@ namespace ChickenDist.Forms
                 {
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
-                        MessageBox.Show(err, "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
-                        return;
+                        decimal maxAvail = available / (item.Factor > 0 ? item.Factor : 1m);
+                        if (maxAvail > 0)
+                        {
+                            MessageBox.Show($"⚠️ الكمية المطلوبة أكبر من الرصيد المتاح.\nتم ضبط الكمية على أقصى رصيد متاح بالمخزن ({maxAvail:G29}) لمنع البيع بالسالب.", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            item.Qty = maxAvail;
+                        }
+                        else
+                        {
+                            MessageBox.Show(err + "\nالبيع بالسالب غير مسموح.", "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
+                            return;
+                        }
                     }
-                    item.Qty = newQty;
-                    item.Total = (newQty * item.Price) - item.DiscountAmt;
+                    else
+                    {
+                        item.Qty = newQty;
+                    }
+                    item.Total = (item.Qty * item.Price) - item.DiscountAmt;
                     this.BeginInvoke(new Action(RefreshGrid));
                 }
                 else

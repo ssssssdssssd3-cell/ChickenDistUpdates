@@ -3349,10 +3349,34 @@ namespace ChickenDist.Forms
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-					else RefreshGrid();
-					return;
+					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
+					if (!isServiceDB && maxAvailInUnit > 0 && newQty > maxAvailInUnit)
+					{
+						if (existingRow != null)
+						{
+							if (existingRow.Quantity >= maxAvailInUnit)
+							{
+								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+								else RefreshGrid();
+								return;
+							}
+							newQty = maxAvailInUnit;
+						}
+						else
+						{
+							qtyToAdd = maxAvailInUnit;
+							newQty = maxAvailInUnit;
+							tempItem.Quantity = maxAvailInUnit;
+						}
+					}
+					else
+					{
+						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+						else RefreshGrid();
+						return;
+					}
 				}
 
 				if (existingRow != null)
@@ -3394,10 +3418,34 @@ namespace ChickenDist.Forms
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-					else RefreshGrid();
-					return;
+					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
+					if (!isServiceDB && maxAvailInUnit > 0 && newQty > maxAvailInUnit)
+					{
+						if (existingRow != null)
+						{
+							if (existingRow.Quantity >= maxAvailInUnit)
+							{
+								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+								else RefreshGrid();
+								return;
+							}
+							newQty = maxAvailInUnit;
+						}
+						else
+						{
+							qtyToAdd = maxAvailInUnit;
+							newQty = maxAvailInUnit;
+							tempItem.Quantity = maxAvailInUnit;
+						}
+					}
+					else
+					{
+						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+						else RefreshGrid();
+						return;
+					}
 				}
 
 				decimal oldPrice = product.Price;
