@@ -506,66 +506,8 @@ namespace ChickenDist.DAL
 
         public static void PromptZeroStockDialog(Form parent, List<ZeroStockItemDTO> zeroItems)
         {
-            if (zeroItems == null || zeroItems.Count == 0) return;
-
-            try
-            {
-                if (zeroItems.Count == 1)
-                {
-                    var item = zeroItems[0];
-                    string msg = $"⚠️ تنبيه نفاد المخزون:\n\nالصنف: [{item.ProductName}]\nأصبح رصيده في المخزن (0) بعد هذه العملية!\n\nهل ترغب في إضافته وتأكيده في كشكول النواقص لتوريده؟";
-                    DialogResult res = MessageBox.Show(parent, msg, "نفاد المخزون (رصيد 0)", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                    if (res == DialogResult.Yes)
-                    {
-                        AddOrUpdateShortage(
-                            productID: item.ProductID,
-                            productName: item.ProductName,
-                            requestedQty: item.MinStockLimit > 0 ? item.MinStockLimit : 1,
-                            currentStock: item.CurrentStock,
-                            minStockLimit: item.MinStockLimit,
-                            notes: "تمت الإضافة بتأكيد المستخدم عند نفاد الرصيد (0)",
-                            source: "آلي (رصيد صفر)",
-                            status: "جديد",
-                            supplierID: item.SupplierID,
-                            supplierName: item.SupplierName,
-                            categoryID: item.CategoryID,
-                            categoryName: item.CategoryName,
-                            brand: item.Brand
-                        );
-                    }
-                }
-                else
-                {
-                    string names = string.Join("\n • ", zeroItems.ConvertAll(x => x.ProductName));
-                    string msg = $"⚠️ تنبيه نفاد المخزون:\n\nالأصناف التالية أصبحت رصيدها (0) في المخزن:\n • {names}\n\nهل ترغب في إضافة هذه الأصناف بالكامل إلى كشكول النواقص؟";
-                    DialogResult res = MessageBox.Show(parent, msg, "أصناف نفدت من المخزون", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                    if (res == DialogResult.Yes)
-                    {
-                        foreach (var item in zeroItems)
-                        {
-                            AddOrUpdateShortage(
-                                productID: item.ProductID,
-                                productName: item.ProductName,
-                                requestedQty: item.MinStockLimit > 0 ? item.MinStockLimit : 1,
-                                currentStock: item.CurrentStock,
-                                minStockLimit: item.MinStockLimit,
-                                notes: "تمت الإضافة بتأكيد المستخدم عند نفاد الرصيد (0)",
-                                source: "آلي (رصيد صفر)",
-                                status: "جديد",
-                                supplierID: item.SupplierID,
-                                supplierName: item.SupplierName,
-                                categoryID: item.CategoryID,
-                                categoryName: item.CategoryName,
-                                brand: item.Brand
-                            );
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Error("ShortageDAL.PromptZeroStockDialog", ex);
-            }
+            // تم إلغاء النوافذ المنبثقة التفاعلية لأن النواقص تُسجل آلياً في الخلفية
+            // لمنع إرباك الكاشير وتعطيل سرعة إصدار الفواتير
         }
 
         public static DataTable GetComprehensiveShortages(

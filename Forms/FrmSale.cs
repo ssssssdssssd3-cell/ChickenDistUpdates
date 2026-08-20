@@ -4154,11 +4154,8 @@ namespace ChickenDist.Forms
 						try
 						{
 							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
-							var zeroItems = ShortageDAL.ProcessStockChangesAfterSale(soldPids);
-							if (zeroItems.Count > 0)
-							{
-								ShortageDAL.PromptZeroStockDialog(this, zeroItems);
-							}
+							// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
+							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
 						}
 						catch { }
 
@@ -4258,11 +4255,8 @@ namespace ChickenDist.Forms
 						try
 						{
 							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
-							var zeroItems = ShortageDAL.ProcessStockChangesAfterSale(soldPids);
-							if (zeroItems.Count > 0)
-							{
-								ShortageDAL.PromptZeroStockDialog(this, zeroItems);
-							}
+							// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
+							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
 						}
 						catch { }
 					}
