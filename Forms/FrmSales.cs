@@ -380,6 +380,7 @@ namespace ChickenDist.Forms
 				FillWeight = 100f
 			});
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
+			SetupSalesGridContextMenu();
 
 			// الصف 1: تفاصيل الأصناف والتحكم (تحت بعض بكامل العرض)
 			TableLayoutPanel tblDetail = new TableLayoutPanel
@@ -941,6 +942,87 @@ namespace ChickenDist.Forms
 			FrmSale frmSale = new FrmSale(saleID, isCopyMode: true);
 			frmSale.ShowDialog();
 			LoadSales();
+		}
+
+		private void SetupSalesGridContextMenu()
+		{
+			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+
+			var miPrint = new ToolStripMenuItem("🖨️ طباعة الفاتورة", null, (s, e) => BtnPrint_Click(s, e));
+			var miWhatsApp = new ToolStripMenuItem("📱 إرسال الفاتورة عبر واتساب", null, (s, e) =>
+			{
+				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleID"))
+				{
+					int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+					FrmSale.SendSaleInvoiceWhatsApp(saleID, this);
+				}
+			});
+			var miEdit = new ToolStripMenuItem("📝 تعديل الفاتورة", null, (s, e) => BtnEdit_Click(s, e));
+			var miCopy = new ToolStripMenuItem("📄 نسخ الفاتورة", null, (s, e) => BtnCopy_Click(s, e));
+			var miReturn = new ToolStripMenuItem("↩️ فتح شاشة المرتجعات", null, (s, e) =>
+			{
+				new FrmReturn().ShowDialog(this);
+			});
+			var miStatement = new ToolStripMenuItem("👤 كشف حساب العميل", null, (s, e) =>
+			{
+				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleID"))
+				{
+					int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
+					string cname = dgSales.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
+					object cidObj = DbHelper.Scalar("SELECT ClientID FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
+					if (cidObj != null && int.TryParse(cidObj.ToString(), out int cid) && cid > 0)
+					{
+						new FrmClientStatement(cid, cname, 0).ShowDialog(this);
+					}
+					else
+					{
+						MessageBox.Show("هذه الفاتورة نقدية وليست لعميل مسجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+				}
+			});
+			var miAudit = new ToolStripMenuItem("🔒 سجل تعديلات وعمليات الفواتير", null, (s, e) =>
+			{
+				new FrmSalesAuditList().ShowDialog(this);
+			});
+			var miCopyCode = new ToolStripMenuItem("📋 نسخ رقم الفاتورة", null, (s, e) =>
+			{
+				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleCode"))
+				{
+					string code = dgSales.SelectedRows[0].Cells["SaleCode"].Value?.ToString() ?? "";
+					if (!string.IsNullOrEmpty(code))
+					{
+						Clipboard.SetText(code);
+					}
+				}
+			});
+
+			ctx.Items.AddRange(new ToolStripItem[] {
+				miPrint,
+				miWhatsApp,
+				miEdit,
+				miCopy,
+				miReturn,
+				new ToolStripSeparator(),
+				miStatement,
+				miAudit,
+				new ToolStripSeparator(),
+				miCopyCode
+			});
+
+			dgSales.ContextMenuStrip = ctx;
+			dgSales.MouseDown += (s, e) =>
+			{
+				if (e.Button == MouseButtons.Right)
+				{
+					var hit = dgSales.HitTest(e.X, e.Y);
+					if (hit.RowIndex >= 0)
+					{
+						dgSales.ClearSelection();
+						dgSales.Rows[hit.RowIndex].Selected = true;
+						dgSales.CurrentCell = dgSales.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+					}
+				}
+			};
 		}
 	}
 }

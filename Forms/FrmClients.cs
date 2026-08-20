@@ -124,6 +124,7 @@ namespace ChickenDist.Forms
                 dgClients.Columns["CratesBalance"].Visible = false;
             }
             dgClients.SelectionChanged += DgClients_SelectionChanged;
+            SetupClientsContextMenu();
             
             pnlGrid.Controls.Add(dgClients);
             pnlGrid.Controls.Add(pnlSearch);
@@ -502,6 +503,96 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0) { MessageBox.Show("اختر عميلاً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             new FrmReports("Clients", _selectedID).ShowDialog();
+        }
+
+        private void SetupClientsContextMenu()
+        {
+            var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+
+            var miStatement = new ToolStripMenuItem("📑 كشف حساب تفصيلي", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
+                {
+                    int cid = Convert.ToInt32(dgClients.SelectedRows[0].Cells["ClientID"].Value);
+                    string cname = dgClients.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
+                    new FrmClientStatement(cid, cname, 0).ShowDialog(this);
+                }
+            });
+
+            var miItemized = new ToolStripMenuItem("📊 كشف حساب بالأصناف والكميات", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
+                {
+                    int cid = Convert.ToInt32(dgClients.SelectedRows[0].Cells["ClientID"].Value);
+                    string cname = dgClients.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
+                    new FrmClientStatement(cid, cname, 1).ShowDialog(this);
+                }
+            });
+
+            var miPayment = new ToolStripMenuItem("💵 سند قبض سريع", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
+                {
+                    BtnPayment_Click(s, e);
+                }
+            });
+
+            var miWhatsApp = new ToolStripMenuItem("📱 مراسلة واتساب / تذكير بالمديونية", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
+                {
+                    string phone = dgClients.SelectedRows[0].Cells["Phone"].Value?.ToString() ?? "";
+                    string name = dgClients.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
+                    string bal = dgClients.SelectedRows[0].Cells["Balance"].Value?.ToString() ?? "0";
+                    if (!string.IsNullOrEmpty(phone))
+                    {
+                        string msg = Uri.EscapeDataString($"مرحباً {name}، نود إحاطتكم بأن رصيد حسابكم الحالي طرفنا هو: {bal} ج.");
+                        string cleanPhone = phone.Replace(" ", "").Replace("-", "");
+                        if (cleanPhone.StartsWith("01")) cleanPhone = "2" + cleanPhone;
+                        try { System.Diagnostics.Process.Start($"https://wa.me/{cleanPhone}?text={msg}"); } catch { }
+                    }
+                    else
+                    {
+                        MessageBox.Show("لا يوجد رقم هاتف مسجل لهذا العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            });
+
+            var miCopyPhone = new ToolStripMenuItem("📋 نسخ رقم الهاتف", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("Phone"))
+                {
+                    string phone = dgClients.SelectedRows[0].Cells["Phone"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(phone))
+                    {
+                        Clipboard.SetText(phone);
+                    }
+                }
+            });
+
+            ctx.Items.AddRange(new ToolStripItem[] {
+                miStatement,
+                miItemized,
+                miPayment,
+                miWhatsApp,
+                new ToolStripSeparator(),
+                miCopyPhone
+            });
+
+            dgClients.ContextMenuStrip = ctx;
+            dgClients.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = dgClients.HitTest(e.X, e.Y);
+                    if (hit.RowIndex >= 0)
+                    {
+                        dgClients.ClearSelection();
+                        dgClients.Rows[hit.RowIndex].Selected = true;
+                        dgClients.CurrentCell = dgClients.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                    }
+                }
+            };
         }
     }
 }

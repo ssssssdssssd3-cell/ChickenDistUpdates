@@ -99,6 +99,7 @@ namespace ChickenDist.Forms
             dgSuppliers.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 60 });
             dgSuppliers.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
             dgSuppliers.SelectionChanged += DgSuppliers_SelectionChanged;
+            SetupSuppliersContextMenu();
 
             pnlGrid.Controls.Add(dgSuppliers);
             pnlGrid.Controls.Add(pnlSearch);
@@ -418,6 +419,93 @@ namespace ChickenDist.Forms
                 return;
             }
             new FrmReports("Suppliers", _selectedID).ShowDialog();
+        }
+
+        private void SetupSuppliersContextMenu()
+        {
+            var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+
+            var miStatement = new ToolStripMenuItem("📑 كشف حساب تفصيلي", null, (s, e) =>
+            {
+                if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
+                {
+                    int sid = Convert.ToInt32(dgSuppliers.SelectedRows[0].Cells["SupplierID"].Value);
+                    string sname = dgSuppliers.SelectedRows[0].Cells["SupplierName"].Value?.ToString() ?? "";
+                    new FrmSupplierStatement(sid, sname).ShowDialog(this);
+                }
+            });
+
+            var miMovement = new ToolStripMenuItem("📊 تقرير حركة أصناف المورد", null, (s, e) =>
+            {
+                if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
+                {
+                    BtnItemMovementReport_Click(s, e);
+                }
+            });
+
+            var miPayment = new ToolStripMenuItem("💵 سند صرف سريع", null, (s, e) =>
+            {
+                if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
+                {
+                    BtnExpense_Click(s, e);
+                }
+            });
+
+            var miWhatsApp = new ToolStripMenuItem("📱 مراسلة واتساب للمورد", null, (s, e) =>
+            {
+                if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
+                {
+                    string phone = dgSuppliers.SelectedRows[0].Cells["Phone"].Value?.ToString() ?? "";
+                    string name = dgSuppliers.SelectedRows[0].Cells["SupplierName"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(phone))
+                    {
+                        string msg = Uri.EscapeDataString($"مرحباً {name}، نود الاستفسار بشأن الحساب والطلبيات.");
+                        string cleanPhone = phone.Replace(" ", "").Replace("-", "");
+                        if (cleanPhone.StartsWith("01")) cleanPhone = "2" + cleanPhone;
+                        try { System.Diagnostics.Process.Start($"https://wa.me/{cleanPhone}?text={msg}"); } catch { }
+                    }
+                    else
+                    {
+                        MessageBox.Show("لا يوجد رقم هاتف مسجل لهذا المورد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            });
+
+            var miCopyPhone = new ToolStripMenuItem("📋 نسخ رقم الهاتف", null, (s, e) =>
+            {
+                if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("Phone"))
+                {
+                    string phone = dgSuppliers.SelectedRows[0].Cells["Phone"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(phone))
+                    {
+                        Clipboard.SetText(phone);
+                    }
+                }
+            });
+
+            ctx.Items.AddRange(new ToolStripItem[] {
+                miStatement,
+                miMovement,
+                miPayment,
+                miWhatsApp,
+                new ToolStripSeparator(),
+                miCopyPhone
+            });
+
+            dgSuppliers.ContextMenuStrip = ctx;
+            dgSuppliers.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = dgSuppliers.HitTest(e.X, e.Y);
+                    if (hit.RowIndex >= 0)
+                    {
+                        dgSuppliers.ClearSelection();
+                        dgSuppliers.Rows[hit.RowIndex].Selected = true;
+                        dgSuppliers.CurrentCell = dgSuppliers.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                    }
+                }
+            };
         }
     }
 }

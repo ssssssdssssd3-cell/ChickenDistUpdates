@@ -153,6 +153,7 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",             HeaderText = "الملاحظات",      FillWeight = 110f });
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+			SetupPurchasesGridContextMenu();
 
 			// الصف 1: تفاصيل الأصناف (تحت بعض بكامل العرض)
 			var tblDetail = new TableLayoutPanel
@@ -417,6 +418,85 @@ namespace ChickenDist.Forms
 
 			if (sender is Control ctrl)
 				menu.Show(ctrl, new System.Drawing.Point(0, ctrl.Height));
+		}
+
+		private void SetupPurchasesGridContextMenu()
+		{
+			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+
+			var miPrint = new ToolStripMenuItem("🖨️ طباعة الفاتورة", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0)
+				{
+					BtnPrintPurchase_Click(dgPurchases, EventArgs.Empty);
+				}
+			});
+
+			var miBarcode = new ToolStripMenuItem("🏷️ طباعة باركود أصناف الفاتورة", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
+				{
+					int pid = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+					string code = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value?.ToString() ?? "";
+					new FrmPrintPurchaseBarcodes(pid, code).ShowDialog(this);
+				}
+			});
+
+			var miReturn = new ToolStripMenuItem("↩️ إنشاء مرتجع مشتريات", null, (s, e) =>
+			{
+				new FrmPurchaseReturn().ShowDialog(this);
+			});
+
+			var miStatement = new ToolStripMenuItem("🏭 كشف حساب المورد", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
+				{
+					int pid = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+					string sname = dgPurchases.SelectedRows[0].Cells["SupplierName"].Value?.ToString() ?? "";
+					object suppObj = DbHelper.Scalar("SELECT SupplierID FROM Purchases WHERE PurchaseID = @id", DbHelper.P("@id", pid));
+					if (suppObj != null && int.TryParse(suppObj.ToString(), out int suppId) && suppId > 0)
+					{
+						new FrmSupplierStatement(suppId, sname).ShowDialog(this);
+					}
+				}
+			});
+
+			var miCopyCode = new ToolStripMenuItem("📋 نسخ رقم الفاتورة", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseCode"))
+				{
+					string code = dgPurchases.SelectedRows[0].Cells["PurchaseCode"].Value?.ToString() ?? "";
+					if (!string.IsNullOrEmpty(code))
+					{
+						Clipboard.SetText(code);
+					}
+				}
+			});
+
+			ctx.Items.AddRange(new ToolStripItem[] {
+				miPrint,
+				miBarcode,
+				miReturn,
+				new ToolStripSeparator(),
+				miStatement,
+				new ToolStripSeparator(),
+				miCopyCode
+			});
+
+			dgPurchases.ContextMenuStrip = ctx;
+			dgPurchases.MouseDown += (s, e) =>
+			{
+				if (e.Button == MouseButtons.Right)
+				{
+					var hit = dgPurchases.HitTest(e.X, e.Y);
+					if (hit.RowIndex >= 0)
+					{
+						dgPurchases.ClearSelection();
+						dgPurchases.Rows[hit.RowIndex].Selected = true;
+						dgPurchases.CurrentCell = dgPurchases.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+					}
+				}
+			};
 		}
 	}
 }

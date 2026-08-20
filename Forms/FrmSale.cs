@@ -1060,6 +1060,7 @@ namespace ChickenDist.Forms
 			pnlItems.Controls.Add(pnlQuickItems);
 			pnlItems.Controls.Add(pnlProductBar);
 			LoadColumnSettings();
+			SetupGridContextMenu();
 
 			// ── 4. تذييل الصفحة (Footer Panel & Summary) ─────────────────────
 			pnlFooter = new Panel
@@ -2658,6 +2659,124 @@ namespace ChickenDist.Forms
 				dgItems.CurrentCell = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex];
 				dgItems.BeginEdit(true);
 			}
+		}
+
+		private void SetupGridContextMenu()
+		{
+			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+
+			var miCard = new ToolStripMenuItem("🔍 كارت الصنف وتعديل البيانات (F4)", null, (s, e) =>
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					int pid = _items[dgItems.CurrentRow.Index].ProductID;
+					if (pid > 0)
+					{
+						using (var frm = new FrmProductCard(pid))
+						{
+							if (frm.ShowDialog(this) == DialogResult.OK)
+							{
+								LoadCombos();
+								RefreshGrid();
+							}
+						}
+					}
+				}
+			});
+
+			var miStock = new ToolStripMenuItem("📊 رصيد الصنف في المخازن", null, (s, e) =>
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					var item = _items[dgItems.CurrentRow.Index];
+					if (item.ProductID > 0)
+					{
+						var dt = DbHelper.Query(@"
+							SELECT w.WarehouseName, ISNULL(ps.Quantity, 0) AS Qty
+							FROM Warehouses w
+							LEFT JOIN ProductStock ps ON w.WarehouseID = ps.WarehouseID AND ps.ProductID = @pid",
+							DbHelper.P("@pid", item.ProductID));
+						string msg = $"📦 تفاصيل رصيد الصنف: {item.ProductName}\n" + new string('-', 40) + "\n";
+						decimal totalStock = 0;
+						foreach (DataRow r in dt.Rows)
+						{
+							decimal q = Convert.ToDecimal(r["Qty"]);
+							totalStock += q;
+							msg += $"• {r["WarehouseName"]}: {q:N2} {item.UnitName}\n";
+						}
+						msg += new string('-', 40) + $"\nالإجمالي الكلي: {totalStock:N2} {item.UnitName}";
+						MessageBox.Show(msg, "رصيد المخازن", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+				}
+			});
+
+			var miBarcode = new ToolStripMenuItem("🏷️ طباعة باركود الصنف", null, (s, e) =>
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					var item = _items[dgItems.CurrentRow.Index];
+					if (item.ProductID > 0)
+					{
+						var dt = DbHelper.Query("SELECT ProductCode, InternationalCode, ShelfLocation, SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+						if (dt.Rows.Count > 0)
+						{
+							string code = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+							string intCode = dt.Rows[0]["InternationalCode"]?.ToString() ?? "";
+							string loc = dt.Rows[0]["ShelfLocation"]?.ToString() ?? "";
+							decimal price = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : item.UnitPrice;
+							using (var frm = new FrmPrintProductBarcode(item.ProductID, item.ProductName, code, intCode, price, loc))
+							{
+								frm.ShowDialog(this);
+							}
+						}
+					}
+				}
+			});
+
+			var miNote = new ToolStripMenuItem("📝 تعديل السيريال / الملاحظة", null, (s, e) =>
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0)
+				{
+					if (dgItems.Columns.Contains("IMEI"))
+					{
+						dgItems.CurrentCell = dgItems.CurrentRow.Cells["IMEI"];
+						dgItems.BeginEdit(true);
+					}
+				}
+			});
+
+			var miDel = new ToolStripMenuItem("🗑️ حذف الصنف من الفاتورة (Del)", null, (s, e) =>
+			{
+				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
+				{
+					_items.RemoveAt(dgItems.CurrentRow.Index);
+					RefreshGrid();
+				}
+			});
+
+			ctx.Items.AddRange(new ToolStripItem[] {
+				miCard,
+				miStock,
+				miBarcode,
+				miNote,
+				new ToolStripSeparator(),
+				miDel
+			});
+
+			dgItems.ContextMenuStrip = ctx;
+			dgItems.MouseDown += (s, e) =>
+			{
+				if (e.Button == MouseButtons.Right)
+				{
+					var hit = dgItems.HitTest(e.X, e.Y);
+					if (hit.RowIndex >= 0)
+					{
+						dgItems.ClearSelection();
+						dgItems.Rows[hit.RowIndex].Selected = true;
+						dgItems.CurrentCell = dgItems.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+					}
+				}
+			};
 		}
 
 		private void DgItems_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)

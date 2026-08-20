@@ -333,6 +333,67 @@ namespace ChickenDist.Forms
             dgItems.KeyDown += DgItems_KeyDown;
 
             var cmsPOS = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+            cmsPOS.Items.Add("🔍 كارت الصنف السريع (F4)", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
+                    if (pId > 0)
+                    {
+                        if (new FrmProductCard(pId).ShowDialog(this) == DialogResult.OK)
+                        {
+                            RefreshGrid();
+                        }
+                    }
+                }
+            });
+            cmsPOS.Items.Add("📊 فحص رصيد الصنف بالمخازن", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
+                    string name = _items[dgItems.SelectedRows[0].Index].Name;
+                    if (pId > 0)
+                    {
+                        var dt = DbHelper.Query(@"
+                            SELECT w.WarehouseName, ISNULL(ps.Quantity, 0) AS Qty
+                            FROM Warehouses w
+                            LEFT JOIN ProductStock ps ON w.WarehouseID = ps.WarehouseID AND ps.ProductID = @pid",
+                            DbHelper.P("@pid", pId));
+                        string msg = $"📦 تفاصيل رصيد الصنف: {name}\n" + new string('-', 40) + "\n";
+                        decimal totalStock = 0;
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            decimal q = Convert.ToDecimal(r["Qty"]);
+                            totalStock += q;
+                            msg += $"• {r["WarehouseName"]}: {q:N2}\n";
+                        }
+                        msg += new string('-', 40) + $"\nالإجمالي الكلي: {totalStock:N2}";
+                        MessageBox.Show(msg, "رصيد المخازن", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            });
+            cmsPOS.Items.Add("🏷️ طباعة باركود الصنف", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
+                    if (pId > 0)
+                    {
+                        var dt = DbHelper.Query("SELECT ProductName, ProductCode, InternationalCode, ShelfLocation, SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", pId));
+                        if (dt.Rows.Count > 0)
+                        {
+                            string name = dt.Rows[0]["ProductName"]?.ToString() ?? "";
+                            string code = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+                            string intCode = dt.Rows[0]["InternationalCode"]?.ToString() ?? "";
+                            string loc = dt.Rows[0]["ShelfLocation"]?.ToString() ?? "";
+                            decimal price = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : _items[dgItems.SelectedRows[0].Index].Price;
+                            using (var frm = new FrmPrintProductBarcode(pId, name, code, intCode, price, loc))
+                            {
+                                frm.ShowDialog(this);
+                            }
+                        }
+                    }
+                }
+            });
+            cmsPOS.Items.Add(new ToolStripSeparator());
             cmsPOS.Items.Add("📓 إضافة الصنف المحدد لكشكول النواقص", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
@@ -347,7 +408,27 @@ namespace ChickenDist.Forms
                 }
             });
             cmsPOS.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => new FrmMinStockEdit().ShowDialog());
+            cmsPOS.Items.Add(new ToolStripSeparator());
+            cmsPOS.Items.Add("🗑️ حذف الصنف من الفاتورة (Del)", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    _items.RemoveAt(dgItems.SelectedRows[0].Index);
+                    RefreshGrid();
+                }
+            });
             dgItems.ContextMenuStrip = cmsPOS;
+            dgItems.MouseDown += (s, e) => {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = dgItems.HitTest(e.X, e.Y);
+                    if (hit.RowIndex >= 0 && hit.RowIndex < _items.Count)
+                    {
+                        dgItems.ClearSelection();
+                        dgItems.Rows[hit.RowIndex].Selected = true;
+                        dgItems.CurrentCell = dgItems.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                    }
+                }
+            };
 
             this.Controls.Add(dgItems);
 

@@ -281,19 +281,84 @@ namespace ChickenDist.Forms
             Theme.AdjustGridHeaders(dgProducts);
 
             var cmsProducts = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cmsProducts.Items.Add("📓 إضافة الصنف لكشكول النواقص", null, (s, e) => AddSelectedToShortages());
-            cmsProducts.Items.Add("🎯 تعديل حد الطلب والنواقص", null, (s, e) => {
-                new FrmMinStockEdit().ShowDialog();
-                LoadProducts();
-            });
-            cmsProducts.Items.Add("📝 تعديل ومعاينة بطاقة الصنف", null, (s, e) => {
+            cmsProducts.Items.Add("🔍 تعديل ومعاينة بطاقة الصنف (F4)", null, (s, e) => {
                 if (dgProducts.SelectedRows.Count > 0)
                 {
                     int productID = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
                     if (new FrmProductCard(productID).ShowDialog() == DialogResult.OK) LoadProducts();
                 }
             });
+            cmsProducts.Items.Add("🏷️ طباعة باركود الصنف", null, (s, e) => {
+                if (dgProducts.SelectedRows.Count > 0)
+                {
+                    int pid = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
+                    var dt = DbHelper.Query("SELECT ProductName, ProductCode, InternationalCode, ShelfLocation, SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                    if (dt.Rows.Count > 0)
+                    {
+                        string name = dt.Rows[0]["ProductName"]?.ToString() ?? "";
+                        string code = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+                        string intCode = dt.Rows[0]["InternationalCode"]?.ToString() ?? "";
+                        string loc = dt.Rows[0]["ShelfLocation"]?.ToString() ?? "";
+                        decimal price = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : 0m;
+                        using (var frm = new FrmPrintProductBarcode(pid, name, code, intCode, price, loc))
+                        {
+                            frm.ShowDialog(this);
+                        }
+                    }
+                }
+            });
+            cmsProducts.Items.Add("📊 فحص رصيد الصنف في المخازن", null, (s, e) => {
+                if (dgProducts.SelectedRows.Count > 0)
+                {
+                    int pid = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
+                    string name = dgProducts.SelectedRows[0].Cells["ProductName"].Value?.ToString() ?? "";
+                    var dt = DbHelper.Query(@"
+                        SELECT w.WarehouseName, ISNULL(ps.Quantity, 0) AS Qty
+                        FROM Warehouses w
+                        LEFT JOIN ProductStock ps ON w.WarehouseID = ps.WarehouseID AND ps.ProductID = @pid",
+                        DbHelper.P("@pid", pid));
+                    string msg = $"📦 تفاصيل رصيد الصنف: {name}\n" + new string('-', 40) + "\n";
+                    decimal totalStock = 0;
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        decimal q = Convert.ToDecimal(r["Qty"]);
+                        totalStock += q;
+                        msg += $"• {r["WarehouseName"]}: {q:N2}\n";
+                    }
+                    msg += new string('-', 40) + $"\nالإجمالي الكلي: {totalStock:N2}";
+                    MessageBox.Show(msg, "رصيد المخازن", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            });
+            cmsProducts.Items.Add(new ToolStripSeparator());
+            cmsProducts.Items.Add("📓 إضافة الصنف لكشكول النواقص", null, (s, e) => AddSelectedToShortages());
+            cmsProducts.Items.Add("🎯 تعديل حد الطلب والنواقص", null, (s, e) => {
+                new FrmMinStockEdit().ShowDialog();
+                LoadProducts();
+            });
+            cmsProducts.Items.Add(new ToolStripSeparator());
+            cmsProducts.Items.Add("📋 نسخ كود / باركود الصنف", null, (s, e) => {
+                if (dgProducts.SelectedRows.Count > 0 && dgProducts.Columns.Contains("ProductCode"))
+                {
+                    string code = dgProducts.SelectedRows[0].Cells["ProductCode"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(code))
+                    {
+                        Clipboard.SetText(code);
+                    }
+                }
+            });
             dgProducts.ContextMenuStrip = cmsProducts;
+            dgProducts.MouseDown += (s, e) => {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = dgProducts.HitTest(e.X, e.Y);
+                    if (hit.RowIndex >= 0)
+                    {
+                        dgProducts.ClearSelection();
+                        dgProducts.Rows[hit.RowIndex].Selected = true;
+                        dgProducts.CurrentCell = dgProducts.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                    }
+                }
+            };
 
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             dgProducts.CellDoubleClick += (s, e) => {
