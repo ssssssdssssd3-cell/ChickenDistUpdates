@@ -196,7 +196,7 @@ namespace ChickenDist.Forms
 
             try
             {
-                pd.Print();
+                AppConfig.PrintInBackground(pd);
             }
             catch (Exception ex)
             {

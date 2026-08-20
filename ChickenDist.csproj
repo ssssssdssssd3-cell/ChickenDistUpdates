@@ -45,20 +45,11 @@
 
   <!-- Copy the bot and MobileApp folders automatically to the build output directory -->
   <ItemGroup>
-    <None Include="bot\**\*" Exclude="bot\node_modules\**\*;bot\.wwebjs_auth\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\bot\**\*" Exclude="..\bot\node_modules\**\*;..\bot\.wwebjs_auth\**\*">
-      <Link>bot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    <None Include="bot\*.js;bot\*.json;bot\*.txt;bot\public\**\*" Exclude="bot\package-lock.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="MobileApp\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
-  <!-- Run Obfuscar automatically after build in Release mode -->
-  <Target Name="RunObfuscar" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
-    <Exec Command="&quot;$(UserProfile)\.nuget\packages\obfuscar\2.2.38\tools\Obfuscar.Console.exe&quot; &quot;$(ProjectDir)obfuscar.xml&quot;" ContinueOnError="WarnAndContinue" />
-  </Target>
 </Project>

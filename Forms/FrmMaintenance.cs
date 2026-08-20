@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -390,6 +390,8 @@ namespace ChickenDist.Forms
 
             // طباعة التذكرة
             PrintDocument pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
+            AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
             pd.PrintPage += (s, ev) =>
             {
                 var row = dgTickets.SelectedRows[0];

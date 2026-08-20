@@ -95,6 +95,7 @@ namespace ChickenDist.Forms
         private void DoPrint()
         {
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             bool isReceipt = string.Equals(_printFormat, "Receipt", StringComparison.OrdinalIgnoreCase);
 
             if (isReceipt)
@@ -205,7 +206,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                pd.Print();
+                AppConfig.PrintInBackground(pd);
             }
         }
 

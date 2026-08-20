@@ -298,6 +298,37 @@ namespace ChickenDist.Core
             catch { }
         }
 
+        /// <summary>
+        /// تشغيل أمر الطباعة في الخلفية (Background Thread) مع منع تجميد/تهنيج البرنامج
+        /// وإخفاء نافذة الـ Popup المزعجة (الصفحة X من document) عبر StandardPrintController
+        /// </summary>
+        public static void PrintInBackground(System.Drawing.Printing.PrintDocument pd, Action onCompleted = null, Action<Exception> onError = null)
+        {
+            if (pd == null) return;
+            try
+            {
+                pd.PrintController = new System.Drawing.Printing.StandardPrintController();
+                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    try
+                    {
+                        pd.Print();
+                        onCompleted?.Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("PrintInBackground execution failed", ex, "Printer");
+                        onError?.Invoke(ex);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("PrintInBackground initialization failed", ex, "Printer");
+                onError?.Invoke(ex);
+            }
+        }
+
         public static int DriverPortalPort
         {
             get => int.TryParse(Get("DriverPortalPort", "8080"), out int p) ? p : 8080;

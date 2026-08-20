@@ -79,7 +79,7 @@ namespace ChickenDist.Forms
 
                 pd.PrintPage += Pd_PrintPage;
 
-                pd.Print();
+                AppConfig.PrintInBackground(pd);
             }
             catch (Exception ex)
             {

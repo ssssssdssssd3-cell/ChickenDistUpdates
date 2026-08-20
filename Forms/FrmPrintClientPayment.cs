@@ -219,7 +219,7 @@ namespace ChickenDist.Forms
                 g.DrawString("توقيع العميل: ....................",  fBody, Brushes.Black, left, y);
             };
 
-            try { pd.Print(); }
+            try { AppConfig.PrintInBackground(pd); }
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ في الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);

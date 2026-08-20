@@ -436,6 +436,7 @@ namespace ChickenDist.Forms
         private void BtnPrint_Click(object sender, EventArgs e)
         {
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             int currentRowIndex = 0;
             int pageNumber = 0;

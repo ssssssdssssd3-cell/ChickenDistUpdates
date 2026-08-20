@@ -309,6 +309,7 @@ namespace ChickenDist.Forms
             try
             {
                 var pd = new PrintDocument();
+                pd.PrintController = new StandardPrintController();
                 
                 if (cboPrinters.SelectedIndex > 0)
                 {

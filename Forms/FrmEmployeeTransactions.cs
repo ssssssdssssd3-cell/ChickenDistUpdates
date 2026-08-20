@@ -492,6 +492,8 @@ namespace ChickenDist.Forms
             _printRowIndex = 0;
 
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.Margins = new Margins(40, 40, 40, 40);
             pd.PrintPage += Pd_PrintPage;
 

@@ -413,6 +413,7 @@ namespace ChickenDist.Forms
 
             _printRowIndex = 0;
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
 

@@ -1110,6 +1110,7 @@ namespace ChickenDist.Forms
                 LoadDashboardData();
 
                 var pd = new System.Drawing.Printing.PrintDocument();
+                pd.PrintController = new System.Drawing.Printing.StandardPrintController();
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 
                 pd.PrintPage += (s, ev) =>

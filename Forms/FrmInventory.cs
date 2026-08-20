@@ -1953,6 +1953,7 @@ namespace ChickenDist.Forms
             _printStockRowIndex = 0;
             _printStockPageNum = 1;
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
 
@@ -2108,6 +2109,7 @@ namespace ChickenDist.Forms
             _printLogIndex = 0;
             _printLogPageNum = 1;
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
 
@@ -2413,6 +2415,7 @@ namespace ChickenDist.Forms
         {
             _printScaleRowIndex = 0;
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
 

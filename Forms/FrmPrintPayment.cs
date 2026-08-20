@@ -87,6 +87,7 @@ namespace ChickenDist.Forms
         private void DoPrint()
         {
             var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
             pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
@@ -376,7 +377,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                pd.Print();
+                AppConfig.PrintInBackground(pd);
             }
         }
 

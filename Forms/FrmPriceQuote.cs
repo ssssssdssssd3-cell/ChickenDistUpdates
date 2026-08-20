@@ -1131,7 +1131,7 @@ namespace ChickenDist.Forms
                 logoImg?.Dispose();
             };
 
-            try { pd.Print(); }
+            try { AppConfig.PrintInBackground(pd); }
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ في الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1456,7 +1456,7 @@ namespace ChickenDist.Forms
 
             try
             {
-                pd.Print();
+                AppConfig.PrintInBackground(pd);
             }
             catch (Exception ex)
             {

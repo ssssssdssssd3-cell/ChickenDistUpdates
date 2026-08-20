@@ -2638,6 +2638,7 @@ namespace ChickenDist.Forms
 				return;
 			}
 			PrintDocument printDocument = new PrintDocument();
+			printDocument.PrintController = new StandardPrintController();
 			AppConfig.SetPrinter(printDocument, AppConfig.A4PrinterName);
 			if (dg.Columns.Count > 5)
 			{
@@ -3006,6 +3007,7 @@ namespace ChickenDist.Forms
 		private void PrintDailyClosing(DataGridView dg)
 		{
 			var pd = new PrintDocument();
+			pd.PrintController = new StandardPrintController();
 			AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 			pd.DefaultPageSettings.Landscape = true;
 			pd.DefaultPageSettings.Margins = new Margins(30, 30, 40, 40);

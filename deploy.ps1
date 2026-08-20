@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.505"
+$VERSION   = "2.0.506"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -56,18 +56,13 @@ foreach ($path in $updateManagerPaths) {
 }
 
 # Step 2: Build
-Write-Step "Building (MSBuild Release)"
+Write-Step "Building (Release)"
 if (Test-Path $OUT_DIR) { 
     try { Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue } catch {}
 }
 New-Item -ItemType Directory -Path $OUT_DIR -Force | Out-Null
 
-$msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-if (Test-Path $msbuildPath) {
-    & $msbuildPath $CSPROJ /p:Configuration=Release /v:minimal /nologo
-} else {
-    & dotnet publish $CSPROJ -c Release -f net48 -o $OUT_DIR --nologo /p:UseSharedCompilation=false /nodereuse:false
-}
+& dotnet build $CSPROJ -c Release /p:UseSharedCompilation=false /p:NodeReuse=false /v:minimal /nologo
 
 if ($LASTEXITCODE -ne 0) {
     Write-Fail "Build failed!"
@@ -76,10 +71,12 @@ if ($LASTEXITCODE -ne 0) {
 Write-OK "Build successful"
 
 # Step 2.5: Ensure Obfuscar is executed if needed
-Write-Step "Checking Obfuscated Assembly"
 $obfuscarExe = "$env:USERPROFILE\.nuget\packages\obfuscar\2.2.38\tools\Obfuscar.Console.exe"
 $obfuscatedSource = "$PROJECT_DIR\bin\Release\net48\Obfuscated\ProSoft.exe"
-if (-not (Test-Path $obfuscatedSource) -and (Test-Path $obfuscarExe)) {
+if (Test-Path $obfuscatedSource) {
+    Remove-Item $obfuscatedSource -Force -ErrorAction SilentlyContinue
+}
+if (Test-Path $obfuscarExe) {
     & $obfuscarExe "$PROJECT_DIR\obfuscar.xml"
     Write-OK "Obfuscar completed successfully"
 }

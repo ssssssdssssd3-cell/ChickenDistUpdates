@@ -605,6 +605,7 @@ namespace ChickenDist.Forms
             try
             {
                 var pd = new System.Drawing.Printing.PrintDocument();
+                pd.PrintController = new System.Drawing.Printing.StandardPrintController();
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 
                 int rowIndex = 0;

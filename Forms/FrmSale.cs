@@ -4607,6 +4607,7 @@ namespace ChickenDist.Forms
 			bool isReceipt = (res == DialogResult.Yes);
 
 			var pd = new System.Drawing.Printing.PrintDocument();
+			pd.PrintController = new System.Drawing.Printing.StandardPrintController();
 			if (isReceipt)
 			{
 				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Receipt", 300, 1000);
@@ -4923,7 +4924,7 @@ namespace ChickenDist.Forms
 
 			try
 			{
-				pd.Print();
+				AppConfig.PrintInBackground(pd);
 			}
 			catch (Exception ex)
 			{

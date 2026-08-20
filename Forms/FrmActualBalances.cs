@@ -356,6 +356,8 @@ namespace ChickenDist.Forms
             try
             {
                 var pd = new PrintDocument();
+                pd.PrintController = new StandardPrintController();
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
                 pd.PrintPage += (s, pe) =>
                 {
                     Graphics g = pe.Graphics;

@@ -226,6 +226,7 @@ namespace ChickenDist.Forms
             }
 
             var pd = new System.Drawing.Printing.PrintDocument();
+            pd.PrintController = new System.Drawing.Printing.StandardPrintController();
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             pd.DefaultPageSettings.Landscape = true;
             int pageRow = 0;

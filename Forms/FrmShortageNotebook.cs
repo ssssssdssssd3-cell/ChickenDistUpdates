@@ -1069,6 +1069,8 @@ namespace ChickenDist.Forms
             {
                 using (var pd = new PrintDocument())
                 {
+                    pd.PrintController = new StandardPrintController();
+                    AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
                     int printRowIndex = 0;
 
                     pd.PrintPage += (s, e2) =>

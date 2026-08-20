@@ -743,16 +743,15 @@ namespace ChickenDist.Forms
             }
             _printItemIndex = 0;
             _pageNum = 1;
-            using (var pd = new PrintDocument())
+            var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
+            pd.PrintPage += PrintDoc_PrintPage;
+            using (var dlg = new PrintDialog())
             {
-                pd.PrintPage += PrintDoc_PrintPage;
-                using (var dlg = new PrintDialog())
+                dlg.Document = pd;
+                if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    dlg.Document = pd;
-                    if (dlg.ShowDialog() == DialogResult.OK)
-                    {
-                        pd.Print();
-                    }
+                    AppConfig.PrintInBackground(pd);
                 }
             }
         }
