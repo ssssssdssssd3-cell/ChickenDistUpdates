@@ -298,6 +298,16 @@ namespace ChickenDist.Forms
 				LoadSales();
 			};
 			flowLayoutPanel.Controls.Add(btnNewSale);
+
+			// زر تقرير الأصناف الراكدة
+			var btnStagnant = Theme.MakeButton("💤 الأصناف الراكدة", Color.FromArgb(140, 60, 160));
+			btnStagnant.Size = new Size(150, 34);
+			btnStagnant.Margin = new Padding(4, 0, 4, 0);
+			btnStagnant.Click += delegate
+			{
+				new FrmReports("Sales", 0, "StagnantProducts").ShowDialog();
+			};
+			flowLayoutPanel.Controls.Add(btnStagnant);
 			// ─── منطقة المحتوى: صفان بنسب مرنة (الفواتير أعلاه والأصناف أسفله تحت بعض) ───
 			TableLayoutPanel tblContent = new TableLayoutPanel
 			{

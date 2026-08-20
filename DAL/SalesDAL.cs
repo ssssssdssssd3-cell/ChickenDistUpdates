@@ -3421,6 +3421,126 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
                 DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
+
+        /// <summary>تقرير الأصناف الراكدة (التي تم شراؤها ولم تُباع)</summary>
+        public static DataTable GetStagnantProducts(DateTime from, DateTime to, int? warehouseID = null, int? categoryID = null, string brand = null, string mode = "PurchasedNeverSold", int minStagnantDays = 0, string keyword = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+
+            string modeCondition = "";
+            if (mode == "PurchasedNeverSold")
+            {
+                modeCondition = "AND ISNULL(purch.TotalPurchasedQty, 0) > 0 AND (sales.TotalSoldQty IS NULL OR sales.TotalSoldQty = 0)";
+            }
+            else if (mode == "ZeroSalesAllTime")
+            {
+                modeCondition = "AND NOT EXISTS (SELECT 1 FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1)";
+            }
+            else if (mode == "NoSalesInPeriodWithStock")
+            {
+                modeCondition = "AND ISNULL(stk.CurrentStock, 0) > 0 AND (sales.TotalSoldQty IS NULL OR sales.TotalSoldQty = 0)";
+            }
+            else if (mode == "SlowMoving")
+            {
+                modeCondition = "AND ISNULL(stk.CurrentStock, 0) > 0 AND ISNULL(sales.TotalSoldQty, 0) <= 3";
+            }
+            else
+            {
+                modeCondition = "AND (sales.TotalSoldQty IS NULL OR sales.TotalSoldQty = 0)";
+            }
+
+            string daysCondition = "";
+            if (minStagnantDays > 0)
+            {
+                daysCondition = $@"AND (
+                    (purch.LastPurchaseDate IS NOT NULL AND DATEDIFF(DAY, purch.LastPurchaseDate, GETDATE()) >= {minStagnantDays})
+                    OR (purch.LastPurchaseDate IS NULL AND sales.LastSaleDate IS NULL)
+                )";
+            }
+
+            string brandCondition = "";
+            if (!string.IsNullOrWhiteSpace(brand) && brand != "جميع الشركات والماركات" && brand != "كل الشركات والماركات")
+            {
+                brandCondition = "AND (p.Brand = @brand OR p.ProducerCompany = @brand)";
+            }
+
+            string sql = $@"
+                SELECT 
+                    p.ProductID,
+                    COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
+                    ISNULL(p.PartNumber, N'---') AS PartNumber,
+                    p.ProductName,
+                    ISNULL(c.CategoryName, N'عام') AS CategoryName,
+                    COALESCE(NULLIF(p.Brand, ''), p.ProducerCompany, N'---') AS Brand,
+                    ISNULL(p.ShelfLocation, N'---') AS ShelfLocation,
+                    ISNULL(p.Unit, N'قطعة') AS Unit,
+                    ISNULL(p.PurchasePrice, 0) AS PurchasePrice,
+                    ISNULL(p.SalePrice, 0) AS SalePrice,
+                    ISNULL(purch.TotalPurchasedQty, 0) AS TotalPurchasedQty,
+                    purch.LastPurchaseDate,
+                    ISNULL(purch.TotalPurchaseAmount, 0) AS TotalPurchaseAmount,
+                    ISNULL(sales.TotalSoldQty, 0) AS TotalSoldQty,
+                    sales.LastSaleDate,
+                    ISNULL(stk.CurrentStock, 0) AS CurrentStock,
+                    (ISNULL(stk.CurrentStock, 0) * ISNULL(p.PurchasePrice, 0)) AS StagnantStockValue,
+                    CASE 
+                        WHEN purch.LastPurchaseDate IS NOT NULL THEN DATEDIFF(DAY, purch.LastPurchaseDate, GETDATE())
+                        ELSE 0
+                    END AS StagnantDays
+                FROM Products p
+                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                LEFT JOIN (
+                    SELECT pi.ProductID, 
+                           SUM(pi.Quantity * ISNULL(pi.Factor, 1.0)) AS TotalPurchasedQty,
+                           SUM(pi.TotalPrice) AS TotalPurchaseAmount,
+                           MAX(pr.PurchaseDate) AS LastPurchaseDate
+                    FROM PurchaseItems pi
+                    JOIN Purchases pr ON pi.PurchaseID = pr.PurchaseID
+                    WHERE pr.IsPosted = 1
+                      AND (@wh IS NULL OR pr.WarehouseID = @wh)
+                    GROUP BY pi.ProductID
+                ) purch ON p.ProductID = purch.ProductID
+                LEFT JOIN (
+                    SELECT si.ProductID,
+                           SUM(si.Quantity * ISNULL(si.Factor, 1.0)) AS TotalSoldQty,
+                           MAX(s.SaleDate) AS LastSaleDate
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    WHERE s.IsPosted = 1
+                      AND (@wh IS NULL OR s.WarehouseID = @wh)
+                      AND (CAST(s.SaleDate AS DATE) BETWEEN @f AND @t)
+                    GROUP BY si.ProductID
+                ) sales ON p.ProductID = sales.ProductID
+                LEFT JOIN (
+                    SELECT ps.ProductID, SUM(ps.Quantity) AS CurrentStock
+                    FROM ProductStock ps
+                    WHERE (@wh IS NULL OR ps.WarehouseID = @wh)
+                    GROUP BY ps.ProductID
+                ) stk ON p.ProductID = stk.ProductID
+                WHERE p.IsActive = 1
+                  AND COALESCE(p.IsService, 0) = 0
+                  AND (@cat IS NULL OR p.CategoryID = @cat)
+                  {brandCondition}
+                  {modeCondition}
+                  {daysCondition}
+                  AND (@kw IS NULL OR (
+                        p.ProductName LIKE N'%' + @kw + N'%' OR
+                        p.ProductCode LIKE N'%' + @kw + N'%' OR
+                        p.PartNumber LIKE N'%' + @kw + N'%' OR
+                        p.Brand LIKE N'%' + @kw + N'%' OR
+                        p.ProducerCompany LIKE N'%' + @kw + N'%'
+                  ))
+                ORDER BY StagnantStockValue DESC, purch.LastPurchaseDate ASC";
+
+            return DbHelper.Query(sql,
+                DbHelper.P("@f", f),
+                DbHelper.P("@t", t),
+                DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@cat", categoryID.HasValue ? (object)categoryID.Value : DBNull.Value),
+                DbHelper.P("@brand", string.IsNullOrWhiteSpace(brand) ? (object)DBNull.Value : brand.Trim()),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
+        }
     }
 }
 

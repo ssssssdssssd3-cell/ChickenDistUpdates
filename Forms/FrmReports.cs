@@ -35,13 +35,15 @@ namespace ChickenDist.Forms
 		private DataTable _currentDt;
 		private string _targetModule = null;
 		private int _preFilteredID = 0;
+		private string _defaultTabTag = null;
 
 		public string TargetModule => _targetModule;
 
-		public FrmReports(string targetModule = null, int preFilteredID = 0)
+		public FrmReports(string targetModule = null, int preFilteredID = 0, string defaultTabTag = null)
 		{
 			_targetModule = targetModule;
 			_preFilteredID = preFilteredID;
+			_defaultTabTag = defaultTabTag;
 			InitUI();
 		}
 
@@ -202,6 +204,7 @@ namespace ChickenDist.Forms
 				("🏷️ الخصومات والتخفيضات", "SalesDiscounts"),
 				("🔄 مرتجعات المبيعات", "DetailedReturns"),
 				("💰 أرباح وهامش المبيعات", "SalesProfitability"),
+				("💤 الأصناف الراكدة (مشتراة ولم تُباع)", "StagnantProducts"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير المشتريات الشاملة
@@ -258,15 +261,15 @@ namespace ChickenDist.Forms
 					bool keep = false;
 					if (_targetModule == "Sales")
 					{
-						keep = (report.tag == "DailySalesSummary" || report.tag == "SalesByPeriod" || report.tag == "DetailedSales" || report.tag == "DetailedSaleItems" || report.tag == "SalesByProduct" || report.tag == "SalesByCategory" || report.tag == "SalesByClient" || report.tag == "SalesByUser" || report.tag == "SalesByPaymentMethod" || report.tag == "SalesDiscounts" || report.tag == "DetailedReturns" || report.tag == "SalesProfitability");
+						keep = (report.tag == "DailySalesSummary" || report.tag == "SalesByPeriod" || report.tag == "DetailedSales" || report.tag == "DetailedSaleItems" || report.tag == "SalesByProduct" || report.tag == "SalesByCategory" || report.tag == "SalesByClient" || report.tag == "SalesByUser" || report.tag == "SalesByPaymentMethod" || report.tag == "SalesDiscounts" || report.tag == "DetailedReturns" || report.tag == "SalesProfitability" || report.tag == "StagnantProducts");
 					}
 					else if (_targetModule == "Purchases")
 					{
-						keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases");
+						keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases" || report.tag == "StagnantProducts");
 					}
 					else if (_targetModule == "Stores")
 					{
-						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct");
+						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct" || report.tag == "StagnantProducts");
 					}
 					else if (_targetModule == "Clients")
 					{
@@ -1001,6 +1004,153 @@ namespace ChickenDist.Forms
 					continue;
 				}
 
+				if (item2 == "StagnantProducts")
+				{
+					TableLayoutPanel layout = new TableLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						ColumnCount = 1,
+						RowCount = 3,
+						RightToLeft = RightToLeft.Yes
+					};
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+					layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+
+					FlowLayoutPanel pnlFilters = new FlowLayoutPanel
+					{
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						FlowDirection = FlowDirection.RightToLeft,
+						WrapContents = false,
+						Padding = new Padding(6, 6, 6, 4)
+					};
+
+					Label lblMode = new Label { Text = "🔍 نوع التقرير:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 7, 0, 0), Font = Theme.FontBold };
+					ComboBox cboMode = new ComboBox { Name = "cboFilterStagnantMode", Width = 235, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
+					cboMode.Items.Add(new ComboItem(0, "🛒 تم شراؤه ولم يُباع نهائياً (مبيعات = 0)"));
+					cboMode.Items.Add(new ComboItem(1, "⏳ لم يُباع خلال الفترة (رصيد بالمخزن)"));
+					cboMode.Items.Add(new ComboItem(2, "💤 لم يُباع إطلاقاً (كل الوقت)"));
+					cboMode.Items.Add(new ComboItem(3, "📉 بطيء الحركة (مبيعات ضعيفة <= 3)"));
+					cboMode.DisplayMember = "Text";
+					cboMode.SelectedIndex = 0;
+					cboMode.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					Label lblCategory = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
+					ComboBox cboCat = new ComboBox { Name = "cboFilterStagnantCategory", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
+					cboCat.Items.Add(new ComboItem(0, "جميع التصنيفات"));
+					try
+					{
+						var dtCats = CategoryDAL.GetAll(true);
+						foreach (DataRow r in dtCats.Rows)
+							cboCat.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+					}
+					catch { }
+					cboCat.DisplayMember = "Text";
+					cboCat.SelectedIndex = 0;
+					cboCat.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					Label lblBrand = new Label { Text = "الشركة/الماركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
+					ComboBox cboBrand = new ComboBox { Name = "cboFilterStagnantBrand", Width = 160, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
+					cboBrand.Items.Add("جميع الشركات والماركات");
+					try
+					{
+						var dtB = LookupDAL.GetAll("Brands", "BrandName");
+						if (dtB != null)
+						{
+							foreach (DataRow r in dtB.Rows)
+							{
+								string b = r["BrandName"]?.ToString()?.Trim();
+								if (!string.IsNullOrEmpty(b) && !cboBrand.Items.Contains(b)) cboBrand.Items.Add(b);
+							}
+						}
+						var dtP = LookupDAL.GetAll("ProducerCompanies", "ProducerName");
+						if (dtP != null)
+						{
+							foreach (DataRow r in dtP.Rows)
+							{
+								string p = r["ProducerName"]?.ToString()?.Trim();
+								if (!string.IsNullOrEmpty(p) && !cboBrand.Items.Contains(p)) cboBrand.Items.Add(p);
+							}
+						}
+					}
+					catch { }
+					cboBrand.SelectedIndex = 0;
+					cboBrand.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					Label lblDays = new Label { Text = "أيام الركود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
+					ComboBox cboDays = new ComboBox { Name = "cboFilterStagnantDays", Width = 135, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
+					cboDays.Items.Add(new ComboItem(0, "كل الفترات"));
+					cboDays.Items.Add(new ComboItem(30, "أكثر من شهر (30 يوم)"));
+					cboDays.Items.Add(new ComboItem(60, "أكثر من شهرين (60 يوم)"));
+					cboDays.Items.Add(new ComboItem(90, "أكثر من 3 شهور (90 يوم)"));
+					cboDays.Items.Add(new ComboItem(180, "أكثر من 6 شهور (180 يوم)"));
+					cboDays.Items.Add(new ComboItem(365, "أكثر من سنة (365 يوم)"));
+					cboDays.DisplayMember = "Text";
+					cboDays.SelectedIndex = 0;
+					cboDays.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+
+					pnlFilters.Controls.AddRange(new Control[] { lblMode, cboMode, lblCategory, cboCat, lblBrand, cboBrand, lblDays, cboDays });
+					layout.Controls.Add(pnlFilters, 0, 0);
+
+					DataGridView dgStagnant = new DataGridView
+					{
+						Name = "dgStagnantProducts",
+						Dock = DockStyle.Fill,
+						BackgroundColor = Theme.BgCard,
+						BorderStyle = BorderStyle.None,
+						RowHeadersVisible = false,
+						AllowUserToAddRows = false,
+						ReadOnly = true,
+						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+						RightToLeft = RightToLeft.Yes,
+						GridColor = Theme.BorderColor,
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
+						DefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.BgCard,
+							ForeColor = Theme.TextMain,
+							SelectionBackColor = Theme.Primary,
+							SelectionForeColor = Color.White,
+							Font = Theme.FontMain
+						},
+						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+						{
+							BackColor = Theme.Primary,
+							ForeColor = Color.White,
+							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+							Alignment = DataGridViewContentAlignment.MiddleCenter
+						},
+						ColumnHeadersHeight = 36,
+						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+						EnableHeadersVisualStyles = false
+					};
+					layout.Controls.Add(dgStagnant, 0, 1);
+
+					Panel pnlSummary = new Panel
+					{
+						Name = "pnlStagnantSummary",
+						Dock = DockStyle.Fill,
+						BackColor = Theme.BgCard,
+						Padding = new Padding(10, 4, 10, 4)
+					};
+					Label lblStagnantSummary = new Label
+					{
+						Name = "lblStagnantSummary",
+						Dock = DockStyle.Fill,
+						ForeColor = Theme.Accent,
+						Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+						TextAlign = ContentAlignment.MiddleLeft,
+						Text = "📊 إجمالي الأصناف الراكدة: 0 | إجمالي كميات الرصيد: 0.00 | إجمالي قيمة البضاعة الراكدة بالتكلفة: 0.00 ج.م"
+					};
+					pnlSummary.Controls.Add(lblStagnantSummary);
+					layout.Controls.Add(pnlSummary, 0, 2);
+
+					tabPage.Controls.Add(layout);
+					tabReports.TabPages.Add(tabPage);
+					continue;
+				}
+
 				DataGridView value = new DataGridView
 				{
 					Dock = DockStyle.Fill,
@@ -1045,6 +1195,19 @@ namespace ChickenDist.Forms
 			};
 			base.Controls.Add(tabReports);
 			tabReports.BringToFront();
+
+			if (!string.IsNullOrEmpty(_defaultTabTag))
+			{
+				foreach (TabPage tp in tabReports.TabPages)
+				{
+					if (tp.Tag?.ToString() == _defaultTabTag)
+					{
+						tabReports.SelectedTab = tp;
+						break;
+					}
+				}
+			}
+
 			LoadCurrentTab();
 		}
 
@@ -1282,6 +1445,77 @@ namespace ChickenDist.Forms
 						("MarginPct", "هامش الربح %")
 					}, dataGridView);
 					break;
+
+				case "StagnantProducts":
+				{
+					string mode = "PurchasedNeverSold";
+					var cboM = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterStagnantMode");
+					if (cboM != null)
+					{
+						int sel = cboM.SelectedIndex;
+						mode = sel == 1 ? "NoSalesInPeriodWithStock" : sel == 2 ? "ZeroSalesAllTime" : sel == 3 ? "SlowMoving" : "PurchasedNeverSold";
+					}
+
+					int? catId = null;
+					var cboC = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterStagnantCategory");
+					if (cboC?.SelectedItem is ComboItem ciC && ciC.ID > 0)
+					{
+						catId = ciC.ID;
+					}
+
+					string brand = null;
+					var cboB = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterStagnantBrand");
+					if (cboB?.SelectedItem != null && cboB.SelectedIndex > 0)
+					{
+						brand = cboB.SelectedItem.ToString();
+					}
+
+					int minDays = 0;
+					var cboD = FindControlByName<ComboBox>(tabReports.SelectedTab, "cboFilterStagnantDays");
+					if (cboD?.SelectedItem is ComboItem ciD)
+					{
+						minDays = ciD.ID;
+					}
+
+					string kw = txtSearchClient != null ? txtSearchClient.Text.Trim() : null;
+
+					_currentDt = ReportDAL.GetStagnantProducts(dtpFrom.Value, dtpTo.Value, warehouseID, catId, brand, mode, minDays, kw);
+
+					var dg = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgStagnantProducts") ?? dataGridView;
+					SetupGrid(new(string, string)[]
+					{
+						("ProductCode", "كود الصنف"),
+						("PartNumber", "رقم القطعة"),
+						("ProductName", "اسم الصنف"),
+						("CategoryName", "القسم / التصنيف"),
+						("Brand", "الشركة / الماركة"),
+						("ShelfLocation", "الرف"),
+						("Unit", "الوحدة"),
+						("PurchasePrice", "سعر الشراء"),
+						("SalePrice", "سعر البيع"),
+						("TotalPurchasedQty", "إجمالي المشتريات"),
+						("LastPurchaseDate", "تاريخ آخر شراء"),
+						("TotalSoldQty", "الكمية المباعة"),
+						("CurrentStock", "الرصيد الحالي"),
+						("StagnantStockValue", "قيمة الركود بالتكلفة"),
+						("StagnantDays", "أيام الركود")
+					}, dg);
+
+					var lblSummary = FindControlByName<Label>(tabReports.SelectedTab, "lblStagnantSummary");
+					if (lblSummary != null && _currentDt != null)
+					{
+						int count = _currentDt.Rows.Count;
+						decimal totalQty = 0;
+						decimal totalVal = 0;
+						foreach (DataRow r in _currentDt.Rows)
+						{
+							if (r["CurrentStock"] != DBNull.Value) totalQty += Convert.ToDecimal(r["CurrentStock"]);
+							if (r["StagnantStockValue"] != DBNull.Value) totalVal += Convert.ToDecimal(r["StagnantStockValue"]);
+						}
+						lblSummary.Text = $"📊 إجمالي الأصناف الراكدة: {count:N0} صنف | إجمالي كميات الرصيد: {totalQty:N2} | إجمالي قيمة البضاعة الراكدة بالتكلفة: {totalVal:N2} ج.م";
+					}
+					break;
+				}
 
 				case "DailyPurchasesSummary":
 					_currentDt = PurchaseDAL.GetDailyPurchasesSummary(dtpFrom.Value, dtpTo.Value);
@@ -2112,6 +2346,10 @@ namespace ChickenDist.Forms
 			{
 				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDebtAging");
 			}
+			if (text == "StagnantProducts")
+			{
+				return FindControlByName<DataGridView>(tabReports.SelectedTab, "dgStagnantProducts");
+			}
 			
 			return FindControlByName<DataGridView>(tabReports.SelectedTab, "") ?? tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 		}
@@ -2355,9 +2593,12 @@ namespace ChickenDist.Forms
 				case "قيمة المبيعات":
 				case "الكمية المشتراة":
 				case "قيمة المشتريات":
+				case "TotalPurchasedQty":
+				case "TotalSoldQty":
+				case "StagnantStockValue":
 					break;
 				}
-				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية") ? "N0" : "N2");
+				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية" || name2 == "TotalPurchasedQty" || name2 == "TotalSoldQty") ? "N0" : "N2");
 				dg.Rows[index].Cells[j].Value = array[j].ToString(text2);
 			}
 		}
