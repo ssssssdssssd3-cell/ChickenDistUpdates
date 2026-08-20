@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
@@ -65,6 +66,68 @@ namespace ChickenDist.Core
             return null;
         }
 
+        private static readonly byte[] _entropyKey = new byte[] { 0x43, 0x68, 0x69, 0x63, 0x6B, 0x65, 0x6E, 0x44, 0x69, 0x73, 0x74, 0x32, 0x30, 0x32, 0x36, 0x21 }; // "ChickenDist2026!"
+
+        public static string EncryptString(string plainText)
+        {
+            if (string.IsNullOrEmpty(plainText)) return "";
+            try
+            {
+                byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+                using (var aes = Aes.Create())
+                {
+                    aes.Key = _entropyKey;
+                    aes.GenerateIV();
+                    using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        ms.Write(aes.IV, 0, aes.IV.Length);
+                        using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                        {
+                            cs.Write(plainBytes, 0, plainBytes.Length);
+                            cs.FlushFinalBlock();
+                        }
+                        return Convert.ToBase64String(ms.ToArray());
+                    }
+                }
+            }
+            catch
+            {
+                return plainText;
+            }
+        }
+
+        public static string DecryptString(string cipherText)
+        {
+            if (string.IsNullOrEmpty(cipherText)) return "";
+            try
+            {
+                byte[] cipherBytes = Convert.FromBase64String(cipherText);
+                if (cipherBytes.Length <= 16) return cipherText;
+                using (var aes = Aes.Create())
+                {
+                    aes.Key = _entropyKey;
+                    byte[] iv = new byte[16];
+                    Array.Copy(cipherBytes, 0, iv, 0, 16);
+                    aes.IV = iv;
+                    using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Write))
+                        {
+                            cs.Write(cipherBytes, 16, cipherBytes.Length - 16);
+                            cs.FlushFinalBlock();
+                        }
+                        return Encoding.UTF8.GetString(ms.ToArray());
+                    }
+                }
+            }
+            catch
+            {
+                return cipherText;
+            }
+        }
+
         private static string GetInitialConnectionString()
         {
             return GetConnectionStringFromIni();
@@ -97,7 +160,27 @@ namespace ChickenDist.Core
                 string db = ReadIniDirect(iniPath, "Database", "Database", "ProSoftDB");
                 string intSec = ReadIniDirect(iniPath, "Database", "IntegratedSecurity", "True");
                 string user = ReadIniDirect(iniPath, "Database", "User", "");
-                string pass = ReadIniDirect(iniPath, "Database", "Password", "");
+                string rawPass = ReadIniDirect(iniPath, "Database", "Password", "");
+                string pass = rawPass;
+
+                if (!string.IsNullOrEmpty(rawPass))
+                {
+                    if (rawPass.StartsWith("enc:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        pass = DecryptString(rawPass.Substring(4));
+                    }
+                    else
+                    {
+                        // ترحيل تلقائي فوري: تشفير كلمة المرور في Settings.ini لحمايتها من الكشف
+                        pass = rawPass;
+                        try
+                        {
+                            string encrypted = "enc:" + EncryptString(rawPass);
+                            UpdateIniKeyDirect(iniPath, "Database", "Password", encrypted);
+                        }
+                        catch { }
+                    }
+                }
 
                 bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
 
@@ -137,6 +220,45 @@ namespace ChickenDist.Core
             {
                 return "Data Source=.;Initial Catalog=ProSoftDB;Integrated Security=True;Connect Timeout=30;Packet Size=32768;MultipleActiveResultSets=True;Pooling=True;Min Pool Size=5;Max Pool Size=200;";
             }
+        }
+
+        private static void UpdateIniKeyDirect(string iniPath, string section, string key, string newValue)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(iniPath)) return;
+                string[] lines = System.IO.File.ReadAllLines(iniPath, Encoding.Unicode);
+                string currentSection = "";
+                bool updated = false;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string t = lines[i].Trim();
+                    if (t.StartsWith("[") && t.EndsWith("]"))
+                    {
+                        currentSection = t.Substring(1, t.Length - 2).Trim();
+                        continue;
+                    }
+                    if (currentSection.Equals(section, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int idx = t.IndexOf('=');
+                        if (idx > 0)
+                        {
+                            string k = t.Substring(0, idx).Trim();
+                            if (k.Equals(key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                lines[i] = $"{k}={newValue}";
+                                updated = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (updated)
+                {
+                    System.IO.File.WriteAllLines(iniPath, lines, Encoding.Unicode);
+                }
+            }
+            catch { }
         }
 
         private static void UpdateIniDatabaseKey(string iniPath, string newDatabaseName)

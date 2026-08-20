@@ -137,8 +137,8 @@ namespace ChickenDist.Forms
             };
             pnlTop.Controls.Add(lblClock);
             lblClock.BringToFront();
-            _clockTimer = new System.Windows.Forms.Timer { Interval = 30000 }; // كل 30 ثانية
-            _clockTimer.Tick += (s, e) => lblClock.Text = DateTime.Now.ToString("hh:mm tt");
+            _clockTimer = new System.Windows.Forms.Timer { Interval = 1000 }; // تحديث حي كل ثانية
+            _clockTimer.Tick += (s, e) => lblClock.Text = DateTime.Now.ToString("hh:mm:ss tt");
             _clockTimer.Start();
 
             this.Controls.Add(pnlTop);

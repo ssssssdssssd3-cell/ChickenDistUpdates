@@ -3,6 +3,7 @@ using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Linq;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
@@ -2210,17 +2211,26 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            // تحقق من وجود تاريخ صلاحية للأصناف التي تتطلب ذلك
-            foreach (var item in _items)
+            // تحقق سريع ومجمع من وجود تاريخ صلاحية للأصناف التي تتطلب ذلك دفعة واحدة
+            if (_items.Count > 0)
             {
-                var hasExpiryObj = DbHelper.Scalar("SELECT HasExpiry FROM Products WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
-                bool prodHasExpiry = hasExpiryObj != null && Convert.ToBoolean(hasExpiryObj);
-                if (prodHasExpiry)
+                var pids = string.Join(",", _items.Select(i => i.ProductID).Distinct());
+                var dtExpiry = DbHelper.Query($"SELECT ProductID, HasExpiry FROM Products WHERE ProductID IN ({pids})");
+                var expiryMap = new Dictionary<int, bool>();
+                foreach (DataRow r in dtExpiry.Rows)
                 {
-                    if (!item.ExpiryDate.HasValue)
+                    expiryMap[Convert.ToInt32(r["ProductID"])] = r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
+                }
+
+                foreach (var item in _items)
+                {
+                    if (expiryMap.TryGetValue(item.ProductID, out bool prodHasExpiry) && prodHasExpiry)
                     {
-                        MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
+                        if (!item.ExpiryDate.HasValue)
+                        {
+                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
                     }
                 }
             }
