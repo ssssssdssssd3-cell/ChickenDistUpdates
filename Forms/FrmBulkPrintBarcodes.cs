@@ -62,6 +62,18 @@ namespace ChickenDist.Forms
             UpdateSummaryBadges();
         }
 
+        public FrmBulkPrintBarcodes(List<BarcodePrintItem> initialItems) : this()
+        {
+            if (initialItems != null && initialItems.Count > 0)
+            {
+                foreach (var item in initialItems)
+                {
+                    dgItems.Rows.Add(item.ProductID, item.ProductName, item.ProductCode, item.Price.ToString("F2"), item.PrintQty > 0 ? item.PrintQty : 1, item.ShelfLocation, "\ud83d\uddd1");
+                }
+                UpdateSummaryBadges();
+            }
+        }
+
         private void InitializeComponent()
         {
             this.Text = "🏷️ طباعة باركود الأصناف (مجمع)";

@@ -367,9 +367,20 @@ namespace ChickenDist.Forms
             btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
             btnAddExpiryRow.Enabled = false;
 
+            var btnPrintIncreaseBarcodes = Theme.MakeButton("🏷️ باركود الزيادات", Color.FromArgb(39, 174, 96));
+            btnPrintIncreaseBarcodes.Size = new Size(120, 28);
+            btnPrintIncreaseBarcodes.Margin = new Padding(2, 2, 6, 0);
+            btnPrintIncreaseBarcodes.Click += BtnPrintIncreaseBarcodes_Click;
+
+            var btnZeroOutWarehouse = Theme.MakeButton("⚠️ تصفير المخزن", Color.FromArgb(190, 40, 40));
+            btnZeroOutWarehouse.Size = new Size(115, 28);
+            btnZeroOutWarehouse.Margin = new Padding(2, 2, 6, 0);
+            btnZeroOutWarehouse.Click += BtnZeroOutWarehouse_Click;
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory, lblInventoryStart,
                 btnSaveAdj, btnClearAdj,
+                btnPrintIncreaseBarcodes, btnZeroOutWarehouse,
                 btnScaleReport, btnVarianceReport, btnPrintStock, btnMovement, btnAddExpiryRow
             });
 
@@ -1481,10 +1492,62 @@ namespace ChickenDist.Forms
 
                         if (savedCount > 0)
                         {
-                            MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
                             LoadStock();
                             LoadLogs();
+
+                            // ── جمع الأصناف التي تمت زيادة رصيدها في الجرد لطباعة باركود لها ──
+                            var increasedItems = new System.Collections.Generic.List<BarcodePrintItem>();
+                            foreach (var row in modifiedRows)
+                            {
+                                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                                if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actualEntered))
+                                {
+                                    decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookEntered);
+                                    decimal diff = actualEntered - bookEntered;
+                                    if (diff > 0)
+                                    {
+                                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                                        string name = row.Cells["ProductName"].Value?.ToString() ?? "";
+                                        string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
+                                        string shelf = row.Cells["ShelfLocation"].Value?.ToString() ?? "";
+                                        string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
+                                        decimal salePrice = 0;
+                                        if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal sp)) salePrice = sp;
+
+                                        int printCount = (int)Math.Ceiling(diff);
+                                        if (printCount <= 0) printCount = 1;
+
+                                        increasedItems.Add(new BarcodePrintItem
+                                        {
+                                            ProductID = pid,
+                                            ProductName = name,
+                                            ProductCode = code,
+                                            Price = salePrice,
+                                            PrintQty = printCount,
+                                            ShelfLocation = shelf
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (increasedItems.Count > 0)
+                            {
+                                var res = MessageBox.Show(
+                                    $"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.\n\n🏷️ يوجد عدد ({increasedItems.Count}) صنف تمت زيادة كمياتها في الجرد.\nهل تريد فتح شاشة طباعة الباركود لطباعة استيكرات بالكميات المضافة؟",
+                                    "طباعة باركود الزيادات",
+                                    MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Question);
+
+                                if (res == DialogResult.Yes)
+                                {
+                                    new FrmBulkPrintBarcodes(increasedItems).ShowDialog(this);
+                                }
+                            }
+                            else
+                            {
+                                MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -1499,7 +1562,159 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void BtnPrintIncreaseBarcodes_Click(object sender, EventArgs e)
+        {
+            var increasedItems = new System.Collections.Generic.List<BarcodePrintItem>();
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var numStyles = System.Globalization.NumberStyles.Any;
 
+            foreach (DataGridViewRow row in dgStock.Rows)
+            {
+                if (row.Cells["ProductID"].Value == null) continue;
+                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actualEntered))
+                {
+                    decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookEntered);
+                    decimal diff = actualEntered - bookEntered;
+                    if (diff > 0)
+                    {
+                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                        string name = row.Cells["ProductName"].Value?.ToString() ?? "";
+                        string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
+                        string shelf = row.Cells["ShelfLocation"].Value?.ToString() ?? "";
+                        string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
+                        decimal salePrice = 0;
+                        if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal sp)) salePrice = sp;
+
+                        int printCount = (int)Math.Ceiling(diff);
+                        if (printCount <= 0) printCount = 1;
+
+                        increasedItems.Add(new BarcodePrintItem
+                        {
+                            ProductID = pid,
+                            ProductName = name,
+                            ProductCode = code,
+                            Price = salePrice,
+                            PrintQty = printCount,
+                            ShelfLocation = shelf
+                        });
+                    }
+                }
+            }
+
+            if (increasedItems.Count > 0)
+            {
+                new FrmBulkPrintBarcodes(increasedItems).ShowDialog(this);
+            }
+            else
+            {
+                MessageBox.Show("لا توجد أصناف بها زيادة بالكميات (فارق جرد موجب) في الجدول حالياً.\nأدخل الرصيد الفعلي في الجدول ثم اضغط الزر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void BtnZeroOutWarehouse_Click(object sender, EventArgs e)
+        {
+            int? selectedWid = null;
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                selectedWid = ci.ID;
+            }
+
+            if (!selectedWid.HasValue || selectedWid.Value <= 0)
+            {
+                MessageBox.Show("يرجى اختيار مخزن محدد من القائمة العلوية لتصفيره (لا يمكن تصفير كافة المخازن معاً دفعة واحدة كإجراء أمان).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int wid = selectedWid.Value;
+            string wName = cboWarehouse.Text;
+
+            var confirmDlg = new Form
+            {
+                Text = "⚠️ تأكيد تصفير رصيد المخزن بالكامل",
+                Size = new Size(480, 250),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
+                BackColor = Theme.BgMain, Font = Theme.FontMain
+            };
+
+            var lblMsg = new Label
+            {
+                Text = $"⚠️ تحذير شديد:\nأنت على وشك تصفير جميع كميات أصناف المخزن: [{wName}].\nسيتم جعل رصيد كافة الأصناف بالمخزن = 0 فوراً.\n\nاكتب كلمة (تصفير) في المربع أدناه للتأكيد القاطع:",
+                Location = new Point(15, 12),
+                Size = new Size(435, 80),
+                ForeColor = Color.FromArgb(220, 53, 69),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+
+            var txtConfirm = new TextBox
+            {
+                Location = new Point(15, 100),
+                Size = new Size(435, 30),
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                TextAlign = HorizontalAlignment.Center
+            };
+
+            var btnConfirm = Theme.MakeButton("⚠️ نعم، قم بتصفير المخزن", 235, 145, 215, 36, Color.FromArgb(190, 40, 40));
+            var btnCancel = Theme.MakeButton("❌ تراجع وإلغاء", 15, 145, 150, 36, Color.FromArgb(100, 110, 120));
+
+            btnConfirm.Click += (s2, e2) =>
+            {
+                if (txtConfirm.Text.Trim() != "تصفير")
+                {
+                    MessageBox.Show("كلمة التأكيد غير صحيحة. يرجى كتابة كلمة 'تصفير' بحروف صحيحة.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                confirmDlg.DialogResult = DialogResult.OK;
+                confirmDlg.Close();
+            };
+
+            btnCancel.Click += (s2, e2) =>
+            {
+                confirmDlg.DialogResult = DialogResult.Cancel;
+                confirmDlg.Close();
+            };
+
+            confirmDlg.Controls.AddRange(new Control[] { lblMsg, txtConfirm, btnConfirm, btnCancel });
+
+            if (confirmDlg.ShowDialog(this) == DialogResult.OK)
+            {
+                try
+                {
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        // 1. تسجيل حركة تسوية شاملة لكل صنف كان له رصيد
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                            SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, 0, N'[تصفير شامل لرصيد المخزن بالكامل]', @uid, p.Unit, 1
+                            FROM ProductStock ps
+                            JOIN Products p ON ps.ProductID = p.ProductID
+                            WHERE ps.WarehouseID = @wid AND ps.Quantity <> 0",
+                            DbHelper.P("@wid", wid),
+                            DbHelper.P("@uid", Session.EmpID));
+
+                        // 2. تصفير ProductStock
+                        DbHelper.ExecuteTrans(trans, "UPDATE ProductStock SET Quantity = 0 WHERE WarehouseID = @wid", DbHelper.P("@wid", wid));
+
+                        // 3. تصفير ProductBatches للصلاحيات
+                        DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = 0 WHERE WarehouseID = @wid", DbHelper.P("@wid", wid));
+                    });
+
+                    ProductCache.Invalidate();
+                    MessageBox.Show($"✅ تم تصفير جميع أرصدة المخزن [{wName}] بنجاح، وأصبح رصيد كافة الأصناف = 0.", "تم التصفير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadStock();
+                    LoadLogs();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء تصفير المخزن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
 
         private void BtnMovement_Click(object sender, EventArgs e)
         {
