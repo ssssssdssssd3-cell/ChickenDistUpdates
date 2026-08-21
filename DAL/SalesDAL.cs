@@ -1889,6 +1889,14 @@ namespace ChickenDist.DAL
                 @"SELECT sr.ReturnID, sr.ReturnDate,
                           ISNULL(s.SaleCode, N'مرتجع عام') AS SaleCode,
                           ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                          CASE 
+                              WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
+                              WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
+                              WHEN sr.PaymentType = 'Cash' THEN N'💵 نقدي'
+                              WHEN s.SaleType = 'Visa' THEN N'💳 فيزا'
+                              WHEN s.SaleType = 'Credit' THEN N'📋 آجل'
+                              ELSE N'💵 نقدي'
+                          END AS PaymentType,
                           sr.TotalAmount, sr.Notes
                   FROM SalesReturns sr
                   LEFT JOIN Sales s ON sr.SaleID=s.SaleID
@@ -1900,36 +1908,55 @@ namespace ChickenDist.DAL
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
 
-        public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items, int? warehouseID = null, string returnType = "Credit")
+        public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items, int? warehouseID = null, string returnType = "Cash", int? shiftID = null)
         {
             int returnedRetID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string saleType = returnType;
+                string paymentType = returnType ?? "Cash";
                 int whID = warehouseID ?? 1;
+                int? sID = shiftID ?? Session.CurrentShiftID;
+                if (!sID.HasValue || sID.Value <= 0)
+                {
+                    try { sID = ShiftDAL.GetActiveShiftID(); } catch { }
+                }
+
+                int? targetVisaAccID = null;
 
                 if (saleID > 0)
                 {
-                    var dtSale = DbHelper.QueryTrans(trans, "SELECT SaleType, ClientID, WarehouseID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
+                    var dtSale = DbHelper.QueryTrans(trans, "SELECT SaleType, ClientID, WarehouseID, VisaAccountID, ShiftID FROM Sales WHERE SaleID=@sid", DbHelper.P("@sid", saleID));
                     if (dtSale.Rows.Count > 0)
                     {
-                        saleType = dtSale.Rows[0]["SaleType"].ToString();
+                        if (string.IsNullOrEmpty(returnType))
+                            paymentType = dtSale.Rows[0]["SaleType"].ToString();
                         if (dtSale.Rows[0]["WarehouseID"] != DBNull.Value)
                             whID = Convert.ToInt32(dtSale.Rows[0]["WarehouseID"]);
                         if (!clientID.HasValue && dtSale.Rows[0]["ClientID"] != DBNull.Value)
                             clientID = Convert.ToInt32(dtSale.Rows[0]["ClientID"]);
+                        if (dtSale.Rows[0]["VisaAccountID"] != DBNull.Value)
+                            targetVisaAccID = Convert.ToInt32(dtSale.Rows[0]["VisaAccountID"]);
+                        if (!sID.HasValue && dtSale.Rows[0]["ShiftID"] != DBNull.Value)
+                            sID = Convert.ToInt32(dtSale.Rows[0]["ShiftID"]);
                     }
                 }
 
+                // تطبيع نوع الدفع
+                if (paymentType.Contains("Visa") || paymentType.Contains("فيزا")) paymentType = "Visa";
+                else if (paymentType.Contains("Credit") || paymentType.Contains("آجل")) paymentType = "Credit";
+                else paymentType = "Cash";
+
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid,@rtyp)",
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType,PaymentType,ShiftID) VALUES(@dt,@sid,@cid,@tot,@n,@by,@wid,@rtyp,@ptyp,@shid)",
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@sid", saleID > 0 ? (object)saleID : DBNull.Value),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@tot", total), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@wid", whID),
-                    DbHelper.P("@rtyp", saleID > 0 ? "InvoiceReturn" : "GeneralReturn"));
+                    DbHelper.P("@rtyp", saleID > 0 ? "InvoiceReturn" : "GeneralReturn"),
+                    DbHelper.P("@ptyp", paymentType),
+                    DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
 
                 if (retID <= 0) throw new Exception("فشل إنشاء سجل المرتجع.");
 
@@ -1946,33 +1973,70 @@ namespace ChickenDist.DAL
                         DbHelper.P("@fac", item.Factor));
                 }
 
-                // المنطق المحاسبي السليم:
-                // بيع نقدي → رد نقدي من الخزنة (AmountOut)
-                // بيع آجل أو حمولة مندوب → تخفيض دين العميل (Credit في ClientTransactions)
-                if (saleType == "Cash")
+                // المنطق المحاسبي الدقيق:
+                // 1. مرتجع نقدي (Cash) → صرف نقدية من الخزينة/الدرج (ReturnOutcome) وتأثيرها على الدرج في الوردية
+                if (paymentType == "Cash")
                 {
                     int accId = Session.GetDefaultSafeID();
                     AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "رد قيمة مرتجع المبيعات نقداً للعميل");
 
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by,@accId)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'ReturnOutcome',@amt,@ref,@n,@by,@accId,@shid)",
                         DbHelper.P("@dt", DateTime.Now),
                         DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
-                        DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع للفاتورة رقم " + saleID) : ("مرتجع بيع عام نقدي " + (notes ?? ""))),
+                        DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع نقدي للفاتورة رقم " + saleID) : ("مرتجع بيع عام نقدي " + (notes ?? ""))),
                         DbHelper.P("@by", Session.EmpID),
-                        DbHelper.P("@accId", accId));
+                        DbHelper.P("@accId", accId),
+                        DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
                 }
+                // 2. مرتجع فيزا (Visa) → صرف من حساب الفيزا/البنك وتأثيرها على إجمالي الفيزا في الوردية دون المساس بنقدية الدرج
+                else if (paymentType == "Visa")
+                {
+                    int visaAcc = targetVisaAccID ?? (Session.GetDefaultSafeID());
+                    try
+                    {
+                        var dtVisa = DbHelper.QueryTrans(trans, "SELECT TOP 1 AccountID FROM SafeAccounts WHERE IsActive=1 AND AccountType IN ('Visa','Bank') ORDER BY AccountID");
+                        if (dtVisa.Rows.Count > 0 && targetVisaAccID == null)
+                            visaAcc = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
+                    }
+                    catch { }
+
+                    DbHelper.ExecuteTrans(trans,
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'VisaReturn',@amt,@ref,@n,@by,@accId,@shid)",
+                        DbHelper.P("@dt", DateTime.Now),
+                        DbHelper.P("@amt", total), DbHelper.P("@ref", retID),
+                        DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع فيزا للفاتورة رقم " + saleID) : ("مرتجع بيع عام فيزا " + (notes ?? ""))),
+                        DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@accId", visaAcc),
+                        DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
+
+                    if (clientID.HasValue)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Return',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", retID), DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع فيزا للفاتورة رقم " + saleID) : ("مرتجع بيع عام فيزا " + (notes ?? ""))),
+                            DbHelper.P("@by", Session.EmpID));
+
+                        DbHelper.ExecuteTrans(trans,
+                            "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Refund',@amt,@ref,@n,@by)",
+                            DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                            DbHelper.P("@ref", retID), DbHelper.P("@n", "رد قيمة مرتجع فيزا للعميل"),
+                            DbHelper.P("@by", Session.EmpID));
+                    }
+                }
+                // 3. مرتجع آجل (Credit) → تخفيض رصيد/مديونية العميل دون تحريك النقدية
                 else if (clientID.HasValue)
                 {
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Return',@amt,@ref,@n,@by)",
                         DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                        DbHelper.P("@ref", retID), DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع للفاتورة رقم " + saleID) : ("مرتجع بيع عام آجل " + (notes ?? ""))),
+                        DbHelper.P("@ref", retID), DbHelper.P("@n", saleID > 0 ? ("مرتجع بيع آجل للفاتورة رقم " + saleID) : ("مرتجع بيع عام آجل " + (notes ?? ""))),
                         DbHelper.P("@by", Session.EmpID));
                 }
 
                 // معالجة مرتجع التقسيط
-                if (saleID > 0 && saleType == "Installment")
+                if (saleID > 0 && paymentType == "Installment")
                 {
                     InstallmentDAL.HandleSalesReturn(trans, saleID, total);
                 }
@@ -2413,6 +2477,14 @@ namespace ChickenDist.DAL
                     CAST(sr.ReturnID AS NVARCHAR) AS ReturnCode,
                     ISNULL(s.SaleCode, N'مرتجع مباشر') AS OriginalSaleCode,
                     ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                    CASE 
+                        WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
+                        WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
+                        WHEN sr.PaymentType = 'Cash' THEN N'💵 نقدي'
+                        WHEN s.SaleType = 'Visa' THEN N'💳 فيزا'
+                        WHEN s.SaleType = 'Credit' THEN N'📋 آجل'
+                        ELSE N'💵 نقدي'
+                    END AS PaymentType,
                     COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
                     p.ProductName AS ProductName,
                     ri.Quantity AS ReturnedQty,

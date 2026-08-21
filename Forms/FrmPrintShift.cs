@@ -235,17 +235,17 @@ namespace ChickenDist.Forms
                     var dtR = DbHelper.Query(@"
                         SELECT 
                             ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns,
-                            ISNULL(SUM(CASE WHEN s.SaleType IN ('Cash','Mixed') THEN sr.TotalAmount ELSE 0 END), 0) AS CashReturns
+                            ISNULL(SUM(CASE WHEN sr.PaymentType = 'Cash' OR (sr.PaymentType IS NULL AND s.SaleType IN ('Cash','Mixed')) THEN sr.TotalAmount ELSE 0 END), 0) AS CashReturns,
+                            ISNULL(SUM(CASE WHEN sr.PaymentType = 'Visa' OR (sr.PaymentType IS NULL AND s.SaleType = 'Visa') THEN sr.TotalAmount ELSE 0 END), 0) AS VisaReturns
                         FROM SalesReturns sr
-                        JOIN Sales s ON sr.SaleID = s.SaleID
-                        WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))",
+                        LEFT JOIN Sales s ON sr.SaleID = s.SaleID
+                        WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))",
                         DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime));
 
                     if (dtR.Rows.Count > 0)
                     {
                         _totalReturns = Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]);
                         _cashReturns = Convert.ToDecimal(dtR.Rows[0]["CashReturns"]);
-                        if (_cashReturns == 0 && _totalReturns > 0) _cashReturns = _totalReturns;
                     }
 
                     _expectedCash = _openingCash + _cashSales + _totalCollections - _cashReturns - _totalExpenses;
@@ -265,8 +265,19 @@ namespace ChickenDist.Forms
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt)) AND s.IsPosted = 1
                     UNION ALL
-                    SELECT sr.ReturnDate AS TransTime, 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, 'مرتجع مبيعات' AS Details, -sr.TotalAmount AS Amount
-                    FROM SalesReturns sr JOIN Sales s ON sr.SaleID=s.SaleID WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))
+                    SELECT 
+                        sr.ReturnDate AS TransTime, 
+                        CASE 
+                            WHEN sr.PaymentType = 'Visa' THEN N'مرتجع فيزا' 
+                            WHEN sr.PaymentType = 'Credit' THEN N'مرتجع آجل' 
+                            ELSE N'مرتجع نقدي' 
+                        END AS TransType, 
+                        CAST(sr.ReturnID AS NVARCHAR) AS RefCode, 
+                        ISNULL(sr.Notes, N'مرتجع مبيعات') AS Details, 
+                        CASE WHEN sr.PaymentType = 'Cash' OR (sr.PaymentType IS NULL AND s.SaleType IN ('Cash','Mixed')) THEN -sr.TotalAmount ELSE 0 END AS Amount
+                    FROM SalesReturns sr 
+                    LEFT JOIN Sales s ON sr.SaleID=s.SaleID 
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))
                     UNION ALL
                     SELECT 
                         cb.TransDate AS TransTime,

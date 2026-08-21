@@ -1090,6 +1090,14 @@ namespace ChickenDist.Core
                     BEGIN
                         ALTER TABLE SalesReturns ADD ReturnType NVARCHAR(50) NOT NULL DEFAULT 'InvoiceReturn';
                     END
+                    IF COL_LENGTH('SalesReturns', 'PaymentType') IS NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';
+                    END
+                    IF COL_LENGTH('SalesReturns', 'ShiftID') IS NULL
+                    BEGIN
+                        ALTER TABLE SalesReturns ADD ShiftID INT NULL;
+                    END
                 END");
 
                 SafeMigrate("Sales.IsPosted", @"

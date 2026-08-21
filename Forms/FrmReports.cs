@@ -1295,11 +1295,12 @@ namespace ChickenDist.Forms
 					break;
 				case "DetailedReturns":
 					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[6]
+					SetupGrid(new(string, string)[7]
 					{
 						("ReturnDate", "التاريخ والوقت"),
 						("SaleCode", "الفاتورة الأصلية"),
 						("ClientName", "العميل"),
+						("PaymentType", "طريقة الدفع / السداد"),
 						("TotalAmount", "قيمة المرتجع"),
 						("Notes", "البيان / الملاحظات"),
 						("ReturnID", "معرف المرتجع")

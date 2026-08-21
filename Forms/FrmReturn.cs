@@ -275,15 +275,17 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
 
-            var lblRetType = new Label { Text = "نوع التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
+            var lblRetType = new Label { Text = "طريقة دفع المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
             cboReturnType = new ComboBox
             {
-                Width = 95, Height = 26,
+                Width = 145, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            cboReturnType.Items.Add("📋 آجل");
-            cboReturnType.Items.Add("💵 نقدي");
+            cboReturnType.Items.Add("💵 نقدي (كاش)");
+            cboReturnType.Items.Add("💳 فيزا (شبكة / بطاقة)");
+            cboReturnType.Items.Add("📋 آجل (على الحساب)");
             cboReturnType.SelectedIndex = 0;
 
             lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(8, 5, 0, 0) };
@@ -308,10 +310,10 @@ namespace ChickenDist.Forms
             lblSaleType = new Label { Text = "نوع الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
             cboSaleTypeFilter = new ComboBox
             {
-                Width = 120, Height = 26,
+                Width = 125, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
+            cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "💳 فيزا", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
             cboSaleTypeFilter.SelectedIndex = 0;
             cboSaleTypeFilter.SelectedIndexChanged += (s, e) => LoadSales();
             StyleSearchInput(cboSaleTypeFilter);
@@ -466,7 +468,9 @@ namespace ChickenDist.Forms
                     {
                         string val = e.Value.ToString();
                         if (val == "Cash") e.Value = "💵 نقدي";
+                        else if (val == "Visa") e.Value = "💳 فيزا";
                         else if (val == "Credit") e.Value = "📋 آجل";
+                        else if (val == "Mixed") e.Value = "💳 مختلط (كاش+فيزا)";
                         else if (val == "DriverLoad") e.Value = "🚚 حمولة مندوب";
                         else if (val == "Installment") e.Value = "📅 تقسيط";
                     }
@@ -812,6 +816,7 @@ namespace ChickenDist.Forms
                 {
                     string sel = cboSaleTypeFilter.SelectedItem.ToString();
                     if (sel.Contains("Cash") || sel.Contains("نقدي")) saleType = "Cash";
+                    else if (sel.Contains("Visa") || sel.Contains("فيزا")) saleType = "Visa";
                     else if (sel.Contains("Credit") || sel.Contains("آجل")) saleType = "Credit";
                     else if (sel.Contains("Installment") || sel.Contains("تقسيط")) saleType = "Installment";
                     else if (sel.Contains("DriverLoad") || sel.Contains("حمولة") || sel.Contains("تحميل")) saleType = "DriverLoad";
@@ -839,6 +844,18 @@ namespace ChickenDist.Forms
 
             int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
             
+            // ضبط نوع دفع المرتجع تلقائياً بناءً على نوع الفاتورة الأصلية
+            if (dgSales.CurrentRow.Cells["SaleType"] != null && dgSales.CurrentRow.Cells["SaleType"].Value != null)
+            {
+                string origSaleType = dgSales.CurrentRow.Cells["SaleType"].Value.ToString();
+                if (origSaleType == "Visa")
+                    cboReturnType.SelectedIndex = 1; // فيزا
+                else if (origSaleType == "Credit")
+                    cboReturnType.SelectedIndex = 2; // آجل
+                else
+                    cboReturnType.SelectedIndex = 0; // كاش نقدي
+            }
+
             var dtSaleInfo = DbHelper.Query("SELECT ISNULL(TotalAmount,0) AS TotalAmount, ISNULL(ShippingCharge,0) AS ShippingCharge FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
             if (dtSaleInfo.Rows.Count > 0)
             {
@@ -1024,8 +1041,21 @@ namespace ChickenDist.Forms
 
             int mode = cboMode.SelectedIndex;
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
-            string returnType = cboReturnType.SelectedIndex == 1 ? "Cash" : "Credit";
+            
+            string returnType = "Cash";
+            if (cboReturnType.SelectedIndex == 1 || cboReturnType.Text.Contains("Visa") || cboReturnType.Text.Contains("فيزا"))
+                returnType = "Visa";
+            else if (cboReturnType.SelectedIndex == 2 || cboReturnType.Text.Contains("Credit") || cboReturnType.Text.Contains("آجل"))
+                returnType = "Credit";
+            else
+                returnType = "Cash";
+
             int? clientID = (cboClient.SelectedItem is ComboItem cc && cc.ID > 0) ? (int?)cc.ID : null;
+            int? shiftID = Session.CurrentShiftID;
+            if (!shiftID.HasValue || shiftID.Value <= 0)
+            {
+                try { shiftID = ShiftDAL.GetActiveShiftID(); } catch { }
+            }
 
             if (mode == 0) // مرتجع فاتورة معينة
             {
@@ -1069,10 +1099,14 @@ namespace ChickenDist.Forms
 
                 try
                 {
-                    int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType);
+                    int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                     if (id > 0) 
                     { 
-                        MessageBox.Show("✅ تم حفظ مرتجع البيع بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                        var askPrint = MessageBox.Show("✅ تم حفظ مرتجع البيع بنجاح!\n\nهل ترغب في طباعة إيصال المرتجع الآن؟", "نجاح العملية", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1); 
+                        if (askPrint == DialogResult.Yes)
+                        {
+                            try { new FrmPrintReturn(id, null, false); } catch { }
+                        }
                         txtNotes.Text = "";
                         LoadSales();
                     }
@@ -1120,10 +1154,14 @@ namespace ChickenDist.Forms
 
                 try
                 {
-                    int id = ReturnDAL.SaveReturn(0, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType);
+                    int id = ReturnDAL.SaveReturn(0, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                     if (id > 0)
                     {
-                        MessageBox.Show("✅ تم حفظ مرتجع البيع العام بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        var askPrint = MessageBox.Show("✅ تم حفظ مرتجع البيع العام بنجاح!\n\nهل ترغب في طباعة إيصال المرتجع الآن؟", "نجاح", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
+                        if (askPrint == DialogResult.Yes)
+                        {
+                            try { new FrmPrintReturn(id, null, false); } catch { }
+                        }
                         txtNotes.Text = "";
                         dgItems.Rows.Clear();
                         RecalcTotals();

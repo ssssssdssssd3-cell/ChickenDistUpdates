@@ -775,11 +775,12 @@ namespace ChickenDist.Forms
                 var dtR = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns,
-                        ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' OR s.SaleType = 'Mixed' THEN sr.TotalAmount ELSE 0 END), 0) AS CashReturns,
-                        ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN sr.TotalAmount ELSE 0 END), 0) AS VisaReturns
+                        ISNULL(SUM(CASE WHEN sr.PaymentType = 'Cash' OR (sr.PaymentType IS NULL AND (s.SaleType = 'Cash' OR s.SaleType = 'Mixed')) THEN sr.TotalAmount ELSE 0 END), 0) AS CashReturns,
+                        ISNULL(SUM(CASE WHEN sr.PaymentType = 'Visa' OR (sr.PaymentType IS NULL AND s.SaleType = 'Visa') THEN sr.TotalAmount ELSE 0 END), 0) AS VisaReturns,
+                        ISNULL(SUM(CASE WHEN sr.PaymentType = 'Credit' OR (sr.PaymentType IS NULL AND s.SaleType = 'Credit') THEN sr.TotalAmount ELSE 0 END), 0) AS CreditReturns
                     FROM SalesReturns sr
-                    JOIN Sales s ON sr.SaleID = s.SaleID
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))",
+                    LEFT JOIN Sales s ON sr.SaleID = s.SaleID
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))",
                     DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
 
                 // 3. المصروفات والتوريدات النقدية
@@ -790,7 +791,7 @@ namespace ChickenDist.Forms
                     FROM CashBox 
                     WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
                       AND (AccountID = @accId OR AccountID IS NULL OR @accId = 0)
-                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'VisaReturn', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),
                     DbHelper.P("@accId", drawerSafeID));
@@ -806,7 +807,7 @@ namespace ChickenDist.Forms
                 
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]) : 0;
                 decimal crtn = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["CashReturns"]) : 0;
-                if (crtn == 0 && tr > 0) crtn = tr; // fallback
+                decimal vrtn = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["VisaReturns"]) : 0;
 
                 decimal ex  = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalExpenses"]) : 0;
                 decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]) : 0;
@@ -915,16 +916,20 @@ namespace ChickenDist.Forms
                         sr.ReturnDate AS TransTime,
                         N'مرتجع مبيعات (-)' AS TransType,
                         CAST(sr.ReturnID AS NVARCHAR) AS RefCode,
-                        N'مرتجع فاتورة مبيعات' AS Details,
-                        N'نقدي' AS PayMethod,
+                        ISNULL(sr.Notes, N'مرتجع مبيعات') AS Details,
+                        CASE 
+                            WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
+                            WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
+                            ELSE N'💵 نقدي'
+                        END AS PayMethod,
                         0.00 AS AmountIn,
                         sr.TotalAmount AS AmountOut,
                         ISNULL(e.EmpName, N'كاشير') AS UserName,
                         'RETURN' AS FilterCategory
                     FROM SalesReturns sr 
-                    JOIN Sales s ON sr.SaleID = s.SaleID 
+                    LEFT JOIN Sales s ON sr.SaleID = s.SaleID 
                     LEFT JOIN Employees e ON sr.CreatedBy = e.EmpID
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))
                     
                     UNION ALL
                     
