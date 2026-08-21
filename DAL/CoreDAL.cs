@@ -1552,8 +1552,8 @@ namespace ChickenDist.DAL
 
                     // تسجيل قيد إثبات فتح الوردية
                     DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
-                          VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid, @ref)",
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                          VALUES (GETDATE(), 'ShiftOpen', 0, 0, @acc, @notes, @uid, @ref, @ref)",
                         DbHelper.P("@acc", safeID > 0 ? safeID : 1),
                         DbHelper.P("@notes", $"فتح وردية عمل جديدة #{newShiftID} تلقائياً ({cashierName} - {stationName}) - رصيد افتتاحي: {openingCash:N2} ج"),
                         DbHelper.P("@uid", empID),
