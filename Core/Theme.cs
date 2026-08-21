@@ -195,7 +195,8 @@ namespace ChickenDist.Core
 
                 if (c is FlowLayoutPanel flp)
                 {
-                    flp.FlowDirection = FlowDirection.RightToLeft;
+                    flp.RightToLeft = RightToLeft.Yes;
+                    flp.FlowDirection = FlowDirection.LeftToRight;
                 }
                 else if (c is StatusStrip ss)
                 {
