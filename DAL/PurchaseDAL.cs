@@ -31,10 +31,6 @@ namespace ChickenDist.DAL
             {
                 if (Quantity > 0)
                     return Math.Round(TotalPrice / Quantity, 4);
-                if (DiscountPct > 0m)
-                    return Math.Round(UnitPrice * (1m - DiscountPct / 100m), 4);
-                if (DiscountAmt > 0m)
-                    return Math.Round(Math.Max(0m, UnitPrice - DiscountAmt), 4);
                 return UnitPrice;
             }
         }
@@ -45,8 +41,6 @@ namespace ChickenDist.DAL
             get
             {
                 decimal gross = Quantity * UnitPrice;
-                if (DiscountPct > 0m)
-                    return Math.Round(gross * (1m - DiscountPct / 100m), 2);
                 if (DiscountAmt > 0m)
                     return Math.Round(Math.Max(0m, gross - DiscountAmt), 2);
                 return Math.Round(gross, 2);

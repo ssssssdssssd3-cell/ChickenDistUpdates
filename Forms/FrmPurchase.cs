@@ -1358,6 +1358,15 @@ namespace ChickenDist.Forms
                 }
             }
 
+            if (disc > 0 && defaultSalePrice > 0)
+            {
+                defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
+            }
+            else if (defaultSalePrice > 0 && defaultPrice > 0 && defaultPrice < defaultSalePrice && disc == 0)
+            {
+                disc = Math.Round((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m, 2);
+            }
+
             // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم
             foreach (var item in _items)
             {
@@ -1777,32 +1786,41 @@ namespace ChickenDist.Forms
             {
                 // 3. الوحدة الكبرى (الأساسية)
                 dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
-                dto.UnitPrice = prod.PurchasePrice * dto.Factor;
                 dto.SuggestedSalePrice = prod.Price * dto.Factor;
+                dto.UnitPrice = dto.DiscountPct > 0 
+                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
+                    : (prod.PurchasePrice * dto.Factor);
             }
             else if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
             {
                 // 1. الوحدة الوسطى
                 dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
-                dto.UnitPrice = prod.PurchasePrice * dto.Factor;
                 dto.SuggestedSalePrice = prod.Price * dto.Factor;
+                dto.UnitPrice = dto.DiscountPct > 0 
+                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
+                    : (prod.PurchasePrice * dto.Factor);
             }
             else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
             {
                 // 2. الوحدة الصغرى (التجزئة)
                 dto.Factor = 1m;
-                dto.UnitPrice = prod.PurchasePrice;
                 dto.SuggestedSalePrice = prod.Price;
+                dto.UnitPrice = dto.DiscountPct > 0 
+                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
+                    : prod.PurchasePrice;
             }
             else
             {
                 // احتياطي
                 dto.Factor = 1m;
-                dto.UnitPrice = prod.PurchasePrice;
                 dto.SuggestedSalePrice = prod.Price;
+                dto.UnitPrice = dto.DiscountPct > 0 
+                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
+                    : prod.PurchasePrice;
             }
 
             // تحديث الجدول
+            row.Cells["DiscountPct"].Value = dto.DiscountPct.ToString("F2");
             row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
             row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
             row.Cells["SuggestedSalePrice"].Value = (dto.SuggestedSalePrice ?? 0m).ToString("F2");
@@ -1948,12 +1966,21 @@ namespace ChickenDist.Forms
             }
             else if (colName == "UnitPrice")
             {
-                if (decimal.TryParse(cellVal, out decimal p) && p > 0)
+                if (decimal.TryParse(cellVal, out decimal p) && p >= 0)
                 {
                     item.UnitPrice = p;
-                    decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
                     decimal sell = item.SuggestedSalePrice ?? 0m;
-                    decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
+                    if (sell > 0 && sell >= p)
+                    {
+                        item.DiscountPct = Math.Round((sell - p) / sell * 100m, 2);
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
+                    }
+                    else if (sell > 0 && p > sell)
+                    {
+                        item.DiscountPct = 0m;
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = "0.00";
+                    }
+                    decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
                 else
@@ -1965,10 +1992,14 @@ namespace ChickenDist.Forms
                 {
                     item.DiscountPct = d;
                     item.DiscountAmt = 0m; // مسح القيمة المباشرة عند وجود نسبة
-                    // تحديث إجمالي السطر وهامش الربح بناءً على صافي سعر الشراء
-                    decimal netBuy = item.NetUnitPrice;
                     decimal sell = item.SuggestedSalePrice ?? 0m;
-                    decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
+                    if (sell > 0)
+                    {
+                        item.UnitPrice = Math.Round(sell * (1m - d / 100m), 2);
+                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
+                    }
+                    decimal buy = item.UnitPrice;
+                    decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
@@ -1980,8 +2011,19 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                 {
                     item.SuggestedSalePrice = s;
-                    decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
-                    decimal margin = netBuy > 0 ? (s - netBuy) / netBuy * 100m : 0m;
+                    if (item.DiscountPct > 0)
+                    {
+                        item.UnitPrice = Math.Round(s * (1m - item.DiscountPct / 100m), 2);
+                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
+                    }
+                    else if (item.UnitPrice > 0 && s >= item.UnitPrice)
+                    {
+                        item.DiscountPct = Math.Round((s - item.UnitPrice) / s * 100m, 2);
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
+                    }
+                    decimal buy = item.UnitPrice;
+                    decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
+                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                 }
                 else
