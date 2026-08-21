@@ -2511,7 +2511,23 @@ namespace ChickenDist.Forms
 					{
 						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
 						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
-						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName);
+						decimal discount = frmProductSearch.SelectedDiscount;
+						decimal discPct = 0m;
+						decimal discAmt = 0m;
+						if (discount > 0)
+						{
+							if (discount <= 100m)
+							{
+								discPct = discount;
+								discAmt = Math.Round((qty * price) * discount / 100m, 2);
+							}
+							else
+							{
+								discAmt = discount;
+								discPct = (qty * price) > 0 ? Math.Round((discount / (qty * price)) * 100m, 2) : 0m;
+							}
+						}
+						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName, discountPct: discPct, discountAmt: discAmt);
 						FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
 						if (frmProductSearch.SelectedBatchID.HasValue)
 						{
@@ -3190,7 +3206,7 @@ namespace ChickenDist.Forms
 			CalculateNet();
 		}
 
-		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null)
+		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null, decimal discountPct = 0m, decimal discountAmt = 0m)
 		{
 			ComboItem product = null;
 			// البحث في _productCache أولاً
@@ -3346,7 +3362,7 @@ namespace ChickenDist.Forms
 				}
 				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
-				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
 					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
@@ -3389,6 +3405,18 @@ namespace ChickenDist.Forms
 					{
 						existingRow.Quantity = newQty;
 						if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
+						if (discountPct > 0)
+						{
+							existingRow.DiscountPct = discountPct;
+							decimal gross = existingRow.Quantity * existingRow.UnitPrice;
+							existingRow.DiscountAmt = Math.Round(gross * discountPct / 100m, 2);
+						}
+						else if (discountAmt > 0)
+						{
+							existingRow.DiscountAmt = discountAmt;
+							decimal gross = existingRow.Quantity * existingRow.UnitPrice;
+							existingRow.DiscountPct = gross > 0 ? Math.Round(discountAmt / gross * 100m, 2) : 0m;
+						}
 					}
 				}
 				else
@@ -3415,7 +3443,7 @@ namespace ChickenDist.Forms
 				}
 				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
 
-				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate);
+				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
 					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
@@ -3473,11 +3501,11 @@ namespace ChickenDist.Forms
 
 					if (qtyOld > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock, unitName, batchID, expiryDate));
+						_items.Add(CreateSaleItemDTO(product, qtyOld, oldPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt));
 					}
 					if (qtyNew > 0)
 					{
-						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock, unitName, batchID, expiryDate));
+						_items.Add(CreateSaleItemDTO(product, qtyNew, newPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt));
 					}
 				}
 				else
@@ -3492,6 +3520,18 @@ namespace ChickenDist.Forms
 						{
 							existingRow.Quantity = newQty;
 							if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
+							if (discountPct > 0)
+							{
+								existingRow.DiscountPct = discountPct;
+								decimal gross = existingRow.Quantity * existingRow.UnitPrice;
+								existingRow.DiscountAmt = Math.Round(gross * discountPct / 100m, 2);
+							}
+							else if (discountAmt > 0)
+							{
+								existingRow.DiscountAmt = discountAmt;
+								decimal gross = existingRow.Quantity * existingRow.UnitPrice;
+								existingRow.DiscountPct = gross > 0 ? Math.Round(discountAmt / gross * 100m, 2) : 0m;
+							}
 						}
 					}
 					else
@@ -3573,7 +3613,7 @@ namespace ChickenDist.Forms
 			return true;
 		}
 
-		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock, string unitName = null, int? batchID = null, DateTime? expiryDate = null)
+		private SaleItemDTO CreateSaleItemDTO(ComboItem product, decimal qty, decimal price, decimal stock, string unitName = null, int? batchID = null, DateTime? expiryDate = null, decimal discountPct = 0m, decimal discountAmt = 0m)
 		{
 			string selectedUnit = unitName;
 			decimal factor = 1m;
@@ -3617,6 +3657,15 @@ namespace ChickenDist.Forms
 				}
 			}
 
+			if (discountPct > 0 && discountAmt == 0m)
+			{
+				discountAmt = Math.Round(qty * price * discountPct / 100m, 2);
+			}
+			else if (discountAmt > 0 && discountPct == 0m)
+			{
+				discountPct = (qty * price) > 0 ? Math.Round(discountAmt / (qty * price) * 100m, 2) : 0m;
+			}
+
 			return new SaleItemDTO
 			{
 				ProductID = product.ID,
@@ -3637,7 +3686,9 @@ namespace ChickenDist.Forms
 				UnitName = selectedUnit,
 				Factor = factor,
 				BatchID = batchID,
-				ExpiryDate = expiryDate
+				ExpiryDate = expiryDate,
+				DiscountPct = discountPct,
+				DiscountAmt = discountAmt
 			};
 		}
 

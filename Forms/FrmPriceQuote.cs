@@ -527,7 +527,8 @@ namespace ChickenDist.Forms
                     {
                         decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1.00m;
                         decimal price = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
-                        AddProductByID(frm.SelectedProductID, qty, price);
+                        decimal discount = frm.SelectedDiscount;
+                        AddProductByID(frm.SelectedProductID, qty, price, discount);
                     }
                     else
                     {
@@ -577,7 +578,7 @@ namespace ChickenDist.Forms
             txtProductCode.Focus();
         }
 
-        private void AddProductByID(int productID, decimal qty, decimal? overridePrice = null)
+        private void AddProductByID(int productID, decimal qty, decimal? overridePrice = null, decimal discount = 0m)
         {
             DataRow pRow = ProductDAL.GetByID(productID);
             if (pRow == null) return;
@@ -594,11 +595,37 @@ namespace ChickenDist.Forms
             else if (_selectedTier == "جملة" && pRow.Table.Columns.Contains("WholesalePrice") && pRow["WholesalePrice"] != DBNull.Value)
                 price = Convert.ToDecimal(pRow["WholesalePrice"]);
 
+            decimal discPct = 0m;
+            decimal discAmt = 0m;
+            if (discount > 0)
+            {
+                if (discount <= 100m)
+                {
+                    discPct = discount;
+                    discAmt = Math.Round((qty * price) * discount / 100m, 2);
+                }
+                else
+                {
+                    discAmt = discount;
+                    discPct = (qty * price) > 0 ? Math.Round(discount / (qty * price) * 100m, 2) : 0m;
+                }
+            }
+
             // Check if item already exists in quote list
             SaleItemDTO existing = _items.Find(x => x.ProductID == productID && Math.Abs(x.UnitPrice - price) < 0.005m);
             if (existing != null)
             {
                 existing.Quantity += qty;
+                if (discPct > 0)
+                {
+                    existing.DiscountPct = discPct;
+                    existing.DiscountAmt = Math.Round((existing.Quantity * existing.UnitPrice) * discPct / 100m, 2);
+                }
+                else if (discAmt > 0)
+                {
+                    existing.DiscountAmt = discAmt;
+                    existing.DiscountPct = (existing.Quantity * existing.UnitPrice) > 0 ? Math.Round(discAmt / (existing.Quantity * existing.UnitPrice) * 100m, 2) : 0m;
+                }
             }
             else
             {
@@ -612,7 +639,9 @@ namespace ChickenDist.Forms
                     Quantity = qty,
                     UnitPrice = price,
                     PurchasePrice = purchasePrice,
-                    Factor = 1.0m
+                    Factor = 1.0m,
+                    DiscountPct = discPct,
+                    DiscountAmt = discAmt
                 };
                 _items.Add(dto);
             }

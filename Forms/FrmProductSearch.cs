@@ -233,7 +233,7 @@ namespace ChickenDist.Forms
             int discLabelX = _isPurchaseMode ? 100 : 255;
             int discTxtX = _isPurchaseMode ? 15 : 170;
 
-            var lblDiscount = new Label { Text = "🎁 الخصم:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            var lblDiscount = new Label { Text = "🎁 الخصم %:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             int permNoticeX = _isPurchaseMode ? 175 : 345;
@@ -806,7 +806,7 @@ namespace ChickenDist.Forms
             else
                 SelectedSalePrice = SelectedPrice;
 
-            if (txtSelectedDiscount != null && decimal.TryParse(txtSelectedDiscount.Text.Trim(), out decimal dVal))
+            if (txtSelectedDiscount != null && decimal.TryParse(txtSelectedDiscount.Text.Replace("%", "").Trim(), out decimal dVal))
                 SelectedDiscount = dVal;
             else
                 SelectedDiscount = 0m;

@@ -1283,7 +1283,7 @@ namespace ChickenDist.Forms
             AddItemFromRow(row, 1, unitName, factor, price, batchID, expiryDate);
         }
 
-        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null)
+        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, decimal discountAmt = 0m)
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
@@ -1394,6 +1394,10 @@ namespace ChickenDist.Forms
             if (existing != null)
             {
                 existing.Qty = targetQty;
+                if (discountAmt > 0)
+                {
+                    existing.DiscountAmt = discountAmt;
+                }
                 existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
                 FocusQtyCell(existing);
@@ -1411,8 +1415,8 @@ namespace ChickenDist.Forms
                 Qty = qty,
                 Price = price,
                 Cost = cost,
-                Total = (qty * price),
-                DiscountAmt = 0,
+                Total = (qty * price) - discountAmt,
+                DiscountAmt = discountAmt,
                 HasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]),
                 DefaultExpiryDays = row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
                 BatchID = batchID,
@@ -2528,7 +2532,16 @@ namespace ChickenDist.Forms
                             }
                             decimal posPrice = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
                             decimal posQty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
-                            AddItemFromRow(row, posQty, frm.SelectedUnitName, factor, posPrice, frm.SelectedBatchID, frm.SelectedExpiryDate);
+                            decimal posDisc = frm.SelectedDiscount;
+                            decimal discAmt = 0m;
+                            if (posDisc > 0)
+                            {
+                                if (posDisc <= 100m)
+                                    discAmt = Math.Round((posQty * posPrice) * posDisc / 100m, 2);
+                                else
+                                    discAmt = posDisc;
+                            }
+                            AddItemFromRow(row, posQty, frm.SelectedUnitName, factor, posPrice, frm.SelectedBatchID, frm.SelectedExpiryDate, discAmt);
                         }
                         // فتح الشاشة مرة أخرى لاختيار صنف تاني
                         continue;
