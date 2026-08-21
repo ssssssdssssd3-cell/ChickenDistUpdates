@@ -316,7 +316,8 @@ namespace ChickenDist.Core
                                     curX = width - 20;
                                     g.DrawRectangle(pBlack, 20, y, width - 40, rowH);
 
-                                    string pCode = itm.Table.Columns.Contains("ProductCode") ? itm["ProductCode"]?.ToString() : "";
+                                    string rawCode = itm.Table.Columns.Contains("ProductCode") ? itm["ProductCode"]?.ToString() : "";
+                                    string pCode = ChickenDist.Forms.FrmPrintSale.FormatProductCode(rawCode);
                                     string pName = itm["ProductName"]?.ToString() ?? "";
                                     string uName = itm.Table.Columns.Contains("UnitName") && !string.IsNullOrWhiteSpace(itm["UnitName"]?.ToString()) ? itm["UnitName"].ToString() : "قطعة";
                                     decimal qVal = Convert.ToDecimal(itm["Quantity"]);

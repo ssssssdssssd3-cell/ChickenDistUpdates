@@ -851,7 +851,9 @@ namespace ChickenDist.Forms
                     var boldSheet = new Font("Arial", 10, FontStyle.Bold);
 
                     if (string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase))
+                        string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(a4Template, "AlTarekNoDiscount", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(a4Template, "AlTarekHomeNoDiscount", StringComparison.OrdinalIgnoreCase))
                     {
                         // ════════════════════════════════════════════════════════════════════════
                         // AL TAREK HOME FULL GRID & BALANCE INVOICE TEMPLATE (نموذج الطارق هوم)
@@ -951,7 +953,8 @@ namespace ChickenDist.Forms
                         }
                     }
                     else if (string.Equals(a4Template, "CommercialGrid", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase))
+                             string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(a4Template, "CommercialGridNoDiscount", StringComparison.OrdinalIgnoreCase))
                     {
                         // ════════════════════════════════════════════════════════════════════════
                         // COMMERCIAL FULL GRID A4 TEMPLATE (نموذج بيان الأسعار والأجهزة الكهربائية)
@@ -1120,35 +1123,68 @@ namespace ChickenDist.Forms
 
                     // ===== Table Header =====
                     bool isCommercial = string.Equals(a4Template, "CommercialGrid", StringComparison.OrdinalIgnoreCase) ||
-                                        string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase);
+                                        string.Equals(a4Template, "AlRahmaGrid", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(a4Template, "CommercialGridNoDiscount", StringComparison.OrdinalIgnoreCase);
                     bool isAlTarek = string.Equals(a4Template, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase);
+                                     string.Equals(a4Template, "AlTarekHome", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(a4Template, "AlTarekNoDiscount", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(a4Template, "AlTarekHomeNoDiscount", StringComparison.OrdinalIgnoreCase);
+
+                    bool hideDiscountCol = string.Equals(a4Template, "AlTarekNoDiscount", StringComparison.OrdinalIgnoreCase) ||
+                                           string.Equals(a4Template, "AlTarekHomeNoDiscount", StringComparison.OrdinalIgnoreCase) ||
+                                           string.Equals(a4Template, "CommercialGridNoDiscount", StringComparison.OrdinalIgnoreCase);
 
                     int xNotes, colWNotes, xTotal, colWTotal, xDiscount, colWDiscount, xPrice, colWPrice, xQty, colWQty, xUnit, colWUnit, xIndex, colWIndex, xCode, colWCode, xName, colWName, xProduct, colWProduct;
                     int xWh = 0, colWWh = 0;
 
                     if (isCommercial || isAlTarek)
                     {
-                        xNotes       = margin;
-                        colWNotes    = 65;
-                        xTotal       = xNotes + colWNotes;
-                        colWTotal    = 75;
-                        xDiscount    = xTotal + colWTotal;
-                        colWDiscount = 45;
-                        xPrice       = xDiscount + colWDiscount;
-                        colWPrice    = 65;
-                        xQty         = xPrice + colWPrice;
-                        colWQty      = 48;
-                        xUnit        = xQty + colWQty;
-                        colWUnit     = 45;
-                        xIndex       = pageW - margin - 26;
-                        colWIndex    = 26;
-                        xCode        = xIndex - 58;
-                        colWCode     = 58;
-                        xName        = xUnit + colWUnit;
-                        colWName     = xCode - xName;
-                        xProduct     = xName;
-                        colWProduct  = colWName;
+                        if (hideDiscountCol)
+                        {
+                            xNotes       = margin;
+                            colWNotes    = 65;
+                            xTotal       = xNotes + colWNotes;
+                            colWTotal    = 80;
+                            xDiscount    = xTotal;
+                            colWDiscount = 0;
+                            xPrice       = xTotal + colWTotal;
+                            colWPrice    = 70;
+                            xQty         = xPrice + colWPrice;
+                            colWQty      = 50;
+                            xUnit        = xQty + colWQty;
+                            colWUnit     = 45;
+                            xIndex       = pageW - margin - 26;
+                            colWIndex    = 26;
+                            xCode        = xIndex - 58;
+                            colWCode     = 58;
+                            xName        = xUnit + colWUnit;
+                            colWName     = xCode - xName;
+                            xProduct     = xName;
+                            colWProduct  = colWName;
+                        }
+                        else
+                        {
+                            xNotes       = margin;
+                            colWNotes    = 65;
+                            xTotal       = xNotes + colWNotes;
+                            colWTotal    = 75;
+                            xDiscount    = xTotal + colWTotal;
+                            colWDiscount = 45;
+                            xPrice       = xDiscount + colWDiscount;
+                            colWPrice    = 65;
+                            xQty         = xPrice + colWPrice;
+                            colWQty      = 48;
+                            xUnit        = xQty + colWQty;
+                            colWUnit     = 45;
+                            xIndex       = pageW - margin - 26;
+                            colWIndex    = 26;
+                            xCode        = xIndex - 58;
+                            colWCode     = 58;
+                            xName        = xUnit + colWUnit;
+                            colWName     = xCode - xName;
+                            xProduct     = xName;
+                            colWProduct  = colWName;
+                        }
                     }
                     else
                     {
@@ -1187,7 +1223,10 @@ namespace ChickenDist.Forms
                         DrawColHeader(g, boldSheet, "الوحدة", xUnit, colWUnit, y + 3);
                         DrawColHeader(g, boldSheet, "الكمية", xQty, colWQty, y + 3);
                         DrawColHeader(g, boldSheet, "سعر البيع", xPrice, colWPrice, y + 3);
-                        DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 3);
+                        if (!hideDiscountCol)
+                        {
+                            DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + 3);
+                        }
                         DrawColHeader(g, boldSheet, "إجمالي البيع", xTotal, colWTotal, y + 3);
                         DrawColHeader(g, boldSheet, "ملاحظات", xNotes, colWNotes, y + 3);
                         y += 24;
@@ -1270,12 +1309,6 @@ namespace ChickenDist.Forms
                     {
                         while (_printItemIndex < _items.Rows.Count)
                         {
-                            if (y + 150 > e.PageBounds.Height)
-                            {
-                                e.HasMorePages = true;
-                                return;
-                            }
-
                             DataRow r = _items.Rows[_printItemIndex];
                             decimal qty   = Convert.ToDecimal(r["Quantity"]);
                             decimal price = Convert.ToDecimal(r["UnitPrice"]);
@@ -1289,72 +1322,129 @@ namespace ChickenDist.Forms
                             else if (itemDiscAmt > 0)
                                 discText = itemDiscAmt.ToString("F2");
 
-                            _runningTotal += tot; 
-                            _runningQtyTotal += qty;
+                            string prodName = r["ProductName"]?.ToString() ?? "";
 
                             if (isCommercial || isAlTarek)
                             {
-                                g.DrawRectangle(Pens.Black, xIndex, y, colWIndex, 20);
-                                g.DrawRectangle(Pens.Black, xCode, y, colWCode, 20);
-                                g.DrawRectangle(Pens.Black, xName, y, colWName, 20);
-                                g.DrawRectangle(Pens.Black, xUnit, y, colWUnit, 20);
-                                g.DrawRectangle(Pens.Black, xQty, y, colWQty, 20);
-                                g.DrawRectangle(Pens.Black, xPrice, y, colWPrice, 20);
-                                g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, 20);
-                                g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, 20);
-                                g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, 20);
+                                SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWName - 4));
+                                int rowHeight = Math.Max(22, (int)Math.Ceiling(nameSize.Height) + 4);
+                                if (rowHeight > 46) rowHeight = 46;
 
-                                DrawColCell(g, normal, (_printItemIndex + 1).ToString(), xIndex, colWIndex, y + 3, center);
-                                string pCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : (r.Table.Columns.Contains("ProductID") ? r["ProductID"].ToString() : "");
-                                DrawColCell(g, normal, pCode, xCode, colWCode, y + 3, center);
-                                DrawColCell(g, normal, r["ProductName"].ToString(), xName, colWName, y + 3, right);
+                                if (y + rowHeight + 120 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                _runningTotal += tot; 
+                                _runningQtyTotal += qty;
+
+                                g.DrawRectangle(Pens.Black, xIndex, y, colWIndex, rowHeight);
+                                g.DrawRectangle(Pens.Black, xCode, y, colWCode, rowHeight);
+                                g.DrawRectangle(Pens.Black, xName, y, colWName, rowHeight);
+                                g.DrawRectangle(Pens.Black, xUnit, y, colWUnit, rowHeight);
+                                g.DrawRectangle(Pens.Black, xQty, y, colWQty, rowHeight);
+                                g.DrawRectangle(Pens.Black, xPrice, y, colWPrice, rowHeight);
+                                if (!hideDiscountCol)
+                                {
+                                    g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, rowHeight);
+                                }
+                                g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, rowHeight);
+                                g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, rowHeight);
+
+                                DrawColCell(g, normal, (_printItemIndex + 1).ToString(), xIndex, colWIndex, y, rowHeight, center);
+                                string rawCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : (r.Table.Columns.Contains("ProductID") ? r["ProductID"].ToString() : "");
+                                string pCode = FormatProductCode(rawCode);
+                                DrawColCell(g, normal, pCode, xCode, colWCode, y, rowHeight, center);
+
+                                var nameSf = new StringFormat
+                                {
+                                    Alignment = StringAlignment.Far,
+                                    LineAlignment = StringAlignment.Center,
+                                    FormatFlags = StringFormatFlags.FitBlackBox
+                                };
+                                g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xName + 2, y + 1, colWName - 4, rowHeight - 2), nameSf);
+
                                 string unitStr = r.Table.Columns.Contains("UnitName") && !string.IsNullOrWhiteSpace(r["UnitName"]?.ToString()) ? r["UnitName"].ToString() : (r.Table.Columns.Contains("BaseUnitName") && !string.IsNullOrWhiteSpace(r["BaseUnitName"]?.ToString()) ? r["BaseUnitName"].ToString() : "قطعة");
-                                DrawColCell(g, normal, unitStr, xUnit, colWUnit, y + 3, center);
-                                DrawColCell(g, normal, qty.ToString("N2"), xQty, colWQty, y + 3, center);
-                                DrawColCell(g, normal, price.ToString("N2"), xPrice, colWPrice, y + 3, center);
-                                DrawColCell(g, normal, discText, xDiscount, colWDiscount, y + 3, center);
-                                DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y + 3, center);
+                                DrawColCell(g, normal, unitStr, xUnit, colWUnit, y, rowHeight, center);
+                                DrawColCell(g, normal, qty.ToString("N2"), xQty, colWQty, y, rowHeight, center);
+                                DrawColCell(g, normal, price.ToString("N2"), xPrice, colWPrice, y, rowHeight, center);
+                                if (!hideDiscountCol)
+                                {
+                                    DrawColCell(g, normal, discText, xDiscount, colWDiscount, y, rowHeight, center);
+                                }
+                                DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y, rowHeight, center);
 
                                 string itemNotes = r.Table.Columns.Contains("Notes") && r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
                                 if (string.IsNullOrEmpty(itemNotes) && r.Table.Columns.Contains("KitchenNotes") && r["KitchenNotes"] != DBNull.Value) itemNotes = r["KitchenNotes"].ToString();
-                                DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y + 3, center);
-                                y += 20;
+                                DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y, rowHeight, center);
+                                y += rowHeight;
                             }
                             else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
                                      string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ||
                                      string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase))
                             {
+                                SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWProduct - 4));
+                                int rowHeight = Math.Max(18, (int)Math.Ceiling(nameSize.Height) + 4);
+                                if (rowHeight > 42) rowHeight = 42;
+
+                                if (y + rowHeight + 120 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                _runningTotal += tot; 
+                                _runningQtyTotal += qty;
+
                                 Pen borderPen = string.Equals(a4Template, "SparePartsGrid", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.SteelBlue, 1f) :
                                                 string.Equals(a4Template, "SupermarketA4", StringComparison.OrdinalIgnoreCase) ? new Pen(Color.OliveDrab, 1f) :
                                                 Pens.Black;
 
-                                g.DrawRectangle(borderPen, xTotal, y, colWTotal, 18);
-                                g.DrawRectangle(borderPen, xDiscount, y, colWDiscount, 18);
-                                g.DrawRectangle(borderPen, xPrice, y, colWPrice, 18);
-                                g.DrawRectangle(borderPen, xQty, y, colWQty, 18);
-                                g.DrawRectangle(borderPen, xProduct, y, colWProduct, 18);
+                                g.DrawRectangle(borderPen, xTotal, y, colWTotal, rowHeight);
+                                if (colWDiscount > 0) g.DrawRectangle(borderPen, xDiscount, y, colWDiscount, rowHeight);
+                                g.DrawRectangle(borderPen, xPrice, y, colWPrice, rowHeight);
+                                g.DrawRectangle(borderPen, xQty, y, colWQty, rowHeight);
+                                g.DrawRectangle(borderPen, xProduct, y, colWProduct, rowHeight);
 
-                                DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y + 2);
-                                DrawColCell(g, normal, discText,               xDiscount, colWDiscount, y + 2);
-                                DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y + 2);
-                                DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y + 2);
-                                DrawColCell(g, normal, r["ProductName"].ToString(), xProduct, colWProduct,  y + 2);
-                                y += 18;
+                                DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y, rowHeight, center);
+                                if (colWDiscount > 0) DrawColCell(g, normal, discText, xDiscount, colWDiscount, y, rowHeight, center);
+                                DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y, rowHeight, center);
+                                DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y, rowHeight, center);
+
+                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.FitBlackBox };
+                                g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xProduct + 2, y + 1, colWProduct - 4, rowHeight - 2), prodSf);
+                                y += rowHeight;
                             }
                             else
                             {
-                                g.DrawLine(Pens.LightGray, margin, y + 18, pageW - margin, y + 18);
-                                g.DrawLine(Pens.LightGray, xDiscount, y, xDiscount, y + 18);
-                                g.DrawLine(Pens.LightGray, xPrice, y, xPrice, y + 18);
-                                g.DrawLine(Pens.LightGray, xQty, y, xQty, y + 18);
-                                g.DrawLine(Pens.LightGray, xProduct, y, xProduct, y + 18);
+                                SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWProduct - 4));
+                                int rowHeight = Math.Max(18, (int)Math.Ceiling(nameSize.Height) + 4);
+                                if (rowHeight > 42) rowHeight = 42;
 
-                                DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y + 2);
-                                DrawColCell(g, normal, discText,               xDiscount, colWDiscount, y + 2);
-                                DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y + 2);
-                                DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y + 2);
-                                DrawColCell(g, normal, r["ProductName"].ToString(), xProduct, colWProduct,  y + 2);
-                                y += 18;
+                                if (y + rowHeight + 120 > e.PageBounds.Height)
+                                {
+                                    e.HasMorePages = true;
+                                    return;
+                                }
+
+                                _runningTotal += tot; 
+                                _runningQtyTotal += qty;
+
+                                g.DrawLine(Pens.LightGray, margin, y + rowHeight, pageW - margin, y + rowHeight);
+                                if (colWDiscount > 0) g.DrawLine(Pens.LightGray, xDiscount, y, xDiscount, y + rowHeight);
+                                g.DrawLine(Pens.LightGray, xPrice, y, xPrice, y + rowHeight);
+                                g.DrawLine(Pens.LightGray, xQty, y, xQty, y + rowHeight);
+                                g.DrawLine(Pens.LightGray, xProduct, y, xProduct, y + rowHeight);
+
+                                DrawColCell(g, normal, tot.ToString("N2"),     xTotal,    colWTotal,    y, rowHeight, center);
+                                if (colWDiscount > 0) DrawColCell(g, normal, discText, xDiscount, colWDiscount, y, rowHeight, center);
+                                DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y, rowHeight, center);
+                                DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y, rowHeight, center);
+
+                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.FitBlackBox };
+                                g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xProduct + 2, y + 1, colWProduct - 4, rowHeight - 2), prodSf);
+                                y += rowHeight;
                             }
 
                             _printItemIndex++;
@@ -1910,6 +2000,14 @@ namespace ChickenDist.Forms
             }
         }
 
+        public static string FormatProductCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return "";
+            string c = code.Trim();
+            string trimmed = c.TrimStart('0');
+            return string.IsNullOrEmpty(trimmed) ? (c.Contains("0") ? "0" : c) : trimmed;
+        }
+
         private void DrawColHeader(Graphics g, Font f, string text, int x, int w, int y, Brush brush = null)
         {
             var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
@@ -1918,8 +2016,14 @@ namespace ChickenDist.Forms
 
         private void DrawColCell(Graphics g, Font f, string text, int x, int w, int y, StringFormat sf = null)
         {
-            var format = sf ?? new StringFormat { Alignment = StringAlignment.Far };
+            var format = sf ?? new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
             g.DrawString(text, f, Brushes.Black, new RectangleF(x, y, w, 18), format);
+        }
+
+        private void DrawColCell(Graphics g, Font f, string text, int x, int w, int y, int h, StringFormat sf = null)
+        {
+            var format = sf ?? new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+            g.DrawString(text, f, Brushes.Black, new RectangleF(x, y, w, h), format);
         }
 
         private void DrawSimpleBarcode(Graphics g, string text, float x, float y, float w, float h)

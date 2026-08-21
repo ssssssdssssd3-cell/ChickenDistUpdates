@@ -474,7 +474,9 @@ namespace ChickenDist.Forms
             cboA4Template.Items.AddRange(new object[]
             {
                 "نموذج بيان الأسعار والشبكة التجارية (Commercial Grid A4)",
+                "نموذج بيان الأسعار (بدون عمود الخصم) (Commercial Grid - No Discount)",
                 "نموذج الطارق هوم (Al Tarek Home)",
+                "نموذج الطارق هوم (بدون عمود الخصم) (Al Tarek Home - No Discount)",
                 "الكلاسيكي الأزرق (Classic Blue)",
                 "التصميم الحديث (Modern Dark)",
                 "الفاتورة الرسمية (Official Invoice)",
@@ -485,7 +487,9 @@ namespace ChickenDist.Forms
                 "فاتورة شركات حديثة (CorporateModern)"
             });
             cboA4Template.SelectedItem = AppConfig.A4Template == "CommercialGrid" || AppConfig.A4Template == "AlRahmaGrid" ? "نموذج بيان الأسعار والشبكة التجارية (Commercial Grid A4)"
+                                       : AppConfig.A4Template == "CommercialGridNoDiscount" ? "نموذج بيان الأسعار (بدون عمود الخصم) (Commercial Grid - No Discount)"
                                        : AppConfig.A4Template == "AlTarekGrid" || AppConfig.A4Template == "AlTarekHome" ? "نموذج الطارق هوم (Al Tarek Home)"
+                                       : AppConfig.A4Template == "AlTarekNoDiscount" || AppConfig.A4Template == "AlTarekHomeNoDiscount" ? "نموذج الطارق هوم (بدون عمود الخصم) (Al Tarek Home - No Discount)"
                                        : AppConfig.A4Template == "Classic" ? "الكلاسيكي الأزرق (Classic Blue)"
                                        : AppConfig.A4Template == "Modern" ? "التصميم الحديث (Modern Dark)"
                                        : AppConfig.A4Template == "Official" ? "الفاتورة الرسمية (Official Invoice)"
@@ -494,8 +498,8 @@ namespace ChickenDist.Forms
                                        : AppConfig.A4Template == "SupermarketA4" ? "نموذج السوبرماركت (SupermarketA4)"
                                        : AppConfig.A4Template == "ElegantClassic" ? "فاتورة كلاسيكية فاخرة (ElegantClassic)"
                                        : AppConfig.A4Template == "CorporateModern" ? "فاتورة شركات حديثة (CorporateModern)"
-                                       : "نموذج بيان الأسعار والشبكة التجارية (Commercial Grid A4)";
-            if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 0;
+                                       : "نموذج الطارق هوم (Al Tarek Home)";
+            if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 2;
             this.Controls.Add(cboA4Template);
             y += 35;
 
@@ -504,17 +508,22 @@ namespace ChickenDist.Forms
             btnPreviewA4.Click += (s, e) =>
             {
                 // حفظ قالب A4 الحالي مؤقتاً للمعاينة
-                AppConfig.A4Template = cboA4Template.SelectedIndex == 0 ? "CommercialGrid"
-                                     : cboA4Template.SelectedIndex == 1 ? "AlTarekGrid"
-                                     : cboA4Template.SelectedIndex == 2 ? "Classic"
-                                     : cboA4Template.SelectedIndex == 3 ? "Modern"
-                                     : cboA4Template.SelectedIndex == 4 ? "Official"
-                                     : cboA4Template.SelectedIndex == 5 ? "Simple"
-                                     : cboA4Template.SelectedIndex == 6 ? "SparePartsGrid"
-                                     : cboA4Template.SelectedIndex == 7 ? "SupermarketA4"
-                                     : cboA4Template.SelectedIndex == 8 ? "ElegantClassic"
-                                     : cboA4Template.SelectedIndex == 9 ? "CorporateModern"
-                                     : "CommercialGrid";
+                AppConfig.A4Template = cboA4Template.SelectedIndex switch
+                {
+                    0 => "CommercialGrid",
+                    1 => "CommercialGridNoDiscount",
+                    2 => "AlTarekGrid",
+                    3 => "AlTarekNoDiscount",
+                    4 => "Classic",
+                    5 => "Modern",
+                    6 => "Official",
+                    7 => "Simple",
+                    8 => "SparePartsGrid",
+                    9 => "SupermarketA4",
+                    10 => "ElegantClassic",
+                    11 => "CorporateModern",
+                    _ => "AlTarekGrid"
+                };
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
@@ -1231,17 +1240,22 @@ namespace ChickenDist.Forms
                                           : cboReceiptTemplate.SelectedIndex == 7 ? "RestaurantReceipt"
                                           : cboReceiptTemplate.SelectedIndex == 8 ? "PharmacyReceipt"
                                           : "Standard";
-                AppConfig.A4Template = cboA4Template.SelectedIndex == 0 ? "CommercialGrid"
-                                     : cboA4Template.SelectedIndex == 1 ? "AlTarekGrid"
-                                     : cboA4Template.SelectedIndex == 2 ? "Classic"
-                                     : cboA4Template.SelectedIndex == 3 ? "Modern"
-                                     : cboA4Template.SelectedIndex == 4 ? "Official"
-                                     : cboA4Template.SelectedIndex == 5 ? "Simple"
-                                     : cboA4Template.SelectedIndex == 6 ? "SparePartsGrid"
-                                     : cboA4Template.SelectedIndex == 7 ? "SupermarketA4"
-                                     : cboA4Template.SelectedIndex == 8 ? "ElegantClassic"
-                                     : cboA4Template.SelectedIndex == 9 ? "CorporateModern"
-                                     : "CommercialGrid";
+                AppConfig.A4Template = cboA4Template.SelectedIndex switch
+                {
+                    0 => "CommercialGrid",
+                    1 => "CommercialGridNoDiscount",
+                    2 => "AlTarekGrid",
+                    3 => "AlTarekNoDiscount",
+                    4 => "Classic",
+                    5 => "Modern",
+                    6 => "Official",
+                    7 => "Simple",
+                    8 => "SparePartsGrid",
+                    9 => "SupermarketA4",
+                    10 => "ElegantClassic",
+                    11 => "CorporateModern",
+                    _ => "AlTarekGrid"
+                };
                 AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
                                           : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
                                           : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
