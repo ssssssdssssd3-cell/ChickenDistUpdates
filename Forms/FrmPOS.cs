@@ -51,6 +51,8 @@ namespace ChickenDist.Forms
         private List<POSItem> _items = new List<POSItem>();
         private int _lastSaleID = 0;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
+        private string _activeDraftKey = null;
+        private int _activeDraftID = 0;
 
         // Barcode auto-detection
         private System.Windows.Forms.Timer _barcodeTimer;
@@ -2298,6 +2300,19 @@ namespace ChickenDist.Forms
                 }
                 catch { }
 
+                if (_activeDraftID > 0)
+                {
+                    DraftManager.MarkRecovered(_activeDraftID);
+                    DraftManager.DeleteDraftByID(_activeDraftID);
+                }
+                if (!string.IsNullOrEmpty(_activeDraftKey))
+                {
+                    DraftManager.DeleteDraft(_activeDraftKey);
+                }
+                DraftManager.DeleteDraft($"POS_User_{Session.EmpID}");
+                _activeDraftID = 0;
+                _activeDraftKey = null;
+
                 NewInvoice();
             }
             catch (Exception ex)
@@ -2312,7 +2327,8 @@ namespace ChickenDist.Forms
 
         private void NewInvoice()
         {
-            DraftManager.DeleteDraft($"POS_User_{Session.EmpID}");
+            _activeDraftKey = null;
+            _activeDraftID = 0;
             _isSaving = false;
             _items.Clear();
             _loadedDraftSaleID = 0;
@@ -2352,12 +2368,12 @@ namespace ChickenDist.Forms
             {
                 if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
                 {
-                    RestorePOSFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                    RestorePOSFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID, frm.SelectedDraftKey);
                 }
             }
         }
 
-        private void RestorePOSFromDraft(string json, int draftId)
+        private void RestorePOSFromDraft(string json, int draftId, string draftKey = null)
         {
             try
             {
@@ -2371,6 +2387,9 @@ namespace ChickenDist.Forms
                 }
 
                 NewInvoice();
+
+                _activeDraftID = draftId;
+                _activeDraftKey = !string.IsNullOrEmpty(draftKey) ? draftKey : $"POS_User_{Session.EmpID}_{draftId}";
 
                 if (data.ClientID > 0)
                 {
@@ -2412,8 +2431,7 @@ namespace ChickenDist.Forms
                 }
 
                 RefreshGrid();
-                DraftManager.MarkRecovered(draftId);
-                MessageBox.Show($"✅ تم استرجاع فاتورة الكاشير بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"✅ تم استرجاع فاتورة الكاشير بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -2467,8 +2485,11 @@ namespace ChickenDist.Forms
                     });
                 }
 
-                string draftKey = $"POS_User_{Session.EmpID}";
-                DraftManager.SaveDraft("POS", draftKey, Session.EmpID, clientId, clientName, _selectedSaleType, total, _items.Count, data);
+                if (string.IsNullOrEmpty(_activeDraftKey))
+                {
+                    _activeDraftKey = $"POS_User_{Session.EmpID}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                }
+                DraftManager.SaveDraft("POS", _activeDraftKey, Session.EmpID, clientId, clientName, _selectedSaleType, total, _items.Count, data);
             }
             catch { }
         }

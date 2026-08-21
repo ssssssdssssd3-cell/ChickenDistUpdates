@@ -198,6 +198,7 @@ namespace ChickenDist.Core
 
         public static void DeleteDraft(string draftKey)
         {
+            if (string.IsNullOrEmpty(draftKey)) return;
             try
             {
                 // Remove local file
@@ -218,8 +219,35 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void DeleteDraftByID(int draftId)
+        {
+            if (draftId <= 0) return;
+            try
+            {
+                var rowObj = DbHelper.Scalar("SELECT DraftKey FROM IncompleteDrafts WHERE DraftID = @id", DbHelper.P("@id", draftId));
+                if (rowObj != null && rowObj != DBNull.Value)
+                {
+                    string k = rowObj.ToString();
+                    try
+                    {
+                        string safeFileName = "draft_" + k.Replace(" ", "_").Replace(":", "_").Replace("\\", "_").Replace("/", "_") + ".json";
+                        string localPath = Path.Combine(_localDraftFolder, safeFileName);
+                        if (File.Exists(localPath)) File.Delete(localPath);
+                    }
+                    catch { }
+                }
+
+                DbHelper.Execute("DELETE FROM IncompleteDrafts WHERE DraftID = @id", DbHelper.P("@id", draftId));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DraftManager.DeleteDraftByID", ex);
+            }
+        }
+
         public static void MarkRecovered(int draftId)
         {
+            if (draftId <= 0) return;
             try
             {
                 DbHelper.Execute("UPDATE IncompleteDrafts SET IsRecovered = 1 WHERE DraftID = @id", DbHelper.P("@id", draftId));

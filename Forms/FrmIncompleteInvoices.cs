@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
         // Property for caller to receive the selected restored draft
         public DataRow SelectedDraftRow { get; private set; }
         public string SelectedDraftType { get; private set; }
+        public string SelectedDraftKey { get; private set; }
         public string SelectedDraftJson { get; private set; }
         public int SelectedDraftID { get; private set; }
         public bool IsRestored { get; private set; } = false;
@@ -311,6 +312,7 @@ namespace ChickenDist.Forms
             SelectedDraftRow = r;
             SelectedDraftID = draftId;
             SelectedDraftType = r["DraftType"].ToString();
+            SelectedDraftKey = r["DraftKey"]?.ToString() ?? "";
             SelectedDraftJson = r["DraftData"].ToString();
             IsRestored = true;
 
@@ -332,8 +334,9 @@ namespace ChickenDist.Forms
                 var rows = _dtDrafts.Select($"DraftID = {draftId}");
                 if (rows.Length > 0)
                 {
-                    string draftKey = rows[0]["DraftKey"].ToString();
+                    string draftKey = rows[0]["DraftKey"]?.ToString() ?? "";
                     DraftManager.DeleteDraft(draftKey);
+                    DraftManager.DeleteDraftByID(draftId);
                     LoadDrafts();
                 }
             }

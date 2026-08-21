@@ -60,6 +60,8 @@ namespace ChickenDist.Forms
         private int _editPurchaseID = 0;
         private bool _isCopyMode = false;
         private DateTime? _loadedLastModified = null;
+        private string _activeDraftKey = null;
+        private int _activeDraftID = 0;
 
         public FrmPurchase(int purchaseID, bool isCopyMode = false) : this()
         {
@@ -2134,7 +2136,8 @@ namespace ChickenDist.Forms
         // مسح الفاتورة (جديدة)
         private void ClearInvoice()
         {
-            DraftManager.DeleteDraft($"Purchase_User_{Session.EmpID}");
+            _activeDraftKey = null;
+            _activeDraftID = 0;
             _items.Clear();
             RefreshGrid();
             if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
@@ -2606,6 +2609,20 @@ namespace ChickenDist.Forms
                     FrmQuickAdd.RaiseProductSaved();
 
                     _lastPurchaseID = id;
+
+                    if (_activeDraftID > 0)
+                    {
+                        DraftManager.MarkRecovered(_activeDraftID);
+                        DraftManager.DeleteDraftByID(_activeDraftID);
+                    }
+                    if (!string.IsNullOrEmpty(_activeDraftKey))
+                    {
+                        DraftManager.DeleteDraft(_activeDraftKey);
+                    }
+                    DraftManager.DeleteDraft($"Purchase_User_{Session.EmpID}");
+                    _activeDraftID = 0;
+                    _activeDraftKey = null;
+
                     MessageBox.Show(
                         $"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: {id}" +
                         (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : "") +
@@ -2647,12 +2664,12 @@ namespace ChickenDist.Forms
             {
                 if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
                 {
-                    RestorePurchaseFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                    RestorePurchaseFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID, frm.SelectedDraftKey);
                 }
             }
         }
 
-        private void RestorePurchaseFromDraft(string json, int draftId)
+        private void RestorePurchaseFromDraft(string json, int draftId, string draftKey = null)
         {
             try
             {
@@ -2666,6 +2683,9 @@ namespace ChickenDist.Forms
                 }
 
                 ClearInvoice();
+
+                _activeDraftID = draftId;
+                _activeDraftKey = !string.IsNullOrEmpty(draftKey) ? draftKey : $"Purchase_User_{Session.EmpID}_{draftId}";
 
                 if (data.SupplierID > 0)
                 {
@@ -2725,8 +2745,7 @@ namespace ChickenDist.Forms
 
                 RefreshGrid();
                 RecalcTotals();
-                DraftManager.MarkRecovered(draftId);
-                MessageBox.Show($"✅ تم استرجاع فاتورة المشتريات غير المكتملة بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"✅ تم استرجاع فاتورة المشتريات غير المكتملة بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -2789,8 +2808,11 @@ namespace ChickenDist.Forms
                     });
                 }
 
-                string draftKey = $"Purchase_User_{Session.EmpID}";
-                DraftManager.SaveDraft("Purchase", draftKey, Session.EmpID, suppId, suppName, _purchaseType, netTotal, _items.Count, data);
+                if (string.IsNullOrEmpty(_activeDraftKey))
+                {
+                    _activeDraftKey = $"Purchase_User_{Session.EmpID}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                }
+                DraftManager.SaveDraft("Purchase", _activeDraftKey, Session.EmpID, suppId, suppName, _purchaseType, netTotal, _items.Count, data);
             }
             catch { }
         }

@@ -49,6 +49,8 @@ namespace ChickenDist.Forms
         private DateTime? _inventoryStartDate = null;
         private System.Collections.Generic.HashSet<int> _inventoriedProductIDs
             = new System.Collections.Generic.HashSet<int>();
+        private string _activeDraftKey = null;
+        private int _activeDraftID = 0;
 
         // Tab Logs
         private DataGridView dgLogs;
@@ -1475,17 +1477,20 @@ namespace ChickenDist.Forms
             {
                 if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
                 {
-                    RestoreInventoryFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+                    RestoreInventoryFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID, frm.SelectedDraftKey);
                 }
             }
         }
 
-        private void RestoreInventoryFromDraft(string json, int draftId)
+        private void RestoreInventoryFromDraft(string json, int draftId, string draftKey = null)
         {
             try
             {
                 var data = DraftManager.Deserialize<InventoryDraftData>(json);
                 if (data == null) return;
+
+                _activeDraftID = draftId;
+                _activeDraftKey = !string.IsNullOrEmpty(draftKey) ? draftKey : $"Inventory_Wh_{data.WarehouseID}";
 
                 if (data.WarehouseID > 0)
                 {
@@ -1510,8 +1515,7 @@ namespace ChickenDist.Forms
                 }
 
                 LoadStock();
-                DraftManager.MarkRecovered(draftId);
-                MessageBox.Show($"✅ تم استرجاع مسودة الجرد بنجاح وتحديث ({_enteredActualQty.Count}) صنف!", "استرجاع مسودة الجرد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"✅ تم استرجاع مسودة الجرد بنجاح وتحديث ({_enteredActualQty.Count}) صنف!\nستظل محفوظة في قائمة العمليات غير المكتملة لحين حفظ التسوية نهائياً أو حذفها.", "استرجاع مسودة الجرد", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -1578,8 +1582,11 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                string draftKey = $"Inventory_Wh_{wid}";
-                DraftManager.SaveDraft("Inventory", draftKey, Session.EmpID, wid, wName, "جرد مخزن", 0, _enteredActualQty.Count, data);
+                if (string.IsNullOrEmpty(_activeDraftKey))
+                {
+                    _activeDraftKey = $"Inventory_Wh_{wid}";
+                }
+                DraftManager.SaveDraft("Inventory", _activeDraftKey, Session.EmpID, wid, wName, "جرد مخزن", 0, _enteredActualQty.Count, data);
             }
             catch { }
         }
@@ -1881,7 +1888,19 @@ namespace ChickenDist.Forms
 
                         if (savedCount > 0)
                         {
+                            if (_activeDraftID > 0)
+                            {
+                                DraftManager.MarkRecovered(_activeDraftID);
+                                DraftManager.DeleteDraftByID(_activeDraftID);
+                            }
+                            if (!string.IsNullOrEmpty(_activeDraftKey))
+                            {
+                                DraftManager.DeleteDraft(_activeDraftKey);
+                            }
                             DraftManager.DeleteDraft($"Inventory_Wh_{wid}");
+                            _activeDraftID = 0;
+                            _activeDraftKey = null;
+
                             ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
                             LoadStock();
                             LoadLogs();

@@ -100,6 +100,8 @@ namespace ChickenDist.Forms
         private bool _isCopyMode = false;
         private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
+        private string _activeDraftKey = null;
+        private int _activeDraftID = 0;
         // ── Auto-barcode detection ─────────────────────────────────────────────
         private System.Windows.Forms.Timer _barcodeTimer;
         private DateTime _lastKeyTime = DateTime.MinValue;
@@ -4298,6 +4300,19 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
+						if (_activeDraftID > 0)
+						{
+							DraftManager.MarkRecovered(_activeDraftID);
+							DraftManager.DeleteDraftByID(_activeDraftID);
+						}
+						if (!string.IsNullOrEmpty(_activeDraftKey))
+						{
+							DraftManager.DeleteDraft(_activeDraftKey);
+						}
+						DraftManager.DeleteDraft($"Sale_User_{Session.EmpID}");
+						_activeDraftID = 0;
+						_activeDraftKey = null;
+
 						DialogResult printResult = MessageBox.Show(
 							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
 							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -4494,12 +4509,12 @@ namespace ChickenDist.Forms
 			{
 				if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))
 				{
-					RestoreSaleFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID);
+					RestoreSaleFromDraft(frm.SelectedDraftJson, frm.SelectedDraftID, frm.SelectedDraftKey);
 				}
 			}
 		}
 
-		private void RestoreSaleFromDraft(string json, int draftId)
+		private void RestoreSaleFromDraft(string json, int draftId, string draftKey = null)
 		{
 			try
 			{
@@ -4513,6 +4528,9 @@ namespace ChickenDist.Forms
 				}
 
 				ResetForm();
+
+				_activeDraftID = draftId;
+				_activeDraftKey = !string.IsNullOrEmpty(draftKey) ? draftKey : $"Sale_User_{Session.EmpID}_{draftId}";
 
 				if (data.ClientID > 0)
 				{
@@ -4563,8 +4581,7 @@ namespace ChickenDist.Forms
 				}
 
 				RefreshGrid();
-				DraftManager.MarkRecovered(draftId);
-				MessageBox.Show($"✅ تم استرجاع الفاتورة غير المكتملة بنجاح ({_items.Count} صنف)!", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				MessageBox.Show($"✅ تم استرجاع الفاتورة غير المكتملة بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex)
 			{
@@ -4619,8 +4636,11 @@ namespace ChickenDist.Forms
 					});
 				}
 
-				string draftKey = $"Sale_User_{Session.EmpID}";
-				DraftManager.SaveDraft("Sale", draftKey, Session.EmpID, clientId, clientName, _invoiceType, netTotal, _items.Count, data);
+				if (string.IsNullOrEmpty(_activeDraftKey))
+				{
+					_activeDraftKey = $"Sale_User_{Session.EmpID}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+				}
+				DraftManager.SaveDraft("Sale", _activeDraftKey, Session.EmpID, clientId, clientName, _invoiceType, netTotal, _items.Count, data);
 			}
 			catch { }
 		}
@@ -6322,6 +6342,8 @@ namespace ChickenDist.Forms
 			_editSaleID = 0;
 			_isCopyMode = false;
 			_isDirty = false;
+			_activeDraftID = 0;
+			_activeDraftKey = null;
 
 			// إعادة تحميل الكومبو لإعادة تعيين الفلترة والبحث ومنح تجربة سريعة بين الفواتير
 			LoadCombos();
