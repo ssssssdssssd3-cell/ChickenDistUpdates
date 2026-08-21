@@ -100,7 +100,7 @@ namespace ChickenDist.Forms
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
-                Margin = new Padding(0, 5, 0, 0)
+                Margin = new Padding(0, 5, 2, 0)
             };
 
             inputCtrl.Width = inputWidth;
@@ -110,7 +110,7 @@ namespace ChickenDist.Forms
             {
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Color.Transparent,
                 Margin = new Padding(4, 2, 4, 2),
                 Padding = new Padding(0),
@@ -130,7 +130,7 @@ namespace ChickenDist.Forms
             var pnlHeaderContainer = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 122,
+                Height = 136,
                 BackColor = Theme.BgCard
             };
 
@@ -138,46 +138,46 @@ namespace ChickenDist.Forms
             var pnlRow1 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 40,
+                Height = 44,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(6, 5, 6, 2),
+                Padding = new Padding(6, 4, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                AutoScroll = true
+                AutoScroll = false
             };
 
             // الصف 2: الخيارات والمرشحات الإضافية
             var pnlRow2 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 38,
-                BackColor = Color.FromArgb(240, 244, 248),
+                Height = 44,
+                BackColor = Theme.BgCard,
                 Padding = new Padding(6, 4, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                AutoScroll = true
+                AutoScroll = false
             };
 
             // الصف 3: أزرار العمليات
             var pnlRow3 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 42,
-                BackColor = Color.FromArgb(230, 236, 244),
-                Padding = new Padding(6, 5, 6, 2),
+                Height = 48,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(6, 4, 6, 2),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                AutoScroll = true
+                AutoScroll = false
             };
 
-            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboWarehouse = new ComboBox { Width = 115, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 110);
+            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 115);
 
-            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboCategory = new ComboBox { Width = 115, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             try
             {
                 cboCategory.Items.Add(new ComboItem(0, "(كل التصنيفات)"));
@@ -190,13 +190,13 @@ namespace ChickenDist.Forms
             }
             catch { }
             cboCategory.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlCat = MakeFilterPanel("التصنيف:", cboCategory, 110);
+            var pnlCat = MakeFilterPanel("التصنيف:", cboCategory, 115);
 
-            cboLocation = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboLocation = new ComboBox { Width = 115, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboLocation.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlLoc = MakeFilterPanel("📍 المكان/الرف:", cboLocation, 110);
+            var pnlLoc = MakeFilterPanel("📍 المكان/الرف:", cboLocation, 115);
 
-            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtSearch = new TextBox { Width = 130, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += (s, e) =>
             {
@@ -216,26 +216,26 @@ namespace ChickenDist.Forms
                     e.SuppressKeyPress = true;
                 }
             };
-            var pnlSch = MakeFilterPanel("بحث/أسكانر:", txtSearch, 110);
+            var pnlSch = MakeFilterPanel("بحث/أسكانر:", txtSearch, 130);
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
-            btnSearch.Size = new Size(65, 26);
-            btnSearch.Margin = new Padding(4, 3, 10, 0);
+            btnSearch.Size = new Size(70, 26);
+            btnSearch.Margin = new Padding(4, 2, 8, 0);
             btnSearch.Click += (s, e) => LoadStock();
 
-            cboMaxRows = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboMaxRows = new ComboBox { Width = 105, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
             cboMaxRows.SelectedIndex = 0;
             cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlLimit = MakeFilterPanel("عرض:", cboMaxRows, 110);
+            var pnlLimit = MakeFilterPanel("عرض:", cboMaxRows, 105);
 
             chkBelowMin = new CheckBox
             {
                 Text = "⚠️ حد الطلب",
-                ForeColor = Color.FromArgb(180, 90, 0),
+                ForeColor = Color.FromArgb(245, 158, 11),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes
             };
             chkBelowMin.CheckedChanged += (s, e) => LoadStock();
@@ -243,10 +243,10 @@ namespace ChickenDist.Forms
             chkHideZeroStock = new CheckBox
             {
                 Text = "🚫 بدون رصيد صفري",
-                ForeColor = Color.FromArgb(0, 102, 204),
+                ForeColor = Color.FromArgb(56, 189, 248),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -255,10 +255,10 @@ namespace ChickenDist.Forms
             chkExpiryOnly = new CheckBox
             {
                 Text = "📗 صلاحية فقط",
-                ForeColor = Color.FromArgb(0, 130, 50),
+                ForeColor = Color.FromArgb(52, 211, 153),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -267,10 +267,10 @@ namespace ChickenDist.Forms
             chkScaleOnly = new CheckBox
             {
                 Text = "⚖️ أصناف الميزان",
-                ForeColor = Color.FromArgb(120, 40, 180),
+                ForeColor = Color.FromArgb(192, 132, 252),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -279,10 +279,10 @@ namespace ChickenDist.Forms
             chkUninventoriedOnly = new CheckBox
             {
                 Text = "⏳ لم تُجرد بعد",
-                ForeColor = Color.FromArgb(180, 50, 50),
+                ForeColor = Color.FromArgb(248, 113, 113),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false,
                 Enabled = true
@@ -292,10 +292,10 @@ namespace ChickenDist.Forms
             chkAutoIncrementScan = new CheckBox
             {
                 Text = "⚡ زيادة (+1) بالأسكانر",
-                ForeColor = Color.FromArgb(0, 120, 80),
+                ForeColor = Color.FromArgb(45, 212, 191),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -303,10 +303,10 @@ namespace ChickenDist.Forms
             chkSmallestUnit = new CheckBox
             {
                 Text = "🔹 الجرد بالوحدة الصغرى",
-                ForeColor = Color.FromArgb(0, 90, 160),
+                ForeColor = Color.FromArgb(96, 165, 250),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
-                Margin = new Padding(6, 5, 6, 0),
+                Margin = new Padding(4, 5, 4, 0),
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
@@ -327,8 +327,9 @@ namespace ChickenDist.Forms
                 Name = "cboPriceType",
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Width = 90,
-                BackColor = Color.FromArgb(240, 255, 240),
-                ForeColor = Color.FromArgb(0, 90, 40),
+                Height = 26,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold)
             };
@@ -571,9 +572,9 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10, 10, 10, 10),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                AutoScroll = true
+                AutoScroll = false
             };
             
             dtpFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };

@@ -239,7 +239,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Top,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 8, 8, 8),
                 WrapContents = true
@@ -265,7 +265,7 @@ namespace ChickenDist.Forms
                     AutoSize = true,
                     ForeColor = Theme.TextMain,
                     Font = Theme.FontBold,
-                    Margin = new Padding(0, 5, 0, 0)
+                    Margin = new Padding(0, 5, 2, 0)
                 };
 
                 inputCtrl.Width = inputWidth;
@@ -275,7 +275,7 @@ namespace ChickenDist.Forms
                 {
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                    FlowDirection = FlowDirection.RightToLeft,
+                    FlowDirection = FlowDirection.LeftToRight,
                     BackColor = Color.Transparent,
                     Margin = new Padding(4, 2, 4, 2),
                     Padding = new Padding(0),
