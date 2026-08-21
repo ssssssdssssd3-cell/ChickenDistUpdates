@@ -18,7 +18,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboWarehouse;
         private Button btnSearch, btnMovement, btnPrintStock, btnAddExpiryRow;
-        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkAutoIncrementScan;
+        private CheckBox chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkAutoIncrementScan, chkSmallestUnit;
         private ComboBox cboCategory, cboMaxRows, cboPriceType;
         private Label lblCount, lblTotalCost, lblTotalSale;
 
@@ -92,6 +92,36 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+        {
+            var lbl = new Label
+            {
+                Text = labelText,
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold,
+                Margin = new Padding(0, 5, 0, 0)
+            };
+
+            inputCtrl.Width = inputWidth;
+            inputCtrl.Height = 26;
+
+            var pnl = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent,
+                Margin = new Padding(4, 2, 4, 2),
+                Padding = new Padding(0),
+                WrapContents = false
+            };
+
+            pnl.Controls.Add(lbl);
+            pnl.Controls.Add(inputCtrl);
+            return pnl;
+        }
+
         private void BuildStockTab()
         {
             // Panel Left: Grid and filters (Dock Fill)
@@ -143,12 +173,11 @@ namespace ChickenDist.Forms
                 AutoScroll = true
             };
 
-            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboWarehouse = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboWarehouse.SelectedIndexChanged += (s, e) => LoadStock();
+            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 110);
 
-            var lblCat = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboCategory = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             try
             {
                 cboCategory.Items.Add(new ComboItem(0, "(كل التصنيفات)"));
@@ -161,13 +190,13 @@ namespace ChickenDist.Forms
             }
             catch { }
             cboCategory.SelectedIndexChanged += (s, e) => LoadStock();
+            var pnlCat = MakeFilterPanel("التصنيف:", cboCategory, 110);
 
-            var lblLoc = new Label { Text = "📍 المكان/الرف:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-            cboLocation = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboLocation = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboLocation.SelectedIndexChanged += (s, e) => LoadStock();
+            var pnlLoc = MakeFilterPanel("📍 المكان/الرف:", cboLocation, 110);
 
-            var lblSch = new Label { Text = "بحث/أسكانر:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 3, 2, 0) };
+            txtSearch = new TextBox { Width = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += (s, e) =>
             {
@@ -187,17 +216,18 @@ namespace ChickenDist.Forms
                     e.SuppressKeyPress = true;
                 }
             };
+            var pnlSch = MakeFilterPanel("بحث/أسكانر:", txtSearch, 110);
 
             btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
             btnSearch.Size = new Size(65, 26);
-            btnSearch.Margin = new Padding(2, 2, 10, 0);
+            btnSearch.Margin = new Padding(4, 3, 10, 0);
             btnSearch.Click += (s, e) => LoadStock();
 
-            var lblLimit = new Label { Text = "عدد العرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-            cboMaxRows = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(2, 3, 10, 0) };
+            cboMaxRows = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
             cboMaxRows.SelectedIndex = 0;
             cboMaxRows.SelectedIndexChanged += (s, e) => LoadStock();
+            var pnlLimit = MakeFilterPanel("عرض:", cboMaxRows, 110);
 
             chkBelowMin = new CheckBox
             {
@@ -270,35 +300,36 @@ namespace ChickenDist.Forms
                 Checked = false
             };
 
+            chkSmallestUnit = new CheckBox
+            {
+                Text = "🔹 الجرد بالوحدة الصغرى",
+                ForeColor = Color.FromArgb(0, 90, 160),
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                AutoSize = true,
+                Margin = new Padding(6, 5, 6, 0),
+                RightToLeft = RightToLeft.Yes,
+                Checked = false
+            };
+            chkSmallestUnit.CheckedChanged += (s, e) => LoadStock();
+
             // الصف 1: المخزن، التصنيف، المكان، البحث
             pnlRow1.Controls.AddRange(new Control[] {
-                lblWh, cboWarehouse,
-                lblCat, cboCategory,
-                lblLoc, cboLocation,
-                lblSch, txtSearch, btnSearch
+                pnlWh,
+                pnlCat,
+                pnlLoc,
+                pnlSch,
+                btnSearch
             });
 
-            // ── الصف 2: عدد العرض + خيارات التصفية ──────────────────────────────
-            var lblLimit2 = new Label { Text = "عرض:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 6, 2, 0) };
-
             // ── قائمة نوع السعر ───────────────────────────────────────────────────
-            var lblPriceType = new Label
-            {
-                Text = "💰 الجرد بسعر:",
-                AutoSize = true,
-                ForeColor = Color.FromArgb(0, 100, 50),
-                Font = Theme.FontBold,
-                Margin = new Padding(10, 6, 2, 0)
-            };
             cboPriceType = new ComboBox
             {
                 Name = "cboPriceType",
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Width = 110,
+                Width = 90,
                 BackColor = Color.FromArgb(240, 255, 240),
                 ForeColor = Color.FromArgb(0, 90, 40),
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(2, 3, 8, 0),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold)
             };
             cboPriceType.Items.Add("قطاعي");
@@ -306,11 +337,18 @@ namespace ChickenDist.Forms
             cboPriceType.Items.Add("جملة");
             cboPriceType.SelectedIndex = 0;
             cboPriceType.SelectedIndexChanged += (s, e) => LoadStock();
+            var pnlPriceType = MakeFilterPanel("💰 الجرد بسعر:", cboPriceType, 90);
 
             pnlRow2.Controls.AddRange(new Control[] {
-                lblLimit2, cboMaxRows,
-                chkBelowMin, chkHideZeroStock, chkExpiryOnly, chkScaleOnly, chkUninventoriedOnly, chkAutoIncrementScan,
-                lblPriceType, cboPriceType
+                pnlLimit,
+                pnlPriceType,
+                chkSmallestUnit,
+                chkBelowMin,
+                chkHideZeroStock,
+                chkExpiryOnly,
+                chkScaleOnly,
+                chkUninventoriedOnly,
+                chkAutoIncrementScan
             });
 
             // ── الصف 3: أزرار العمليات ─────────────────────────────────────────
@@ -533,44 +571,51 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard, 
                 Padding = new Padding(10, 10, 10, 10),
                 RightToLeft = RightToLeft.Yes,
-                FlowDirection = FlowDirection.RightToLeft
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = true
             };
             
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 5, 0) };
-            dtpFrom = new DateTimePicker { Width = 120, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
+            dtpFrom = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30) };
+            var pnlFrom = MakeFilterPanel("من:", dtpFrom, 115);
             
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
-            dtpTo = new DateTimePicker { Width = 120, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            dtpTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
+            var pnlTo = MakeFilterPanel("إلى:", dtpTo, 115);
 
-            var lblLogWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
-            cboLogWarehouse = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cboLogWarehouse = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboLogWarehouse.SelectedIndexChanged += (s, e) => LoadLogs();
+            var pnlLogWh = MakeFilterPanel("المخزن:", cboLogWarehouse, 140);
 
-            var lblSearchLog = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 5, 0) };
-            txtSearchLog = new TextBox { Width = 140 };
+            txtSearchLog = new TextBox { Width = 130 };
             txtSearchLog.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
+            var pnlLogSch = MakeFilterPanel("بحث:", txtSearchLog, 130);
 
             btnLoadLogs = Theme.MakeButton("🔍 عرض السجل", Color.FromArgb(60, 100, 60));
             btnLoadLogs.Size = new Size(110, 30);
+            btnLoadLogs.Margin = new Padding(4, 2, 4, 2);
             btnLoadLogs.Click += (s, e) => LoadLogs();
 
             btnPrintLogs = Theme.MakeButton("🖨 طباعة السجل", Theme.Accent);
             btnPrintLogs.Size = new Size(110, 30);
+            btnPrintLogs.Margin = new Padding(4, 2, 4, 2);
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
             var btnVarianceReportLogs = Theme.MakeButton("📊 تقرير فروق الجرد المالي", Color.FromArgb(120, 50, 150));
             btnVarianceReportLogs.Size = new Size(180, 30);
+            btnVarianceReportLogs.Margin = new Padding(4, 2, 4, 2);
             btnVarianceReportLogs.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
             var btnSessions = Theme.MakeButton("📋 استرجاع عمليات وجلسات الجرد", Color.FromArgb(70, 40, 130));
             btnSessions.Size = new Size(210, 30);
+            btnSessions.Margin = new Padding(4, 2, 4, 2);
             btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
 
             var btnIncompleteLogs = Theme.MakeButton("📂 فواتير وعمليات لم تكتمل", Color.FromArgb(70, 40, 130));
             btnIncompleteLogs.Size = new Size(180, 30);
+            btnIncompleteLogs.Margin = new Padding(4, 2, 4, 2);
             btnIncompleteLogs.Click += (s, e) => OpenIncompleteInventoryDialog();
 
-            pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblLogWh, cboLogWarehouse, lblSearchLog, txtSearchLog, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs, btnSessions, btnIncompleteLogs });
+            pnlTop.Controls.AddRange(new Control[] { pnlFrom, pnlTo, pnlLogWh, pnlLogSch, btnLoadLogs, btnPrintLogs, btnVarianceReportLogs, btnSessions, btnIncompleteLogs });
             tabLogs.Controls.Add(pnlTop);
 
             dgLogs = MakeGrid();
@@ -738,15 +783,28 @@ namespace ChickenDist.Forms
 
                 decimal f2 = u2Factor > 0 ? u2Factor : 1m;
                 decimal f3 = u3Factor > 0 ? u3Factor : 1m;
-                decimal factor1 = f2 * f3;
+                decimal majorFactor = (f3 > 0 && f2 > 0 && !string.IsNullOrWhiteSpace(unit2)) ? (f3 * f2) : (f2 > 0 ? f2 : 1m);
+                decimal mediumFactor = f2;
+                decimal smallFactor = 1.0m;
 
-                string displayUnit = baseUnit;
-                decimal curFactor = 1.0m;
+                string majorName = !string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الكبرى";
+                string mediumName = unit2;
+                string smallName = !string.IsNullOrWhiteSpace(unit1) ? unit1 : (!string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الصغرى");
 
-                if (!string.IsNullOrWhiteSpace(unit1))
+                string displayUnit;
+                decimal curFactor;
+
+                bool preferSmallestUnit = chkSmallestUnit != null && chkSmallestUnit.Checked;
+
+                if (preferSmallestUnit)
                 {
-                    displayUnit = unit1;
-                    curFactor = factor1;
+                    displayUnit = smallName;
+                    curFactor = smallFactor; // 1.0
+                }
+                else
+                {
+                    displayUnit = majorName;
+                    curFactor = majorFactor;
                 }
 
                 bool hasMultiUnits = !string.IsNullOrWhiteSpace(unit1) || !string.IsNullOrWhiteSpace(unit2);
@@ -1184,27 +1242,32 @@ namespace ChickenDist.Forms
 
             decimal f2 = u2Factor > 0 ? u2Factor : 1m;
             decimal f3 = u3Factor > 0 ? u3Factor : 1m;
-            decimal factor1 = f2 * f3;
-            decimal factor2 = f3;
+            decimal majorFactor = (f3 > 0 && f2 > 0 && !string.IsNullOrWhiteSpace(unit2)) ? (f3 * f2) : (f2 > 0 ? f2 : 1m);
+            decimal mediumFactor = f2;
+            decimal smallFactor = 1.0m;
 
-            var menu = new ContextMenuStrip { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            string majorName = !string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الكبرى";
+            string mediumName = unit2;
+            string smallName = !string.IsNullOrWhiteSpace(unit1) ? unit1 : (!string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الصغرى");
 
-            if (!string.IsNullOrWhiteSpace(unit1))
+            var menu = new ContextMenuStrip { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), RightToLeft = RightToLeft.Yes };
+
+            // 1. الوحدة الكبرى
+            var miMajor = menu.Items.Add($"📦 {majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})");
+            miMajor.Click += (s, e) => SwitchRowUnit(row, majorName, majorFactor);
+
+            // 2. الوحدة الوسطى (إن وجدت)
+            if (!string.IsNullOrWhiteSpace(mediumName) && !string.Equals(mediumName, majorName, StringComparison.OrdinalIgnoreCase))
             {
-                var mi1 = menu.Items.Add($"📦 {unit1} (معامل: {factor1:G29})");
-                mi1.Click += (s, e) => SwitchRowUnit(row, unit1, factor1);
+                var miMedium = menu.Items.Add($"⚙️ {mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})");
+                miMedium.Click += (s, e) => SwitchRowUnit(row, mediumName, mediumFactor);
             }
 
-            if (!string.IsNullOrWhiteSpace(unit2) && !string.Equals(unit2, unit1, StringComparison.OrdinalIgnoreCase))
+            // 3. الوحدة الصغرى (إن وجدت ومختلفة)
+            if (!string.IsNullOrWhiteSpace(smallName) && !string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase) && !string.Equals(smallName, mediumName, StringComparison.OrdinalIgnoreCase))
             {
-                var mi2 = menu.Items.Add($"📦 {unit2} (معامل: {factor2:G29})");
-                mi2.Click += (s, e) => SwitchRowUnit(row, unit2, factor2);
-            }
-
-            if (!string.IsNullOrWhiteSpace(baseUnit) && !string.Equals(baseUnit, unit1, StringComparison.OrdinalIgnoreCase) && !string.Equals(baseUnit, unit2, StringComparison.OrdinalIgnoreCase))
-            {
-                var miBase = menu.Items.Add($"📦 {baseUnit} (معامل: 1)");
-                miBase.Click += (s, e) => SwitchRowUnit(row, baseUnit, 1.0m);
+                var miSmall = menu.Items.Add($"🔹 {smallName} (الوحدة الصغرى - تجزئة - معامل: 1)");
+                miSmall.Click += (s, e) => SwitchRowUnit(row, smallName, smallFactor);
             }
 
             if (menu.Items.Count > 0)
@@ -1898,17 +1961,23 @@ namespace ChickenDist.Forms
 
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             string bookQtyStr = r.Cells["BookQty"].Value?.ToString() ?? "0";
+            decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
             r.Cells["ActualQty"].Value = bookQtyStr;
             r.Cells["DiffQty"].Value = "0.000";
             r.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
 
+            Color invColor = GetInventoriedRowColor();
+            r.DefaultCellStyle.BackColor = invColor;
+            r.Cells["ActualQty"].Style.BackColor = invColor;
+
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             if (decimal.TryParse(bookQtyStr, System.Globalization.NumberStyles.Any, inv, out decimal bq))
             {
-                _enteredActualQty[pid] = bq;
+                _enteredActualQty[pid] = bq * curFactor;
                 _inventoriedProductIDs.Add(pid);
             }
             dgStock.InvalidateRow(r.Index);
+            AutoSaveInventoryDraft();
         }
 
         private void HideSelectedRowForLater()
