@@ -560,16 +560,38 @@ namespace ChickenDist.Core
                 ALTER TABLE SalesReturns ADD IsPosted BIT NOT NULL DEFAULT 1;
             END");
 
-            SafeMigrate("Purchases.IsPosted.Early", @"
-            IF OBJECT_ID('Purchases', 'U') IS NOT NULL AND COL_LENGTH('Purchases', 'IsPosted') IS NULL
+            SafeMigrate("SalesReturns.Columns.Essential", @"
+            IF OBJECT_ID('SalesReturns', 'U') IS NOT NULL
             BEGIN
-                ALTER TABLE Purchases ADD IsPosted BIT NOT NULL DEFAULT 1;
+                IF COL_LENGTH('SalesReturns', 'SaleID') IS NOT NULL
+                    ALTER TABLE SalesReturns ALTER COLUMN SaleID INT NULL;
+                IF COL_LENGTH('SalesReturns', 'ClientID') IS NULL
+                    ALTER TABLE SalesReturns ADD ClientID INT NULL;
+                IF COL_LENGTH('SalesReturns', 'WarehouseID') IS NULL
+                    ALTER TABLE SalesReturns ADD WarehouseID INT NULL;
+                IF COL_LENGTH('SalesReturns', 'ReturnType') IS NULL
+                    ALTER TABLE SalesReturns ADD ReturnType NVARCHAR(50) NOT NULL DEFAULT 'InvoiceReturn';
+                IF COL_LENGTH('SalesReturns', 'PaymentType') IS NULL
+                    ALTER TABLE SalesReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';
+                IF COL_LENGTH('SalesReturns', 'ShiftID') IS NULL
+                    ALTER TABLE SalesReturns ADD ShiftID INT NULL;
             END");
 
             SafeMigrate("PurchaseReturns.IsPosted.Early", @"
             IF OBJECT_ID('PurchaseReturns', 'U') IS NOT NULL AND COL_LENGTH('PurchaseReturns', 'IsPosted') IS NULL
             BEGIN
                 ALTER TABLE PurchaseReturns ADD IsPosted BIT NOT NULL DEFAULT 1;
+            END");
+
+            SafeMigrate("PurchaseReturns.Columns.Essential", @"
+            IF OBJECT_ID('PurchaseReturns', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('PurchaseReturns', 'WarehouseID') IS NULL
+                    ALTER TABLE PurchaseReturns ADD WarehouseID INT NULL;
+                IF COL_LENGTH('PurchaseReturns', 'PaymentType') IS NULL
+                    ALTER TABLE PurchaseReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Credit';
+                IF COL_LENGTH('PurchaseReturns', 'ShiftID') IS NULL
+                    ALTER TABLE PurchaseReturns ADD ShiftID INT NULL;
             END");
 
             SafeMigrate("Products.EnglishName", @"
@@ -3510,6 +3532,33 @@ namespace ChickenDist.Core
                     BEGIN
                         UPDATE SafeAccounts SET AccountName = REPLACE(REPLACE(REPLACE(AccountName, ' / الدرج', ''), '/ الدرج', ''), '/الدرج', '') WHERE AccountName LIKE '%الدرج%';
                         UPDATE SafeAccounts SET AccountType = 'Cash' WHERE AccountType IS NULL OR AccountType = '' OR AccountType = 'General';
+                    END
+
+                    -- ضمان وجود أعمدة المرتجع المرتبطة بالوردية وطرق الدفع
+                    IF OBJECT_ID('SalesReturns', 'U') IS NOT NULL
+                    BEGIN
+                        IF COL_LENGTH('SalesReturns', 'SaleID') IS NOT NULL
+                            ALTER TABLE SalesReturns ALTER COLUMN SaleID INT NULL;
+                        IF COL_LENGTH('SalesReturns', 'ClientID') IS NULL
+                            ALTER TABLE SalesReturns ADD ClientID INT NULL;
+                        IF COL_LENGTH('SalesReturns', 'WarehouseID') IS NULL
+                            ALTER TABLE SalesReturns ADD WarehouseID INT NULL;
+                        IF COL_LENGTH('SalesReturns', 'ReturnType') IS NULL
+                            ALTER TABLE SalesReturns ADD ReturnType NVARCHAR(50) NOT NULL DEFAULT 'InvoiceReturn';
+                        IF COL_LENGTH('SalesReturns', 'PaymentType') IS NULL
+                            ALTER TABLE SalesReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';
+                        IF COL_LENGTH('SalesReturns', 'ShiftID') IS NULL
+                            ALTER TABLE SalesReturns ADD ShiftID INT NULL;
+                    END
+
+                    IF OBJECT_ID('PurchaseReturns', 'U') IS NOT NULL
+                    BEGIN
+                        IF COL_LENGTH('PurchaseReturns', 'WarehouseID') IS NULL
+                            ALTER TABLE PurchaseReturns ADD WarehouseID INT NULL;
+                        IF COL_LENGTH('PurchaseReturns', 'PaymentType') IS NULL
+                            ALTER TABLE PurchaseReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Credit';
+                        IF COL_LENGTH('PurchaseReturns', 'ShiftID') IS NULL
+                            ALTER TABLE PurchaseReturns ADD ShiftID INT NULL;
                     END
                 ");
             }

@@ -394,10 +394,14 @@ namespace ChickenDist.Forms
                 "Expense" => "مصروفات",
                 "ShiftOpen" => "فتح وردية جديدة",
                 "ShiftClose" => "تقفيل وردية",
+                "ShiftDeficit" => "سند تسوية عجز وردية",
+                "ShiftSurplus" => "سند تسوية زيادة وردية",
                 "ReturnOutcome" => "صرف مرتجع مبيعات",
                 "DriverHandover" => "تقفيل حساب مندوب",
                 "Adjustment" => "تسوية حساب",
                 "Transfer" or "TransferOut" or "TransferIn" => "تحويل مالي",
+                "ShiftCloseOut" => "توريد تقفيل وردية إلى الخزنة",
+                "ShiftCloseIn" => "استلام وارد تقفيل وردية",
                 "InitialBalance" => "رصيد افتتاحي",
                 _ => GetArabicFallback(type)
             };
@@ -416,10 +420,14 @@ namespace ChickenDist.Forms
                 "Expense" => "مصروفات",
                 "ShiftOpen" => "فتح وردية",
                 "ShiftClose" => "إغلاق وردية",
+                "ShiftDeficit" => "تسوية عجز وردية",
+                "ShiftSurplus" => "تسوية زيادة وردية",
                 "ReturnOutcome" => "مرتجع مبيعات",
                 "DriverHandover" => "تقفيل مندوب",
                 "Adjustment" => "تسوية حساب",
                 "Transfer" or "TransferOut" or "TransferIn" => "تحويل مالي",
+                "ShiftCloseOut" => "توريد للخزنة",
+                "ShiftCloseIn" => "استلام من الدرج",
                 "InitialBalance" => "رصيد افتتاحي",
                 _ => GetArabicFallback(type)
             };

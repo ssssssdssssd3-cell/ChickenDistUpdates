@@ -1910,6 +1910,7 @@ namespace ChickenDist.DAL
 
         public static int SaveReturn(int saleID, int? clientID, decimal total, string notes, List<SaleItemDTO> items, int? warehouseID = null, string returnType = "Cash", int? shiftID = null)
         {
+            DbHelper.EnsureShiftSchema();
             int returnedRetID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
@@ -2050,6 +2051,7 @@ namespace ChickenDist.DAL
         /// </summary>
         public static bool SaveItemExchange(int? clientID, int warehouseID, List<SaleItemDTO> returnedItems, List<SaleItemDTO> newItems, string paymentType, string notes, int? shiftID = null)
         {
+            DbHelper.EnsureShiftSchema();
             if (returnedItems == null || returnedItems.Count == 0)
                 throw new Exception("يجب تحديد صنف واحد على الأقل للمرتجع!");
             if (newItems == null || newItems.Count == 0)

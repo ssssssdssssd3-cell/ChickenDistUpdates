@@ -1171,21 +1171,53 @@ namespace ChickenDist.Forms
                     DbHelper.P("@notes", txtNotes.Text.Trim()),
                     DbHelper.P("@sid", shiftID));
 
-                // 2. تسجيل قيد التحويل المالي للخزنة إذا وجد
+                // 2. تسجيل سند تسوية العجز أو الزيادة في الدرج للتأثير المباشر على رصيد الدرج الدفتري والفعلي
+                if (diff < -0.001m)
+                {
+                    decimal deficit = Math.Abs(diff);
+                    string defReason = txtDeficitReason.Text.Trim();
+                    string defNote = $"سند تسوية عجز تقفيل وردية #{shiftID}" + (!string.IsNullOrEmpty(defReason) ? $" - سبب العجز: {defReason}" : "");
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                          VALUES (GETDATE(), 'ShiftDeficit', 0, @amt, @acc, @notes, @uid, @ref, @shid);",
+                        DbHelper.P("@amt", deficit),
+                        DbHelper.P("@acc", currentSafeID),
+                        DbHelper.P("@notes", defNote),
+                        DbHelper.P("@uid", Session.EmpID),
+                        DbHelper.P("@ref", shiftID),
+                        DbHelper.P("@shid", shiftID));
+                }
+                else if (diff > 0.001m)
+                {
+                    decimal surplus = diff;
+                    string surplusNote = $"سند تسوية زيادة تقفيل وردية #{shiftID}";
+                    DbHelper.Execute(
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                          VALUES (GETDATE(), 'ShiftSurplus', @amt, 0, @acc, @notes, @uid, @ref, @shid);",
+                        DbHelper.P("@amt", surplus),
+                        DbHelper.P("@acc", currentSafeID),
+                        DbHelper.P("@notes", surplusNote),
+                        DbHelper.P("@uid", Session.EmpID),
+                        DbHelper.P("@ref", shiftID),
+                        DbHelper.P("@shid", shiftID));
+                }
+
+                // 3. تسجيل قيد التحويل المالي للخزنة إذا وجد
                 if (transfer > 0 && targetSafeID > 0)
                 {
                     DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
-                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @accOut, @notesOut, @uid, @ref);
-                          INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID)
-                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @accIn, @notesIn, @uid, @ref);",
+                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @accOut, @notesOut, @uid, @ref, @shid);
+                          INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @accIn, @notesIn, @uid, @ref, @shid);",
                         DbHelper.P("@amt", transfer),
                         DbHelper.P("@accOut", currentSafeID),
                         DbHelper.P("@notesOut", $"توريد نقدية من تقفيل الوردية #{shiftID} إلى الخزنة"),
                         DbHelper.P("@accIn", targetSafeID),
                         DbHelper.P("@notesIn", $"توريد وارد من تقفيل الوردية #{shiftID}"),
                         DbHelper.P("@uid", Session.EmpID),
-                        DbHelper.P("@ref", shiftID));
+                        DbHelper.P("@ref", shiftID),
+                        DbHelper.P("@shid", shiftID));
                 }
 
                 // 3. فتح الوردية التالية فوراً تلقائياً

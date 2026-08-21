@@ -608,8 +608,8 @@ namespace ChickenDist.Forms
                     "ShiftCloseIn" => "إغلاق وردية (استلام وارد)",
                     "ShiftClose" => "تقفيل وردية",
                     "ShiftOpen" => "فتح وردية جديدة",
-                    "ShiftDeficit" => "عجز تقفيل وردية",
-                    "ShiftSurplus" => "زيادة تقفيل وردية",
+                    "ShiftDeficit" => "سند تسوية عجز وردية",
+                    "ShiftSurplus" => "سند تسوية زيادة وردية",
                     _ => transType
                 };
 

@@ -17,9 +17,10 @@ namespace ChickenDist.Forms
         private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
-        private Label lblTotal, lblExchangeSummary, lblSearch, lblBarcode, lblFrom, lblTo, lblClient, lblSaleType, lblProductFilter;
+        private Label lblTotal, lblExchangeSummary;
         private SplitContainer _mainSplit;
         private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
+        private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
         private decimal _selectedSaleTotalAmount = 0m;
@@ -28,6 +29,7 @@ namespace ChickenDist.Forms
 
         public FrmReturn()
         {
+            DbHelper.EnsureShiftSchema();
             InitUI();
             LoadCombos();
             LoadSales();
@@ -254,7 +256,37 @@ namespace ChickenDist.Forms
                 c.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             }
 
-            var lblMode = new Label { Text = "العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            // دالة مساعدة لإنشاء حاوية (الاسم أولاً ثم الخانة) لضمان عدم انفصال التسمية عن الحقل أبداً
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(0, 5, 0, 0)
+                };
+
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    FlowDirection = FlowDirection.RightToLeft,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(4, 2, 4, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                return pnl;
+            }
+
             cboMode = new ComboBox
             {
                 Width = 210, Height = 26,
@@ -266,16 +298,41 @@ namespace ChickenDist.Forms
             cboMode.Items.Add("🔄 استبدال أصناف (مرتجع + بديل)");
             cboMode.SelectedIndex = 0;
             cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
+            var pnlMode = MakeFilterPanel("العملية:", cboMode, 210);
 
-            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
-            cboWarehouse = new ComboBox
-            {
-                Width = 120, Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            cboClient = new ComboBox 
+            { 
+                Width = 160, 
+                DropDownStyle = ComboBoxStyle.DropDown, 
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
             };
+            StyleSearchInput(cboClient);
+            SetupSearchableCombo(cboClient);
+            var pnlClient = MakeFilterPanel("العميل:", cboClient, 160);
 
-            var lblRetType = new Label { Text = "طريقة دفع المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
+            cboSaleTypeFilter = new ComboBox
+            {
+                Width = 125, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "💳 فيزا", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
+            cboSaleTypeFilter.SelectedIndex = 0;
+            cboSaleTypeFilter.SelectedIndexChanged += (s, e) => LoadSales();
+            StyleSearchInput(cboSaleTypeFilter);
+            var pnlSaleType = MakeFilterPanel("نوع الفاتورة:", cboSaleTypeFilter, 125);
+
+            cboProductFilter = new ComboBox
+            {
+                Width = 160, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
+            };
+            StyleSearchInput(cboProductFilter);
+            SetupSearchableCombo(cboProductFilter);
+            var pnlProduct = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 160);
+
             cboReturnType = new ComboBox
             {
                 Width = 145, Height = 26,
@@ -287,54 +344,29 @@ namespace ChickenDist.Forms
             cboReturnType.Items.Add("💳 فيزا (شبكة / بطاقة)");
             cboReturnType.Items.Add("📋 آجل (على الحساب)");
             cboReturnType.SelectedIndex = 0;
+            var pnlRetType = MakeFilterPanel("طريقة دفع المرتجع:", cboReturnType, 145);
 
-            lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(8, 5, 0, 0) };
+            cboWarehouse = new ComboBox
+            {
+                Width = 120, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+            };
+            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 120);
+
             dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
             dtpFrom.ValueChanged += (s, e) => LoadSales();
+            _pnlFrom = MakeFilterPanel("من:", dtpFrom, 180);
 
-            lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => LoadSales();
+            _pnlTo = MakeFilterPanel("إلى:", dtpTo, 180);
 
-            lblClient = new Label { Text = "العميل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            cboClient = new ComboBox 
-            { 
-                Width = 160, 
-                DropDownStyle = ComboBoxStyle.DropDown, 
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems
-            };
-            StyleSearchInput(cboClient);
-            SetupSearchableCombo(cboClient);
-
-            lblSaleType = new Label { Text = "نوع الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
-            cboSaleTypeFilter = new ComboBox
-            {
-                Width = 125, Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "💳 فيزا", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
-            cboSaleTypeFilter.SelectedIndex = 0;
-            cboSaleTypeFilter.SelectedIndexChanged += (s, e) => LoadSales();
-            StyleSearchInput(cboSaleTypeFilter);
-
-            lblProductFilter = new Label { Text = "بحث بالصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0), Font = Theme.FontBold };
-            cboProductFilter = new ComboBox
-            {
-                Width = 160, Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown,
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems
-            };
-            StyleSearchInput(cboProductFilter);
-            SetupSearchableCombo(cboProductFilter);
-
-            lblSearch = new Label { Text = "بحث كود/ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtSearch = new TextBox { Width = 110, RightToLeft = RightToLeft.Yes };
             StyleSearchInput(txtSearch);
             txtSearch.TextChanged += (s, e) => LoadSales();
+            _pnlSearch = MakeFilterPanel("بحث كود/ملاحظات:", txtSearch, 110);
 
-            lblBarcode = new Label { Text = "باركود الفاتورة/الصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtInvoiceBarcode = new TextBox { Width = 110, RightToLeft = RightToLeft.No };
             StyleSearchInput(txtInvoiceBarcode);
             txtInvoiceBarcode.KeyDown += (s, e) =>
@@ -346,22 +378,25 @@ namespace ChickenDist.Forms
                     DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
                 }
             };
+            _pnlBarcode = MakeFilterPanel("باركود الفاتورة/الصنف:", txtInvoiceBarcode, 110);
 
             btnSearch = Theme.MakeButton("🔍 تحديث", Theme.Accent);
             btnSearch.Size = new Size(85, 28);
-            btnSearch.Margin = new Padding(10, 0, 0, 0);
+            btnSearch.Margin = new Padding(6, 4, 6, 2);
             btnSearch.Click += (s, e) => LoadSales();
 
             pnlFilter.Controls.AddRange(new Control[] { 
-                lblMode, cboMode, 
-                lblClient, cboClient, 
-                lblSaleType, cboSaleTypeFilter,
-                lblProductFilter, cboProductFilter,
-                lblRetType, cboReturnType, 
-                lblWh, cboWarehouse, 
-                lblFrom, dtpFrom, lblTo, dtpTo, 
-                lblSearch, txtSearch, 
-                lblBarcode, txtInvoiceBarcode, btnSearch 
+                pnlMode, 
+                pnlClient, 
+                pnlSaleType, 
+                pnlProduct, 
+                pnlRetType, 
+                pnlWh, 
+                _pnlFrom, 
+                _pnlTo, 
+                _pnlSearch, 
+                _pnlBarcode, 
+                btnSearch 
             });
 
             // ===== شريط إضافة صنف مرتجع عام / بديل =====
@@ -679,11 +714,11 @@ namespace ChickenDist.Forms
             _pnlNewItemBar.Visible = isExchange;
             dgExchangeNewItems.Visible = isExchange;
 
-            lblFrom.Visible = isInvoice; dtpFrom.Visible = isInvoice;
-            lblTo.Visible = isInvoice; dtpTo.Visible = isInvoice;
-            lblSearch.Visible = isInvoice; txtSearch.Visible = isInvoice;
-            lblBarcode.Visible = isInvoice; txtInvoiceBarcode.Visible = isInvoice;
-            btnSearch.Visible = isInvoice;
+            if (_pnlFrom != null) _pnlFrom.Visible = isInvoice;
+            if (_pnlTo != null) _pnlTo.Visible = isInvoice;
+            if (_pnlSearch != null) _pnlSearch.Visible = isInvoice;
+            if (_pnlBarcode != null) _pnlBarcode.Visible = isInvoice;
+            if (btnSearch != null) btnSearch.Visible = isInvoice;
 
             lblExchangeSummary.Visible = isExchange;
 
