@@ -122,15 +122,17 @@ namespace ChickenDist.Forms
             };
 
             // طريقة التسوية
-            var lblRetType = new Label { Text = "التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            var lblRetType = new Label { Text = "طريقة التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             cboReturnType = new ComboBox
             {
-                Width = 110, Height = 26,
+                Width = 160, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            cboReturnType.Items.Add("📋 آجل");
-            cboReturnType.Items.Add("💵 نقدي");
+            cboReturnType.Items.Add("📋 آجل (خصم من المورد)");
+            cboReturnType.Items.Add("💵 نقدي (استرداد للخزينة)");
+            cboReturnType.Items.Add("💳 فيزا / بنكي (استرداد للبنك)");
             cboReturnType.SelectedIndex = 0;
 
             // تواريخ البحث
@@ -552,6 +554,14 @@ namespace ChickenDist.Forms
             decimal netPurTotal = Convert.ToDecimal(purRow.Cells["TotalAmount"].Value ?? 0);
             lblPurchaseInfo.Text = $"الفاتورة رقم ({purRow.Cells["PurchaseCode"].Value}) | الصافي المسدد: {netPurTotal:N2} ج | النوع: {purTypeStr}";
 
+            // ضبط طريقة التسوية التلقائية للمرتجع
+            if (purTypeStr.Contains("نقدي") || purTypeStr.Contains("Cash"))
+                cboReturnType.SelectedIndex = 1; // نقدي
+            else if (purTypeStr.Contains("فيزا") || purTypeStr.Contains("بنك") || purTypeStr.Contains("Visa"))
+                cboReturnType.SelectedIndex = 2; // فيزا / بنكي
+            else
+                cboReturnType.SelectedIndex = 0; // آجل
+
             // تلقائياً حدد المورد من الفاتورة المختارة
             var dtPur = DbHelper.Query(
                 "SELECT SupplierID, ClientID, PurchaseSource FROM Purchases WHERE PurchaseID=@pid",
@@ -815,7 +825,14 @@ namespace ChickenDist.Forms
             int purchaseID = isGeneral ? 0 : _selectedPurchaseID;
             int? supplierID = (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null;
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
-            string returnType = cboReturnType.SelectedIndex == 1 ? "Cash" : "Credit";
+            
+            string returnType = "Credit";
+            if (cboReturnType.SelectedIndex == 1 || cboReturnType.Text.Contains("Cash") || cboReturnType.Text.Contains("نقدي"))
+                returnType = "Cash";
+            else if (cboReturnType.SelectedIndex == 2 || cboReturnType.Text.Contains("Visa") || cboReturnType.Text.Contains("فيزا") || cboReturnType.Text.Contains("بنك"))
+                returnType = "Visa";
+            else
+                returnType = "Credit";
 
             if (isGeneral && returnType == "Credit" && !supplierID.HasValue)
             {
@@ -823,13 +840,15 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            int? shiftID = Session.CurrentShiftID ?? ShiftDAL.GetActiveShiftID();
+
             try
             {
                 int id = PurchaseReturnDAL.SavePurchaseReturn(purchaseID, supplierID, totalReturnAmount,
-                    txtNotes.Text, returnItems, warehouseID, returnType);
+                    txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                 if (id > 0)
                 {
-                    MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم احتساب الصافي وتحديث المخزن وحساب المورد/العميل تلقائياً.",
+                    MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم احتساب الصافي وتحديث المخزن وحساب المورد/العميل والخزينة تلقائياً.",
                         "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtNotes.Text = "";
                     dgItems.Rows.Clear();

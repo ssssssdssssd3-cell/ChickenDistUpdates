@@ -1069,6 +1069,14 @@ namespace ChickenDist.Core
                     BEGIN
                         ALTER TABLE PurchaseReturns ADD WarehouseID INT NULL REFERENCES Warehouses(WarehouseID);
                     END
+                    IF COL_LENGTH('PurchaseReturns', 'PaymentType') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseReturns ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Credit';
+                    END
+                    IF COL_LENGTH('PurchaseReturns', 'ShiftID') IS NULL
+                    BEGIN
+                        ALTER TABLE PurchaseReturns ADD ShiftID INT NULL;
+                    END
                 END");
 
                 SafeMigrate("SalesReturns.General", @"

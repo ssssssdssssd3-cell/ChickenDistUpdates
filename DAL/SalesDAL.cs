@@ -2048,7 +2048,7 @@ namespace ChickenDist.DAL
         /// <summary>
         /// استبدال أصناف: إرجاع بضاعة واستلام بضاعة جديدة في نفس الحركة وتسوية الفرق مالياً ومخزنياً
         /// </summary>
-        public static bool SaveItemExchange(int? clientID, int warehouseID, List<SaleItemDTO> returnedItems, List<SaleItemDTO> newItems, string paymentType, string notes)
+        public static bool SaveItemExchange(int? clientID, int warehouseID, List<SaleItemDTO> returnedItems, List<SaleItemDTO> newItems, string paymentType, string notes, int? shiftID = null)
         {
             if (returnedItems == null || returnedItems.Count == 0)
                 throw new Exception("يجب تحديد صنف واحد على الأقل للمرتجع!");
@@ -2063,17 +2063,30 @@ namespace ChickenDist.DAL
 
             decimal netDiff = totalNew - totalReturned;
 
+            int? sID = shiftID ?? Session.CurrentShiftID;
+            if (!sID.HasValue || sID.Value <= 0)
+            {
+                try { sID = ShiftDAL.GetActiveShiftID(); } catch { }
+            }
+
+            string pType = "Cash";
+            if (paymentType != null && (paymentType.Contains("Visa") || paymentType.Contains("فيزا"))) pType = "Visa";
+            else if (paymentType != null && (paymentType.Contains("Credit") || paymentType.Contains("آجل"))) pType = "Credit";
+            else pType = "Cash";
+
             DbHelper.RunInTransaction((con, trans) =>
             {
                 // 1. تسجيل حركة المرتجع
                 int retID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType) VALUES(@dt,NULL,@cid,@tot,@n,@by,@wid,N'ExchangeReturn')",
+                    "INSERT INTO SalesReturns(ReturnDate,SaleID,ClientID,TotalAmount,Notes,CreatedBy,WarehouseID,ReturnType,PaymentType,ShiftID) VALUES(@dt,NULL,@cid,@tot,@n,@by,@wid,N'ExchangeReturn',@ptyp,@shid)",
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@tot", totalReturned),
                     DbHelper.P("@n", "استبدال أصناف (مرتجع) - " + notes),
                     DbHelper.P("@by", Session.EmpID),
-                    DbHelper.P("@wid", warehouseID));
+                    DbHelper.P("@wid", warehouseID),
+                    DbHelper.P("@ptyp", pType),
+                    DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
 
                 foreach (var item in returnedItems)
                 {
@@ -2091,16 +2104,18 @@ namespace ChickenDist.DAL
                 string saleCode = "EXC-" + (nextSaleCodeObj ?? "1");
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    @"INSERT INTO Sales (SaleCode, SaleDate, SaleType, ClientID, WarehouseID, TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount, ShippingCharge, CashPaid, Notes, CreatedBy, IsPosted)
-                      VALUES (@code, GETDATE(), @stype, @cid, @wid, @tot, 0, 0, 0, 0, 0, @cash, @n, @by, 1)",
+                    @"INSERT INTO Sales (SaleCode, SaleDate, SaleType, ClientID, WarehouseID, TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount, ShippingCharge, CashPaid, VisaPaid, Notes, CreatedBy, IsPosted, ShiftID)
+                      VALUES (@code, GETDATE(), @stype, @cid, @wid, @tot, 0, 0, 0, 0, 0, @cash, @visa, @n, @by, 1, @shid)",
                     DbHelper.P("@code", saleCode),
-                    DbHelper.P("@stype", paymentType),
+                    DbHelper.P("@stype", pType),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@wid", warehouseID),
                     DbHelper.P("@tot", totalNew),
-                    DbHelper.P("@cash", paymentType == "Cash" ? totalNew : 0m),
+                    DbHelper.P("@cash", pType == "Cash" ? totalNew : 0m),
+                    DbHelper.P("@visa", pType == "Visa" ? totalNew : 0m),
                     DbHelper.P("@n", "استبدال أصناف (صرف بديل) - " + notes),
-                    DbHelper.P("@by", Session.EmpID));
+                    DbHelper.P("@by", Session.EmpID),
+                    DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
 
                 foreach (var item in newItems)
                 {
@@ -2116,18 +2131,21 @@ namespace ChickenDist.DAL
                 // 3. التسوية المالية للفرق الصافي
                 if (netDiff != 0m)
                 {
-                    if (paymentType == "Cash")
+                    if (pType == "Cash")
                     {
                         if (netDiff > 0)
                         {
                             // العميل دفع الفارق نقداً (إيراد للخزنة)
+                            int accId = Session.GetDefaultSafeID();
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy) VALUES(@dt,'ExchangeDiffIn',@amt,@ref,@n,@by)",
+                                "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'ExchangeDiffIn',@amt,@ref,@n,@by,@accId,@shid)",
                                 DbHelper.P("@dt", DateTime.Now),
                                 DbHelper.P("@amt", netDiff),
                                 DbHelper.P("@ref", saleID),
-                                DbHelper.P("@n", "تحصيل فارق استبدال أصناف (عميل)"),
-                                DbHelper.P("@by", Session.EmpID));
+                                DbHelper.P("@n", "تحصيل فارق استبدال أصناف نقداً (عميل)"),
+                                DbHelper.P("@by", Session.EmpID),
+                                DbHelper.P("@accId", accId),
+                                DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
                         }
                         else
                         {
@@ -2136,13 +2154,50 @@ namespace ChickenDist.DAL
 
                             // تم إرجاع الفارق للعميل نقداً (خروج من الخزنة)
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID) VALUES(@dt,'ExchangeDiffOut',@amt,@ref,@n,@by,@accId)",
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'ExchangeDiffOut',@amt,@ref,@n,@by,@accId,@shid)",
                                 DbHelper.P("@dt", DateTime.Now),
                                 DbHelper.P("@amt", Math.Abs(netDiff)),
                                 DbHelper.P("@ref", saleID),
                                 DbHelper.P("@n", "رد فارق استبدال أصناف للعميل نقداً"),
                                 DbHelper.P("@by", Session.EmpID),
-                                DbHelper.P("@accId", accId));
+                                DbHelper.P("@accId", accId),
+                                DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
+                        }
+                    }
+                    else if (pType == "Visa")
+                    {
+                        int visaAcc = Session.GetDefaultSafeID();
+                        try
+                        {
+                            var dtVisa = DbHelper.QueryTrans(trans, "SELECT TOP 1 AccountID FROM SafeAccounts WHERE IsActive=1 AND AccountType IN ('Visa','Bank') ORDER BY AccountID");
+                            if (dtVisa.Rows.Count > 0)
+                                visaAcc = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
+                        }
+                        catch { }
+
+                        if (netDiff > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'Sale',@amt,@ref,@n,@by,@accId,@shid)",
+                                DbHelper.P("@dt", DateTime.Now),
+                                DbHelper.P("@amt", netDiff),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "تحصيل فارق استبدال فيزا"),
+                                DbHelper.P("@by", Session.EmpID),
+                                DbHelper.P("@accId", visaAcc),
+                                DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
+                        }
+                        else
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'VisaReturn',@amt,@ref,@n,@by,@accId,@shid)",
+                                DbHelper.P("@dt", DateTime.Now),
+                                DbHelper.P("@amt", Math.Abs(netDiff)),
+                                DbHelper.P("@ref", saleID),
+                                DbHelper.P("@n", "رد فارق استبدال فيزا"),
+                                DbHelper.P("@by", Session.EmpID),
+                                DbHelper.P("@accId", visaAcc),
+                                DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
                         }
                     }
                     else if (clientID.HasValue)

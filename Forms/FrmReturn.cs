@@ -477,6 +477,28 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var ctxSales = new ContextMenuStrip();
+            var miPrintRet = new ToolStripMenuItem("🖨️ طباعة إيصال مرتجع هذه الفاتورة");
+            miPrintRet.Click += (s, e) =>
+            {
+                if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+                {
+                    int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+                    var dtRet = DbHelper.Query("SELECT TOP 1 ReturnID FROM SalesReturns WHERE SaleID = @id ORDER BY ReturnID DESC", DbHelper.P("@id", saleID));
+                    if (dtRet.Rows.Count > 0)
+                    {
+                        int retID = Convert.ToInt32(dtRet.Rows[0]["ReturnID"]);
+                        new FrmPrintReturn(retID, null, true);
+                    }
+                    else
+                    {
+                        MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة بعد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            };
+            ctxSales.Items.Add(miPrintRet);
+            dgSales.ContextMenuStrip = ctxSales;
+
             dgSales.SelectionChanged += DgSales_SelectionChanged;
             _mainSplit.Panel1.Controls.Add(dgSales);
 
@@ -603,11 +625,37 @@ namespace ChickenDist.Forms
             btnSave = Theme.MakeButton("💾 حفظ العملية (F5)", Color.FromArgb(160, 50, 50));
             btnSave.Width = 180;
             btnSave.Height = 38;
-            btnSave.Margin = new Padding(30, 0, 0, 0);
+            btnSave.Margin = new Padding(20, 0, 0, 0);
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
+
+            var btnReprint = Theme.MakeButton("🖨️ طباعة إيصال المرتجع", Color.FromArgb(70, 70, 95));
+            btnReprint.Width = 160;
+            btnReprint.Height = 38;
+            btnReprint.Margin = new Padding(10, 0, 0, 0);
+            btnReprint.Click += (s, e) =>
+            {
+                if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+                {
+                    int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+                    var dtRet = DbHelper.Query("SELECT TOP 1 ReturnID FROM SalesReturns WHERE SaleID = @id ORDER BY ReturnID DESC", DbHelper.P("@id", saleID));
+                    if (dtRet.Rows.Count > 0)
+                    {
+                        int retID = Convert.ToInt32(dtRet.Rows[0]["ReturnID"]);
+                        new FrmPrintReturn(retID, null, true);
+                    }
+                    else
+                    {
+                        MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة المختارة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("يرجى اختيار فاتورة من الجدول أعلى للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
             
-            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave, btnReprint });
 
             // ===== 4. Add controls =====
             this.Controls.Add(_mainSplit);
@@ -1209,7 +1257,7 @@ namespace ChickenDist.Forms
 
                 try
                 {
-                    bool ok = ReturnDAL.SaveItemExchange(clientID, warehouseID.Value, retItems, newItems, returnType, txtNotes.Text);
+                    bool ok = ReturnDAL.SaveItemExchange(clientID, warehouseID.Value, retItems, newItems, returnType, txtNotes.Text, shiftID);
                     if (ok)
                     {
                         MessageBox.Show("✅ تم إنجاز عملية استبدال الأصناف وتصفية الفرق بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
