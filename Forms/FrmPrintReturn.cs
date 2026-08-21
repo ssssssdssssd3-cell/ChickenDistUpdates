@@ -75,7 +75,8 @@ namespace ChickenDist.Forms
                        p.ProductName, p.ProductCode
                 FROM ReturnItems ri
                 JOIN Products p ON ri.ProductID = p.ProductID
-                WHERE ri.ReturnID = @id", DbHelper.P("@id", _returnID));
+                WHERE ri.ReturnID = @id AND ri.Quantity > 0
+                ORDER BY ri.ReturnItemID", DbHelper.P("@id", _returnID));
         }
 
         private void DoPrint()
@@ -187,15 +188,15 @@ namespace ChickenDist.Forms
                     y += 4;
 
                     // رأس جدول الأصناف
-                    int colProdW = (int)(printableW * 0.45f);
-                    int colQtyW  = (int)(printableW * 0.18f);
+                    int colProdW = (int)(printableW * 0.40f);
+                    int colQtyW  = (int)(printableW * 0.24f);
                     int colPriceW = (int)(printableW * 0.18f);
                     int colTotW  = printableW - colProdW - colQtyW - colPriceW;
 
                     int x = rMargin;
                     g.DrawString("الصنف", bold, Brushes.Black, new RectangleF(x - colProdW, y, colProdW, 16), right);
                     x -= colProdW;
-                    g.DrawString("الكمية", bold, Brushes.Black, new RectangleF(x - colQtyW, y, colQtyW, 16), center);
+                    g.DrawString("كمية المرتجع", bold, Brushes.Black, new RectangleF(x - colQtyW, y, colQtyW, 16), center);
                     x -= colQtyW;
                     g.DrawString("السعر", bold, Brushes.Black, new RectangleF(x - colPriceW, y, colPriceW, 16), center);
                     x -= colPriceW;
