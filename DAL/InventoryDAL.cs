@@ -85,6 +85,8 @@ namespace ChickenDist.DAL
                     COALESCE(p.WholesalePrice,   p.SalePrice) AS WholesalePrice,
                     COALESCE(p.SemiWholesalePrice, p.SalePrice) AS SemiWholesalePrice,
                     p.PurchasePrice,
+                    p.PendingSalePrice,
+                    p.PendingQtyThreshold,
                     p.MinStockLimit,
                     p.ShelfLocation,
                     p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,

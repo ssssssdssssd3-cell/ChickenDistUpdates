@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Linq;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -29,9 +31,11 @@ namespace ChickenDist.Forms
         private string _selectedProductUnit = "";
         private bool _selectedHasExpiry = false;
         private int? _selectedDefaultExpiryDays = null;
-        // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل
-        private readonly System.Collections.Generic.Dictionary<int, decimal> _enteredActualQty
-            = new System.Collections.Generic.Dictionary<int, decimal>();
+        // حفظ الأرصدة الفعلية المدخلة عبر إعادات التحميل (يدعم الأصناف العادية والأصناف ذات السعرين)
+        private readonly System.Collections.Generic.Dictionary<string, decimal> _enteredActualQty
+            = new System.Collections.Generic.Dictionary<string, decimal>();
+
+        private static string GetRowKey(int pid, bool isPending) => isPending ? $"{pid}_p" : $"{pid}";
 
         // قائمة الأصناف التي تم إخفاؤها مؤقتاً بالزر الأيمن لربطها بالجرد لاحقاً
         private readonly System.Collections.Generic.HashSet<int> _hiddenProductIDs
@@ -473,6 +477,9 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",     Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Barcode",         Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Barcode",         Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsPendingPriceRow",    Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PendingSalePrice",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PendingQtyThreshold",  Visible = false });
             Theme.AdjustGridHeaders(dgStock);
 
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
@@ -716,7 +723,10 @@ namespace ChickenDist.Forms
                     lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy HH:mm}";
                 _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
                 foreach (var kv in _enteredActualQty)
-                    _inventoriedProductIDs.Add(kv.Key);
+                {
+                    if (int.TryParse(kv.Key.Split('_')[0], out int p))
+                        _inventoriedProductIDs.Add(p);
+                }
             }
             else
             {
@@ -739,7 +749,10 @@ namespace ChickenDist.Forms
                     lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy 00:00}";
                 _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
                 foreach (var kv in _enteredActualQty)
-                    _inventoriedProductIDs.Add(kv.Key);
+                {
+                    if (int.TryParse(kv.Key.Split('_')[0], out int p))
+                        _inventoriedProductIDs.Add(p);
+                }
             }
 
             int queryMaxRows = (maxDisplay == int.MaxValue) ? 100000 : maxDisplay;
@@ -766,6 +779,8 @@ namespace ChickenDist.Forms
                 decimal baseSP = r["SalePrice"]          != DBNull.Value ? Convert.ToDecimal(r["SalePrice"])          : 0m;
                 decimal baseWP = r.Table.Columns.Contains("WholesalePrice")     && r["WholesalePrice"]     != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"])     : baseSP;
                 decimal baseSWP= r.Table.Columns.Contains("SemiWholesalePrice") && r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : baseSP;
+                decimal pendingSP = r.Table.Columns.Contains("PendingSalePrice") && r["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(r["PendingSalePrice"]) : 0m;
+                decimal pendingThreshold = r.Table.Columns.Contains("PendingQtyThreshold") && r["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(r["PendingQtyThreshold"]) : 0m;
 
                 // اختيار السعر بناءً على القائمة المنسدلة
                 int priceTypeIdx = (cboPriceType != null && cboPriceType.SelectedIndex >= 0) ? cboPriceType.SelectedIndex : 0;
@@ -812,22 +827,10 @@ namespace ChickenDist.Forms
                 bool hasMultiUnits = !string.IsNullOrWhiteSpace(unit1) || !string.IsNullOrWhiteSpace(unit2);
                 string unitCellText = displayUnit + (hasMultiUnits ? " 🔽" : "");
 
-                decimal displayedBookQty = baseBookQty / (curFactor > 0 ? curFactor : 1m);
                 decimal displayedPP  = basePP           * curFactor;
                 decimal displayedSP  = selectedBaseSP   * curFactor; // السعر المحدد من القائمة
                 decimal displayedWP  = baseWP            * curFactor;
                 decimal displayedSWP = baseSWP           * curFactor;
-
-                string actualVal = "";
-                string diffVal   = "";
-                decimal savedActual = 0m;
-                if (_enteredActualQty.TryGetValue(pid, out decimal savedBaseActual))
-                {
-                    savedActual = savedBaseActual / (curFactor > 0 ? curFactor : 1m);
-                    actualVal = savedActual.ToString("N3");
-                    decimal diff = savedActual - displayedBookQty;
-                    diffVal = (diff > 0 ? "+" : "") + diff.ToString("N3");
-                }
 
                 string expiryVal = "";
                 if (dt.Columns.Contains("ExpiryDate") && r["ExpiryDate"] != DBNull.Value)
@@ -841,67 +844,77 @@ namespace ChickenDist.Forms
 
                 string shelfLoc = (dt.Columns.Contains("ShelfLocation") && r["ShelfLocation"] != DBNull.Value) ? r["ShelfLocation"].ToString() : "---";
                 string scalePlu = (dt.Columns.Contains("ScalePLU") && r["ScalePLU"] != DBNull.Value) ? r["ScalePLU"].ToString() : "";
+                string u1Bar = r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                string u2Bar = r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
 
-                int ri = dgStock.Rows.Add(
-                    r["ProductID"],
-                    batchIdVal,
-                    r["ProductCode"],
-                    scalePlu,
-                    r["ProductName"],
-                    shelfLoc,
-                    expiryVal,
-                    unitCellText,
-                    displayedPP.ToString("N2"),
-                    displayedSP.ToString("N2"),
-                    displayedBookQty.ToString("N3"),
-                    actualVal,
-                    diffVal,
-                    "" // Notes
-                );
+                bool hasDualPrices = pendingSP > 0 && Math.Abs(pendingSP - baseSP) > 0.005m;
 
-                dgStock.Rows[ri].Cells["PurchasePrice"].Tag = displayedPP;
-                dgStock.Rows[ri].Cells["SalePrice"].Tag = displayedSP;
-
-                // ألوان متميزة وخاصة للأعمدة التفاعلية (الوحدة، سعر الشراء، سعر البيع)
-                dgStock.Rows[ri].Cells["Unit"].Style.BackColor          = Color.FromArgb(225, 238, 254); // لون سماوي متميز
-                dgStock.Rows[ri].Cells["Unit"].Style.ForeColor          = Color.FromArgb(15, 45, 90);
-                dgStock.Rows[ri].Cells["Unit"].Style.Font               = new Font("Segoe UI", 9f, FontStyle.Bold);
-
-                dgStock.Rows[ri].Cells["PurchasePrice"].Style.BackColor = Color.FromArgb(255, 248, 225); // لون بيج/أصفر خفيف لسعر الشراء
-                dgStock.Rows[ri].Cells["PurchasePrice"].Style.ForeColor = Color.FromArgb(120, 60, 0);
-
-                dgStock.Rows[ri].Cells["SalePrice"].Style.BackColor     = Color.FromArgb(235, 250, 238); // لون أخضر فاتح لسعر البيع
-                dgStock.Rows[ri].Cells["SalePrice"].Style.ForeColor     = Color.FromArgb(0, 80, 30);
-
-                dgStock.Rows[ri].Cells["BaseUnit"].Value          = baseUnit;
-                dgStock.Rows[ri].Cells["Unit1Name"].Value         = unit1;
-                dgStock.Rows[ri].Cells["Unit2Name"].Value         = unit2;
-                dgStock.Rows[ri].Cells["Unit2Factor"].Value       = u2Factor;
-                dgStock.Rows[ri].Cells["Unit3Factor"].Value       = u3Factor;
-                dgStock.Rows[ri].Cells["CurrentFactor"].Value     = curFactor;
-                dgStock.Rows[ri].Cells["BaseBookQty"].Value            = baseBookQty;
-                dgStock.Rows[ri].Cells["BasePurchasePrice"].Value        = basePP;
-                dgStock.Rows[ri].Cells["BaseSalePrice"].Value            = baseSP;
-                dgStock.Rows[ri].Cells["BaseWholesalePrice"].Value       = baseWP;
-                dgStock.Rows[ri].Cells["BaseSemiWholesalePrice"].Value   = baseSWP;
-                dgStock.Rows[ri].Cells["HasExpiry"].Value                = r["HasExpiry"];
-                dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value        = r["DefaultExpiryDays"];
-                dgStock.Rows[ri].Cells["Unit1Barcode"].Value            = r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
-                dgStock.Rows[ri].Cells["Unit2Barcode"].Value            = r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
-
-                // تمييز لون السطر والأصناف المجرودة باللون الأخضر الناصع الجلي
-                bool isInventoried = _enteredActualQty.ContainsKey(pid) || _inventoriedProductIDs.Contains(pid);
-                if (isInventoried)
+                if (hasDualPrices)
                 {
-                    Color invColor = GetInventoriedRowColor();
-                    dgStock.Rows[ri].DefaultCellStyle.BackColor = invColor;
-                    dgStock.Rows[ri].Cells["ActualQty"].Style.BackColor = invColor;
+                    // صنف له سعران بيع: يتم تقسيمه إلى سطرين مستقلين
+                    // السطر الأول: السعر الحالي / القديم
+                    decimal baseBookQtyOld = pendingThreshold > 0 ? Math.Min(baseBookQty, pendingThreshold) : (baseBookQty > 0 ? baseBookQty : 0m);
+                    decimal displayedBookQtyOld = baseBookQtyOld / (curFactor > 0 ? curFactor : 1m);
+                    string rowKeyOld = GetRowKey(pid, false);
+                    string actualValOld = "";
+                    string diffValOld = "";
+                    decimal savedActualOld = 0m;
+                    if (_enteredActualQty.TryGetValue(rowKeyOld, out decimal savedBaseOld))
+                    {
+                        savedActualOld = savedBaseOld / (curFactor > 0 ? curFactor : 1m);
+                        actualValOld = savedActualOld.ToString("N3");
+                        decimal diff1 = savedActualOld - displayedBookQtyOld;
+                        diffValOld = (diff1 > 0 ? "+" : "") + diff1.ToString("N3");
+                    }
+
+                    string nameOld = $"{r["ProductName"]} - (سعر: {displayedSP:N2} ج)";
+                    AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, nameOld, shelfLoc, expiryVal,
+                        unitCellText, displayedPP, displayedSP, displayedBookQtyOld, actualValOld, diffValOld,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQtyOld, basePP, baseSP, baseWP, baseSWP,
+                        r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, pendingSP, pendingThreshold, rowKeyOld, savedActualOld);
+
+                    // السطر الثاني: السعر الجديد / المعلق
+                    decimal baseBookQtyNew = Math.Max(0m, baseBookQty - baseBookQtyOld);
+                    decimal displayedBookQtyNew = baseBookQtyNew / (curFactor > 0 ? curFactor : 1m);
+                    decimal displayedPendingSP = pendingSP * curFactor;
+                    string rowKeyNew = GetRowKey(pid, true);
+                    string actualValNew = "";
+                    string diffValNew = "";
+                    decimal savedActualNew = 0m;
+                    if (_enteredActualQty.TryGetValue(rowKeyNew, out decimal savedBaseNew))
+                    {
+                        savedActualNew = savedBaseNew / (curFactor > 0 ? curFactor : 1m);
+                        actualValNew = savedActualNew.ToString("N3");
+                        decimal diff2 = savedActualNew - displayedBookQtyNew;
+                        diffValNew = (diff2 > 0 ? "+" : "") + diff2.ToString("N3");
+                    }
+
+                    string nameNew = $"{r["ProductName"]} - [سعر جديد] (سعر: {displayedPendingSP:N2} ج)";
+                    AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, nameNew, shelfLoc, expiryVal,
+                        unitCellText, displayedPP, displayedPendingSP, displayedBookQtyNew, actualValNew, diffValNew,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQtyNew, basePP, pendingSP, baseWP, baseSWP,
+                        r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, true, pendingSP, pendingThreshold, rowKeyNew, savedActualNew);
                 }
-
-                if (!string.IsNullOrEmpty(diffVal))
+                else
                 {
-                    decimal diff2 = savedActual - displayedBookQty;
-                    dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = diff2 > 0 ? Color.DarkGreen : Color.OrangeRed;
+                    // صنف عادي بسعر بيع واحد
+                    decimal displayedBookQty = baseBookQty / (curFactor > 0 ? curFactor : 1m);
+                    string rowKey = GetRowKey(pid, false);
+                    string actualVal = "";
+                    string diffVal   = "";
+                    decimal savedActual = 0m;
+                    if (_enteredActualQty.TryGetValue(rowKey, out decimal savedBaseActual))
+                    {
+                        savedActual = savedBaseActual / (curFactor > 0 ? curFactor : 1m);
+                        actualVal = savedActual.ToString("N3");
+                        decimal diff = savedActual - displayedBookQty;
+                        diffVal = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                    }
+
+                    AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, r["ProductName"]?.ToString(), shelfLoc, expiryVal,
+                        unitCellText, displayedPP, displayedSP, displayedBookQty, actualVal, diffVal,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQty, basePP, baseSP, baseWP, baseSWP,
+                        r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, 0m, 0m, rowKey, savedActual);
                 }
             }
 
@@ -912,6 +925,107 @@ namespace ChickenDist.Forms
             dgStock.AutoSizeColumnsMode = oldMode;
             dgStock.ResumeLayout();
             ClearAdjustmentForm();
+        }
+
+        private int AddStockRow(
+            int pid,
+            object batchIdVal,
+            string productCode,
+            string scalePlu,
+            string displayName,
+            string shelfLoc,
+            string expiryVal,
+            string unitCellText,
+            decimal displayedPP,
+            decimal displayedSP,
+            decimal displayedBookQty,
+            string actualVal,
+            string diffVal,
+            string baseUnit,
+            string unit1,
+            string unit2,
+            decimal u2Factor,
+            decimal u3Factor,
+            decimal curFactor,
+            decimal baseBookQty,
+            decimal basePP,
+            decimal baseSP,
+            decimal baseWP,
+            decimal baseSWP,
+            object hasExpiry,
+            object defaultExpiryDays,
+            string u1Bar,
+            string u2Bar,
+            bool isPendingPriceRow,
+            decimal pendingSP,
+            decimal pendingThreshold,
+            string rowKey,
+            decimal savedActual)
+        {
+            int ri = dgStock.Rows.Add(
+                pid,
+                batchIdVal,
+                productCode,
+                scalePlu,
+                displayName,
+                shelfLoc,
+                expiryVal,
+                unitCellText,
+                displayedPP.ToString("N2"),
+                displayedSP.ToString("N2"),
+                displayedBookQty.ToString("N3"),
+                actualVal,
+                diffVal,
+                "" // Notes
+            );
+
+            dgStock.Rows[ri].Cells["PurchasePrice"].Tag = displayedPP;
+            dgStock.Rows[ri].Cells["SalePrice"].Tag = displayedSP;
+
+            dgStock.Rows[ri].Cells["Unit"].Style.BackColor          = Color.FromArgb(225, 238, 254);
+            dgStock.Rows[ri].Cells["Unit"].Style.ForeColor          = Color.FromArgb(15, 45, 90);
+            dgStock.Rows[ri].Cells["Unit"].Style.Font               = new Font("Segoe UI", 9f, FontStyle.Bold);
+
+            dgStock.Rows[ri].Cells["PurchasePrice"].Style.BackColor = Color.FromArgb(255, 248, 225);
+            dgStock.Rows[ri].Cells["PurchasePrice"].Style.ForeColor = Color.FromArgb(120, 60, 0);
+
+            dgStock.Rows[ri].Cells["SalePrice"].Style.BackColor     = isPendingPriceRow ? Color.FromArgb(255, 243, 205) : Color.FromArgb(235, 250, 238);
+            dgStock.Rows[ri].Cells["SalePrice"].Style.ForeColor     = isPendingPriceRow ? Color.FromArgb(133, 100, 4) : Color.FromArgb(0, 80, 30);
+
+            dgStock.Rows[ri].Cells["BaseUnit"].Value          = baseUnit;
+            dgStock.Rows[ri].Cells["Unit1Name"].Value         = unit1;
+            dgStock.Rows[ri].Cells["Unit2Name"].Value         = unit2;
+            dgStock.Rows[ri].Cells["Unit2Factor"].Value       = u2Factor;
+            dgStock.Rows[ri].Cells["Unit3Factor"].Value       = u3Factor;
+            dgStock.Rows[ri].Cells["CurrentFactor"].Value     = curFactor;
+            dgStock.Rows[ri].Cells["BaseBookQty"].Value            = baseBookQty;
+            dgStock.Rows[ri].Cells["BasePurchasePrice"].Value        = basePP;
+            dgStock.Rows[ri].Cells["BaseSalePrice"].Value            = baseSP;
+            dgStock.Rows[ri].Cells["BaseWholesalePrice"].Value       = baseWP;
+            dgStock.Rows[ri].Cells["BaseSemiWholesalePrice"].Value   = baseSWP;
+            dgStock.Rows[ri].Cells["HasExpiry"].Value                = hasExpiry;
+            dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value        = defaultExpiryDays;
+            dgStock.Rows[ri].Cells["Unit1Barcode"].Value            = u1Bar;
+            dgStock.Rows[ri].Cells["Unit2Barcode"].Value            = u2Bar;
+            dgStock.Rows[ri].Cells["IsPendingPriceRow"].Value       = isPendingPriceRow;
+            dgStock.Rows[ri].Cells["PendingSalePrice"].Value        = pendingSP;
+            dgStock.Rows[ri].Cells["PendingQtyThreshold"].Value     = pendingThreshold;
+
+            bool isInventoried = _enteredActualQty.ContainsKey(rowKey) || _inventoriedProductIDs.Contains(pid);
+            if (isInventoried)
+            {
+                Color invColor = GetInventoriedRowColor();
+                dgStock.Rows[ri].DefaultCellStyle.BackColor = invColor;
+                dgStock.Rows[ri].Cells["ActualQty"].Style.BackColor = invColor;
+            }
+
+            if (!string.IsNullOrEmpty(diffVal))
+            {
+                decimal diff2 = savedActual - displayedBookQty;
+                dgStock.Rows[ri].Cells["DiffQty"].Style.ForeColor = diff2 > 0 ? Color.DarkGreen : Color.OrangeRed;
+            }
+
+            return ri;
         }
 
         private void LoadLogs()
@@ -1009,6 +1123,8 @@ namespace ChickenDist.Forms
                 decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
                 string cellText = row.Cells["ActualQty"].Value?.ToString();
                 int rowPid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
+                string rowKey = GetRowKey(rowPid, isPending);
 
                 if (!string.IsNullOrWhiteSpace(cellText) &&
                     decimal.TryParse(cellText, numStyles, inv, out decimal actualQty))
@@ -1019,7 +1135,7 @@ namespace ChickenDist.Forms
                     row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
                     if (rowPid > 0)
                     {
-                        _enteredActualQty[rowPid] = actualQty * curFactor;
+                        _enteredActualQty[rowKey] = actualQty * curFactor;
                         _inventoriedProductIDs.Add(rowPid);
                     }
                     Color invColor = GetInventoriedRowColor();
@@ -1033,7 +1149,7 @@ namespace ChickenDist.Forms
                     row.Cells["ActualQty"].Value = "";
                     row.Cells["DiffQty"].Value   = "";
                     row.Cells["DiffQty"].Style.ForeColor = Theme.TextMain;
-                    if (rowPid > 0) _enteredActualQty.Remove(rowPid);
+                    if (rowPid > 0) _enteredActualQty.Remove(rowKey);
                     row.DefaultCellStyle.BackColor = Color.Empty;
                     row.Cells["ActualQty"].Style.BackColor = Color.FromArgb(255, 255, 225);
                     dgStock.InvalidateRow(e.RowIndex);
@@ -1171,6 +1287,9 @@ namespace ChickenDist.Forms
                 }
 
                 int pid = Convert.ToInt32(targetRow.Cells["ProductID"].Value);
+                bool isPending = targetRow.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(targetRow.Cells["IsPendingPriceRow"].Value);
+                string rowKey = GetRowKey(pid, isPending);
+
                 var numStyles = System.Globalization.NumberStyles.Any;
                 var inv = System.Globalization.CultureInfo.InvariantCulture;
                 decimal.TryParse(targetRow.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookQty);
@@ -1198,7 +1317,7 @@ namespace ChickenDist.Forms
 
                     if (pid > 0)
                     {
-                        _enteredActualQty[pid] = currentActual;
+                        _enteredActualQty[rowKey] = currentActual;
                         _inventoriedProductIDs.Add(pid);
                     }
 
@@ -1287,6 +1406,9 @@ namespace ChickenDist.Forms
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
             int rowPid = row.Cells["ProductID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ProductID"].Value) : 0;
+            bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
+            string rowKey = GetRowKey(rowPid, isPending);
+
             decimal baseBookQty = row.Cells["BaseBookQty"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : 0m;
             decimal basePP = row.Cells["BasePurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BasePurchasePrice"].Value) : 0m;
             decimal baseSP = row.Cells["BaseSalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseSalePrice"].Value) : 0m;
@@ -1305,9 +1427,9 @@ namespace ChickenDist.Forms
             row.Cells["SalePrice"].Tag = newSP;
 
             // Recalculate and convert ActualQty & DiffQty
-            if (rowPid > 0 && _enteredActualQty.ContainsKey(rowPid))
+            if (rowPid > 0 && _enteredActualQty.ContainsKey(rowKey))
             {
-                decimal baseActual = _enteredActualQty[rowPid];
+                decimal baseActual = _enteredActualQty[rowKey];
                 decimal newActualVal = baseActual / factor;
                 row.Cells["ActualQty"].Value = newActualVal.ToString("N3");
 
@@ -1322,7 +1444,7 @@ namespace ChickenDist.Forms
                 {
                     decimal oldFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
                     decimal baseActual = actualVal * oldFactor;
-                    if (rowPid > 0) _enteredActualQty[rowPid] = baseActual;
+                    if (rowPid > 0) _enteredActualQty[rowKey] = baseActual;
 
                     decimal newActualVal = baseActual / factor;
                     row.Cells["ActualQty"].Value = newActualVal.ToString("N3");
@@ -1378,7 +1500,8 @@ namespace ChickenDist.Forms
                     foreach (var kvp in data.EnteredActualQty)
                     {
                         _enteredActualQty[kvp.Key] = kvp.Value;
-                        _inventoriedProductIDs.Add(kvp.Key);
+                        if (int.TryParse(kvp.Key.Split('_')[0], out int p))
+                            _inventoriedProductIDs.Add(p);
                     }
                 }
 
@@ -1411,7 +1534,7 @@ namespace ChickenDist.Forms
                     WarehouseID = wid,
                     WarehouseName = wName,
                     Notes = "جرد مخزن تم حفظه لحظياً",
-                    EnteredActualQty = new System.Collections.Generic.Dictionary<int, decimal>(_enteredActualQty)
+                    EnteredActualQty = new System.Collections.Generic.Dictionary<string, decimal>(_enteredActualQty)
                 };
 
                 if (dgStock != null && dgStock.Rows.Count > 0)
@@ -1422,7 +1545,10 @@ namespace ChickenDist.Forms
                     {
                         if (r.Cells["ProductID"].Value == null) continue;
                         int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
-                        if (_enteredActualQty.ContainsKey(pid))
+                        bool isPending = r.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(r.Cells["IsPendingPriceRow"].Value);
+                        string rowKey = GetRowKey(pid, isPending);
+
+                        if (_enteredActualQty.ContainsKey(rowKey))
                         {
                             string code = r.Cells["ProductCode"].Value?.ToString() ?? "";
                             string name = r.Cells["ProductName"].Value?.ToString() ?? "";
@@ -1470,89 +1596,108 @@ namespace ChickenDist.Forms
             }
             int wid = selectedWid.Value;
 
-            // 1. تجميع كافة الأصناف التي تم تعديل كميتها أو أسعارها
-            var modifiedRows = new System.Collections.Generic.List<DataGridViewRow>();
+            // 1. تجميع كافة الأصناف التي تم تعديل كميتها أو أسعارها في كائنات مستقلة تماماً
+            var modifiedItems = new System.Collections.Generic.List<InventoryAdjustmentRowData>();
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var numStyles = System.Globalization.NumberStyles.Any;
 
             foreach (DataGridViewRow row in dgStock.Rows)
             {
                 if (row.Cells["ProductID"].Value == null) continue;
+                int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                if (pid <= 0) continue;
 
-                bool isQtyModified = false;
-                bool isPriceModified = false;
+                bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
+                decimal pendingSP = row.Cells["PendingSalePrice"].Value != null ? Convert.ToDecimal(row.Cells["PendingSalePrice"].Value) : 0m;
+                decimal pendingThreshold = row.Cells["PendingQtyThreshold"].Value != null ? Convert.ToDecimal(row.Cells["PendingQtyThreshold"].Value) : 0m;
+                string rowKey = GetRowKey(pid, isPending);
 
-                string cellVal = row.Cells["ActualQty"].Value?.ToString();
-                if (!string.IsNullOrWhiteSpace(cellVal) && decimal.TryParse(cellVal, numStyles, inv, out _))
-                {
-                    isQtyModified = true;
-                }
+                decimal factor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
+                if (factor <= 0) factor = 1.0m;
+
+                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                decimal actualEntered = 0m;
+                bool hasActual = !string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out actualEntered);
 
                 // Check PurchasePrice
                 string purVal = row.Cells["PurchasePrice"].Value?.ToString();
-                if (decimal.TryParse(purVal, numStyles, inv, out decimal curPurPrice))
+                bool purModified = false;
+                decimal curPurPrice = 0;
+                if (decimal.TryParse(purVal, numStyles, inv, out curPurPrice))
                 {
-                    decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
-                    if (Math.Round(curPurPrice, 2) != Math.Round(originalPur, 2))
-                    {
-                        isPriceModified = true;
-                    }
+                    decimal origPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                    if (Math.Round(curPurPrice, 2) != Math.Round(origPur, 2)) purModified = true;
                 }
 
                 // Check SalePrice
                 string saleVal = row.Cells["SalePrice"].Value?.ToString();
-                if (decimal.TryParse(saleVal, numStyles, inv, out decimal curSalePrice))
+                bool saleModified = false;
+                decimal curSalePrice = 0;
+                if (decimal.TryParse(saleVal, numStyles, inv, out curSalePrice))
                 {
-                    decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
-                    if (Math.Round(curSalePrice, 2) != Math.Round(originalSale, 2))
-                    {
-                        isPriceModified = true;
-                    }
+                    decimal origSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                    if (Math.Round(curSalePrice, 2) != Math.Round(origSale, 2)) saleModified = true;
                 }
 
-                if (isQtyModified || isPriceModified)
+                if (hasActual || purModified || saleModified)
                 {
-                    modifiedRows.Add(row);
+                    decimal origPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                    decimal origSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                    decimal bq = row.Cells["BookQty"].Value != null && decimal.TryParse(row.Cells["BookQty"].Value.ToString(), numStyles, inv, out decimal bqVal) ? bqVal : 0m;
+                    decimal baseBq = row.Cells["BaseBookQty"].Value != null ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : (bq * factor);
+
+                    modifiedItems.Add(new InventoryAdjustmentRowData
+                    {
+                        ProductID = pid,
+                        BatchIDVal = row.Cells["BatchID"].Value,
+                        ProductCode = row.Cells["ProductCode"].Value?.ToString() ?? "",
+                        ProductName = row.Cells["ProductName"].Value?.ToString() ?? "",
+                        ShelfLocation = row.Cells["ShelfLocation"].Value?.ToString() ?? "",
+                        DisplayUnit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "",
+                        Factor = factor,
+                        BaseBookQty = baseBq,
+                        DisplayedBookQty = bq,
+                        ActualEntered = hasActual ? actualEntered : (decimal?)null,
+                        BaseActual = hasActual ? (actualEntered * factor) : baseBq,
+                        OriginalPurchasePrice = origPur,
+                        OriginalSalePrice = origSale,
+                        NewPurchasePrice = curPurPrice,
+                        NewSalePrice = curSalePrice,
+                        IsPriceModified = purModified || saleModified,
+                        IsQtyModified = hasActual,
+                        HasExpiry = row.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(row.Cells["HasExpiry"].Value),
+                        ExpiryDate = DbHelper.ParseExpiryInput(row.Cells["ExpiryDate"].Value?.ToString()),
+                        Notes = row.Cells["Notes"].Value?.ToString() ?? "",
+                        IsPendingPriceRow = isPending,
+                        PendingSalePrice = pendingSP,
+                        PendingQtyThreshold = pendingThreshold,
+                        RowKey = rowKey
+                    });
                 }
             }
 
-            if (modifiedRows.Count > 0)
+            if (modifiedItems.Count > 0)
             {
                 string msg = "هل أنت متأكد من حفظ التعديلات التالية على الكميات أو الأسعار؟\n\n";
                 int count = 0;
-                foreach (var row in modifiedRows)
+                foreach (var item in modifiedItems)
                 {
-                    string name = row.Cells["ProductName"].Value?.ToString();
-                    msg += $"• {name}: ";
+                    msg += $"• {item.ProductName}: ";
 
-                    // Check Qty change
-                    string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
-                    if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actual))
+                    if (item.IsQtyModified && item.ActualEntered.HasValue)
                     {
-                        decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal book);
-                        decimal diff = actual - book;
-                        msg += $"الكمية ({book:N3} ➔ {actual:N3}) ";
+                        msg += $"الكمية ({item.DisplayedBookQty:N3} ➔ {item.ActualEntered.Value:N3}) ";
                     }
 
-                    // Check PurchasePrice change
-                    string purPriceStr = row.Cells["PurchasePrice"].Value?.ToString();
-                    if (decimal.TryParse(purPriceStr, numStyles, inv, out decimal purPrice))
+                    if (item.IsPriceModified)
                     {
-                        decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
-                        if (Math.Round(purPrice, 2) != Math.Round(originalPur, 2))
+                        if (Math.Round(item.NewPurchasePrice, 2) != Math.Round(item.OriginalPurchasePrice, 2))
                         {
-                            msg += $"شراء ({originalPur:N2} ➔ {purPrice:N2}) ";
+                            msg += $"شراء ({item.OriginalPurchasePrice:N2} ➔ {item.NewPurchasePrice:N2}) ";
                         }
-                    }
-
-                    // Check SalePrice change
-                    string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
-                    if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal salePrice))
-                    {
-                        decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
-                        if (Math.Round(salePrice, 2) != Math.Round(originalSale, 2))
+                        if (Math.Round(item.NewSalePrice, 2) != Math.Round(item.OriginalSalePrice, 2))
                         {
-                            msg += $"بيع ({originalSale:N2} ➔ {salePrice:N2}) ";
+                            msg += $"بيع ({item.OriginalSalePrice:N2} ➔ {item.NewSalePrice:N2}) ";
                         }
                     }
 
@@ -1560,9 +1705,9 @@ namespace ChickenDist.Forms
                     count++;
                     if (count >= 10)
                     {
-                        if (modifiedRows.Count > 10)
+                        if (modifiedItems.Count > 10)
                         {
-                            msg += $"\n... وعدد {modifiedRows.Count - 10} أصناف أخرى.";
+                            msg += $"\n... وعدد {modifiedItems.Count - 10} بنود أخرى.";
                         }
                         break;
                     }
@@ -1576,38 +1721,27 @@ namespace ChickenDist.Forms
                     {
                         DbHelper.RunInTransaction((con, trans) =>
                         {
-                            foreach (var row in modifiedRows)
+                            var grouped = modifiedItems.GroupBy(x => x.ProductID).ToList();
+                            foreach (var grp in grouped)
                             {
-                                int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                                decimal factor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
-                                if (factor <= 0) factor = 1.0m;
+                                int pid = grp.Key;
+                                var mainItem = grp.FirstOrDefault(x => !x.IsPendingPriceRow);
+                                var pendingItem = grp.FirstOrDefault(x => x.IsPendingPriceRow);
 
-                                string displayUnit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "";
-                                string rowNotes    = row.Cells["Notes"].Value?.ToString() ?? "";
-                                bool hasExpiry     = row.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(row.Cells["HasExpiry"].Value);
-
-                                // ── 1. حفظ تعديلات الأسعار ──
-                                string purPriceStr = row.Cells["PurchasePrice"].Value?.ToString();
-                                string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
-
-                                if (decimal.TryParse(purPriceStr, numStyles, inv, out decimal purPrice))
+                                // 1. حفظ تعديلات الأسعار
+                                if (mainItem != null && mainItem.IsPriceModified)
                                 {
-                                    decimal originalPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
-                                    if (Math.Round(purPrice, 2) != Math.Round(originalPur, 2))
+                                    if (Math.Round(mainItem.NewPurchasePrice, 2) != Math.Round(mainItem.OriginalPurchasePrice, 2))
                                     {
-                                        decimal basePurPrice = purPrice / factor;
+                                        decimal basePurPrice = mainItem.NewPurchasePrice / mainItem.Factor;
                                         DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid",
                                             DbHelper.P("@pur", basePurPrice),
                                             DbHelper.P("@pid", pid));
                                     }
-                                }
 
-                                if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal salePrice))
-                                {
-                                    decimal originalSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
-                                    if (Math.Round(salePrice, 2) != Math.Round(originalSale, 2))
+                                    if (Math.Round(mainItem.NewSalePrice, 2) != Math.Round(mainItem.OriginalSalePrice, 2))
                                     {
-                                        decimal baseSalePrice = salePrice / factor;
+                                        decimal baseSalePrice = mainItem.NewSalePrice / mainItem.Factor;
                                         DbHelper.ExecuteTrans(trans, "UPDATE Products SET SalePrice = @sale WHERE ProductID = @pid",
                                             DbHelper.P("@sale", baseSalePrice),
                                             DbHelper.P("@pid", pid));
@@ -1616,97 +1750,127 @@ namespace ChickenDist.Forms
                                             @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
                                               VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, N'تعديل السعر من شاشة جرد وتعديل الأسعار')",
                                             DbHelper.P("@pid", pid),
-                                            DbHelper.P("@old", originalSale / factor),
+                                            DbHelper.P("@old", mainItem.OriginalSalePrice / mainItem.Factor),
                                             DbHelper.P("@new", baseSalePrice),
                                             DbHelper.P("@uid", Session.EmpID));
                                     }
                                 }
 
-                                // ── 2. حفظ تسويات كميات الجرد ──
-                                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
-                                if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actualEntered))
+                                // 2. حفظ تسويات كميات الجرد
+                                bool anyQtyModified = grp.Any(x => x.IsQtyModified);
+                                if (anyQtyModified)
                                 {
-                                    decimal baseActual = actualEntered * factor;
-                                    decimal baseBook = row.Cells["BaseBookQty"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : 0m;
-
-                                    if (hasExpiry)
+                                    if (pendingItem != null || (mainItem != null && mainItem.PendingSalePrice > 0))
                                     {
-                                        object batchIdVal = row.Cells["BatchID"].Value;
-                                        string expStr = row.Cells["ExpiryDate"].Value?.ToString();
-                                        DateTime? exp = null;
-                                        if (!string.IsNullOrWhiteSpace(expStr) && DateTime.TryParse(expStr, out DateTime parsedExp))
-                                            exp = parsedExp;
+                                        // صنف له سعران: احتساب الرصيد الفعلي الإجمالي وضبط السعر المعلق
+                                        decimal actual1 = mainItem != null ? (mainItem.ActualEntered.HasValue ? mainItem.BaseActual : mainItem.BaseBookQty) : 0m;
+                                        decimal actual2 = pendingItem != null ? (pendingItem.ActualEntered.HasValue ? pendingItem.BaseActual : pendingItem.BaseBookQty) : 0m;
+                                        decimal totalActual = actual1 + actual2;
+                                        decimal totalBook = (mainItem != null ? mainItem.BaseBookQty : 0m) + (pendingItem != null ? pendingItem.BaseBookQty : 0m);
 
-                                        if (batchIdVal != null && batchIdVal != DBNull.Value)
+                                        if (actual1 <= 0 && actual2 > 0)
                                         {
-                                            int bid = Convert.ToInt32(batchIdVal);
+                                            // نفاد الكمية بالسعر القديم بالكامل -> تفعيل السعر الجديد تلقائياً
+                                            decimal newPendingPrice = pendingItem != null ? (pendingItem.PendingSalePrice > 0 ? pendingItem.PendingSalePrice : pendingItem.OriginalSalePrice / pendingItem.Factor) : mainItem.PendingSalePrice;
                                             DbHelper.ExecuteTrans(trans,
-                                                "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
-                                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value),
-                                                DbHelper.P("@qty", baseActual),
-                                                DbHelper.P("@bid", bid));
+                                                "UPDATE Products SET SalePrice = COALESCE(NULLIF(PendingSalePrice, 0), SalePrice), PendingSalePrice = NULL, PendingQtyThreshold = NULL WHERE ProductID = @pid",
+                                                DbHelper.P("@pid", pid));
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                                  VALUES (@pid, @old, @new, 'PendingPriceActivation', NULL, @uid, N'تفعيل السعر الجديد بعد جرد واستهلاك الكمية القديمة بالكامل')",
+                                                DbHelper.P("@pid", pid),
+                                                DbHelper.P("@old", mainItem != null ? (mainItem.OriginalSalePrice / mainItem.Factor) : 0),
+                                                DbHelper.P("@new", newPendingPrice),
+                                                DbHelper.P("@uid", Session.EmpID));
                                         }
                                         else
                                         {
+                                            // تحديث كمية الرصيد القديم المتبقية
                                             DbHelper.ExecuteTrans(trans,
-                                                "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
-                                                DbHelper.P("@pid", pid),
-                                                DbHelper.P("@wid", wid),
-                                                DbHelper.P("@qty", baseActual),
-                                                DbHelper.P("@exp", exp.HasValue ? (object)exp.Value : DBNull.Value));
+                                                "UPDATE Products SET PendingQtyThreshold = @thresh WHERE ProductID = @pid",
+                                                DbHelper.P("@thresh", actual1), DbHelper.P("@pid", pid));
                                         }
 
-                                        // Sync ProductStock
+                                        // تحديث رصيد المخزن الإجمالي
                                         DbHelper.ExecuteTrans(trans,
                                             @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
-                                                UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
+                                                UPDATE ProductStock SET Quantity = @aq WHERE ProductID=@pid AND WarehouseID=@wid
                                               ELSE
-                                                INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
-                                            DbHelper.P("@pid", pid),
-                                            DbHelper.P("@wid", wid));
+                                                INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @aq)",
+                                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", totalActual));
 
-                                        // Log to StockAdjustments
-                                        string expText = exp.HasValue ? exp.Value.ToString("yyyy-MM-dd") : "بدون";
-                                        string logNotes = $"[تسوية صلاحية: {expText}] " + rowNotes;
+                                        // تسجيل حركة التسوية في السجل
+                                        string dispUnit = (mainItem ?? pendingItem)?.DisplayUnit ?? "";
+                                        decimal fac = (mainItem ?? pendingItem)?.Factor ?? 1.0m;
+                                        string notes = $"[جرد صنف بسعرين: قديم={actual1:N2}, جديد={actual2:N2}] " + ((mainItem?.Notes ?? "") + " " + (pendingItem?.Notes ?? "")).Trim();
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
                                               VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
-                                            DbHelper.P("@pid", pid),
-                                            DbHelper.P("@wid", wid),
-                                            DbHelper.P("@bq", baseBook),
-                                            DbHelper.P("@aq", baseActual),
-                                            DbHelper.P("@notes", logNotes),
-                                            DbHelper.P("@by", Session.EmpID),
-                                            DbHelper.P("@un", displayUnit),
-                                            DbHelper.P("@fac", factor),
+                                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
+                                            DbHelper.P("@bq", totalBook), DbHelper.P("@aq", totalActual),
+                                            DbHelper.P("@notes", notes), DbHelper.P("@by", Session.EmpID),
+                                            DbHelper.P("@un", dispUnit), DbHelper.P("@fac", fac),
                                             DbHelper.P("@bcode", sessionBatchCode));
                                     }
                                     else
                                     {
-                                        // Normal adjustment
-                                        DbHelper.ExecuteTrans(trans, @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
-                                            UPDATE ProductStock SET Quantity = @aq WHERE ProductID=@pid AND WarehouseID=@wid
-                                        ELSE
-                                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @aq)",
-                                        DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", baseActual));
-                                        
+                                        // صنف عادي بسعر واحد
+                                        var item = mainItem ?? grp.First();
+                                        decimal baseActual = item.BaseActual;
+                                        decimal baseBook = item.BaseBookQty;
+
+                                        if (item.HasExpiry)
+                                        {
+                                            if (item.BatchIDVal != null && item.BatchIDVal != DBNull.Value)
+                                            {
+                                                int bid = Convert.ToInt32(item.BatchIDVal);
+                                                DbHelper.ExecuteTrans(trans,
+                                                    "UPDATE ProductBatches SET ExpiryDate=@exp, Quantity=@qty WHERE BatchID=@bid",
+                                                    DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
+                                                    DbHelper.P("@qty", baseActual),
+                                                    DbHelper.P("@bid", bid));
+                                            }
+                                            else
+                                            {
+                                                DbHelper.ExecuteTrans(trans,
+                                                    "INSERT INTO ProductBatches (ProductID, WarehouseID, Quantity, ExpiryDate) VALUES (@pid, @wid, @qty, @exp)",
+                                                    DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
+                                                    DbHelper.P("@qty", baseActual),
+                                                    DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value));
+                                            }
+
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                                    UPDATE ProductStock SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid) WHERE ProductID=@pid AND WarehouseID=@wid
+                                                  ELSE
+                                                    INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid))",
+                                                DbHelper.P("@pid", pid), DbHelper.P("@wid", wid));
+                                        }
+                                        else
+                                        {
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                                    UPDATE ProductStock SET Quantity = @aq WHERE ProductID=@pid AND WarehouseID=@wid
+                                                  ELSE
+                                                    INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @aq)",
+                                                DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", baseActual));
+                                        }
+
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
                                               VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
-                                            DbHelper.P("@pid", pid),
-                                            DbHelper.P("@wid", wid),
-                                            DbHelper.P("@bq", baseBook),
-                                            DbHelper.P("@aq", baseActual),
-                                            DbHelper.P("@notes", rowNotes),
-                                            DbHelper.P("@by", Session.EmpID),
-                                            DbHelper.P("@un", displayUnit),
-                                            DbHelper.P("@fac", factor),
+                                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
+                                            DbHelper.P("@bq", baseBook), DbHelper.P("@aq", baseActual),
+                                            DbHelper.P("@notes", item.Notes), DbHelper.P("@by", Session.EmpID),
+                                            DbHelper.P("@un", item.DisplayUnit), DbHelper.P("@fac", item.Factor),
                                             DbHelper.P("@bcode", sessionBatchCode));
                                     }
-
-                                    _enteredActualQty.Remove(pid);
                                 }
 
+                                foreach (var itm in grp)
+                                {
+                                    _enteredActualQty.Remove(itm.RowKey);
+                                }
                                 savedCount++;
                             }
                         });
@@ -1720,34 +1884,24 @@ namespace ChickenDist.Forms
 
                             // ── جمع الأصناف التي تمت زيادة رصيدها في الجرد لطباعة باركود لها ──
                             var increasedItems = new System.Collections.Generic.List<BarcodePrintItem>();
-                            foreach (var row in modifiedRows)
+                            foreach (var item in modifiedItems)
                             {
-                                string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
-                                if (!string.IsNullOrWhiteSpace(actualQtyStr) && decimal.TryParse(actualQtyStr, numStyles, inv, out decimal actualEntered))
+                                if (item.IsQtyModified && item.ActualEntered.HasValue)
                                 {
-                                    decimal.TryParse(row.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bookEntered);
-                                    decimal diff = actualEntered - bookEntered;
+                                    decimal diff = item.ActualEntered.Value - item.DisplayedBookQty;
                                     if (diff > 0)
                                     {
-                                        int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                                        string name = row.Cells["ProductName"].Value?.ToString() ?? "";
-                                        string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
-                                        string shelf = row.Cells["ShelfLocation"].Value?.ToString() ?? "";
-                                        string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
-                                        decimal salePrice = 0;
-                                        if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal sp)) salePrice = sp;
-
                                         int printCount = (int)Math.Ceiling(diff);
                                         if (printCount <= 0) printCount = 1;
 
                                         increasedItems.Add(new BarcodePrintItem
                                         {
-                                            ProductID = pid,
-                                            ProductName = name,
-                                            ProductCode = code,
-                                            Price = salePrice,
+                                            ProductID = item.ProductID,
+                                            ProductName = item.ProductName,
+                                            ProductCode = item.ProductCode,
+                                            Price = item.NewSalePrice > 0 ? item.NewSalePrice : item.OriginalSalePrice,
                                             PrintQty = printCount,
-                                            ShelfLocation = shelf
+                                            ShelfLocation = item.ShelfLocation
                                         });
                                     }
                                 }
@@ -1778,10 +1932,34 @@ namespace ChickenDist.Forms
                     }
                 }
             }
-            else
-            {
-                MessageBox.Show("لم يتم إدخال أي رصيد فعلي في الجدول بعد.\nاكتب الرصيد الفعلي في عمود «الرصيد الفعلي» لأي صنف ثم اضغط حفظ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+        }
+
+        public class InventoryAdjustmentRowData
+        {
+            public int ProductID { get; set; }
+            public object BatchIDVal { get; set; }
+            public string ProductCode { get; set; }
+            public string ProductName { get; set; }
+            public string ShelfLocation { get; set; }
+            public string DisplayUnit { get; set; }
+            public decimal Factor { get; set; }
+            public decimal BaseBookQty { get; set; }
+            public decimal DisplayedBookQty { get; set; }
+            public decimal? ActualEntered { get; set; }
+            public decimal BaseActual { get; set; }
+            public decimal OriginalPurchasePrice { get; set; }
+            public decimal OriginalSalePrice { get; set; }
+            public decimal NewPurchasePrice { get; set; }
+            public decimal NewSalePrice { get; set; }
+            public bool IsPriceModified { get; set; }
+            public bool IsQtyModified { get; set; }
+            public bool HasExpiry { get; set; }
+            public DateTime? ExpiryDate { get; set; }
+            public string Notes { get; set; }
+            public bool IsPendingPriceRow { get; set; }
+            public decimal PendingSalePrice { get; set; }
+            public decimal PendingQtyThreshold { get; set; }
+            public string RowKey { get; set; }
         }
 
         private void BtnPrintIncreaseBarcodes_Click(object sender, EventArgs e)
@@ -1962,6 +2140,9 @@ namespace ChickenDist.Forms
             if (r.Cells["ProductID"].Value == null) return;
 
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            bool isPending = r.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(r.Cells["IsPendingPriceRow"].Value);
+            string rowKey = GetRowKey(pid, isPending);
+
             string bookQtyStr = r.Cells["BookQty"].Value?.ToString() ?? "0";
             decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
             r.Cells["ActualQty"].Value = bookQtyStr;
@@ -1975,7 +2156,7 @@ namespace ChickenDist.Forms
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             if (decimal.TryParse(bookQtyStr, System.Globalization.NumberStyles.Any, inv, out decimal bq))
             {
-                _enteredActualQty[pid] = bq * curFactor;
+                _enteredActualQty[rowKey] = bq * curFactor;
                 _inventoriedProductIDs.Add(pid);
             }
             dgStock.InvalidateRow(r.Index);

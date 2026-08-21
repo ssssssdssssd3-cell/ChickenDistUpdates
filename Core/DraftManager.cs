@@ -73,7 +73,7 @@ namespace ChickenDist.Core
         public int WarehouseID { get; set; }
         public string WarehouseName { get; set; }
         public string Notes { get; set; }
-        public Dictionary<int, decimal> EnteredActualQty { get; set; } = new Dictionary<int, decimal>();
+        public Dictionary<string, decimal> EnteredActualQty { get; set; } = new Dictionary<string, decimal>();
         public List<InventoryDraftItemDetail> ItemsDetails { get; set; } = new List<InventoryDraftItemDetail>();
     }
 

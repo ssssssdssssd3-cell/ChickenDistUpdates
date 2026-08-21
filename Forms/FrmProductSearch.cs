@@ -364,16 +364,16 @@ namespace ChickenDist.Forms
                 decimal totalStock = _stockCache.TryGetValue(pid, out var cached) ? cached : 0m;
 
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
-                decimal pendingPrice = row["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row["PendingSalePrice"]) : 0m;
-                decimal threshold = row["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row["PendingQtyThreshold"]) : 0m;
+                decimal pendingPrice = row.Table.Columns.Contains("PendingSalePrice") && row["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row["PendingSalePrice"]) : 0m;
+                decimal threshold = row.Table.Columns.Contains("PendingQtyThreshold") && row["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row["PendingQtyThreshold"]) : 0m;
                 string catName = row.Table.Columns.Contains("CategoryName") && row["CategoryName"] != DBNull.Value ? row["CategoryName"].ToString() : "";
                 string pSize = row.Table.Columns.Contains("ProductSize") && row["ProductSize"] != DBNull.Value ? row["ProductSize"].ToString() : "";
                 string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString() : "";
                 string lastPriceText = _clientLastPrices.TryGetValue(pid, out decimal lp) ? lp.ToString("N2") + " ج" : "-";
 
-                if (pendingPrice > 0m && threshold > 0m)
+                if (pendingPrice > 0m && Math.Abs(pendingPrice - price) > 0.005m)
                 {
-                    decimal oldStockAvailable = Math.Max(0m, Math.Min(totalStock, threshold));
+                    decimal oldStockAvailable = threshold > 0 ? Math.Max(0m, Math.Min(totalStock, threshold)) : totalStock;
                     decimal newStockAvailable = Math.Max(0m, totalStock - oldStockAvailable);
 
                     if (chkShowZeroStock.Checked || totalStock > 0m)
@@ -396,7 +396,7 @@ namespace ChickenDist.Forms
                         int rowIdx2 = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
-                            row["ProductName"].ToString() + " (السعر المعلق)", 
+                            row["ProductName"].ToString() + " [سعر جديد]", 
                             pSize,
                             pColor,
                             row["Unit"],
@@ -592,6 +592,16 @@ namespace ChickenDist.Forms
             decimal baseFactor = unit2FactorVal * unit3FactorVal;
 
             decimal basePrice = Convert.ToDecimal(prodRow["SalePrice"]);
+            decimal pendingPrice = prodRow.Table.Columns.Contains("PendingSalePrice") && prodRow["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["PendingSalePrice"]) : 0m;
+
+            if (selectedRow.Cells["SalePrice"].Value != null && decimal.TryParse(selectedRow.Cells["SalePrice"].Value.ToString(), out decimal gridSp))
+            {
+                if (pendingPrice > 0 && Math.Abs(gridSp - pendingPrice) < 0.01m)
+                {
+                    basePrice = pendingPrice;
+                }
+            }
+
             decimal unit1Price = prodRow.Table.Columns.Contains("Unit1SalePrice") && prodRow["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit1SalePrice"]) : 0m;
             decimal unit2Price = prodRow.Table.Columns.Contains("Unit2SalePrice") && prodRow["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit2SalePrice"]) : 0m;
 
@@ -617,6 +627,24 @@ namespace ChickenDist.Forms
                 GlobalStockQty = baseGlobalStock,
                 MatchedUnit = baseUnit
             });
+
+            // 1.b Pending Price Unit (السعر الجديد إن وجد)
+            if (pendingPrice > 0 && Math.Abs(pendingPrice - Convert.ToDecimal(prodRow["SalePrice"])) > 0.005m && Math.Abs(basePrice - pendingPrice) > 0.005m)
+            {
+                decimal pStock = prodRow.Table.Columns.Contains("PendingQtyThreshold") && prodRow["PendingQtyThreshold"] != DBNull.Value ? Math.Max(0m, stock - Convert.ToDecimal(prodRow["PendingQtyThreshold"])) : stock;
+                decimal pStockMajor = pStock / baseFactor;
+                cboUnits.Items.Add(new UnitComboItem
+                {
+                    DisplayText = $"{baseUnit} [سعر جديد] - {pendingPrice:F2} ج (رصيد: {pStockMajor:N0})",
+                    UnitName = baseUnit,
+                    SalePrice = pendingPrice,
+                    PurchasePrice = basePP,
+                    Factor = baseFactor,
+                    StockQty = pStockMajor,
+                    GlobalStockQty = pStockMajor,
+                    MatchedUnit = baseUnit
+                });
+            }
 
             // 2. Unit 2 (الوسطى)
             if (!string.IsNullOrEmpty(unit2))
