@@ -3062,6 +3062,23 @@ namespace ChickenDist.Forms
 
         private void FrmPOS_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (_items != null && _items.Count > 0)
+            {
+                var confirm = MessageBox.Show(
+                    "توجد أصناف في الفاتورة الحالية لم يتم حفظها أو إتمام دفعها.\nهل أنت متأكد من إغلاق شاشة نقاط البيع والكاشير (POS)؟",
+                    "تنبيه - فاتورة معلقة",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                if (confirm == DialogResult.No)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
             FrmQuickAdd.ProductSaved -= FrmPOS_ProductSaved;
             if (Session.CanOrderColumns("POS"))
             {

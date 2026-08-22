@@ -95,6 +95,8 @@ namespace ChickenDist.Forms
             BuildStockTab();
             BuildLogsTab();
 
+            this.FormClosing += FrmInventory_FormClosing;
+
             Theme.ApplyFormRTL(this);
         }
 
@@ -2786,6 +2788,64 @@ namespace ChickenDist.Forms
                 Text = "طباعة تقرير أصناف الميزان (PLU)"
             };
             preview.ShowDialog();
+        }
+
+        private bool HasUnsavedAdjustments()
+        {
+            if (_enteredActualQty != null && _enteredActualQty.Count > 0)
+                return true;
+
+            if (_inventoriedProductIDs != null && _inventoriedProductIDs.Count > 0)
+                return true;
+
+            if (dgStock != null && dgStock.Rows.Count > 0)
+            {
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var numStyles = System.Globalization.NumberStyles.Any;
+
+                foreach (DataGridViewRow row in dgStock.Rows)
+                {
+                    if (row.Cells["ProductID"].Value == null) continue;
+                    string actualQtyStr = row.Cells["ActualQty"].Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(actualQtyStr)) return true;
+
+                    string purVal = row.Cells["PurchasePrice"].Value?.ToString();
+                    if (decimal.TryParse(purVal, numStyles, inv, out decimal curPurPrice))
+                    {
+                        decimal origPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
+                        if (Math.Round(curPurPrice, 2) != Math.Round(origPur, 2)) return true;
+                    }
+
+                    string saleVal = row.Cells["SalePrice"].Value?.ToString();
+                    if (decimal.TryParse(saleVal, numStyles, inv, out decimal curSalePrice))
+                    {
+                        decimal origSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                        if (Math.Round(curSalePrice, 2) != Math.Round(origSale, 2)) return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void FrmInventory_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (HasUnsavedAdjustments())
+            {
+                var confirm = MessageBox.Show(
+                    "توجد كميات جرد أو تعديلات أسعار مدخلة في الجدول لم يتم اعتمادها أو حفظها.\nهل أنت متأكد من إغلاق شاشة الجرد وتعديل الأسعار؟",
+                    "تنبيه - جرد غير محفوظ",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                if (confirm == DialogResult.No)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
         }
     }
 
