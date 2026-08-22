@@ -2395,14 +2395,14 @@ namespace ChickenDist.Forms
 			dg.BorderStyle = BorderStyle.None;
 
 			bool isDark = (AppConfig.AppTheme == "Dark");
-			Color row1 = isDark ? Color.FromArgb(34, 39, 49) : Color.FromArgb(255, 255, 255);
-			Color row2 = isDark ? Color.FromArgb(43, 49, 62) : Color.FromArgb(240, 245, 252);
-			Color textCol = isDark ? Color.FromArgb(240, 245, 255) : Color.FromArgb(30, 41, 59);
-			Color selBg = isDark ? Color.FromArgb(30, 80, 150) : Color.FromArgb(13, 110, 253);
-			Color gridLine = isDark ? Color.FromArgb(55, 65, 80) : Color.FromArgb(226, 232, 240);
+			Color row1 = isDark ? Color.FromArgb(30, 41, 59) : Color.White;
+			Color row2 = isDark ? Color.FromArgb(24, 32, 47) : Color.FromArgb(248, 250, 252);
+			Color textCol = isDark ? Color.FromArgb(241, 245, 249) : Color.FromArgb(30, 41, 59);
+			Color selBg = Color.FromArgb(37, 99, 235);
+			Color gridLine = isDark ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
 
 			dg.GridColor = gridLine;
-			dg.BackgroundColor = isDark ? Color.FromArgb(26, 30, 38) : Color.FromArgb(245, 247, 250);
+			dg.BackgroundColor = isDark ? Color.FromArgb(15, 23, 42) : Color.FromArgb(245, 247, 250);
 
 			dg.DefaultCellStyle = new DataGridViewCellStyle
 			{
@@ -2601,8 +2601,10 @@ namespace ChickenDist.Forms
 				return;
 			}
 			int index = dg.Rows.Add();
-			dg.Rows[index].DefaultCellStyle.BackColor = Color.FromArgb(30, 60, 30);
-			dg.Rows[index].DefaultCellStyle.ForeColor = Color.LightGreen;
+			dg.Rows[index].DefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
+			dg.Rows[index].DefaultCellStyle.ForeColor = Color.FromArgb(245, 158, 11);
+			dg.Rows[index].DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 41, 59);
+			dg.Rows[index].DefaultCellStyle.SelectionForeColor = Color.FromArgb(245, 158, 11);
 			dg.Rows[index].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 			dg.Rows[index].Cells[0].Value = "الإجمالي الكلي";
 			for (int j = 1; j < dg.Columns.Count; j++)
@@ -3071,7 +3073,7 @@ namespace ChickenDist.Forms
 				totVals[productCount + 3] = grandBalance.ToString("N2");
 
 				int totRowIdx = dg.Rows.Add(totVals);
-				StyleDailySpecialRow(dg.Rows[totRowIdx], Color.FromArgb(30, 60, 30), Color.LightGreen, new Font("Segoe UI", 10.5f, FontStyle.Bold));
+				StyleDailySpecialRow(dg.Rows[totRowIdx], Color.FromArgb(30, 41, 59), Color.FromArgb(245, 158, 11), new Font("Segoe UI", 10.5f, FontStyle.Bold));
 			}
 			catch (Exception ex)
 			{
@@ -4012,76 +4014,56 @@ namespace ChickenDist.Forms
 
 			var tp = tabReports.TabPages[e.Index];
 			bool isSelected = (e.Index == tabReports.SelectedIndex);
-			string tag = tp.Tag?.ToString() ?? "";
-
-			Color accentColor;
-			if (!ReportTabColors.TryGetValue(tag, out accentColor))
-			{
-				accentColor = FallbackTabColors[e.Index % FallbackTabColors.Length];
-			}
 
 			Graphics g = e.Graphics;
 			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 			g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
 			Rectangle tabRect = tabReports.GetTabRect(e.Index);
-			bool isDarkTheme = (AppConfig.AppTheme == "Dark");
 
-			// Background
-			Color bg = isSelected 
-				? (isDarkTheme ? Color.FromArgb(38, 48, 68) : Color.FromArgb(236, 244, 255))
-				: (isDarkTheme ? Color.FromArgb(22, 27, 34) : Color.FromArgb(248, 250, 252));
+			// Background & Text Colors
+			Color bg;
+			Color borderColor;
+			Color textCol;
 
+			if (isSelected)
+			{
+				bg = Color.FromArgb(30, 41, 59); // Slate Navy Card
+				borderColor = Color.FromArgb(59, 130, 246); // Royal Blue Accent
+				textCol = Color.White;
+			}
+			else
+			{
+				bg = Color.FromArgb(241, 245, 249); // Calm Soft Slate
+				borderColor = Color.FromArgb(203, 213, 225);
+				textCol = Color.FromArgb(71, 85, 105);
+			}
+
+			// Fill tab background
 			using (var br = new SolidBrush(bg))
 			{
 				g.FillRectangle(br, tabRect);
 			}
 
 			// Border
-			Color borderColor = isSelected 
-				? (isDarkTheme ? Color.FromArgb(70, 90, 120) : Color.FromArgb(170, 195, 235))
-				: (isDarkTheme ? Color.FromArgb(45, 55, 72) : Color.FromArgb(220, 226, 235));
-
-			using (var p = new Pen(borderColor))
+			using (var p = new Pen(borderColor, 1f))
 			{
 				g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width - 1, tabRect.Height - 1);
 			}
 
 			if (isSelected)
 			{
-				// 3.5px Top Accent Line
-				using (var pAccent = new Pen(accentColor, 3.5f))
+				// Top Accent Line
+				using (var pAccent = new Pen(Color.FromArgb(59, 130, 246), 3.5f))
 				{
-					g.DrawLine(pAccent, tabRect.X + 2, tabRect.Y + 2, tabRect.Right - 2, tabRect.Y + 2);
-				}
-			}
-			else
-			{
-				// Subtle colored indicator top 2px line
-				using (var pAccentSubtle = new Pen(Color.FromArgb(120, accentColor), 2f))
-				{
-					g.DrawLine(pAccentSubtle, tabRect.X + 6, tabRect.Y + 2, tabRect.Right - 6, tabRect.Y + 2);
+					g.DrawLine(pAccent, tabRect.X + 1, tabRect.Y + 2, tabRect.Right - 1, tabRect.Y + 2);
 				}
 			}
 
-			// Text & Indicator Dot
+			// Text
 			string text = tp.Text;
-			using (var font = isSelected ? new Font("Segoe UI", 9.5f, FontStyle.Bold) : new Font("Segoe UI", 9f, FontStyle.Regular))
+			using (var font = new Font("Segoe UI", 9.5f, isSelected ? FontStyle.Bold : FontStyle.Bold))
 			{
-				Color textCol = isSelected 
-					? (isDarkTheme ? Color.FromArgb(240, 246, 255) : Color.FromArgb(15, 23, 42))
-					: (isDarkTheme ? Color.FromArgb(190, 200, 215) : Color.FromArgb(71, 85, 105));
-
-				// Draw small colored pill/circle on the right side of tab (RTL)
-				int dotSize = isSelected ? 8 : 6;
-				int dotY = tabRect.Y + (tabRect.Height - dotSize) / 2;
-				int dotX = tabRect.Right - 14;
-
-				using (var brDot = new SolidBrush(accentColor))
-				{
-					g.FillEllipse(brDot, dotX, dotY, dotSize, dotSize);
-				}
-
 				var sf = new StringFormat
 				{
 					Alignment = StringAlignment.Center,
@@ -4089,7 +4071,7 @@ namespace ChickenDist.Forms
 					FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.FitBlackBox
 				};
 
-				var textRect = new RectangleF(tabRect.X + 4, tabRect.Y, tabRect.Width - 18, tabRect.Height);
+				var textRect = new RectangleF(tabRect.X + 4, tabRect.Y, tabRect.Width - 8, tabRect.Height);
 				using (var brText = new SolidBrush(textCol))
 				{
 					g.DrawString(text, font, brText, textRect, sf);
