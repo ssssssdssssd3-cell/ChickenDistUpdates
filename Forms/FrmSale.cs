@@ -202,8 +202,8 @@ namespace ChickenDist.Forms
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
 			};
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f)); // Right: Invoice details
-			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f)); // Left: Invoice options (Type & Tier)
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 53f)); // Right: Invoice details
+			tblHeaderMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 47f)); // Left: Invoice options (Type & Tier)
 			tblHeaderMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
 			var tblDetails = new TableLayoutPanel
@@ -542,22 +542,40 @@ namespace ChickenDist.Forms
 			}
 
 			// Right side options (Type & Tier Grouping)
-			var pnlOptions = new FlowLayoutPanel
+			// Options Panel: Left side (Type & Tier Grouping)
+			var tblOptions = new TableLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				RowCount = 1,
+				ColumnCount = 2,
+				BackColor = Color.Transparent,
+				Padding = new Padding(2, 0, 2, 0),
+				Margin = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
+			tblOptions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Right (Col 0): Payment Type & Shift Status
+			tblOptions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f)); // Left (Col 1): Price Tiers (Stacked vertically)
+			tblOptions.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+			// Right sub-panel: Invoice Type and Shift Status
+			var pnlTypeAndShift = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Fill,
 				FlowDirection = FlowDirection.TopDown,
 				BackColor = Color.Transparent,
-				Padding = new Padding(4, 0, 4, 0),
-				WrapContents = false
+				WrapContents = false,
+				Padding = new Padding(0),
+				Margin = new Padding(0),
+				RightToLeft = RightToLeft.Yes
 			};
 
 			// Group 1: Invoice Type Card
 			var pnlTypeGroup = new Panel
 			{
-				Width = 430,
+				Width = 340,
 				Height = 50,
 				BackColor = Color.FromArgb(30, 41, 59),
-				Padding = new Padding(6, 2, 6, 2),
+				Padding = new Padding(4, 2, 4, 2),
 				Margin = new Padding(0, 0, 0, 4)
 			};
 			var lblTypeHeader = new Label
@@ -580,7 +598,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 			
-			btnTypeCash = new Button { Text = "💵 نقدي", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCash = new Button { Text = "💵 نقدي", Width = 62, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -599,7 +617,7 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Cash");
 			};
 
-			btnTypeCredit = new Button { Text = "⏳ آجل", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeCredit = new Button { Text = "⏳ آجل", Width = 60, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
 			btnTypeCredit.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -618,15 +636,15 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Credit");
 			};
 
-			btnTypeVisa = new Button { Text = "💳 فيزا", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeVisa = new Button { Text = "💳 فيزا", Width = 60, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
 			btnTypeVisa.FlatAppearance.BorderSize = 0;
 			btnTypeVisa.Click += delegate { SetInvoiceType("Visa"); };
 
-			btnTypeInstallment = new Button { Text = "📅 تقسيط", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeInstallment = new Button { Text = "📅 تقسيط", Width = 65, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
-			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Width = 74, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
+			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Width = 65, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
 			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
 
@@ -638,61 +656,14 @@ namespace ChickenDist.Forms
 			pnlTypeGroup.Controls.Add(pnlTypeButtonsFlow);
 			pnlTypeButtonsFlow.BringToFront();
 
-			// Group 2: Price Tiers Card
-			var pnlTierGroup = new Panel
-			{
-				Width = 430,
-				Height = 48,
-				BackColor = Color.FromArgb(30, 41, 59),
-				Padding = new Padding(6, 2, 6, 2),
-				Margin = new Padding(0, 0, 0, 4)
-			};
-			var lblTierHeader = new Label
-			{
-				Text = "🏷️ فئة السعر :",
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-				ForeColor = Color.FromArgb(226, 232, 240),
-				Dock = DockStyle.Top,
-				Height = 16,
-				TextAlign = ContentAlignment.TopRight
-			};
-			pnlTierGroup.Controls.Add(lblTierHeader);
-
-			var pnlTierButtonsFlow = new FlowLayoutPanel
-			{
-				Dock = DockStyle.Fill,
-				FlowDirection = FlowDirection.RightToLeft,
-				BackColor = Color.Transparent,
-				WrapContents = false,
-				Margin = new Padding(0)
-			};
-
-			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
-			btnTierRetail.FlatAppearance.BorderSize = 0;
-			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
-
-			btnTierSemi = new Button { Text = "🟣 نصف جملة", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
-			btnTierSemi.FlatAppearance.BorderSize = 0;
-			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
-
-			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 110, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(2) };
-			btnTierWholesale.FlatAppearance.BorderSize = 0;
-			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
-
-			pnlTierButtonsFlow.Controls.Add(btnTierRetail);
-			pnlTierButtonsFlow.Controls.Add(btnTierSemi);
-			pnlTierButtonsFlow.Controls.Add(btnTierWholesale);
-			pnlTierGroup.Controls.Add(pnlTierButtonsFlow);
-			pnlTierButtonsFlow.BringToFront();
-
 			// Group 3: Shift Status Card
 			var pnlShiftGroup = new Panel
 			{
-				Width = 320,
+				Width = 340,
 				Height = 44,
 				BackColor = Color.FromArgb(43, 50, 70),
 				Padding = new Padding(6, 2, 6, 2),
-				Margin = new Padding(0, 0, 0, 4)
+				Margin = new Padding(0, 0, 0, 0)
 			};
 			var lblShiftTitleHeader = new Label
 			{
@@ -722,12 +693,61 @@ namespace ChickenDist.Forms
 			pnlShiftGroup.Controls.Add(lblShiftSummaryBar);
 			lblShiftSummaryBar.BringToFront();
 
-			pnlOptions.Controls.Add(pnlTypeGroup);
-			pnlOptions.Controls.Add(pnlTierGroup);
-			pnlOptions.Controls.Add(pnlShiftGroup);
+			pnlTypeAndShift.Controls.Add(pnlTypeGroup);
+			pnlTypeAndShift.Controls.Add(pnlShiftGroup);
+
+			// Group 2: Price Tiers Card (Stacked Vertically Under Each Other)
+			var pnlTierGroup = new Panel
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Color.FromArgb(30, 41, 59),
+				Padding = new Padding(4, 2, 4, 2),
+				Margin = new Padding(0)
+			};
+			var lblTierHeader = new Label
+			{
+				Text = "🏷️ فئة السعر :",
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				ForeColor = Color.FromArgb(226, 232, 240),
+				Dock = DockStyle.Top,
+				Height = 16,
+				TextAlign = ContentAlignment.TopRight
+			};
+			pnlTierGroup.Controls.Add(lblTierHeader);
+
+			var pnlTierButtonsFlow = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.TopDown,
+				BackColor = Color.Transparent,
+				WrapContents = false,
+				Margin = new Padding(0),
+				Padding = new Padding(0)
+			};
+
+			btnTierRetail = new Button { Text = "🔵 قطاعي", Width = 118, Height = 24, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierRetail.FlatAppearance.BorderSize = 0;
+			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
+
+			btnTierSemi = new Button { Text = "🟣 نصف جملة", Width = 118, Height = 24, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierSemi.FlatAppearance.BorderSize = 0;
+			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+
+			btnTierWholesale = new Button { Text = "🟠 جملة", Width = 118, Height = 24, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierWholesale.FlatAppearance.BorderSize = 0;
+			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
+
+			pnlTierButtonsFlow.Controls.Add(btnTierRetail);
+			pnlTierButtonsFlow.Controls.Add(btnTierSemi);
+			pnlTierButtonsFlow.Controls.Add(btnTierWholesale);
+			pnlTierGroup.Controls.Add(pnlTierButtonsFlow);
+			pnlTierButtonsFlow.BringToFront();
+
+			tblOptions.Controls.Add(pnlTypeAndShift, 0, 0);
+			tblOptions.Controls.Add(pnlTierGroup, 1, 0);
 
 			tblHeaderMain.Controls.Add(tblDetails, 0, 0);
-			tblHeaderMain.Controls.Add(pnlOptions, 1, 0);
+			tblHeaderMain.Controls.Add(tblOptions, 1, 0);
 			pnlHeader.Controls.Add(tblHeaderMain);
 
 			// ── 2. شريط اختيار وإدخال الأصناف (Product Entry Bar) ───────────────
