@@ -128,34 +128,24 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-				Margin = new Padding(0, 4, 4, 0),
 				RightToLeft = RightToLeft.Yes
 			};
+
+			int lblW = lbl.PreferredWidth;
+			int totalW = lblW + inputWidth + 6;
 
 			var pnl = new Panel
 			{
-				Height = 34,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				Margin = new Padding(4, 2, 8, 2),
+				Size = new Size(totalW, 32),
+				Margin = new Padding(2, 2, 6, 2),
 				RightToLeft = RightToLeft.Yes
 			};
 
-			var flow = new FlowLayoutPanel
-			{
-				Dock = DockStyle.Fill,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				FlowDirection = FlowDirection.RightToLeft,
-				WrapContents = false,
-				Margin = new Padding(0),
-				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
-			};
+			lbl.Location = new Point(totalW - lblW, 4);
+			inputCtrl.Location = new Point(0, 2);
 
-			flow.Controls.Add(lbl);
-			flow.Controls.Add(inputCtrl);
-			pnl.Controls.Add(flow);
+			pnl.Controls.Add(lbl);
+			pnl.Controls.Add(inputCtrl);
 			return pnl;
 		}
 
@@ -269,7 +259,7 @@ namespace ChickenDist.Forms
 
 			dtpFrom = new DateTimePicker
 			{
-				Width = 165,
+				Width = 145,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd  hh:mm tt",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
@@ -279,7 +269,7 @@ namespace ChickenDist.Forms
 
 			dtpTo = new DateTimePicker
 			{
-				Width = 165,
+				Width = 145,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd  hh:mm tt",
 				Value = DateTime.Now,
@@ -289,7 +279,7 @@ namespace ChickenDist.Forms
 
 			cboDatePresets = new ComboBox
 			{
-				Width = 125,
+				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
@@ -300,7 +290,7 @@ namespace ChickenDist.Forms
 
 			cboWarehouse = new ComboBox
 			{
-				Width = 135,
+				Width = 120,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
@@ -311,7 +301,7 @@ namespace ChickenDist.Forms
 
 			cboPayType = new ComboBox
 			{
-				Width = 120,
+				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
@@ -322,7 +312,7 @@ namespace ChickenDist.Forms
 
 			cboEmployee = new ComboBox
 			{
-				Width = 140,
+				Width = 135,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
@@ -333,7 +323,7 @@ namespace ChickenDist.Forms
 
 			txtSearchClient = new TextBox
 			{
-				Width = 200,
+				Width = 180,
 				BackColor = Theme.BgInput,
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
@@ -342,22 +332,22 @@ namespace ChickenDist.Forms
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
 			btnLoad = Theme.MakeButton("🔄 تحديث التقرير", Theme.Accent);
-			btnLoad.Size = new Size(130, 30);
+			btnLoad.Size = new Size(125, 30);
 			btnLoad.Margin = new Padding(4, 2, 4, 2);
 			btnLoad.Click += delegate { LoadCurrentTab(); };
 
 			btnPrint = Theme.MakeButton("🖨️ طباعة الصفحة الحالية", Theme.Primary);
-			btnPrint.Size = new Size(165, 30);
+			btnPrint.Size = new Size(155, 30);
 			btnPrint.Margin = new Padding(4, 2, 4, 2);
 			btnPrint.Click += BtnPrint_Click;
 
 			btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
-			btnExportExcel.Size = new Size(130, 30);
+			btnExportExcel.Size = new Size(120, 30);
 			btnExportExcel.Margin = new Padding(4, 2, 4, 2);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
 			btnWhatsAppReport = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
-			btnWhatsAppReport.Size = new Size(165, 30);
+			btnWhatsAppReport.Size = new Size(155, 30);
 			btnWhatsAppReport.Margin = new Padding(4, 2, 4, 2);
 			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
 			btnWhatsAppReport.Visible = false;
@@ -378,7 +368,7 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.RightToLeft,
+				FlowDirection = FlowDirection.LeftToRight,
 				WrapContents = true,
 				Margin = new Padding(0, 0, 0, 4),
 				Padding = new Padding(0),
@@ -391,21 +381,21 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.RightToLeft,
+				FlowDirection = FlowDirection.LeftToRight,
 				WrapContents = true,
 				Margin = new Padding(0, 4, 0, 0),
 				Padding = new Padding(0),
 				RightToLeft = RightToLeft.Yes
 			};
 
-			flowRow1.Controls.Add(MakeFilterPanel("📅 من تاريخ:", dtpFrom, 165));
-			flowRow1.Controls.Add(MakeFilterPanel("📅 إلى تاريخ:", dtpTo, 165));
-			flowRow1.Controls.Add(MakeFilterPanel("⚡ فترات سريعة:", cboDatePresets, 125));
-			flowRow1.Controls.Add(MakeFilterPanel("🏪 المخزن:", cboWarehouse, 135));
-			flowRow1.Controls.Add(MakeFilterPanel("💳 طريقة الدفع:", cboPayType, 120));
-			flowRow1.Controls.Add(MakeFilterPanel("👤 المندوب / الكاشير:", cboEmployee, 140));
+			flowRow1.Controls.Add(MakeFilterPanel("من تاريخ:", dtpFrom, 145));
+			flowRow1.Controls.Add(MakeFilterPanel("إلى تاريخ:", dtpTo, 145));
+			flowRow1.Controls.Add(MakeFilterPanel("فترات سريعة:", cboDatePresets, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("المخزن:", cboWarehouse, 120));
+			flowRow1.Controls.Add(MakeFilterPanel("طريقة الدفع:", cboPayType, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("المندوب / الكاشير:", cboEmployee, 135));
 
-			flowRow2.Controls.Add(MakeFilterPanel("🔍 بحث شامل في التقرير:", txtSearchClient, 200));
+			flowRow2.Controls.Add(MakeFilterPanel("🔍 بحث شامل في التقرير:", txtSearchClient, 180));
 			flowRow2.Controls.Add(btnLoad);
 			flowRow2.Controls.Add(btnPrint);
 			flowRow2.Controls.Add(btnExportExcel);
