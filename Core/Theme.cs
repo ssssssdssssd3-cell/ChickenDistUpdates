@@ -439,7 +439,42 @@ namespace ChickenDist.Core
 
         public static void ApplyGridTheme(DataGridView grid)
         {
+            if (grid == null) return;
             StyleGridHeader(grid);
+
+            grid.EnableDoubleBuffering();
+            grid.BackgroundColor = BgCard;
+            grid.GridColor = BorderColor;
+            grid.BorderStyle = BorderStyle.None;
+            grid.RowHeadersVisible = false;
+            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            grid.RowTemplate.Height = 28;
+
+            bool isDark = (AppConfig.AppTheme == "Dark");
+            Color row1 = isDark ? Color.FromArgb(34, 39, 49) : Color.FromArgb(255, 255, 255);
+            Color row2 = isDark ? Color.FromArgb(43, 49, 62) : Color.FromArgb(240, 245, 252);
+            Color textCol = isDark ? Color.FromArgb(240, 245, 255) : Color.FromArgb(30, 41, 59);
+            Color selBg = isDark ? Color.FromArgb(30, 80, 150) : Color.FromArgb(13, 110, 253);
+
+            grid.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = row1,
+                ForeColor = textCol,
+                SelectionBackColor = selBg,
+                SelectionForeColor = Color.White,
+                Font = FontMain,
+                Alignment = DataGridViewContentAlignment.MiddleLeft
+            };
+
+            grid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = row2,
+                ForeColor = textCol,
+                SelectionBackColor = selBg,
+                SelectionForeColor = Color.White,
+                Font = FontMain,
+                Alignment = DataGridViewContentAlignment.MiddleLeft
+            };
         }
 
         private static readonly Font _gridHeaderFont = new Font("Segoe UI", 10f, FontStyle.Bold);

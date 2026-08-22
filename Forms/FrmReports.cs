@@ -551,34 +551,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgDetailedSales",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgDetailedSales);
 					layout.Controls.Add(dgDetailedSales, 0, 0);
 
 					TableLayoutPanel tblBottom = new TableLayoutPanel
@@ -631,34 +606,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgDetailedSaleItems",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Color.FromArgb(40, 60, 90),
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 32,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgDetailedSaleItems);
 
 					dgDetailedSaleItems.Columns.Add("ProductName", "اسم الصنف");
 					dgDetailedSaleItems.Columns.Add("Quantity", "الكمية");
@@ -826,34 +776,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgClientSales",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgClientSales);
 					layout.Controls.Add(dgClientSales, 0, 1);
 
 					TableLayoutPanel pnlKPIs = new TableLayoutPanel
@@ -974,34 +899,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgSupplierActivity",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgSupplierActivity);
 					layout.Controls.Add(dgSupplierActivity, 0, 1);
 
 					tabPage.Controls.Add(layout);
@@ -1033,34 +933,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgIncomeStatement",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgPL);
 					grpPL.Controls.Add(dgPL);
 					splitPanel.Controls.Add(grpPL, 0, 0);
 
@@ -1080,21 +955,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgProductProfit",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = dgPL.DefaultCellStyle,
-						ColumnHeadersDefaultCellStyle = dgPL.ColumnHeadersDefaultCellStyle,
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgProdProfit);
 					subTabProduct.Controls.Add(dgProdProfit);
 					subTab.TabPages.Add(subTabProduct);
 
@@ -1106,21 +969,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgClientProfit",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = dgPL.DefaultCellStyle,
-						ColumnHeadersDefaultCellStyle = dgPL.ColumnHeadersDefaultCellStyle,
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgCliProfit);
 					subTabClient.Controls.Add(dgCliProfit);
 					subTab.TabPages.Add(subTabClient);
 
@@ -1196,34 +1047,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgDebtAging",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 					};
+					ApplyGridZebraStyle(dgDebtAging);
 					layout.Controls.Add(dgDebtAging, 0, 1);
 
 					tabPage.Controls.Add(layout);
@@ -1324,34 +1150,9 @@ namespace ChickenDist.Forms
 					{
 						Name = "dgStagnantProducts",
 						Dock = DockStyle.Fill,
-						BackgroundColor = Theme.BgCard,
-						BorderStyle = BorderStyle.None,
-						RowHeadersVisible = false,
-						AllowUserToAddRows = false,
-						ReadOnly = true,
-						SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-						RightToLeft = RightToLeft.Yes,
-						GridColor = Theme.BorderColor,
-						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
-						DefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.BgCard,
-							ForeColor = Theme.TextMain,
-							SelectionBackColor = Theme.Primary,
-							SelectionForeColor = Color.White,
-							Font = Theme.FontMain
-						},
-						ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-						{
-							BackColor = Theme.Primary,
-							ForeColor = Color.White,
-							Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-							Alignment = DataGridViewContentAlignment.MiddleCenter
-						},
-						ColumnHeadersHeight = 36,
-						ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-						EnableHeadersVisualStyles = false
+						AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells
 					};
+					ApplyGridZebraStyle(dgStagnant);
 					layout.Controls.Add(dgStagnant, 0, 1);
 
 					Panel pnlSummary = new Panel
@@ -1381,34 +1182,9 @@ namespace ChickenDist.Forms
 				DataGridView value = new DataGridView
 				{
 					Dock = DockStyle.Fill,
-					BackgroundColor = Theme.BgCard,
-					BorderStyle = BorderStyle.None,
-					RowHeadersVisible = false,
-					AllowUserToAddRows = false,
-					ReadOnly = true,
-					SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-					RightToLeft = RightToLeft.Yes,
-					GridColor = Theme.BorderColor,
-					AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-					DefaultCellStyle = new DataGridViewCellStyle
-					{
-						BackColor = Theme.BgCard,
-						ForeColor = Theme.TextMain,
-						SelectionBackColor = Theme.Primary,
-						SelectionForeColor = Color.White,
-						Font = Theme.FontMain
-					},
-					ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-					{
-						BackColor = Theme.Primary,
-						ForeColor = Color.White,
-						Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-						Alignment = DataGridViewContentAlignment.MiddleCenter
-					},
-					ColumnHeadersHeight = 36,
-					ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-					EnableHeadersVisualStyles = false
+					AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 				};
+				ApplyGridZebraStyle(value);
 				tabPage.Controls.Add(value);
 				tabReports.TabPages.Add(tabPage);
 			}
@@ -2585,8 +2361,64 @@ namespace ChickenDist.Forms
 			return FindControlByName<DataGridView>(tabReports.SelectedTab, "") ?? tabReports.SelectedTab.Controls.OfType<DataGridView>().FirstOrDefault();
 		}
 
+		private void ApplyGridZebraStyle(DataGridView dg)
+		{
+			if (dg == null) return;
+			dg.EnableDoubleBuffering();
+			dg.RowTemplate.Height = 28;
+			dg.RowHeadersVisible = false;
+			dg.AllowUserToAddRows = false;
+			dg.ReadOnly = true;
+			dg.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+			dg.RightToLeft = RightToLeft.Yes;
+			dg.BorderStyle = BorderStyle.None;
+
+			bool isDark = (AppConfig.AppTheme == "Dark");
+			Color row1 = isDark ? Color.FromArgb(34, 39, 49) : Color.FromArgb(255, 255, 255);
+			Color row2 = isDark ? Color.FromArgb(43, 49, 62) : Color.FromArgb(240, 245, 252);
+			Color textCol = isDark ? Color.FromArgb(240, 245, 255) : Color.FromArgb(30, 41, 59);
+			Color selBg = isDark ? Color.FromArgb(30, 80, 150) : Color.FromArgb(13, 110, 253);
+			Color gridLine = isDark ? Color.FromArgb(55, 65, 80) : Color.FromArgb(226, 232, 240);
+
+			dg.GridColor = gridLine;
+			dg.BackgroundColor = isDark ? Color.FromArgb(26, 30, 38) : Color.FromArgb(245, 247, 250);
+
+			dg.DefaultCellStyle = new DataGridViewCellStyle
+			{
+				BackColor = row1,
+				ForeColor = textCol,
+				SelectionBackColor = selBg,
+				SelectionForeColor = Color.White,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+				Alignment = DataGridViewContentAlignment.MiddleLeft
+			};
+
+			dg.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+			{
+				BackColor = row2,
+				ForeColor = textCol,
+				SelectionBackColor = selBg,
+				SelectionForeColor = Color.White,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+				Alignment = DataGridViewContentAlignment.MiddleLeft
+			};
+
+			dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+			{
+				BackColor = Color.FromArgb(30, 41, 59),
+				ForeColor = Color.White,
+				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+				Alignment = DataGridViewContentAlignment.MiddleCenter
+			};
+			dg.ColumnHeadersHeight = 34;
+			dg.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+			dg.EnableHeadersVisualStyles = false;
+		}
+
 		private void SetupGrid((string field, string header)[] cols, DataGridView dg)
 		{
+			if (dg == null) return;
+			ApplyGridZebraStyle(dg);
 			dg.Columns.Clear();
 			if (cols.Length > 6)
 			{
