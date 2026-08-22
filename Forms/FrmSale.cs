@@ -605,16 +605,24 @@ namespace ChickenDist.Forms
 			};
 			pnlTypeGroup.Controls.Add(lblTypeHeader);
 
-			var pnlTypeButtonsFlow = new FlowLayoutPanel
+			var tblTypeButtons = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				FlowDirection = FlowDirection.RightToLeft,
+				RowCount = 1,
+				ColumnCount = 5,
 				BackColor = Color.Transparent,
-				WrapContents = false,
-				Margin = new Padding(0)
+				Padding = new Padding(0),
+				Margin = new Padding(0),
+				RightToLeft = RightToLeft.Yes
 			};
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			
-			btnTypeCash = new Button { Text = "💵 نقدي", Width = 60, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
+			btnTypeCash = new Button { Text = "💵 نقدي", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -633,7 +641,7 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Cash");
 			};
 
-			btnTypeCredit = new Button { Text = "⏳ آجل", Width = 58, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
+			btnTypeCredit = new Button { Text = "⏳ آجل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
 			btnTypeCredit.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -652,25 +660,25 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Credit");
 			};
 
-			btnTypeVisa = new Button { Text = "💳 فيزا", Width = 58, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
+			btnTypeVisa = new Button { Text = "💳 فيزا", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeVisa.FlatAppearance.BorderSize = 0;
 			btnTypeVisa.Click += delegate { SetInvoiceType("Visa"); };
 
-			btnTypeInstallment = new Button { Text = "📅 تقسيط", Width = 64, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
+			btnTypeInstallment = new Button { Text = "📅 تقسيط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
-			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Width = 64, Height = 26, Font = Theme.FontBold, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1) };
+			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
 			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
 
-			pnlTypeButtonsFlow.Controls.Add(btnTypeCash);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeCredit);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeVisa);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeInstallment);
-			pnlTypeButtonsFlow.Controls.Add(btnTypeDriverLoad);
-			pnlTypeGroup.Controls.Add(pnlTypeButtonsFlow);
-			pnlTypeButtonsFlow.BringToFront();
+			tblTypeButtons.Controls.Add(btnTypeCash, 0, 0);
+			tblTypeButtons.Controls.Add(btnTypeCredit, 1, 0);
+			tblTypeButtons.Controls.Add(btnTypeVisa, 2, 0);
+			tblTypeButtons.Controls.Add(btnTypeInstallment, 3, 0);
+			tblTypeButtons.Controls.Add(btnTypeDriverLoad, 4, 0);
+			pnlTypeGroup.Controls.Add(tblTypeButtons);
+			tblTypeButtons.BringToFront();
 
 			// Group 3: Shift Status Card
 			var pnlShiftGroup = new Panel
