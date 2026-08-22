@@ -34,7 +34,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "💳 اختيار ماكينة / حساب الفيزا";
-            this.Size = new Size(500, 440);
+            this.Size = new Size(500, 420);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -49,27 +49,29 @@ namespace ChickenDist.Forms
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
+                Height = 80,
                 BackColor = Color.FromArgb(41, 25, 75), // Visa Purple Theme
-                Padding = new Padding(15, 10, 15, 10)
+                Padding = new Padding(15, 8, 15, 8)
             };
 
             var lblTitle = new Label
             {
                 Text = "💳 تحصيل السداد عبر الفيزا / الدفع الإلكتروني",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Top,
-                Height = 26
+                Height = 24,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             var lblAmount = new Label
             {
                 Text = $"المبلغ المطلوب تحصيله: {_amount:N2} ج",
-                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(241, 196, 15), // Gold Accent
                 Dock = DockStyle.Top,
-                Height = 28
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             var lblSub = new Label
@@ -78,7 +80,8 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(215, 205, 235),
                 Dock = DockStyle.Top,
-                Height = 18
+                Height = 18,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             pnlHeader.Controls.Add(lblSub);
@@ -86,11 +89,33 @@ namespace ChickenDist.Forms
             pnlHeader.Controls.Add(lblTitle);
             this.Controls.Add(pnlHeader);
 
+            // Bottom Actions Bar
+            var pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 55,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15, 8, 15, 8)
+            };
+
+            btnOk = Theme.MakeButton("✅ تأكيد الحساب (Enter)", 270, 8, 195, 38, Color.FromArgb(39, 174, 96));
+            btnOk.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnOk.Click += (s, e) => ConfirmSelection();
+
+            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", 15, 8, 120, 38, Theme.Danger);
+            btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
+
+            pnlBottom.Controls.Add(btnOk);
+            pnlBottom.Controls.Add(btnCancel);
+            this.Controls.Add(pnlBottom);
+
             // Center Panel with Flow & Dropdown
             var pnlCenter = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(15, 10, 15, 10)
+                Padding = new Padding(15, 8, 15, 8),
+                BackColor = Theme.BgMain
             };
 
             var lblSelectPrompt = new Label
@@ -99,7 +124,8 @@ namespace ChickenDist.Forms
                 Font = Theme.FontBold,
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
-                Height = 24
+                Height = 24,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             flowAccounts = new FlowLayoutPanel
@@ -108,16 +134,18 @@ namespace ChickenDist.Forms
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(5),
-                RightToLeft = RightToLeft.No
+                Padding = new Padding(2),
+                Margin = new Padding(0),
+                RightToLeft = RightToLeft.Yes
             };
 
             // Combo selection row
             var pnlComboRow = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 45,
-                Padding = new Padding(0, 5, 0, 5)
+                Height = 40,
+                Padding = new Padding(0, 4, 0, 0),
+                BackColor = Color.Transparent
             };
 
             cboAccounts = new ComboBox
@@ -127,7 +155,8 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                RightToLeft = RightToLeft.Yes
             };
             cboAccounts.SelectedIndexChanged += CboAccounts_SelectedIndexChanged;
 
@@ -157,31 +186,11 @@ namespace ChickenDist.Forms
             pnlComboRow.Controls.Add(btnAddNew);
 
             pnlCenter.Controls.Add(flowAccounts);
-            pnlCenter.Controls.Add(lblSelectPrompt);
             pnlCenter.Controls.Add(pnlComboRow);
+            pnlCenter.Controls.Add(lblSelectPrompt);
 
             this.Controls.Add(pnlCenter);
-
-            // Bottom Actions Bar
-            var pnlBottom = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 55,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(15, 10, 15, 10)
-            };
-
-            btnOk = Theme.MakeButton("✅ تأكيد الحساب (Enter)", 270, 8, 195, 38, Color.FromArgb(39, 174, 96));
-            btnOk.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnOk.Click += (s, e) => ConfirmSelection();
-
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", 15, 8, 120, 38, Theme.Danger);
-            btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
-
-            pnlBottom.Controls.Add(btnOk);
-            pnlBottom.Controls.Add(btnCancel);
-            this.Controls.Add(pnlBottom);
+            pnlCenter.BringToFront();
 
             this.KeyDown += FrmSelectVisaAccount_KeyDown;
         }
@@ -194,7 +203,6 @@ namespace ChickenDist.Forms
             DataTable dt = AccountDAL.GetActiveVisaAccounts();
             if (dt.Rows.Count == 0)
             {
-                // Auto seed default Visa if none
                 DbHelper.Execute(@"
                     IF NOT EXISTS (SELECT 1 FROM SafeAccounts WHERE AccountType = 'Visa')
                     BEGIN
@@ -212,7 +220,6 @@ namespace ChickenDist.Forms
                 int accId = Convert.ToInt32(r["AccountID"]);
                 string accName = r["AccountName"].ToString();
                 string accNum = r["AccountNumber"] != DBNull.Value ? r["AccountNumber"].ToString() : "";
-                string accType = r["AccountType"].ToString();
 
                 var item = new ComboItem(accId, accName);
                 int cIdx = cboAccounts.Items.Add(item);
@@ -222,7 +229,6 @@ namespace ChickenDist.Forms
                     preselectIdx = cIdx;
                 }
 
-                // Create Quick Card Button
                 int shortcutKey = index <= 9 ? index : 0;
                 string shortcutPrefix = shortcutKey > 0 ? $"[{shortcutKey}] " : "• ";
                 string displayNum = !string.IsNullOrWhiteSpace(accNum) ? $" ({accNum})" : "";
@@ -230,17 +236,17 @@ namespace ChickenDist.Forms
                 var btnCard = new Button
                 {
                     Text = $"{shortcutPrefix}💳 {accName}{displayNum}",
-                    Height = 44,
-                    Width = 440,
+                    Height = 42,
+                    Width = 430,
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(53, 44, 78),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleRight,
                     Padding = new Padding(12, 0, 12, 0),
                     Cursor = Cursors.Hand,
                     Tag = accId,
-                    Margin = new Padding(0, 3, 0, 3)
+                    Margin = new Padding(0, 2, 0, 4)
                 };
                 btnCard.FlatAppearance.BorderSize = 1;
                 btnCard.FlatAppearance.BorderColor = Color.FromArgb(142, 68, 173);
@@ -338,36 +344,63 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            // Numeric keys 1..9 for instant fast selection
-            int numKey = -1;
-            if (e.KeyCode >= Keys.D1 && e.KeyCode <= Keys.D9) numKey = (e.KeyCode - Keys.D1);
-            else if (e.KeyCode >= Keys.NumPad1 && e.KeyCode <= Keys.NumPad9) numKey = (e.KeyCode - Keys.NumPad1);
-
-            if (numKey >= 0 && numKey < cboAccounts.Items.Count)
+            // Numeric shortcuts 1-9 for quick selection
+            int numPressed = -1;
+            if (e.KeyCode >= Keys.D1 && e.KeyCode <= Keys.D9)
             {
-                cboAccounts.SelectedIndex = numKey;
-                if (cboAccounts.SelectedItem is ComboItem ci && ci.ID > 0)
+                numPressed = e.KeyCode - Keys.D1 + 1;
+            }
+            else if (e.KeyCode >= Keys.NumPad1 && e.KeyCode <= Keys.NumPad9)
+            {
+                numPressed = e.KeyCode - Keys.NumPad1 + 1;
+            }
+
+            if (numPressed > 0 && numPressed <= flowAccounts.Controls.Count)
+            {
+                var btn = flowAccounts.Controls[numPressed - 1] as Button;
+                if (btn != null && btn.Tag is int id)
                 {
-                    SelectAndConfirm(ci.ID, ci.Text);
+                    SelectAndConfirm(id, btn.Text);
                     e.Handled = true;
                 }
             }
         }
 
         /// <summary>
-        /// استدعاء سريع لنافذة اختيار حساب الفيزا
+        /// دالة سريعة لاختيار حساب الفيزا إن وُجد أكثر من حساب، وإرجاع المختار مباشرة.
         /// </summary>
         public static bool SelectVisaAccount(IWin32Window owner, decimal amount, int? preselectedID, out int chosenID, out string chosenName)
         {
             try
             {
                 var dt = AccountDAL.GetActiveVisaAccounts();
-                if (dt.Rows.Count == 1 && (!preselectedID.HasValue || preselectedID.Value <= 0 || preselectedID.Value == Convert.ToInt32(dt.Rows[0]["AccountID"])))
+                if (dt.Rows.Count == 0)
                 {
-                    // لو في حساب فيزا واحد فقط مسجل في النظام، نأخذه تلقائياً مع إمكانية التأكيد
+                    chosenID = 0;
+                    chosenName = "";
+                    return true;
+                }
+
+                // لو في حساب فيزا واحد فقط مسجل في النظام، نأخذه تلقائياً فوراً دون تعطيل المستخدم
+                if (dt.Rows.Count == 1)
+                {
                     chosenID = Convert.ToInt32(dt.Rows[0]["AccountID"]);
                     chosenName = dt.Rows[0]["AccountName"].ToString();
                     return true;
+                }
+
+                // لو الحساب المحدد مسبقاً هو حساب فيزا ساري، نأخذه مباشرة
+                if (preselectedID.HasValue && preselectedID.Value > 0)
+                {
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        if (Convert.ToInt32(r["AccountID"]) == preselectedID.Value)
+                        {
+                            chosenID = preselectedID.Value;
+                            chosenName = r["AccountName"].ToString();
+                            return true;
+                        }
+                    }
                 }
 
                 using (var frm = new FrmSelectVisaAccount(amount, preselectedID))
