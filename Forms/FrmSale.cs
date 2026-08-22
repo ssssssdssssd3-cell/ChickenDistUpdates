@@ -28,6 +28,8 @@ namespace ChickenDist.Forms
 
 		private Button btnTypeVisa;
 
+		private Button btnTypeMixed;
+
 		private string _invoiceType = "Cash";
 
 		private Label lblClient;
@@ -609,20 +611,21 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Fill,
 				RowCount = 1,
-				ColumnCount = 5,
+				ColumnCount = 6,
 				BackColor = Color.Transparent,
 				Padding = new Padding(0),
 				Margin = new Padding(0),
 				RightToLeft = RightToLeft.Yes
 			};
-			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.70f));
 			tblTypeButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			
-			btnTypeCash = new Button { Text = "💵 نقدي", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeCash = new Button { Text = "💵 نقدي", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -641,7 +644,7 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Cash");
 			};
 
-			btnTypeCredit = new Button { Text = "⏳ آجل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeCredit = new Button { Text = "⏳ آجل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
 			btnTypeCredit.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -660,23 +663,28 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Credit");
 			};
 
-			btnTypeVisa = new Button { Text = "💳 فيزا", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeVisa = new Button { Text = "💳 فيزا", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeVisa.FlatAppearance.BorderSize = 0;
 			btnTypeVisa.Click += delegate { SetInvoiceType("Visa"); };
 
-			btnTypeInstallment = new Button { Text = "📅 تقسيط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeMixed = new Button { Text = "🔀 مختلط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeMixed.FlatAppearance.BorderSize = 0;
+			btnTypeMixed.Click += delegate { SetInvoiceType("Mixed"); };
+
+			btnTypeInstallment = new Button { Text = "📅 تقسيط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
-			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
 			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
 
 			tblTypeButtons.Controls.Add(btnTypeCash, 0, 0);
 			tblTypeButtons.Controls.Add(btnTypeCredit, 1, 0);
 			tblTypeButtons.Controls.Add(btnTypeVisa, 2, 0);
-			tblTypeButtons.Controls.Add(btnTypeInstallment, 3, 0);
-			tblTypeButtons.Controls.Add(btnTypeDriverLoad, 4, 0);
+			tblTypeButtons.Controls.Add(btnTypeMixed, 3, 0);
+			tblTypeButtons.Controls.Add(btnTypeInstallment, 4, 0);
+			tblTypeButtons.Controls.Add(btnTypeDriverLoad, 5, 0);
 			pnlTypeGroup.Controls.Add(tblTypeButtons);
 			tblTypeButtons.BringToFront();
 
@@ -2443,6 +2451,11 @@ namespace ChickenDist.Forms
 				btnTypeVisa.BackColor = ((_invoiceType == "Visa") ? Color.FromArgb(142, 68, 173) : inactiveBg);
 				btnTypeVisa.ForeColor = ((_invoiceType == "Visa") ? Color.White : inactiveFg);
 			}
+			if (btnTypeMixed != null)
+			{
+				btnTypeMixed.BackColor = ((_invoiceType == "Mixed") ? Color.FromArgb(13, 148, 136) : inactiveBg);
+				btnTypeMixed.ForeColor = ((_invoiceType == "Mixed") ? Color.White : inactiveFg);
+			}
 			if (btnTypeInstallment != null)
 			{
 				btnTypeInstallment.BackColor = ((_invoiceType == "Installment") ? Color.FromArgb(14, 165, 233) : inactiveBg);
@@ -2478,6 +2491,7 @@ namespace ChickenDist.Forms
 			btnTypeCash.Visible = Session.CanSellCash;
 			btnTypeCredit.Visible = Session.CanSellCredit;
 			if (btnTypeVisa != null) btnTypeVisa.Visible = Session.IsAdmin || Session.CanSellVisa;
+			if (btnTypeMixed != null) btnTypeMixed.Visible = Session.IsAdmin || (Session.CanSellCash && Session.CanSellVisa);
 			btnTypeDriverLoad.Visible = Session.CanSellDriverLoad;
 			btnTypeInstallment.Visible = Session.CanSellInstallment;
 
@@ -2491,7 +2505,7 @@ namespace ChickenDist.Forms
 		{
 			bool flag = _invoiceType == "Credit" || _invoiceType == "Installment";
 			bool flag2 = _invoiceType == "DriverLoad";
-			bool flag3 = _invoiceType == "Cash" || _invoiceType == "Visa";
+			bool flag3 = _invoiceType == "Cash" || _invoiceType == "Visa" || _invoiceType == "Mixed";
 			cboClient.Enabled = flag || flag3;
 			cboDriver.Enabled = true;
 
@@ -4095,14 +4109,14 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : _invoiceType == "Installment" ? 3 : _invoiceType == "Visa" ? 4 : 2;
+			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : _invoiceType == "Installment" ? 3 : _invoiceType == "Visa" ? 4 : _invoiceType == "Mixed" ? 5 : 2;
 			int? clientID = null;
 			int? driverID = null;
-			if (_invoiceType == "Credit" || _invoiceType == "Cash" || _invoiceType == "Installment" || _invoiceType == "Visa")
+			if (_invoiceType == "Credit" || _invoiceType == "Cash" || _invoiceType == "Installment" || _invoiceType == "Visa" || _invoiceType == "Mixed")
 			{
 				if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 				{
-					if (_invoiceType == "Cash" || _invoiceType == "Visa")
+					if (_invoiceType == "Cash" || _invoiceType == "Visa" || _invoiceType == "Mixed")
 					{
 						clientID = null;
 					}
@@ -4178,9 +4192,28 @@ namespace ChickenDist.Forms
 			net += shippingAtSave;
 			string priceTier = _selectedTier ?? "قطاعي";
 
-			// ─── إشعار الدفع النقدي ───
+			// ─── إشعار الدفع النقدي / المختلط ───
 			decimal paidAmount = net;
-			if (!isDraft && _invoiceType == "Cash")
+			decimal? mixedCashPaid = null;
+			decimal? mixedVisaPaid = null;
+			int? mixedVisaAccountID = null;
+			int? mixedSafeAccountID = null;
+
+			if (!isDraft && _invoiceType == "Mixed")
+			{
+				int? initialSafe = null;
+				if (cboSafeAccount.SelectedItem is ComboItem si && si.ID > 0) initialSafe = si.ID;
+				using (var frmMixed = new FrmMixedPayment(net, clientID.HasValue, initialSafe))
+				{
+					if (frmMixed.ShowDialog(this) != DialogResult.OK) return;
+					mixedCashPaid = frmMixed.CashPaid;
+					mixedVisaPaid = frmMixed.VisaPaid;
+					paidAmount = frmMixed.CashPaid;
+					mixedSafeAccountID = frmMixed.SafeAccountID;
+					mixedVisaAccountID = frmMixed.VisaAccountID;
+				}
+			}
+			else if (!isDraft && _invoiceType == "Cash")
 			{
 				decimal? defaultPaid = null;
 				if (_editSaleID > 0)
@@ -4234,13 +4267,13 @@ namespace ChickenDist.Forms
 				// وضع التعديل
 				try
 				{
-					int? safeAccountID = null;
-					if (cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+					int? safeAccountID = mixedSafeAccountID;
+					if (!safeAccountID.HasValue && cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
 					{
 						safeAccountID = safeItem.ID;
 					}
 
-					int? visaAccountID = null;
+					int? visaAccountID = mixedVisaAccountID;
 					string visaAccountName = "";
 					if (_invoiceType == "Visa" && !isDraft)
 					{
@@ -4256,9 +4289,11 @@ namespace ChickenDist.Forms
 					bool updated = SaleDAL.UpdateSale(_editSaleID, saleType, clientID, driverID,
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
-						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, cashPaid: paidAmount,
+						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, 
+						cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
 						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
-						visaAccountID: visaAccountID, visaPaid: (_invoiceType == "Visa" ? net : (decimal?)null));
+						visaAccountID: visaAccountID, 
+						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)));
 					if (updated)
 					{
 						_isDirty = false;
@@ -4320,13 +4355,13 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				int? safeAccountID = null;
-				if (cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
+				int? safeAccountID = mixedSafeAccountID;
+				if (!safeAccountID.HasValue && cboSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
 				{
 					safeAccountID = safeItem.ID;
 				}
 
-				int? visaAccountID = null;
+				int? visaAccountID = mixedVisaAccountID;
 				string visaAccountName = "";
 				if (_invoiceType == "Visa" && !isDraft)
 				{
@@ -4344,9 +4379,11 @@ namespace ChickenDist.Forms
 					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
-					schedule: schedule, safeAccountID: safeAccountID, cashPaid: paidAmount,
+					schedule: schedule, safeAccountID: safeAccountID, 
+					cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
 					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
-					visaAccountID: visaAccountID, visaPaid: (_invoiceType == "Visa" ? net : (decimal?)null));
+					visaAccountID: visaAccountID, 
+					visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)));
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -5193,6 +5230,7 @@ namespace ChickenDist.Forms
 				case "Credit": return "آجل";
 				case "Cash": return "نقدي";
 				case "Visa": return "فيزا";
+				case "Mixed": return "مختلط (كاش + فيزا)";
 				case "DriverLoad": return "تحميل مندوب";
 				case "Installment": return "تقسيط";
 				default: return type ?? "نقدي";

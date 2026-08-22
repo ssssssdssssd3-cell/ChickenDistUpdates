@@ -168,7 +168,7 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : saleType == 5 ? "Mixed" : "Cash";
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                 int targetWarehouse = warehouseID ?? 1;
@@ -413,34 +413,38 @@ namespace ChickenDist.DAL
                     }
 
                     // نقدي: أضف للخزنة وسجل في حساب العميل دائماً
-                    if (typeStr == "Cash")
+                    // نقدي أو مختلط: أضف للخزنة وسجل في حساب العميل دائماً
+                    if (typeStr == "Cash" || (typeStr == "Mixed" && (cashPaid ?? 0m) > 0m))
                     {
                         decimal actualPaid = cashPaid ?? total;
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", actualPaid), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@n", (typeStr == "Mixed" ? "بيع مختلط (نقدي) " : "بيع نقدي ") + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID())));
 
                         // تسجيل الفاتورة وسداد العميل دائماً في ClientTransactions (يظهر في كشف الحساب)
                         if (clientID.HasValue)
                         {
-                            // مدين: قيمة الفاتورة كاملة
-                            DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
-                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "فاتورة بيع نقدي " + code),
-                                DbHelper.P("@by", Session.EmpID));
-                            // دائن: المبلغ المسدد فعلاً
+                            if (typeStr == "Cash" || typeStr == "Mixed")
+                            {
+                                // مدين: قيمة الفاتورة كاملة
+                                DbHelper.ExecuteTrans(trans,
+                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", (typeStr == "Mixed" ? "فاتورة بيع مختلط " : "فاتورة بيع نقدي ") + code),
+                                    DbHelper.P("@by", Session.EmpID));
+                            }
+                            // دائن: المبلغ المسدد نقداً فعلاً
                             DbHelper.ExecuteTrans(trans,
                                 "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
                                 DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
-                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد فاتورة بيع نقدي " + code),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", (typeStr == "Mixed" ? "سداد نقدي فاتورة " : "سداد فاتورة بيع نقدي ") + code),
                                 DbHelper.P("@by", Session.EmpID));
                         }
                     }
                     
-                    // فيزا: أضف لحساب ماكينة الفيزا وسجل في حساب العميل دائماً
+                    // فيزا أو مختلط: أضف لحساب ماكينة الفيزا وسجل في حساب العميل دائماً
                     if (typeStr == "Visa" || (visaPaid.HasValue && visaPaid.Value > 0))
                     {
                         decimal actualVisaPaid = (visaPaid.HasValue && visaPaid.Value > 0) ? visaPaid.Value : total;
@@ -451,7 +455,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('Sale',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", actualVisaPaid), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "سداد فيزا " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@n", (typeStr == "Mixed" ? "سداد فيزا (مختلط) " : "سداد فيزا ") + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", targetVisaAcc));
 
                         if (clientID.HasValue)
@@ -957,7 +961,7 @@ namespace ChickenDist.DAL
                             DbHelper.P("@by", Session.EmpID));
                     }
 
-                    if (typeStr == "Credit" && clientID.HasValue)
+                    if (typeStr == "Credit" || typeStr == "Installment")
                     {
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
@@ -965,33 +969,37 @@ namespace ChickenDist.DAL
                             DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل فاتورة بيع " + code),
                             DbHelper.P("@by", Session.EmpID));
                     }
-                    else if (typeStr == "Cash")
+                    else if (typeStr == "Cash" || (typeStr == "Mixed" && (cashPaid ?? 0m) > 0m))
                     {
                         decimal actualPaid = cashPaid ?? total;
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
                             DbHelper.P("@amt", actualPaid), DbHelper.P("@ref", saleID),
-                            DbHelper.P("@n", "تعديل بيع نقدي " + code), DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@n", (typeStr == "Mixed" ? "تعديل بيع مختلط (نقدي) " : "تعديل بيع نقدي ") + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
 
                         // تسجيل الفاتورة وسداد العميل دائماً في ClientTransactions (يظهر في كشف الحساب)
                         if (clientID.HasValue)
                         {
-                            // مدين: قيمة الفاتورة كاملة
-                            DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
-                                DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
-                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "تعديل فاتورة بيع نقدي " + code),
-                                DbHelper.P("@by", Session.EmpID));
+                            if (typeStr == "Cash" || typeStr == "Mixed")
+                            {
+                                // مدين: قيمة الفاتورة كاملة
+                                DbHelper.ExecuteTrans(trans,
+                                    "INSERT INTO ClientTransactions(ClientID,TransType,Debit,RefID,Notes,CreatedBy) VALUES(@cid,'Sale',@amt,@ref,@n,@by)",
+                                    DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", total),
+                                    DbHelper.P("@ref", saleID), DbHelper.P("@n", (typeStr == "Mixed" ? "تعديل فاتورة بيع مختلط " : "تعديل فاتورة بيع نقدي ") + code),
+                                    DbHelper.P("@by", Session.EmpID));
+                            }
                             // دائن: المبلغ المسدد فعلاً
                             DbHelper.ExecuteTrans(trans,
                                 "INSERT INTO ClientTransactions(ClientID,TransType,Credit,RefID,Notes,CreatedBy) VALUES(@cid,'Payment',@amt,@ref,@n,@by)",
                                 DbHelper.P("@cid", clientID.Value), DbHelper.P("@amt", actualPaid),
-                                DbHelper.P("@ref", saleID), DbHelper.P("@n", "سداد تعديل فاتورة بيع نقدي " + code),
+                                DbHelper.P("@ref", saleID), DbHelper.P("@n", (typeStr == "Mixed" ? "سداد نقدي تعديل فاتورة " : "سداد تعديل فاتورة بيع نقدي ") + code),
                                 DbHelper.P("@by", Session.EmpID));
                         }
                     }
-                    else if (typeStr == "Visa" || (visaPaid.HasValue && visaPaid.Value > 0))
+                    
+                    if (typeStr == "Visa" || (visaPaid.HasValue && visaPaid.Value > 0))
                     {
                         decimal actualVisaPaid = (visaPaid.HasValue && visaPaid.Value > 0) ? visaPaid.Value : total;
                         int targetVisaAcc = visaAccountID.HasValue && visaAccountID.Value > 0 
