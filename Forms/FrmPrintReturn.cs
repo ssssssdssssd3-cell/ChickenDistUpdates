@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -21,15 +22,17 @@ namespace ChickenDist.Forms
         private decimal _runningQtyTotal = 0;
         private string _printFormat;
         private bool _showPreview;
+        private bool _isMultiPagePrinting = false;
 
         public static string FormatPaymentType(string payType)
         {
-            if (string.IsNullOrEmpty(payType)) return "نقدي";
+            if (string.IsNullOrEmpty(payType)) return "نقدي (كاش - من الدرج)";
             switch (payType.Trim())
             {
-                case "Cash": return "💵 نقدي (كاش)";
-                case "Visa": return "💳 فيزا (شبكة / بطاقة)";
-                case "Credit": return "📋 آجل (خصم من الحساب)";
+                case "Cash": return "نقدي (كاش - من الدرج)";
+                case "Visa": return "فيزا (إلكتروني / بنك)";
+                case "Credit": return "آجل (خصم من رصيد العميل)";
+                case "Mixed": return "مختلط (كاش + فيزا)";
                 default: return payType;
             }
         }
@@ -70,12 +73,14 @@ namespace ChickenDist.Forms
                 _returnRow = dt.Rows[0];
 
             _items = DbHelper.Query(@"
-                SELECT ri.ReturnItemID, ri.ProductID, ri.Quantity, ri.UnitPrice, ri.TotalPrice,
-                       ISNULL(ri.UnitName, p.Unit) AS UnitName,
-                       p.ProductName, p.ProductCode
+                SELECT ri.ReturnItemID, ri.ProductID, ri.Quantity, ri.UnitPrice, 
+                       ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
+                       ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
+                       ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
+                       ISNULL(p.ProductCode, N'') AS ProductCode
                 FROM ReturnItems ri
-                JOIN Products p ON ri.ProductID = p.ProductID
-                WHERE ri.ReturnID = @id AND ri.Quantity > 0
+                LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                WHERE ri.ReturnID = @id
                 ORDER BY ri.ReturnItemID", DbHelper.P("@id", _returnID));
         }
 
@@ -88,7 +93,7 @@ namespace ChickenDist.Forms
             if (isReceipt)
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
-                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                pd.DefaultPageSettings.Margins = new Margins(8, 8, 8, 8);
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
             }
             else
@@ -103,25 +108,38 @@ namespace ChickenDist.Forms
                 _printItemIndex = 0;
                 _runningTotal = 0;
                 _runningQtyTotal = 0;
+                _isMultiPagePrinting = false;
             };
 
             pd.PrintPage += (s, e) =>
             {
+                // Reset per-job rendering state on first page of every pass
+                if (!_isMultiPagePrinting)
+                {
+                    _printItemIndex = 0;
+                    _runningTotal = 0;
+                    _runningQtyTotal = 0;
+                }
+
                 var g = e.Graphics;
-                var boldBig = new Font("Arial", 12, FontStyle.Bold);
-                var bold = new Font("Arial", 9.5f, FontStyle.Bold);
-                var normal = new Font("Arial", 8.5f);
-                var small = new Font("Arial", 7.5f);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                var boldBig = new Font("Segoe UI", 12f, FontStyle.Bold);
+                var boldMed = new Font("Segoe UI", 10f, FontStyle.Bold);
+                var bold    = new Font("Segoe UI", 9f, FontStyle.Bold);
+                var normal  = new Font("Segoe UI", 8.5f, FontStyle.Regular);
+                var small   = new Font("Segoe UI", 8f, FontStyle.Regular);
 
                 int pageW = e.PageBounds.Width;
-                int lMargin = isReceipt ? 12 : 20;
-                int rMargin = pageW - (isReceipt ? 12 : 20);
+                int lMargin = isReceipt ? 10 : 20;
+                int rMargin = pageW - (isReceipt ? 10 : 20);
                 int printableW = rMargin - lMargin;
                 int y = isReceipt ? 10 : 20;
 
-                var center = new StringFormat { Alignment = StringAlignment.Center };
-                var right  = new StringFormat { Alignment = StringAlignment.Far };
-                var left   = new StringFormat { Alignment = StringAlignment.Near };
+                var sfRight  = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+                var sfLeft   = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far,  LineAlignment = StringAlignment.Center };
+                var sfCenter = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
                 // 1. الشعار واسم المنشأة
                 if (AppConfig.PrintShopLogo && !string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
@@ -141,22 +159,22 @@ namespace ChickenDist.Forms
 
                 if (!string.IsNullOrEmpty(AppConfig.CompanyName))
                 {
-                    g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 22), center);
+                    g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 22), sfCenter);
                     y += 24;
                 }
 
                 if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
                 {
-                    g.DrawString("هاتف: " + AppConfig.CompanyPhone, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 14), center);
-                    y += 15;
+                    g.DrawString("هاتف: " + AppConfig.CompanyPhone, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 14), sfCenter);
+                    y += 16;
                 }
 
                 // 2. عنوان الإيصال
-                y += 4;
-                g.FillRectangle(new SolidBrush(Color.FromArgb(230, 230, 230)), lMargin, y, printableW, 22);
-                g.DrawRectangle(Pens.Gray, lMargin, y, printableW, 22);
-                g.DrawString("إيصال مرتجع مبيعات", bold, Brushes.Black, new RectangleF(lMargin, y + 2, printableW, 18), center);
-                y += 28;
+                y += 2;
+                g.FillRectangle(new SolidBrush(Color.FromArgb(240, 240, 240)), lMargin, y, printableW, 24);
+                g.DrawRectangle(new Pen(Color.FromArgb(100, 116, 139), 1f), lMargin, y, printableW, 24);
+                g.DrawString("إيصال مرتجع مبيعات", boldMed, Brushes.Black, new RectangleF(lMargin, y, printableW, 24), sfCenter);
+                y += 30;
 
                 if (_returnRow != null)
                 {
@@ -168,116 +186,130 @@ namespace ChickenDist.Forms
                     string cashier = _returnRow["CashierName"]?.ToString() ?? "كاشير";
                     string formattedPayType = FormatPaymentType(payType);
 
-                    // تفاصيل الإيصال
-                    g.DrawString($"رقم المرتجع: {returnCode}", bold, Brushes.Black, new RectangleF(lMargin, y, printableW / 2, 16), right);
-                    g.DrawString($"التاريخ: {returnDate:yyyy/MM/dd hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin + (printableW / 2), y, printableW / 2, 16), left);
-                    y += 18;
+                    // تفاصيل الإيصال (رقم المرتجع والتاريخ)
+                    int halfW = printableW / 2;
+                    g.DrawString($"رقم المرتجع: {returnCode}", bold, Brushes.Black, new RectangleF(lMargin + halfW, y, halfW, 18), sfRight);
+                    g.DrawString($"التاريخ: {returnDate:yyyy/MM/dd hh:mm tt}", normal, Brushes.Black, new RectangleF(lMargin, y, halfW, 18), sfLeft);
+                    y += 20;
 
-                    g.DrawString($"الفاتورة الأصلية: {saleCode}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW / 2, 16), right);
-                    g.DrawString($"العميل: {clientName}", normal, Brushes.Black, new RectangleF(lMargin + (printableW / 2), y, printableW / 2, 16), left);
-                    y += 18;
+                    // الفاتورة الأصلية والعميل
+                    g.DrawString($"الفاتورة الأصلية: {saleCode}", normal, Brushes.Black, new RectangleF(lMargin + halfW, y, halfW, 18), sfRight);
+                    g.DrawString($"العميل: {clientName}", normal, Brushes.Black, new RectangleF(lMargin, y, halfW, 18), sfLeft);
+                    y += 22;
 
                     // إبراز طريقة دفع / رد المرتجع
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(245, 245, 255)), lMargin, y, printableW, 20);
-                    g.DrawRectangle(new Pen(Color.FromArgb(59, 130, 246)), lMargin, y, printableW, 20);
-                    g.DrawString($"طريقة رد القيمة: {formattedPayType}", bold, Brushes.DarkBlue, new RectangleF(lMargin + 5, y + 2, printableW - 10, 16), right);
-                    y += 26;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(241, 245, 249)), lMargin, y, printableW, 22);
+                    g.DrawRectangle(new Pen(Color.FromArgb(59, 130, 246), 1.2f), lMargin, y, printableW, 22);
+                    g.DrawString($"طريقة رد القيمة: {formattedPayType}", bold, Brushes.DarkBlue, new RectangleF(lMargin + 6, y, printableW - 12, 22), sfRight);
+                    y += 28;
 
-                    // خط فاصل
-                    g.DrawLine(Pens.Black, lMargin, y, rMargin, y);
-                    y += 4;
+                    // جدول الأصناف
+                    int colTotW   = isReceipt ? 65 : 100;
+                    int colPriceW = isReceipt ? 45 : 75;
+                    int colQtyW   = isReceipt ? 45 : 75;
+                    int colProdW  = printableW - colTotW - colPriceW - colQtyW;
+
+                    int xProd  = lMargin + colTotW + colPriceW + colQtyW;
+                    int xQty   = lMargin + colTotW + colPriceW;
+                    int xPrice = lMargin + colTotW;
+                    int xTot   = lMargin;
 
                     // رأس جدول الأصناف
-                    int colProdW = (int)(printableW * 0.40f);
-                    int colQtyW  = (int)(printableW * 0.24f);
-                    int colPriceW = (int)(printableW * 0.18f);
-                    int colTotW  = printableW - colProdW - colQtyW - colPriceW;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(226, 232, 240)), lMargin, y, printableW, 22);
+                    g.DrawRectangle(Pens.Gray, lMargin, y, printableW, 22);
 
-                    int x = rMargin;
-                    g.DrawString("الصنف", bold, Brushes.Black, new RectangleF(x - colProdW, y, colProdW, 16), right);
-                    x -= colProdW;
-                    g.DrawString("كمية المرتجع", bold, Brushes.Black, new RectangleF(x - colQtyW, y, colQtyW, 16), center);
-                    x -= colQtyW;
-                    g.DrawString("السعر", bold, Brushes.Black, new RectangleF(x - colPriceW, y, colPriceW, 16), center);
-                    x -= colPriceW;
-                    g.DrawString("الإجمالي", bold, Brushes.Black, new RectangleF(x - colTotW, y, colTotW, 16), left);
+                    g.DrawString("الصنف", bold, Brushes.Black, new RectangleF(xProd, y, colProdW, 22), sfRight);
+                    g.DrawString("الكمية", bold, Brushes.Black, new RectangleF(xQty, y, colQtyW, 22), sfCenter);
+                    g.DrawString("السعر", bold, Brushes.Black, new RectangleF(xPrice, y, colPriceW, 22), sfCenter);
+                    g.DrawString("الإجمالي", bold, Brushes.Black, new RectangleF(xTot, y, colTotW, 22), sfLeft);
 
-                    y += 18;
-                    g.DrawLine(Pens.Black, lMargin, y, rMargin, y);
-                    y += 4;
+                    y += 22;
 
                     // صفوف الأصناف
-                    if (_items != null)
+                    if (_items != null && _items.Rows.Count > 0)
                     {
                         while (_printItemIndex < _items.Rows.Count)
                         {
                             var r = _items.Rows[_printItemIndex];
-                            string pName = r["ProductName"]?.ToString() ?? "";
+                            string pName = r["ProductName"]?.ToString() ?? "صنف";
                             string unit = r["UnitName"]?.ToString() ?? "";
-                            decimal q = Convert.ToDecimal(r["Quantity"]);
-                            decimal p = Convert.ToDecimal(r["UnitPrice"]);
-                            decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+                            decimal q = r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 0m;
+                            decimal p = r["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(r["UnitPrice"]) : 0m;
+                            decimal tot = r["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(r["TotalPrice"]) : (q * p);
 
                             _runningQtyTotal += q;
                             _runningTotal += tot;
 
-                            x = rMargin;
-                            string nameWithUnit = !string.IsNullOrEmpty(unit) ? $"{pName} ({unit})" : pName;
-                            g.DrawString(nameWithUnit, normal, Brushes.Black, new RectangleF(x - colProdW, y, colProdW, 16), right);
-                            x -= colProdW;
-                            g.DrawString(q.ToString("G29"), normal, Brushes.Black, new RectangleF(x - colQtyW, y, colQtyW, 16), center);
-                            x -= colQtyW;
-                            g.DrawString(p.ToString("N2"), normal, Brushes.Black, new RectangleF(x - colPriceW, y, colPriceW, 16), center);
-                            x -= colPriceW;
-                            g.DrawString(tot.ToString("N2"), normal, Brushes.Black, new RectangleF(x - colTotW, y, colTotW, 16), left);
+                            string nameWithUnit = !string.IsNullOrWhiteSpace(unit) ? $"{pName} ({unit})" : pName;
 
-                            y += 18;
+                            // رسم خلفية خفيفة متناوبة
+                            if (_printItemIndex % 2 == 1)
+                            {
+                                g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), lMargin, y, printableW, 22);
+                            }
+                            g.DrawRectangle(new Pen(Color.FromArgb(226, 232, 240)), lMargin, y, printableW, 22);
+
+                            g.DrawString(nameWithUnit, normal, Brushes.Black, new RectangleF(xProd, y, colProdW, 22), sfRight);
+                            g.DrawString(q.ToString("0.##"), normal, Brushes.Black, new RectangleF(xQty, y, colQtyW, 22), sfCenter);
+                            g.DrawString(p.ToString("N2"), normal, Brushes.Black, new RectangleF(xPrice, y, colPriceW, 22), sfCenter);
+                            g.DrawString(tot.ToString("N2"), normal, Brushes.Black, new RectangleF(xTot, y, colTotW, 22), sfLeft);
+
+                            y += 22;
                             _printItemIndex++;
 
                             if (y > e.PageBounds.Height - 120 && _printItemIndex < _items.Rows.Count)
                             {
+                                _isMultiPagePrinting = true;
                                 e.HasMorePages = true;
                                 return;
                             }
                         }
                     }
 
-                    // خط ختامي
-                    g.DrawLine(Pens.Black, lMargin, y, rMargin, y);
-                    y += 6;
+                    _isMultiPagePrinting = false;
+                    e.HasMorePages = false;
 
-                    // الإجمالي النهائي
+                    // خط فاصل بعد الأصناف
+                    y += 4;
+
+                    // صندوق الإجمالي النهائي
                     decimal totalAmount = Convert.ToDecimal(_returnRow["TotalAmount"]);
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(235, 235, 235)), lMargin, y, printableW, 24);
-                    g.DrawRectangle(Pens.Black, lMargin, y, printableW, 24);
-                    g.DrawString($"إجمالي المرتجع: {totalAmount:N2} ج", boldBig, Brushes.Black, new RectangleF(lMargin, y + 3, printableW - 10, 20), right);
-                    y += 30;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(240, 253, 244)), lMargin, y, printableW, 28);
+                    g.DrawRectangle(new Pen(Color.FromArgb(22, 163, 74), 1.5f), lMargin, y, printableW, 28);
+                    g.DrawString($"إجمالي المرتجع: {totalAmount:N2} ج", boldBig, Brushes.Black, new RectangleF(lMargin + 8, y, printableW - 16, 28), sfRight);
+                    y += 34;
 
-                    // ملاحظات
+                    // ملخص الكميات
+                    g.DrawString($"عدد الأصناف: {_items?.Rows.Count ?? 0}  |  إجمالي كميات المرتجع: {_runningQtyTotal:0.##}", small, Brushes.DimGray, new RectangleF(lMargin, y, printableW, 16), sfCenter);
+                    y += 18;
+
+                    // ملاحظات إن وجدت
                     string notes = _returnRow["Notes"]?.ToString() ?? "";
                     if (!string.IsNullOrWhiteSpace(notes))
                     {
-                        g.DrawString($"ملاحظات: {notes}", normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 30), right);
-                        y += 32;
+                        g.DrawString($"ملاحظات: {notes}", normal, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 22), sfRight);
+                        y += 24;
                     }
 
-                    // معلومات الكاشير والتوقيع
+                    // خط فاصل رفيع
+                    g.DrawLine(new Pen(Color.FromArgb(203, 213, 225)), lMargin, y, rMargin, y);
                     y += 8;
-                    g.DrawString($"الكاشير: {cashier}", small, Brushes.Black, new RectangleF(lMargin, y, printableW / 2, 14), right);
-                    g.DrawString("توقيع العميل / المستلم: .................", small, Brushes.Black, new RectangleF(lMargin + (printableW / 2), y, printableW / 2, 14), left);
-                    y += 20;
 
-                    g.DrawString("شكراً لتعاملكم معنا", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center);
+                    // معلومات الكاشير والتوقيع
+                    g.DrawString($"الكاشير: {cashier}", small, Brushes.Black, new RectangleF(lMargin + halfW, y, halfW, 16), sfRight);
+                    g.DrawString("توقيع العميل / المستلم: .................", small, Brushes.Black, new RectangleF(lMargin, y, halfW, 16), sfLeft);
+                    y += 22;
+
+                    g.DrawString("شكراً لتعاملكم معنا", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), sfCenter);
                 }
-
-                e.HasMorePages = false;
             };
 
             try
             {
                 if (_showPreview)
                 {
-                    var dlg = new PrintPreviewDialog { Document = pd, Width = 800, Height = 600 };
+                    var dlg = new PrintPreviewDialog { Document = pd, Width = 850, Height = 650 };
+                    dlg.StartPosition = FormStartPosition.CenterScreen;
                     dlg.ShowDialog();
                 }
                 else
