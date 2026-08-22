@@ -47,22 +47,21 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "💳💵 سداد مختلط (نقدي + فيزا)";
-            this.Size = new Size(460, 410);
+            this.Size = new Size(520, 480);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
             this.KeyPreview = true;
 
-            // Header Banner
+            // 1. Header Panel
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                Height = 70,
                 BackColor = Color.FromArgb(30, 41, 59),
                 Padding = new Padding(15, 8, 15, 8)
             };
@@ -70,17 +69,17 @@ namespace ChickenDist.Forms
             var lblTitle = new Label
             {
                 Text = "💳💵 توزيع السداد (جزء نقدي + جزء فيزا)",
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Top,
-                Height = 22,
+                Height = 24,
                 TextAlign = ContentAlignment.MiddleRight
             };
 
             lblTotal = new Label
             {
                 Text = $"إجمالي الفاتورة المطلوب: {_totalAmount:N2} ج",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(241, 196, 15), // Gold Accent
                 Dock = DockStyle.Top,
                 Height = 26,
@@ -89,9 +88,27 @@ namespace ChickenDist.Forms
 
             pnlHeader.Controls.Add(lblTotal);
             pnlHeader.Controls.Add(lblTitle);
-            this.Controls.Add(pnlHeader);
 
-            // Body Panel
+            // 2. Bottom Buttons Bar
+            var pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 60,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15, 10, 15, 10)
+            };
+
+            btnOk = Theme.MakeButton("✔️ تأكيد الحفظ (Enter)", 250, 10, 230, 40, Theme.Success);
+            btnOk.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            btnOk.Click += (s, e) => ConfirmPayment();
+
+            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 10, 110, 40, Theme.Danger);
+            btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
+
+            pnlBottom.Controls.AddRange(new Control[] { btnOk, btnCancel });
+
+            // 3. Main Center Panel with TableLayoutPanel
             var pnlBody = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -99,27 +116,42 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgMain
             };
 
-            int curY = 15;
+            var tblFields = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 230,
+                RowCount = 4,
+                ColumnCount = 2,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
+            };
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f)); // Col 0: Labels
+            tblFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f)); // Col 1: Inputs
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));     // Cash Amount
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));     // Safe Drawer
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));     // Visa Amount
+            tblFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));     // Visa Machine
 
-            // 1. Cash Amount
+            // Row 0: Cash Amount
             var lblCash = new Label
             {
                 Text = "💵 المبلغ المدفوع نقداً (كاش):",
-                Location = new Point(240, curY + 4),
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Theme.TextMain
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight
             };
             txtCashPaid = new TextBox
             {
-                Location = new Point(20, curY),
-                Width = 200,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
                 ForeColor = Color.FromArgb(16, 185, 129),
                 BorderStyle = BorderStyle.FixedSingle,
                 TextAlign = HorizontalAlignment.Center,
-                Text = "0.00"
+                Text = "0.00",
+                Margin = new Padding(0, 10, 0, 10)
             };
             txtCashPaid.TextChanged += (s, e) =>
             {
@@ -133,109 +165,111 @@ namespace ChickenDist.Forms
                 _isUpdatingText = false;
                 RecalculateTotals();
             };
-            pnlBody.Controls.AddRange(new Control[] { lblCash, txtCashPaid });
 
-            curY += 45;
-
-            // 2. Safe Account (Cash Drawer)
+            // Row 1: Safe Account
             var lblSafe = new Label
             {
                 Text = "🏦 خزينة الاستلام (الدرج):",
-                Location = new Point(240, curY + 4),
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Theme.TextSub
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextSub,
+                TextAlign = ContentAlignment.MiddleRight
             };
             cboSafeAccount = new ComboBox
             {
-                Location = new Point(20, curY),
-                Width = 200,
+                Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = Theme.FontMain,
+                Font = new Font("Segoe UI", 10.5f),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 12, 0, 10)
             };
-            pnlBody.Controls.AddRange(new Control[] { lblSafe, cboSafeAccount });
 
-            curY += 45;
-
-            // 3. Visa Amount
+            // Row 2: Visa Amount
             var lblVisa = new Label
             {
                 Text = "💳 المبلغ المدفوع فيزا (إلكتروني):",
-                Location = new Point(240, curY + 4),
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Theme.TextMain
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight
             };
             txtVisaPaid = new TextBox
             {
-                Location = new Point(20, curY),
-                Width = 200,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
                 ForeColor = Color.FromArgb(142, 68, 173),
                 BorderStyle = BorderStyle.FixedSingle,
                 TextAlign = HorizontalAlignment.Center,
-                Text = _totalAmount.ToString("F2")
+                Text = _totalAmount.ToString("F2"),
+                Margin = new Padding(0, 10, 0, 10)
             };
             txtVisaPaid.TextChanged += (s, e) =>
             {
                 if (_isUpdatingText) return;
                 RecalculateTotals();
             };
-            pnlBody.Controls.AddRange(new Control[] { lblVisa, txtVisaPaid });
 
-            curY += 45;
-
-            // 4. Visa Machine / Bank Account
+            // Row 3: Visa Account
             var lblVisaAcc = new Label
             {
                 Text = "💳 ماكينة / حساب الفيزا:",
-                Location = new Point(240, curY + 4),
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Theme.TextSub
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextSub,
+                TextAlign = ContentAlignment.MiddleRight
             };
             cboVisaAccount = new ComboBox
             {
-                Location = new Point(20, curY),
-                Width = 200,
+                Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = Theme.FontMain,
+                Font = new Font("Segoe UI", 10.5f),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 12, 0, 10)
             };
-            pnlBody.Controls.AddRange(new Control[] { lblVisaAcc, cboVisaAccount });
 
-            curY += 50;
+            tblFields.Controls.Add(lblCash, 0, 0);
+            tblFields.Controls.Add(txtCashPaid, 1, 0);
 
-            // Summary Status Bar
+            tblFields.Controls.Add(lblSafe, 0, 1);
+            tblFields.Controls.Add(cboSafeAccount, 1, 1);
+
+            tblFields.Controls.Add(lblVisa, 0, 2);
+            tblFields.Controls.Add(txtVisaPaid, 1, 2);
+
+            tblFields.Controls.Add(lblVisaAcc, 0, 3);
+            tblFields.Controls.Add(cboVisaAccount, 1, 3);
+
+            pnlBody.Controls.Add(tblFields);
+
+            // 4. Summary Status Bar
             var pnlSummary = new Panel
             {
-                Location = new Point(20, curY),
-                Size = new Size(405, 45),
+                Dock = DockStyle.Bottom,
+                Height = 45,
                 BackColor = Color.FromArgb(30, 41, 59),
-                Padding = new Padding(8)
+                Padding = new Padding(12, 8, 12, 8)
             };
 
             lblTotalPaid = new Label
             {
                 Text = "المسدد: 0.00 ج",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(74, 222, 128),
                 Dock = DockStyle.Left,
-                Width = 190,
+                Width = 220,
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
             lblRemaining = new Label
             {
                 Text = "المتبقي: 0.00 ج",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(248, 113, 113),
                 Dock = DockStyle.Right,
-                Width = 190,
+                Width = 220,
                 TextAlign = ContentAlignment.MiddleRight
             };
 
@@ -243,25 +277,10 @@ namespace ChickenDist.Forms
             pnlSummary.Controls.Add(lblRemaining);
             pnlBody.Controls.Add(pnlSummary);
 
+            // Add panels in correct docking order
             this.Controls.Add(pnlBody);
-
-            // Bottom Buttons Bar
-            var pnlBottom = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 55,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(15, 10, 15, 10)
-            };
-
-            btnOk = Theme.MakeButton("✔️ تأكيد الحفظ (Enter)", 230, 10, 195, 35, Theme.Success);
-            btnOk.Click += (s, e) => ConfirmPayment();
-
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 10, 100, 35, Theme.Danger);
-            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
-
-            pnlBottom.Controls.AddRange(new Control[] { btnOk, btnCancel });
             this.Controls.Add(pnlBottom);
+            this.Controls.Add(pnlHeader);
 
             this.AcceptButton = btnOk;
             this.CancelButton = btnCancel;
