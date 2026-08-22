@@ -303,8 +303,8 @@ namespace ChickenDist.Forms
 
             if (isReceipt)
             {
-                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 310, 1400);
-                pd.DefaultPageSettings.Margins = new Margins(8, 8, 8, 8);
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 285, 1400);
+                pd.DefaultPageSettings.Margins = new Margins(5, 5, 5, 5);
                 if (!string.IsNullOrEmpty(AppConfig.ReceiptPrinterName))
                     AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
             }
@@ -571,32 +571,33 @@ namespace ChickenDist.Forms
         }
 
         /// <summary>
-        /// رسم تقرير إغلاق الوردية بتقسيم شبكي مخصص لطابعات الريسيت الحراري (80mm)
+        /// رسم تقرير إغلاق الوردية بتقسيم شبكي مخصص لطابعات الريسيت الحراري (80mm) مع هوامش آمنة تمنع اقتصاص الجانب الأيمن
         /// </summary>
         private void DrawReceiptPage(Graphics g, Rectangle bounds)
         {
+            int pageW = Math.Min(bounds.Width > 0 ? bounds.Width : 280, 285);
             int lMargin = 8;
-            int rMargin = 8;
-            int printableW = bounds.Width - lMargin - rMargin;
-            int y = 8;
+            int rMargin = 22; // هامش آمن كافٍ من اليمين لتفادي الاقتصاص عند رؤوس الطباعة الحرارية
+            int printableW = pageW - lMargin - rMargin;
+            int y = 10;
 
-            var fontTitle = new Font("Segoe UI", 12f, FontStyle.Bold);
-            var fontSub = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            var fontBold = new Font("Segoe UI", 9f, FontStyle.Bold);
-            var fontNormal = new Font("Segoe UI", 8.5f, FontStyle.Regular);
+            var fontTitle = new Font("Segoe UI", 11.5f, FontStyle.Bold);
+            var fontSub = new Font("Segoe UI", 9f, FontStyle.Bold);
+            var fontBold = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            var fontNormal = new Font("Segoe UI", 8f, FontStyle.Regular);
             var fontSmall = new Font("Segoe UI", 7.5f, FontStyle.Regular);
 
-            var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
             var sfRight = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
             var sfLeft = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
             // 1. رأس الشركة
             string compName = string.IsNullOrEmpty(AppConfig.CompanyName) ? "شركة برو سوفت" : AppConfig.CompanyName;
-            g.DrawString(compName, fontTitle, Brushes.Black, new RectangleF(lMargin, y, printableW, 24), sfCenter);
-            y += 24;
+            g.DrawString(compName, fontTitle, Brushes.Black, new RectangleF(lMargin, y, printableW, 22), sfCenter);
+            y += 22;
 
-            g.DrawString($"تقرير إغلاق الوردية #{_shiftID}", fontSub, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), sfCenter);
-            y += 20;
+            g.DrawString($"تقرير إغلاق الوردية #{_shiftID}", fontSub, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfCenter);
+            y += 18;
 
             g.DrawLine(new Pen(Color.Black, 1.5f), lMargin, y, lMargin + printableW, y);
             y += 6;
@@ -604,9 +605,9 @@ namespace ChickenDist.Forms
             // 2. بيانات الوردية
             void DrawRecInfo(string label, string val)
             {
-                g.DrawString(label, fontBold, Brushes.Black, new RectangleF(lMargin + printableW / 2, y, printableW / 2, 18), sfRight);
-                g.DrawString(val, fontNormal, Brushes.Black, new RectangleF(lMargin, y, printableW / 2, 18), sfLeft);
-                y += 18;
+                g.DrawString(label, fontBold, Brushes.Black, new RectangleF(lMargin + printableW / 2, y, printableW / 2, 17), sfRight);
+                g.DrawString(val, fontNormal, Brushes.Black, new RectangleF(lMargin, y, printableW / 2 - 2, 17), sfLeft);
+                y += 17;
             }
 
             DrawRecInfo("الفرع والجهاز:", $"{_branchName} - {_posStationName}");
@@ -622,7 +623,7 @@ namespace ChickenDist.Forms
             // 3. جدول البيانات المالية
             void DrawRecGridRow(string label, decimal val, bool isBold = false, bool isHighlighted = false)
             {
-                int rh = isHighlighted ? 24 : 19;
+                int rh = isHighlighted ? 22 : 18;
                 if (isHighlighted)
                 {
                     g.FillRectangle(new SolidBrush(Color.FromArgb(235, 235, 235)), lMargin, y, printableW, rh);
@@ -633,8 +634,8 @@ namespace ChickenDist.Forms
                     g.DrawLine(new Pen(Color.FromArgb(210, 210, 210), 0.8f), lMargin, y + rh, lMargin + printableW, y + rh);
                 }
 
-                g.DrawString(label, isBold ? fontBold : fontNormal, Brushes.Black, new RectangleF(lMargin + 105, y, printableW - 110, rh), sfRight);
-                g.DrawString(val.ToString("N2") + " ج", isBold ? fontBold : fontNormal, Brushes.Black, new RectangleF(lMargin + 4, y, 100, rh), sfLeft);
+                g.DrawString(label, isBold ? fontBold : fontNormal, Brushes.Black, new RectangleF(lMargin + 90, y, printableW - 92, rh), sfRight);
+                g.DrawString(val.ToString("N2") + " ج", isBold ? fontBold : fontNormal, Brushes.Black, new RectangleF(lMargin + 2, y, 88, rh), sfLeft);
                 y += rh + (isHighlighted ? 3 : 1);
             }
 
@@ -653,11 +654,11 @@ namespace ChickenDist.Forms
             DrawRecGridRow("الفعلي بالدرج:", _actualCash, true, true);
             
             string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
-            int diffRh = 24;
+            int diffRh = 22;
             g.FillRectangle(new SolidBrush(Color.FromArgb(225, 225, 225)), lMargin, y, printableW, diffRh);
             g.DrawRectangle(new Pen(Color.Black, 1.2f), lMargin, y, printableW, diffRh);
-            g.DrawString("الفرق المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin + 125, y, printableW - 130, diffRh), sfRight);
-            g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 4, y, 120, diffRh), sfLeft);
+            g.DrawString("الفرق المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin + 110, y, printableW - 112, diffRh), sfRight);
+            g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 2, y, 108, diffRh), sfLeft);
             y += diffRh + 4;
 
             if (!string.IsNullOrWhiteSpace(_deficitReason))
