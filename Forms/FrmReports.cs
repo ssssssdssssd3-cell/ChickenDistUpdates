@@ -33,6 +33,7 @@ namespace ChickenDist.Forms
 		private Button btnWhatsAppReport;
 
 		private Button btnExportExcel;
+		private Button btnExportPdf;
 
 		private TextBox txtSearchClient;
 
@@ -116,33 +117,35 @@ namespace ChickenDist.Forms
 			InitUI();
 		}
 
-		private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 140)
+		private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 140, Color? labelColor = null)
 		{
 			inputCtrl.Width = inputWidth;
 			inputCtrl.Height = 26;
-			inputCtrl.Font = Theme.FontMain;
+			inputCtrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 
 			var lbl = new Label
 			{
 				Text = labelText,
 				AutoSize = true,
-				ForeColor = Theme.TextMain,
+				ForeColor = labelColor ?? Color.FromArgb(226, 232, 240),
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				RightToLeft = RightToLeft.Yes
 			};
 
 			int lblW = lbl.PreferredWidth;
-			int totalW = lblW + inputWidth + 6;
+			int totalW = lblW + inputWidth + 14;
 
 			var pnl = new Panel
 			{
-				Size = new Size(totalW, 32),
-				Margin = new Padding(2, 2, 6, 2),
+				Size = new Size(totalW, 34),
+				BackColor = Color.FromArgb(43, 50, 70),
+				Margin = new Padding(3, 2, 4, 2),
+				Padding = new Padding(4, 4, 4, 4),
 				RightToLeft = RightToLeft.Yes
 			};
 
-			lbl.Location = new Point(totalW - lblW, 4);
-			inputCtrl.Location = new Point(0, 2);
+			lbl.Location = new Point(totalW - lblW - 6, 7);
+			inputCtrl.Location = new Point(4, 4);
 
 			pnl.Controls.Add(lbl);
 			pnl.Controls.Add(inputCtrl);
@@ -263,6 +266,7 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd  hh:mm tt",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			dtpFrom.ValueChanged += (s, e) => LoadCurrentTab();
@@ -273,6 +277,7 @@ namespace ChickenDist.Forms
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd  hh:mm tt",
 				Value = DateTime.Now,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			dtpTo.ValueChanged += (s, e) => LoadCurrentTab();
@@ -281,9 +286,10 @@ namespace ChickenDist.Forms
 			{
 				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			SetupDatePresets();
@@ -292,9 +298,10 @@ namespace ChickenDist.Forms
 			{
 				Width = 120,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadWarehouses();
@@ -303,9 +310,10 @@ namespace ChickenDist.Forms
 			{
 				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadPaymentTypes();
@@ -314,9 +322,10 @@ namespace ChickenDist.Forms
 			{
 				Width = 135,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadEmployees();
@@ -324,30 +333,41 @@ namespace ChickenDist.Forms
 			txtSearchClient = new TextBox
 			{
 				Width = 180,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.FromArgb(15, 23, 42),
+				ForeColor = Color.White,
 				BorderStyle = BorderStyle.FixedSingle,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
-			btnLoad = Theme.MakeButton("🔄 تحديث التقرير", Theme.Accent);
-			btnLoad.Size = new Size(125, 30);
+			btnLoad = Theme.MakeButton("🔄 تحديث التقرير", Color.FromArgb(245, 158, 11));
+			btnLoad.Size = new Size(130, 32);
+			btnLoad.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnLoad.Margin = new Padding(4, 2, 4, 2);
 			btnLoad.Click += delegate { LoadCurrentTab(); };
 
-			btnPrint = Theme.MakeButton("🖨️ طباعة الصفحة الحالية", Theme.Primary);
-			btnPrint.Size = new Size(155, 30);
+			btnPrint = Theme.MakeButton("🖨️ طباعة الصفحة", Color.FromArgb(37, 99, 235));
+			btnPrint.Size = new Size(140, 32);
+			btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnPrint.Margin = new Padding(4, 2, 4, 2);
 			btnPrint.Click += BtnPrint_Click;
 
-			btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
-			btnExportExcel.Size = new Size(120, 30);
+			btnExportPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+			btnExportPdf.Size = new Size(130, 32);
+			btnExportPdf.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+			btnExportPdf.Margin = new Padding(4, 2, 4, 2);
+			btnExportPdf.Click += BtnExportPdf_Click;
+
+			btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(16, 185, 129));
+			btnExportExcel.Size = new Size(130, 32);
+			btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnExportExcel.Margin = new Padding(4, 2, 4, 2);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
 			btnWhatsAppReport = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
-			btnWhatsAppReport.Size = new Size(155, 30);
+			btnWhatsAppReport.Size = new Size(155, 32);
+			btnWhatsAppReport.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnWhatsAppReport.Margin = new Padding(4, 2, 4, 2);
 			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
 			btnWhatsAppReport.Visible = false;
@@ -357,8 +377,8 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Top,
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				BackColor = Theme.BgCard,
-				Padding = new Padding(8, 6, 8, 6),
+				BackColor = Color.FromArgb(30, 41, 59),
+				Padding = new Padding(10, 8, 10, 8),
 				RightToLeft = RightToLeft.Yes
 			};
 
@@ -395,9 +415,10 @@ namespace ChickenDist.Forms
 			flowRow1.Controls.Add(MakeFilterPanel("طريقة الدفع:", cboPayType, 115));
 			flowRow1.Controls.Add(MakeFilterPanel("المندوب / الكاشير:", cboEmployee, 135));
 
-			flowRow2.Controls.Add(MakeFilterPanel("🔍 بحث شامل في التقرير:", txtSearchClient, 180));
+			flowRow2.Controls.Add(MakeFilterPanel("🔍 بحث شامل في التقرير:", txtSearchClient, 180, Color.FromArgb(241, 196, 15)));
 			flowRow2.Controls.Add(btnLoad);
 			flowRow2.Controls.Add(btnPrint);
+			flowRow2.Controls.Add(btnExportPdf);
 			flowRow2.Controls.Add(btnExportExcel);
 			flowRow2.Controls.Add(btnWhatsAppReport);
 
@@ -3067,11 +3088,34 @@ namespace ChickenDist.Forms
 			row.DefaultCellStyle.SelectionForeColor = fg;
 		}
 
-		private void PrintDailyClosing(DataGridView dg)
+		private static string GetInstalledPdfPrinter()
+		{
+			foreach (string p in PrinterSettings.InstalledPrinters)
+			{
+				if (p.IndexOf("PDF", StringComparison.OrdinalIgnoreCase) >= 0)
+					return p;
+			}
+			return null;
+		}
+
+		private void PrintDailyClosing(DataGridView dg, string pdfFilePath = null)
 		{
 			var pd = new PrintDocument();
 			pd.PrintController = new StandardPrintController();
-			AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+			if (!string.IsNullOrEmpty(pdfFilePath))
+			{
+				string pdfPrinter = GetInstalledPdfPrinter();
+				if (!string.IsNullOrEmpty(pdfPrinter))
+				{
+					pd.PrinterSettings.PrinterName = pdfPrinter;
+					pd.PrinterSettings.PrintToFile = true;
+					pd.PrinterSettings.PrintFileName = pdfFilePath;
+				}
+			}
+			else
+			{
+				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+			}
 			pd.DefaultPageSettings.Landscape = true;
 			pd.DefaultPageSettings.Margins = new Margins(30, 30, 40, 40);
 
@@ -3370,6 +3414,224 @@ namespace ChickenDist.Forms
 			catch (Exception ex)
 			{
 				MessageBox.Show("حدث خطأ أثناء تحميل المخازن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private void BtnExportPdf_Click(object sender, EventArgs e)
+		{
+			DataGridView dataGridView = GetActiveGrid();
+			if (dataGridView == null || dataGridView.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد بيانات لتصديرها إلى PDF.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation,
+					MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+				return;
+			}
+
+			string tabText = tabReports.SelectedTab?.Text ?? "تقرير";
+			string cleanName = System.Text.RegularExpressions.Regex.Replace(tabText, @"[^\w\s\-\u0600-\u06FF]", "").Trim();
+			string defaultFileName = $"{cleanName}_{DateTime.Now:yyyy_MM_dd}.pdf";
+
+			ExportToPdf(dataGridView, defaultFileName);
+		}
+
+		private void ExportToPdf(DataGridView dg, string defaultFileName)
+		{
+			using (var dlg = new SaveFileDialog())
+			{
+				dlg.Title = "تصدير التقرير إلى PDF";
+				dlg.FileName = defaultFileName;
+				dlg.Filter = "ملفات PDF (*.pdf)|*.pdf|كل الملفات (*.*)|*.*";
+				dlg.DefaultExt = "pdf";
+				if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+				string filePath = dlg.FileName;
+
+				try
+				{
+					if (tabReports.SelectedTab?.Tag?.ToString() == "DailyClosing")
+					{
+						PrintDailyClosing(dg, filePath);
+					}
+					else
+					{
+						string pdfPrinter = GetInstalledPdfPrinter();
+						PrintDocument printDocument = new PrintDocument();
+						printDocument.PrintController = new StandardPrintController();
+						if (!string.IsNullOrEmpty(pdfPrinter))
+						{
+							printDocument.PrinterSettings.PrinterName = pdfPrinter;
+							printDocument.PrinterSettings.PrintToFile = true;
+							printDocument.PrinterSettings.PrintFileName = filePath;
+						}
+
+						if (dg.Columns.Count > 5)
+						{
+							printDocument.DefaultPageSettings.Landscape = true;
+						}
+
+						int pageRow = 0;
+						int pageNum = 1;
+
+						printDocument.PrintPage += delegate(object s, PrintPageEventArgs ev)
+						{
+							Graphics g = ev.Graphics;
+							Font fComp  = new Font("Arial", 13f, FontStyle.Bold);
+							Font fTitle = new Font("Arial", 15f, FontStyle.Bold);
+							Font fHead  = new Font("Arial", 9.5f, FontStyle.Bold);
+							Font fCell  = new Font("Arial", 8.5f, FontStyle.Regular);
+							Font fCellB = new Font("Arial", 8.5f, FontStyle.Bold);
+							Font fFoot  = new Font("Arial", 8f, FontStyle.Regular);
+
+							var brushHeaderBg = new SolidBrush(Color.FromArgb(28, 45, 78));
+							var brushRowAlt   = new SolidBrush(Color.FromArgb(245, 248, 253));
+							var brushTotBg    = new SolidBrush(Color.FromArgb(220, 245, 225));
+							var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
+							var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
+
+							int pageW = printDocument.DefaultPageSettings.Landscape ? 1040 : 775;
+							int startX = 25;
+							int y = 25;
+
+							// 1. Header
+							string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+							SizeF szComp = g.MeasureString(companyName, fComp);
+							g.DrawString(companyName, fComp, Brushes.DarkBlue, startX + (pageW - szComp.Width) / 2f, y);
+							y += (int)szComp.Height + 3;
+
+							string titleText = tabReports.SelectedTab?.Text ?? "تقرير";
+							titleText = System.Text.RegularExpressions.Regex.Replace(titleText, @"\p{Cs}|\p{So}|\p{Sk}|\p{Cn}", "").Trim();
+							SizeF szTitle = g.MeasureString(titleText, fTitle);
+							g.DrawString(titleText, fTitle, Brushes.Black, startX + (pageW - szTitle.Width) / 2f, y);
+							y += (int)szTitle.Height + 5;
+
+							string dateInfo = (tabReports.SelectedTab?.Tag?.ToString() == "ClientBalances")
+								? $"تاريخ التقرير: {DateTime.Now:dd/MM/yyyy HH:mm}"
+								: $"من تاريخ: {dtpFrom.Value:dd/MM/yyyy}   إلى تاريخ: {dtpTo.Value:dd/MM/yyyy}";
+							SizeF szDate = g.MeasureString(dateInfo, fFoot);
+							g.DrawString(dateInfo, fFoot, Brushes.DarkGray, startX + (pageW - szDate.Width) / 2f, y);
+							y += (int)szDate.Height + 6;
+
+							g.DrawLine(penDark, startX, y, startX + pageW, y);
+							y += 10;
+
+							// Visible Columns
+							var visCols = new List<DataGridViewColumn>();
+							for (int k = 0; k < dg.Columns.Count; k++)
+							{
+								if (dg.Columns[k].Visible) visCols.Add(dg.Columns[k]);
+							}
+
+							int[] colWidths = new int[visCols.Count];
+							if (visCols.Count > 0)
+							{
+								int totalW = 0;
+								for (int i = 0; i < visCols.Count; i++) totalW += visCols[i].Width;
+								if (totalW <= 0) totalW = 1;
+								int assigned = 0;
+								for (int i = 0; i < visCols.Count; i++)
+								{
+									colWidths[i] = (visCols[i].Width * pageW) / totalW;
+									if (colWidths[i] < 40) colWidths[i] = 40;
+									assigned += colWidths[i];
+								}
+								if (assigned != pageW) colWidths[colWidths.Length - 1] += (pageW - assigned);
+							}
+
+							int headH = 28;
+							int rowH  = 25;
+
+							// Table Header Row
+							int curX = startX + pageW;
+							g.FillRectangle(brushHeaderBg, startX, y, pageW, headH);
+							g.DrawRectangle(penDark, startX, y, pageW, headH);
+
+							for (int i = 0; i < visCols.Count; i++)
+							{
+								int cw = colWidths[i];
+								curX -= cw;
+								var rect = new RectangleF(curX, y, cw, headH);
+								g.DrawRectangle(penGrid, curX, y, cw, headH);
+
+								var sf = new StringFormat
+								{
+									Alignment = StringAlignment.Center,
+									LineAlignment = StringAlignment.Center,
+									Trimming = StringTrimming.EllipsisCharacter,
+									FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
+								};
+								g.DrawString(visCols[i].HeaderText, fHead, Brushes.White, rect, sf);
+							}
+							y += headH;
+
+							// Data Rows
+							int maxY = printDocument.DefaultPageSettings.Landscape ? 700 : 980;
+							while (pageRow < dg.Rows.Count)
+							{
+								if (y + rowH > maxY)
+								{
+									ev.HasMorePages = true;
+									pageNum++;
+									return;
+								}
+
+								var row = dg.Rows[pageRow];
+								bool isSummary = (pageRow == dg.Rows.Count - 1 && row.Cells[0].Value?.ToString()?.Contains("الإجمالي") == true);
+								Brush rowBg = isSummary ? brushTotBg : ((pageRow % 2 == 1) ? brushRowAlt : Brushes.White);
+								Font cellFont = isSummary ? fCellB : fCell;
+
+								g.FillRectangle(rowBg, startX, y, pageW, rowH);
+								g.DrawRectangle(penGrid, startX, y, pageW, rowH);
+
+								int rx = startX + pageW;
+								for (int i = 0; i < visCols.Count; i++)
+								{
+									int cw = colWidths[i];
+									rx -= cw;
+									var cellRect = new RectangleF(rx, y, cw, rowH);
+									g.DrawRectangle(penGrid, rx, y, cw, rowH);
+
+									string cVal = row.Cells[visCols[i].Index].Value?.ToString() ?? "";
+									var sf = new StringFormat
+									{
+										Alignment = StringAlignment.Center,
+										LineAlignment = StringAlignment.Center,
+										Trimming = StringTrimming.EllipsisCharacter,
+										FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft
+									};
+									g.DrawString(cVal, cellFont, Brushes.Black, cellRect, sf);
+								}
+
+								y += rowH;
+								pageRow++;
+							}
+
+							// Footer
+							string foot = $"صفحة {pageNum}  -  طُبع بواسطة نظام برو سوفت  {DateTime.Now:yyyy/MM/dd HH:mm}";
+							SizeF szF = g.MeasureString(foot, fFoot);
+							g.DrawString(foot, fFoot, Brushes.Gray, startX + (pageW - szF.Width) / 2f, maxY + 5);
+
+							ev.HasMorePages = false;
+						};
+
+						printDocument.Print();
+					}
+
+					var result = MessageBox.Show(
+						"✅ تم تصدير التقرير إلى PDF بنجاح!\n\nهل تريد فتح الملف الآن؟",
+						"تم التصدير بنجاح", MessageBoxButtons.YesNo, MessageBoxIcon.Information,
+						MessageBoxDefaultButton.Button1,
+						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+					if (result == DialogResult.Yes)
+					{
+						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(filePath) { UseShellExecute = true });
+					}
+				}
+				catch (Exception ex)
+				{
+					AppLogger.Error("FrmReports.ExportToPdf", ex);
+					MessageBox.Show("❌ فشل تصدير ملف PDF:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
 			}
 		}
 
