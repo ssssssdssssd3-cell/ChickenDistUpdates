@@ -303,9 +303,10 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty", HeaderText = "الكمية", FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "MinStock", HeaderText = "الحد الأدنى", FillWeight = 45 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", FillWeight = 55 });
+            bool canSeeCost = Session.CanViewCost("Warehouses");
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", FillWeight = 55, Visible = canSeeCost });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 55 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCostValue", HeaderText = "قيمة التكلفة", FillWeight = 65 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCostValue", HeaderText = "قيمة التكلفة", FillWeight = 65, Visible = canSeeCost });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalSaleValue", HeaderText = "قيمة البيع", FillWeight = 65 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLoc", HeaderText = "مكان الرف", FillWeight = 50 });
             dgStock.CellFormatting += DgStock_CellFormatting;
@@ -528,9 +529,10 @@ namespace ChickenDist.Forms
                 }
 
                 // شريط الإجماليات
+                string costPart = Session.CanViewCost("Warehouses") ? $"  التكلفة: {totalCostValue:N2} ج  |" : "";
                 lblTotals.Text =
                     $"  إجمالي الأصناف: {totalProducts}  |" +
-                    $"  التكلفة: {totalCostValue:N2} ج  |" +
+                    costPart +
                     $"  البيع: {totalSaleValue:N2} ج  |" +
                     $"  🔴 عجز: {lowStockCount}";
             }

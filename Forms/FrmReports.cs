@@ -658,6 +658,14 @@ namespace ChickenDist.Forms
 						keep = (report.tag == "ShiftsHistory" || report.tag == "ShiftVsCalendarComparison");
 					}
 
+					if (keep && !Session.CanViewCost("Reports"))
+					{
+						if (report.tag == "SalesProfitability" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DetailedInventoryValuation")
+						{
+							keep = false;
+						}
+					}
+
 					if (keep)
 					{
 						filteredReports.Add(report);
@@ -2583,15 +2591,24 @@ namespace ChickenDist.Forms
 				dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 			}
 
+			bool canSeeCost = Session.CanViewCost("Reports");
 			for (int i = 0; i < cols.Length; i++)
 			{
 				var (name, headerText) = cols[i];
 				bool isNameCol = (name == "الصنف" || name == "ProductName" || name == "اسم الصنف" || name == "البيان" || headerText == "الصنف" || headerText == "اسم الصنف");
+				bool isCostCol = (name == "PurchasePrice" || name == "AvgPurchasePrice" || name == "LastPurchasePrice" || name == "MinPurchasePrice" || name == "MaxPurchasePrice" ||
+				                  name == "TotalCost" || name == "NetProfit" || name == "ProfitMargin" || name == "MarginPct" ||
+				                  name == "StagnantStockValue" || name == "StockValue" || name == "ExpectedProfit" ||
+				                  name == "ShortageCostLoss" || name == "SurplusCostGain" ||
+				                  headerText.Contains("سعر الشراء") || headerText.Contains("سعر التكلفة") || headerText.Contains("التكلفة") ||
+				                  headerText.Contains("الربح") || headerText.Contains("الأرباح") || headerText.Contains("هامش"));
+
 				var col = new DataGridViewTextBoxColumn
 				{
 					Name = name,
 					HeaderText = headerText,
-					FillWeight = isNameCol ? 350f : 100f
+					FillWeight = isNameCol ? 350f : 100f,
+					Visible = !isCostCol || canSeeCost
 				};
 				if (isNameCol)
 				{

@@ -1814,7 +1814,8 @@ namespace ChickenDist.Forms
                 {
                     if (item.Cost > 0 && newPrice < item.Cost)
                     {
-                        MessageBox.Show($"❌ غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
+                        MessageBox.Show($"❌ غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
                         return;
                     }
@@ -1823,7 +1824,8 @@ namespace ChickenDist.Forms
                     decimal testNetUnit = item.Qty > 0 ? (testNetTotal / item.Qty) : newPrice;
                     if (item.Cost > 0 && testNetUnit < item.Cost)
                     {
-                        MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
+                        MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
                         return;
                     }
@@ -1845,7 +1847,8 @@ namespace ChickenDist.Forms
                     decimal netUnitPrice = item.Qty > 0 ? (netTotal / item.Qty) : item.Price;
                     if (item.Cost > 0 && netUnitPrice < item.Cost)
                     {
-                        MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
+                        MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Discount"].Value = item.DiscountAmt.ToString("N2");
                         return;
                     }
@@ -2067,7 +2070,8 @@ namespace ChickenDist.Forms
                         decimal netUnit = item.Qty > 0 ? (item.Total / item.Qty) : item.Price;
                         if (netUnit < item.Cost - 0.001m)
                         {
-                            MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}) أقل من سعر التكلفة ({item.Cost:N2}).", "تنبيه سعر التكلفة", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                            string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " يقل عن الحد الأدنى المسموح به.";
+                            MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                             _isSaving = false;
                             return;
                         }

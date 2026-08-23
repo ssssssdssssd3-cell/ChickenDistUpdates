@@ -407,12 +407,14 @@ namespace ChickenDist.Forms
             };
             dgShortages.Columns.Add(colDeficit);
 
+            bool canSeeCost = Session.CanViewCost("ShortageNotebook");
             var colPurchasePrice = new DataGridViewTextBoxColumn
             {
                 Name = "PurchasePrice",
                 HeaderText = "سعر الشراء ✏️",
                 FillWeight = 85,
                 ReadOnly = false,
+                Visible = canSeeCost,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = AppConfig.AppTheme == "Dark" ? Color.FromArgb(45, 55, 72) : Color.FromArgb(240, 253, 244),
@@ -423,7 +425,7 @@ namespace ChickenDist.Forms
             };
             dgShortages.Columns.Add(colPurchasePrice);
 
-            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 95, ReadOnly = true });
+            dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 95, ReadOnly = true, Visible = canSeeCost });
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 80, ReadOnly = true });
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Source", HeaderText = "المصدر", FillWeight = 90, ReadOnly = true });
             dgShortages.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 120, ReadOnly = true });
@@ -1043,7 +1045,8 @@ namespace ChickenDist.Forms
             }
             if (lblHeaderSubtitle != null)
             {
-                lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}) | تكلفة التوفير التقديرية: {totalCost:N2} ج";
+                string costText = Session.CanViewCost("ShortageNotebook") ? $" | تكلفة التوفير التقديرية: {totalCost:N2} ج" : "";
+                lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}){costText}";
             }
         }
 

@@ -170,9 +170,12 @@ namespace ChickenDist.Forms
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
 
 
+            bool canSeeCost = Session.CanViewCost("Products");
+
             // --- GroupBox 2 Content ---
             int py = 25;
-            AddNud(grpPrice, "شراء الكبرى:", 10, py, out nudPurchasePrice, 2); py += 38;
+            AddNud(grpPrice, "شراء الكبرى:", 10, py, out nudPurchasePrice, 2, canSeeCost);
+            if (canSeeCost) py += 38;
             AddNud(grpPrice, "بيع قطاعي الكبرى:", 10, py, out nudPrice, 2); py += 38;
             AddNud(grpPrice, "نصف جملة الكبرى:", 10, py, out nudSemiWholesalePrice, 2); py += 38;
             AddNud(grpPrice, "جملة الكبرى:", 10, py, out nudWholesalePrice, 2); py += 38;
@@ -233,7 +236,8 @@ namespace ChickenDist.Forms
             grpUnit2.Controls.AddRange(new Control[] { txtUnit2Barcode, btnUnit2MultiBarcode });
             u2y += 38;
 
-            AddNud(grpUnit2, "شراء الوسطى (محسوب):", 10, u2y, out nudUnit2PurchasePrice, 2); u2y += 38;
+            AddNud(grpUnit2, "شراء الوسطى (محسوب):", 10, u2y, out nudUnit2PurchasePrice, 2, canSeeCost);
+            if (canSeeCost) u2y += 38;
             AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, u2y, out nudUnit2SalePrice, 2); u2y += 35;
 
             var btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
@@ -261,7 +265,8 @@ namespace ChickenDist.Forms
             grpUnit1.Controls.AddRange(new Control[] { txtUnit1Barcode, btnUnit1MultiBarcode });
             u1y += 38;
 
-            AddNud(grpUnit1, "شراء الصغرى (محسوب):", 10, u1y, out nudUnit1PurchasePrice, 2); u1y += 38;
+            AddNud(grpUnit1, "شراء الصغرى (محسوب):", 10, u1y, out nudUnit1PurchasePrice, 2, canSeeCost);
+            if (canSeeCost) u1y += 38;
             AddNud(grpUnit1, "بيع قطاعي الصغرى:", 10, u1y, out nudUnit1SalePrice, 2); u1y += 35;
 
             var btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
@@ -553,10 +558,11 @@ namespace ChickenDist.Forms
             catch {}
         }
 
-        private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals)
+        private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals, bool visible = true)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            var lbl = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
+            parent.Controls.Add(lbl);
+            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
             parent.Controls.Add(nud);
         }
 

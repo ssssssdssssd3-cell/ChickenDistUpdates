@@ -151,8 +151,11 @@ namespace ChickenDist.Forms
             var cardPricing = CreateCardPanel("💰 الأسعار والتخزين (Pricing & Stock Limits)", ref currentY, 145);
 
             // Row 1: Purchase Price, Sale Price, Wholesale Price
+            bool canSeeCost = Session.CanViewCost("Products");
             var lblCost = CreateLabel("سعر الشراء / التكلفة (ج):", 16, 32, 230);
             nudCost = CreateNumericUpDown(0m, 100000m, 2, 16, 54, 230);
+            lblCost.Visible = canSeeCost;
+            nudCost.Visible = canSeeCost;
             cardPricing.Controls.Add(lblCost);
             cardPricing.Controls.Add(nudCost);
 

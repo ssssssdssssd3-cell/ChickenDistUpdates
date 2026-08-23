@@ -134,6 +134,11 @@ namespace ChickenDist.Forms
             var lblSaleDesc = new Label { Text = "القيمة البيعية المفقودة", Font = new Font("Arial", 8f), ForeColor = Color.DarkGray };
             var card4 = CreateCard("🏷️ خسارة العجز (بسعر البيع)", lblTotalShortageSale, lblSaleDesc, Color.FromArgb(110, 40, 120), Color.FromArgb(245, 235, 255));
 
+            bool canSeeCost = Session.CanViewCost("Inventory");
+            card1.Visible = canSeeCost;
+            card2.Visible = canSeeCost;
+            card3.Visible = canSeeCost;
+
             pnlCards.Controls.Add(card1, 0, 0);
             pnlCards.Controls.Add(card2, 1, 0);
             pnlCards.Controls.Add(card3, 2, 0);
@@ -163,10 +168,10 @@ namespace ChickenDist.Forms
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",     HeaderText = "الفعلي",         Width = 75 });
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",       HeaderText = "فارق الكمية",    Width = 85 });
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffType",      HeaderText = "نوع الفارق",     Width = 85 });
-            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء",    Width = 85 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء",    Width = 85, Visible = canSeeCost });
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",     HeaderText = "سعر البيع",      Width = 85 });
-            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageLoss",   HeaderText = "خسارة العجز (ج)", Width = 110 });
-            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SurplusGain",    HeaderText = "زيادة التكلفة (ج)", Width = 110 });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageLoss",   HeaderText = "خسارة العجز (ج)", Width = 110, Visible = canSeeCost });
+            dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "SurplusGain",    HeaderText = "زيادة التكلفة (ج)", Width = 110, Visible = canSeeCost });
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy",     HeaderText = "المسؤول",        Width = 90 });
             dgGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",         HeaderText = "ملاحظات",        Width = 150 });
 

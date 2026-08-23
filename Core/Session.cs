@@ -142,13 +142,37 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanCopySalesInvoice;
         }
 
+        /// <summary>
+        /// هل يحق للمستخدم رؤية سعر التكلفة وهوامش الربح؟
+        /// إذا كان الموظف مقفولاً عليه الدخول على كارت الصنف أو شاشة الأصناف، أو ليس لديه صلاحية رؤية التكلفة، تُحجب التكلفة نهائياً في كل مكان
+        /// </summary>
         public static bool CanViewCost(string screen = "Sales")
         {
             if (IsAdmin) return true;
+
+            // إذا كان الموظف مقفولاً عليه الدخول على كارت الصنف أو شاشة الأصناف، تُحجب التكلفة تماماً في كل البرنامج
+            if (!CanAccess("ProductCard") || !CanAccess("Products")) return false;
+
             if (_perms.ContainsKey(screen) && _perms[screen].CanViewCost) return true;
             if (screen == "PriceQuote" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
             if (screen == "Sales" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
+            if (screen == "POS" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
+            if (screen == "Products" && _perms.ContainsKey("Products") && _perms["Products"].CanViewCost) return true;
+            if (screen == "ProductCard" && _perms.ContainsKey("Products") && _perms["Products"].CanViewCost) return true;
+            if (screen == "Inventory" && _perms.ContainsKey("Inventory") && _perms["Inventory"].CanViewCost) return true;
+            if (screen == "ShortageNotebook" && (_perms.ContainsKey("ShortageNotebook") && _perms["ShortageNotebook"].CanViewCost || _perms.ContainsKey("Inventory") && _perms["Inventory"].CanViewCost)) return true;
+            if (screen == "Warehouses" && (_perms.ContainsKey("Warehouses") && _perms["Warehouses"].CanViewCost || _perms.ContainsKey("Products") && _perms["Products"].CanViewCost)) return true;
+            if (screen == "Wastage" && (_perms.ContainsKey("Wastage") && _perms["Wastage"].CanViewCost || _perms.ContainsKey("Inventory") && _perms["Inventory"].CanViewCost)) return true;
+            if (screen == "Reports" && (_perms.ContainsKey("Reports") && _perms["Reports"].CanViewCost || _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost)) return true;
+
             return false;
+        }
+
+        public static bool CanViewAnyCost()
+        {
+            if (IsAdmin) return true;
+            if (!CanAccess("ProductCard") || !CanAccess("Products")) return false;
+            return CanViewCost("Sales") || CanViewCost("Products") || CanViewCost("Inventory") || CanViewCost("Reports");
         }
 
         public static bool CanAdd(string screen)

@@ -123,8 +123,9 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف التالف", ReadOnly = true, FillWeight = 150 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Qty", HeaderText = "الكمية التالفة", FillWeight = 50, ValueType = typeof(decimal) });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostPrice", HeaderText = "تكلفة الوحدة", ReadOnly = true, FillWeight = 50 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 60 });
+            bool canSeeCost = Session.CanViewCost("Wastage");
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostPrice", HeaderText = "تكلفة الوحدة", ReadOnly = true, FillWeight = 50, Visible = canSeeCost });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 60, Visible = canSeeCost });
             
             var colDelete = new DataGridViewButtonColumn
             {
@@ -154,7 +155,8 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Right,
                 Width = 300,
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Visible = canSeeCost
             };
 
             btnSave = Theme.MakeButton("💾 حفظ مستند التالف", Color.FromArgb(160, 50, 50));

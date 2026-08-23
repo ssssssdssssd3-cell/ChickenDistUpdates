@@ -69,10 +69,12 @@ namespace ChickenDist.Forms
             y += 40;
 
             // سعر الشراء
-            pnlForm.Controls.Add(new Label { Text = "سعر الشراء:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            nudPurchasePrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            bool canSeeCost = Session.CanViewCost("Products");
+            var lblPurchase = new Label { Text = "سعر الشراء:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold, Visible = canSeeCost };
+            nudPurchasePrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Visible = canSeeCost };
+            pnlForm.Controls.Add(lblPurchase);
             pnlForm.Controls.Add(nudPurchasePrice);
-            y += 40;
+            if (canSeeCost) y += 40;
 
             // سعر البيع
             pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
