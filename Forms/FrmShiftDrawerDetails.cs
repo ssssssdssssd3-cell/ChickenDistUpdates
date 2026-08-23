@@ -23,6 +23,12 @@ namespace ChickenDist.Forms
 
         public FrmShiftDrawerDetails(int shiftID)
         {
+            if (!Session.CanViewShiftDetails())
+            {
+                MessageBox.Show("⛔ غير مصرح لك بعرض تفاصيل وحركة درج الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Load += (s, e) => this.Close();
+                return;
+            }
             _shiftID = shiftID;
             InitUI();
             LoadDrawerData();

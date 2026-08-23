@@ -21,6 +21,12 @@ namespace ChickenDist.Forms
 
         public FrmShiftReport(int? shiftID = null)
         {
+            if (!Session.CanViewShiftDetails())
+            {
+                MessageBox.Show("⛔ غير مصرح لك بعرض تقرير وتفاصيل الورديات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Load += (s, e) => this.Close();
+                return;
+            }
             _targetShiftID = shiftID;
             InitUI();
             LoadShiftsList();

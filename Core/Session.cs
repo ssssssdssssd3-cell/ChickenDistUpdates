@@ -263,6 +263,17 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanViewDetails;
         }
 
+        public static bool CanViewShiftDetails()
+        {
+            if (IsAdmin) return true;
+            if (_perms.ContainsKey("ShiftClose")) return _perms["ShiftClose"].CanViewDetails;
+            if (_perms.ContainsKey("ShiftsHistory")) return _perms["ShiftsHistory"].CanViewDetails;
+            if (_perms.ContainsKey("POS")) return _perms["POS"].CanViewDetails;
+            if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanViewDetails;
+            if (_perms.ContainsKey("DailyClosing")) return _perms["DailyClosing"].CanViewDetails;
+            return false;
+        }
+
         public static bool CanViewBalance(string screen = "CashBox")
         {
             if (IsAdmin) return true;

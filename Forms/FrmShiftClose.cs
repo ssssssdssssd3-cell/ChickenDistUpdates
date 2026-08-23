@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
         private Button btnToggleDetails;
         private Button btnDrawerMovementDetails;
 
-        private bool _forceShowDetails = true;
+        private bool _forceShowDetails = false;
 
         public FrmShiftClose()
         {
@@ -86,6 +86,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
+            _forceShowDetails = Session.CanViewShiftDetails();
             this.Text = "إدارة وإغلاق الوردية المحاسبية";
             this.Size = new Size(1180, 840);
             this.MinimumSize = new Size(1060, 760);
@@ -128,12 +129,13 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 4, 0)
+                Margin = new Padding(0, 0, 4, 0),
+                Visible = Session.CanViewShiftDetails()
             };
             btnToggleDetails.FlatAppearance.BorderSize = 0;
             btnToggleDetails.Click += (s, e) =>
             {
-                if (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || Session.CanAccess("ShiftDetails"))
+                if (Session.CanViewShiftDetails())
                 {
                     _forceShowDetails = !_forceShowDetails;
                     if (_openShift != null)
@@ -158,12 +160,13 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 4, 0)
+                Margin = new Padding(0, 0, 4, 0),
+                Visible = Session.CanViewShiftDetails()
             };
             btnDrawerMovementDetails.FlatAppearance.BorderSize = 0;
             btnDrawerMovementDetails.Click += (s, e) =>
             {
-                if (Session.IsAdmin || Session.CanAccess("ShiftDetails") || Session.CanAccess("ShiftCloseDetails") || Session.CanViewDetails("ShiftClose"))
+                if (Session.CanViewShiftDetails())
                 {
                     if (_openShift != null)
                     {
@@ -505,9 +508,17 @@ namespace ChickenDist.Forms
             btnPrintReport.Margin    = new Padding(6, 0, 0, 0);
             btnRefresh.Margin        = new Padding(6, 0, 0, 0);
 
+            btnDetailedReport.Visible = Session.CanViewShiftDetails();
+            btnApproveShift.Visible   = Session.IsAdmin || Session.CanAccess("ShiftApprove");
+
             btnCloseShift.Click     += BtnCloseShift_Click;
             btnApproveShift.Click   += BtnApproveShift_Click;
             btnDetailedReport.Click += (s, e) => {
+                if (!Session.CanViewShiftDetails())
+                {
+                    MessageBox.Show("🔒 ليس لديك صلاحية لعرض تقرير وتفاصيل الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 int? sid = _openShift != null ? Convert.ToInt32(_openShift["ShiftID"]) : (int?)null;
                 using (var dlg = new FrmShiftReport(sid)) { dlg.ShowDialog(this); }
             };
@@ -838,32 +849,39 @@ namespace ChickenDist.Forms
                     Expected = expected
                 };
 
+                bool canViewDetails = Session.CanViewShiftDetails() && _forceShowDetails;
+
                 // عرض مؤشرات المبيعات
-                lblInvoiceCountVal.Text   = invCount.ToString("N0");
-                lblGrossSalesVal.Text     = grossSales.ToString("N2") + " ج";
-                lblReturnsSummaryVal.Text = tr.ToString("N2") + " ج";
-                lblDiscountsVal.Text      = discounts.ToString("N2") + " ج";
-                lblTaxesVal.Text          = "0.00 ج";
-                lblNetSalesVal.Text       = netSales.ToString("N2") + " ج";
+                lblInvoiceCountVal.Text   = canViewDetails ? invCount.ToString("N0") : "*** 🔒";
+                lblGrossSalesVal.Text     = canViewDetails ? grossSales.ToString("N2") + " ج" : "*** 🔒";
+                lblReturnsSummaryVal.Text = canViewDetails ? tr.ToString("N2") + " ج" : "*** 🔒";
+                lblDiscountsVal.Text      = canViewDetails ? discounts.ToString("N2") + " ج" : "*** 🔒";
+                lblTaxesVal.Text          = canViewDetails ? "0.00 ج" : "*** 🔒";
+                lblNetSalesVal.Text       = canViewDetails ? netSales.ToString("N2") + " ج" : "*** 🔒";
 
                 // عرض كروت وسائل الدفع والنقدية
-                lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
-                lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
-                lblVisaSalesVal.Text   = vs.ToString("N2") + " ج";
-                lblWalletSalesVal.Text = ws.ToString("N2") + " ج";
-                lblCreditSalesVal.Text = (cr + os).ToString("N2") + " ج";
-                lblCashInVal.Text      = cin.ToString("N2") + " ج";
-                lblReturnsVal.Text     = crtn.ToString("N2") + " ج";
-                lblExpensesVal.Text    = ex.ToString("N2") + " ج";
-                lblExpectedVal.Text    = expected.ToString("N2") + " ج";
+                lblOpeningCashVal.Text = canViewDetails ? oc.ToString("N2") + " ج" : "*** 🔒";
+                lblCashSalesVal.Text   = canViewDetails ? cs.ToString("N2") + " ج" : "*** 🔒";
+                lblVisaSalesVal.Text   = canViewDetails ? vs.ToString("N2") + " ج" : "*** 🔒";
+                lblWalletSalesVal.Text = canViewDetails ? ws.ToString("N2") + " ج" : "*** 🔒";
+                lblCreditSalesVal.Text = canViewDetails ? (cr + os).ToString("N2") + " ج" : "*** 🔒";
+                lblCashInVal.Text      = canViewDetails ? cin.ToString("N2") + " ج" : "*** 🔒";
+                lblReturnsVal.Text     = canViewDetails ? crtn.ToString("N2") + " ج" : "*** 🔒";
+                lblExpensesVal.Text    = canViewDetails ? ex.ToString("N2") + " ج" : "*** 🔒";
+                lblExpectedVal.Text    = canViewDetails ? expected.ToString("N2") + " ج" : "*** 🔒";
                 
-                if (string.IsNullOrWhiteSpace(txtActualCash.Text) || txtActualCash.Text == "0" || txtActualCash.Text == "0.00")
+                if (canViewDetails && (string.IsNullOrWhiteSpace(txtActualCash.Text) || txtActualCash.Text == "0" || txtActualCash.Text == "0.00"))
                 {
                     txtActualCash.Text = Math.Max(0m, expected).ToString("N2");
                 }
+                else if (!canViewDetails && (txtActualCash.Text == "0" || txtActualCash.Text == "0.00"))
+                {
+                    txtActualCash.Text = "";
+                }
 
-                bool canViewDetails = (Session.IsAdmin || Session.CanViewDetails("ShiftClose") || _forceShowDetails);
                 pnlSalesKpi.Visible = pnlKpiContainer.Visible = canViewDetails;
+                if (pnlFilterBar != null) pnlFilterBar.Visible = canViewDetails;
+                if (pnlMovementsContainer != null) pnlMovementsContainer.Visible = canViewDetails;
 
                 RecalcDiff();
             }
@@ -1044,6 +1062,19 @@ namespace ChickenDist.Forms
             decimal.TryParse(txtActualCash.Text.Replace(",", ""), out decimal actual);
             decimal diff = actual - _summary.Expected;
 
+            bool canViewDetails = Session.CanViewShiftDetails() && _forceShowDetails;
+            if (!canViewDetails)
+            {
+                lblDiffVal.Text = "*** 🔒 (إغلاق أعمى)";
+                lblDiffVal.ForeColor = Theme.TextSub;
+                pnlDeficitReasonBox.Visible = false;
+
+                decimal.TryParse(txtTransferAmount.Text.Replace(",", ""), out decimal trAct);
+                decimal remAct = Math.Max(0m, actual - trAct);
+                lblRemainingVal.Text = remAct.ToString("N2") + " ج";
+                return;
+            }
+
             if (diff > 0.01m)
             {
                 lblDiffVal.Text = $"🟢 زيادة: +{diff:N2} ج";
@@ -1080,9 +1111,10 @@ namespace ChickenDist.Forms
 
             decimal expected = _summary != null ? _summary.Expected : 0m;
             decimal diff = actual - expected;
+            bool canViewDetails = Session.CanViewShiftDetails();
 
             // التحقق من سبب العجز الإجباري
-            if (diff < -0.01m && string.IsNullOrWhiteSpace(txtDeficitReason.Text))
+            if (canViewDetails && diff < -0.01m && string.IsNullOrWhiteSpace(txtDeficitReason.Text))
             {
                 MessageBox.Show("⚠️ يوجد عجز في نقدية الوردية بمقدار (" + diff.ToString("N2") + " ج).\n\nيرجى كتابة وتبرير سبب العجز في حقل 'تبرير سبب العجز' قبل تقفيل الوردية.", "إلزامية تبرير العجز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtDeficitReason.Focus();
@@ -1101,12 +1133,18 @@ namespace ChickenDist.Forms
             int targetSafeID = 0;
             if (cboTargetSafe.SelectedItem is ComboItem ci) targetSafeID = ci.ID;
 
-            string confirmMsg = $"هل أنت متأكد من تقفيل الوردية الحالية؟\n\n" +
-                                $"• المبلغ الفعلي بالدرج: {actual:N2} ج\n" +
-                                $"• الفارق (العجز/الزيادة): {diff:N2} ج\n" +
-                                (transfer > 0 ? $"• المبلغ المحول للخزنة: {transfer:N2} ج\n" : "") +
-                                $"• المبلغ المتبقي كرصيد للوردية القادمة: {remainingInDrawer:N2} ج\n\n" +
-                                "⚡ سيتم فتح الوردية التالية تلقائياً فوراً.";
+            string confirmMsg = canViewDetails
+                ? ($"هل أنت متأكد من تقفيل الوردية الحالية؟\n\n" +
+                   $"• المبلغ الفعلي بالدرج: {actual:N2} ج\n" +
+                   $"• الفارق (العجز/الزيادة): {diff:N2} ج\n" +
+                   (transfer > 0 ? $"• المبلغ المحول للخزنة: {transfer:N2} ج\n" : "") +
+                   $"• المبلغ المتبقي كرصيد للوردية القادمة: {remainingInDrawer:N2} ج\n\n" +
+                   "⚡ سيتم فتح الوردية التالية تلقائياً فوراً.")
+                : ($"هل أنت متأكد من تأكيد تسليم نقدية وتقفيل الوردية الحالية؟\n\n" +
+                   $"• المبلغ الفعلي المسلم بالدرج: {actual:N2} ج\n" +
+                   (transfer > 0 ? $"• المبلغ المحول للخزنة: {transfer:N2} ج\n" : "") +
+                   $"• المبلغ المتبقي كرصيد للوردية القادمة: {remainingInDrawer:N2} ج\n\n" +
+                   "⚡ سيتم فتح الوردية التالية تلقائياً فوراً.");
 
             if (MessageBox.Show(confirmMsg, "تأكيد إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;

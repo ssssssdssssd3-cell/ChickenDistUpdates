@@ -728,7 +728,9 @@ namespace ChickenDist.Forms
                                                    string.Equals(key, "DailyAccounts", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "ActualBalances", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase) ||
-                                                   string.Equals(key, "Financials", StringComparison.OrdinalIgnoreCase);
+                                                   string.Equals(key, "Financials", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase);
                             if (!isDetailsScreen)
                             {
                                 DisableGridCell(targetGrid.Rows[ri], 12); // ViewDetails

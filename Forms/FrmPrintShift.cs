@@ -76,44 +76,54 @@ namespace ChickenDist.Forms
         {
             if (shiftID <= 0) return;
 
+            bool canViewDetails = Session.CanViewShiftDetails();
+
             var menu = new ContextMenuStrip
             {
                 RightToLeft = RightToLeft.Yes,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
 
-            var itemReceiptDirect = new ToolStripMenuItem("🖨️ طباعة ريسيت حراري (Thermal 80mm) - مباشر", null, (s, e) =>
+            var itemReceiptDirect = new ToolStripMenuItem("🖨️ طباعة إيصال استلام نقدية الوردية (Thermal 80mm) - مباشر", null, (s, e) =>
             {
                 new FrmPrintShift(shiftID, "Receipt", showPreview: false);
             });
 
-            var itemReceiptPreview = new ToolStripMenuItem("🔍 معاينة ريسيت حراري (Thermal 80mm)", null, (s, e) =>
+            var itemReceiptPreview = new ToolStripMenuItem("🔍 معاينة إيصال استلام نقدية الوردية (Thermal 80mm)", null, (s, e) =>
             {
                 new FrmPrintShift(shiftID, "Receipt", showPreview: true);
             });
 
-            var itemA4Direct = new ToolStripMenuItem("📄 طباعة تقرير ورق (A4) - شبكي وجداول احترافية - مباشر", null, (s, e) =>
+            if (canViewDetails)
             {
-                new FrmPrintShift(shiftID, "A4", showPreview: false);
-            });
+                var itemA4Direct = new ToolStripMenuItem("📄 طباعة تقرير ورق (A4) - شبكي وجداول احترافية - مباشر", null, (s, e) =>
+                {
+                    new FrmPrintShift(shiftID, "A4", showPreview: false);
+                });
 
-            var itemA4Preview = new ToolStripMenuItem("🔍 معاينة تقرير ورق (A4) - شبكي وجداول احترافية", null, (s, e) =>
+                var itemA4Preview = new ToolStripMenuItem("🔍 معاينة تقرير ورق (A4) - شبكي وجداول احترافية", null, (s, e) =>
+                {
+                    new FrmPrintShift(shiftID, "A4", showPreview: true);
+                });
+
+                var itemWhatsApp = new ToolStripMenuItem("📲 إرسال تقرير الوردية واتساب", null, (s, e) =>
+                {
+                    SendShiftWhatsApp(shiftID, anchorControl?.FindForm());
+                });
+
+                menu.Items.Add(itemA4Preview);
+                menu.Items.Add(itemA4Direct);
+                menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add(itemReceiptPreview);
+                menu.Items.Add(itemReceiptDirect);
+                menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add(itemWhatsApp);
+            }
+            else
             {
-                new FrmPrintShift(shiftID, "A4", showPreview: true);
-            });
-
-            var itemWhatsApp = new ToolStripMenuItem("📲 إرسال تقرير الوردية واتساب", null, (s, e) =>
-            {
-                SendShiftWhatsApp(shiftID, anchorControl?.FindForm());
-            });
-
-            menu.Items.Add(itemA4Preview);
-            menu.Items.Add(itemA4Direct);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(itemReceiptPreview);
-            menu.Items.Add(itemReceiptDirect);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(itemWhatsApp);
+                menu.Items.Add(itemReceiptPreview);
+                menu.Items.Add(itemReceiptDirect);
+            }
 
             if (anchorControl != null && anchorControl.IsHandleCreated)
             {
@@ -475,21 +485,29 @@ namespace ChickenDist.Forms
 
             y += thH;
 
-            var financialRows = new List<(string seq, string title, decimal amt, string note, Color col, bool bold, Color bg)>
+            bool canViewDetails = Session.CanViewShiftDetails();
+            var financialRows = new List<(string seq, string title, decimal amt, string note, Color col, bool bold, Color bg)>();
+            if (canViewDetails)
             {
-                ("1", "رصيد بداية الوردية (الافتتاحي)", _openingCash, "النقدية المسجلة بالدرج عند بدء الوردية", Color.Black, false, Color.White),
-                ("2", "مبيعات نقدية (كاش الدرج) 🛒", _cashSales, "السيولة النقدية المحصلة بالدرج من المبيعات", Color.FromArgb(15, 118, 110), true, colRowAlt),
-                ("3", "مبيعات فيزا وماكينات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا (لا تدخل بسيولة الدرج)", Color.FromArgb(109, 40, 217), false, Color.White),
-                ("4", "مبيعات محافظ إلكترونية (إنستاباي/فودافون) 📱", _walletSales, "إيرادات بالمحافظ الإلكترونية (لا تدخل بسيولة الدرج)", Color.FromArgb(0, 168, 232), false, colRowAlt),
-                ("5", "مبيعات آجل / عملاء 📑", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل", Color.FromArgb(52, 152, 219), false, Color.White),
-                ("6", "إجمالي مبيعات الوردية الكلي", _totalSales, $"الفواتير: {_invoiceCount} | الخصومات: {_totalDiscounts:N2} ج | الصافي: {_netSales:N2} ج", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)),
-                ("7", "توريدات وإيداعات وتحصيل للدرج ➕", _totalCollections, "سندات قبض وتحويلات نقدية واردة للدرج", _totalCollections > 0 ? Color.FromArgb(21, 128, 61) : Color.Black, false, Color.White),
-                ("8", "مرتجعات مبيعات كاش الدرج ↩ ➖", _cashReturns > 0 ? _cashReturns : _totalReturns, "مرتجع مبيعات نقدية مخصوم من نقدية الدرج", _totalReturns > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, colRowAlt),
-                ("9", "مصروفات ونثريات وسحوبات من الدرج ➖", _totalExpenses, "نثريات ومصروفات وسندات صرف مسحوبة من الدرج", _totalExpenses > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White),
-                ("10", "النقدية المتوقعة بالدرج (السيولة الواجبة)", _expectedCash, "الرصيد الواجب توفره بالدرج (الافتتاحي + الكاش + التوريدات - المرتجع - المصروف)", colPrimary, true, Color.FromArgb(238, 242, 255)),
-                ("11", "النقدية الفعلية المحصورة بالدرج", _actualCash, "المبلغ الفعلي المعدود بمعرفة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)),
-                ("12", "الفرق المحاسبي (عجز / زيادة)", _difference, _difference == 0 ? "مطابق تماماً بدون أي فروقات ✔" : (_difference < 0 ? $"عجز نقدي قدره {_difference:N2} ج 🔴" : $"زيادة نقدية قدرها {_difference:N2} ج 🟢"), _difference == 0 ? Color.FromArgb(21, 128, 61) : (_difference < 0 ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6)), true, _difference == 0 ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242))
-            };
+                financialRows.Add(("1", "رصيد بداية الوردية (الافتتاحي)", _openingCash, "النقدية المسجلة بالدرج عند بدء الوردية", Color.Black, false, Color.White));
+                financialRows.Add(("2", "مبيعات نقدية (كاش الدرج) 🛒", _cashSales, "السيولة النقدية المحصلة بالدرج من المبيعات", Color.FromArgb(15, 118, 110), true, colRowAlt));
+                financialRows.Add(("3", "مبيعات فيزا وماكينات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا (لا تدخل بسيولة الدرج)", Color.FromArgb(109, 40, 217), false, Color.White));
+                financialRows.Add(("4", "مبيعات محافظ إلكترونية (إنستاباي/فودافون) 📱", _walletSales, "إيرادات بالمحافظ الإلكترونية (لا تدخل بسيولة الدرج)", Color.FromArgb(0, 168, 232), false, colRowAlt));
+                financialRows.Add(("5", "مبيعات آجل / عملاء 📑", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل", Color.FromArgb(52, 152, 219), false, Color.White));
+                financialRows.Add(("6", "إجمالي مبيعات الوردية الكلي", _totalSales, $"الفواتير: {_invoiceCount} | الخصومات: {_totalDiscounts:N2} ج | الصافي: {_netSales:N2} ج", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)));
+                financialRows.Add(("7", "توريدات وإيداعات وتحصيل للدرج ➕", _totalCollections, "سندات قبض وتحويلات نقدية واردة للدرج", _totalCollections > 0 ? Color.FromArgb(21, 128, 61) : Color.Black, false, Color.White));
+                financialRows.Add(("8", "مرتجعات مبيعات كاش الدرج ↩ ➖", _cashReturns > 0 ? _cashReturns : _totalReturns, "مرتجع مبيعات نقدية مخصوم من نقدية الدرج", _totalReturns > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, colRowAlt));
+                financialRows.Add(("9", "مصروفات ونثريات وسحوبات من الدرج ➖", _totalExpenses, "نثريات ومصروفات وسندات صرف مسحوبة من الدرج", _totalExpenses > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White));
+                financialRows.Add(("10", "النقدية المتوقعة بالدرج (السيولة الواجبة)", _expectedCash, "الرصيد الواجب توفره بالدرج (الافتتاحي + الكاش + التوريدات - المرتجع - المصروف)", colPrimary, true, Color.FromArgb(238, 242, 255)));
+                financialRows.Add(("11", "النقدية الفعلية المحصورة بالدرج", _actualCash, "المبلغ الفعلي المعدود بمعرفة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
+                financialRows.Add(("12", "الفرق المحاسبي (عجز / زيادة)", _difference, _difference == 0 ? "مطابق تماماً بدون أي فروقات ✔" : (_difference < 0 ? $"عجز نقدي قدره {_difference:N2} ج 🔴" : $"زيادة نقدية قدرها {_difference:N2} ج 🟢"), _difference == 0 ? Color.FromArgb(21, 128, 61) : (_difference < 0 ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6)), true, _difference == 0 ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242)));
+            }
+            else
+            {
+                financialRows.Add(("1", "النقدية الفعلية المسلمة بالدرج 💵", _actualCash, "المبلغ الفعلي المعدود والمسلم بواسطة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
+                financialRows.Add(("2", "المبلغ المحول والمودع بالخزنة 🏦", _transferredAmount, $"تم تحويله إلى: {(string.IsNullOrEmpty(_targetSafeName) ? "---" : _targetSafeName)}", Color.FromArgb(15, 118, 110), true, colRowAlt));
+                financialRows.Add(("3", "المبلغ المتبقي بالدرج كعهدة بداية 📌", _remainingInDrawer, "عهدة افتتاحية بالدرج للوردية القادمة", Color.Black, true, Color.White));
+            }
 
             foreach (var r in financialRows)
             {
@@ -639,32 +657,46 @@ namespace ChickenDist.Forms
                 y += rh + (isHighlighted ? 3 : 1);
             }
 
-            DrawRecGridRow("رصيد بداية الوردية:", _openingCash);
-            DrawRecGridRow("إجمالي المبيعات:", _totalSales, true);
-            DrawRecGridRow("  • مبيعات كاش بالدرج:", _cashSales);
-            DrawRecGridRow("  • مبيعات فيزا (إلكتروني):", _visaSales);
-            if (_walletSales > 0) DrawRecGridRow("  • مبيعات محافظ:", _walletSales);
-            DrawRecGridRow("  • مبيعات آجل:", _creditSales + _otherSales);
-            DrawRecGridRow("توريدات وإيداعات الدرج ➕:", _totalCollections);
-            DrawRecGridRow("مرتجعات كاش الدرج ↩ ➖:", _cashReturns > 0 ? _cashReturns : _totalReturns);
-            DrawRecGridRow("المصروفات والسحب من الدرج ➖:", _totalExpenses);
-            y += 3;
-
-            DrawRecGridRow("المتوقع بالدرج (السيولة):", _expectedCash, true, true);
-            DrawRecGridRow("الفعلي بالدرج:", _actualCash, true, true);
-            
-            string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
-            int diffRh = 22;
-            g.FillRectangle(new SolidBrush(Color.FromArgb(225, 225, 225)), lMargin, y, printableW, diffRh);
-            g.DrawRectangle(new Pen(Color.Black, 1.2f), lMargin, y, printableW, diffRh);
-            g.DrawString("الفرق المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin + 110, y, printableW - 112, diffRh), sfRight);
-            g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 2, y, 108, diffRh), sfLeft);
-            y += diffRh + 4;
-
-            if (!string.IsNullOrWhiteSpace(_deficitReason))
+            bool canViewDetails = Session.CanViewShiftDetails();
+            if (!canViewDetails)
             {
-                g.DrawString($"⚠️ سبب العجز: {_deficitReason}", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), sfRight);
-                y += 20;
+                DrawRecGridRow("المبلغ الفعلي المسلم بالدرج:", _actualCash, true, true);
+                if (_transferredAmount > 0)
+                {
+                    DrawRecGridRow($"المحول إلى ({_targetSafeName}):", _transferredAmount, true);
+                }
+                DrawRecGridRow("المتبقي كعهدة للوردية التالية:", _remainingInDrawer, true);
+                y += 4;
+            }
+            else
+            {
+                DrawRecGridRow("رصيد بداية الوردية:", _openingCash);
+                DrawRecGridRow("إجمالي المبيعات:", _totalSales, true);
+                DrawRecGridRow("  • مبيعات كاش بالدرج:", _cashSales);
+                DrawRecGridRow("  • مبيعات فيزا (إلكتروني):", _visaSales);
+                if (_walletSales > 0) DrawRecGridRow("  • مبيعات محافظ:", _walletSales);
+                DrawRecGridRow("  • مبيعات آجل:", _creditSales + _otherSales);
+                DrawRecGridRow("توريدات وإيداعات الدرج ➕:", _totalCollections);
+                DrawRecGridRow("مرتجعات كاش الدرج ↩ ➖:", _cashReturns > 0 ? _cashReturns : _totalReturns);
+                DrawRecGridRow("المصروفات والسحب من الدرج ➖:", _totalExpenses);
+                y += 3;
+
+                DrawRecGridRow("المتوقع بالدرج (السيولة):", _expectedCash, true, true);
+                DrawRecGridRow("الفعلي بالدرج:", _actualCash, true, true);
+            
+                string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
+                int diffRh = 22;
+                g.FillRectangle(new SolidBrush(Color.FromArgb(225, 225, 225)), lMargin, y, printableW, diffRh);
+                g.DrawRectangle(new Pen(Color.Black, 1.2f), lMargin, y, printableW, diffRh);
+                g.DrawString("الفرق المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin + 110, y, printableW - 112, diffRh), sfRight);
+                g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 2, y, 108, diffRh), sfLeft);
+                y += diffRh + 4;
+
+                if (!string.IsNullOrWhiteSpace(_deficitReason))
+                {
+                    g.DrawString($"⚠️ سبب العجز: {_deficitReason}", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), sfRight);
+                    y += 20;
+                }
             }
 
             // 4. التوريد
