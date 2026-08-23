@@ -164,11 +164,13 @@ namespace ChickenDist.Forms
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
-                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
+                "اسم صنف كبير + باركود (بدون سعر)"
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                                            : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
             this.Controls.Add(cboBarcodeTemplate);
@@ -361,6 +363,7 @@ namespace ChickenDist.Forms
                 template = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
                          : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
                          : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
+                         : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
                          : "Standard";
             }
             if (cboBarcodeEncoding.SelectedItem != null)
@@ -476,6 +479,38 @@ namespace ChickenDist.Forms
                     if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
                     {
                         g.DrawString($"الرف: {item.ShelfLocation}", fLocation, Brushes.Black, new RectangleF(x + w / 2, y, w / 2 - 5, isSmallSticker ? 10 : 12), rightFormat);
+                    }
+                }
+                else if (template == "NoPrice" || template == "NoPriceBigName")
+                {
+                    if (chkPrintCompanyName.Checked && !string.IsNullOrWhiteSpace(AppConfig.CompanyName))
+                    {
+                        g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        y += isSmallSticker ? 10 : 12;
+                    }
+
+                    // اسم الصنف بخط كبير وبارز
+                    g.DrawString(item.ProductName, fNameLarge, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 20 : 28), center);
+                    y += isSmallSticker ? 20 : 28;
+
+                    // رسم الباركود بدون سعر
+                    float barcodeHeight = isSmallSticker ? 26 : 38;
+                    float barcodeX = x + (w - (w - 16)) / 2;
+                    if (isCode128)
+                        DrawCode128(g, item.ProductCode, barcodeX, y, w - 16, barcodeHeight);
+                    else
+                        DrawCode39(g, item.ProductCode, barcodeX, y, w - 16, barcodeHeight);
+                    y += barcodeHeight + 2;
+
+                    // كود الباركود ورقم الرف إن وجد
+                    if (!string.IsNullOrWhiteSpace(item.ShelfLocation))
+                    {
+                        g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(x + 2, y, w / 2 - 2, isSmallSticker ? 10 : 12), leftFormat);
+                        g.DrawString($"الرف: {item.ShelfLocation}", fLocation, Brushes.Black, new RectangleF(x + w / 2, y, w / 2 - 2, isSmallSticker ? 10 : 12), rightFormat);
+                    }
+                    else
+                    {
+                        g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                     }
                 }
                 else

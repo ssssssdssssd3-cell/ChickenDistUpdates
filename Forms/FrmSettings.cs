@@ -562,11 +562,13 @@ namespace ChickenDist.Forms
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
-                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
+                "اسم صنف كبير + باركود (بدون سعر)"
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
+                                            : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
             this.Controls.Add(cboBarcodeTemplate);
@@ -1260,6 +1262,7 @@ namespace ChickenDist.Forms
                 AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
                                           : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
                                           : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
+                                          : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
                                           : "Standard";
                 AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
 
