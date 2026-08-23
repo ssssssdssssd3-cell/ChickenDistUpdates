@@ -451,7 +451,20 @@ namespace ChickenDist.Forms
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
-                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
+                    ("📅 تقرير المبيعات اليومية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
+                    ("📈 تقرير المبيعات خلال فترة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPeriod")))),
+                    ("🧾 سجل فواتير المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSales")))),
+                    ("📦 تفاصيل سطور وأصناف المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSaleItems")))),
+                    ("📊 مبيعات الأصناف والربحية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByProduct")))),
+                    ("🏢 مبيعات المجموعات والأقسام", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByCategory")))),
+                    ("👥 مبيعات العملاء والمسدد", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByClient")))),
+                    ("👔 مبيعات المستخدمين والكاشير", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByUser")))),
+                    ("💳 طرق الدفع والتحصيل", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPaymentMethod")))),
+                    ("🏷️ الخصومات والتخفيضات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesDiscounts")))),
+                    ("🔄 مرتجعات المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedReturns")))),
+                    ("💰 أرباح وهامش المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesProfitability")))),
+                    ("💤 الأصناف الراكدة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "StagnantProducts")))),
+                    ("📊 كل تقارير المبيعات الشاملة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales")))),
                 } : new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
@@ -465,7 +478,20 @@ namespace ChickenDist.Forms
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
-                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
+                    ("📅 تقرير المبيعات اليومية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
+                    ("📈 تقرير المبيعات خلال فترة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPeriod")))),
+                    ("🧾 سجل فواتير المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSales")))),
+                    ("📦 تفاصيل سطور وأصناف المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSaleItems")))),
+                    ("📊 مبيعات الأصناف والربحية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByProduct")))),
+                    ("🏢 مبيعات المجموعات والأقسام", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByCategory")))),
+                    ("👥 مبيعات العملاء والمسدد", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByClient")))),
+                    ("👔 مبيعات المستخدمين والكاشير", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByUser")))),
+                    ("💳 طرق الدفع والتحصيل", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPaymentMethod")))),
+                    ("🏷️ الخصومات والتخفيضات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesDiscounts")))),
+                    ("🔄 مرتجعات المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedReturns")))),
+                    ("💰 أرباح وهامش المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesProfitability")))),
+                    ("💤 الأصناف الراكدة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "StagnantProducts")))),
+                    ("📊 كل تقارير المبيعات الشاملة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales")))),
                 }),
 
                 ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
@@ -650,7 +676,20 @@ namespace ChickenDist.Forms
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
-                    ("📊 تقارير المبيعات", "Reports,Sales",   (Action)(() => NavigateTo(new FrmReports("Sales")))),
+                    ("📅 تقرير المبيعات اليومية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
+                    ("📈 تقرير المبيعات خلال فترة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPeriod")))),
+                    ("🧾 سجل فواتير المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSales")))),
+                    ("📦 تفاصيل سطور وأصناف المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSaleItems")))),
+                    ("📊 مبيعات الأصناف والربحية", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByProduct")))),
+                    ("🏢 مبيعات المجموعات والأقسام", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByCategory")))),
+                    ("👥 مبيعات العملاء والمسدد", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByClient")))),
+                    ("👔 مبيعات المستخدمين والكاشير", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByUser")))),
+                    ("💳 طرق الدفع والتحصيل", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPaymentMethod")))),
+                    ("🏷️ الخصومات والتخفيضات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesDiscounts")))),
+                    ("🔄 مرتجعات المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedReturns")))),
+                    ("💰 أرباح وهامش المبيعات", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesProfitability")))),
+                    ("💤 الأصناف الراكدة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "StagnantProducts")))),
+                    ("📊 كل تقارير المبيعات الشاملة", "Reports,Sales", (Action)(() => NavigateTo(new FrmReports("Sales")))),
                 }),
 
                 ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
@@ -1127,10 +1166,22 @@ namespace ChickenDist.Forms
             // Check if this form type is already open → switch to it
             foreach (var entry in _openTabs)
             {
-                if (!entry.form.IsDisposed && entry.form.GetType() == form.GetType())
+                if (!entry.form.IsDisposed)
                 {
-                    SwitchToTab(entry.form, entry.tab);
-                    return entry.tab;
+                    if (form is FrmReports newRpt && entry.form is FrmReports existingRpt)
+                    {
+                        if (string.Equals(newRpt.TargetModule, existingRpt.TargetModule, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(newRpt.DefaultTabTag, existingRpt.DefaultTabTag, StringComparison.OrdinalIgnoreCase))
+                        {
+                            SwitchToTab(entry.form, entry.tab);
+                            return entry.tab;
+                        }
+                    }
+                    else if (entry.form.GetType() == form.GetType())
+                    {
+                        SwitchToTab(entry.form, entry.tab);
+                        return entry.tab;
+                    }
                 }
             }
 

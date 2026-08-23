@@ -108,6 +108,63 @@ namespace ChickenDist.Forms
 		};
 
 		public string TargetModule => _targetModule;
+		public string DefaultTabTag => _defaultTabTag;
+
+		private Label lblReportHeaderTitle;
+		private Label lblReportHeaderDesc;
+
+		private static readonly Dictionary<string, (string title, string desc)> ReportDescriptions = new Dictionary<string, (string title, string desc)>(StringComparer.OrdinalIgnoreCase)
+		{
+			// Sales
+			{ "DailySalesSummary", ("📅 تقرير المبيعات اليومية", "عرض ملخص إجمالي لمبيعات اليوم الحالي أو يوم محدد، ومجموع المبيعات النقدية والآجلة والفيزا، مع إجمالي الخصومات وصافي دخل اليومية.") },
+			{ "SalesByPeriod", ("📈 تقرير المبيعات خلال فترة", "مقارنة وتحليل حركة المبيعات وتطورها على مدار فترة زمنية محددة (أيام / أسابيع / شهور) مع الرسوم البيانية والإحصائيات.") },
+			{ "DetailedSales", ("🧾 سجل فواتير المبيعات", "استعراض ومراجعة كافة فواتير المبيعات الصادرة مع تفاصيل كل فاتورة وإمكانية إعادة الطباعة (A4 / ريسيت) أو الإرسال واتساب للعميل.") },
+			{ "DetailedSaleItems", ("📦 تفاصيل سطور وأصناف المبيعات", "حصر تفصيلي لكل صنف تم بيعه داخل الفواتير مع الكميات المباعة وسعر كل حركة ونسبة الخصم والإجمالي.") },
+			{ "SalesByProduct", ("📊 مبيعات الأصناف والربحية", "معرفة الأصناف الأكثر مبيعاً والأعلى تحقيقاً للأرباح، وحساب هامش ربح كل صنف ونسبته من إجمالي المبيعات.") },
+			{ "SalesByCategory", ("🏢 مبيعات المجموعات والأقسام", "تحليل المبيعات حسب التصنيفات والأقسام لمعرفة أي الأقسام الأكثر رواجاً ونشاطاً في المبيعات.") },
+			{ "SalesByClient", ("👥 مبيعات العملاء والمسدد", "كشف مبيعات وسحوبات كل عميل على حدة مع إجمالي المبالغ المسددة والمتبقية كديون ومعدل تكرار الشراء.") },
+			{ "SalesByUser", ("👔 مبيعات المستخدمين والكاشير", "تقييم إنتاجية ومبيعات كل مستخدم أو كاشير أو بائع، ومتابعة حركات البيع الصادرة من كل موظف.") },
+			{ "SalesByPaymentMethod", ("💳 طرق الدفع والتحصيل", "تفصيل وتوزيع المبيعات حسب طريقة التحصيل (نقدي / فيزا وبطاقات / آجل / دفع مختلط) لمطابقة النقدية والخزائن.") },
+			{ "SalesDiscounts", ("🏷️ الخصومات والتخفيضات", "حصر شامل لجميع الخصومات والتخفيضات الممنوحة على الفواتير أو الأصناف لمعرفة التكلفة الإجمالية للخصومات.") },
+			{ "DetailedReturns", ("🔄 مرتجعات المبيعات", "متابعة وتحليل فواتير وأصناف مرتجع المبيعات وأسباب الإرجاع وطريقة رد المبالغ للعملاء.") },
+			{ "SalesProfitability", ("💰 أرباح وهامش المبيعات", "حساب صافي الأرباح المحققة بعد خصم تكلفة الشراء والخصومات، وتحديد نسبة الربحية الدقيقة للمبيعات.") },
+			{ "StagnantProducts", ("💤 الأصناف الراكدة (مشتراة ولم تُباع)", "كشف الأصناف المخزنة التي لم تسجل أي حركة بيع خلال الفترة المحددة للمساعدة في التصفية وتنشيط المبيعات.") },
+
+			// Purchases
+			{ "DailyPurchasesSummary", ("📅 تقرير المشتريات اليومية", "ملخص مشتريات اليوم والتوريدات النقدية والآجلة وتكلفة البضاعة المشتراة.") },
+			{ "PurchasesByPeriod", ("📈 تقرير المشتريات خلال فترة", "تحليل ومتابعة المشتريات وتطور تكاليف التوريد خلال فترة محددة.") },
+			{ "DetailedPurchases", ("🧾 سجل فواتير المشتريات", "استعراض سجل فواتير الشراء وأرقامها والموردين ومراجعة الأسعار وتفاصيل الفاتورة.") },
+			{ "DetailedPurchaseItems", ("📦 تفاصيل سطور وأصناف المشتريات", "حصر الأصناف المشتراة مع الكميات الواردة وأسعار الشراء وتكاليف التوريد.") },
+			{ "PurchasesBySupplier", ("🤝 مشتريات الموردين والمسدد", "حجم التعاملات والمشتريات لكل مورد مع إجمالي المسدد والمتبقي في الحساب.") },
+			{ "PurchasesByProduct", ("📊 مشتريات الأصناف ومتوسط التكلفة", "متابعة كميات شراء كل صنف ومتوسط تكلفة الشراء عبر التوريدات المختلفة.") },
+			{ "PurchasesByCategory", ("🏢 مشتريات الأقسام والتصنيفات", "توزيع تكاليف المشتريات حسب الأقسام والتصنيفات المخزنية.") },
+			{ "DetailedPurchaseReturns", ("🔄 مرتجعات المشتريات", "حصر البضاعة المسترجعة للموردين واسترداد قيمتها نقداً أو خصماً من الرصيد.") },
+			{ "SupplierPayments", ("💵 المدفوعات للموردين والتسويات", "سجل سندات الصرف والتحويلات المالية المسددة للموردين لتسوية الأرصدة.") },
+			{ "PurchasePricesTracking", ("📈 أسعار الشراء وتغير الأسعار", "مراقبة تقلبات وتغيرات أسعار شراء الأصناف عبر الزمن لتفادي ارتفاع التكاليف.") },
+			{ "CreditPurchases", ("⏳ المشتريات الآجلة والمديونيات", "حصر المشتريات الآجلة ومتابعة مواعيد استحقاق السداد للموردين.") },
+
+			// Financials & Shifts
+			{ "DailyClosing", ("📑 تقرير التقفيل اليومي", "مراجعة واعتماد إقفال اليومية ومطابقة النقدية الفعلية مع مبيعات البرنامج.") },
+			{ "ShiftsHistory", ("📊 سجل وتقارير الورديات", "استعراض تفاصيل الورديات المغلقة ومبيعات كل كاشير والعجز أو الزيادة في الدرج.") },
+			{ "ShiftVsCalendarComparison", ("⚖️ مقارنة الورديات بالأيام التقويمية", "مطابقة مبيعات الورديات مع التاريخ الفعلي لليوم لمنع أي تداخل بين الأيام.") },
+			{ "IncomeStatementAndProfitability", ("📊 قائمة الدخل والربحية", "قائمة الدخل الشاملة: المبيعات - تكلفة المبيعات - المصروفات = صافي الربح.") },
+			{ "FinancialSummary", ("📊 الملخص المالي العام", "نظرة عامة وشاملة على الموقف المالي وحركة الخزائن والديون والأرباح.") },
+
+			// Clients & Drivers
+			{ "SalesByDriver", ("🚚 مبيعات المناديب والسيارات", "حجم مبيعات وتحصيلات كل مندوب وسيارة توزيع وعمولاتهم.") },
+			{ "ClientBalances", ("👥 أرصدة ومديونيات العملاء", "كشف كامل بأرصدة وديون جميع العملاء وإمكانية إرسال كشوف الحساب عبر واتساب.") },
+			{ "DebtAging", ("⏳ أعمار الديون", "تصنيف مديونيات العملاء حسب الفترة الزمنية (أقل من 30 يوم، 60 يوم، 90+ يوم) لمتابعة التحصيل.") },
+			{ "ClientProductSales", ("📊 مسحوبات العملاء من الأصناف", "تحليل الأصناف والكميات التي يسحبها كل عميل بانتظام.") },
+			{ "Handovers", ("📋 تسليم وتصفية المناديب", "متابعة حركات تسليم العهد والبضائع المحملة للمناديب وتصفيتها.") },
+
+			// Stores & Inventory
+			{ "ProductQtyDetail", ("📦 تفاصيل أرصدة المخازن", "استعراض أرصدة وكميات الأصناف داخل كل مخزن مع مواقع الأرفف وحد الطلب.") },
+			{ "WastageLoss", ("🗑️ الهوالك والتالف", "سجل الأصناف التالفة والهالكة وأسباب التلف وتكلفتها الإجمالية.") },
+			{ "DetailedInventoryValuation", ("💰 تقييم بضاعة المخزن", "حساب القيمة المالية الإجمالية للمخزون بسعر التكلفة وسعر البيع المتوقع.") },
+			{ "SupplierItemActivity", ("📊 حركة أصناف الموردين", "متابعة حركة الأصناف الخاصة بكل مورد وتوريداتها ومبيعاتها.") },
+			{ "ExpiryReport", ("⏳ تواريخ الصلاحية", "كشف الأصناف القريبة من انتهاء الصلاحية لتصريفها قبل التلف.") },
+			{ "InventoryVariance", ("⚖️ عجز وفروق الجرد", "مقارنة الرصيد الفعلي بعد الجرد مع الرصيد الدفتري وحساب الفروق.") }
+		};
 
 		public FrmReports(string targetModule = null, int preFilteredID = 0, string defaultTabTag = null)
 		{
@@ -422,8 +479,42 @@ namespace ChickenDist.Forms
 			flowRow2.Controls.Add(btnExportExcel);
 			flowRow2.Controls.Add(btnWhatsAppReport);
 
+			// بانر علوي أنيق يعرض اسم التقرير واستخدامه
+			var pnlReportBanner = new Panel
+			{
+				Dock = DockStyle.Top,
+				Height = 52,
+				BackColor = Color.FromArgb(15, 23, 42),
+				Padding = new Padding(12, 5, 12, 5),
+				Margin = new Padding(0, 0, 0, 8),
+				RightToLeft = RightToLeft.Yes
+			};
+
+			lblReportHeaderTitle = new Label
+			{
+				Dock = DockStyle.Top,
+				Height = 22,
+				ForeColor = Color.FromArgb(241, 196, 15), // Gold
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				TextAlign = ContentAlignment.MiddleRight,
+				Text = "📊 تقارير المبيعات الشاملة"
+			};
+
+			lblReportHeaderDesc = new Label
+			{
+				Dock = DockStyle.Fill,
+				ForeColor = Color.FromArgb(203, 213, 225), // Light Slate
+				Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+				TextAlign = ContentAlignment.MiddleRight,
+				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع."
+			};
+
+			pnlReportBanner.Controls.Add(lblReportHeaderDesc);
+			pnlReportBanner.Controls.Add(lblReportHeaderTitle);
+
 			pnlTopContainer.Controls.Add(flowRow2);
 			pnlTopContainer.Controls.Add(flowRow1);
+			pnlTopContainer.Controls.Add(pnlReportBanner);
 			base.Controls.Add(pnlTopContainer);
 
 			tabReports = new TabControl
@@ -1242,6 +1333,21 @@ namespace ChickenDist.Forms
 				return;
 			}
 			string text = tabReports.SelectedTab.Tag?.ToString();
+
+			// تحديث بانر عنوان ووصف التقرير
+			if (!string.IsNullOrEmpty(text) && ReportDescriptions.TryGetValue(text, out var rptInfo))
+			{
+				if (lblReportHeaderTitle != null) lblReportHeaderTitle.Text = rptInfo.title;
+				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "💡 استخدام التقرير: " + rptInfo.desc;
+				this.Text = rptInfo.title;
+			}
+			else
+			{
+				if (lblReportHeaderTitle != null) lblReportHeaderTitle.Text = tabReports.SelectedTab.Text;
+				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "💡 استعراض بيانات التقرير المختار مع إمكانية الفلترة والتصدير والطباعة.";
+				this.Text = tabReports.SelectedTab.Text;
+			}
+
 			if (btnWhatsAppReport != null)
 			{
 				btnWhatsAppReport.Visible = (text == "ClientBalances");
