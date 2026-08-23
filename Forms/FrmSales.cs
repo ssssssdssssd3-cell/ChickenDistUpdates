@@ -874,17 +874,26 @@ namespace ChickenDist.Forms
 			var itemPreviewReceipt = new ToolStripMenuItem("🔍 معاينة ريسيت حراري (Receipt)");
 			itemPreviewReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: true);
 
-			var itemPrintA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5) - مباشر");
+			var itemPrintA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4 كامل) - مباشر");
 			itemPrintA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: false);
 
-			var itemPreviewA4 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A4/A5)");
+			var itemPreviewA4 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A4 كامل)");
 			itemPreviewA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: true);
+
+			var itemPrintA5 = new ToolStripMenuItem("📑 طباعة فاتورة ورق (A5 نصف صفحة) - مباشر");
+			itemPrintA5.Click += (s2, e2) => new FrmPrintSale(saleID, "A5", showPreview: false);
+
+			var itemPreviewA5 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A5 نصف صفحة)");
+			itemPreviewA5.Click += (s2, e2) => new FrmPrintSale(saleID, "A5", showPreview: true);
 
 			menu.Items.Add(itemPrintReceipt);
 			menu.Items.Add(itemPreviewReceipt);
 			menu.Items.Add(new ToolStripSeparator());
 			menu.Items.Add(itemPrintA4);
 			menu.Items.Add(itemPreviewA4);
+			menu.Items.Add(new ToolStripSeparator());
+			menu.Items.Add(itemPrintA5);
+			menu.Items.Add(itemPreviewA5);
 
 			if (sender is Control ctrl)
 			{

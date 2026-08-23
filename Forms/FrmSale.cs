@@ -4799,17 +4799,21 @@ namespace ChickenDist.Forms
 			}
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt)");
+			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt 80mm)");
 			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: false);
             
-			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4/A5)");
+			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4 كامل)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: false);
+
+			var itemA5 = new ToolStripMenuItem("📑 طباعة فاتورة ورق (A5 نصف صفحة)");
+			itemA5.Click += (s2, e2) => new FrmPrintSale(printID, "A5", showPreview: false);
 
 			var itemPrep = new ToolStripMenuItem("📋 طباعة إذن التحضير والتجميع (F9)");
 			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
 
 			menu.Items.Add(itemReceipt);
 			menu.Items.Add(itemA4);
+			menu.Items.Add(itemA5);
 			menu.Items.Add(new ToolStripSeparator());
 			menu.Items.Add(itemPrep);
 
@@ -4856,17 +4860,21 @@ namespace ChickenDist.Forms
 			}
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 معاينة ريسيت حراري (Receipt)");
+			var itemReceipt = new ToolStripMenuItem("🧾 معاينة ريسيت حراري (Receipt 80mm)");
 			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: true);
             
-			var itemA4 = new ToolStripMenuItem("📄 معاينة فاتورة ورق (A4/A5)");
+			var itemA4 = new ToolStripMenuItem("📄 معاينة فاتورة ورق (A4 كامل)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: true);
+
+			var itemA5 = new ToolStripMenuItem("📑 معاينة فاتورة ورق (A5 نصف صفحة)");
+			itemA5.Click += (s2, e2) => new FrmPrintSale(printID, "A5", showPreview: true);
 
 			var itemPrep = new ToolStripMenuItem("📋 معاينة إذن التحضير والتجميع (F9)");
 			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
 
 			menu.Items.Add(itemReceipt);
 			menu.Items.Add(itemA4);
+			menu.Items.Add(itemA5);
 			menu.Items.Add(new ToolStripSeparator());
 			menu.Items.Add(itemPrep);
 
@@ -4906,8 +4914,17 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
-				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A4", 827, 1169);
-				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(25, 25, 25, 25);
+				bool isA4 = string.Equals(AppConfig.DefaultInvoiceFormat, "A4", StringComparison.OrdinalIgnoreCase) || AppConfig.DefaultInvoiceFormat != "A5";
+				if (isA4)
+				{
+					pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A4", 827, 1169);
+					pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(30, 30, 30, 30);
+				}
+				else
+				{
+					pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A5", 583, 827);
+					pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(20, 20, 20, 20);
+				}
 				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 			}
 
@@ -4915,7 +4932,7 @@ namespace ChickenDist.Forms
 			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.Text : (cboClient?.Text?.Trim() ?? "عميل نقدي");
 			if (string.IsNullOrEmpty(clientName) || clientName.StartsWith("--")) clientName = "عميل نقدي";
 			string empName = Session.EmpName;
-			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
+			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "الرحمة جروب لتجارة الأجهزة الكهربائية والأدوات المنزلية";
 			string companyPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
 			string companyAddress = !string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) ? AppConfig.CompanyAddress : "";
 			string invoiceCode = _editSaleID > 0 ? $"فاتورة رقم {_editSaleID}" : "فاتورة مبيعات جديدة";
@@ -4924,8 +4941,11 @@ namespace ChickenDist.Forms
 			Image logoImg = null;
 			try
 			{
-				string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
-				if (!System.IO.File.Exists(logoPath)) logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.jpg");
+				string logoPath = AppConfig.ShopLogoPath;
+				if (string.IsNullOrEmpty(logoPath) || !System.IO.File.Exists(logoPath))
+					logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+				if (!System.IO.File.Exists(logoPath)) 
+					logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.jpg");
 				if (System.IO.File.Exists(logoPath)) logoImg = Image.FromFile(logoPath);
 			}
 			catch { }
@@ -4944,11 +4964,13 @@ namespace ChickenDist.Forms
 			pd.PrintPage += (s, e) =>
 			{
 				var g = e.Graphics;
-				float titleSize  = isReceipt ? 12f : 16f;
-				float headerSize = isReceipt ? 9f  : 11f;
-				float bodySize   = isReceipt ? 8.5f: 10f;
+				int pageW = e.PageBounds.Width;
+				bool isA4Page = !isReceipt && pageW > 700;
+				float titleSize  = isReceipt ? 12f : (isA4Page ? 16f : 13f);
+				float headerSize = isReceipt ? 9f  : (isA4Page ? 11f : 9.5f);
+				float bodySize   = isReceipt ? 8.5f: (isA4Page ? 10f : 8.5f);
 
-				using var fontCompany = new Font("Arial", isReceipt ? 11f : 14f, FontStyle.Bold);
+				using var fontCompany = new Font("Arial", isReceipt ? 11f : (isA4Page ? 15f : 12f), FontStyle.Bold);
 				using var fontTitle   = new Font("Arial", titleSize,  FontStyle.Bold);
 				using var fontHeader  = new Font("Arial", headerSize, FontStyle.Bold);
 				using var fontBody    = new Font("Arial", bodySize,   FontStyle.Regular);
@@ -4971,7 +4993,10 @@ namespace ChickenDist.Forms
 				{
 					if (logoImg != null && !isReceipt)
 					{
-						g.DrawImage(logoImg, right - 70, y, 65, 50);
+						int lW = isA4Page ? 90 : 65;
+						int lH = (int)((float)logoImg.Height / logoImg.Width * lW);
+						if (lH > 70) lH = 70;
+						g.DrawImage(logoImg, right - lW - 5, y, lW, lH);
 					}
 
 					SizeF szComp = g.MeasureString(companyName, fontCompany);
@@ -4989,30 +5014,31 @@ namespace ChickenDist.Forms
 					string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
 					SizeF szT  = g.MeasureString(tit, fontTitle);
 					g.DrawString(tit, fontTitle, Brushes.Black, left + (width - szT.Width) / 2, y);
-					y += (int)szT.Height + (isReceipt ? 4 : 6);
+					y += (int)szT.Height + (isReceipt ? 4 : (isA4Page ? 8 : 6));
 
 					g.DrawLine(penDark, left, y, right, y);
-					y += (isReceipt ? 4 : 8);
+					y += (isReceipt ? 4 : (isA4Page ? 10 : 8));
 
 					string dateStr = dtpDate.Value.ToString("dd/MM/yyyy HH:mm");
 					if (!isReceipt)
 					{
+						int infoH = isA4Page ? 24 : 20;
 						g.DrawString($"المخزن المصدر: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"المخزن المصدر: {whName}", fontHeader).Width, y);
 						g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
-						y += 20;
+						y += infoH;
 
 						g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
 						g.DrawString($"المرجع / الفاتورة: {invoiceCode} ({saleTypeStr})", fontBody, Brushes.Black, left, y);
-						y += 20;
+						y += infoH;
 
 						g.DrawString($"الموظف المسؤول: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف المسؤول: {empName}", fontBody).Width, y);
 						g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, left, y);
-						y += 22;
+						y += infoH + 2;
 
 						if (!string.IsNullOrWhiteSpace(txtNotes.Text))
 						{
 							g.DrawString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, right - g.MeasureString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody).Width, y);
-							y += 20;
+							y += infoH;
 						}
 					}
 					else
@@ -5028,7 +5054,7 @@ namespace ChickenDist.Forms
 					}
 
 					g.DrawLine(penGrid, left, y, right, y);
-					y += (isReceipt ? 4 : 8);
+					y += (isReceipt ? 4 : (isA4Page ? 10 : 8));
 				}
 
 				// ── 2. إعداد أبعاد أعمدة الجدول الشبكي ──
@@ -5038,7 +5064,7 @@ namespace ChickenDist.Forms
 				int colUnitW = isReceipt ? 30 : (int)(width * 0.11);
 				int colQtyW  = isReceipt ? 30 : (int)(width * 0.13);
 				int colProdW = width - colNumW - colCodeW - colLocW - colUnitW - colQtyW;
-				int rowH     = isReceipt ? 22 : 26;
+				int rowH     = isReceipt ? 22 : (isA4Page ? 32 : 26);
 
 				var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
 				var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };

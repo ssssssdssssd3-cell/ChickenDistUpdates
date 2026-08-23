@@ -312,9 +312,10 @@ namespace ChickenDist.Forms
             cboInvoiceFormat.Items.AddRange(new object[]
             {
                 "ريسيت حراري (Receipt 80mm)",
-                "ورق عادي (A4/A5)"
+                "ورق A4 كامل (A4 Sheet)",
+                "ورق A5 نصف صفحة (A5 Sheet)"
             });
-            cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : 1;
+            cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : (AppConfig.DefaultInvoiceFormat == "A5" ? 2 : 1);
             this.Controls.Add(cboInvoiceFormat);
             y += 40;
 
@@ -1228,7 +1229,7 @@ namespace ChickenDist.Forms
                                              : cboBarcodeStickerSize.SelectedIndex == 2 ? "38x26_double"
                                              : cboBarcodeStickerSize.SelectedIndex == 1 ? "38x26"
                                              : "50x30";
-                AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : "A4";
+                AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : (cboInvoiceFormat.SelectedIndex == 2 ? "A5" : "A4");
 
                 // Save Templates Settings
                 AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
