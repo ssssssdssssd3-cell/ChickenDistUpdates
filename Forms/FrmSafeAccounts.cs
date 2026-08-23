@@ -149,16 +149,32 @@ namespace ChickenDist.Forms
             pnlFields.Controls.Add(tblFields);
 
             // Buttons
+            bool canAdd = Session.IsAdmin || Session.CanAdd("SafeAccounts");
+            bool canEdit = Session.IsAdmin || Session.CanEdit("SafeAccounts");
+            bool canDelete = Session.IsAdmin || Session.CanDelete("SafeAccounts");
+
             btnNew = Theme.MakeButton("🆕 جديد", 20, 280, 80, 38, Color.FromArgb(60, 100, 60));
+            btnNew.Visible = canAdd;
             btnNew.Click += (s, e) => ClearFields();
 
             btnSave = Theme.MakeButton("💾 حفظ الحساب", 110, 280, 110, 38, Theme.Accent);
+            btnSave.Visible = canAdd || canEdit;
             btnSave.Click += BtnSave_Click;
 
             btnDelete = Theme.MakeButton("🗑 حذف", 230, 280, 80, 38, Color.FromArgb(140, 40, 40));
+            btnDelete.Visible = canDelete;
             btnDelete.Click += BtnDelete_Click;
 
             pnlFields.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+
+            if (!canAdd && !canEdit)
+            {
+                txtName.ReadOnly = true;
+                txtNumber.ReadOnly = true;
+                cboType.Enabled = false;
+                nudOpening.Enabled = false;
+                chkActive.Enabled = false;
+            }
 
             tbl.Controls.Add(pnlFields, 0, 0); // Right
             tbl.Controls.Add(pnlGrid, 1, 0);   // Left
@@ -220,7 +236,14 @@ namespace ChickenDist.Forms
                 txtNumber.Text = r["AccountNumber"] != DBNull.Value ? r["AccountNumber"].ToString() : "";
                 nudOpening.Value = Convert.ToDecimal(r["OpeningBalance"]);
                 chkActive.Checked = Convert.ToBoolean(r["IsActive"]);
-                
+
+                bool canEdit = Session.IsAdmin || Session.CanEdit("SafeAccounts");
+                bool canDelete = Session.IsAdmin || Session.CanDelete("SafeAccounts");
+
+                txtName.ReadOnly = !canEdit;
+                txtNumber.ReadOnly = !canEdit;
+                nudOpening.Enabled = canEdit;
+
                 // If it is the default Cash Safe (ID=1), prevent editing its type or disabling it
                 if (_selectedAccountID == 1)
                 {
@@ -230,29 +253,55 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    cboType.Enabled = true;
-                    chkActive.Enabled = true;
-                    btnDelete.Enabled = true;
+                    cboType.Enabled = canEdit;
+                    chkActive.Enabled = canEdit;
+                    btnDelete.Enabled = canDelete;
                 }
             }
         }
 
         private void ClearFields()
         {
+            if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
+            {
+                MessageBox.Show("⛔ غير مصرح لك بإضافة خزائن أو حسابات جديدة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             _selectedAccountID = 0;
             txtName.Clear();
+            txtName.ReadOnly = false;
             cboType.SelectedIndex = 0;
             cboType.Enabled = true;
             txtNumber.Clear();
+            txtNumber.ReadOnly = false;
             nudOpening.Value = 0;
+            nudOpening.Enabled = true;
             chkActive.Checked = true;
             chkActive.Enabled = true;
-            btnDelete.Enabled = true;
+            btnDelete.Enabled = false;
             txtName.Focus();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_selectedAccountID == 0)
+            {
+                if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بإضافة خزينة أو حساب جديد.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+            else
+            {
+                if (!Session.IsAdmin && !Session.CanEdit("SafeAccounts"))
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بتعديل بيانات الخزينة أو الحساب.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
             string name = txtName.Text.Trim();
             string type = cboType.Text;
             string number = string.IsNullOrWhiteSpace(txtNumber.Text) ? null : txtNumber.Text.Trim();
@@ -324,6 +373,11 @@ namespace ChickenDist.Forms
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedAccountID == 0) return;
+            if (!Session.IsAdmin && !Session.CanDelete("SafeAccounts"))
+            {
+                MessageBox.Show("⛔ غير مصرح لك بحذف الخزائن أو الحسابات.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (_selectedAccountID == 1)
             {
                 MessageBox.Show("❌ خطأ: يمنع تماماً حذف الخزينة الرئيسية للنظام.", "حظر عملية", MessageBoxButtons.OK, MessageBoxIcon.Error);

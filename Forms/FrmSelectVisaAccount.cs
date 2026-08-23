@@ -170,11 +170,17 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(5, 0, 0, 0)
+                Margin = new Padding(5, 0, 0, 0),
+                Visible = Session.IsAdmin || (Session.CanAccess("SafeAccounts") && Session.CanAdd("SafeAccounts"))
             };
             btnAddNew.FlatAppearance.BorderSize = 0;
             btnAddNew.Click += (s, e) =>
             {
+                if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بإضافة ماكينات فيزا أو خزائن جديدة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 using (var frm = new FrmSafeAccounts())
                 {
                     frm.ShowDialog(this);

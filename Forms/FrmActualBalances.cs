@@ -87,9 +87,14 @@ namespace ChickenDist.Forms
             _btnManageAccounts = Theme.MakeButton("💳 إدارة الخزائن والحسابات", Color.FromArgb(70, 70, 150));
             _btnManageAccounts.Size = new Size(180, 34);
             _btnManageAccounts.Dock = DockStyle.Left;
-            _btnManageAccounts.Visible = Session.IsAdmin || Session.CanAccess("SafeAccounts");
+            _btnManageAccounts.Visible = Session.IsAdmin || (Session.CanAccess("SafeAccounts") && (Session.CanAdd("SafeAccounts") || Session.CanEdit("SafeAccounts")));
             _btnManageAccounts.Click += (s, e) =>
             {
+                if (!Session.IsAdmin && !Session.CanAccess("SafeAccounts"))
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 new FrmSafeAccounts().ShowDialog(this);
                 LoadData();
             };
