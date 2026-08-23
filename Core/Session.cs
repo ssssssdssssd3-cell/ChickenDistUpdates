@@ -32,6 +32,70 @@ namespace ChickenDist.Core
         }
 
         public static string AllowedSafeIDs { get; set; }
+
+        /// <summary>
+        /// الحصول على معرّف الدرج/الخزنة المسموح بها للموظف الحالي.
+        /// </summary>
+        public static int GetPrimaryAllowedSafeID()
+        {
+            if (DefaultSafeID.HasValue && DefaultSafeID.Value > 0)
+                return DefaultSafeID.Value;
+
+            var set = GetAllowedSafeIDSet();
+            if (set != null && set.Count > 0)
+            {
+                foreach (var id in set) return id;
+            }
+
+            return GetDefaultSafeID();
+        }
+
+        /// <summary>
+        /// الحصول على مجموعة معرّفات الخزن / الأدراج المسموح بها للمستخدم الحالي.
+        /// للأدمن: يعيد null (جميع الخزن مسموح بها بدون أي قيود).
+        /// للموظف: يعيد قائمة الأدراج المخصصة له فقط.
+        /// </summary>
+        public static HashSet<int> GetAllowedSafeIDSet()
+        {
+            if (IsAdmin) return null;
+
+            var set = new HashSet<int>();
+            if (DefaultSafeID.HasValue && DefaultSafeID.Value > 0)
+            {
+                set.Add(DefaultSafeID.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(AllowedSafeIDs))
+            {
+                var parts = AllowedSafeIDs.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    if (int.TryParse(p.Trim(), out int id) && id > 0)
+                        set.Add(id);
+                }
+            }
+
+            // إذا لم يكن محدداً له أي درج محدد وهو ليس أدمن، يُلزم بدرج النظام الافتراضي فقط
+            if (set.Count == 0 && !IsAdmin)
+            {
+                int defId = GetDefaultSafeID();
+                if (defId > 0) set.Add(defId);
+            }
+
+            return set;
+        }
+
+        /// <summary>
+        /// التحقق هل الخزنة أو الدرج مسموح للمستخدم الحالي بالتعامل عليه ورؤية حركاته؟
+        /// </summary>
+        public static bool IsSafeAllowed(int safeId)
+        {
+            if (IsAdmin) return true;
+            if (safeId <= 0) return false;
+            var set = GetAllowedSafeIDSet();
+            if (set == null) return true;
+            return set.Contains(safeId);
+        }
         public static bool CanSellCash { get; set; }
         public static bool CanSellCredit { get; set; }
         public static bool CanSellVisa { get; set; }

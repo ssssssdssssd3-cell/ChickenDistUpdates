@@ -1638,6 +1638,47 @@ namespace ChickenDist.DAL
             return DbHelper.Query("SELECT AccountID, AccountName, AccountType, AccountNumber, OpeningBalance FROM SafeAccounts WHERE IsActive = 1 ORDER BY AccountID");
         }
 
+        /// <summary>
+        /// استرجاع الخزن / الأدراج المسموح بها للمستخدم الحالي فقط.
+        /// </summary>
+        public static DataTable GetAllowedSafeAccounts()
+        {
+            DataTable dt = GetActiveSafeAccounts();
+            if (Session.IsAdmin) return dt;
+
+            var allowed = Session.GetAllowedSafeIDSet();
+            if (allowed == null) return dt;
+
+            DataTable filtered = dt.Clone();
+            foreach (DataRow r in dt.Rows)
+            {
+                int id = Convert.ToInt32(r["AccountID"]);
+                if (allowed.Contains(id))
+                {
+                    filtered.ImportRow(r);
+                }
+            }
+
+            if (filtered.Rows.Count == 0 && dt.Rows.Count > 0)
+            {
+                int defId = Session.GetDefaultSafeID();
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (Convert.ToInt32(r["AccountID"]) == defId)
+                    {
+                        filtered.ImportRow(r);
+                        break;
+                    }
+                }
+                if (filtered.Rows.Count == 0)
+                {
+                    filtered.ImportRow(dt.Rows[0]);
+                }
+            }
+
+            return filtered;
+        }
+
         public static DataTable GetActiveVisaAccounts()
         {
             try

@@ -465,13 +465,16 @@ namespace ChickenDist.Forms
                 int selectedFilterID = 0;
                 if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem fItem) selectedFilterID = fItem.ID;
 
-                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                DataTable safes = AccountDAL.GetAllowedSafeAccounts();
                 
                 // For Cash Filter Combo
                 if (cboSafeFilter != null)
                 {
                     cboSafeFilter.Items.Clear();
-                    cboSafeFilter.Items.Add(new ComboItem(0, "-- الكل --"));
+                    if (Session.IsAdmin || (Session.CanChangeSafe("CashBox") && safes.Rows.Count > 1))
+                    {
+                        cboSafeFilter.Items.Add(new ComboItem(0, "-- الكل --"));
+                    }
                 }
 
                 // For Expense Entry Combo
@@ -490,23 +493,23 @@ namespace ChickenDist.Forms
                     if (cboExpSafeAccount != null) cboExpSafeAccount.Items.Add(item2);
                 }
 
+                int defaultSafeID = Session.GetPrimaryAllowedSafeID();
+
                 if (cboSafeFilter != null)
                 {
                     cboSafeFilter.DisplayMember = "Text";
-                    cboSafeFilter.SelectedIndex = 0;
-                    if (selectedFilterID > 0)
+                    int selectIdx = 0;
+                    for (int i = 0; i < cboSafeFilter.Items.Count; i++)
                     {
-                        for (int i = 0; i < cboSafeFilter.Items.Count; i++)
+                        if (cboSafeFilter.Items[i] is ComboItem item && (item.ID == selectedFilterID || (selectedFilterID == 0 && item.ID == defaultSafeID)))
                         {
-                            if (cboSafeFilter.Items[i] is ComboItem item && item.ID == selectedFilterID)
-                            {
-                                cboSafeFilter.SelectedIndex = i;
-                                break;
-                            }
+                            selectIdx = i;
+                            break;
                         }
                     }
+                    if (cboSafeFilter.Items.Count > 0) cboSafeFilter.SelectedIndex = selectIdx;
 
-                    if (!Session.CanChangeSafe("CashBox"))
+                    if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
                     {
                         cboSafeFilter.Enabled = false;
                     }
@@ -515,19 +518,18 @@ namespace ChickenDist.Forms
                 if (cboExpSafeAccount != null)
                 {
                     cboExpSafeAccount.DisplayMember = "Text";
-                    if (cboExpSafeAccount.Items.Count > 0) cboExpSafeAccount.SelectedIndex = 0;
-                    if (selectedExpAccID > 0)
+                    int selectExpIdx = 0;
+                    for (int i = 0; i < cboExpSafeAccount.Items.Count; i++)
                     {
-                        for (int i = 0; i < cboExpSafeAccount.Items.Count; i++)
+                        if (cboExpSafeAccount.Items[i] is ComboItem item && (item.ID == selectedExpAccID || (selectedExpAccID == 0 && item.ID == defaultSafeID)))
                         {
-                            if (cboExpSafeAccount.Items[i] is ComboItem item && item.ID == selectedExpAccID)
-                            {
-                                cboExpSafeAccount.SelectedIndex = i;
-                                break;
-                            }
+                            selectExpIdx = i;
+                            break;
                         }
                     }
-                    if (!Session.CanChangeSafe("CashBox"))
+                    if (cboExpSafeAccount.Items.Count > 0) cboExpSafeAccount.SelectedIndex = selectExpIdx;
+
+                    if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
                     {
                         cboExpSafeAccount.Enabled = false;
                     }
@@ -546,6 +548,15 @@ namespace ChickenDist.Forms
             if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
             {
                 selectedAccountID = safeItem.ID;
+            }
+
+            if (!Session.IsAdmin)
+            {
+                var allowed = Session.GetAllowedSafeIDSet();
+                if (selectedAccountID == null || selectedAccountID == 0 || (allowed != null && !allowed.Contains(selectedAccountID.Value)))
+                {
+                    selectedAccountID = Session.GetPrimaryAllowedSafeID();
+                }
             }
 
             var dt = AccountDAL.GetCashBox(dtpCashFrom.Value, dtpCashTo.Value, selectedAccountID);
@@ -671,6 +682,11 @@ namespace ChickenDist.Forms
         private void BtnTransfer_Click(object sender, EventArgs e)
         {
             if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية تحويل النقدية بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.IsAdmin && !Session.CanChangeSafe("CashBox"))
+            {
+                MessageBox.Show("⛔ ليس لديك صلاحية تحويل النقدية بين الخزن والأدراج.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             var dlg = new Form
             {
                 Text = "🔄 تحويل نقدية بين الحسابات",
@@ -710,18 +726,28 @@ namespace ChickenDist.Forms
             // Load safes
             try
             {
-                DataTable safes = AccountDAL.GetActiveSafeAccounts();
-                foreach (DataRow row in safes.Rows)
+                DataTable srcSafes = AccountDAL.GetAllowedSafeAccounts();
+                DataTable allSafes = AccountDAL.GetActiveSafeAccounts();
+                foreach (DataRow row in srcSafes.Rows)
                 {
                     ComboItem item1 = new ComboItem(Convert.ToInt32(row["AccountID"]), row["AccountName"].ToString());
-                    ComboItem item2 = new ComboItem(Convert.ToInt32(row["AccountID"]), row["AccountName"].ToString());
                     cboSource.Items.Add(item1);
+                }
+                foreach (DataRow row in allSafes.Rows)
+                {
+                    ComboItem item2 = new ComboItem(Convert.ToInt32(row["AccountID"]), row["AccountName"].ToString());
                     cboDest.Items.Add(item2);
                 }
                 cboSource.DisplayMember = "Text";
                 cboDest.DisplayMember = "Text";
                 if (cboSource.Items.Count > 0) cboSource.SelectedIndex = 0;
                 if (cboDest.Items.Count > 1) cboDest.SelectedIndex = 1;
+                else if (cboDest.Items.Count > 0) cboDest.SelectedIndex = 0;
+
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || srcSafes.Rows.Count <= 1))
+                {
+                    cboSource.Enabled = false;
+                }
             }
             catch { }
 
@@ -820,7 +846,7 @@ namespace ChickenDist.Forms
             // Load safes
             try
             {
-                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                DataTable safes = AccountDAL.GetAllowedSafeAccounts();
                 foreach (DataRow row in safes.Rows)
                 {
                     cboSafe.Items.Add(new ComboItem(
@@ -830,8 +856,8 @@ namespace ChickenDist.Forms
                 }
                 cboSafe.DisplayMember = "Text";
                 
-                // Pre-select current filter if any
-                int preselectedID = 1;
+                // Pre-select current filter or default safe
+                int preselectedID = Session.GetPrimaryAllowedSafeID();
                 if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem filterItem && filterItem.ID > 0)
                 {
                     preselectedID = filterItem.ID;
@@ -845,6 +871,11 @@ namespace ChickenDist.Forms
                         cboSafe.SelectedIndex = i;
                         break;
                     }
+                }
+
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
+                {
+                    cboSafe.Enabled = false;
                 }
             }
             catch { }
@@ -1096,6 +1127,12 @@ namespace ChickenDist.Forms
             var dt = AccountDAL.GetExpenses(dtpExpFrom.Value, dtpExpTo.Value, selectedVehicleID, selectedVehicleType);
             foreach (DataRow r in dt.Rows)
             {
+                if (!Session.IsAdmin)
+                {
+                    int safeAccID = r["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(r["SafeAccountID"]) : 1;
+                    if (!Session.IsSafeAllowed(safeAccID)) continue;
+                }
+
                 var vehicleLabel = r["VehicleType"] != DBNull.Value && r["VehicleName"] != DBNull.Value
                     ? $"{r["VehicleType"]} - {r["VehicleName"]}"
                     : r["VehicleName"] != DBNull.Value ? r["VehicleName"].ToString() : "";
@@ -1137,7 +1174,7 @@ namespace ChickenDist.Forms
             // select safe account if present
             if (cboExpSafeAccount != null && cboExpSafeAccount.Items.Count > 0)
             {
-                int safeAccountID = 1; // Default
+                int safeAccountID = Session.GetPrimaryAllowedSafeID();
                 if (row.Cells["SafeAccountID"].Value != null && row.Cells["SafeAccountID"].Value != DBNull.Value)
                 {
                     int.TryParse(row.Cells["SafeAccountID"].Value.ToString(), out safeAccountID);
@@ -1163,7 +1200,20 @@ namespace ChickenDist.Forms
             nudExpAmount.Value = 0;
             txtExpNotes.Clear();
             if (cboExpVehicle.Items.Count > 0) cboExpVehicle.SelectedIndex = 0;
-            if (cboExpSafeAccount != null && cboExpSafeAccount.Items.Count > 0) cboExpSafeAccount.SelectedIndex = 0;
+            if (cboExpSafeAccount != null && cboExpSafeAccount.Items.Count > 0)
+            {
+                int defSafeId = Session.GetPrimaryAllowedSafeID();
+                int targetIdx = 0;
+                for (int i = 0; i < cboExpSafeAccount.Items.Count; i++)
+                {
+                    if (cboExpSafeAccount.Items[i] is ComboItem item && item.ID == defSafeId)
+                    {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+                cboExpSafeAccount.SelectedIndex = targetIdx;
+            }
         }
 
         private void BtnSaveExp_Click(object sender, EventArgs e)
@@ -1179,7 +1229,13 @@ namespace ChickenDist.Forms
             if (cboExpSafeAccount.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
                 safeAccountID = safeItem.ID;
 
-            int targetSafeID = safeAccountID ?? 1;
+            if (!Session.IsAdmin)
+            {
+                if (!safeAccountID.HasValue || !Session.IsSafeAllowed(safeAccountID.Value))
+                    safeAccountID = Session.GetPrimaryAllowedSafeID();
+            }
+
+            int targetSafeID = safeAccountID ?? Session.GetPrimaryAllowedSafeID();
             decimal currentBal = AccountDAL.GetCashBalance(targetSafeID);
             if (nudExpAmount.Value > currentBal && _selectedExpID == 0)
             {

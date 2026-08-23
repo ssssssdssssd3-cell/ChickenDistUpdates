@@ -18,6 +18,12 @@ namespace ChickenDist.Forms
 
         public FrmSafeAccounts()
         {
+            if (!Session.IsAdmin && !Session.CanAccess("SafeAccounts"))
+            {
+                MessageBox.Show("⛔ غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Load += (s, e) => this.Close();
+                return;
+            }
             InitUI();
             LoadAccounts();
         }

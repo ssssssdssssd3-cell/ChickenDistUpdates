@@ -573,7 +573,7 @@ namespace ChickenDist.Forms
             LoadEntitiesForCategory();
 
             // Safes & Bank Accounts
-            var dtAcc = AccountDAL.GetActiveSafeAccounts();
+            var dtAcc = AccountDAL.GetAllowedSafeAccounts();
             cboAccountSafe.Items.Clear();
             cboTransferFrom.Items.Clear();
             cboTransferTo.Items.Clear();
@@ -583,12 +583,34 @@ namespace ChickenDist.Forms
                 var ci = new ComboItem((int)r["AccountID"], r["AccountName"].ToString());
                 cboAccountSafe.Items.Add(ci);
                 cboTransferFrom.Items.Add(ci);
+            }
+            var dtAll = AccountDAL.GetActiveSafeAccounts();
+            foreach (DataRow r in dtAll.Rows)
+            {
+                var ci = new ComboItem((int)r["AccountID"], r["AccountName"].ToString());
                 cboTransferTo.Items.Add(ci);
             }
-            if (cboAccountSafe.Items.Count > 0) cboAccountSafe.SelectedIndex = 0;
-            if (cboTransferFrom.Items.Count > 0) cboTransferFrom.SelectedIndex = 0;
+
+            int defSafeId = Session.GetPrimaryAllowedSafeID();
+            int selectIdx = 0;
+            for (int i = 0; i < cboAccountSafe.Items.Count; i++)
+            {
+                if (cboAccountSafe.Items[i] is ComboItem item && item.ID == defSafeId)
+                {
+                    selectIdx = i;
+                    break;
+                }
+            }
+            if (cboAccountSafe.Items.Count > 0) cboAccountSafe.SelectedIndex = selectIdx;
+            if (cboTransferFrom.Items.Count > 0) cboTransferFrom.SelectedIndex = selectIdx;
             if (cboTransferTo.Items.Count > 1) cboTransferTo.SelectedIndex = 1;
             else if (cboTransferTo.Items.Count > 0) cboTransferTo.SelectedIndex = 0;
+
+            if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || dtAcc.Rows.Count <= 1))
+            {
+                cboAccountSafe.Enabled = false;
+                cboTransferFrom.Enabled = false;
+            }
         }
 
         private void LoadEntitiesForCategory()

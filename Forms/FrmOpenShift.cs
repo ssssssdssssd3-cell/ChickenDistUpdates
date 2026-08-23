@@ -188,10 +188,10 @@ namespace ChickenDist.Forms
         {
             try
             {
-                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                DataTable safes = AccountDAL.GetAllowedSafeAccounts();
                 cboSafeAccount.Items.Clear();
                 int selectedIdx = -1;
-                int defaultSafeID = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
+                int defaultSafeID = Session.GetPrimaryAllowedSafeID();
 
                 for (int i = 0; i < safes.Rows.Count; i++)
                 {
@@ -211,6 +211,11 @@ namespace ChickenDist.Forms
                 {
                     cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
                     UpdateOpeningCashFromPreviousShift();
+                }
+
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("POS") || safes.Rows.Count <= 1))
+                {
+                    cboSafeAccount.Enabled = false;
                 }
             }
             catch { }

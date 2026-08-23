@@ -87,6 +87,7 @@ namespace ChickenDist.Forms
             _btnManageAccounts = Theme.MakeButton("💳 إدارة الخزائن والحسابات", Color.FromArgb(70, 70, 150));
             _btnManageAccounts.Size = new Size(180, 34);
             _btnManageAccounts.Dock = DockStyle.Left;
+            _btnManageAccounts.Visible = Session.IsAdmin || Session.CanAccess("SafeAccounts");
             _btnManageAccounts.Click += (s, e) =>
             {
                 new FrmSafeAccounts().ShowDialog(this);
@@ -268,6 +269,8 @@ namespace ChickenDist.Forms
                 foreach (DataRow r in dt.Rows)
                 {
                     int accID = Convert.ToInt32(r["AccountID"]);
+                    if (!Session.IsSafeAllowed(accID)) continue;
+
                     string name = r["AccountName"].ToString().Replace(" / الدرج", "").Replace("/ الدرج", "").Replace("/الدرج", "").Replace(" / درج", "").Trim();
                     string type = r["AccountType"]?.ToString() ?? "Cash";
                     string num = r["AccountNumber"] != DBNull.Value ? r["AccountNumber"].ToString() : "-";
