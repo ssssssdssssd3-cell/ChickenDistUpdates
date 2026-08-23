@@ -633,11 +633,21 @@ namespace ChickenDist.Forms
 
         private void OpenQuickSearch()
         {
-            using (var dlg = new FrmProductSearch())
+            string lastSearchText = "";
+            while (true)
             {
-                if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductID > 0)
+                using (var dlg = new FrmProductSearch(initialSearchText: lastSearchText))
                 {
-                    AddGeneralProductByID(dlg.SelectedProductID);
+                    if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                    {
+                        lastSearchText = dlg.SearchText;
+                        AddGeneralProductByID(dlg.SelectedProductID);
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }

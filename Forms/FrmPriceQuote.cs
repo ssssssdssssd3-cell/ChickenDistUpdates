@@ -519,12 +519,14 @@ namespace ChickenDist.Forms
             if (cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
                 whId = ci.ID;
 
+            string lastSearchText = "";
             while (true)
             {
-                using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true))
+                using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true, initialSearchText: lastSearchText))
                 {
                     if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
                     {
+                        lastSearchText = frm.SearchText;
                         decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1.00m;
                         decimal price = frm.SelectedSalePrice > 0 ? frm.SelectedSalePrice : frm.SelectedPrice;
                         decimal discount = frm.SelectedDiscount;

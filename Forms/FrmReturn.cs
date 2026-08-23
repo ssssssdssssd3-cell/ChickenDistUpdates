@@ -1405,10 +1405,14 @@ namespace ChickenDist.Forms
         private void OpenProductSearchDialog()
         {
             int? whId = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
-            using (var dlg = new FrmProductSearch(whId, false))
+            string lastSearchText = "";
+            while (true)
             {
-                if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductID > 0)
+                using (var dlg = new FrmProductSearch(whId, false, initialSearchText: lastSearchText))
                 {
+                    if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                    {
+                        lastSearchText = dlg.SearchText;
                     var pRow = ProductDAL.GetByID(dlg.SelectedProductID);
                     string pname = pRow != null ? pRow["ProductName"].ToString() : "صنف " + dlg.SelectedProductID;
                     decimal price = dlg.SelectedSalePrice > 0 ? dlg.SelectedSalePrice : (pRow != null && pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m);
@@ -1445,9 +1449,15 @@ namespace ChickenDist.Forms
                     row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
 
                     RecalcTotals();
+                    continue;
+                }
+                else
+                {
+                    break;
                 }
             }
         }
+    }
 
         private void SetupSearchableCombo(ComboBox cbo)
         {

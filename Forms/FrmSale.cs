@@ -2581,13 +2581,15 @@ namespace ChickenDist.Forms
 			{
 				int? saleClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient && ciClient.ID > 0) ? ciClient.ID : (int?)null;
 				_searchSessionActive = true;
+				string lastSearchText = "";
 				while (true)
 				{
-					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID);
+					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID, initialSearchText: lastSearchText);
 					frmProductSearch.ShowDialog();
 
 					if (frmProductSearch.DialogResult == DialogResult.OK)
 					{
+						lastSearchText = frmProductSearch.SearchText;
 						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
 						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
 						decimal discount = frmProductSearch.SelectedDiscount;

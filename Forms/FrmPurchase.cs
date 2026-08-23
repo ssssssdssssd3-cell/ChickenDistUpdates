@@ -400,12 +400,14 @@ namespace ChickenDist.Forms
             {
                 try
                 {
+                    string lastSearchText = "";
                     while (true)
                     {
-                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true))
+                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true, initialSearchText: lastSearchText))
                         {
                             if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                             {
+                                lastSearchText = dlgSearch.SearchText;
                                 ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
                                 if (prodItem == null)
                                 {

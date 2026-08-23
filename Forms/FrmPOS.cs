@@ -2524,14 +2524,16 @@ namespace ChickenDist.Forms
                 // تظل الشاشة تُعاد فتحها بعد كل اختيار
                 // حتى يضغط المستخدم إلغاء أو يُغلق الشاشة
                 _searchSessionActive = true;
+                string lastSearchText = "";
                 while (true)
                 {
                     int posClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient) ? ciClient.ID : 0;
-                    var frm = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null);
+                    using var frm = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null, initialSearchText: lastSearchText);
                     frm.ShowDialog();
 
                     if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
                     {
+                        lastSearchText = frm.SearchText;
                         var dt = DbHelper.Query(@"
                             SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
                                    p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 

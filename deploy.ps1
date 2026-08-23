@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.0.544"
+$VERSION   = "2.0.545"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -62,7 +62,12 @@ if (Test-Path $OUT_DIR) {
 }
 New-Item -ItemType Directory -Path $OUT_DIR -Force | Out-Null
 
-& dotnet build $CSPROJ -c Release /v:minimal /nologo
+$msbuildExe = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+if (Test-Path $msbuildExe) {
+    & $msbuildExe $CSPROJ /p:Configuration=Release /t:Build /m /v:minimal /nologo
+} else {
+    & dotnet build $CSPROJ -c Release /v:minimal /nologo
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Fail "Build failed!"
@@ -77,7 +82,7 @@ if (Test-Path $obfuscatedSource) {
     Remove-Item $obfuscatedSource -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path $obfuscarExe) {
-    & $obfuscarExe "$PROJECT_DIR\obfuscar.xml"
+    & $obfuscarExe -s "$PROJECT_DIR\obfuscar.xml"
     Write-OK "Obfuscar completed successfully"
 }
 

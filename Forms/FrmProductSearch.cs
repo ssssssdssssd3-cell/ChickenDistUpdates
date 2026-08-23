@@ -55,7 +55,9 @@ namespace ChickenDist.Forms
             public override string ToString() => DisplayText;
         }
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false, int? clientID = null)
+        public string SearchText => txtSearch?.Text ?? "";
+
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false, int? clientID = null, string initialSearchText = "")
         {
             _warehouseID = warehouseID;
             _clientID = clientID;
@@ -68,6 +70,11 @@ namespace ChickenDist.Forms
             if (defaultShowZeroStock && chkShowZeroStock != null)
             {
                 chkShowZeroStock.Checked = true;
+            }
+            if (!string.IsNullOrEmpty(initialSearchText))
+            {
+                txtSearch.Text = initialSearchText;
+                ApplyFilter();
             }
         }
 
@@ -84,6 +91,12 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
+            this.Shown += (s, e) =>
+            {
+                txtSearch.Focus();
+                txtSearch.SelectAll();
+            };
+
             // ── Top panel (Filters) ──────────────────────────────────────────
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 145, Name = "pnlSearch", BackColor = Theme.BgSearchPanel, RightToLeft = RightToLeft.No, Padding = new Padding(12, 8, 12, 8) };
             
@@ -93,9 +106,10 @@ namespace ChickenDist.Forms
 
             // Row 1: Search name/code & Category
             var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(620, 16), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtSearch = new TextBox { Location = new Point(120, 12), Width = 490, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            txtSearch = new TextBox { Location = new Point(120, 12), Width = 490, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold), TabIndex = 0 };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += TxtSearch_KeyDown;
+            txtSearch.Enter += (s, e) => txtSearch.SelectAll();
             
             var lblCat = new Label { Text = "التصنيف:", Location = new Point(620, 48), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
             cboCategory = new ComboBox { Location = new Point(120, 44), Width = 490, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10) };
