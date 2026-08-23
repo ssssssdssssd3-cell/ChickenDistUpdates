@@ -184,25 +184,32 @@ namespace ChickenDist.Forms
 			{
 				Text = labelText,
 				AutoSize = true,
-				ForeColor = labelColor ?? Color.FromArgb(226, 232, 240),
+				ForeColor = labelColor ?? Color.FromArgb(255, 220, 110), // Gold/Amber for readability
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				RightToLeft = RightToLeft.Yes
 			};
 
 			int lblW = lbl.PreferredWidth;
-			int totalW = lblW + inputWidth + 14;
+			int totalW = lblW + inputWidth + 16;
 
 			var pnl = new Panel
 			{
-				Size = new Size(totalW, 34),
-				BackColor = Color.FromArgb(43, 50, 70),
+				Size = new Size(totalW, 36),
+				BackColor = Color.FromArgb(30, 41, 59),
 				Margin = new Padding(3, 2, 4, 2),
-				Padding = new Padding(4, 4, 4, 4),
+				Padding = new Padding(4),
 				RightToLeft = RightToLeft.Yes
 			};
+			pnl.Paint += (s, e) =>
+			{
+				using (var pen = new Pen(Color.FromArgb(51, 65, 85), 1.2f))
+				{
+					e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
+				}
+			};
 
-			lbl.Location = new Point(totalW - lblW - 6, 7);
-			inputCtrl.Location = new Point(4, 4);
+			lbl.Location = new Point(totalW - lblW - 6, 8);
+			inputCtrl.Location = new Point(4, 5);
 
 			pnl.Controls.Add(lbl);
 			pnl.Controls.Add(inputCtrl);
@@ -247,11 +254,11 @@ namespace ChickenDist.Forms
 						int diff = (7 + (int)today.DayOfWeek - (int)DayOfWeek.Saturday) % 7;
 						var weekStart = today.AddDays(-diff);
 						dtpFrom.Value = new DateTime(weekStart.Year, weekStart.Month, weekStart.Day, 0, 0, 0);
-						dtpTo.Value = now;
+						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
 						break;
 					case 4: // هذا الشهر
 						dtpFrom.Value = new DateTime(today.Year, today.Month, 1, 0, 0, 0);
-						dtpTo.Value = now;
+						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
 						break;
 					case 5: // الشهر السابق
 						var lastMonth = today.AddMonths(-1);
@@ -262,11 +269,11 @@ namespace ChickenDist.Forms
 						break;
 					case 6: // العام الحالي
 						dtpFrom.Value = new DateTime(today.Year, 1, 1, 0, 0, 0);
-						dtpTo.Value = now;
+						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
 						break;
 					case 7: // كل الفترات
 						dtpFrom.Value = new DateTime(2020, 1, 1, 0, 0, 0);
-						dtpTo.Value = now.AddDays(1);
+						dtpTo.Value = new DateTime(2035, 12, 31, 23, 59, 59);
 						break;
 				}
 			};
@@ -319,46 +326,46 @@ namespace ChickenDist.Forms
 
 			dtpFrom = new DateTimePicker
 			{
-				Width = 145,
+				Width = 135,
 				Format = DateTimePickerFormat.Custom,
-				CustomFormat = "yyyy/MM/dd  hh:mm tt",
+				CustomFormat = "yyyy/MM/dd",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			dtpFrom.ValueChanged += (s, e) => LoadCurrentTab();
 
 			dtpTo = new DateTimePicker
 			{
-				Width = 145,
+				Width = 135,
 				Format = DateTimePickerFormat.Custom,
-				CustomFormat = "yyyy/MM/dd  hh:mm tt",
+				CustomFormat = "yyyy/MM/dd",
 				Value = DateTime.Now,
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			dtpTo.ValueChanged += (s, e) => LoadCurrentTab();
 
 			cboDatePresets = new ComboBox
 			{
-				Width = 115,
+				Width = 120,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Color.FromArgb(15, 23, 42),
-				ForeColor = Color.White,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				FlatStyle = FlatStyle.Flat,
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			SetupDatePresets();
 
 			cboWarehouse = new ComboBox
 			{
-				Width = 120,
+				Width = 125,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Color.FromArgb(15, 23, 42),
-				ForeColor = Color.White,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				FlatStyle = FlatStyle.Flat,
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadWarehouses();
@@ -367,10 +374,10 @@ namespace ChickenDist.Forms
 			{
 				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Color.FromArgb(15, 23, 42),
-				ForeColor = Color.White,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				FlatStyle = FlatStyle.Flat,
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadPaymentTypes();
@@ -379,19 +386,19 @@ namespace ChickenDist.Forms
 			{
 				Width = 135,
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Color.FromArgb(15, 23, 42),
-				ForeColor = Color.White,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				FlatStyle = FlatStyle.Flat,
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
 			LoadEmployees();
 
 			txtSearchClient = new TextBox
 			{
-				Width = 180,
-				BackColor = Color.FromArgb(15, 23, 42),
-				ForeColor = Color.White,
+				Width = 190,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				BorderStyle = BorderStyle.FixedSingle,
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
@@ -399,103 +406,77 @@ namespace ChickenDist.Forms
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
 			btnLoad = Theme.MakeButton("🔄 تحديث التقرير", Color.FromArgb(245, 158, 11));
-			btnLoad.Size = new Size(130, 32);
+			btnLoad.Size = new Size(130, 36);
 			btnLoad.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-			btnLoad.Margin = new Padding(4, 2, 4, 2);
+			btnLoad.Margin = new Padding(3, 2, 3, 2);
 			btnLoad.Click += delegate { LoadCurrentTab(); };
 
-			btnPrint = Theme.MakeButton("🖨️ طباعة الصفحة", Color.FromArgb(37, 99, 235));
-			btnPrint.Size = new Size(140, 32);
+			btnPrint = Theme.MakeButton("🖨️ طباعة", Color.FromArgb(37, 99, 235));
+			btnPrint.Size = new Size(100, 36);
 			btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-			btnPrint.Margin = new Padding(4, 2, 4, 2);
+			btnPrint.Margin = new Padding(3, 2, 3, 2);
 			btnPrint.Click += BtnPrint_Click;
 
-			btnExportPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
-			btnExportPdf.Size = new Size(130, 32);
+			btnExportPdf = Theme.MakeButton("📄 PDF", Color.FromArgb(220, 38, 38));
+			btnExportPdf.Size = new Size(95, 36);
 			btnExportPdf.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-			btnExportPdf.Margin = new Padding(4, 2, 4, 2);
+			btnExportPdf.Margin = new Padding(3, 2, 3, 2);
 			btnExportPdf.Click += BtnExportPdf_Click;
 
-			btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(16, 185, 129));
-			btnExportExcel.Size = new Size(130, 32);
+			btnExportExcel = Theme.MakeButton("📥 إكسيل", Color.FromArgb(16, 185, 129));
+			btnExportExcel.Size = new Size(100, 36);
 			btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-			btnExportExcel.Margin = new Padding(4, 2, 4, 2);
+			btnExportExcel.Margin = new Padding(3, 2, 3, 2);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
-			btnWhatsAppReport = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
-			btnWhatsAppReport.Size = new Size(155, 32);
+			btnWhatsAppReport = Theme.MakeButton("📲 واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsAppReport.Size = new Size(110, 36);
 			btnWhatsAppReport.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-			btnWhatsAppReport.Margin = new Padding(4, 2, 4, 2);
+			btnWhatsAppReport.Margin = new Padding(3, 2, 3, 2);
 			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
 			btnWhatsAppReport.Visible = false;
 
-			var pnlTopContainer = new Panel
-			{
-				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				BackColor = Color.FromArgb(30, 41, 59),
-				Padding = new Padding(10, 8, 10, 8),
-				RightToLeft = RightToLeft.Yes
-			};
-
-			var flowRow1 = new FlowLayoutPanel
-			{
-				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.LeftToRight,
-				WrapContents = true,
-				Margin = new Padding(0, 0, 0, 4),
-				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
-			};
-
-			var flowRow2 = new FlowLayoutPanel
-			{
-				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.LeftToRight,
-				WrapContents = true,
-				Margin = new Padding(0, 4, 0, 0),
-				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
-			};
-
-			flowRow1.Controls.Add(MakeFilterPanel("من تاريخ:", dtpFrom, 145));
-			flowRow1.Controls.Add(MakeFilterPanel("إلى تاريخ:", dtpTo, 145));
-			flowRow1.Controls.Add(MakeFilterPanel("فترات سريعة:", cboDatePresets, 115));
-			flowRow1.Controls.Add(MakeFilterPanel("المخزن:", cboWarehouse, 120));
-			flowRow1.Controls.Add(MakeFilterPanel("طريقة الدفع:", cboPayType, 115));
-			flowRow1.Controls.Add(MakeFilterPanel("المندوب / الكاشير:", cboEmployee, 135));
-
-			flowRow2.Controls.Add(MakeFilterPanel("🔍 بحث شامل في التقرير:", txtSearchClient, 180, Color.FromArgb(241, 196, 15)));
-			flowRow2.Controls.Add(btnLoad);
-			flowRow2.Controls.Add(btnPrint);
-			flowRow2.Controls.Add(btnExportPdf);
-			flowRow2.Controls.Add(btnExportExcel);
-			flowRow2.Controls.Add(btnWhatsAppReport);
-
-			// بانر علوي أنيق يعرض اسم التقرير واستخدامه
+			// ── 1. بانر علوي فخم (Header Banner) يعرض اسم التقرير وأزرار العمليات ──
 			var pnlReportBanner = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 52,
+				Height = 58,
 				BackColor = Color.FromArgb(15, 23, 42),
-				Padding = new Padding(12, 5, 12, 5),
-				Margin = new Padding(0, 0, 0, 8),
+				Padding = new Padding(12, 6, 12, 6),
 				RightToLeft = RightToLeft.Yes
+			};
+
+			var pnlBannerActions = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Left,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				BackColor = Color.Transparent,
+				FlowDirection = FlowDirection.LeftToRight,
+				WrapContents = false,
+				Padding = new Padding(0, 4, 0, 4),
+				Margin = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
+			pnlBannerActions.Controls.Add(btnLoad);
+			pnlBannerActions.Controls.Add(btnPrint);
+			pnlBannerActions.Controls.Add(btnExportPdf);
+			pnlBannerActions.Controls.Add(btnExportExcel);
+			pnlBannerActions.Controls.Add(btnWhatsAppReport);
+
+			var pnlBannerTitles = new Panel
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Color.Transparent,
+				Padding = new Padding(10, 2, 10, 2)
 			};
 
 			lblReportHeaderTitle = new Label
 			{
 				Dock = DockStyle.Top,
-				Height = 22,
+				Height = 26,
 				ForeColor = Color.FromArgb(241, 196, 15), // Gold
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 12f, FontStyle.Bold),
 				TextAlign = ContentAlignment.MiddleRight,
 				Text = "📊 تقارير المبيعات الشاملة"
 			};
@@ -509,11 +490,57 @@ namespace ChickenDist.Forms
 				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع."
 			};
 
-			pnlReportBanner.Controls.Add(lblReportHeaderDesc);
-			pnlReportBanner.Controls.Add(lblReportHeaderTitle);
+			pnlBannerTitles.Controls.Add(lblReportHeaderDesc);
+			pnlBannerTitles.Controls.Add(lblReportHeaderTitle);
 
-			pnlTopContainer.Controls.Add(flowRow2);
-			pnlTopContainer.Controls.Add(flowRow1);
+			pnlReportBanner.Controls.Add(pnlBannerTitles);
+			pnlReportBanner.Controls.Add(pnlBannerActions);
+
+			// ── 2. شريط أدوات الفلترة والبحث الموحد (Unified Filter & Search Bar) ──
+			var pnlFiltersBar = new Panel
+			{
+				Dock = DockStyle.Top,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				BackColor = Color.FromArgb(24, 38, 62),
+				Padding = new Padding(10, 6, 10, 6),
+				RightToLeft = RightToLeft.Yes
+			};
+
+			var flowFilters = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Top,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				BackColor = Color.Transparent,
+				FlowDirection = FlowDirection.LeftToRight,
+				WrapContents = true,
+				Margin = new Padding(0),
+				Padding = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
+
+			flowFilters.Controls.Add(MakeFilterPanel("📅 من تاريخ:", dtpFrom, 135));
+			flowFilters.Controls.Add(MakeFilterPanel("📅 إلى تاريخ:", dtpTo, 135));
+			flowFilters.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 120));
+			flowFilters.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 125));
+			flowFilters.Controls.Add(MakeFilterPanel("💳 طريقة الدفع:", cboPayType, 115));
+			flowFilters.Controls.Add(MakeFilterPanel("👔 الكاشير/المندوب:", cboEmployee, 135));
+			flowFilters.Controls.Add(MakeFilterPanel("🔍 بحث في النتائج:", txtSearchClient, 190, Color.FromArgb(255, 220, 110)));
+
+			pnlFiltersBar.Controls.Add(flowFilters);
+
+			var pnlTopContainer = new Panel
+			{
+				Dock = DockStyle.Top,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				BackColor = Color.FromArgb(15, 23, 42),
+				Padding = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
+
+			pnlTopContainer.Controls.Add(pnlFiltersBar);
 			pnlTopContainer.Controls.Add(pnlReportBanner);
 			base.Controls.Add(pnlTopContainer);
 
