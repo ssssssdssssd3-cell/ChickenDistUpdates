@@ -2432,9 +2432,9 @@ namespace ChickenDist.Forms
             int? clientID = isClientPurchase ? partyID : null;
             string purchaseSource = isClientPurchase ? "Client" : "Supplier";
 
-            if (_purchaseType == "Credit" && !partyID.HasValue)
+            if (!partyID.HasValue)
             {
-                MessageBox.Show(isClientPurchase ? "اختر العميل أولاً للفواتير الآجلة" : "اختر المورد أولاً للفواتير الآجلة", "تنبيه",
+                MessageBox.Show(isClientPurchase ? "اختر العميل أولاً" : "اختر المورد أولاً", "تنبيه",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
