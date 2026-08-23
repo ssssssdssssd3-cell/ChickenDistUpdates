@@ -17,7 +17,7 @@ namespace ChickenDist.Forms
         private ComboBox cmbDriver, cmbPriceTier, cmbPaymentType;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement;
-        private Label lblBalance;
+        private Label lblBalance, lblSummary;
         private int _selectedID = 0;
 
         public FrmClients()
@@ -30,8 +30,8 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "إدارة العملاء";
-            this.Size = new Size(1100, 680);
+            this.Text = "إدارة العملاء والمديونيات";
+            this.Size = new Size(1150, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -46,48 +46,84 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f)); // Column 0 (Right): Details (35%)
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65f)); // Column 1 (Left): Grid (65%)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 350f)); // Column 0 (Right): Customer Form Card (350px)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Column 1 (Left): Grid Table
             tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // Left: Grid panel
-            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
+            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8), BackColor = Theme.BgMain };
             
-            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.BgSearchPanel, Padding = new Padding(8) };
-            Theme.StyleSearchHeaderPanel(pnlSearch);
-            var lblSearch = new Label { Text = "🔍 بحث العملاء:", Dock = DockStyle.Right, AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextSearchLabel, Margin = new Padding(0, 6, 8, 0) };
-            txtSearch = new TextBox { Dock = DockStyle.Right, Width = 260, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Text = "بحث بالاسم أو الهاتف...", Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
-            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف...") txtSearch.Text = ""; };
-            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف..."; };
+            var pnlSearch = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 52,
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(10, 8, 10, 8),
+                RightToLeft = RightToLeft.Yes
+            };
+
+            lblSummary = new Label
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 8, 0, 0),
+                Text = "👥 إجمالي العملاء: --  |  💰 إجمالي المديونيات: -- ج"
+            };
+
+            var lblSearch = new Label
+            {
+                Text = "🔍 بحث العملاء:",
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(0, 8, 6, 0)
+            };
+
+            txtSearch = new TextBox
+            {
+                Dock = DockStyle.Right,
+                Width = 280,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Text = "بحث بالاسم أو الهاتف أو الكود...",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود...") txtSearch.Text = ""; };
+            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف أو الكود..."; };
             txtSearch.TextChanged += (s, e) => {
                 string searchVal = txtSearch.Text;
-                if (searchVal == "بحث بالاسم أو الهاتف...") searchVal = "";
+                if (searchVal == "بحث بالاسم أو الهاتف أو الكود...") searchVal = "";
                 LoadClients(searchVal);
             };
-            pnlSearch.Controls.Add(lblSearch);
-            pnlSearch.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍", Theme.Primary);
+            btnSearch = Theme.MakeButton("🔍", Color.FromArgb(37, 99, 235));
             btnSearch.Dock = DockStyle.Right;
             btnSearch.Width = 45;
             btnSearch.Click += (s, e) => {
-                string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف..." ? "" : txtSearch.Text;
+                string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
                 LoadClients(searchVal);
             };
             txtSearch.KeyDown += (s, e) => { 
                 if (e.KeyCode == Keys.Enter) {
-                    string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف..." ? "" : txtSearch.Text;
+                    string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
                     LoadClients(searchVal);
                 }
             };
 
+            pnlSearch.Controls.Add(lblSummary);
             pnlSearch.Controls.Add(btnSearch);
             pnlSearch.Controls.Add(txtSearch);
+            pnlSearch.Controls.Add(lblSearch);
 
             dgClients = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -95,29 +131,43 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
+                GridColor = Color.FromArgb(226, 232, 240),
+                RowTemplate = { Height = 34 },
+                ColumnHeadersHeight = 38,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Theme.BgCard,
-                    ForeColor = Theme.TextMain,
-                    SelectionBackColor = Theme.Primary,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    SelectionBackColor = Color.FromArgb(37, 99, 235),
                     SelectionForeColor = Color.White,
-                    Font = Theme.FontMain
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                    Alignment = DataGridViewContentAlignment.MiddleLeft
+                },
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(248, 250, 252),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    SelectionBackColor = Color.FromArgb(37, 99, 235),
+                    SelectionForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                    Alignment = DataGridViewContentAlignment.MiddleLeft
                 },
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Theme.Primary,
+                    BackColor = Color.FromArgb(15, 23, 42),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
                 },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientID", Visible = false });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientCode", HeaderText = "الكود", FillWeight = 30 });
-            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "اسم العميل" });
+            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", HeaderText = "اسم العميل", FillWeight = 110 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 60 });
-            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد", FillWeight = 50 });
+            dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد المالي", FillWeight = 55 });
             dgClients.Columns.Add(new DataGridViewTextBoxColumn { Name = "CratesBalance", HeaderText = "رصيد الفوارغ", FillWeight = 40 });
             if (!AppConfig.EnableCratesTracking)
             {
@@ -129,37 +179,53 @@ namespace ChickenDist.Forms
             pnlGrid.Controls.Add(dgClients);
             pnlGrid.Controls.Add(pnlSearch);
 
-            // Right: Detail panel
+            // Right: Detail panel (Customer Form Card)
             var pnlDetails = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
+                BackColor = Color.FromArgb(24, 38, 62),
                 Padding = new Padding(12),
                 AutoScroll = true
             };
 
             int y = 10;
+            var lblDetailsTitle = new Label
+            {
+                Text = "📋 بطاقة وتفاصيل العميل",
+                Location = new Point(10, y),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold)
+            };
+            pnlDetails.Controls.Add(lblDetailsTitle);
+            y += 32;
+
             pnlDetails.Controls.Add(MakeField("كود العميل:", ref y, out txtCode));
             txtCode.ReadOnly = true;
             txtCode.TabStop = false;
+            txtCode.BackColor = Color.FromArgb(241, 245, 249);
+            txtCode.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+
             pnlDetails.Controls.Add(MakeField("اسم العميل:", ref y, out txtName));
+            txtName.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+
             pnlDetails.Controls.Add(MakeField("الهاتف:", ref y, out txtPhone));
             pnlDetails.Controls.Add(MakeField("هاتف إضافي:", ref y, out txtPhone2));
             pnlDetails.Controls.Add(MakeField("العنوان:", ref y, out txtAddress));
 
-            var lblLimit = new Label { Text = "حد المديونية:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblLimit = new Label { Text = "حد المديونية:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblLimit);
-            nudCreditLimit = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = 0, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            pnlDetails.Controls.Add(nudCreditLimit); y += 36;
+            nudCreditLimit = new NumericUpDown { Location = new Point(10, y), Width = 205, Height = 28, Minimum = 0, Maximum = 9999999, DecimalPlaces = 2, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            pnlDetails.Controls.Add(nudCreditLimit); y += 34;
 
-            var lblOp = new Label { Text = "رصيد افتتاحي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblOp = new Label { Text = "رصيد افتتاحي:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblOp);
-            nudOpening = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            pnlDetails.Controls.Add(nudOpening); y += 36;
+            nudOpening = new NumericUpDown { Location = new Point(10, y), Width = 205, Height = 28, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 2, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            pnlDetails.Controls.Add(nudOpening); y += 34;
 
-            var lblOpCrates = new Label { Text = "رصيد الفوارغ الأولي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblOpCrates = new Label { Text = "رصيد الفوارغ الأولي:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblOpCrates);
-            nudOpeningCrates = new NumericUpDown { Location = new Point(10, y - 2), Width = 185, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 0, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            nudOpeningCrates = new NumericUpDown { Location = new Point(10, y), Width = 205, Height = 28, Minimum = -999999, Maximum = 9999999, DecimalPlaces = 0, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             pnlDetails.Controls.Add(nudOpeningCrates);
             if (!AppConfig.EnableCratesTracking)
             {
@@ -168,48 +234,63 @@ namespace ChickenDist.Forms
             }
             else
             {
-                y += 36;
+                y += 34;
             }
 
-            var lblDriver = new Label { Text = "المندوب الافتراضي:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblDriver = new Label { Text = "المندوب الافتراضي:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblDriver);
-            cmbDriver = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
-            pnlDetails.Controls.Add(cmbDriver); y += 36;
+            cmbDriver = new ComboBox { Location = new Point(10, y), Width = 205, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            pnlDetails.Controls.Add(cmbDriver); y += 34;
 
-            var lblPriceTier = new Label { Text = "فئة السعر الافتراضية:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblPriceTier = new Label { Text = "فئة السعر:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblPriceTier);
-            cmbPriceTier = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cmbPriceTier = new ComboBox { Location = new Point(10, y), Width = 205, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             cmbPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
             cmbPriceTier.SelectedIndex = 0;
-            pnlDetails.Controls.Add(cmbPriceTier); y += 36;
+            pnlDetails.Controls.Add(cmbPriceTier); y += 34;
 
-            var lblPaymentType = new Label { Text = "طريقة الدفع المسموحة:", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblPaymentType = new Label { Text = "طريقة الدفع:", Location = new Point(220, y + 4), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             pnlDetails.Controls.Add(lblPaymentType);
-            cmbPaymentType = new ComboBox { Location = new Point(10, y - 2), Width = 185, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
+            cmbPaymentType = new ComboBox { Location = new Point(10, y), Width = 205, Height = 28, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             cmbPaymentType.Items.AddRange(new object[] { "الكل (كاش / آجل)", "كاش فقط (نقدي)", "آجل فقط (مديونية)" });
             cmbPaymentType.SelectedIndex = 0;
-            pnlDetails.Controls.Add(cmbPaymentType); y += 36;
+            pnlDetails.Controls.Add(cmbPaymentType); y += 34;
 
             pnlDetails.Controls.Add(MakeField("ملاحظات:", ref y, out txtNotes));
 
-            chkActive = new CheckBox { Text = "نشط", Location = new Point(110, y), Width = 185, ForeColor = Theme.TextMain, Checked = true, RightToLeft = RightToLeft.Yes }; y += 36;
+            chkActive = new CheckBox { Text = "العميل نشط ويتعامل حالياً", Location = new Point(10, y), Width = 285, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Checked = true, RightToLeft = RightToLeft.Yes }; y += 32;
             pnlDetails.Controls.Add(chkActive);
 
-            lblBalance = new Label { Text = "الرصيد الحالي: ---", Location = new Point(10, y), Width = 285, AutoSize = false, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 11, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight }; y += 40;
+            lblBalance = new Label
+            {
+                Text = "الرصيد الحالي: ---",
+                Location = new Point(10, y),
+                Width = 305,
+                Height = 38,
+                AutoSize = false,
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
             pnlDetails.Controls.Add(lblBalance);
+            y += 46;
 
-            btnSave = Theme.MakeButton("💾 حفظ", 210, y, 90, 32, Theme.Accent);
-            btnNew = Theme.MakeButton("🆕 جديد", 110, y, 90, 32, Theme.Success);
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 90, 32, Theme.Danger); y += 44;
-            btnPayment = Theme.MakeButton("💵 تحصيل", 205, y, 95, 32, Theme.Success);
-            btnAdjustment = Theme.MakeButton("⚖️ تسوية", 110, y, 90, 32, Theme.Secondary);
-            btnStatement = Theme.MakeButton("📄 كشف مالي", 10, y, 95, 32, Theme.Primary); y += 44;
-            btnItemizedStatement = Theme.MakeButton("📦 كشف أصناف العميل", 160, y, 140, 32, Color.FromArgb(20, 100, 160));
-            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 140, 32, Theme.Accent); y += 44;
-            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", 10, y, 290, 34, Color.FromArgb(37, 211, 102));
+            btnSave = Theme.MakeButton("💾 حفظ التعديل", 215, y, 100, 36, Color.FromArgb(245, 158, 11));
+            btnNew = Theme.MakeButton("🆕 عميل جديد", 115, y, 95, 36, Color.FromArgb(16, 185, 129));
+            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68)); y += 42;
+
+            btnPayment = Theme.MakeButton("💵 تحصيل نقدية", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
+            btnAdjustment = Theme.MakeButton("⚖️ تسوية رصيد", 115, y, 95, 34, Color.FromArgb(71, 85, 105));
+            btnStatement = Theme.MakeButton("📄 كشف حساب", 10, y, 100, 34, Color.FromArgb(37, 99, 235)); y += 40;
+
+            btnItemizedStatement = Theme.MakeButton("📦 كشف الأصناف", 165, y, 150, 34, Color.FromArgb(2, 132, 199));
+            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 150, 34, Color.FromArgb(217, 119, 6)); y += 42;
+
+            var btnWhatsApp = Theme.MakeButton("📲 إرسال كشف الحساب واتساب", 10, y, 305, 36, Color.FromArgb(37, 211, 102));
             btnWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnWhatsApp.ForeColor = Color.White;
- 
+
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
@@ -249,10 +330,9 @@ namespace ChickenDist.Forms
                     () => ReceiptImageGenerator.GenerateClientStatementImage(_selectedID, name, bal),
                     "📱 إرسال كشف حساب العميل عبر الواتساب");
             };
- 
+
             pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement, btnWhatsApp });
 
-            
             tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
             tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
             this.Controls.Add(tbl);
@@ -261,18 +341,18 @@ namespace ChickenDist.Forms
 
         private Panel MakeField(string label, ref int y, out TextBox txt)
         {
-            var p = new Panel { Location = new Point(5, y), Width = 310, Height = 32 };
-            p.Controls.Add(new Label { Text = label, Location = new Point(200, 5), AutoSize = true, ForeColor = Theme.TextMain });
-            txt = new TextBox { Location = new Point(10, 1), Width = 185, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            var p = new Panel { Location = new Point(5, y), Width = 320, Height = 32 };
+            p.Controls.Add(new Label { Text = label, Location = new Point(215, 6), AutoSize = true, ForeColor = Color.FromArgb(241, 245, 249), Font = new Font("Segoe UI", 9f, FontStyle.Bold) });
+            txt = new TextBox { Location = new Point(5, 2), Width = 205, Height = 26, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
             p.Controls.Add(txt);
-            y += 38;
+            y += 34;
             return p;
         }
 
         private void LoadClients(string search = "")
         {
             dgClients.Rows.Clear();
-            if (search == "بحث بالاسم أو الهاتف...") search = "";
+            if (search == "بحث بالاسم أو الهاتف أو الكود...") search = "";
 
             DataTable dt = string.IsNullOrWhiteSpace(search)
                 ? ClientDAL.GetAll()
@@ -283,12 +363,45 @@ namespace ChickenDist.Forms
             var oldMode = dgClients.AutoSizeColumnsMode;
             dgClients.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
 
+            decimal totalDebt = 0;
             foreach (DataRow r in dt.Rows)
             {
                 decimal bal = Convert.ToDecimal(r["Balance"]);
+                totalDebt += bal;
                 int cratesBal = Convert.ToInt32(r["CratesBalance"]);
-                var row = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " فارغ");
-                if (bal > 0) dgClients.Rows[row].DefaultCellStyle.ForeColor = System.Drawing.Color.OrangeRed;
+                int rowIndex = dgClients.Rows.Add(r["ClientID"], r["ClientCode"], r["ClientName"], r["Phone"], bal.ToString("N2") + " ج", cratesBal.ToString() + " فارغ");
+                var row = dgClients.Rows[rowIndex];
+
+                // تنسيق الألوان بشكل مريح ومميز لعمود الرصيد فقط
+                if (bal > 0)
+                {
+                    row.Cells["Balance"].Style.ForeColor = Color.FromArgb(220, 38, 38); // Red
+                    row.Cells["Balance"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+                else if (bal < 0)
+                {
+                    row.Cells["Balance"].Style.ForeColor = Color.FromArgb(37, 99, 235); // Blue
+                    row.Cells["Balance"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+                else
+                {
+                    row.Cells["Balance"].Style.ForeColor = Color.FromArgb(22, 163, 74); // Green
+                    row.Cells["Balance"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+
+                if (cratesBal > 0)
+                {
+                    row.Cells["CratesBalance"].Style.ForeColor = Color.FromArgb(217, 119, 6);
+                }
+                else
+                {
+                    row.Cells["CratesBalance"].Style.ForeColor = Color.FromArgb(148, 163, 184);
+                }
+            }
+
+            if (lblSummary != null)
+            {
+                lblSummary.Text = string.Format("👥 إجمالي العملاء: {0:N0}  |  💰 إجمالي المديونيات: {1:N2} ج", dt.Rows.Count, totalDebt);
             }
 
             dgClients.AutoSizeColumnsMode = oldMode;
