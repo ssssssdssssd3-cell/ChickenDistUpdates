@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent(decimal salePrice)
         {
             this.Text = "🏷️ طباعة باركود صنف";
-            this.Size = new Size(500, 500);
+            this.Size = new Size(540, 560);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -68,18 +68,31 @@ namespace ChickenDist.Forms
             var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الصنف", _productName);
             this.Controls.Add(pnlTop);
 
-            int y = 90;
+            var pnlContent = new Panel
+            {
+                Location = new Point(15, 60),
+                Size = new Size(495, 435),
+                BackColor = Theme.BgCard,
+                Padding = new Padding(15)
+            };
+            this.Controls.Add(pnlContent);
+
+            int y = 15;
+            int lblW = 160;
+            int inputX = 180;
+            int inputW = 285;
 
             // Barcode Type Selection
-            this.Controls.Add(new Label { Text = "الرمز المطلوب طباعته:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "الرمز المطلوب طباعته:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             cboBarcodeType = new ComboBox
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboBarcodeType.Items.Add($"كود الصنف الافتراضي ({_productCode})");
             if (!string.IsNullOrWhiteSpace(_internationalCode))
@@ -91,52 +104,55 @@ namespace ChickenDist.Forms
             {
                 cboBarcodeType.SelectedIndex = 0;
             }
-            this.Controls.Add(cboBarcodeType);
-            y += 40;
+            pnlContent.Controls.Add(cboBarcodeType);
+            y += 42;
 
             // Print Quantity
-            this.Controls.Add(new Label { Text = "عدد الملصقات:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "عدد الملصقات:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             nudPrintQty = new NumericUpDown
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 Minimum = 1,
                 Maximum = 1000,
                 Value = 1,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            this.Controls.Add(nudPrintQty);
-            y += 40;
+            pnlContent.Controls.Add(nudPrintQty);
+            y += 42;
 
             // Sale Price
-            this.Controls.Add(new Label { Text = "سعر البيع المطبوع:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "سعر البيع المطبوع:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             nudPrice = new NumericUpDown
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 Minimum = 0,
                 Maximum = 999999,
                 DecimalPlaces = 2,
                 Value = salePrice,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            this.Controls.Add(nudPrice);
-            y += 40;
+            pnlContent.Controls.Add(nudPrice);
+            y += 42;
 
             // Printer Selection
-            this.Controls.Add(new Label { Text = "اختر الطابعة:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "اختر الطابعة:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             cboPrinters = new ComboBox
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             try
             {
@@ -150,19 +166,20 @@ namespace ChickenDist.Forms
                     cboPrinters.SelectedIndex = 0;
             }
             catch { }
-            this.Controls.Add(cboPrinters);
-            y += 40;
+            pnlContent.Controls.Add(cboPrinters);
+            y += 42;
 
             // Sticker Template
-            this.Controls.Add(new Label { Text = "شكل ملصق الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "شكل ملصق الباركود:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             cboBarcodeTemplate = new ComboBox
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
@@ -178,19 +195,20 @@ namespace ChickenDist.Forms
                                             : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
                                             : "الافتراضي (اسم صنف + سعر + باركود)";
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
-            this.Controls.Add(cboBarcodeTemplate);
-            y += 40;
+            pnlContent.Controls.Add(cboBarcodeTemplate);
+            y += 42;
 
             // Barcode Encoding
-            this.Controls.Add(new Label { Text = "نوع تشفير الباركود:", Location = new Point(20, y + 4), AutoSize = true, ForeColor = Theme.TextMain });
+            pnlContent.Controls.Add(new Label { Text = "نوع تشفير الباركود:", Location = new Point(15, y + 4), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) });
             cboBarcodeEncoding = new ComboBox
             {
-                Location = new Point(180, y),
-                Width = 280,
+                Location = new Point(inputX, y),
+                Width = inputW,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboBarcodeEncoding.Items.AddRange(new object[]
             {
@@ -198,43 +216,48 @@ namespace ChickenDist.Forms
                 "Code 39 (أحادي عريض)"
             });
             cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
-            this.Controls.Add(cboBarcodeEncoding);
-            y += 40;
+            pnlContent.Controls.Add(cboBarcodeEncoding);
+            y += 42;
 
             // Checkboxes
             chkPrintPrice = new CheckBox
             {
                 Text = "طباعة السعر على الملصق",
-                Location = new Point(180, y),
+                Location = new Point(inputX, y),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Checked = true
             };
-            this.Controls.Add(chkPrintPrice);
+            pnlContent.Controls.Add(chkPrintPrice);
 
             chkPrintCompanyName = new CheckBox
             {
                 Text = "طباعة اسم المؤسسة",
-                Location = new Point(180, y + 25),
+                Location = new Point(inputX, y + 26),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Checked = true
             };
-            this.Controls.Add(chkPrintCompanyName);
-            y += 65;
+            pnlContent.Controls.Add(chkPrintCompanyName);
+            y += 62;
 
             // Buttons
-            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة", 20, y, 140, 36, Theme.Success);
+            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة", 15, y, 150, 40, Theme.Success);
+            btnPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPrint.Click += (s, e) => StartPrintJob(false);
-            this.Controls.Add(btnPrint);
+            pnlContent.Controls.Add(btnPrint);
 
-            btnPreview = Theme.MakeButton("معاينة 👁️", 170, y, 110, 36, Theme.Accent);
+            btnPreview = Theme.MakeButton("معاينة 👁️", 175, y, 140, 40, Theme.Accent);
+            btnPreview.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPreview.Click += (s, e) => StartPrintJob(true);
-            this.Controls.Add(btnPreview);
+            pnlContent.Controls.Add(btnPreview);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 290, y, 110, 36, Color.FromArgb(70, 80, 95));
+            btnCancel = Theme.MakeButton("إلغاء ↩", 325, y, 140, 40, Color.FromArgb(100, 116, 139));
+            btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnCancel.Click += (s, e) => this.Close();
-            this.Controls.Add(btnCancel);
+            pnlContent.Controls.Add(btnCancel);
 
             Theme.ApplyFormRTL(this);
         }

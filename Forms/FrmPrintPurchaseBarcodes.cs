@@ -123,8 +123,9 @@ namespace ChickenDist.Forms
                 Location = new Point(160, y),
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             try
             {
@@ -147,7 +148,8 @@ namespace ChickenDist.Forms
                 Text = "شكل ملصق الباركود:",
                 Location = new Point(20, y + 4),
                 AutoSize = true,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblTemplate);
 
@@ -156,8 +158,9 @@ namespace ChickenDist.Forms
                 Location = new Point(160, y),
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
@@ -182,7 +185,8 @@ namespace ChickenDist.Forms
                 Text = "نوع تشفير الباركود:",
                 Location = new Point(20, y + 4),
                 AutoSize = true,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             this.Controls.Add(lblEncoding);
 
@@ -191,8 +195,9 @@ namespace ChickenDist.Forms
                 Location = new Point(160, y),
                 Width = 240,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboBarcodeEncoding.Items.AddRange(new object[]
             {

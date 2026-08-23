@@ -504,6 +504,8 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlTop);           // Top
 
             this.Resize += (s, e) => { LayoutTopCard(); LayoutBottomBar(); };
+            this.Load += (s, e) => { LayoutTopCard(); LayoutBottomBar(); };
+            this.Shown += (s, e) => { LayoutTopCard(); LayoutBottomBar(); };
             LayoutTopCard();
             LayoutBottomBar();
 
