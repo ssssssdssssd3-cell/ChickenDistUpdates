@@ -328,6 +328,7 @@ namespace ChickenDist.Forms
                 case "FrmWarehouseTransfer":
                 case "FrmWarehouseTransfersList":
                 case "FrmPriceChanges":
+                case "FrmPricePoster":
                 case "FrmBulkPrintBarcodes":
                 case "FrmMinStockEdit":
                 case "FrmShortageNotebook":
@@ -476,6 +477,7 @@ namespace ChickenDist.Forms
 
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
+                    ("📋 لستة الأصناف",      "PricePoster",       (Action)(() => NavigateTo(new FrmPricePoster()))),
                     ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => { if (FrmProducts.PromptImportPassword(this)) NavigateTo(new FrmImportProducts()); })),
@@ -660,6 +662,7 @@ namespace ChickenDist.Forms
 
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
+                    ("📋 لستة الأصناف",      "PricePoster",       (Action)(() => NavigateTo(new FrmPricePoster()))),
                     ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => { if (FrmProducts.PromptImportPassword(this)) NavigateTo(new FrmImportProducts()); })),

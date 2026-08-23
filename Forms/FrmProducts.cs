@@ -381,7 +381,7 @@ namespace ChickenDist.Forms
             btnPrintBarcode.Width = 130;
             btnPrintBarcode.Click += BtnPrintBarcode_Click;
 
-            var btnPricePoster = Theme.MakeButton("📢 منشور الأسعار", Color.FromArgb(120, 80, 140));
+            var btnPricePoster = Theme.MakeButton("📋 لستة الأصناف", Color.FromArgb(120, 80, 140));
             btnPricePoster.Width = 130;
             btnPricePoster.Click += (s, e) => new FrmPricePoster().ShowDialog();
 

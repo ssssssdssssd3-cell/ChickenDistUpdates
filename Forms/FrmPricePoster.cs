@@ -41,7 +41,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "منشور الأسعار اليومية";
+            this.Text = "لستة الأصناف (منشور الأسعار)";
             this.Size = new Size(1150, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
             var pnlControls = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10), BackColor = Theme.BgCard, AutoScroll = true };
             
             int y = 10;
-            var lblTitle = new Label { Text = "عنوان المنشور:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            var lblTitle = new Label { Text = "عنوان لستة الأصناف:", Location = new Point(10, y), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
             pnlControls.Controls.Add(lblTitle);
             y += 22;
 
@@ -72,7 +72,7 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(10, y),
                 Width = 280,
-                Text = "قائمة أسعار اليوم",
+                Text = "لستة الأصناف والأسعار",
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle,

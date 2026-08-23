@@ -406,7 +406,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("WarehouseTransfer", "🔄 تحويل مخزني صادر", 2),
             new ScreenInfo("WarehouseTransfersList", "📋 سجل التحويلات المخزنية", 2),
             new ScreenInfo("PriceChanges", "📉 سجل تغير وحركات الأسعار", 2),
-            new ScreenInfo("PricePoster", "📢 منشور الأسعار", 2),
+            new ScreenInfo("PricePoster", "📋 لستة الأصناف (منشور الأسعار)", 2),
             new ScreenInfo("ProductMovement", "📊 تقرير وحركة الصنف التفصيلي", 2),
             new ScreenInfo("BulkPrintBarcodes", "🏷️ طباعة الباركود (مجمع)", 2),
             new ScreenInfo("ClothingMatrix", "👔 مصفوفة مقاسات وألوان الملابس", 2),
