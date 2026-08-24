@@ -855,5 +855,69 @@ namespace ChickenDist.DAL
             catch { }
             return list;
         }
+
+        /// <summary>مزامنة وضبط جدول أرصدة الأصناف ProductStock مع الحسابات الدفترية الدقيقة لكافة الأصناف والمخازن</summary>
+        public static void SyncAllProductStock(int? warehouseID = null)
+        {
+            try
+            {
+                string whSql = warehouseID.HasValue 
+                    ? "SELECT WarehouseID FROM Warehouses WHERE WarehouseID = @wid" 
+                    : "SELECT WarehouseID FROM Warehouses WHERE IsActive = 1";
+                var prms = warehouseID.HasValue ? new[] { DbHelper.P("@wid", warehouseID.Value) } : new System.Data.SqlClient.SqlParameter[0];
+                var dtWh = DbHelper.Query(whSql, prms);
+
+                foreach (DataRow wr in dtWh.Rows)
+                {
+                    int wid = Convert.ToInt32(wr["WarehouseID"]);
+                    var stockMap = GetStockSummary(wid);
+                    if (stockMap == null || stockMap.Count == 0) continue;
+
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        foreach (var kvp in stockMap)
+                        {
+                            DbHelper.ExecuteTrans(trans, @"
+                                IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
+                                    UPDATE ProductStock SET Quantity = @q, LastUpdated = GETDATE() WHERE ProductID = @pid AND WarehouseID = @wid
+                                ELSE
+                                    INSERT INTO ProductStock (ProductID, WarehouseID, Quantity, LastUpdated) VALUES (@pid, @wid, @q, GETDATE())",
+                                DbHelper.P("@pid", kvp.Key),
+                                DbHelper.P("@wid", wid),
+                                DbHelper.P("@q", kvp.Value));
+                        }
+                    });
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>مزامنة رصيد صنف محدد في جدول ProductStock</summary>
+        public static void SyncProductStock(int productID, int? warehouseID = null)
+        {
+            try
+            {
+                string whSql = warehouseID.HasValue 
+                    ? "SELECT WarehouseID FROM Warehouses WHERE WarehouseID = @wid" 
+                    : "SELECT WarehouseID FROM Warehouses WHERE IsActive = 1";
+                var prms = warehouseID.HasValue ? new[] { DbHelper.P("@wid", warehouseID.Value) } : new System.Data.SqlClient.SqlParameter[0];
+                var dtWh = DbHelper.Query(whSql, prms);
+
+                foreach (DataRow wr in dtWh.Rows)
+                {
+                    int wid = Convert.ToInt32(wr["WarehouseID"]);
+                    decimal dynamicQty = GetProductStock(productID, wid);
+                    DbHelper.Execute(@"
+                        IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
+                            UPDATE ProductStock SET Quantity = @q, LastUpdated = GETDATE() WHERE ProductID = @pid AND WarehouseID = @wid
+                        ELSE
+                            INSERT INTO ProductStock (ProductID, WarehouseID, Quantity, LastUpdated) VALUES (@pid, @wid, @q, GETDATE())",
+                        DbHelper.P("@pid", productID),
+                        DbHelper.P("@wid", wid),
+                        DbHelper.P("@q", dynamicQty));
+                }
+            }
+            catch { }
+        }
     }
 }

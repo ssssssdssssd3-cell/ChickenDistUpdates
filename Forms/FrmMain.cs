@@ -30,6 +30,7 @@ namespace ChickenDist.Forms
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
+            try { System.Threading.Tasks.Task.Run(() => InventoryDAL.SyncAllProductStock()); } catch {}
         }
 
         private void InitializeComponent()

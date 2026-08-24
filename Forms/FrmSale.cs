@@ -2799,18 +2799,16 @@ namespace ChickenDist.Forms
 					var item = _items[dgItems.CurrentRow.Index];
 					if (item.ProductID > 0)
 					{
-						var dt = DbHelper.Query(@"
-							SELECT w.WarehouseName, ISNULL(ps.Quantity, 0) AS Qty
-							FROM Warehouses w
-							LEFT JOIN ProductStock ps ON w.WarehouseID = ps.WarehouseID AND ps.ProductID = @pid",
-							DbHelper.P("@pid", item.ProductID));
+						var dtWarehouses = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
 						string msg = $"📦 تفاصيل رصيد الصنف: {item.ProductName}\n" + new string('-', 40) + "\n";
 						decimal totalStock = 0;
-						foreach (DataRow r in dt.Rows)
+						foreach (DataRow r in dtWarehouses.Rows)
 						{
-							decimal q = Convert.ToDecimal(r["Qty"]);
+							int wid = Convert.ToInt32(r["WarehouseID"]);
+							string wName = r["WarehouseName"]?.ToString() ?? "";
+							decimal q = InventoryDAL.GetProductStock(item.ProductID, wid);
 							totalStock += q;
-							msg += $"• {r["WarehouseName"]}: {q:N2} {item.UnitName}\n";
+							msg += $"• {wName}: {q:N2} {item.UnitName}\n";
 						}
 						msg += new string('-', 40) + $"\nالإجمالي الكلي: {totalStock:N2} {item.UnitName}";
 						MessageBox.Show(msg, "رصيد المخازن", MessageBoxButtons.OK, MessageBoxIcon.Information);
