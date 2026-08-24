@@ -384,6 +384,18 @@ namespace ChickenDist.Forms
                     }
                 }
             });
+            cmsPOS.Items.Add("📈 كشف حركة الصنف التفصيلي", null, (s, e) => {
+                if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
+                {
+                    int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
+                    string name = _items[dgItems.SelectedRows[0].Index].Name;
+                    string unit = _items[dgItems.SelectedRows[0].Index].UnitName ?? "";
+                    if (pId > 0)
+                    {
+                        new FrmProductMovement(pId, name, unit).ShowDialog(this);
+                    }
+                }
+            });
             cmsPOS.Items.Add("🏷️ طباعة باركود الصنف", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {

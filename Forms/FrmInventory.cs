@@ -439,11 +439,16 @@ namespace ChickenDist.Forms
             btnZeroOutWarehouse.Margin = new Padding(2, 1, 3, 0);
             btnZeroOutWarehouse.Click += BtnZeroOutWarehouse_Click;
 
+            var btnFindOutliers = Theme.MakeButton("🔍 فحص وتصحيح القيم الشاذة ⚠️", Color.FromArgb(220, 38, 38));
+            btnFindOutliers.Size = new Size(185, 28);
+            btnFindOutliers.Margin = new Padding(2, 1, 3, 0);
+            btnFindOutliers.Click += (s, e) => ShowOutliersDialog();
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory,
                 btnSaveAdj, btnClearAdj,
                 btnPrintStock, btnPrintIncreaseBarcodes, btnVarianceReport, btnMovement, btnAddExpiryRow,
-                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnZeroOutWarehouse
+                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnZeroOutWarehouse, btnFindOutliers
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);
@@ -2140,6 +2145,188 @@ namespace ChickenDist.Forms
                     MessageBox.Show("حدث خطأ أثناء تصفير المخزن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void ShowOutliersDialog()
+        {
+            var dlg = new Form
+            {
+                Text = "🔍 فحص وتصحيح الأصناف ذات الأسعار أو الكميات الشاذة / الخاطئة",
+                Size = new Size(1020, 620),
+                StartPosition = FormStartPosition.CenterParent,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Theme.BgMain,
+                Font = Theme.FontMain
+            };
+
+            var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Color.FromArgb(40, 48, 65), Padding = new Padding(10) };
+            var lblInfo = new Label
+            {
+                Text = "⚠️ هذه الشاشة تفحص وتستخرج كافة الأصناف التي تحتوي على أسعار أو كميات شاذة وغير منطقية (ناتجة عن خطأ استيراد إكسيل أو كتابة خاطئة) لتعديلها فوراً.",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.FromArgb(254, 240, 138),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            pnlTop.Controls.Add(lblInfo);
+
+            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
+            var btnSaveOutliers = Theme.MakeButton("💾 حفظ وتطبيق التعديلات", Theme.Success, new Point(10, 8), new Size(200, 36));
+            var btnOpenCard = Theme.MakeButton("🔍 كارت الصنف", Theme.Primary, new Point(220, 8), new Size(130, 36));
+            var btnZeroOutSelected = Theme.MakeButton("🗑️ تصفير رصيد المحدد", Color.FromArgb(190, 40, 40), new Point(360, 8), new Size(160, 36));
+            var btnClose = Theme.MakeButton("إغلاق", Color.FromArgb(100, 110, 120), new Point(530, 8), new Size(100, 36));
+            btnClose.Click += (s, e) => dlg.Close();
+
+            pnlBottom.Controls.AddRange(new Control[] { btnSaveOutliers, btnOpenCard, btnZeroOutSelected, btnClose });
+
+            var dg = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Color.White,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                Font = new Font("Segoe UI", 10f),
+                RowTemplate = { Height = 32 },
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeight = 36,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(30, 41, 59),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                }
+            };
+            Theme.EnableDoubleBuffer(dg);
+
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", HeaderText = "ID", Visible = false });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "الباركود / الكود", ReadOnly = true, FillWeight = 90 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 220 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", ReadOnly = true, FillWeight = 60 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", ReadOnly = false, FillWeight = 90 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", ReadOnly = false, FillWeight = 90 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد بالمخزن", ReadOnly = false, FillWeight = 90 });
+            dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalVal", HeaderText = "إجمالي القيمة التقديرية", ReadOnly = true, FillWeight = 120 });
+
+            dg.Columns["PurchasePrice"].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+            dg.Columns["SalePrice"].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+            dg.Columns["StockQty"].DefaultCellStyle.BackColor = Color.FromArgb(224, 242, 254);
+            dg.Columns["TotalVal"].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            dg.Columns["TotalVal"].DefaultCellStyle.ForeColor = Color.DarkRed;
+
+            Action loadOutliers = () =>
+            {
+                dg.Rows.Clear();
+                string sql = @"
+                    SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.PurchasePrice, p.SalePrice,
+                           ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) AS Stock
+                    FROM Products p
+                    WHERE p.IsActive = 1
+                      AND (
+                           p.SalePrice >= 5000 
+                        OR p.PurchasePrice >= 5000 
+                        OR ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) >= 5000
+                        OR (p.SalePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) >= 500000
+                        OR (p.PurchasePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) >= 500000
+                        OR p.SalePrice < 0
+                        OR p.PurchasePrice < 0
+                      )
+                    ORDER BY (p.SalePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) DESC";
+
+                var dtOut = DbHelper.Query(sql);
+                foreach (DataRow r in dtOut.Rows)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    string code = r["ProductCode"]?.ToString() ?? "";
+                    string name = r["ProductName"]?.ToString() ?? "";
+                    string unit = r["Unit"]?.ToString() ?? "";
+                    decimal pp = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                    decimal sp = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                    decimal stock = Convert.ToDecimal(r["Stock"]);
+                    decimal tot = stock * (sp > 0 ? sp : pp);
+
+                    dg.Rows.Add(pid, code, name, unit, pp.ToString("N2"), sp.ToString("N2"), stock.ToString("N3"), tot.ToString("N2") + " ج");
+                }
+
+                if (dg.Rows.Count == 0)
+                {
+                    MessageBox.Show("✅ ممتاز: لم يتم العثور على أي أصناف بأسعار أو كميات شاذة أو غير منطقية في قاعدة البيانات!", "الفحص سليم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
+            btnOpenCard.Click += (s, e) =>
+            {
+                if (dg.SelectedRows.Count == 0) return;
+                int pid = Convert.ToInt32(dg.SelectedRows[0].Cells["ProductID"].Value);
+                if (new FrmProductCard(pid).ShowDialog(dlg) == DialogResult.OK)
+                {
+                    loadOutliers();
+                }
+            };
+
+            btnZeroOutSelected.Click += (s, e) =>
+            {
+                if (dg.SelectedRows.Count == 0) return;
+                int pid = Convert.ToInt32(dg.SelectedRows[0].Cells["ProductID"].Value);
+                string pName = dg.SelectedRows[0].Cells["ProductName"].Value?.ToString() ?? "";
+                if (MessageBox.Show($"هل تريد تصفير رصيد الصنف '{pName}' وجعل كميته = 0 في كافة المخازن؟", "تأكيد تصفير الرصيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    DbHelper.Execute("UPDATE ProductStock SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                    DbHelper.Execute("UPDATE ProductBatches SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                    loadOutliers();
+                }
+            };
+
+            btnSaveOutliers.Click += (s, e) =>
+            {
+                dg.EndEdit();
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                int updatedCount = 0;
+                try
+                {
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        foreach (DataGridViewRow row in dg.Rows)
+                        {
+                            int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+                            if (decimal.TryParse(row.Cells["PurchasePrice"].Value?.ToString(), System.Globalization.NumberStyles.Any, inv, out decimal newPP) &&
+                                decimal.TryParse(row.Cells["SalePrice"].Value?.ToString(), System.Globalization.NumberStyles.Any, inv, out decimal newSP) &&
+                                decimal.TryParse(row.Cells["StockQty"].Value?.ToString(), System.Globalization.NumberStyles.Any, inv, out decimal newStock))
+                            {
+                                DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pp, SalePrice = @sp WHERE ProductID = @pid",
+                                    DbHelper.P("@pp", newPP), DbHelper.P("@sp", newSP), DbHelper.P("@pid", pid));
+
+                                DbHelper.ExecuteTrans(trans, @"
+                                    IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = 1)
+                                        UPDATE ProductStock SET Quantity = @q WHERE ProductID = @pid AND WarehouseID = 1
+                                    ELSE
+                                        INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, 1, @q)",
+                                    DbHelper.P("@q", newStock), DbHelper.P("@pid", pid));
+
+                                updatedCount++;
+                            }
+                        }
+                    });
+
+                    ProductCache.Invalidate();
+                    MessageBox.Show($"✅ تم حفظ وتصحيح بيانات ({updatedCount}) صنف بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    loadOutliers();
+                    LoadStock();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء الحفظ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            dlg.Controls.Add(dg);
+            dlg.Controls.Add(pnlBottom);
+            dlg.Controls.Add(pnlTop);
+
+            loadOutliers();
+            dlg.ShowDialog(this);
         }
 
         private void BtnMovement_Click(object sender, EventArgs e)
