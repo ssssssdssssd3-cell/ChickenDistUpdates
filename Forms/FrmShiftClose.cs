@@ -1154,109 +1154,117 @@ namespace ChickenDist.Forms
                 int shiftID = Convert.ToInt32(_openShift["ShiftID"]);
                 int currentSafeID = _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
 
-                // 1. تحديث بيانات الوردية المغلقة
-                DbHelper.Execute(@"
-                    UPDATE Shifts
-                    SET CloseTime = GETDATE(),
-                        ClosedBy = @emp,
-                        TotalSales = @ts,
-                        CashSales = @cs,
-                        VisaSales = @vs,
-                        WalletSales = @ws,
-                        CreditSales = @crs,
-                        OtherSales = @os,
-                        TotalReturns = @tr,
-                        CashReturns = @crr,
-                        TotalDiscounts = @disc,
-                        NetSales = @nets,
-                        InvoiceCount = @invc,
-                        CashExpenses = @exp,
-                        CashIn = @cin,
-                        ExpectedCash = @expCash,
-                        ActualCash = @actCash,
-                        Difference = @diff,
-                        TransferToSafeID = @targetSafe,
-                        TransferredAmount = @transAmt,
-                        RemainingInDrawer = @rem,
-                        DeficitReason = @defReason,
-                        DenominationsJson = @denoms,
-                        Notes = @notes,
-                        ApprovalStatus = 'PendingApproval',
-                        Status = 'Closed'
-                    WHERE ShiftID = @sid",
-                    DbHelper.P("@emp", Session.EmpID),
-                    DbHelper.P("@ts", _summary != null ? _summary.TotalSales : 0),
-                    DbHelper.P("@cs", _summary != null ? _summary.CashSales : 0),
-                    DbHelper.P("@vs", _summary != null ? _summary.VisaSales : 0),
-                    DbHelper.P("@ws", _summary != null ? _summary.WalletSales : 0),
-                    DbHelper.P("@crs", _summary != null ? _summary.CreditSales : 0),
-                    DbHelper.P("@os", _summary != null ? _summary.OtherSales : 0),
-                    DbHelper.P("@tr", _summary != null ? _summary.TotalReturns : 0),
-                    DbHelper.P("@crr", _summary != null ? _summary.CashReturns : 0),
-                    DbHelper.P("@disc", _summary != null ? _summary.Discounts : 0),
-                    DbHelper.P("@nets", _summary != null ? _summary.NetSales : 0),
-                    DbHelper.P("@invc", _summary != null ? _summary.InvoiceCount : 0),
-                    DbHelper.P("@exp", _summary != null ? _summary.Expenses : 0),
-                    DbHelper.P("@cin", _summary != null ? _summary.TotalCashIn : 0),
-                    DbHelper.P("@expCash", expected),
-                    DbHelper.P("@actCash", actual),
-                    DbHelper.P("@diff", diff),
-                    DbHelper.P("@targetSafe", targetSafeID > 0 ? (object)targetSafeID : DBNull.Value),
-                    DbHelper.P("@transAmt", transfer),
-                    DbHelper.P("@rem", remainingInDrawer),
-                    DbHelper.P("@defReason", txtDeficitReason.Text.Trim()),
-                    DbHelper.P("@denoms", _denominationsJson),
-                    DbHelper.P("@notes", txtNotes.Text.Trim()),
-                    DbHelper.P("@sid", shiftID));
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    // 1. تحديث بيانات الوردية المغلقة
+                    DbHelper.ExecuteTrans(trans, @"
+                        UPDATE Shifts
+                        SET CloseTime = GETDATE(),
+                            ClosedBy = @emp,
+                            TotalSales = @ts,
+                            CashSales = @cs,
+                            VisaSales = @vs,
+                            WalletSales = @ws,
+                            CreditSales = @crs,
+                            OtherSales = @os,
+                            TotalReturns = @tr,
+                            CashReturns = @crr,
+                            TotalDiscounts = @disc,
+                            NetSales = @nets,
+                            InvoiceCount = @invc,
+                            CashExpenses = @exp,
+                            CashIn = @cin,
+                            ExpectedCash = @expCash,
+                            ActualCash = @actCash,
+                            Difference = @diff,
+                            TransferToSafeID = @targetSafe,
+                            TransferredAmount = @transAmt,
+                            RemainingInDrawer = @rem,
+                            DeficitReason = @defReason,
+                            DenominationsJson = @denoms,
+                            Notes = @notes,
+                            ApprovalStatus = 'PendingApproval',
+                            Status = 'Closed'
+                        WHERE ShiftID = @sid",
+                        DbHelper.P("@emp", Session.EmpID),
+                        DbHelper.P("@ts", _summary != null ? _summary.TotalSales : 0),
+                        DbHelper.P("@cs", _summary != null ? _summary.CashSales : 0),
+                        DbHelper.P("@vs", _summary != null ? _summary.VisaSales : 0),
+                        DbHelper.P("@ws", _summary != null ? _summary.WalletSales : 0),
+                        DbHelper.P("@crs", _summary != null ? _summary.CreditSales : 0),
+                        DbHelper.P("@os", _summary != null ? _summary.OtherSales : 0),
+                        DbHelper.P("@tr", _summary != null ? _summary.TotalReturns : 0),
+                        DbHelper.P("@crr", _summary != null ? _summary.CashReturns : 0),
+                        DbHelper.P("@disc", _summary != null ? _summary.Discounts : 0),
+                        DbHelper.P("@nets", _summary != null ? _summary.NetSales : 0),
+                        DbHelper.P("@invc", _summary != null ? _summary.InvoiceCount : 0),
+                        DbHelper.P("@exp", _summary != null ? _summary.Expenses : 0),
+                        DbHelper.P("@cin", _summary != null ? _summary.TotalCashIn : 0),
+                        DbHelper.P("@expCash", expected),
+                        DbHelper.P("@actCash", actual),
+                        DbHelper.P("@diff", diff),
+                        DbHelper.P("@targetSafe", targetSafeID > 0 ? (object)targetSafeID : DBNull.Value),
+                        DbHelper.P("@transAmt", transfer),
+                        DbHelper.P("@rem", remainingInDrawer),
+                        DbHelper.P("@defReason", txtDeficitReason.Text.Trim()),
+                        DbHelper.P("@denoms", _denominationsJson),
+                        DbHelper.P("@notes", txtNotes.Text.Trim()),
+                        DbHelper.P("@sid", shiftID));
 
-                // 2. تسجيل سند تسوية العجز أو الزيادة في الدرج للتأثير المباشر على رصيد الدرج الدفتري والفعلي
-                if (diff < -0.001m)
-                {
-                    decimal deficit = Math.Abs(diff);
-                    string defReason = txtDeficitReason.Text.Trim();
-                    string defNote = $"سند تسوية عجز تقفيل وردية #{shiftID}" + (!string.IsNullOrEmpty(defReason) ? $" - سبب العجز: {defReason}" : "");
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
-                          VALUES (GETDATE(), 'ShiftDeficit', 0, @amt, @acc, @notes, @uid, @ref, @shid);",
-                        DbHelper.P("@amt", deficit),
-                        DbHelper.P("@acc", currentSafeID),
-                        DbHelper.P("@notes", defNote),
-                        DbHelper.P("@uid", Session.EmpID),
-                        DbHelper.P("@ref", shiftID),
-                        DbHelper.P("@shid", shiftID));
-                }
-                else if (diff > 0.001m)
-                {
-                    decimal surplus = diff;
-                    string surplusNote = $"سند تسوية زيادة تقفيل وردية #{shiftID}";
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
-                          VALUES (GETDATE(), 'ShiftSurplus', @amt, 0, @acc, @notes, @uid, @ref, @shid);",
-                        DbHelper.P("@amt", surplus),
-                        DbHelper.P("@acc", currentSafeID),
-                        DbHelper.P("@notes", surplusNote),
-                        DbHelper.P("@uid", Session.EmpID),
-                        DbHelper.P("@ref", shiftID),
-                        DbHelper.P("@shid", shiftID));
-                }
+                    // 2. مطابقة وتعديل الرصيد الفعلي للدرج في الخزنة ليتطابق تماماً مع النقدية الفعلية المسلمة (actual)
+                    decimal currentLiveBalance = AccountDAL.GetCashBalanceTrans(trans, currentSafeID);
+                    decimal adjustmentDiff = actual - currentLiveBalance;
 
-                // 3. تسجيل قيد التحويل المالي للخزنة إذا وجد
-                if (transfer > 0 && targetSafeID > 0)
-                {
-                    DbHelper.Execute(
-                        @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
-                          VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @accOut, @notesOut, @uid, @ref, @shid);
-                          INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
-                          VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @accIn, @notesIn, @uid, @ref, @shid);",
-                        DbHelper.P("@amt", transfer),
-                        DbHelper.P("@accOut", currentSafeID),
-                        DbHelper.P("@notesOut", $"توريد نقدية من تقفيل الوردية #{shiftID} إلى الخزنة"),
-                        DbHelper.P("@accIn", targetSafeID),
-                        DbHelper.P("@notesIn", $"توريد وارد من تقفيل الوردية #{shiftID}"),
-                        DbHelper.P("@uid", Session.EmpID),
-                        DbHelper.P("@ref", shiftID),
-                        DbHelper.P("@shid", shiftID));
-                }
+                    if (adjustmentDiff < -0.001m)
+                    {
+                        decimal deficit = Math.Abs(adjustmentDiff);
+                        string defReason = txtDeficitReason.Text.Trim();
+                        string defNote = $"سند تسوية عجز تقفيل وردية #{shiftID}" + (!string.IsNullOrEmpty(defReason) ? $" - سبب العجز: {defReason}" : "");
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                              VALUES (GETDATE(), 'ShiftDeficit', 0, @amt, @acc, @notes, @uid, @ref, @shid);",
+                            DbHelper.P("@amt", deficit),
+                            DbHelper.P("@acc", currentSafeID),
+                            DbHelper.P("@notes", defNote),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID),
+                            DbHelper.P("@shid", shiftID));
+                    }
+                    else if (adjustmentDiff > 0.001m)
+                    {
+                        decimal surplus = adjustmentDiff;
+                        string surplusNote = $"سند تسوية زيادة تقفيل وردية #{shiftID}";
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                              VALUES (GETDATE(), 'ShiftSurplus', @amt, 0, @acc, @notes, @uid, @ref, @shid);",
+                            DbHelper.P("@amt", surplus),
+                            DbHelper.P("@acc", currentSafeID),
+                            DbHelper.P("@notes", surplusNote),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID),
+                            DbHelper.P("@shid", shiftID));
+                    }
+
+                    // 3. تسجيل قيد التحويل المالي للخزنة إذا وجد مع ضمان عدم سحب رصيد سالب
+                    if (transfer > 0 && targetSafeID > 0)
+                    {
+                        AccountDAL.EnsureSufficientCashTrans(trans, currentSafeID, transfer, "توريد نقدية تقفيل الوردية إلى الخزنة");
+
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                              VALUES (GETDATE(), 'ShiftCloseOut', 0, @amt, @accOut, @notesOut, @uid, @ref, @shid);
+                              INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy, RefID, ShiftID)
+                              VALUES (GETDATE(), 'ShiftCloseIn', @amt, 0, @accIn, @notesIn, @uid, @ref, @shid);",
+                            DbHelper.P("@amt", transfer),
+                            DbHelper.P("@accOut", currentSafeID),
+                            DbHelper.P("@notesOut", $"توريد نقدية من تقفيل الوردية #{shiftID} إلى الخزنة"),
+                            DbHelper.P("@accIn", targetSafeID),
+                            DbHelper.P("@notesIn", $"توريد وارد من تقفيل الوردية #{shiftID}"),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@ref", shiftID),
+                            DbHelper.P("@shid", shiftID));
+                    }
+                });
 
                 // 3. فتح الوردية التالية فوراً تلقائياً
                 int newShiftID = ShiftDAL.EnsureActiveShift(Session.EmpID, currentSafeID, remainingInDrawer);

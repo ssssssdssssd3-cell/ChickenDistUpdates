@@ -3747,11 +3747,33 @@ namespace ChickenDist.Core
                         ALTER TABLE Expenses ADD ShiftID INT NULL;
                     END
 
-                    -- تنظيف وتوحيد مسميات الحسابات وأنواعها
+                    -- تنظيف وتوحيد مسميات الحسابات وأنواعها وتصحيح أي رصيد سالب محاسبياً
                     IF OBJECT_ID('SafeAccounts','U') IS NOT NULL
                     BEGIN
                         UPDATE SafeAccounts SET AccountName = REPLACE(REPLACE(REPLACE(AccountName, ' / الدرج', ''), '/ الدرج', ''), '/الدرج', '') WHERE AccountName LIKE '%الدرج%';
                         UPDATE SafeAccounts SET AccountType = 'Cash' WHERE AccountType IS NULL OR AccountType = '' OR AccountType = 'General';
+                    END
+
+                    -- تصحيح فوري لأي رصيد سالب في الخزن أو الأدراج الناتجة عن عمليات سابقة
+                    IF OBJECT_ID('CashBox','U') IS NOT NULL
+                    BEGIN
+                        DECLARE @curAccId INT, @curNegBal DECIMAL(18,2);
+                        DECLARE curNeg CURSOR FOR 
+                            SELECT AccountID, (ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0)) AS Bal
+                            FROM CashBox
+                            WHERE AccountID IS NOT NULL AND AccountID > 0
+                            GROUP BY AccountID
+                            HAVING (ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0)) < -0.001;
+                        OPEN curNeg;
+                        FETCH NEXT FROM curNeg INTO @curAccId, @curNegBal;
+                        WHILE @@FETCH_STATUS = 0
+                        BEGIN
+                            INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                            VALUES (GETDATE(), 'Reconcile', ABS(@curNegBal), 0, @curAccId, N'سند تسوية تلقائي لتصحيح رصيد الدرج ومنع السالب', 1);
+                            FETCH NEXT FROM curNeg INTO @curAccId, @curNegBal;
+                        END;
+                        CLOSE curNeg;
+                        DEALLOCATE curNeg;
                     END
 
                     -- ضمان وجود أعمدة المرتجع المرتبطة بالوردية وطرق الدفع

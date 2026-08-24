@@ -1584,6 +1584,17 @@ namespace ChickenDist.DAL
                     try
                     {
                         decimal liveBal = AccountDAL.GetCashBalance(safeID);
+                        if (liveBal < -0.001m)
+                        {
+                            decimal fixAmt = Math.Abs(liveBal);
+                            DbHelper.Execute(
+                                @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
+                                  VALUES (GETDATE(), 'Reconcile', @amt, 0, @acc, N'سند تسوية تلقائي لتصحيح رصيد الدرج ومنع السالب', @uid);",
+                                DbHelper.P("@amt", fixAmt),
+                                DbHelper.P("@acc", safeID > 0 ? safeID : 1),
+                                DbHelper.P("@uid", empID));
+                            liveBal = 0m;
+                        }
                         openingCash = Math.Max(0m, liveBal);
                     }
                     catch
