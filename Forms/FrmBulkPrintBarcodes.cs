@@ -1237,162 +1237,164 @@ namespace ChickenDist.Forms
             e.HasMorePages = (_currentItemIndex < _printList.Count);
         }
 
-        private void DrawCode128(Graphics g, string text, float x, float y, float width, float height)
+        private static readonly string[] Code128Patterns = new string[]
         {
-            if (string.IsNullOrEmpty(text)) return;
-            text = text.Trim();
+            "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
+            "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
+            "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211",
+            "212123", "212321", "232121", "111323", "131123", "131321", "112313", "132113", "132311", "211313",
+            "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331",
+            "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111",
+            "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214",
+            "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111",
+            "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141",
+            "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141",
+            "114131", "311141", "411131", "211412", "211214", "211232", "2331112"
+        };
 
-            // Set GDI+ options for crisp, aliased rendering
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-
-            List<int> pattern = EncodeCode128Auto(text);
-            if (pattern == null || pattern.Count == 0) return;
-
-            int totalModules = 0;
-            foreach (int m in pattern) totalModules += m;
-
-            // Safe quiet zone
-            float quietZoneModules = 10f;
-            float availableWidth = width;
-            float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
-            
-            float maxModuleWidth = (availableWidth < 130f) ? 1.5f : 2.0f;
-            if (moduleWidth > maxModuleWidth) moduleWidth = maxModuleWidth;
-            if (moduleWidth < 0.8f) moduleWidth = 0.8f;
-
-            float actualBarcodeWidth = totalModules * moduleWidth;
-            float curX = x + (width - actualBarcodeWidth) / 2f;
-            bool bar = true;
-
-            using (var brush = new SolidBrush(Color.Black))
+        private static void DrawCode128(Graphics g, string code, float x, float y, float width, float height)
+        {
+            try
             {
-                foreach (int m in pattern)
+                code = code?.Trim() ?? "";
+                if (string.IsNullOrEmpty(code)) return;
+
+                // Set GDI+ options for crisp, aliased rendering (perfect for optical barcode scanners)
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+                var symbolIndices = new List<int>();
+
+                // Check if the code is entirely numeric
+                bool isAllDigits = true;
+                foreach (char c in code)
                 {
-                    float w = m * moduleWidth;
-                    if (bar)
+                    if (c < '0' || c > '9')
                     {
-                        g.FillRectangle(brush, curX, y, w, height);
+                        isAllDigits = false;
+                        break;
                     }
-                    curX += w;
-                    bar = !bar;
                 }
-            }
-        }
 
-        private List<int> EncodeCode128Auto(string text)
-        {
-            var pattern = new List<int>();
-            int[][] codeTable = GetCode128Table();
-
-            // Check if the text is entirely numeric
-            bool isAllDigits = true;
-            foreach (char c in text)
-            {
-                if (c < '0' || c > '9')
+                if (isAllDigits && code.Length >= 2 && code.Length % 2 == 0)
                 {
-                    isAllDigits = false;
-                    break;
+                    // Code 128 Subset C (Optimal 2-digits per symbol for numbers)
+                    symbolIndices.Add(105); // Start C
+                    int sum = 105;
+                    int pos = 1;
+                    for (int i = 0; i < code.Length; i += 2)
+                    {
+                        int val = int.Parse(code.Substring(i, 2));
+                        symbolIndices.Add(val);
+                        sum += val * pos;
+                        pos++;
+                    }
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
                 }
-            }
-
-            if (isAllDigits && text.Length >= 2 && text.Length % 2 == 0)
-            {
-                // Code 128 Subset C (Numeric pairs)
-                int checksum = 105;
-                pattern.AddRange(codeTable[105]); // Start C
-                int pos = 1;
-                for (int i = 0; i < text.Length; i += 2)
+                else if (isAllDigits && code.Length >= 3 && code.Length % 2 != 0)
                 {
-                    int val = int.Parse(text.Substring(i, 2));
-                    checksum += val * pos;
-                    pattern.AddRange(codeTable[val]);
+                    // Odd number of digits: Start C for digit pairs, switch to B for the last digit
+                    symbolIndices.Add(105); // Start C
+                    int sum = 105;
+                    int pos = 1;
+                    for (int i = 0; i < code.Length - 1; i += 2)
+                    {
+                        int val = int.Parse(code.Substring(i, 2));
+                        symbolIndices.Add(val);
+                        sum += val * pos;
+                        pos++;
+                    }
+
+                    // Switch to Code B (Code B in Code C is 100)
+                    symbolIndices.Add(100);
+                    sum += 100 * pos;
                     pos++;
-                }
-                checksum %= 103;
-                pattern.AddRange(codeTable[checksum]);
-                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
-            }
-            else if (isAllDigits && text.Length >= 3 && text.Length % 2 != 0)
-            {
-                // Odd digits: Start C, switch to B for last char
-                int checksum = 105;
-                pattern.AddRange(codeTable[105]); // Start C
-                int pos = 1;
-                for (int i = 0; i < text.Length - 1; i += 2)
-                {
-                    int val = int.Parse(text.Substring(i, 2));
-                    checksum += val * pos;
-                    pattern.AddRange(codeTable[val]);
+
+                    // Last character in Code B
+                    int lastVal = code[code.Length - 1] - 32;
+                    if (lastVal < 0 || lastVal > 95) lastVal = 0;
+                    symbolIndices.Add(lastVal);
+                    sum += lastVal * pos;
                     pos++;
+
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
                 }
-
-                // Switch to Code B (Code B in Code C table is 100)
-                checksum += 100 * pos;
-                pattern.AddRange(codeTable[100]);
-                pos++;
-
-                // Last char
-                int lastVal = text[text.Length - 1] - 32;
-                if (lastVal < 0 || lastVal > 95) lastVal = 0;
-                checksum += lastVal * pos;
-                pattern.AddRange(codeTable[lastVal]);
-                pos++;
-
-                checksum %= 103;
-                pattern.AddRange(codeTable[checksum]);
-                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
-            }
-            else
-            {
-                // Code 128 Subset B (Alphanumeric)
-                int checksum = 104;
-                pattern.AddRange(codeTable[104]); // Start B
-
-                for (int i = 0; i < text.Length; i++)
+                else
                 {
-                    char c = text[i];
-                    int val = c - 32;
-                    if (val < 0 || val > 95) val = 0;
-                    checksum += val * (i + 1);
-                    pattern.AddRange(codeTable[val]);
+                    // Code 128 Subset B (Alphanumeric)
+                    symbolIndices.Add(104); // Start B
+                    int sum = 104;
+                    for (int i = 0; i < code.Length; i++)
+                    {
+                        int val = code[i] - 32;
+                        if (val < 0 || val > 95) val = 0; // fallback to Space
+                        symbolIndices.Add(val);
+                        sum += val * (i + 1);
+                    }
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
                 }
 
-                checksum %= 103;
-                pattern.AddRange(codeTable[checksum]);
-                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
+                int totalModules = 0;
+                foreach (int index in symbolIndices)
+                {
+                    if (index >= 0 && index < Code128Patterns.Length)
+                    {
+                        string pattern = Code128Patterns[index];
+                        foreach (char c in pattern)
+                        {
+                            totalModules += (c - '0');
+                        }
+                    }
+                }
+
+                // Leave safe quiet zone margins
+                float quietZoneModules = 10f; // 10 modules quiet zone each side
+                float availableWidth = width;
+                float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
+                
+                // Allow readable module width, capped appropriately for sticker size
+                float maxModuleWidth = (availableWidth < 130f) ? 1.5f : 2.0f; 
+                if (moduleWidth > maxModuleWidth)
+                {
+                    moduleWidth = maxModuleWidth;
+                }
+                if (moduleWidth < 0.8f) moduleWidth = 0.8f;
+
+                // Center the barcode with its quiet zones
+                float actualBarcodeWidth = totalModules * moduleWidth;
+                float curX = x + (width - actualBarcodeWidth) / 2f;
+
+                using (var brush = new SolidBrush(Color.Black))
+                {
+                    foreach (int index in symbolIndices)
+                    {
+                        if (index < 0 || index >= Code128Patterns.Length) continue;
+                        string pattern = Code128Patterns[index];
+                        for (int i = 0; i < pattern.Length; i++)
+                        {
+                            bool isBar = (i % 2 == 0);
+                            float elementWidth = (pattern[i] - '0') * moduleWidth;
+                            float nextX = curX + elementWidth;
+
+                            if (isBar)
+                            {
+                                float barX = curX;
+                                float barW = elementWidth;
+                                g.FillRectangle(brush, barX, y, barW, height);
+                            }
+                            curX = nextX;
+                        }
+                    }
+                }
             }
-
-            return pattern;
-        }
-
-        private int[][] GetCode128Table()
-        {
-            return new int[][]
-            {
-                new int[] {2,1,2,2,2,2}, new int[] {2,2,2,1,2,2}, new int[] {2,2,2,2,2,1}, new int[] {1,2,1,2,2,3}, new int[] {1,2,1,3,2,2},
-                new int[] {1,3,1,2,2,2}, new int[] {1,2,2,2,1,3}, new int[] {1,2,2,3,1,2}, new int[] {1,3,2,2,1,2}, new int[] {2,2,1,2,1,3},
-                new int[] {2,2,1,3,1,2}, new int[] {2,3,1,2,1,2}, new int[] {1,1,2,2,3,2}, new int[] {1,2,2,1,3,2}, new int[] {1,2,2,2,3,1},
-                new int[] {1,1,3,2,2,2}, new int[] {1,2,3,1,2,2}, new int[] {1,2,3,2,2,1}, new int[] {2,2,3,2,1,1}, new int[] {2,2,1,1,3,2},
-                new int[] {2,2,1,2,3,1}, new int[] {2,1,3,2,1,2}, new int[] {2,2,3,1,1,2}, new int[] {3,1,2,1,3,1}, new int[] {3,1,1,2,2,2},
-                new int[] {3,2,1,1,2,2}, new int[] {3,2,1,2,2,1}, new int[] {3,1,2,2,1,2}, new int[] {3,2,2,1,1,2}, new int[] {3,2,2,2,1,1},
-                new int[] {2,1,2,1,2,3}, new int[] {2,1,2,3,2,1}, new int[] {2,3,2,1,2,1}, new int[] {1,1,1,3,2,3}, new int[] {1,3,1,1,2,3},
-                new int[] {1,3,1,3,2,1}, new int[] {1,1,2,3,1,3}, new int[] {1,3,2,1,1,3}, new int[] {1,3,2,3,1,1}, new int[] {2,1,1,3,1,3},
-                new int[] {2,3,1,1,1,3}, new int[] {2,3,1,3,1,1}, new int[] {1,1,2,1,3,3}, new int[] {1,1,2,3,3,1}, new int[] {1,3,2,1,3,1},
-                new int[] {1,1,3,1,2,3}, new int[] {1,1,3,3,2,1}, new int[] {1,3,3,1,2,1}, new int[] {3,1,3,1,2,1}, new int[] {2,1,1,3,3,1},
-                new int[] {2,3,1,1,3,1}, new int[] {2,1,3,1,1,3}, new int[] {2,1,3,3,1,1}, new int[] {2,1,3,1,3,1}, new int[] {3,1,1,1,2,3},
-                new int[] {3,1,1,3,2,1}, new int[] {3,3,1,1,2,1}, new int[] {3,1,2,1,1,3}, new int[] {3,1,2,3,1,1}, new int[] {3,3,2,1,1,1},
-                new int[] {3,1,4,1,1,1}, new int[] {2,2,1,4,1,1}, new int[] {4,3,1,1,1,1}, new int[] {1,1,1,2,2,4}, new int[] {1,1,1,4,2,2},
-                new int[] {1,2,1,1,2,4}, new int[] {1,2,1,4,2,1}, new int[] {1,4,1,1,2,2}, new int[] {1,4,1,2,2,1}, new int[] {1,1,2,2,1,4},
-                new int[] {1,1,2,4,1,2}, new int[] {1,2,2,1,1,4}, new int[] {1,2,2,4,1,1}, new int[] {1,4,2,1,1,2}, new int[] {1,4,2,2,1,1},
-                new int[] {2,4,1,2,1,1}, new int[] {2,2,1,1,1,4}, new int[] {4,1,1,1,1,2}, new int[] {1,3,4,1,1,1}, new int[] {1,1,1,2,4,2},
-                new int[] {1,2,1,1,4,2}, new int[] {1,2,1,2,4,1}, new int[] {1,1,4,2,1,2}, new int[] {1,2,4,1,1,2}, new int[] {1,2,4,2,1,1},
-                new int[] {4,1,1,2,1,2}, new int[] {4,2,1,1,1,2}, new int[] {4,2,1,2,1,1}, new int[] {2,1,2,1,4,1}, new int[] {2,1,4,1,2,1},
-                new int[] {4,1,2,1,2,1}, new int[] {1,1,1,1,4,3}, new int[] {1,1,1,3,4,1}, new int[] {1,3,1,1,4,1}, new int[] {1,1,4,1,1,3},
-                new int[] {1,1,4,3,1,1}, new int[] {4,1,1,1,3,1}, new int[] {2,1,1,4,1,2}, new int[] {2,1,1,2,1,4}, new int[] {2,1,1,2,3,2},
-                new int[] {2,3,3,1,1,1,2}, new int[] {2,1,1,2,2,2}, new int[] {2,1,2,2,1,2}, new int[] {2,2,1,1,2,2}, new int[] {2,1,2,2,2,1}
-            };
+            catch { }
         }
 
         private void DrawCode39(Graphics g, string text, float x, float y, float width, float height)
