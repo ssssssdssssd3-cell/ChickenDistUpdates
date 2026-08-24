@@ -662,7 +662,10 @@ namespace ChickenDist.Forms
             try
             {
                 DbHelper.EnsureShiftSchema();
-                DataTable dt;
+                DataTable dt = null;
+                int myEmpId = Session.EmpID > 0 ? Session.EmpID : 1;
+                int mySafeId = Session.DefaultSafeID ?? Session.GetDefaultSafeID();
+
                 try
                 {
                     dt = DbHelper.Query(
@@ -670,20 +673,15 @@ namespace ChickenDist.Forms
                           FROM Shifts s 
                           JOIN Employees e ON s.OpenedBy = e.EmpID 
                           LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
-                          WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+                          WHERE s.Status = 'Open' AND (s.OpenedBy = @emp OR s.SafeAccountID = @safe)
+                          ORDER BY s.OpenTime DESC",
+                        DbHelper.P("@emp", myEmpId),
+                        DbHelper.P("@safe", mySafeId > 0 ? (object)mySafeId : DBNull.Value));
                 }
-                catch
-                {
-                    dt = DbHelper.Query(
-                        @"SELECT TOP 1 s.*, e.EmpName AS OpenedByName, NULL AS SafeName 
-                          FROM Shifts s 
-                          JOIN Employees e ON s.OpenedBy = e.EmpID 
-                          WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
-                }
+                catch {}
 
-                if (dt.Rows.Count == 0)
+                if (dt == null || dt.Rows.Count == 0)
                 {
-                    ShiftDAL.EnsureActiveShift(Session.EmpID);
                     try
                     {
                         dt = DbHelper.Query(
@@ -692,6 +690,24 @@ namespace ChickenDist.Forms
                               JOIN Employees e ON s.OpenedBy = e.EmpID 
                               LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
                               WHERE s.Status = 'Open' ORDER BY s.OpenTime DESC");
+                    }
+                    catch {}
+                }
+
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    ShiftDAL.EnsureActiveShift(myEmpId, mySafeId);
+                    try
+                    {
+                        dt = DbHelper.Query(
+                            @"SELECT TOP 1 s.*, e.EmpName AS OpenedByName, sa.AccountName AS SafeName 
+                              FROM Shifts s 
+                              JOIN Employees e ON s.OpenedBy = e.EmpID 
+                              LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                              WHERE s.Status = 'Open' AND (s.OpenedBy = @emp OR s.SafeAccountID = @safe)
+                              ORDER BY s.OpenTime DESC",
+                            DbHelper.P("@emp", myEmpId),
+                            DbHelper.P("@safe", mySafeId > 0 ? (object)mySafeId : DBNull.Value));
                     }
                     catch {}
                 }

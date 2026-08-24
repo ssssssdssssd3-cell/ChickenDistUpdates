@@ -1530,12 +1530,30 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql, DbHelper.P("@f", f), DbHelper.P("@t", t));
         }
 
-        public static int? GetActiveShiftID()
+        public static int? GetActiveShiftID(int empID = 0, int? safeAccountID = null)
         {
             try
             {
                 DbHelper.EnsureShiftSchema();
-                object o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                if (empID <= 0) empID = Session.EmpID;
+                int safeID = safeAccountID.HasValue && safeAccountID.Value > 0 
+                    ? safeAccountID.Value 
+                    : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+
+                object o = null;
+                if (empID > 0 || safeID > 0)
+                {
+                    o = DbHelper.Scalar(
+                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND (OpenedBy = @emp OR SafeAccountID = @safe) ORDER BY ShiftID DESC",
+                        DbHelper.P("@emp", empID),
+                        DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value));
+                }
+
+                if (o == null || o == DBNull.Value)
+                {
+                    o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                }
+
                 if (o != null && o != DBNull.Value)
                 {
                     int sid = Convert.ToInt32(o);
@@ -1558,8 +1576,17 @@ namespace ChickenDist.DAL
             {
                 DbHelper.EnsureShiftSchema();
 
-                // 1. التحقق من وجود وردية مفتوحة حالياً
-                object o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                if (empID <= 0) empID = Session.EmpID > 0 ? Session.EmpID : 1;
+                int safeID = safeAccountID.HasValue && safeAccountID.Value > 0 
+                    ? safeAccountID.Value 
+                    : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+
+                // 1. التحقق من وجود وردية مفتوحة لهذا الموظف أو هذا الدرج تحديداً
+                object o = DbHelper.Scalar(
+                    "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND (OpenedBy = @emp OR SafeAccountID = @safe) ORDER BY ShiftID DESC",
+                    DbHelper.P("@emp", empID),
+                    DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value));
+
                 if (o != null && o != DBNull.Value)
                 {
                     int sid = Convert.ToInt32(o);
@@ -1567,12 +1594,6 @@ namespace ChickenDist.DAL
                     try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", sid)); } catch {}
                     return sid;
                 }
-
-                // 2. لا توجد وردية مفتوحة -> فتح وردية جديدة تلقائياً فوراً
-                if (empID <= 0) empID = Session.EmpID > 0 ? Session.EmpID : 1;
-                int safeID = safeAccountID.HasValue && safeAccountID.Value > 0 
-                    ? safeAccountID.Value 
-                    : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
 
                 decimal openingCash = 0m;
                 if (customOpeningCash.HasValue)
