@@ -232,10 +232,12 @@ namespace ChickenDist.Forms
             cboSupplier = new ComboBox
             {
                 Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
+            SetupSearchableCombo(cboSupplier);
+
             btnSupplierAdd = new Button
             {
                 Text = "➕",
@@ -251,16 +253,106 @@ namespace ChickenDist.Forms
             btnSupplierAdd.FlatAppearance.BorderSize = 0;
             btnSupplierAdd.Click += (s, e) =>
             {
-                new FrmSuppliers().ShowDialog();
-                // Reload combos
-                LoadCombos();
-                // Try to select the latest supplier
-                object latestIdObj = DbHelper.Scalar("SELECT TOP 1 SupplierID FROM Suppliers ORDER BY SupplierID DESC");
-                if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+                bool isClient = cboPurchaseSource.SelectedIndex == 1;
+                if (isClient)
                 {
+                    new FrmClients().ShowDialog();
+                    LoadCombos();
+                    object latestIdObj = DbHelper.Scalar("SELECT TOP 1 ClientID FROM Clients ORDER BY ClientID DESC");
+                    if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+                    {
+                        var allItems = cboSupplier.Tag as List<ComboItem>;
+                        if (allItems != null)
+                        {
+                            cboSupplier.BeginUpdate();
+                            cboSupplier.Items.Clear();
+                            cboSupplier.Items.AddRange(allItems.ToArray());
+                            cboSupplier.EndUpdate();
+                        }
+                        for (int i = 0; i < cboSupplier.Items.Count; i++)
+                        {
+                            if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
+                            {
+                                cboSupplier.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    new FrmSuppliers().ShowDialog();
+                    LoadCombos();
+                    object latestIdObj = DbHelper.Scalar("SELECT TOP 1 SupplierID FROM Suppliers ORDER BY SupplierID DESC");
+                    if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+                    {
+                        var allItems = cboSupplier.Tag as List<ComboItem>;
+                        if (allItems != null)
+                        {
+                            cboSupplier.BeginUpdate();
+                            cboSupplier.Items.Clear();
+                            cboSupplier.Items.AddRange(allItems.ToArray());
+                            cboSupplier.EndUpdate();
+                        }
+                        for (int i = 0; i < cboSupplier.Items.Count; i++)
+                        {
+                            if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
+                            {
+                                cboSupplier.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var btnSupplierSearch = new Button
+            {
+                Text = "🔍",
+                Width = 38,
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Left,
+                Margin = new Padding(2)
+            };
+            btnSupplierSearch.FlatAppearance.BorderSize = 0;
+            btnSupplierSearch.Click += (s, e) =>
+            {
+                bool isClient = cboPurchaseSource.SelectedIndex == 1;
+                int foundID = 0;
+                if (isClient)
+                {
+                    using (var frm = new FrmClientSearch())
+                    {
+                        if (frm.ShowDialog() == DialogResult.OK)
+                            foundID = frm.SelectedClientID;
+                    }
+                }
+                else
+                {
+                    using (var frm = new FrmSupplierSearch())
+                    {
+                        if (frm.ShowDialog() == DialogResult.OK)
+                            foundID = frm.SelectedSupplierID;
+                    }
+                }
+
+                if (foundID > 0)
+                {
+                    var allItems = cboSupplier.Tag as List<ComboItem>;
+                    if (allItems != null)
+                    {
+                        cboSupplier.BeginUpdate();
+                        cboSupplier.Items.Clear();
+                        cboSupplier.Items.AddRange(allItems.ToArray());
+                        cboSupplier.EndUpdate();
+                    }
                     for (int i = 0; i < cboSupplier.Items.Count; i++)
                     {
-                        if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
+                        if (cboSupplier.Items[i] is ComboItem ci && ci.ID == foundID)
                         {
                             cboSupplier.SelectedIndex = i;
                             break;
@@ -268,7 +360,9 @@ namespace ChickenDist.Forms
                     }
                 }
             };
+
             pnlSupplier.Controls.Add(cboSupplier);
+            pnlSupplier.Controls.Add(btnSupplierSearch);
             pnlSupplier.Controls.Add(btnSupplierAdd);
             cboSupplier.SendToBack();
 
@@ -1180,13 +1274,18 @@ namespace ChickenDist.Forms
                 if (isClient)
                 {
                     if (lblSupp != null) lblSupp.Text = "* اسم العميل:";
-                    if (btnSupplierAdd != null) btnSupplierAdd.Visible = false;
+                    if (btnSupplierAdd != null) btnSupplierAdd.Visible = true;
 
                     partyItems.Add(new ComboItem(0, "-- اختر العميل --"));
                     DataTable dtClient = ClientDAL.GetAll(true);
                     foreach (DataRow r in dtClient.Rows)
-                        partyItems.Add(new ComboItem(
-                            Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString()));
+                    {
+                        var item = new ComboItem(Convert.ToInt32(r["ClientID"]), r["ClientName"].ToString());
+                        item.ClientCode = r["ClientCode"] != DBNull.Value ? r["ClientCode"].ToString().Trim() : "";
+                        item.Phone = r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                        item.Phone2 = r.Table.Columns.Contains("Phone2") && r["Phone2"] != DBNull.Value ? r["Phone2"].ToString().Trim() : "";
+                        partyItems.Add(item);
+                    }
                 }
                 else
                 {
@@ -1194,13 +1293,19 @@ namespace ChickenDist.Forms
                     if (btnSupplierAdd != null) btnSupplierAdd.Visible = true;
 
                     partyItems.Add(new ComboItem(0, "-- اختر المورد --"));
-                    DataTable dtSup = SupplierCache.GetActive();
+                    DataTable dtSup = SupplierDAL.GetAll(true);
                     foreach (DataRow r in dtSup.Rows)
-                        partyItems.Add(new ComboItem(
-                            Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString()));
+                    {
+                        var item = new ComboItem(Convert.ToInt32(r["SupplierID"]), r["SupplierName"].ToString());
+                        item.ProductCode = r["SupplierCode"] != DBNull.Value ? r["SupplierCode"].ToString().Trim() : "";
+                        item.ClientCode = item.ProductCode;
+                        item.Phone = r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                        partyItems.Add(item);
+                    }
                 }
 
                 cboSupplier.Items.AddRange(partyItems.ToArray());
+                cboSupplier.Tag = partyItems;
                 cboSupplier.DisplayMember = "Text";
                 if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
                 cboSupplier.EndUpdate();
@@ -2904,6 +3009,9 @@ namespace ChickenDist.Forms
                         if (item2.ID == 0) continue;
                         if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0 ||
                             (item2.ProductCode != null && item2.ProductCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.ClientCode != null && item2.ClientCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.Phone != null && item2.Phone.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (item2.Phone2 != null && item2.Phone2.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
                             (item2.PartNumber != null && item2.PartNumber.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
                             (item2.InternationalCode != null && item2.InternationalCode.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
                         {
@@ -3507,3 +3615,5 @@ namespace ChickenDist.Forms
         }
     }
 }
+
+

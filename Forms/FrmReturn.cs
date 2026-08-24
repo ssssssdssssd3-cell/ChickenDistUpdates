@@ -424,12 +424,20 @@ namespace ChickenDist.Forms
             var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             
-            btnAddGenItem = Theme.MakeButton("🔍 بحث في الأصناف (F2)", Color.FromArgb(40, 110, 160));
-            btnAddGenItem.Size = new Size(160, 28);
-            btnAddGenItem.Margin = new Padding(10, 0, 0, 0);
+            btnAddGenItem = Theme.MakeButton("🔍 بحث (F2)", Color.FromArgb(40, 110, 160));
+            btnAddGenItem.Size = new Size(110, 28);
+            btnAddGenItem.Margin = new Padding(8, 0, 0, 0);
             btnAddGenItem.Click += (s, e) => OpenProductSearchDialog();
 
-            _pnlGenItemBar.Controls.AddRange(new Control[] { lblGenTitle, cboAllProducts, lblGenQtyL, txtGenQty, lblGenPriceL, txtGenPrice, btnAddGenItem });
+            var btnAddGenToList = Theme.MakeButton("➕ إضافة صنف", Color.FromArgb(40, 140, 70));
+            btnAddGenToList.Size = new Size(115, 28);
+            btnAddGenToList.Margin = new Padding(8, 0, 0, 0);
+            btnAddGenToList.Click += BtnAddGenItem_Click;
+
+            txtGenPrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { BtnAddGenItem_Click(s, e); e.Handled = true; e.SuppressKeyPress = true; } };
+            txtGenQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { txtGenPrice.Focus(); e.Handled = true; e.SuppressKeyPress = true; } };
+
+            _pnlGenItemBar.Controls.AddRange(new Control[] { lblGenTitle, cboAllProducts, lblGenQtyL, txtGenQty, lblGenPriceL, txtGenPrice, btnAddGenToList, btnAddGenItem });
 
             // شريط إضافة صنف جديد للاستبدال
             _pnlNewItemBar = new FlowLayoutPanel
@@ -568,7 +576,17 @@ namespace ChickenDist.Forms
             colNew.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             dgItems.Columns.Add(colNew);
             
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر المرتجع", ReadOnly = true, FillWeight = 40 });
+            var colUnitPrice = new DataGridViewTextBoxColumn
+            {
+                Name = "UnitPrice",
+                HeaderText = "سعر المرتجع",
+                ReadOnly = false,
+                FillWeight = 50
+            };
+            colUnitPrice.DefaultCellStyle.BackColor = Color.FromArgb(40, 55, 45);
+            colUnitPrice.DefaultCellStyle.ForeColor = Color.FromArgb(120, 240, 160);
+            colUnitPrice.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            dgItems.Columns.Add(colUnitPrice);
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي المرتجع", ReadOnly = true, FillWeight = 50 });
 
             // Hidden helper columns
@@ -586,6 +604,21 @@ namespace ChickenDist.Forms
 
             dgItems.CellValidating += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.CellClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+                {
+                    dgItems.CurrentCell = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    dgItems.BeginEdit(true);
+                }
+            };
+            dgItems.EditingControlShowing += (s, e) =>
+            {
+                if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName" && e.Control is ComboBox cb)
+                {
+                    cb.DroppedDown = true;
+                }
+            };
             dgItems.CellFormatting += (s, e) =>
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CurrentStock")
@@ -757,6 +790,36 @@ namespace ChickenDist.Forms
             var row = dgItems.Rows[idx];
             int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
             decimal actStock = GetProductActualStock(ci.ID, selectedWh);
+
+            var dtProdInfo = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2Factor, Unit2SalePrice, Unit3Factor, SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
+            string baseUnit = "";
+            string u1Name = null, u2Name = null;
+            decimal u2Factor = 1m, u3Factor = 1m;
+            if (dtProdInfo.Rows.Count > 0)
+            {
+                var pr = dtProdInfo.Rows[0];
+                baseUnit = pr["Unit"]?.ToString() ?? "";
+                u1Name = pr["Unit1Name"]?.ToString();
+                u2Name = pr["Unit2Name"]?.ToString();
+                if (pr["Unit2Factor"] != DBNull.Value) decimal.TryParse(pr["Unit2Factor"].ToString(), out u2Factor);
+                if (pr["Unit3Factor"] != DBNull.Value) decimal.TryParse(pr["Unit3Factor"].ToString(), out u3Factor);
+                row.Cells["BaseUnitName"].Value = baseUnit;
+                row.Cells["Unit1Name"].Value = u1Name;
+                row.Cells["Unit1SalePrice"].Value = pr["Unit1SalePrice"]?.ToString();
+                row.Cells["Unit2Name"].Value = u2Name;
+                row.Cells["Unit2Factor"].Value = u2Factor;
+                row.Cells["Unit2SalePrice"].Value = pr["Unit2SalePrice"]?.ToString();
+                row.Cells["Unit3Factor"].Value = u3Factor;
+            }
+
+            var comboCell = (DataGridViewComboBoxCell)row.Cells["UnitName"];
+            comboCell.Items.Clear();
+            if (!string.IsNullOrEmpty(u1Name)) comboCell.Items.Add(u1Name);
+            if (!string.IsNullOrEmpty(u2Name) && !comboCell.Items.Contains(u2Name)) comboCell.Items.Add(u2Name);
+            if (!string.IsNullOrEmpty(baseUnit) && !comboCell.Items.Contains(baseUnit)) comboCell.Items.Add(baseUnit);
+
+            if (comboCell.Items.Count > 0)
+                comboCell.Value = comboCell.Items[0];
 
             row.Cells["ProductID"].Value       = ci.ID;
             row.Cells["ProductName"].Value     = ci.Text;
@@ -1104,16 +1167,53 @@ namespace ChickenDist.Forms
             var row = dgItems.Rows[e.RowIndex];
             var colName = dgItems.Columns[e.ColumnIndex].Name;
 
-            if (colName == "NewReturnedQty")
+            if (colName == "NewReturnedQty" || colName == "UnitPrice")
             {
                 decimal newQty = 0;
                 if (row.Cells["NewReturnedQty"].Value != null)
                     decimal.TryParse(row.Cells["NewReturnedQty"].Value.ToString(), out newQty);
-                
-                decimal price = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
-                decimal rowTotal = newQty * price;
-                row.Cells["TotalPrice"].Value = rowTotal.ToString("F2");
 
+                decimal price = 0;
+                if (row.Cells["UnitPrice"].Value != null)
+                    decimal.TryParse(row.Cells["UnitPrice"].Value.ToString(), out price);
+
+                if (colName == "UnitPrice")
+                {
+                    // تنسيق السعر الجديد
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (e.RowIndex < dgItems.Rows.Count)
+                            dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = price.ToString("F2");
+                    });
+                }
+
+                row.Cells["TotalPrice"].Value = (newQty * price).ToString("F2");
+                RecalcTotals();
+            }
+            else if (colName == "UnitName")
+            {
+                string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
+                string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
+
+                decimal u1Price = 0m, u2Price = 0m;
+                if (row.Cells["Unit1SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit1SalePrice"].Value.ToString(), out u1Price);
+                if (row.Cells["Unit2SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit2SalePrice"].Value.ToString(), out u2Price);
+
+                decimal autoPrice = 0m;
+                if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name && u2Price > 0)
+                    autoPrice = u2Price;
+                else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name && u1Price > 0)
+                    autoPrice = u1Price;
+
+                if (autoPrice > 0)
+                {
+                    row.Cells["UnitPrice"].Value = autoPrice.ToString("F2");
+                }
+
+                decimal.TryParse(row.Cells["NewReturnedQty"]?.Value?.ToString(), out decimal newQty);
+                decimal.TryParse(row.Cells["UnitPrice"]?.Value?.ToString(), out decimal price);
+                row.Cells["TotalPrice"].Value = (newQty * price).ToString("F2");
                 RecalcTotals();
             }
         }
@@ -1224,7 +1324,33 @@ namespace ChickenDist.Forms
 
                     if (newQty > 0)
                     {
-                        returnItems.Add(new SaleItemDTO { ProductID = prodID, ProductName = prodName, Quantity = newQty, UnitPrice = price });
+                        string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                        string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
+                        string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
+                        string baseUnit = row.Cells["BaseUnitName"]?.Value?.ToString();
+
+                        decimal factor = 1m;
+                        if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
+                        {
+                            decimal u2Factor = row.Cells["Unit2Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
+                            factor = u2Factor > 0 ? u2Factor : 1m;
+                        }
+                        else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
+                        {
+                            decimal u2Factor = row.Cells["Unit2Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
+                            decimal u3Factor = row.Cells["Unit3Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit3Factor"].Value) : 1m;
+                            factor = (u2Factor > 0 ? u2Factor : 1m) * (u3Factor > 0 ? u3Factor : 1m);
+                        }
+
+                        returnItems.Add(new SaleItemDTO 
+                        { 
+                            ProductID = prodID, 
+                            ProductName = prodName, 
+                            Quantity = newQty, 
+                            UnitPrice = price,
+                            UnitName = selectedUnit,
+                            Factor = factor
+                        });
                         totalReturnAmount += (newQty * price);
                     }
                 }

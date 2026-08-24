@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -91,21 +91,21 @@ namespace ChickenDist.Forms
 		private List<SaleItemDTO> _items = new List<SaleItemDTO>();
 		private decimal? _pendingBarcodeWeight = null;
 		private decimal? _pendingScaleWeight = null;
-		// كاش الأصناف المستقل (بدلاً من cboProduct.Tag)
+		// ÙƒØ§Ø´ Ø§Ù„Ø£ØµÙ†Ø§Ù Ø§Ù„Ù…Ø³ØªÙ‚Ù„ (Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† cboProduct.Tag)
 		private List<ComboItem> _productCache = new List<ComboItem>();
-		// FIX: cache أرصدة المخزون لتفادي رحلة DB لكل صنف عند الاختيار
+		// FIX: cache Ø£Ø±ØµØ¯Ø© Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ù„ØªÙØ§Ø¯ÙŠ Ø±Ø­Ù„Ø© DB Ù„ÙƒÙ„ ØµÙ†Ù Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø±
 		private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
 
 		private int _lastSaleID = 0;
         private bool _isDirty = false;
         private int _editSaleID = 0;
-        private int _loadedQuoteID = 0; // معرف عرض الأسعار المحول
+        private int _loadedQuoteID = 0; // Ù…Ø¹Ø±Ù Ø¹Ø±Ø¶ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ù…Ø­ÙˆÙ„
         private bool _isCopyMode = false;
         private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
         private string _activeDraftKey = null;
         private int _activeDraftID = 0;
-        // ── Auto-barcode detection ─────────────────────────────────────────────
+        // â”€â”€ Auto-barcode detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         private System.Windows.Forms.Timer _barcodeTimer;
         private DateTime _lastKeyTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
@@ -113,13 +113,13 @@ namespace ChickenDist.Forms
 		private Button btnTierRetail;
 		private Button btnTierSemi;
 		private Button btnTierWholesale;
-		private string _selectedTier = "قطاعي";
+		private string _selectedTier = "Ù‚Ø·Ø§Ø¹ÙŠ";
 		private ComboBox cboWarehouse;
 		private ComboBox cboSafeAccount;
 		private Label lblSafeAccount;
-		private Button btnCustomizeCols; // زر تخصيص الأعمدة
-		private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
-		private bool _searchSessionActive = false; // جلسة البحث السريع
+		private Button btnCustomizeCols; // Ø²Ø± ØªØ®ØµÙŠØµ Ø§Ù„Ø£Ø¹Ù…Ø¯Ø©
+		private int _pendingRowIdx = -1; // Ø³Ø·Ø± Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„ÙƒÙˆØ¯ Ø§Ù„Ù…Ø¹Ù„Ù‚
+		private bool _searchSessionActive = false; // Ø¬Ù„Ø³Ø© Ø§Ù„Ø¨Ø­Ø« Ø§Ù„Ø³Ø±ÙŠØ¹
 		private Label lblCratesOut;
 		private NumericUpDown nudCratesOut;
 		private Label lblCratesIn;
@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
 
 		private void InitUI()
 		{
-			Text = "شاشة المبيعات";
+			Text = "Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª";
 			base.Size = new Size(1024, 700);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			RightToLeft = RightToLeft.Yes;
@@ -188,7 +188,7 @@ namespace ChickenDist.Forms
 			_barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
 			_barcodeTimer.Tick += BarcodeTimer_Tick;
 
-			// ── 1. رأس الصفحة (Header Panel) ──────────────────────────────────
+			// â”€â”€ 1. Ø±Ø£Ø³ Ø§Ù„ØµÙØ­Ø© (Header Panel) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 			pnlHeader = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -232,7 +232,7 @@ namespace ChickenDist.Forms
 			}
 
 			// Row 0: Client & Date
-			lblClient = MakeLabel("العميل :", 0, 0);
+			lblClient = MakeLabel("Ø§Ù„Ø¹Ù…ÙŠÙ„ :", 0, 0);
 			lblClient.Dock = DockStyle.Fill;
 			lblClient.TextAlign = ContentAlignment.MiddleRight;
 			lblClient.Margin = new Padding(2);
@@ -253,8 +253,9 @@ namespace ChickenDist.Forms
 
 			lblClientBalance = new Label
 			{
-				Text = "رصيد: 0.00 ج",
-				Width = 95,
+				Text = "Ø±ØµÙŠØ¯: 0.00 Ø¬",
+				AutoSize = true,
+				MinimumSize = new Size(90, 0),
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleRight,
@@ -264,7 +265,7 @@ namespace ChickenDist.Forms
 
 			Button btnClientStatement = new Button
 			{
-				Text = "📋 كشف",
+				Text = "ðŸ“‹ ÙƒØ´Ù",
 				Width = 50,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
@@ -279,13 +280,13 @@ namespace ChickenDist.Forms
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0) {
 					new FrmClientStatement(ci.ID, ci.Text).ShowDialog();
 				} else {
-					MessageBox.Show("الرجاء اختيار عميل أولاً", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					MessageBox.Show("Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø§Ø®ØªÙŠØ§Ø± Ø¹Ù…ÙŠÙ„ Ø£ÙˆÙ„Ø§Ù‹", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				}
 			};
 
 			Button btnClientSearch = new Button
 			{
-				Text = "🔍",
+				Text = "ðŸ”",
 				Width = 40,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
@@ -328,7 +329,7 @@ namespace ChickenDist.Forms
 
 			Button btnClientAdd = new Button
 			{
-				Text = "➕",
+				Text = "âž•",
 				Width = 30,
 				Font = Theme.FontBold,
 				FlatStyle = FlatStyle.Flat,
@@ -347,7 +348,7 @@ namespace ChickenDist.Forms
 				cboClient.BeginUpdate();
 				cboClient.Items.Clear();
 				List<ComboItem> clientItems = new List<ComboItem>();
-				clientItems.Add(new ComboItem(0, "-- اختر عميل --"));
+				clientItems.Add(new ComboItem(0, "-- Ø§Ø®ØªØ± Ø¹Ù…ÙŠÙ„ --"));
 				foreach (DataRow row in all.Rows)
 				{
 					var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
@@ -382,7 +383,7 @@ namespace ChickenDist.Forms
 			pnlClient.Controls.Add(btnClientAdd);
 			cboClient.SendToBack();
 
-			lblDate = MakeLabel("التاريخ :", 0, 0);
+			lblDate = MakeLabel("Ø§Ù„ØªØ§Ø±ÙŠØ® :", 0, 0);
 			lblDate.Dock = DockStyle.Fill;
 			lblDate.TextAlign = ContentAlignment.MiddleRight;
 			lblDate.Margin = new Padding(2);
@@ -403,7 +404,7 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(dtpDate, 3, 0);
 
 			// Row 1: Client Address & Warehouse
-			lblClientAddress = MakeLabel("العنوان :", 0, 0);
+			lblClientAddress = MakeLabel("Ø§Ù„Ø¹Ù†ÙˆØ§Ù† :", 0, 0);
 			lblClientAddress.Dock = DockStyle.Fill;
 			lblClientAddress.TextAlign = ContentAlignment.MiddleRight;
 			lblClientAddress.Margin = new Padding(2);
@@ -420,7 +421,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2)
 			};
 
-			lblDriver = MakeLabel("المندوب :", 0, 0);
+			lblDriver = MakeLabel("Ø§Ù„Ù…Ù†Ø¯ÙˆØ¨ :", 0, 0);
 			cboDriver = new ComboBox
 			{
 				Dock = DockStyle.Fill,
@@ -433,7 +434,7 @@ namespace ChickenDist.Forms
 			};
 			SetupSearchableCombo(cboDriver);
 
-			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
+			var lblWarehouse = MakeLabel("Ø§Ù„Ù…Ø®Ø²Ù† :", 0, 0);
 			lblWarehouse.Dock = DockStyle.Fill;
 			lblWarehouse.TextAlign = ContentAlignment.MiddleRight;
 			lblWarehouse.Margin = new Padding(2);
@@ -455,7 +456,7 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(cboWarehouse, 3, 1);
 
 			// Row 2: Safe Account & Notes
-			lblSafeAccount = MakeLabel("الخزينة :", 0, 0);
+			lblSafeAccount = MakeLabel("Ø§Ù„Ø®Ø²ÙŠÙ†Ø© :", 0, 0);
 			lblSafeAccount.Dock = DockStyle.Fill;
 			lblSafeAccount.TextAlign = ContentAlignment.MiddleRight;
 			lblSafeAccount.Margin = new Padding(2);
@@ -471,7 +472,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2)
 			};
 
-			lblNotes = MakeLabel("ملاحظات :", 0, 0);
+			lblNotes = MakeLabel("Ù…Ù„Ø§Ø­Ø¸Ø§Øª :", 0, 0);
 			lblNotes.Dock = DockStyle.Fill;
 			lblNotes.TextAlign = ContentAlignment.MiddleRight;
 			lblNotes.Margin = new Padding(2);
@@ -492,7 +493,7 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(txtNotes, 3, 2);
 
 			// Row 3: Crates Tracking (only if enabled)
-			lblCratesOut = MakeLabel("فوارغ صادرة :", 0, 0);
+			lblCratesOut = MakeLabel("ÙÙˆØ§Ø±Øº ØµØ§Ø¯Ø±Ø© :", 0, 0);
 			lblCratesOut.Dock = DockStyle.Fill;
 			lblCratesOut.TextAlign = ContentAlignment.MiddleRight;
 			lblCratesOut.Margin = new Padding(2);
@@ -508,7 +509,7 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2, 4, 2, 4)
 			};
 
-			lblCratesIn = MakeLabel("فوارغ واردة :", 0, 0);
+			lblCratesIn = MakeLabel("ÙÙˆØ§Ø±Øº ÙˆØ§Ø±Ø¯Ø© :", 0, 0);
 			lblCratesIn.Dock = DockStyle.Fill;
 			lblCratesIn.TextAlign = ContentAlignment.MiddleRight;
 			lblCratesIn.Margin = new Padding(2);
@@ -527,7 +528,7 @@ namespace ChickenDist.Forms
 
 			lblClientCratesBalance = new Label
 			{
-				Text = "فوارغ العميل: 0 فارغ",
+				Text = "ÙÙˆØ§Ø±Øº Ø§Ù„Ø¹Ù…ÙŠÙ„: 0 ÙØ§Ø±Øº",
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Theme.Accent,
 				TextAlign = ContentAlignment.MiddleLeft,
@@ -598,7 +599,7 @@ namespace ChickenDist.Forms
 			};
 			var lblTypeHeader = new Label
 			{
-				Text = "💳 نوع الدفع / الفاتورة :",
+				Text = "ðŸ’³ Ù†ÙˆØ¹ Ø§Ù„Ø¯ÙØ¹ / Ø§Ù„ÙØ§ØªÙˆØ±Ø© :",
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				ForeColor = Color.FromArgb(226, 232, 240),
 				Dock = DockStyle.Top,
@@ -625,7 +626,7 @@ namespace ChickenDist.Forms
 			tblTypeButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.70f));
 			tblTypeButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			
-			btnTypeCash = new Button { Text = "💵 نقدي", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeCash = new Button { Text = "ðŸ’µ Ù†Ù‚Ø¯ÙŠ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCash.FlatAppearance.BorderSize = 0;
 			btnTypeCash.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -634,9 +635,9 @@ namespace ChickenDist.Forms
 					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
 					{
 						string ptype = clientRow["DefaultPaymentType"].ToString();
-						if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "آجل")
+						if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "Ø¢Ø¬Ù„")
 						{
-							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (آجل فقط)، لا يمكن البيع له نقداً!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							MessageBox.Show("âš ï¸ Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ù…Ø­Ø¯ÙŽÙ‘Ø¯ ÙÙŠ ÙƒØ§Ø±Øª Ø§Ù„Ø¹Ù…ÙŠÙ„ Ù„Ù€ (Ø¢Ø¬Ù„ ÙÙ‚Ø·)ØŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„Ø¨ÙŠØ¹ Ù„Ù‡ Ù†Ù‚Ø¯Ø§Ù‹!", "Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹ ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­Ø©", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							return;
 						}
 					}
@@ -644,7 +645,7 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Cash");
 			};
 
-			btnTypeCredit = new Button { Text = "⏳ آجل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeCredit = new Button { Text = "â³ Ø¢Ø¬Ù„", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeCredit.FlatAppearance.BorderSize = 0;
 			btnTypeCredit.Click += delegate {
 				if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -653,9 +654,9 @@ namespace ChickenDist.Forms
 					if (clientRow != null && clientRow.Table.Columns.Contains("DefaultPaymentType") && clientRow["DefaultPaymentType"] != DBNull.Value)
 					{
 						string ptype = clientRow["DefaultPaymentType"].ToString();
-						if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+						if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "ÙƒØ§Ø´")
 						{
-							MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							MessageBox.Show("âš ï¸ Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ù…Ø­Ø¯ÙŽÙ‘Ø¯ ÙÙŠ ÙƒØ§Ø±Øª Ø§Ù„Ø¹Ù…ÙŠÙ„ Ù„Ù€ (ÙƒØ§Ø´ ÙÙ‚Ø·)ØŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„Ø¨ÙŠØ¹ Ù„Ù‡ Ø¨Ø§Ù„Ø£Ø¬Ù„!", "Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹ ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­Ø©", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							return;
 						}
 					}
@@ -663,19 +664,19 @@ namespace ChickenDist.Forms
 				SetInvoiceType("Credit");
 			};
 
-			btnTypeVisa = new Button { Text = "💳 فيزا", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeVisa = new Button { Text = "ðŸ’³ ÙÙŠØ²Ø§", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeVisa.FlatAppearance.BorderSize = 0;
 			btnTypeVisa.Click += delegate { SetInvoiceType("Visa"); };
 
-			btnTypeMixed = new Button { Text = "🔀 مختلط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeMixed = new Button { Text = "ðŸ”€ Ù…Ø®ØªÙ„Ø·", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeMixed.FlatAppearance.BorderSize = 0;
 			btnTypeMixed.Click += delegate { SetInvoiceType("Mixed"); };
 
-			btnTypeInstallment = new Button { Text = "📅 تقسيط", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeInstallment = new Button { Text = "ðŸ“… ØªÙ‚Ø³ÙŠØ·", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeInstallment.FlatAppearance.BorderSize = 0;
 			btnTypeInstallment.Click += delegate { SetInvoiceType("Installment"); };
 
-			btnTypeDriverLoad = new Button { Text = "🚚 تحميل", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
+			btnTypeDriverLoad = new Button { Text = "ðŸšš ØªØ­Ù…ÙŠÙ„", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(1, 0, 1, 0) };
 			btnTypeDriverLoad.FlatAppearance.BorderSize = 0;
 			btnTypeDriverLoad.Click += delegate { SetInvoiceType("DriverLoad"); };
 
@@ -698,7 +699,7 @@ namespace ChickenDist.Forms
 			};
 			var lblShiftTitleHeader = new Label
 			{
-				Text = "الوردية والدرج المفتوح :",
+				Text = "Ø§Ù„ÙˆØ±Ø¯ÙŠØ© ÙˆØ§Ù„Ø¯Ø±Ø¬ Ø§Ù„Ù…ÙØªÙˆØ­ :",
 				Font = Theme.FontSmall,
 				ForeColor = Theme.TextSub,
 				Dock = DockStyle.Top,
@@ -709,7 +710,7 @@ namespace ChickenDist.Forms
 
 			lblShiftSummaryBar = new Label
 			{
-				Text = "🔄 جاري التحميل...",
+				Text = "ðŸ”„ Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...",
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				ForeColor = Color.FromArgb(74, 222, 128),
 				Dock = DockStyle.Fill,
@@ -737,7 +738,7 @@ namespace ChickenDist.Forms
 			};
 			var lblTierHeader = new Label
 			{
-				Text = "🏷️ فئة السعر :",
+				Text = "ðŸ·ï¸ ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± :",
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				ForeColor = Color.FromArgb(226, 232, 240),
 				Dock = DockStyle.Top,
@@ -760,17 +761,17 @@ namespace ChickenDist.Forms
 			tblTierButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33f));
 			tblTierButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
-			btnTierRetail = new Button { Text = "🔵 قطاعي", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierRetail = new Button { Text = "ðŸ”µ Ù‚Ø·Ø§Ø¹ÙŠ", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
 			btnTierRetail.FlatAppearance.BorderSize = 0;
-			btnTierRetail.Click += (s, e) => ApplyTierChange("قطاعي");
+			btnTierRetail.Click += (s, e) => ApplyTierChange("Ù‚Ø·Ø§Ø¹ÙŠ");
 
-			btnTierSemi = new Button { Text = "🟣 نصف جملة", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierSemi = new Button { Text = "ðŸŸ£ Ù†ØµÙ Ø¬Ù…Ù„Ø©", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
 			btnTierSemi.FlatAppearance.BorderSize = 0;
-			btnTierSemi.Click += (s, e) => ApplyTierChange("نصف جملة");
+			btnTierSemi.Click += (s, e) => ApplyTierChange("Ù†ØµÙ Ø¬Ù…Ù„Ø©");
 
-			btnTierWholesale = new Button { Text = "🟠 جملة", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
+			btnTierWholesale = new Button { Text = "ðŸŸ  Ø¬Ù…Ù„Ø©", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(0, 1, 0, 1) };
 			btnTierWholesale.FlatAppearance.BorderSize = 0;
-			btnTierWholesale.Click += (s, e) => ApplyTierChange("جملة");
+			btnTierWholesale.Click += (s, e) => ApplyTierChange("Ø¬Ù…Ù„Ø©");
 
 			tblTierButtons.Controls.Add(btnTierRetail, 0, 0);
 			tblTierButtons.Controls.Add(btnTierSemi, 0, 1);
@@ -786,8 +787,8 @@ namespace ChickenDist.Forms
 			tblHeaderMain.Controls.Add(tblOptions, 1, 0);
 			pnlHeader.Controls.Add(tblHeaderMain);
 
-			// ── 2. شريط اختيار وإدخال الأصناف (Product Entry Bar) ───────────────
-			// ── 2. شريط أدوات الجدول (Grid Toolbar: بحث سريع + سطر جديد + الأعمدة) ───────────────
+			// â”€â”€ 2. Ø´Ø±ÙŠØ· Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø£ØµÙ†Ø§Ù (Product Entry Bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+			// â”€â”€ 2. Ø´Ø±ÙŠØ· Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø¬Ø¯ÙˆÙ„ (Grid Toolbar: Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹ + Ø³Ø·Ø± Ø¬Ø¯ÙŠØ¯ + Ø§Ù„Ø£Ø¹Ù…Ø¯Ø©) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 			var pnlGridToolbar = new Panel
 			{
 				Dock = DockStyle.Top,
@@ -808,7 +809,7 @@ namespace ChickenDist.Forms
 
 			btnSearchProduct = new Button
 			{
-				Text = "🔍 بحث سريع عن الأصناف (F3)",
+				Text = "ðŸ” Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹ Ø¹Ù† Ø§Ù„Ø£ØµÙ†Ø§Ù (F3)",
 				Size = new Size(210, 30),
 				BackColor = Theme.Accent,
 				ForeColor = Color.White,
@@ -822,7 +823,7 @@ namespace ChickenDist.Forms
 
 			var btnManualAdd = new Button
 			{
-				Text = "➕ سطر إدخال جديد (Ins)",
+				Text = "âž• Ø³Ø·Ø± Ø¥Ø¯Ø®Ø§Ù„ Ø¬Ø¯ÙŠØ¯ (Ins)",
 				Size = new Size(160, 30),
 				BackColor = Theme.Success,
 				ForeColor = Color.White,
@@ -836,7 +837,7 @@ namespace ChickenDist.Forms
 
 			btnCustomizeCols = new Button
 			{
-				Text      = "⚙️ تخصيص الأعمدة",
+				Text      = "âš™ï¸ ØªØ®ØµÙŠØµ Ø§Ù„Ø£Ø¹Ù…Ø¯Ø©",
 				Size      = new Size(130, 30),
 				BackColor = Color.FromArgb(55, 65, 81),
 				ForeColor = Color.White,
@@ -854,7 +855,7 @@ namespace ChickenDist.Forms
 			flowToolbar.Controls.Add(btnCustomizeCols);
 			pnlGridToolbar.Controls.Add(flowToolbar);
 
-			// cboProduct: نُبقي على الـ ComboBox مخفياً فقط كحاوية للكاش
+			// cboProduct: Ù†ÙØ¨Ù‚ÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ù€ ComboBox Ù…Ø®ÙÙŠØ§Ù‹ ÙÙ‚Ø· ÙƒØ­Ø§ÙˆÙŠØ© Ù„Ù„ÙƒØ§Ø´
 			cboProduct = new ComboBox { Visible = false, Width = 0 };
 
 			// Background initialization to prevent NullReferenceException:
@@ -862,7 +863,7 @@ namespace ChickenDist.Forms
 			txtPrice = new TextBox();
 			btnAddItem = new Button();
 
-			// ── 3. جدول الأصناف (Items Panel & Grid) ──────────────────────────
+			// â”€â”€ 3. Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø£ØµÙ†Ø§Ù (Items Panel & Grid) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 			pnlItems = new Panel
 			{
 				Dock = DockStyle.Fill,
@@ -881,7 +882,7 @@ namespace ChickenDist.Forms
 
 			var lblQuickTitle = new Label
 			{
-				Text = "⭐ أصناف سريعة",
+				Text = "â­ Ø£ØµÙ†Ø§Ù Ø³Ø±ÙŠØ¹Ø©",
 				Dock = DockStyle.Top,
 				Height = 30,
 				Font = new Font(Theme.FontMain.FontFamily, 11f, FontStyle.Bold),
@@ -940,26 +941,26 @@ namespace ChickenDist.Forms
 				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 			};
 			
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CodeEntry", HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 35f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 35f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "رقم القطعة", ReadOnly = true, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CarModel", HeaderText = "الموديل", ReadOnly = true, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الماركة", ReadOnly = true, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "مكان العرض", ReadOnly = true, FillWeight = 30f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", ReadOnly = true, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", ReadOnly = true, FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "خصم %", ReadOnly = false, FillWeight = 30f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 55f, Visible = true });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CodeEntry", HeaderText = "ÙƒÙˆØ¯ Ø§Ù„ØµÙ†Ù", ReadOnly = false, FillWeight = 55f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "Ø§Ù„ØµÙ†Ù", ReadOnly = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "Ø§Ù„Ù…Ù‚Ø§Ø³", ReadOnly = true, FillWeight = 35f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "Ø§Ù„Ù„ÙˆÙ†", ReadOnly = true, FillWeight = 35f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartNumber", HeaderText = "Ø±Ù‚Ù… Ø§Ù„Ù‚Ø·Ø¹Ø©", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CarModel", HeaderText = "Ø§Ù„Ù…ÙˆØ¯ÙŠÙ„", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "Ø§Ù„Ù…Ø§Ø±ÙƒØ©", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "Ù…ÙƒØ§Ù† Ø§Ù„Ø¹Ø±Ø¶", ReadOnly = true, FillWeight = 30f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„ÙØ¹Ù„ÙŠ", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "Ø§Ù„ÙˆØ­Ø¯Ø©", ReadOnly = false, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "Ø§Ù„ÙƒÙ…ÙŠØ©", ReadOnly = false, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "Ø§Ù„Ø³Ø¹Ø±", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "Ø¢Ø®Ø± Ø³Ø¹Ø± Ù„Ù„Ø¹Ù…ÙŠÙ„ ðŸ·ï¸", ReadOnly = true, FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "Ø®ØµÙ… %", ReadOnly = false, FillWeight = 30f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "Ù‚ÙŠÙ…Ø© Ø®ØµÙ…", ReadOnly = false, FillWeight = 35f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ", ReadOnly = true, FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "Ø§Ù„Ø³ÙŠØ±ÙŠØ§Ù„", ReadOnly = false, FillWeight = 55f, Visible = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙƒÙ„ÙØ©", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			
 			DataGridViewButtonColumn delCol = new DataGridViewButtonColumn
 			{
@@ -979,7 +980,7 @@ namespace ChickenDist.Forms
 					string colName = dgItems.Columns[e.ColumnIndex].Name;
 					if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "DiscountAmt" || colName == "UnitName" || colName == "IMEI")
 					{
-						return; // السماح بتعديل الخانات التفاعلية مباشرة
+						return; // Ø§Ù„Ø³Ù…Ø§Ø­ Ø¨ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø®Ø§Ù†Ø§Øª Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠØ© Ù…Ø¨Ø§Ø´Ø±Ø©
 					}
 				}
 				BtnSearchProduct_Click(s, e);
@@ -1035,7 +1036,7 @@ namespace ChickenDist.Forms
 			LoadColumnSettings();
 			SetupGridContextMenu();
 
-			// ── 4. تذييل الصفحة (Footer Panel & Summary) ─────────────────────
+			// â”€â”€ 4. ØªØ°ÙŠÙŠÙ„ Ø§Ù„ØµÙØ­Ø© (Footer Panel & Summary) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
@@ -1056,13 +1057,13 @@ namespace ChickenDist.Forms
 				AutoScroll = true
 			};
 
-			// 1. إجمالي الأصناف
-			Label lblTotalTitle = MakeLabel("إجمالي الأصناف:", 0, 0);
+			// 1. Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£ØµÙ†Ø§Ù
+			Label lblTotalTitle = MakeLabel("Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£ØµÙ†Ø§Ù:", 0, 0);
 			lblTotalTitle.AutoSize = true;
 			lblTotalTitle.ForeColor = Theme.TextSub;
 			lblTotalVal = new Label
 			{
-				Text = "0.00 ج",
+				Text = "0.00 Ø¬",
 				ForeColor = Theme.TextMain,
 				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
 				AutoSize = false
@@ -1082,8 +1083,8 @@ namespace ChickenDist.Forms
 			pnlTotalGrp.Controls.Add(lblTotalVal);
 			pnlTotalGrp.Controls.Add(lblTotalTitle);
 
-			// 2. الخصم
-			Label lblDiscType = MakeLabel("الخصم:", 0, 0);
+			// 2. Ø§Ù„Ø®ØµÙ…
+			Label lblDiscType = MakeLabel("Ø§Ù„Ø®ØµÙ…:", 0, 0);
 			lblDiscType.AutoSize = true;
 			lblDiscType.ForeColor = Theme.TextSub;
 			cboInvoiceDiscountType = new ComboBox
@@ -1095,7 +1096,7 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				Width = 66
 			};
-			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
+			cboInvoiceDiscountType.Items.AddRange(new object[] { "Ù‚ÙŠÙ…Ø©", "Ù†Ø³Ø¨Ø© %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
 			cboInvoiceDiscountType.SelectedIndexChanged += (s, e) => CalculateNet();
 
@@ -1125,8 +1126,8 @@ namespace ChickenDist.Forms
 			pnlDiscGrp.Controls.Add(cboInvoiceDiscountType);
 			pnlDiscGrp.Controls.Add(lblDiscType);
 
-			// 3. شحن / تحميل
-			lblShippingChargeTitle = MakeLabel("شحن:", 0, 0);
+			// 3. Ø´Ø­Ù† / ØªØ­Ù…ÙŠÙ„
+			lblShippingChargeTitle = MakeLabel("Ø´Ø­Ù†:", 0, 0);
 			lblShippingChargeTitle.AutoSize = true;
 			lblShippingChargeTitle.ForeColor = Theme.TextSub;
 
@@ -1161,16 +1162,16 @@ namespace ChickenDist.Forms
 			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
 			pnlSummaryFlow.Controls.Add(pnlShipGrp);
 
-			// 4. التكلفة والربح (إن وجدت الصلاحية)
+			// 4. Ø§Ù„ØªÙƒÙ„ÙØ© ÙˆØ§Ù„Ø±Ø¨Ø­ (Ø¥Ù† ÙˆØ¬Ø¯Øª Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©)
 			if (Session.CanViewCost("Sales"))
 			{
-				lblCostTitle = MakeLabel("التكلفة:", 0, 0);
+				lblCostTitle = MakeLabel("Ø§Ù„ØªÙƒÙ„ÙØ©:", 0, 0);
 				lblCostTitle.AutoSize = true;
 				lblCostTitle.ForeColor = Theme.TextSub;
 
 				lblCostVal = new Label
 				{
-					Text = "0.00 ج",
+					Text = "0.00 Ø¬",
 					ForeColor = Theme.TextMain,
 					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
 					AutoSize = false
@@ -1191,13 +1192,13 @@ namespace ChickenDist.Forms
 				pnlCostGrp.Controls.Add(lblCostVal);
 				pnlCostGrp.Controls.Add(lblCostTitle);
 
-				lblProfitTitle = MakeLabel("الربح:", 0, 0);
+				lblProfitTitle = MakeLabel("Ø§Ù„Ø±Ø¨Ø­:", 0, 0);
 				lblProfitTitle.AutoSize = true;
 				lblProfitTitle.ForeColor = Theme.TextSub;
 
 				lblProfitVal = new Label
 				{
-					Text = "0.00 ج",
+					Text = "0.00 Ø¬",
 					ForeColor = Theme.Success,
 					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
 					AutoSize = false
@@ -1222,8 +1223,8 @@ namespace ChickenDist.Forms
 				pnlSummaryFlow.Controls.Add(pnlProfitGrp);
 			}
 
-			// 5. عدد الأصناف
-			lblItemCountTitle = MakeLabel("الأصناف:", 0, 0);
+			// 5. Ø¹Ø¯Ø¯ Ø§Ù„Ø£ØµÙ†Ø§Ù
+			lblItemCountTitle = MakeLabel("Ø§Ù„Ø£ØµÙ†Ø§Ù:", 0, 0);
 			lblItemCountTitle.AutoSize = true;
 			lblItemCountTitle.ForeColor = Theme.TextSub;
 
@@ -1235,7 +1236,8 @@ namespace ChickenDist.Forms
 			var pnlCountGrp = new Panel
 			{
 				Height = 32,
-				Width = 95,
+				AutoSize = true,
+				MinimumSize = new Size(90, 0),
 				BackColor = Color.Transparent,
 				Margin = new Padding(3, 1, 3, 1),
 				RightToLeft = RightToLeft.No
@@ -1247,14 +1249,14 @@ namespace ChickenDist.Forms
 			pnlCountGrp.Controls.Add(lblItemCountVal);
 			pnlCountGrp.Controls.Add(lblItemCountTitle);
 
-			// 6. صافي الفاتورة
-			Label lblNetTitle = MakeLabel("صافي الفاتورة:", 0, 0);
+			// 6. ØµØ§ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©
+			Label lblNetTitle = MakeLabel("ØµØ§ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©:", 0, 0);
 			lblNetTitle.AutoSize = true;
 			lblNetTitle.ForeColor = Theme.TextSub;
 
 			lblNetVal = new Label
 			{
-				Text = "0.00 ج",
+				Text = "0.00 Ø¬",
 				ForeColor = Theme.Accent,
 				Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
 				AutoSize = false
@@ -1279,20 +1281,20 @@ namespace ChickenDist.Forms
 			pnlSummaryFlow.Controls.Add(pnlNetGrp);
 
 			// Footer buttons (RTL flow)
-			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 180, 28, Theme.Accent);
+			btnSave = Theme.MakeButton("ðŸ’¾ Ø­ÙØ¸ Ø§Ù„ÙØ§ØªÙˆØ±Ø© (F5)", 0, 0, 180, 28, Theme.Accent);
 			btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 
-			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 26, Color.FromArgb(200, 140, 50));
-			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 90, 26, Color.FromArgb(100, 100, 150));
-			Button btnTawreed = Theme.MakeButton("💵 توريد", 0, 0, 80, 26, Theme.Success);
-			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 26, Color.FromArgb(80, 120, 80));
-			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
-			btnPreview = Theme.MakeButton("🔍 معاينة", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
+			Button btnHold = Theme.MakeButton("â¸ï¸ ØªØ¹Ù„ÙŠÙ‚", 0, 0, 90, 26, Color.FromArgb(200, 140, 50));
+			Button btnLoadHold = Theme.MakeButton("ðŸ“‚ Ù…Ø¹Ù„Ù‚Ø§Øª", 0, 0, 90, 26, Color.FromArgb(100, 100, 150));
+			Button btnTawreed = Theme.MakeButton("ðŸ’µ ØªÙˆØ±ÙŠØ¯", 0, 0, 80, 26, Theme.Success);
+			btnNew = Theme.MakeButton("ðŸ†• Ø¬Ø¯ÙŠØ¯", 0, 0, 75, 26, Color.FromArgb(80, 120, 80));
+			btnPrint = Theme.MakeButton("ðŸ–¨ï¸ Ø·Ø¨Ø§Ø¹Ø©", 0, 0, 90, 26, Theme.Primary);
+			btnPreview = Theme.MakeButton("ðŸ” Ù…Ø¹Ø§ÙŠÙ†Ø©", 0, 0, 90, 26, Color.FromArgb(70, 80, 90));
 			btnPrint.Visible = false;
 			btnPreview.Visible = false;
 
-			btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
-			Button btnPrepSlip = Theme.MakeButton("📋 إذن تحضير (F9)", 0, 0, 130, 26, Color.FromArgb(41, 128, 185));
+			btnWhatsApp = Theme.MakeButton("ðŸ“² ÙˆØ§ØªØ³Ø§Ø¨", 0, 0, 90, 26, Color.FromArgb(37, 211, 102));
+			Button btnPrepSlip = Theme.MakeButton("ðŸ“‹ Ø¥Ø°Ù† ØªØ­Ø¶ÙŠØ± (F9)", 0, 0, 130, 26, Color.FromArgb(41, 128, 185));
 
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
@@ -1333,7 +1335,7 @@ namespace ChickenDist.Forms
 			btnHold.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
 
-			var btnIncomplete = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 135, 26, Color.FromArgb(70, 40, 130));
+			var btnIncomplete = Theme.MakeButton("ðŸ“‚ ÙÙˆØ§ØªÙŠØ± Ù„Ù… ØªÙƒØªÙ…Ù„", 0, 0, 135, 26, Color.FromArgb(70, 40, 130));
 			btnIncomplete.Margin = new Padding(2);
 			btnIncomplete.Click += (s, e) => OpenIncompleteSalesDialog();
 
@@ -1349,7 +1351,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+1/2/3] تغيير الوحدة",
+				Text = "Ø§Ù„Ø§Ø®ØªØµØ§Ø±Ø§Øª: [F2] Ø¬Ø¯ÙŠØ¯Ø© | [F5] Ø­ÙØ¸ | [F9] Ø¥Ø°Ù† ØªØ­Ø¶ÙŠØ± | [F12] ØªØ±ÙƒÙŠØ² Ø§Ù„ØµÙ†Ù | [F3] Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹ | [Ctrl+1/2/3] ØªØºÙŠÙŠØ± Ø§Ù„ÙˆØ­Ø¯Ø©",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -1400,7 +1402,7 @@ namespace ChickenDist.Forms
                 }
             }
 
-			// ─── اختصارات تغيير الوحدات بالكيبورد (Ctrl + 1/2/3) ───
+			// â”€â”€â”€ Ø§Ø®ØªØµØ§Ø±Ø§Øª ØªØºÙŠÙŠØ± Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø¨Ø§Ù„ÙƒÙŠØ¨ÙˆØ±Ø¯ (Ctrl + 1/2/3) â”€â”€â”€
 			if (e.Control && (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1 || e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2 || e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3))
 			{
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
@@ -1413,15 +1415,15 @@ namespace ChickenDist.Forms
 						string targetUnit = null;
 						if (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1)
 						{
-							targetUnit = prod.BaseUnitName; // الوحدة الكبرى
+							targetUnit = prod.BaseUnitName; // Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙƒØ¨Ø±Ù‰
 						}
 						else if (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2)
 						{
-							targetUnit = prod.Unit2Name; // الوحدة المتوسطة
+							targetUnit = prod.Unit2Name; // Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ù…ØªÙˆØ³Ø·Ø©
 						}
 						else if (e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3)
 						{
-							targetUnit = prod.Unit1Name; // الوحدة الصغرى
+							targetUnit = prod.Unit1Name; // Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ØµØºØ±Ù‰
 						}
 
 						if (!string.IsNullOrEmpty(targetUnit))
@@ -1438,7 +1440,7 @@ namespace ChickenDist.Forms
 								}
 								else
 								{
-									MessageBox.Show($"⚠️ الوحدة '{targetUnit}' غير متوفرة لهذا الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+									MessageBox.Show($"âš ï¸ Ø§Ù„ÙˆØ­Ø¯Ø© '{targetUnit}' ØºÙŠØ± Ù…ØªÙˆÙØ±Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„ØµÙ†Ù.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 								}
 							}
 						}
@@ -1450,7 +1452,7 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9)  { PrintPreparationSlip(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { AddNewCodeRow(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
+			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = ÙØªØ­ Ø´Ø§Ø´Ø© Ø§Ù„Ø¨Ø­Ø«
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
 
@@ -1498,7 +1500,7 @@ namespace ChickenDist.Forms
 				if (price <= 0) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
 				if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
 
-				// إزالة السطر المعلق إن وجد
+				// Ø¥Ø²Ø§Ù„Ø© Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚ Ø¥Ù† ÙˆØ¬Ø¯
 				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 				{
 					dgItems.Rows.RemoveAt(_pendingRowIdx);
@@ -1513,13 +1515,13 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
-				MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("âŒ Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ ØµÙ†Ù Ø¨Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø£Ùˆ Ø§Ù„ÙƒÙˆØ¯: " + code, "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer)
+			// ÙØ­Øµ Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø§Ù„Ø³Ø±ÙŠØ¹Ø© Ù…Ù† Ø§Ù„Ø§Ø³ÙƒÙ†Ø± (Scanner Buffer)
 			if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
 			{
 				double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
@@ -1637,7 +1639,7 @@ namespace ChickenDist.Forms
 			return false;
 		}
 
-		// ── اكتشاف الباركود التلقائي ───────────────────────────────────────
+		// â”€â”€ Ø§ÙƒØªØ´Ø§Ù Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 		private void CboProduct_KeyPress_BarcodeDetect(object sender, KeyPressEventArgs e)
 		{
 			var now = DateTime.Now;
@@ -1714,7 +1716,7 @@ namespace ChickenDist.Forms
 					cboProduct.Items.AddRange(allItems.ToArray());
 					cboProduct.SelectedIndex = 0;
 					cboProduct.EndUpdate();
-					// ننقل التركيز لخلية الكمية مباشرة بعد مسح الباركود
+					// Ù†Ù†Ù‚Ù„ Ø§Ù„ØªØ±ÙƒÙŠØ² Ù„Ø®Ù„ÙŠØ© Ø§Ù„ÙƒÙ…ÙŠØ© Ù…Ø¨Ø§Ø´Ø±Ø© Ø¨Ø¹Ø¯ Ù…Ø³Ø­ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯
 					FocusQtyCellInGrid(foundItem.ID);
 				}
 				finally
@@ -1791,7 +1793,7 @@ namespace ChickenDist.Forms
 					}
 					if (foundItem == null)
 					{
-						MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
+						MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ØµÙ†Ù Ø§Ù„Ø®Ø§Øµ Ø¨Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø§Ù„Ù…ÙŠØ²Ø§Ù†!");
 						_pendingBarcodeWeight = null;
 						return;
 					}
@@ -1894,7 +1896,7 @@ namespace ChickenDist.Forms
 				cbo.EndUpdate();
 				cbo.SelectionStart = text.Length;
 				cbo.SelectionLength = 0;
-				// لا تفتح القائمة إذا كانت الكتابة سريعة جداً (سكانر باركود)
+				// Ù„Ø§ ØªÙØªØ­ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¥Ø°Ø§ ÙƒØ§Ù†Øª Ø§Ù„ÙƒØªØ§Ø¨Ø© Ø³Ø±ÙŠØ¹Ø© Ø¬Ø¯Ø§Ù‹ (Ø³ÙƒØ§Ù†Ø± Ø¨Ø§Ø±ÙƒÙˆØ¯)
 				var timeSinceLastKey = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
 				bool isBarcodeScan = timeSinceLastKey <= BARCODE_INTERVAL_MS;
 				if (!cbo.DroppedDown && !isBarcodeScan)
@@ -1912,7 +1914,7 @@ namespace ChickenDist.Forms
 			_productCache.Clear();
 			cboDriver.Tag = null;
 
-			// FIX: تحميل كل أرصدة المخزون مرة واحدة بدلاً من رحلة DB لكل صنف
+			// FIX: ØªØ­Ù…ÙŠÙ„ ÙƒÙ„ Ø£Ø±ØµØ¯Ø© Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ù…Ø±Ø© ÙˆØ§Ø­Ø¯Ø© Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† Ø±Ø­Ù„Ø© DB Ù„ÙƒÙ„ ØµÙ†Ù
 			_stockCache.Clear();
 			var stockTable = InventoryDAL.GetStock();
 			foreach (DataRow sRow in stockTable.Rows)
@@ -1922,7 +1924,7 @@ namespace ChickenDist.Forms
 			cboClient.BeginUpdate();
 			cboClient.Items.Clear();
 			List<ComboItem> clientItems = new List<ComboItem>();
-			clientItems.Add(new ComboItem(0, "-- اختر عميل --"));
+			clientItems.Add(new ComboItem(0, "-- Ø§Ø®ØªØ± Ø¹Ù…ÙŠÙ„ --"));
 			foreach (DataRow row in all.Rows)
 			{
 				var item = new ComboItem((int)row["ClientID"], row["ClientName"].ToString());
@@ -1951,28 +1953,28 @@ namespace ChickenDist.Forms
 					{
 						cboDriver.SelectedIndex = 0;
 					}
-                    // تطبيق فئة السعر الافتراضية للعميل
+                    // ØªØ·Ø¨ÙŠÙ‚ ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ù„Ù„Ø¹Ù…ÙŠÙ„
                     if (byID != null && byID["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrEmpty(byID["DefaultPriceTier"].ToString()))
                     {
                         string clientTier = byID["DefaultPriceTier"].ToString();
                         if (clientTier != _selectedTier)
-                            SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
+                            SetTierButtons(clientTier); // ØªØ­Ø¯ÙŠØ« Ø§Ù„ØªØµÙ…ÙŠÙ… ÙÙ‚Ø· Ø¨Ø¯ÙˆÙ† Ø³Ø¤Ø§Ù„
                     }
                     else
                     {
-                        if (_selectedTier != "قطاعي")
-                            SetTierButtons("قطاعي");
+                        if (_selectedTier != "Ù‚Ø·Ø§Ø¹ÙŠ")
+                            SetTierButtons("Ù‚Ø·Ø§Ø¹ÙŠ");
                     }
 
-                    // تطبيق طريقة الدفع الافتراضية للعميل (كاش أو آجل)
+                    // ØªØ·Ø¨ÙŠÙ‚ Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ù„Ù„Ø¹Ù…ÙŠÙ„ (ÙƒØ§Ø´ Ø£Ùˆ Ø¢Ø¬Ù„)
                     if (byID != null && byID.Table.Columns.Contains("DefaultPaymentType") && byID["DefaultPaymentType"] != DBNull.Value)
                     {
                         string ptype = byID["DefaultPaymentType"].ToString();
-                        if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
+                        if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "ÙƒØ§Ø´")
                         {
                             SetInvoiceType("Cash");
                         }
-                        else if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "آجل")
+                        else if (string.Equals(ptype, "Credit", StringComparison.OrdinalIgnoreCase) || ptype == "Ø¢Ø¬Ù„")
                         {
                             SetInvoiceType("Credit");
                         }
@@ -1998,19 +2000,19 @@ namespace ChickenDist.Forms
                     if (txtClientAddress != null)
                         txtClientAddress.Text = "";
 
-                    if (_selectedTier != "قطاعي")
-                        SetTierButtons("قطاعي");
+                    if (_selectedTier != "Ù‚Ø·Ø§Ø¹ÙŠ")
+                        SetTierButtons("Ù‚Ø·Ø§Ø¹ÙŠ");
                     this.BackColor = Theme.BgMain;
                     pnlItems.Enabled = true;
                     btnSave.Enabled = true;
                     if (lblClientBalance != null)
                     {
-                        lblClientBalance.Text = "رصيد: 0.00 ج";
+                        lblClientBalance.Text = "Ø±ØµÙŠØ¯: 0.00 Ø¬";
                         lblClientBalance.ForeColor = Theme.Accent;
                     }
                     if (lblClientCratesBalance != null)
                     {
-                        lblClientCratesBalance.Text = "فوارغ العميل: 0 فارغ";
+                        lblClientCratesBalance.Text = "ÙÙˆØ§Ø±Øº Ø§Ù„Ø¹Ù…ÙŠÙ„: 0 ÙØ§Ø±Øº";
                     }
                 }
 			};
@@ -2019,7 +2021,7 @@ namespace ChickenDist.Forms
 			cboDriver.BeginUpdate();
 			cboDriver.Items.Clear();
 			List<ComboItem> driverItems = new List<ComboItem>();
-			driverItems.Add(new ComboItem(0, "-- اختر مندوب --"));
+			driverItems.Add(new ComboItem(0, "-- Ø§Ø®ØªØ± Ù…Ù†Ø¯ÙˆØ¨ --"));
 			foreach (DataRow row2 in drivers.Rows)
 			{
 				driverItems.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
@@ -2034,7 +2036,7 @@ namespace ChickenDist.Forms
 			cboProduct.BeginUpdate();
 			cboProduct.Items.Clear();
 			List<ComboItem> productItems = new List<ComboItem>();
-			productItems.Add(new ComboItem(0, "-- اختر صنف --"));
+			productItems.Add(new ComboItem(0, "-- Ø§Ø®ØªØ± ØµÙ†Ù --"));
 			foreach (DataRow row3 in all2.Rows)
 			{
 				string name = row3["ProductName"].ToString();
@@ -2043,7 +2045,7 @@ namespace ChickenDist.Forms
 				decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
 				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
 
-				// ── بيانات الوحدات المتعددة (مشتركة بين كل فروع الـ if/else) ──
+				// â”€â”€ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù…ØªØ¹Ø¯Ø¯Ø© (Ù…Ø´ØªØ±ÙƒØ© Ø¨ÙŠÙ† ÙƒÙ„ ÙØ±ÙˆØ¹ Ø§Ù„Ù€ if/else) â”€â”€
 				string unit1Name   = row3.Table.Columns.Contains("Unit1Name")   && row3["Unit1Name"]   != DBNull.Value ? row3["Unit1Name"].ToString()   : null;
 				decimal unit1SP    = row3.Table.Columns.Contains("Unit1SalePrice") && row3["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1SalePrice"]) : 0m;
 				decimal unit1PP    = row3.Table.Columns.Contains("Unit1PurchasePrice") && row3["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1PurchasePrice"]) : 0m;
@@ -2056,11 +2058,11 @@ namespace ChickenDist.Forms
 
 				if (pendingPrice > 0m && pendingQtyThreshold > 0m)
 				{
-					// إضافة السعر الحالي كخيار مستقل
+					// Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ ÙƒØ®ÙŠØ§Ø± Ù…Ø³ØªÙ‚Ù„
 					var itemOld = new ComboItem(
 						(int)row3["ProductID"], 
 						name,
-						$"{name} (سعر: {price:N2})",
+						$"{name} (Ø³Ø¹Ø±: {price:N2})",
 						price, 
 						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 						purchasePrice
@@ -2078,18 +2080,18 @@ namespace ChickenDist.Forms
 					itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
+					// ÙˆØ­Ø¯Ø§Øª Ù…ØªØ¹Ø¯Ø¯Ø©
 					itemOld.BaseUnitName = baseUnit;
 					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
 					itemOld.Unit2Name = unit2Name; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
 					itemOld.Unit3Factor = unit3Factor;
 					productItems.Add(itemOld);
 
-					// إضافة السعر المعلق كخيار مستقل
+					// Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚ ÙƒØ®ÙŠØ§Ø± Ù…Ø³ØªÙ‚Ù„
 					var itemPending = new ComboItem(
 						(int)row3["ProductID"], 
 						name,
-						$"{name} (معلق: {pendingPrice:N2})",
+						$"{name} (Ù…Ø¹Ù„Ù‚: {pendingPrice:N2})",
 						pendingPrice, 
 						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 						purchasePrice
@@ -2107,7 +2109,7 @@ namespace ChickenDist.Forms
 					itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
+					// ÙˆØ­Ø¯Ø§Øª Ù…ØªØ¹Ø¯Ø¯Ø©
 					itemPending.BaseUnitName = baseUnit;
 					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
 					itemPending.Unit2Name = unit2Name; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
@@ -2139,7 +2141,7 @@ namespace ChickenDist.Forms
 					comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 					comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 					comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
+					// ÙˆØ­Ø¯Ø§Øª Ù…ØªØ¹Ø¯Ø¯Ø©
 					comboItem.BaseUnitName = baseUnit;
 					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
 					comboItem.Unit2Name = unit2Name; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
@@ -2148,7 +2150,7 @@ namespace ChickenDist.Forms
 				}
 			}
 			_productCache = productItems;
-			// نحدّث cboProduct أيضاً للتوافق مع الكود القديم
+			// Ù†Ø­Ø¯Ù‘Ø« cboProduct Ø£ÙŠØ¶Ø§Ù‹ Ù„Ù„ØªÙˆØ§ÙÙ‚ Ù…Ø¹ Ø§Ù„ÙƒÙˆØ¯ Ø§Ù„Ù‚Ø¯ÙŠÙ…
 			cboProduct.BeginUpdate();
 			cboProduct.Items.Clear();
 			cboProduct.Items.AddRange(productItems.ToArray());
@@ -2156,11 +2158,11 @@ namespace ChickenDist.Forms
 			cboProduct.Tag = productItems;
 			cboProduct.SelectedIndex = 0;
 			cboProduct.EndUpdate();
-			// لا نضيف SelectedIndexChanged - cboProduct مخفي
+			// Ù„Ø§ Ù†Ø¶ÙŠÙ SelectedIndexChanged - cboProduct Ù…Ø®ÙÙŠ
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
-			// تحميل المخازن
+			// ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø®Ø§Ø²Ù†
 			try
 			{
 				var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
@@ -2185,9 +2187,9 @@ namespace ChickenDist.Forms
 					RefreshGrid();
 				};
 			}
-			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
+			catch { /* Ù„Ùˆ Ù…Ø§ÙÙŠØ´ Ù…Ø®Ø§Ø²Ù† Ù†ÙƒÙ…Ù„ Ø¨Ø¯ÙˆÙ† Ø®Ø·Ø£ */ }
 
-			// تحميل الحسابات والخزائن
+			// ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª ÙˆØ§Ù„Ø®Ø²Ø§Ø¦Ù†
 			try
 			{
 				DataTable safes = AccountDAL.GetActiveSafeAccounts();
@@ -2219,7 +2221,7 @@ namespace ChickenDist.Forms
 						continue; // Filter out if not allowed
 					}
 
-					string safeName = row["AccountName"].ToString().Replace(" / الدرج", "").Replace("/ الدرج", "").Replace("/الدرج", "").Replace(" / درج", "").Trim();
+					string safeName = row["AccountName"].ToString().Replace(" / Ø§Ù„Ø¯Ø±Ø¬", "").Replace("/ Ø§Ù„Ø¯Ø±Ø¬", "").Replace("/Ø§Ù„Ø¯Ø±Ø¬", "").Replace(" / Ø¯Ø±Ø¬", "").Trim();
 					var comboItem = new ComboItem(accID, safeName);
 					int addedIdx = cboSafeAccount.Items.Add(comboItem);
 
@@ -2286,7 +2288,7 @@ namespace ChickenDist.Forms
 					DateTime openTime = Convert.ToDateTime(r["OpenTime"]);
 					decimal openingCash = Convert.ToDecimal(r["OpeningCash"]);
 					string emp = r["EmpName"].ToString();
-					string safe = r["SafeName"] != DBNull.Value ? r["SafeName"].ToString() : "درج الكاشير";
+					string safe = r["SafeName"] != DBNull.Value ? r["SafeName"].ToString() : "Ø¯Ø±Ø¬ Ø§Ù„ÙƒØ§Ø´ÙŠØ±";
 
 					if (r.Table.Columns.Contains("SafeAccountID") && r["SafeAccountID"] != DBNull.Value)
 					{
@@ -2301,13 +2303,13 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
+					lblShiftSummaryBar.Text = $"ðŸŸ¢ ÙˆØ±Ø¯ÙŠØ© #{shiftId} | ðŸ‘¤ {emp} | ðŸ’µ ÙØªØ­: {openingCash:N0}Ø¬ | ðŸ¦ {safe}";
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(74, 222, 128);
 				}
 				else
 				{
 					Session.CurrentShiftID = null;
-					lblShiftSummaryBar.Text = "🔴 لا توجد وردية مفتوحة (اضغط هنا لفتح وردية)";
+					lblShiftSummaryBar.Text = "ðŸ”´ Ù„Ø§ ØªÙˆØ¬Ø¯ ÙˆØ±Ø¯ÙŠØ© Ù…ÙØªÙˆØ­Ø© (Ø§Ø¶ØºØ· Ù‡Ù†Ø§ Ù„ÙØªØ­ ÙˆØ±Ø¯ÙŠØ©)";
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(248, 113, 113);
 				}
 			}
@@ -2336,7 +2338,7 @@ namespace ChickenDist.Forms
 						ForeColor = Color.White,
 						Font = new Font(Theme.FontMain.FontFamily, 8.5f, FontStyle.Bold),
 						Cursor = Cursors.Hand,
-						Text = $"{name}\n{price:N2} ج",
+						Text = $"{name}\n{price:N2} Ø¬",
 						Margin = new Padding(3),
 						Tag = id
 					};
@@ -2352,17 +2354,17 @@ namespace ChickenDist.Forms
 		}
 
 		/// <summary>
-		/// يُطبِّق فئة السعر على جميع البنود الموجودة في الجدول عند تغيير الفئة.
+		/// ÙŠÙØ·Ø¨ÙÙ‘Ù‚ ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± Ø¹Ù„Ù‰ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¨Ù†ÙˆØ¯ Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø§Ù„ÙØ¦Ø©.
 		/// </summary>
 		/// <summary>
-		/// يُطبِّق فئة السعر المختارة: يُحدِّث الأزرار ويسأل عن تحديث الأصناف إن وُجدت.
+		/// ÙŠÙØ·Ø¨ÙÙ‘Ù‚ ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø®ØªØ§Ø±Ø©: ÙŠÙØ­Ø¯ÙÙ‘Ø« Ø§Ù„Ø£Ø²Ø±Ø§Ø± ÙˆÙŠØ³Ø£Ù„ Ø¹Ù† ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø£ØµÙ†Ø§Ù Ø¥Ù† ÙˆÙØ¬Ø¯Øª.
 		/// </summary>
 		private void ApplyTierChange(string newTier)
 		{
 			SetTierButtons(newTier);
 			if (_items.Count == 0) return;
 
-			// جلب الأسعار دفعةً واحدة
+			// Ø¬Ù„Ø¨ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø¯ÙØ¹Ø©Ù‹ ÙˆØ§Ø­Ø¯Ø©
 			var sb = new System.Text.StringBuilder();
 			foreach (var it in _items) sb.Append(it.ProductID + ",");
 			string ids = sb.ToString().TrimEnd(',');
@@ -2375,17 +2377,17 @@ namespace ChickenDist.Forms
 			foreach (DataRow r in dtPrices.Rows)
 			{
 				int pid = Convert.ToInt32(r["ProductID"]);
-				decimal price = newTier == "جملة"
+				decimal price = newTier == "Ø¬Ù…Ù„Ø©"
 					? (r["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"]) : Convert.ToDecimal(r["SalePrice"]))
-					: newTier == "نصف جملة"
+					: newTier == "Ù†ØµÙ Ø¬Ù…Ù„Ø©"
 						? (r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : Convert.ToDecimal(r["SalePrice"]))
 						: Convert.ToDecimal(r["SalePrice"]);
 				priceMap[pid] = price;
 			}
 
 			if (MessageBox.Show(
-				$"هل تريد تحديث أسعار جميع الأصناف وفق فئة \"{newTier}\"؟",
-				"تغيير فئة السعر", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+				$"Ù‡Ù„ ØªØ±ÙŠØ¯ ØªØ­Ø¯ÙŠØ« Ø£Ø³Ø¹Ø§Ø± Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£ØµÙ†Ø§Ù ÙˆÙÙ‚ ÙØ¦Ø© \"{newTier}\"ØŸ",
+				"ØªØºÙŠÙŠØ± ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø±", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 			{
 				foreach (var item in _items)
 				{
@@ -2402,7 +2404,7 @@ namespace ChickenDist.Forms
 		}
 
 		/// <summary>
-		/// يُحدِّث مظهر أزرار فئة السعر ليُبرز المحدود منها.
+		/// ÙŠÙØ­Ø¯ÙÙ‘Ø« Ù…Ø¸Ù‡Ø± Ø£Ø²Ø±Ø§Ø± ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± Ù„ÙŠÙØ¨Ø±Ø² Ø§Ù„Ù…Ø­Ø¯ÙˆØ¯ Ù…Ù†Ù‡Ø§.
 		/// </summary>
 		private void SetTierButtons(string tier)
 		{
@@ -2414,12 +2416,12 @@ namespace ChickenDist.Forms
 			Color clrWholesaleOn = Theme.Accent;
 			Color clrOff         = Theme.BgInput;
 
-			btnTierRetail.BackColor    = tier == "قطاعي"    ? clrRetailOn    : clrOff;
-			btnTierRetail.ForeColor    = tier == "قطاعي"    ? Color.White    : Theme.TextMain;
-			btnTierSemi.BackColor      = tier == "نصف جملة" ? clrSemiOn      : clrOff;
-			btnTierSemi.ForeColor      = tier == "نصف جملة" ? Color.White    : Theme.TextMain;
-			btnTierWholesale.BackColor = tier == "جملة"     ? clrWholesaleOn : clrOff;
-			btnTierWholesale.ForeColor = tier == "جملة"     ? Color.White    : Theme.TextMain;
+			btnTierRetail.BackColor    = tier == "Ù‚Ø·Ø§Ø¹ÙŠ"    ? clrRetailOn    : clrOff;
+			btnTierRetail.ForeColor    = tier == "Ù‚Ø·Ø§Ø¹ÙŠ"    ? Color.White    : Theme.TextMain;
+			btnTierSemi.BackColor      = tier == "Ù†ØµÙ Ø¬Ù…Ù„Ø©" ? clrSemiOn      : clrOff;
+			btnTierSemi.ForeColor      = tier == "Ù†ØµÙ Ø¬Ù…Ù„Ø©" ? Color.White    : Theme.TextMain;
+			btnTierWholesale.BackColor = tier == "Ø¬Ù…Ù„Ø©"     ? clrWholesaleOn : clrOff;
+			btnTierWholesale.ForeColor = tier == "Ø¬Ù…Ù„Ø©"     ? Color.White    : Theme.TextMain;
 		}
 
 		private void SetInvoiceType(string type)
@@ -2526,11 +2528,11 @@ namespace ChickenDist.Forms
                 pnlItems.Enabled = false; 
                 btnSave.Enabled = false;
                 
-                string msg = "⚠️ تحذير مالي ⚠️\n\n";
-                if (limitExceeded) msg += $"- تجاوز العميل الحد الائتماني ({status.MaxCreditLimit:N2} ج). رصيده: {status.Balance:N2} ج.\n";
-                if (oldDebtExists) msg += $"- ديون متأخرة (تجاوزت 30 يوم) بقيمة {status.OldDebt30:N2} ج لم تسدد.\n";
+                string msg = "âš ï¸ ØªØ­Ø°ÙŠØ± Ù…Ø§Ù„ÙŠ âš ï¸\n\n";
+                if (limitExceeded) msg += $"- ØªØ¬Ø§ÙˆØ² Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„Ø­Ø¯ Ø§Ù„Ø§Ø¦ØªÙ…Ø§Ù†ÙŠ ({status.MaxCreditLimit:N2} Ø¬). Ø±ØµÙŠØ¯Ù‡: {status.Balance:N2} Ø¬.\n";
+                if (oldDebtExists) msg += $"- Ø¯ÙŠÙˆÙ† Ù…ØªØ£Ø®Ø±Ø© (ØªØ¬Ø§ÙˆØ²Øª 30 ÙŠÙˆÙ…) Ø¨Ù‚ÙŠÙ…Ø© {status.OldDebt30:N2} Ø¬ Ù„Ù… ØªØ³Ø¯Ø¯.\n";
                 
-                MessageBox.Show(msg + "\nالبيع الآجل والتقسيط موقوف لهذا العميل حتى يتم السداد.", "إيقاف البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                MessageBox.Show(msg + "\nØ§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ø¢Ø¬Ù„ ÙˆØ§Ù„ØªÙ‚Ø³ÙŠØ· Ù…ÙˆÙ‚ÙˆÙ Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø­ØªÙ‰ ÙŠØªÙ… Ø§Ù„Ø³Ø¯Ø§Ø¯.", "Ø¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Stop);
             }
             else
             {
@@ -2543,7 +2545,7 @@ namespace ChickenDist.Forms
         private void UpdateClientBalanceLabel(int clientID)
         {
             var status = ClientDAL.GetFinancialStatus(clientID);
-            lblClientBalance.Text = "رصيد: " + status.Balance.ToString("N2") + " ج";
+            lblClientBalance.Text = "Ø±ØµÙŠØ¯: " + status.Balance.ToString("N2") + " Ø¬";
             if (status.Balance > 0)
             {
                 lblClientBalance.ForeColor = Color.FromArgb(255, 110, 110); // Bright light red
@@ -2560,7 +2562,7 @@ namespace ChickenDist.Forms
             int cratesBal = ClientDAL.GetClientCratesBalance(clientID);
             if (lblClientCratesBalance != null)
             {
-                lblClientCratesBalance.Text = "فوارغ العميل: " + cratesBal + " فارغ";
+                lblClientCratesBalance.Text = "ÙÙˆØ§Ø±Øº Ø§Ù„Ø¹Ù…ÙŠÙ„: " + cratesBal + " ÙØ§Ø±Øº";
             }
         }
 
@@ -2606,7 +2608,7 @@ namespace ChickenDist.Forms
 						{
 							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
 							{
-								MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+								MessageBox.Show("âŒ Ø¹Ø¬Ø²: Ù‡Ø°Ø§ Ø§Ù„ØµÙ†Ù Ù…Ù†ØªÙ‡ÙŠ Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ© ÙˆÙ„Ø§ ÙŠØ³Ù…Ø­ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ø¨ÙŠØ¹Ù‡ Ø­Ø³Ø¨ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø­Ø§Ù„ÙŠØ©!", "ØªÙ†Ø¨ÙŠÙ‡ Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©", MessageBoxButtons.OK, MessageBoxIcon.Error);
 								var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
 								if (lastItem != null)
 								{
@@ -2625,12 +2627,12 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						// فتح الشاشة مرة أخرى لاختيار صنف تاني
+						// ÙØªØ­ Ø§Ù„Ø´Ø§Ø´Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ù„Ø§Ø®ØªÙŠØ§Ø± ØµÙ†Ù ØªØ§Ù†ÙŠ
 						continue;
 					}
 					else
 					{
-						// المستخدم ضغط إلغاء → نخرج من الحلقة
+						// Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¶ØºØ· Ø¥Ù„ØºØ§Ø¡ â†’ Ù†Ø®Ø±Ø¬ Ù…Ù† Ø§Ù„Ø­Ù„Ù‚Ø©
 						break;
 					}
 				}
@@ -2639,7 +2641,7 @@ namespace ChickenDist.Forms
 			finally
 			{
 				_searchSessionActive = false;
-				// إرجاع الفوكس للجدول لسطر الإدخال
+				// Ø¥Ø±Ø¬Ø§Ø¹ Ø§Ù„ÙÙˆÙƒØ³ Ù„Ù„Ø¬Ø¯ÙˆÙ„ Ù„Ø³Ø·Ø± Ø§Ù„Ø¥Ø¯Ø®Ø§Ù„
 				this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
 			}
 		}
@@ -2674,14 +2676,14 @@ namespace ChickenDist.Forms
 			AddNewCodeRow();
 		}
 
-		/// <summary>يضيف سطراً فارغاً في الجدول ويضع الكيرسور على عمود كود الصنف مباشرة</summary>
+		/// <summary>ÙŠØ¶ÙŠÙ Ø³Ø·Ø±Ø§Ù‹ ÙØ§Ø±ØºØ§Ù‹ ÙÙŠ Ø§Ù„Ø¬Ø¯ÙˆÙ„ ÙˆÙŠØ¶Ø¹ Ø§Ù„ÙƒÙŠØ±Ø³ÙˆØ± Ø¹Ù„Ù‰ Ø¹Ù…ÙˆØ¯ ÙƒÙˆØ¯ Ø§Ù„ØµÙ†Ù Ù…Ø¨Ø§Ø´Ø±Ø©</summary>
 		private void AddNewCodeRow()
 		{
 			this.BeginInvoke((MethodInvoker)delegate
 			{
 				try
 				{
-					// إذا كان السطر المعلق الحالي موجوداً وفارغاً نكتفي بالتركيز عليه
+					// Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚ Ø§Ù„Ø­Ø§Ù„ÙŠ Ù…ÙˆØ¬ÙˆØ¯Ø§Ù‹ ÙˆÙØ§Ø±ØºØ§Ù‹ Ù†ÙƒØªÙÙŠ Ø¨Ø§Ù„ØªØ±ÙƒÙŠØ² Ø¹Ù„ÙŠÙ‡
 					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 					{
 						var prevCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
@@ -2695,7 +2697,7 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					// إضافة سطر فارغ جديد
+					// Ø¥Ø¶Ø§ÙØ© Ø³Ø·Ø± ÙØ§Ø±Øº Ø¬Ø¯ÙŠØ¯
 					_pendingRowIdx = dgItems.Rows.Add();
 					dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(235, 245, 255);
 
@@ -2737,12 +2739,12 @@ namespace ChickenDist.Forms
 		{
 			if (!(cboProduct.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 			{
-				MessageBox.Show("اختر الصنف أولا\u064b");
+				MessageBox.Show("Ø§Ø®ØªØ± Ø§Ù„ØµÙ†Ù Ø£ÙˆÙ„Ø§\u064b");
 				return;
 			}
 			if (!decimal.TryParse(txtPrice.Text, out var result) || result <= 0m)
 			{
-				MessageBox.Show("أدخل سعرا\u064b صحيحا\u064b");
+				MessageBox.Show("Ø£Ø¯Ø®Ù„ Ø³Ø¹Ø±Ø§\u064b ØµØ­ÙŠØ­Ø§\u064b");
 				return;
 			}
 			decimal value = nudQty.Value;
@@ -2768,11 +2770,11 @@ namespace ChickenDist.Forms
 		{
 			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-			var miCard = new ToolStripMenuItem("🔍 كارت الصنف وتعديل البيانات (F4)", null, (s, e) =>
+			var miCard = new ToolStripMenuItem("ðŸ” ÙƒØ§Ø±Øª Ø§Ù„ØµÙ†Ù ÙˆØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª (F4)", null, (s, e) =>
 			{
 				if (!Session.IsAdmin && !Session.CanAccess("ProductCard") && !Session.CanAccess("Products") && !Session.CanEdit("Products"))
 				{
-					MessageBox.Show("❌ عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					MessageBox.Show("âŒ Ø¹ÙÙˆÙ‹Ø§: Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¹Ù„Ù‰ ÙƒØ§Ø±Øª Ø§Ù„ØµÙ†Ù!", "ØµÙ„Ø§Ø­ÙŠØ© Ù…Ø±ÙÙˆØ¶Ø©", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					return;
 				}
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
@@ -2792,7 +2794,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miStock = new ToolStripMenuItem("📊 رصيد الصنف في المخازن", null, (s, e) =>
+			var miStock = new ToolStripMenuItem("ðŸ“Š Ø±ØµÙŠØ¯ Ø§Ù„ØµÙ†Ù ÙÙŠ Ø§Ù„Ù…Ø®Ø§Ø²Ù†", null, (s, e) =>
 			{
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
 				{
@@ -2800,7 +2802,7 @@ namespace ChickenDist.Forms
 					if (item.ProductID > 0)
 					{
 						var dtWarehouses = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
-						string msg = $"📦 تفاصيل رصيد الصنف: {item.ProductName}\n" + new string('-', 40) + "\n";
+						string msg = $"ðŸ“¦ ØªÙØ§ØµÙŠÙ„ Ø±ØµÙŠØ¯ Ø§Ù„ØµÙ†Ù: {item.ProductName}\n" + new string('-', 40) + "\n";
 						decimal totalStock = 0;
 						foreach (DataRow r in dtWarehouses.Rows)
 						{
@@ -2808,15 +2810,15 @@ namespace ChickenDist.Forms
 							string wName = r["WarehouseName"]?.ToString() ?? "";
 							decimal q = InventoryDAL.GetProductStock(item.ProductID, wid);
 							totalStock += q;
-							msg += $"• {wName}: {q:N2} {item.UnitName}\n";
+							msg += $"â€¢ {wName}: {q:N2} {item.UnitName}\n";
 						}
-						msg += new string('-', 40) + $"\nالإجمالي الكلي: {totalStock:N2} {item.UnitName}";
-						MessageBox.Show(msg, "رصيد المخازن", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						msg += new string('-', 40) + $"\nØ§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙƒÙ„ÙŠ: {totalStock:N2} {item.UnitName}";
+						MessageBox.Show(msg, "Ø±ØµÙŠØ¯ Ø§Ù„Ù…Ø®Ø§Ø²Ù†", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					}
 				}
 			});
 
-			var miBarcode = new ToolStripMenuItem("🏷️ طباعة باركود الصنف", null, (s, e) =>
+			var miBarcode = new ToolStripMenuItem("ðŸ·ï¸ Ø·Ø¨Ø§Ø¹Ø© Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø§Ù„ØµÙ†Ù", null, (s, e) =>
 			{
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
 				{
@@ -2839,7 +2841,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miNote = new ToolStripMenuItem("📝 تعديل السيريال / الملاحظة", null, (s, e) =>
+			var miNote = new ToolStripMenuItem("ðŸ“ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø³ÙŠØ±ÙŠØ§Ù„ / Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©", null, (s, e) =>
 			{
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0)
 				{
@@ -2851,7 +2853,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miDel = new ToolStripMenuItem("🗑️ حذف الصنف من الفاتورة (Del)", null, (s, e) =>
+			var miDel = new ToolStripMenuItem("ðŸ—‘ï¸ Ø­Ø°Ù Ø§Ù„ØµÙ†Ù Ù…Ù† Ø§Ù„ÙØ§ØªÙˆØ±Ø© (Del)", null, (s, e) =>
 			{
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
 				{
@@ -2916,7 +2918,7 @@ namespace ChickenDist.Forms
 
 		private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
 		{
-			// معالجة خلية كود الصنف (السطر المعلق)
+			// Ù…Ø¹Ø§Ù„Ø¬Ø© Ø®Ù„ÙŠØ© ÙƒÙˆØ¯ Ø§Ù„ØµÙ†Ù (Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚)
 			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CodeEntry")
 			{
 				string code = dgItems.Rows[e.RowIndex].Cells["CodeEntry"].Value?.ToString()?.Trim() ?? "";
@@ -2925,7 +2927,7 @@ namespace ChickenDist.Forms
 				{
 					if (string.IsNullOrEmpty(code))
 					{
-						// كود فارغ → حذف السطر المعلق
+						// ÙƒÙˆØ¯ ÙØ§Ø±Øº â†’ Ø­Ø°Ù Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚
 						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
 							dgItems.Rows.RemoveAt(rowIdx);
 						_pendingRowIdx = -1;
@@ -2956,7 +2958,7 @@ namespace ChickenDist.Forms
 						if (price <= 0) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
 						if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
 
-						// حذف السطر المعلق ثم إضافة الصنف الحقيقي
+						// Ø­Ø°Ù Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚ Ø«Ù… Ø¥Ø¶Ø§ÙØ© Ø§Ù„ØµÙ†Ù Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠ
 						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
 							dgItems.Rows.RemoveAt(rowIdx);
 						_pendingRowIdx = -1;
@@ -2964,13 +2966,13 @@ namespace ChickenDist.Forms
 						AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
 
 						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-						// فتح سطر جديد للإدخال أو المسح التالي فوراً
+						// ÙØªØ­ Ø³Ø·Ø± Ø¬Ø¯ÙŠØ¯ Ù„Ù„Ø¥Ø¯Ø®Ø§Ù„ Ø£Ùˆ Ø§Ù„Ù…Ø³Ø­ Ø§Ù„ØªØ§Ù„ÙŠ ÙÙˆØ±Ø§Ù‹
 						AddNewCodeRow();
 					}
 					else
 					{
-						MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-						// إعادة التركيز على خلية الكود
+						MessageBox.Show("âŒ Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ ØµÙ†Ù Ø¨Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø£Ùˆ Ø§Ù„ÙƒÙˆØ¯: " + code, "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ÙƒÙˆØ¯", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						// Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ±ÙƒÙŠØ² Ø¹Ù„Ù‰ Ø®Ù„ÙŠØ© Ø§Ù„ÙƒÙˆØ¯
 						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
 						{
 							dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
@@ -2981,7 +2983,7 @@ namespace ChickenDist.Forms
 				return;
 			}
 
-			// ─── معالجة تغيير الوحدة ────────────────────────────────────────────
+			// â”€â”€â”€ Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØºÙŠÙŠØ± Ø§Ù„ÙˆØ­Ø¯Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
 			{
 				if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
@@ -3006,7 +3008,7 @@ namespace ChickenDist.Forms
 				{
 					if (!CheckSaleItemStock(saleItemDTO, result, out string err))
 					{
-						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show(err, "ØªÙ†Ø¨ÙŠÙ‡ - Ø±ØµÙŠØ¯ ØºÙŠØ± ÙƒØ§ÙÙ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
 						return;
 					}
@@ -3018,33 +3020,33 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show("من فضلك أدخل كمية صحيحة أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show("Ù…Ù† ÙØ¶Ù„Ùƒ Ø£Ø¯Ø®Ù„ ÙƒÙ…ÙŠØ© ØµØ­ÙŠØ­Ø© Ø£ÙƒØ¨Ø± Ù…Ù† Ø§Ù„ØµÙØ±.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					dataGridViewRow.Cells["Quantity"].Value = saleItemDTO.Quantity.ToString("F2");
 				}
 			}
 			else if (dgItems.Columns[e.ColumnIndex].Name == "UnitPrice")
 			{
-				// FIX: تغيير >= 0 إلى > 0 لمنع حفظ الفاتورة بسعر صفر
+				// FIX: ØªØºÙŠÙŠØ± >= 0 Ø¥Ù„Ù‰ > 0 Ù„Ù…Ù†Ø¹ Ø­ÙØ¸ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø¨Ø³Ø¹Ø± ØµÙØ±
 				if (decimal.TryParse(dataGridViewRow.Cells["UnitPrice"].Value?.ToString(), out var result2) && result2 > 0m)
 				{
-					// التحقق من عدم البيع بأقل من سعر التكلفة
+					// Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø¹Ø¯Ù… Ø§Ù„Ø¨ÙŠØ¹ Ø¨Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©
 					if (saleItemDTO.PurchasePrice > 0m && result2 < saleItemDTO.PurchasePrice)
 					{
-						string costNotice = Session.CanViewCost("Sales") ? $" أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-						MessageBox.Show($"❌ غير مسموح ببيع الصنف '{saleItemDTO.ProductName}' بسعر ({result2:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						string costNotice = Session.CanViewCost("Sales") ? $" Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({saleItemDTO.PurchasePrice:N2})." : " Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù„Ø¨ÙŠØ¹.";
+						MessageBox.Show($"âŒ ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­ Ø¨Ø¨ÙŠØ¹ Ø§Ù„ØµÙ†Ù '{saleItemDTO.ProductName}' Ø¨Ø³Ø¹Ø± ({result2:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						dataGridViewRow.Cells["UnitPrice"].Value = saleItemDTO.UnitPrice.ToString("F2");
 						return;
 					}
 
-					// التحقق أيضاً مع الخصم الحالي
+					// Ø§Ù„ØªØ­Ù‚Ù‚ Ø£ÙŠØ¶Ø§Ù‹ Ù…Ø¹ Ø§Ù„Ø®ØµÙ… Ø§Ù„Ø­Ø§Ù„ÙŠ
 					decimal testGross = saleItemDTO.Quantity * result2;
 					decimal testDisc = saleItemDTO.DiscountPct > 0 ? (testGross * saleItemDTO.DiscountPct / 100m) : saleItemDTO.DiscountAmt;
 					decimal testNet = testGross - testDisc;
 					decimal testNetUnit = saleItemDTO.Quantity > 0 ? (testNet / saleItemDTO.Quantity) : result2;
 					if (saleItemDTO.PurchasePrice > 0m && testNetUnit < saleItemDTO.PurchasePrice)
 					{
-						string costNotice = Session.CanViewCost("Sales") ? $" أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-						MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({testNetUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						string costNotice = Session.CanViewCost("Sales") ? $" Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({saleItemDTO.PurchasePrice:N2})." : " Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù„Ø¨ÙŠØ¹.";
+						MessageBox.Show($"âŒ Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø¯Ø®Ù„ Ù…Ø¹ Ø§Ù„Ø®ØµÙ… Ø§Ù„Ø­Ø§Ù„ÙŠ ÙŠØ¬Ø¹Ù„ ØµØ§ÙÙŠ Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ØµÙ†Ù '{saleItemDTO.ProductName}' ({testNetUnit:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						dataGridViewRow.Cells["UnitPrice"].Value = saleItemDTO.UnitPrice.ToString("F2");
 						return;
 					}
@@ -3056,7 +3058,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show("من فضلك أدخل سعر صحيح أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show("Ù…Ù† ÙØ¶Ù„Ùƒ Ø£Ø¯Ø®Ù„ Ø³Ø¹Ø± ØµØ­ÙŠØ­ Ø£ÙƒØ¨Ø± Ù…Ù† Ø§Ù„ØµÙØ±.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					dataGridViewRow.Cells["UnitPrice"].Value = saleItemDTO.UnitPrice.ToString("F2");
 				}
 			}
@@ -3071,8 +3073,8 @@ namespace ChickenDist.Forms
 
 					if (saleItemDTO.PurchasePrice > 0m && netUnitPrice < saleItemDTO.PurchasePrice)
 					{
-						string costNotice = Session.CanViewCost("Sales") ? $" أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-						MessageBox.Show($"❌ نسبة الخصم تجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						string costNotice = Session.CanViewCost("Sales") ? $" Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({saleItemDTO.PurchasePrice:N2})." : " Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù„Ø¨ÙŠØ¹.";
+						MessageBox.Show($"âŒ Ù†Ø³Ø¨Ø© Ø§Ù„Ø®ØµÙ… ØªØ¬Ø¹Ù„ ØµØ§ÙÙŠ Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ØµÙ†Ù '{saleItemDTO.ProductName}' ({netUnitPrice:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountPct.ToString("F2");
 						return;
 					}
@@ -3082,7 +3084,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show("من فضلك أدخل نسبة خصم صحيحة بين 0 و 100.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show("Ù…Ù† ÙØ¶Ù„Ùƒ Ø£Ø¯Ø®Ù„ Ù†Ø³Ø¨Ø© Ø®ØµÙ… ØµØ­ÙŠØ­Ø© Ø¨ÙŠÙ† 0 Ùˆ 100.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountPct.ToString("F2");
 				}
 			}
@@ -3093,7 +3095,7 @@ namespace ChickenDist.Forms
 					decimal gross = saleItemDTO.Quantity * saleItemDTO.UnitPrice;
 					if (resultAmt > gross)
 					{
-						MessageBox.Show("قيمة الخصم لا يمكن أن تكون أكبر من إجمالي سعر الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show("Ù‚ÙŠÙ…Ø© Ø§Ù„Ø®ØµÙ… Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø£Ù† ØªÙƒÙˆÙ† Ø£ÙƒØ¨Ø± Ù…Ù† Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø³Ø¹Ø± Ø§Ù„ØµÙ†Ù.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 						return;
 					}
@@ -3102,8 +3104,8 @@ namespace ChickenDist.Forms
 					decimal netUnitPrice = saleItemDTO.Quantity > 0 ? (testNet / saleItemDTO.Quantity) : saleItemDTO.UnitPrice;
 					if (saleItemDTO.PurchasePrice > 0m && netUnitPrice < saleItemDTO.PurchasePrice)
 					{
-						string costNotice = Session.CanViewCost("Sales") ? $" أقل من سعر التكلفة ({saleItemDTO.PurchasePrice:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-						MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{saleItemDTO.ProductName}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						string costNotice = Session.CanViewCost("Sales") ? $" Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({saleItemDTO.PurchasePrice:N2})." : " Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù„Ø¨ÙŠØ¹.";
+						MessageBox.Show($"âŒ Ù‚ÙŠÙ…Ø© Ø§Ù„Ø®ØµÙ… ØªØ¬Ø¹Ù„ ØµØ§ÙÙŠ Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ØµÙ†Ù '{saleItemDTO.ProductName}' ({netUnitPrice:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 						return;
 					}
@@ -3120,7 +3122,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show("من فضلك أدخل قيمة خصم صحيحة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show("Ù…Ù† ÙØ¶Ù„Ùƒ Ø£Ø¯Ø®Ù„ Ù‚ÙŠÙ…Ø© Ø®ØµÙ… ØµØ­ÙŠØ­Ø©.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					dataGridViewRow.Cells[e.ColumnIndex].Value = saleItemDTO.DiscountAmt.ToString("F2");
 				}
 			}
@@ -3140,7 +3142,7 @@ namespace ChickenDist.Forms
 			CalculateNet();
 		}
 
-		/// <summary>معالجة تغيير الوحدة في عمود UnitName — يُحدِّث Factor وسعر البيع وسعر الشراء</summary>
+		/// <summary>Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØºÙŠÙŠØ± Ø§Ù„ÙˆØ­Ø¯Ø© ÙÙŠ Ø¹Ù…ÙˆØ¯ UnitName â€” ÙŠÙØ­Ø¯ÙÙ‘Ø« Factor ÙˆØ³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹ ÙˆØ³Ø¹Ø± Ø§Ù„Ø´Ø±Ø§Ø¡</summary>
 		private void HandleUnitChange(DataGridViewRow row, SaleItemDTO dto, string newUnit)
 		{
 			if (string.IsNullOrEmpty(newUnit)) return;
@@ -3151,14 +3153,14 @@ namespace ChickenDist.Forms
 
 			if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
 			{
-				// 1. الوحدة الوسطى
+				// 1. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙˆØ³Ø·Ù‰
 				dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
 				if (prod.Unit2SalePrice > 0) dto.UnitPrice = prod.Unit2SalePrice;
 				if (prod.Unit2PurchasePrice > 0) dto.PurchasePrice = prod.Unit2PurchasePrice;
 			}
 			else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
 			{
-				// 2. الوحدة الصغرى (التجزئة)
+				// 2. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ØµØºØ±Ù‰ (Ø§Ù„ØªØ¬Ø²Ø¦Ø©)
 				dto.Factor = 1m;
 				if (prod.Unit1SalePrice > 0) dto.UnitPrice = prod.Unit1SalePrice;
 				else dto.UnitPrice = prod.Price;
@@ -3167,20 +3169,20 @@ namespace ChickenDist.Forms
 			}
 			else if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
 			{
-				// 3. الوحدة الكبرى (الأساسية)
+				// 3. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙƒØ¨Ø±Ù‰ (Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©)
 				dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
 				dto.UnitPrice = prod.Price;
 				dto.PurchasePrice = prod.PurchasePrice;
 			}
 			else
 			{
-				// احتياطي
+				// Ø§Ø­ØªÙŠØ§Ø·ÙŠ
 				dto.Factor = 1m;
 				dto.UnitPrice = prod.Price;
 				dto.PurchasePrice = prod.PurchasePrice;
 			}
 
-			// تحديث الجدول
+			// ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¬Ø¯ÙˆÙ„
 			row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
 			row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
 			if (dgItems.Columns.Contains("PurchasePrice"))
@@ -3190,7 +3192,7 @@ namespace ChickenDist.Forms
 
 		private void RefreshGrid()
 		{
-			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
+			_pendingRowIdx = -1; // Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ø³Ø·Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚ Ø¹Ù†Ø¯ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¬Ø¯ÙˆÙ„
 			dgItems.Rows.Clear();
 			int clientID = (cboClient != null && cboClient.SelectedItem is ComboItem ci) ? ci.ID : 0;
 			foreach (SaleItemDTO item in _items)
@@ -3200,7 +3202,7 @@ namespace ChickenDist.Forms
 				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") : "-";
 
 				int rIndex = dgItems.Rows.Add(
-					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
+					item.ProductCode, // CodeEntry - Ø¹Ø±Ø¶ Ø§Ù„ÙƒÙˆØ¯ Ø§Ù„Ù…Ø­Ù„ÙŠ Ù„Ù„ØµÙ†Ù
 					item.ProductName,
 					item.ProductSize,
 					item.Color,
@@ -3209,7 +3211,7 @@ namespace ChickenDist.Forms
 					item.Brand,
 					item.ShelfLocation,
 					item.StockQty.ToString("F2"),
-					null,              // UnitName - سيُعيَّن بالكود أدناه
+					null,              // UnitName - Ø³ÙŠÙØ¹ÙŠÙŽÙ‘Ù† Ø¨Ø§Ù„ÙƒÙˆØ¯ Ø£Ø¯Ù†Ø§Ù‡
 					item.Quantity.ToString("F2"),
 					item.UnitPrice.ToString("F2"),
 					lastPriceStr,
@@ -3221,10 +3223,10 @@ namespace ChickenDist.Forms
 					item.PurchasePrice.ToString("F2"),
 					costTotal.ToString("F2")
 				);
-				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
+				// Ø¹Ù…ÙˆØ¯ Ø§Ù„ÙƒÙˆØ¯ Ù„Ù„Ø³Ø·ÙˆØ± Ø§Ù„Ù…Ø¶Ø§ÙØ© Ù„Ù„Ù‚Ø±Ø§Ø¡Ø© ÙÙ‚Ø· (Ù„ÙŠØ³ Ù„Ù„ØªØ¹Ø¯ÙŠÙ„)
 				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
 
-				// ─── تهيئة ComboBox السيريال المتاح ─────────────────────────────────────
+				// â”€â”€â”€ ØªÙ‡ÙŠØ¦Ø© ComboBox Ø§Ù„Ø³ÙŠØ±ÙŠØ§Ù„ Ø§Ù„Ù…ØªØ§Ø­ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 				if (dgItems.Columns.Contains("IMEI"))
 				{
 					var availableSerials = PurchaseDAL.GetAvailableSerialsForProduct(item.ProductID);
@@ -3249,7 +3251,7 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				// ─── تهيئة ComboBox الوحدة ──────────────────────────────────────────
+				// â”€â”€â”€ ØªÙ‡ÙŠØ¦Ø© ComboBox Ø§Ù„ÙˆØ­Ø¯Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 				if (dgItems.Columns.Contains("UnitName") && dgItems.Columns["UnitName"] is DataGridViewComboBoxColumn unitCol)
 				{
 					var unitCell = (DataGridViewComboBoxCell)dgItems.Rows[rIndex].Cells["UnitName"];
@@ -3258,23 +3260,23 @@ namespace ChickenDist.Forms
 					ComboItem prod = GetProductComboItem(item.ProductID);
 					if (prod != null)
 					{
-						// 1. الوحدة الكبرى (الأساسية)
+						// 1. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙƒØ¨Ø±Ù‰ (Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©)
 						if (!string.IsNullOrEmpty(prod.BaseUnitName))
 						{
 							unitList.Add(prod.BaseUnitName);
 						}
 						else
 						{
-							unitList.Add("وحدة");
+							unitList.Add("ÙˆØ­Ø¯Ø©");
 						}
 
-						// 2. الوحدة الوسطى (إن وُجدت)
+						// 2. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙˆØ³Ø·Ù‰ (Ø¥Ù† ÙˆÙØ¬Ø¯Øª)
 						if (!string.IsNullOrEmpty(prod.Unit2Name))
 						{
 							unitList.Add(prod.Unit2Name);
 						}
 
-						// 3. الوحدة الصغرى (إن وُجدت وليست مكررة مع الكبرى)
+						// 3. Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ØµØºØ±Ù‰ (Ø¥Ù† ÙˆÙØ¬Ø¯Øª ÙˆÙ„ÙŠØ³Øª Ù…ÙƒØ±Ø±Ø© Ù…Ø¹ Ø§Ù„ÙƒØ¨Ø±Ù‰)
 						if (!string.IsNullOrEmpty(prod.Unit1Name) && prod.Unit1Name != prod.BaseUnitName)
 						{
 							unitList.Add(prod.Unit1Name);
@@ -3282,11 +3284,11 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة");
+						unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "ÙˆØ­Ø¯Ø©");
 					}
 
 					unitCell.DataSource = unitList;
-					// تعيين القيمة المحفوظة (أو الافتراضية)
+					// ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø© (Ø£Ùˆ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ©)
 					string savedUnit = item.UnitName;
 					if (!string.IsNullOrEmpty(savedUnit) && unitList.Contains(savedUnit))
 						unitCell.Value = savedUnit;
@@ -3308,7 +3310,7 @@ namespace ChickenDist.Forms
                         cell.Style.ForeColor = Color.White;
                     }
                 }
-                // تعيين Tag للسطر لضمان عمل FocusQtyCellInGrid بشكل صحيح
+                // ØªØ¹ÙŠÙŠÙ† Tag Ù„Ù„Ø³Ø·Ø± Ù„Ø¶Ù…Ø§Ù† Ø¹Ù…Ù„ FocusQtyCellInGrid Ø¨Ø´ÙƒÙ„ ØµØ­ÙŠØ­
                 dgItems.Rows[rIndex].Tag = item;
 			}
 			CalculateNet();
@@ -3317,18 +3319,18 @@ namespace ChickenDist.Forms
 		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null, decimal discountPct = 0m, decimal discountAmt = 0m)
 		{
 			ComboItem product = null;
-			// البحث في _productCache أولاً
+			// Ø§Ù„Ø¨Ø­Ø« ÙÙŠ _productCache Ø£ÙˆÙ„Ø§Ù‹
 			foreach (var ci in _productCache)
 			{
 				if (ci.ID == productID) { product = ci; break; }
 			}
-			// Fallback: بحث في cboProduct.Items (للتوافق)
+			// Fallback: Ø¨Ø­Ø« ÙÙŠ cboProduct.Items (Ù„Ù„ØªÙˆØ§ÙÙ‚)
 			if (product == null)
 				foreach (var item in cboProduct.Items)
 				{
 					if (item is ComboItem ci && ci.ID == productID) { product = ci; break; }
 				}
-			// Fallback: إذا لم يكن الصنف في الكومبو، نحمله مباشرة من قاعدة البيانات
+			// Fallback: Ø¥Ø°Ø§ Ù„Ù… ÙŠÙƒÙ† Ø§Ù„ØµÙ†Ù ÙÙŠ Ø§Ù„ÙƒÙˆÙ…Ø¨ÙˆØŒ Ù†Ø­Ù…Ù„Ù‡ Ù…Ø¨Ø§Ø´Ø±Ø© Ù…Ù† Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
 			if (product == null)
 			{
 				try
@@ -3362,7 +3364,7 @@ namespace ChickenDist.Forms
 						product.PartNumber = pRow["PartNumber"]?.ToString() ?? "";
 						product.ShelfLocation = pRow["ShelfLocation"]?.ToString() ?? "";
 
-						// أضف الصنف للقائمة لتجنب التحميل مرة أخرى
+						// Ø£Ø¶Ù Ø§Ù„ØµÙ†Ù Ù„Ù„Ù‚Ø§Ø¦Ù…Ø© Ù„ØªØ¬Ù†Ø¨ Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰
 						cboProduct.Items.Add(product);
 						if (cboProduct.Tag is List<ComboItem> tagList)
 							tagList.Add(product);
@@ -3376,7 +3378,7 @@ namespace ChickenDist.Forms
 			if (product == null) return;
 
 			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
-			// التحقق من IsService مباشرة من DB لضمان دقة القيمة
+			// Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† IsService Ù…Ø¨Ø§Ø´Ø±Ø© Ù…Ù† DB Ù„Ø¶Ù…Ø§Ù† Ø¯Ù‚Ø© Ø§Ù„Ù‚ÙŠÙ…Ø©
 			bool isServiceDB = product.IsService;
 			if (!isServiceDB)
 			{
@@ -3385,7 +3387,7 @@ namespace ChickenDist.Forms
 			}
 			if (stock <= 0 && !isServiceDB)
 			{
-				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show($"âŒ Ø¹Ø¬Ø²: Ø§Ù„ØµÙ†Ù '{product.Name}' Ù„ÙŠØ³ Ù„Ø¯ÙŠÙ‡ Ø±ØµÙŠØ¯ ÙƒØ§ÙÙ ÙÙŠ Ø§Ù„Ù…Ø®Ø²Ù† Ø­Ø§Ù„ÙŠØ§Ù‹ (Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø§Ù„ÙŠ: 0)!", "Ø±ØµÙŠØ¯ ØºÙŠØ± ÙƒØ§ÙÙ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 				else RefreshGrid();
 				return;
@@ -3426,7 +3428,7 @@ namespace ChickenDist.Forms
 					{
 						if (oldestExpiry.HasValue)
 						{
-							var res = MessageBox.Show("يوجد تاريخ أقرب سينتهي، هل تريد بيعه أولاً؟", "تنبيه تاريخ الصلاحية", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+							var res = MessageBox.Show("ÙŠÙˆØ¬Ø¯ ØªØ§Ø±ÙŠØ® Ø£Ù‚Ø±Ø¨ Ø³ÙŠÙ†ØªÙ‡ÙŠØŒ Ù‡Ù„ ØªØ±ÙŠØ¯ Ø¨ÙŠØ¹Ù‡ Ø£ÙˆÙ„Ø§Ù‹ØŸ", "ØªÙ†Ø¨ÙŠÙ‡ ØªØ§Ø±ÙŠØ® Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 							if (res == DialogResult.Yes)
 							{
 								batchID = oldestBatchID;
@@ -3439,7 +3441,7 @@ namespace ChickenDist.Forms
 
 			if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
 			{
-				MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("âŒ Ø¹Ø¬Ø²: Ù‡Ø°Ø§ Ø§Ù„ØµÙ†Ù Ù…Ù†ØªÙ‡ÙŠ Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ© ÙˆÙ„Ø§ ÙŠØ³Ù…Ø­ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ø¨ÙŠØ¹Ù‡ Ø­Ø³Ø¨ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø­Ø§Ù„ÙŠØ©!", "ØªÙ†Ø¨ÙŠÙ‡ Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 				else RefreshGrid();
 				return;
@@ -3447,8 +3449,8 @@ namespace ChickenDist.Forms
 
 			if (manualPrice.HasValue && product.PurchasePrice > 0m && manualPrice.Value < product.PurchasePrice)
 			{
-				string costNotice = Session.CanViewCost("Sales") ? $" أقل من سعر التكلفة ({product.PurchasePrice:N2}) للصنف '{product.Name}'." : $" أقل من الحد الأدنى المسموح به للصنف '{product.Name}'.";
-				MessageBox.Show($"❌ غير مسموح بإدخال سعر ({manualPrice.Value:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				string costNotice = Session.CanViewCost("Sales") ? $" Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({product.PurchasePrice:N2}) Ù„Ù„ØµÙ†Ù '{product.Name}'." : $" Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù„ØµÙ†Ù '{product.Name}'.";
+				MessageBox.Show($"âŒ ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­ Ø¨Ø¥Ø¯Ø®Ø§Ù„ Ø³Ø¹Ø± ({manualPrice.Value:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 				else RefreshGrid();
 				return;
@@ -3481,7 +3483,7 @@ namespace ChickenDist.Forms
 						{
 							if (existingRow.Quantity >= maxAvailInUnit)
 							{
-								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+								MessageBox.Show($"âš ï¸ ØªÙ… Ø¥Ø¶Ø§ÙØ© ÙƒØ§Ù…Ù„ Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ù…ØªØ§Ø­ Ø¨Ø§Ù„Ù…Ø®Ø²Ù† ({maxAvailInUnit:N2}) Ù„Ù„ØµÙ†Ù '{product.Name}'.\nÙ„Ø§ ÙŠÙ…ÙƒÙ† Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø²ÙŠØ¯ Ù„Ù…Ù†Ø¹ Ø§Ù„Ø¨ÙŠØ¹ Ø¨Ø§Ù„Ø³Ø§Ù„Ø¨.", "Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ù„Ù„Ø±ØµÙŠØ¯", MessageBoxButtons.OK, MessageBoxIcon.Information);
 								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 								else RefreshGrid();
 								return;
@@ -3497,7 +3499,7 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show(err, "ØªÙ†Ø¨ÙŠÙ‡ - Ø±ØµÙŠØ¯ ØºÙŠØ± ÙƒØ§ÙÙ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 						else RefreshGrid();
 						return;
@@ -3562,7 +3564,7 @@ namespace ChickenDist.Forms
 						{
 							if (existingRow.Quantity >= maxAvailInUnit)
 							{
-								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+								MessageBox.Show($"âš ï¸ ØªÙ… Ø¥Ø¶Ø§ÙØ© ÙƒØ§Ù…Ù„ Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ù…ØªØ§Ø­ Ø¨Ø§Ù„Ù…Ø®Ø²Ù† ({maxAvailInUnit:N2}) Ù„Ù„ØµÙ†Ù '{product.Name}'.\nÙ„Ø§ ÙŠÙ…ÙƒÙ† Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø²ÙŠØ¯ Ù„Ù…Ù†Ø¹ Ø§Ù„Ø¨ÙŠØ¹ Ø¨Ø§Ù„Ø³Ø§Ù„Ø¨.", "Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ù„Ù„Ø±ØµÙŠØ¯", MessageBoxButtons.OK, MessageBoxIcon.Information);
 								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 								else RefreshGrid();
 								return;
@@ -3578,7 +3580,7 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						MessageBox.Show(err, "ØªÙ†Ø¨ÙŠÙ‡ - Ø±ØµÙŠØ¯ ØºÙŠØ± ÙƒØ§ÙÙ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 						else RefreshGrid();
 						return;
@@ -3694,7 +3696,7 @@ namespace ChickenDist.Forms
 
 				if (reqQtyInFactor > dbQty)
 				{
-					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({dbQty:N2})!";
+					err = $"âŒ Ø¹Ø¬Ø²: Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø© ({reqQtyInFactor:N2}) Ø£ÙƒØ¨Ø± Ù…Ù† Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ§Ø­Ø© ÙÙŠ ØªØ´ØºÙŠÙ„ÙŠØ© Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© ({dbQty:N2})!";
 					return false;
 				}
 			}
@@ -3715,7 +3717,7 @@ namespace ChickenDist.Forms
 
 				if (reqQtyInFactor > dbQty)
 				{
-					err = $"❌ عجز: الكمية المطلوبة ({reqQtyInFactor:N2}) أكبر من الكمية المتاحة في المخزن حالياً ({dbQty:N2})!";
+					err = $"âŒ Ø¹Ø¬Ø²: Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø© ({reqQtyInFactor:N2}) Ø£ÙƒØ¨Ø± Ù…Ù† Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ§Ø­Ø© ÙÙŠ Ø§Ù„Ù…Ø®Ø²Ù† Ø­Ø§Ù„ÙŠØ§Ù‹ ({dbQty:N2})!";
 					return false;
 				}
 			}
@@ -3730,17 +3732,17 @@ namespace ChickenDist.Forms
 			if (string.IsNullOrEmpty(selectedUnit))
 			{
 				string defUnit = product.DefaultSaleUnit;
-				if (string.IsNullOrEmpty(defUnit)) defUnit = "الكبرى";
+				if (string.IsNullOrEmpty(defUnit)) defUnit = "Ø§Ù„ÙƒØ¨Ø±Ù‰";
 
-				if (defUnit == "الوسطى" && !string.IsNullOrEmpty(product.Unit2Name))
+				if (defUnit == "Ø§Ù„ÙˆØ³Ø·Ù‰" && !string.IsNullOrEmpty(product.Unit2Name))
 				{
 					selectedUnit = product.Unit2Name;
 				}
-				else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(product.Unit1Name))
+				else if (defUnit == "Ø§Ù„ØµØºØ±Ù‰" && !string.IsNullOrEmpty(product.Unit1Name))
 				{
 					selectedUnit = product.Unit1Name;
 				}
-				else // "الكبرى" or default
+				else // "Ø§Ù„ÙƒØ¨Ø±Ù‰" or default
 				{
 					selectedUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : product.Unit1Name;
 				}
@@ -3802,14 +3804,14 @@ namespace ChickenDist.Forms
 		}
 
 		/// <summary>
-		/// يجلب بيانات الوحدات المتعددة للصنف من ComboItem (أو يستعلم إذا لم يكن في الـ cache)
+		/// ÙŠØ¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù…ØªØ¹Ø¯Ø¯Ø© Ù„Ù„ØµÙ†Ù Ù…Ù† ComboItem (Ø£Ùˆ ÙŠØ³ØªØ¹Ù„Ù… Ø¥Ø°Ø§ Ù„Ù… ÙŠÙƒÙ† ÙÙŠ Ø§Ù„Ù€ cache)
 		/// </summary>
 		private ComboItem GetProductComboItem(int productID)
 		{
-			// بحث في _productCache
+			// Ø¨Ø­Ø« ÙÙŠ _productCache
 			foreach (var ci in _productCache)
 				if (ci.ID == productID) return ci;
-			// بحث في cboProduct.Items كـ fallback
+			// Ø¨Ø­Ø« ÙÙŠ cboProduct.Items ÙƒÙ€ fallback
 			foreach (var obj in cboProduct.Items)
 				if (obj is ComboItem ci2 && ci2.ID == productID) return ci2;
 			if (cboProduct.Tag is List<ComboItem> all)
@@ -3827,19 +3829,19 @@ namespace ChickenDist.Forms
 				gross += item.TotalPrice;
 				totalCost += item.PurchasePrice * item.Quantity;
 			}
-			lblTotalVal.Text = gross.ToString("N2") + " ج";
+			lblTotalVal.Text = gross.ToString("N2") + " Ø¬";
 
 			decimal discount = 0m;
 			decimal discountPct = 0m;
 			decimal discountAmt = 0m;
 			if (txtInvoiceDiscount != null && decimal.TryParse(txtInvoiceDiscount.Text, out discount) && discount > 0)
 			{
-				if (cboInvoiceDiscountType.SelectedIndex == 1) // نسبة %
+				if (cboInvoiceDiscountType.SelectedIndex == 1) // Ù†Ø³Ø¨Ø© %
 				{
 					discountPct = discount;
 					discountAmt = Math.Round(gross * discountPct / 100m, 2);
 				}
-				else // قيمة
+				else // Ù‚ÙŠÙ…Ø©
 				{
 					discountAmt = discount;
 					if (gross > 0)
@@ -3853,7 +3855,7 @@ namespace ChickenDist.Forms
 			decimal net = Math.Max(0m, gross - discountAmt) + shippingVal;
 			if (lblNetVal != null)
 			{
-				lblNetVal.Text = net.ToString("N2") + " ج";
+				lblNetVal.Text = net.ToString("N2") + " Ø¬";
 			}
 
 			if (lblItemCountVal != null)
@@ -3865,8 +3867,8 @@ namespace ChickenDist.Forms
 			if (lblCostVal != null && Session.CanViewCost("Sales"))
 			{
 				decimal profit = net - totalCost;
-				lblCostVal.Text = totalCost.ToString("N2") + " ج";
-				lblProfitVal.Text = profit.ToString("N2") + " ج";
+				lblCostVal.Text = totalCost.ToString("N2") + " Ø¬";
+				lblProfitVal.Text = profit.ToString("N2") + " Ø¬";
 				lblProfitVal.ForeColor = profit >= 0 ? Theme.Success : Color.FromArgb(220, 60, 60);
 			}
             _isDirty = true;
@@ -3884,7 +3886,7 @@ namespace ChickenDist.Forms
 		}
 
 		/// <summary>
-		/// يحمّل فاتورة موجودة لغرض التعديل أو النسخ.
+		/// ÙŠØ­Ù…Ù‘Ù„ ÙØ§ØªÙˆØ±Ø© Ù…ÙˆØ¬ÙˆØ¯Ø© Ù„ØºØ±Ø¶ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø£Ùˆ Ø§Ù„Ù†Ø³Ø®.
 		/// </summary>
 		private void LoadInvoiceForEdit(int saleID)
 		{
@@ -3892,7 +3894,7 @@ namespace ChickenDist.Forms
 				@"SELECT s.SaleType, s.SaleDate, s.ClientID, s.DriverID, s.Notes,
 				         COALESCE(s.DiscountAmount,0) AS DiscountAmount,
 				         COALESCE(s.DiscountPct,0)    AS DiscountPct,
-				         COALESCE(s.PriceTier,'قطاعي') AS PriceTier,
+				         COALESCE(s.PriceTier,'Ù‚Ø·Ø§Ø¹ÙŠ') AS PriceTier,
 				         COALESCE(s.CratesOut, 0) AS CratesOut,
 				         COALESCE(s.CratesIn, 0) AS CratesIn,
 				         COALESCE(s.ShippingCharge, 0.0) AS ShippingCharge,
@@ -3902,7 +3904,7 @@ namespace ChickenDist.Forms
 
 			if (dtSale.Rows.Count == 0)
 			{
-				MessageBox.Show("لم يتم العثور على الفاتورة!", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø©!", "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				return;
 			}
 
@@ -3911,14 +3913,14 @@ namespace ChickenDist.Forms
 			// Concurrency Token
 			_loadedLastModified = row["LastModifiedDate"] != DBNull.Value ? Convert.ToDateTime(row["LastModifiedDate"]) : Convert.ToDateTime(row["SaleDate"]);
 
-			// نوع الفاتورة
+			// Ù†ÙˆØ¹ Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 			string typeStr = row["SaleType"].ToString();
 			SetInvoiceType(typeStr);
 
-			// التاريخ
+			// Ø§Ù„ØªØ§Ø±ÙŠØ®
 			dtpDate.Value = _isCopyMode ? DateTime.Today : Convert.ToDateTime(row["SaleDate"]);
 
-			// العميل
+			// Ø§Ù„Ø¹Ù…ÙŠÙ„
 			if (row["ClientID"] != DBNull.Value)
 			{
 				int cid = Convert.ToInt32(row["ClientID"]);
@@ -3927,7 +3929,7 @@ namespace ChickenDist.Forms
 						{ cboClient.SelectedIndex = i; break; }
 			}
 
-			// المندوب
+			// Ø§Ù„Ù…Ù†Ø¯ÙˆØ¨
 			if (row["DriverID"] != DBNull.Value)
 			{
 				int did = Convert.ToInt32(row["DriverID"]);
@@ -3936,14 +3938,14 @@ namespace ChickenDist.Forms
 						{ cboDriver.SelectedIndex = i; break; }
 			}
 
-			// ملاحظات
+			// Ù…Ù„Ø§Ø­Ø¸Ø§Øª
 			txtNotes.Text = row["Notes"].ToString();
 
-			// الأقفاص
+			// Ø§Ù„Ø£Ù‚ÙØ§Øµ
 			nudCratesOut.Value = row["CratesOut"] != DBNull.Value ? Convert.ToInt32(row["CratesOut"]) : 0;
 			nudCratesIn.Value = row["CratesIn"] != DBNull.Value ? Convert.ToInt32(row["CratesIn"]) : 0;
 
-			// الشحن
+			// Ø§Ù„Ø´Ø­Ù†
 			if (nudShippingCharge != null)
 			{
 				nudShippingCharge.Value = row.Table.Columns.Contains("ShippingCharge") && row["ShippingCharge"] != DBNull.Value
@@ -3951,7 +3953,7 @@ namespace ChickenDist.Forms
 					: 0m;
 			}
 
-			// الخصم
+			// Ø§Ù„Ø®ØµÙ…
 			decimal discPct = row.Table.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
 			decimal discAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
 			if (discPct > 0)
@@ -3965,19 +3967,19 @@ namespace ChickenDist.Forms
 				txtInvoiceDiscount.Text = discAmt.ToString("G29");
 			}
 
-			// فئة السعر
+			// ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø±
 			string tier = row["PriceTier"].ToString();
-			// تعيين فئة السعر أثناء تحميل الفاتورة (بدون سؤال)
-			SetTierButtons(!string.IsNullOrEmpty(tier) ? tier : "قطاعي");
+			// ØªØ¹ÙŠÙŠÙ† ÙØ¦Ø© Ø§Ù„Ø³Ø¹Ø± Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© (Ø¨Ø¯ÙˆÙ† Ø³Ø¤Ø§Ù„)
+			SetTierButtons(!string.IsNullOrEmpty(tier) ? tier : "Ù‚Ø·Ø§Ø¹ÙŠ");
 
-			// البنود
+			// Ø§Ù„Ø¨Ù†ÙˆØ¯
 			var dtItems = SaleDAL.GetItems(saleID);
 			_items.Clear();
 			foreach (DataRow iRow in dtItems.Rows)
 			{
 				int pid = Convert.ToInt32(iRow["ProductID"]);
 				decimal qty = Convert.ToDecimal(iRow["Quantity"]);
-				// نضيف الكمية للـ cache في وضع التعديل (وليس النسخ) لكي يعتبرها رصيداً متاحاً في الجريد أثناء التعديل
+				// Ù†Ø¶ÙŠÙ Ø§Ù„ÙƒÙ…ÙŠØ© Ù„Ù„Ù€ cache ÙÙŠ ÙˆØ¶Ø¹ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ (ÙˆÙ„ÙŠØ³ Ø§Ù„Ù†Ø³Ø®) Ù„ÙƒÙŠ ÙŠØ¹ØªØ¨Ø±Ù‡Ø§ Ø±ØµÙŠØ¯Ø§Ù‹ Ù…ØªØ§Ø­Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¬Ø±ÙŠØ¯ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„
 				if (!_isCopyMode)
 				{
 					if (_stockCache.ContainsKey(pid))
@@ -4009,11 +4011,11 @@ namespace ChickenDist.Forms
 			}
 			RefreshGrid();
 
-			// عنوان النافذة
+			// Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù†Ø§ÙØ°Ø©
 			if (_isCopyMode)
-				Text = "نسخة من الفاتورة";
+				Text = "Ù†Ø³Ø®Ø© Ù…Ù† Ø§Ù„ÙØ§ØªÙˆØ±Ø©";
 			else
-				Text = $"تعديل الفاتورة رقم {saleID}";
+				Text = $"ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø±Ù‚Ù… {saleID}";
 
 			_isDirty = false;
 		}
@@ -4067,34 +4069,34 @@ namespace ChickenDist.Forms
 		{
 			if (_items.Count == 0)
 			{
-				MessageBox.Show("أضف أصناف أولاً");
+				MessageBox.Show("Ø£Ø¶Ù Ø£ØµÙ†Ø§Ù Ø£ÙˆÙ„Ø§Ù‹");
 				return;
 			}
 
 			if (_editSaleID > 0 && _invoiceType == "Installment")
 			{
-				MessageBox.Show("❌ لا يمكن تعديل فواتير التقسيط من شاشة المبيعات مباشرة. يرجى تعديلها أو إدارتها من شاشة عقود التقسيط.", "تعديل غير مسموح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+				MessageBox.Show("âŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ¹Ø¯ÙŠÙ„ ÙÙˆØ§ØªÙŠØ± Ø§Ù„ØªÙ‚Ø³ÙŠØ· Ù…Ù† Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª Ù…Ø¨Ø§Ø´Ø±Ø©. ÙŠØ±Ø¬Ù‰ ØªØ¹Ø¯ÙŠÙ„Ù‡Ø§ Ø£Ùˆ Ø¥Ø¯Ø§Ø±ØªÙ‡Ø§ Ù…Ù† Ø´Ø§Ø´Ø© Ø¹Ù‚ÙˆØ¯ Ø§Ù„ØªÙ‚Ø³ÙŠØ·.", "ØªØ¹Ø¯ÙŠÙ„ ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 				return;
 			}
 
-			// ─── التحقق من صلاحية تعديل الفاتورة ───
+			// â”€â”€â”€ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ØµÙ„Ø§Ø­ÙŠØ© ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© â”€â”€â”€
 			if (_editSaleID > 0)
 			{
 				if (!Session.CanEditSalesInvoice())
 				{
-					MessageBox.Show("❌ ليس لديك صلاحية تعديل الفواتير.\nراجع مسؤول النظام.",
-						"صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+					MessageBox.Show("âŒ Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ ØµÙ„Ø§Ø­ÙŠØ© ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ÙÙˆØ§ØªÙŠØ±.\nØ±Ø§Ø¬Ø¹ Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„Ù†Ø¸Ø§Ù….",
+						"ØµÙ„Ø§Ø­ÙŠØ© Ù…Ø±ÙÙˆØ¶Ø©", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 					return;
 				}
 				if (!SaleDAL.CanEditSale(_editSaleID, out string editReason))
 				{
-					MessageBox.Show($"❌ لا يمكن تعديل الفاتورة:\n{editReason}",
-						"تعديل مرفوض", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+					MessageBox.Show($"âŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø©:\n{editReason}",
+						"ØªØ¹Ø¯ÙŠÙ„ Ù…Ø±ÙÙˆØ¶", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 					return;
 				}
 			}
 
-			// ─── التحقق من المخزون ───
+			// â”€â”€â”€ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ù…Ø®Ø²ÙˆÙ† â”€â”€â”€
 			foreach (SaleItemDTO item in _items)
 			{
 				bool isSrv = item.IsService;
@@ -4103,14 +4105,14 @@ namespace ChickenDist.Forms
 					var isSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
 					isSrv = isSrvVal != null && isSrvVal != DBNull.Value && Convert.ToBoolean(isSrvVal);
 				}
-				if (isSrv) continue; // الأصناف الخدمية لا تخضع لفحص الرصيد وتباع بالسالب
+				if (isSrv) continue; // Ø§Ù„Ø£ØµÙ†Ø§Ù Ø§Ù„Ø®Ø¯Ù…ÙŠØ© Ù„Ø§ ØªØ®Ø¶Ø¹ Ù„ÙØ­Øµ Ø§Ù„Ø±ØµÙŠØ¯ ÙˆØªØ¨Ø§Ø¹ Ø¨Ø§Ù„Ø³Ø§Ù„Ø¨
 
 				decimal productStock = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
 				decimal quantityToCheck = item.Quantity;
 
 				if (_editSaleID > 0)
 				{
-					// في حال التعديل، نقوم بالتحقق من الفارق فقط
+					// ÙÙŠ Ø­Ø§Ù„ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ØŒ Ù†Ù‚ÙˆÙ… Ø¨Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„ÙØ§Ø±Ù‚ ÙÙ‚Ø·
 					var oldQtyObj = DbHelper.Scalar("SELECT Quantity FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid",
 						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID));
 					decimal oldQty = oldQtyObj != null ? Convert.ToDecimal(oldQtyObj) : 0m;
@@ -4127,14 +4129,14 @@ namespace ChickenDist.Forms
 
 					if (!allowNegativeStock)
 					{
-						MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
-							"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+						MessageBox.Show($"âŒ Ø®Ø·Ø£: Ø§Ù„ØµÙ†Ù '{item.ProductName}' Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ù†Ù‡ Ø±ØµÙŠØ¯ ÙƒØ§ÙÙ ÙÙŠ Ø§Ù„Ù…Ø®Ø²Ù† Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„ØªØºØ·ÙŠØ© Ø§Ù„Ø²ÙŠØ§Ø¯Ø© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©.\nØ§Ù„Ø²ÙŠØ§Ø¯Ø© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©: {quantityToCheck:N2} {item.UnitName}\nØ§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ§Ø­Ø© Ø¨Ø§Ù„Ù…Ø®Ø²Ù†: {availableInSelectedUnit:N2} {item.UnitName}",
+							"Ø¹Ø¬Ø² ÙÙŠ Ø§Ù„Ø±ØµÙŠØ¯", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 						return;
 					}
 					else
 					{
-						MessageBox.Show($"تحذير: الصنف '{item.ProductName}' سيؤدي لظهور رصيد بالسالب!\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
-							"تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						MessageBox.Show($"ØªØ­Ø°ÙŠØ±: Ø§Ù„ØµÙ†Ù '{item.ProductName}' Ø³ÙŠØ¤Ø¯ÙŠ Ù„Ø¸Ù‡ÙˆØ± Ø±ØµÙŠØ¯ Ø¨Ø§Ù„Ø³Ø§Ù„Ø¨!\nØ§Ù„Ø²ÙŠØ§Ø¯Ø© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©: {quantityToCheck:N2} {item.UnitName}\nØ§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ§Ø­Ø© Ø¨Ø§Ù„Ù…Ø®Ø²Ù†: {availableInSelectedUnit:N2} {item.UnitName}",
+							"ØªÙ†Ø¨ÙŠÙ‡ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 					}
 				}
 			}
@@ -4152,7 +4154,7 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show("اختر العميل");
+						MessageBox.Show("Ø§Ø®ØªØ± Ø§Ù„Ø¹Ù…ÙŠÙ„");
 						return;
 					}
 				}
@@ -4167,7 +4169,7 @@ namespace ChickenDist.Forms
 			{
 				if (!(cboDriver.SelectedItem is ComboItem comboItem3) || comboItem3.ID == 0)
 				{
-					MessageBox.Show("اختر المندوب");
+					MessageBox.Show("Ø§Ø®ØªØ± Ø§Ù„Ù…Ù†Ø¯ÙˆØ¨");
 					return;
 				}
 				driverID = comboItem3.ID;
@@ -4185,7 +4187,7 @@ namespace ChickenDist.Forms
 					discountPct = discount;
 					discountAmount = Math.Round(gross * (discount / 100m), 2);
 				}
-				else // قيمة
+				else // Ù‚ÙŠÙ…Ø©
 				{
 					discountAmount = discount;
 					if (gross > 0) discountPct = Math.Round((discountAmount / gross) * 100m, 2);
@@ -4193,7 +4195,7 @@ namespace ChickenDist.Forms
 			}
 			decimal net = Math.Max(0m, gross - discountAmount);
 
-			// ─── التحقق من عدم بيع أي صنف بأقل من سعر التكلفة ───
+			// â”€â”€â”€ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø¹Ø¯Ù… Ø¨ÙŠØ¹ Ø£ÙŠ ØµÙ†Ù Ø¨Ø£Ù‚Ù„ Ù…Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© â”€â”€â”€
 			foreach (SaleItemDTO itemCheck in _items)
 			{
 				if (itemCheck.PurchasePrice > 0m)
@@ -4211,19 +4213,19 @@ namespace ChickenDist.Forms
 					decimal netUnit = itemCheck.Quantity > 0 ? (itemNet / itemCheck.Quantity) : itemCheck.UnitPrice;
 					if (netUnit < itemCheck.PurchasePrice - 0.001m)
 					{
-						string costNotice = Session.CanViewCost("Sales") ? $" يقل عن سعر التكلفة ({itemCheck.PurchasePrice:N2})." : " يقل عن الحد الأدنى المسموح به.";
-						MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{itemCheck.ProductName}' بعد الخصومات ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+						string costNotice = Session.CanViewCost("Sales") ? $" ÙŠÙ‚Ù„ Ø¹Ù† Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© ({itemCheck.PurchasePrice:N2})." : " ÙŠÙ‚Ù„ Ø¹Ù† Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡.";
+						MessageBox.Show($"âŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø­ÙØ¸ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ù„Ø£Ù† ØµØ§ÙÙŠ Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ØµÙ†Ù '{itemCheck.ProductName}' Ø¨Ø¹Ø¯ Ø§Ù„Ø®ØµÙˆÙ…Ø§Øª ({netUnit:N2}){costNotice}", "ØªÙ†Ø¨ÙŠÙ‡ Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 						return;
 					}
 				}
 			}
 
-			// ─── إضافة الشحن إلى الإجمالي ───
+			// â”€â”€â”€ Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø´Ø­Ù† Ø¥Ù„Ù‰ Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ â”€â”€â”€
 			decimal shippingAtSave = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
 			net += shippingAtSave;
-			string priceTier = _selectedTier ?? "قطاعي";
+			string priceTier = _selectedTier ?? "Ù‚Ø·Ø§Ø¹ÙŠ";
 
-			// ─── إشعار الدفع النقدي / المختلط ───
+			// â”€â”€â”€ Ø¥Ø´Ø¹Ø§Ø± Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ù†Ù‚Ø¯ÙŠ / Ø§Ù„Ù…Ø®ØªÙ„Ø· â”€â”€â”€
 			decimal paidAmount = net;
 			decimal? mixedCashPaid = null;
 			decimal? mixedVisaPaid = null;
@@ -4262,7 +4264,7 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// ─── التحقق من حد الائتمان ───
+			// â”€â”€â”€ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø¯ Ø§Ù„Ø§Ø¦ØªÙ…Ø§Ù† â”€â”€â”€
 			if (!isDraft && _invoiceType == "Credit" && clientID.HasValue)
 			{
 				DataRow byID = ClientDAL.GetByID(clientID.Value);
@@ -4276,7 +4278,7 @@ namespace ChickenDist.Forms
 
 						if (_editSaleID > 0)
 						{
-							// في وضع التعديل، نطرح قيمة الفاتورة القديمة أولاً
+							// ÙÙŠ ÙˆØ¶Ø¹ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ØŒ Ù†Ø·Ø±Ø­ Ù‚ÙŠÙ…Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© Ø£ÙˆÙ„Ø§Ù‹
 							var oldTotalObj = DbHelper.Scalar("SELECT TotalAmount FROM Sales WHERE SaleID=@id", DbHelper.P("@id", _editSaleID));
 							decimal oldTotal = oldTotalObj != null ? Convert.ToDecimal(oldTotalObj) : 0m;
 							valueToCompare = clientBalance - oldTotal + net;
@@ -4284,18 +4286,18 @@ namespace ChickenDist.Forms
 
 						if (valueToCompare > maxCredit)
 						{
-							MessageBox.Show($"❌ الرصيد المتوقع بعد الحفظ ({valueToCompare:N2} ج) يتجاوز الحد الأقصى للائتمان المسموح به لهذا العميل ({maxCredit:N2} ج)!\n\nيرجى تحصيل دفعة نقدية أولاً.",
-								"تجاوز حد المديونية", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+							MessageBox.Show($"âŒ Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø¨Ø¹Ø¯ Ø§Ù„Ø­ÙØ¸ ({valueToCompare:N2} Ø¬) ÙŠØªØ¬Ø§ÙˆØ² Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ù„Ù„Ø§Ø¦ØªÙ…Ø§Ù† Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„ ({maxCredit:N2} Ø¬)!\n\nÙŠØ±Ø¬Ù‰ ØªØ­ØµÙŠÙ„ Ø¯ÙØ¹Ø© Ù†Ù‚Ø¯ÙŠØ© Ø£ÙˆÙ„Ø§Ù‹.",
+								"ØªØ¬Ø§ÙˆØ² Ø­Ø¯ Ø§Ù„Ù…Ø¯ÙŠÙˆÙ†ÙŠØ©", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 							return;
 						}
 					}
 				}
 			}
 
-			// ─── الحفظ أو التعديل ───
+			// â”€â”€â”€ Ø§Ù„Ø­ÙØ¸ Ø£Ùˆ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ â”€â”€â”€
 			if (_editSaleID > 0)
 			{
-				// وضع التعديل
+				// ÙˆØ¶Ø¹ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„
 				try
 				{
 					int? safeAccountID = mixedSafeAccountID;
@@ -4329,14 +4331,14 @@ namespace ChickenDist.Forms
 					{
 						_isDirty = false;
 						DialogResult pr = MessageBox.Show(
-							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
-							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+							$"âœ… ØªÙ… ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø±Ù‚Ù… [{_editSaleID}] Ø¨Ù†Ø¬Ø§Ø­!\n\nÙ‡Ù„ ØªØ±ÙŠØ¯ Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø¹Ø¯Ù‘Ù„Ø©ØŸ",
+							"ØªØ¹Ø¯ÙŠÙ„ Ù†Ø§Ø¬Ø­", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID, showPreview: false);
 
 						try
 						{
 							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
-							// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
+							// ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ù†ÙˆØ§Ù‚Øµ Ø¢Ù„ÙŠØ§Ù‹ ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ© Ø¹Ù†Ø¯ Ø­Ø¯ Ø§Ù„Ø·Ù„Ø¨ Ø£Ùˆ Ù†ÙØ§Ø¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ø¯ÙˆÙ† Ø¥Ø¸Ù‡Ø§Ø± Ù†ÙˆØ§ÙØ° Ù…Ù†Ø¨Ø«Ù‚Ø© Ù…Ø±Ø¨ÙƒØ©
 							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
 						}
 						catch { }
@@ -4345,24 +4347,24 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show("❌ فشل التعديل، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+						MessageBox.Show("âŒ ÙØ´Ù„ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ØŒ Ø±Ø§Ø¬Ø¹ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª", "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					}
 				}
 				catch (Exception ex)
 				{
 					if (ex.Message.Contains("CONCURRENCY_ERROR"))
 					{
-						MessageBox.Show(ex.Message.Replace("CONCURRENCY_ERROR: ", ""), "خطأ تعديل متزامن", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show(ex.Message.Replace("CONCURRENCY_ERROR: ", ""), "Ø®Ø·Ø£ ØªØ¹Ø¯ÙŠÙ„ Ù…ØªØ²Ø§Ù…Ù†", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}
 					else
 					{
-						MessageBox.Show("❌ حدث خطأ أثناء التعديل:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show("âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„:\n" + ex.Message, "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}
 				}
 			}
 			else
 			{
-				// وضع الإنشاء الجديد (أو نسخ)
+				// ÙˆØ¶Ø¹ Ø§Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¬Ø¯ÙŠØ¯ (Ø£Ùˆ Ù†Ø³Ø®)
 				decimal downPayment = 0m;
 				int installmentCount = 1;
 				string installmentPeriod = "Monthly";
@@ -4426,8 +4428,8 @@ namespace ChickenDist.Forms
 					}
 					if (isDraft)
 					{
-						MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.",
-							"تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						MessageBox.Show($"âœ… ØªÙ… ØªØ¹Ù„ÙŠÙ‚ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø¨Ù†Ø¬Ø§Ø­.\nÙŠÙ…ÙƒÙ†Ùƒ Ø§Ø³ØªØ¯Ø¹Ø§Ø¤Ù‡Ø§ Ù„Ø§Ø­Ù‚Ø§Ù‹ Ù…Ù† Ø²Ø± ðŸ“‚ Ù…Ø¹Ù„Ù‚Ø§Øª.",
+							"ØªØ¹Ù„ÙŠÙ‚", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					}
 					else
 					{
@@ -4445,14 +4447,14 @@ namespace ChickenDist.Forms
 						_activeDraftKey = null;
 
 						DialogResult printResult = MessageBox.Show(
-							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
-							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+							$"âœ… ØªÙ… Ø­ÙØ¸ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø¨Ù†Ø¬Ø§Ø­ Ø±Ù‚Ù… [{num3}]!\n\nÙ‡Ù„ ØªØ±ÙŠØ¯ Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø¢Ù†ØŸ",
+							"Ù†Ø¬Ø§Ø­ Ø§Ù„Ø­ÙØ¸ ÙˆØ§Ù„Ø·Ø¨Ø§Ø¹Ø©", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (printResult == DialogResult.Yes) new FrmPrintSale(num3, showPreview: false);
 
 						try
 						{
 							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
-							// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
+							// ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ù†ÙˆØ§Ù‚Øµ Ø¢Ù„ÙŠØ§Ù‹ ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ© Ø¹Ù†Ø¯ Ø­Ø¯ Ø§Ù„Ø·Ù„Ø¨ Ø£Ùˆ Ù†ÙØ§Ø¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ø¯ÙˆÙ† Ø¥Ø¸Ù‡Ø§Ø± Ù†ÙˆØ§ÙØ° Ù…Ù†Ø¨Ø«Ù‚Ø© Ù…Ø±Ø¨ÙƒØ©
 							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
 						}
 						catch { }
@@ -4462,7 +4464,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					MessageBox.Show("âŒ ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸ØŒ Ø±Ø§Ø¬Ø¹ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª", "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 				}
 			}
 		}
@@ -4472,14 +4474,14 @@ namespace ChickenDist.Forms
 			DataTable dt = SaleDAL.GetDraftSales();
 			if (dt.Rows.Count == 0)
 			{
-				MessageBox.Show("لا توجد فواتير معلقة حالياً.", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙˆØ§ØªÙŠØ± Ù…Ø¹Ù„Ù‚Ø© Ø­Ø§Ù„ÙŠØ§Ù‹.", "Ù…Ø¹Ù„ÙˆÙ…Ø§Øª", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				return;
 			}
 
 			var dlg = new Form
 			{
 				Width = 800, Height = 450,
-				Text = "📂 الفواتير المعلقة",
+				Text = "ðŸ“‚ Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©",
 				StartPosition = FormStartPosition.CenterParent,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
@@ -4510,17 +4512,17 @@ namespace ChickenDist.Forms
 				if (dgDrafts.Columns.Contains("SaleType")) dgDrafts.Columns["SaleType"].Visible = false;
 				if (dgDrafts.Columns.Contains("DiscountAmount")) dgDrafts.Columns["DiscountAmount"].Visible = false;
 				if (dgDrafts.Columns.Contains("DiscountPct")) dgDrafts.Columns["DiscountPct"].Visible = false;
-				if (dgDrafts.Columns.Contains("SaleCode")) dgDrafts.Columns["SaleCode"].HeaderText = "كود الفاتورة";
-				if (dgDrafts.Columns.Contains("SaleDate")) dgDrafts.Columns["SaleDate"].HeaderText = "التاريخ";
-				if (dgDrafts.Columns.Contains("ClientName")) dgDrafts.Columns["ClientName"].HeaderText = "العميل";
-				if (dgDrafts.Columns.Contains("DriverName")) dgDrafts.Columns["DriverName"].HeaderText = "المندوب";
-				if (dgDrafts.Columns.Contains("TotalAmount")) dgDrafts.Columns["TotalAmount"].HeaderText = "الإجمالي";
-				if (dgDrafts.Columns.Contains("Notes")) dgDrafts.Columns["Notes"].HeaderText = "ملاحظات";
+				if (dgDrafts.Columns.Contains("SaleCode")) dgDrafts.Columns["SaleCode"].HeaderText = "ÙƒÙˆØ¯ Ø§Ù„ÙØ§ØªÙˆØ±Ø©";
+				if (dgDrafts.Columns.Contains("SaleDate")) dgDrafts.Columns["SaleDate"].HeaderText = "Ø§Ù„ØªØ§Ø±ÙŠØ®";
+				if (dgDrafts.Columns.Contains("ClientName")) dgDrafts.Columns["ClientName"].HeaderText = "Ø§Ù„Ø¹Ù…ÙŠÙ„";
+				if (dgDrafts.Columns.Contains("DriverName")) dgDrafts.Columns["DriverName"].HeaderText = "Ø§Ù„Ù…Ù†Ø¯ÙˆØ¨";
+				if (dgDrafts.Columns.Contains("TotalAmount")) dgDrafts.Columns["TotalAmount"].HeaderText = "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ";
+				if (dgDrafts.Columns.Contains("Notes")) dgDrafts.Columns["Notes"].HeaderText = "Ù…Ù„Ø§Ø­Ø¸Ø§Øª";
 			};
 
 			var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 45, Width = 800, BackColor = Theme.BgCard, Padding = new Padding(5) };
 
-			var btnLoad = Theme.MakeButton("✅ استدعاء الفاتورة", 0, 5, 180, 35, Theme.Success);
+			var btnLoad = Theme.MakeButton("âœ… Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ Ø§Ù„ÙØ§ØªÙˆØ±Ø©", 0, 5, 180, 35, Theme.Success);
 			btnLoad.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnLoad.Click += (s2, e2) =>
 			{
@@ -4529,7 +4531,7 @@ namespace ChickenDist.Forms
 
 				if (_isDirty && _items.Count > 0)
 				{
-					if (MessageBox.Show("توجد فاتورة حالية قيد التسجيل، سيتم مسحها لتحميل الفاتورة المعلقة.\nهل أنت متأكد؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+					if (MessageBox.Show("ØªÙˆØ¬Ø¯ ÙØ§ØªÙˆØ±Ø© Ø­Ø§Ù„ÙŠØ© Ù‚ÙŠØ¯ Ø§Ù„ØªØ³Ø¬ÙŠÙ„ØŒ Ø³ÙŠØªÙ… Ù…Ø³Ø­Ù‡Ø§ Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©.\nÙ‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ØŸ", "ØªØ£ÙƒÙŠØ¯", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
 						return;
 				}
 
@@ -4609,13 +4611,13 @@ namespace ChickenDist.Forms
 				dlg.Close();
 			};
 
-			var btnDeleteDraft = Theme.MakeButton("❌ حذف المسودة", 190, 5, 150, 35, Color.FromArgb(180, 60, 60));
+			var btnDeleteDraft = Theme.MakeButton("âŒ Ø­Ø°Ù Ø§Ù„Ù…Ø³ÙˆØ¯Ø©", 190, 5, 150, 35, Color.FromArgb(180, 60, 60));
 			btnDeleteDraft.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 			btnDeleteDraft.Click += (s2, e2) =>
 			{
 				if (dgDrafts.SelectedRows.Count == 0) return;
 				var row = (DataRowView)dgDrafts.SelectedRows[0].DataBoundItem;
-				if (MessageBox.Show("هل أنت متأكد من حذف هذه الفاتورة المعلقة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+				if (MessageBox.Show("Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ù‡Ø°Ù‡ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ", "ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø°Ù", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
 				{
 					int saleID = Convert.ToInt32(row["SaleID"]);
 					SaleDAL.DeleteDraftSale(saleID);
@@ -4654,7 +4656,7 @@ namespace ChickenDist.Forms
 
 				if (_isDirty && _items.Count > 0)
 				{
-					if (MessageBox.Show("توجد فاتورة حالية قيد التسجيل، سيتم استبدالها بالمسودة المسترجعة.\nهل ترغب بالمتابعة؟", "تأكيد الاسترجاع", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+					if (MessageBox.Show("ØªÙˆØ¬Ø¯ ÙØ§ØªÙˆØ±Ø© Ø­Ø§Ù„ÙŠØ© Ù‚ÙŠØ¯ Ø§Ù„ØªØ³Ø¬ÙŠÙ„ØŒ Ø³ÙŠØªÙ… Ø§Ø³ØªØ¨Ø¯Ø§Ù„Ù‡Ø§ Ø¨Ø§Ù„Ù…Ø³ÙˆØ¯Ø© Ø§Ù„Ù…Ø³ØªØ±Ø¬Ø¹Ø©.\nÙ‡Ù„ ØªØ±ØºØ¨ Ø¨Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©ØŸ", "ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø§Ø³ØªØ±Ø¬Ø§Ø¹", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
 						return;
 				}
 
@@ -4712,11 +4714,11 @@ namespace ChickenDist.Forms
 				}
 
 				RefreshGrid();
-				MessageBox.Show($"✅ تم استرجاع الفاتورة غير المكتملة بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				MessageBox.Show($"âœ… ØªÙ… Ø§Ø³ØªØ±Ø¬Ø§Ø¹ Ø§Ù„ÙØ§ØªÙˆØ±Ø© ØºÙŠØ± Ø§Ù„Ù…ÙƒØªÙ…Ù„Ø© Ø¨Ù†Ø¬Ø§Ø­ ({_items.Count} ØµÙ†Ù)!\nØ³ØªØ¸Ù„ Ù…Ø­ÙÙˆØ¸Ø© ÙÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ± ØºÙŠØ± Ø§Ù„Ù…ÙƒØªÙ…Ù„Ø© Ù„Ø­ÙŠÙ† Ø­ÙØ¸Ù‡Ø§ Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ Ø£Ùˆ Ø­Ø°ÙÙ‡Ø§.", "Ø§Ø³ØªØ±Ø¬Ø§Ø¹ Ø§Ù„ÙØ§ØªÙˆØ±Ø©", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("حدث خطأ أثناء استرجاع الفاتورة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ø³ØªØ±Ø¬Ø§Ø¹ Ø§Ù„ÙØ§ØªÙˆØ±Ø©:\n" + ex.Message, "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
@@ -4727,7 +4729,7 @@ namespace ChickenDist.Forms
 			try
 			{
 				int clientId = 0;
-				string clientName = "عميل نقدي";
+				string clientName = "Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ";
 				if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
 				{
 					clientId = ci.ID;
@@ -4735,7 +4737,7 @@ namespace ChickenDist.Forms
 				}
 
 				decimal.TryParse(txtInvoiceDiscount?.Text, out decimal discVal);
-				decimal.TryParse(lblNetVal?.Text?.Replace(" ج", "")?.Replace(",", "")?.Trim(), out decimal netTotal);
+				decimal.TryParse(lblNetVal?.Text?.Replace(" Ø¬", "")?.Replace(",", "")?.Trim(), out decimal netTotal);
 
 				var data = new SaleDraftData
 				{
@@ -4743,7 +4745,7 @@ namespace ChickenDist.Forms
 					ClientName = clientName,
 					InvoiceType = _invoiceType,
 					DiscountVal = discVal,
-					DiscountType = cboInvoiceDiscountType?.SelectedItem?.ToString() ?? "قيمة",
+					DiscountType = cboInvoiceDiscountType?.SelectedItem?.ToString() ?? "Ù‚ÙŠÙ…Ø©",
 					Notes = txtNotes?.Text,
 					Items = new List<SaleDraftItem>()
 				};
@@ -4789,7 +4791,7 @@ namespace ChickenDist.Forms
 			}
 			if (_isDirty && _items.Count > 0)
 			{
-				var res = MessageBox.Show("هناك تغييرات لم يتم حفظها في الفاتورة الحالية.\nهل تريد الخروج بدون حفظ؟", "تنبيه", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+				var res = MessageBox.Show("Ù‡Ù†Ø§Ùƒ ØªØºÙŠÙŠØ±Ø§Øª Ù„Ù… ÙŠØªÙ… Ø­ÙØ¸Ù‡Ø§ ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©.\nÙ‡Ù„ ØªØ±ÙŠØ¯ Ø§Ù„Ø®Ø±ÙˆØ¬ Ø¨Ø¯ÙˆÙ† Ø­ÙØ¸ØŸ", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
 				if (res == DialogResult.No)
 				{
 					e.Cancel = true;
@@ -4825,21 +4827,21 @@ namespace ChickenDist.Forms
 
 			if (printID == 0)
 			{
-				MessageBox.Show("لا توجد فواتير مسجلة لطباعتها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙˆØ§ØªÙŠØ± Ù…Ø³Ø¬Ù„Ø© Ù„Ø·Ø¨Ø§Ø¹ØªÙ‡Ø§!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt 80mm)");
+			var itemReceipt = new ToolStripMenuItem("ðŸ§¾ Ø·Ø¨Ø§Ø¹Ø© Ø±ÙŠØ³ÙŠØª Ø­Ø±Ø§Ø±ÙŠ (Receipt 80mm)");
 			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: false);
             
-			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4 كامل)");
+			var itemA4 = new ToolStripMenuItem("ðŸ“„ Ø·Ø¨Ø§Ø¹Ø© ÙØ§ØªÙˆØ±Ø© ÙˆØ±Ù‚ (A4 ÙƒØ§Ù…Ù„)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: false);
 
-			var itemA5 = new ToolStripMenuItem("📑 طباعة فاتورة ورق (A5 نصف صفحة)");
+			var itemA5 = new ToolStripMenuItem("ðŸ“‘ Ø·Ø¨Ø§Ø¹Ø© ÙØ§ØªÙˆØ±Ø© ÙˆØ±Ù‚ (A5 Ù†ØµÙ ØµÙØ­Ø©)");
 			itemA5.Click += (s2, e2) => new FrmPrintSale(printID, "A5", showPreview: false);
 
-			var itemPrep = new ToolStripMenuItem("📋 طباعة إذن التحضير والتجميع (F9)");
+			var itemPrep = new ToolStripMenuItem("ðŸ“‹ Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ± ÙˆØ§Ù„ØªØ¬Ù…ÙŠØ¹ (F9)");
 			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
 
 			menu.Items.Add(itemReceipt);
@@ -4886,21 +4888,21 @@ namespace ChickenDist.Forms
 
 			if (printID == 0)
 			{
-				MessageBox.Show("لا توجد فواتير مسجلة لمعاينتها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙˆØ§ØªÙŠØ± Ù…Ø³Ø¬Ù„Ø© Ù„Ù…Ø¹Ø§ÙŠÙ†ØªÙ‡Ø§!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
 
 			var menu = new ContextMenuStrip();
-			var itemReceipt = new ToolStripMenuItem("🧾 معاينة ريسيت حراري (Receipt 80mm)");
+			var itemReceipt = new ToolStripMenuItem("ðŸ§¾ Ù…Ø¹Ø§ÙŠÙ†Ø© Ø±ÙŠØ³ÙŠØª Ø­Ø±Ø§Ø±ÙŠ (Receipt 80mm)");
 			itemReceipt.Click += (s2, e2) => new FrmPrintSale(printID, "Receipt", showPreview: true);
             
-			var itemA4 = new ToolStripMenuItem("📄 معاينة فاتورة ورق (A4 كامل)");
+			var itemA4 = new ToolStripMenuItem("ðŸ“„ Ù…Ø¹Ø§ÙŠÙ†Ø© ÙØ§ØªÙˆØ±Ø© ÙˆØ±Ù‚ (A4 ÙƒØ§Ù…Ù„)");
 			itemA4.Click += (s2, e2) => new FrmPrintSale(printID, "A4", showPreview: true);
 
-			var itemA5 = new ToolStripMenuItem("📑 معاينة فاتورة ورق (A5 نصف صفحة)");
+			var itemA5 = new ToolStripMenuItem("ðŸ“‘ Ù…Ø¹Ø§ÙŠÙ†Ø© ÙØ§ØªÙˆØ±Ø© ÙˆØ±Ù‚ (A5 Ù†ØµÙ ØµÙØ­Ø©)");
 			itemA5.Click += (s2, e2) => new FrmPrintSale(printID, "A5", showPreview: true);
 
-			var itemPrep = new ToolStripMenuItem("📋 معاينة إذن التحضير والتجميع (F9)");
+			var itemPrep = new ToolStripMenuItem("ðŸ“‹ Ù…Ø¹Ø§ÙŠÙ†Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ± ÙˆØ§Ù„ØªØ¬Ù…ÙŠØ¹ (F9)");
 			itemPrep.Click += (s2, e2) => PrintPreparationSlip();
 
 			menu.Items.Add(itemReceipt);
@@ -4920,17 +4922,17 @@ namespace ChickenDist.Forms
 		}
 
 		/// <summary>
-		/// طباعة إذن تحضير وتجميع بضاعة من المخزن للأصناف الموجودة في الفاتورة الحالية
+		/// Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† ØªØ­Ø¶ÙŠØ± ÙˆØªØ¬Ù…ÙŠØ¹ Ø¨Ø¶Ø§Ø¹Ø© Ù…Ù† Ø§Ù„Ù…Ø®Ø²Ù† Ù„Ù„Ø£ØµÙ†Ø§Ù Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©
 		/// </summary>
 		public void PrintPreparationSlip()
 		{
 			if (_items == null || _items.Count == 0)
 			{
-				MessageBox.Show("لا توجد أصناف في الفاتورة لطباعة إذن التحضير!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£ØµÙ†Ø§Ù ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ù„Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ±!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
 
-			var res = MessageBox.Show("هل تريد طباعة إذن التحضير على طابعة ريسيت حراري (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع طباعة إذن التحضير", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+			var res = MessageBox.Show("Ù‡Ù„ ØªØ±ÙŠØ¯ Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ± Ø¹Ù„Ù‰ Ø·Ø§Ø¨Ø¹Ø© Ø±ÙŠØ³ÙŠØª Ø­Ø±Ø§Ø±ÙŠ (80mm)ØŸ\nØ§Ø¶ØºØ· (Yes) Ù„Ù„Ù€ Receipt Ø£Ùˆ (No) Ù„Ù„Ù€ A4/A5.", "Ø§Ø®ØªÙŠØ§Ø± Ù†ÙˆØ¹ Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ±", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 			if (res == DialogResult.Cancel) return;
 
 			bool isReceipt = (res == DialogResult.Yes);
@@ -4959,14 +4961,14 @@ namespace ChickenDist.Forms
 				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 			}
 
-			string whName = cboWarehouse != null && cboWarehouse.SelectedItem != null ? cboWarehouse.Text : "المخزن الرئيسي";
-			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.Text : (cboClient?.Text?.Trim() ?? "عميل نقدي");
-			if (string.IsNullOrEmpty(clientName) || clientName.StartsWith("--")) clientName = "عميل نقدي";
+			string whName = cboWarehouse != null && cboWarehouse.SelectedItem != null ? cboWarehouse.Text : "Ø§Ù„Ù…Ø®Ø²Ù† Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ";
+			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.Text : (cboClient?.Text?.Trim() ?? "Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ");
+			if (string.IsNullOrEmpty(clientName) || clientName.StartsWith("--")) clientName = "Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ";
 			string empName = Session.EmpName;
-			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "الرحمة جروب لتجارة الأجهزة الكهربائية والأدوات المنزلية";
+			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "Ø§Ù„Ø±Ø­Ù…Ø© Ø¬Ø±ÙˆØ¨ Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø£Ø¬Ù‡Ø²Ø© Ø§Ù„ÙƒÙ‡Ø±Ø¨Ø§Ø¦ÙŠØ© ÙˆØ§Ù„Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ù…Ù†Ø²Ù„ÙŠØ©";
 			string companyPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
 			string companyAddress = !string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) ? AppConfig.CompanyAddress : "";
-			string invoiceCode = _editSaleID > 0 ? $"فاتورة رقم {_editSaleID}" : "فاتورة مبيعات جديدة";
+			string invoiceCode = _editSaleID > 0 ? $"ÙØ§ØªÙˆØ±Ø© Ø±Ù‚Ù… {_editSaleID}" : "ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª Ø¬Ø¯ÙŠØ¯Ø©";
 			string saleTypeStr = FormatInvoiceTypeArabic(_invoiceType);
 
 			Image logoImg = null;
@@ -5019,7 +5021,7 @@ namespace ChickenDist.Forms
 				int right = e.MarginBounds.Right;
 				int width = e.MarginBounds.Width;
 
-				// ── 1. ترويسة الصفحة الأولى ──
+				// â”€â”€ 1. ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø£ÙˆÙ„Ù‰ â”€â”€
 				if (itemIdx == 0)
 				{
 					if (logoImg != null && !isReceipt)
@@ -5036,13 +5038,13 @@ namespace ChickenDist.Forms
 
 					if (!string.IsNullOrWhiteSpace(companyPhone))
 					{
-						string phStr = $"تليفون: {companyPhone}" + (!string.IsNullOrWhiteSpace(companyAddress) ? $" | {companyAddress}" : "");
+						string phStr = $"ØªÙ„ÙŠÙÙˆÙ†: {companyPhone}" + (!string.IsNullOrWhiteSpace(companyAddress) ? $" | {companyAddress}" : "");
 						SizeF szPh = g.MeasureString(phStr, fontBody);
 						g.DrawString(phStr, fontBody, Brushes.DarkGray, left + (width - szPh.Width) / 2, y);
 						y += (int)szPh.Height + 4;
 					}
 
-					string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
+					string tit = "ðŸ“‹ Ø¥Ø°Ù† ØªØ­Ø¶ÙŠØ± ÙˆØªØ¬Ù…ÙŠØ¹ Ø¨Ø¶Ø§Ø¹Ø© (Ù…Ù† Ø§Ù„Ù…Ø®Ø²Ù†)";
 					SizeF szT  = g.MeasureString(tit, fontTitle);
 					g.DrawString(tit, fontTitle, Brushes.Black, left + (width - szT.Width) / 2, y);
 					y += (int)szT.Height + (isReceipt ? 4 : (isA4Page ? 8 : 6));
@@ -5054,33 +5056,33 @@ namespace ChickenDist.Forms
 					if (!isReceipt)
 					{
 						int infoH = isA4Page ? 24 : 20;
-						g.DrawString($"المخزن المصدر: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"المخزن المصدر: {whName}", fontHeader).Width, y);
-						g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
+						g.DrawString($"Ø§Ù„Ù…Ø®Ø²Ù† Ø§Ù„Ù…ØµØ¯Ø±: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"Ø§Ù„Ù…Ø®Ø²Ù† Ø§Ù„Ù…ØµØ¯Ø±: {whName}", fontHeader).Width, y);
+						g.DrawString($"Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„ÙˆÙ‚Øª: {dateStr}", fontBody, Brushes.Black, left, y);
 						y += infoH;
 
-						g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
-						g.DrawString($"المرجع / الفاتورة: {invoiceCode} ({saleTypeStr})", fontBody, Brushes.Black, left, y);
+						g.DrawString($"Ø§Ù„Ø¹Ù…ÙŠÙ„: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"Ø§Ù„Ø¹Ù…ÙŠÙ„: {clientName}", fontHeader).Width, y);
+						g.DrawString($"Ø§Ù„Ù…Ø±Ø¬Ø¹ / Ø§Ù„ÙØ§ØªÙˆØ±Ø©: {invoiceCode} ({saleTypeStr})", fontBody, Brushes.Black, left, y);
 						y += infoH;
 
-						g.DrawString($"الموظف المسؤول: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف المسؤول: {empName}", fontBody).Width, y);
-						g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, left, y);
+						g.DrawString($"Ø§Ù„Ù…ÙˆØ¸Ù Ø§Ù„Ù…Ø³Ø¤ÙˆÙ„: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"Ø§Ù„Ù…ÙˆØ¸Ù Ø§Ù„Ù…Ø³Ø¤ÙˆÙ„: {empName}", fontBody).Width, y);
+						g.DrawString($"Ø¹Ø¯Ø¯ Ø§Ù„Ø£ØµÙ†Ø§Ù: {_items.Count}", fontBody, Brushes.Black, left, y);
 						y += infoH + 2;
 
 						if (!string.IsNullOrWhiteSpace(txtNotes.Text))
 						{
-							g.DrawString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, right - g.MeasureString($"ملاحظات: {txtNotes.Text.Trim()}", fontBody).Width, y);
+							g.DrawString($"Ù…Ù„Ø§Ø­Ø¸Ø§Øª: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, right - g.MeasureString($"Ù…Ù„Ø§Ø­Ø¸Ø§Øª: {txtNotes.Text.Trim()}", fontBody).Width, y);
 							y += infoH;
 						}
 					}
 					else
 					{
-						g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, left, y); y += 18;
-						g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-						g.DrawString($"المرجع: {invoiceCode} | الموظف: {empName}", fontBody, Brushes.Black, left, y); y += 18;
-						g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, left, y); y += 18;
+						g.DrawString($"Ø§Ù„Ù…Ø®Ø²Ù†: {whName}",   fontHeader, Brushes.Black, left, y); y += 18;
+						g.DrawString($"Ø§Ù„Ø¹Ù…ÙŠÙ„: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
+						g.DrawString($"Ø§Ù„Ù…Ø±Ø¬Ø¹: {invoiceCode} | Ø§Ù„Ù…ÙˆØ¸Ù: {empName}", fontBody, Brushes.Black, left, y); y += 18;
+						g.DrawString($"Ø§Ù„ØªØ§Ø±ÙŠØ®: {dateStr}", fontBody,   Brushes.Black, left, y); y += 18;
 						if (!string.IsNullOrWhiteSpace(txtNotes.Text))
 						{
-							g.DrawString($"ملاحظة: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, left, y); y += 18;
+							g.DrawString($"Ù…Ù„Ø§Ø­Ø¸Ø©: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, left, y); y += 18;
 						}
 					}
 
@@ -5088,7 +5090,7 @@ namespace ChickenDist.Forms
 					y += (isReceipt ? 4 : (isA4Page ? 10 : 8));
 				}
 
-				// ── 2. إعداد أبعاد أعمدة الجدول الشبكي ──
+				// â”€â”€ 2. Ø¥Ø¹Ø¯Ø§Ø¯ Ø£Ø¨Ø¹Ø§Ø¯ Ø£Ø¹Ù…Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø´Ø¨ÙƒÙŠ â”€â”€
 				int colNumW  = isReceipt ? 18 : (int)(width * 0.05);
 				int colCodeW = isReceipt ? 35 : (int)(width * 0.13);
 				int colLocW  = isReceipt ? 45 : (int)(width * 0.20);
@@ -5100,7 +5102,7 @@ namespace ChickenDist.Forms
 				var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
 				var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
 
-				// رأس الجدول
+				// Ø±Ø£Ø³ Ø§Ù„Ø¬Ø¯ÙˆÙ„
 				if (!isReceipt)
 				{
 					g.FillRectangle(brushHeaderBg, left, y, width, rowH);
@@ -5116,42 +5118,42 @@ namespace ChickenDist.Forms
 					// Code
 					curX -= colCodeW;
 					g.DrawRectangle(penGrid, curX, y, colCodeW, rowH);
-					g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
+					g.DrawString("Ø§Ù„ÙƒÙˆØ¯", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
 
 					// Product
 					curX -= colProdW;
 					g.DrawRectangle(penGrid, curX, y, colProdW, rowH);
-					g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, rowH), sfCenter);
+					g.DrawString("Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, rowH), sfCenter);
 
 					// Qty
 					curX -= colQtyW;
 					g.DrawRectangle(penGrid, curX, y, colQtyW, rowH);
-					g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
+					g.DrawString("Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
 
 					// Unit
 					curX -= colUnitW;
 					g.DrawRectangle(penGrid, curX, y, colUnitW, rowH);
-					g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
+					g.DrawString("Ø§Ù„ÙˆØ­Ø¯Ø©", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
 
 					// Shelf Location
 					curX -= colLocW;
 					g.DrawRectangle(penGrid, curX, y, colLocW, rowH);
-					g.DrawString("مكان التخزين / الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, rowH), sfCenter);
+					g.DrawString("Ù…ÙƒØ§Ù† Ø§Ù„ØªØ®Ø²ÙŠÙ† / Ø§Ù„Ø±Ù", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, rowH), sfCenter);
 
 					y += rowH;
 				}
 				else
 				{
-					g.DrawString("الصنف",  fontHeader, Brushes.Black, right - colNumW - colProdW, y);
-					g.DrawString("الكمية",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
-					g.DrawString("الوحدة",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW, y);
-					g.DrawString("الرف",   fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW - colLocW, y);
+					g.DrawString("Ø§Ù„ØµÙ†Ù",  fontHeader, Brushes.Black, right - colNumW - colProdW, y);
+					g.DrawString("Ø§Ù„ÙƒÙ…ÙŠØ©",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
+					g.DrawString("Ø§Ù„ÙˆØ­Ø¯Ø©",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW, y);
+					g.DrawString("Ø§Ù„Ø±Ù",   fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW - colLocW, y);
 					y += rowH;
 					g.DrawLine(penGrid, left, y, right, y);
 					y += 4;
 				}
 
-				// ── 3. سطور أصناف التحضير ──
+				// â”€â”€ 3. Ø³Ø·ÙˆØ± Ø£ØµÙ†Ø§Ù Ø§Ù„ØªØ­Ø¶ÙŠØ± â”€â”€
 				while (itemIdx < _items.Count)
 				{
 					var item  = _items[itemIdx];
@@ -5163,7 +5165,7 @@ namespace ChickenDist.Forms
 					}
 					if (string.IsNullOrWhiteSpace(loc)) loc = "---";
 
-					string unit = !string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "قطعة";
+					string unit = !string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "Ù‚Ø·Ø¹Ø©";
 					string code = !string.IsNullOrWhiteSpace(item.ProductCode) ? item.ProductCode : (!string.IsNullOrWhiteSpace(item.PartNumber) ? item.PartNumber : item.ProductID.ToString());
 					string qty  = item.Quantity % 1 == 0 ? item.Quantity.ToString("N0") : item.Quantity.ToString("N2");
 					totalQty += item.Quantity;
@@ -5229,13 +5231,13 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				// ── 4. الإجماليات والتوقيعات ──
+				// â”€â”€ 4. Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ§Øª ÙˆØ§Ù„ØªÙˆÙ‚ÙŠØ¹Ø§Øª â”€â”€
 				if (!isReceipt)
 				{
 					g.FillRectangle(brushTotBg, left, y, width, rowH);
 					g.DrawRectangle(penDark, left, y, width, rowH);
 
-					string totStr = $"إجمالي الأصناف: {_items.Count} صنف  |  إجمالي كميات التحضير: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
+					string totStr = $"Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£ØµÙ†Ø§Ù: {_items.Count} ØµÙ†Ù  |  Ø¥Ø¬Ù…Ø§Ù„ÙŠ ÙƒÙ…ÙŠØ§Øª Ø§Ù„ØªØ­Ø¶ÙŠØ±: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
 					g.DrawString(totStr, fontHeader, Brushes.Black, new RectangleF(left, y, width, rowH), sfCenter);
 					y += rowH + 15;
 				}
@@ -5244,17 +5246,17 @@ namespace ChickenDist.Forms
 					y += 6;
 					g.DrawLine(penDark, left, y, right, y);
 					y += 6;
-					string totStr = $"إجمالي الأصناف: {_items.Count}  |  إجمالي الكميات: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
+					string totStr = $"Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£ØµÙ†Ø§Ù: {_items.Count}  |  Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙƒÙ…ÙŠØ§Øª: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
 					g.DrawString(totStr, fontHeader, Brushes.Black, left, y);
 					y += 18;
 				}
 
-				// توقيعات المسؤول والمستلم
+				// ØªÙˆÙ‚ÙŠØ¹Ø§Øª Ø§Ù„Ù…Ø³Ø¤ÙˆÙ„ ÙˆØ§Ù„Ù…Ø³ØªÙ„Ù…
 				y += (isReceipt ? 6 : 14);
 				g.DrawLine(penDark, left, y, right, y);
 				y += (isReceipt ? 6 : 12);
-				string sig1 = "مسؤول التحضير بالمخزن: ..................................";
-				string sig2 = "توقيع المستلم / السائق: ..................................";
+				string sig1 = "Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„ØªØ­Ø¶ÙŠØ± Ø¨Ø§Ù„Ù…Ø®Ø²Ù†: ..................................";
+				string sig2 = "ØªÙˆÙ‚ÙŠØ¹ Ø§Ù„Ù…Ø³ØªÙ„Ù… / Ø§Ù„Ø³Ø§Ø¦Ù‚: ..................................";
 				if (!isReceipt)
 				{
 					g.DrawString(sig1, fontHeader, Brushes.Black, right - g.MeasureString(sig1, fontHeader).Width, y);
@@ -5276,7 +5278,7 @@ namespace ChickenDist.Forms
 			catch (Exception ex)
 			{
 				AppLogger.Error("FrmSale.PrintPreparationSlip", ex);
-				MessageBox.Show("خطأ في طباعة إذن التحضير: " + ex.Message, "خطأ في الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("Ø®Ø·Ø£ ÙÙŠ Ø·Ø¨Ø§Ø¹Ø© Ø¥Ø°Ù† Ø§Ù„ØªØ­Ø¶ÙŠØ±: " + ex.Message, "Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
@@ -5284,13 +5286,13 @@ namespace ChickenDist.Forms
 		{
 			switch (type)
 			{
-				case "Credit": return "آجل";
-				case "Cash": return "نقدي";
-				case "Visa": return "فيزا";
-				case "Mixed": return "مختلط (كاش + فيزا)";
-				case "DriverLoad": return "تحميل مندوب";
-				case "Installment": return "تقسيط";
-				default: return type ?? "نقدي";
+				case "Credit": return "Ø¢Ø¬Ù„";
+				case "Cash": return "Ù†Ù‚Ø¯ÙŠ";
+				case "Visa": return "ÙÙŠØ²Ø§";
+				case "Mixed": return "Ù…Ø®ØªÙ„Ø· (ÙƒØ§Ø´ + ÙÙŠØ²Ø§)";
+				case "DriverLoad": return "ØªØ­Ù…ÙŠÙ„ Ù…Ù†Ø¯ÙˆØ¨";
+				case "Installment": return "ØªÙ‚Ø³ÙŠØ·";
+				default: return type ?? "Ù†Ù‚Ø¯ÙŠ";
 			}
 		}
 
@@ -5298,14 +5300,14 @@ namespace ChickenDist.Forms
 		{
 			if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
 			{
-				MessageBox.Show("❌ خطأ: يجب اختيار عميل مسجل أولاً لتسجيل عملية التوريد لحسابه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				MessageBox.Show("âŒ Ø®Ø·Ø£: ÙŠØ¬Ø¨ Ø§Ø®ØªÙŠØ§Ø± Ø¹Ù…ÙŠÙ„ Ù…Ø³Ø¬Ù„ Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØ³Ø¬ÙŠÙ„ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªÙˆØ±ÙŠØ¯ Ù„Ø­Ø³Ø§Ø¨Ù‡.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			Form frm = new Form
 			{
 				Width = 400,
 				Height = 310,
-				Text = "توريد نقدية",
+				Text = "ØªÙˆØ±ÙŠØ¯ Ù†Ù‚Ø¯ÙŠØ©",
 				StartPosition = FormStartPosition.CenterParent,
 				RightToLeft = RightToLeft.Yes,
 				RightToLeftLayout = true,
@@ -5316,7 +5318,7 @@ namespace ChickenDist.Forms
 			{
 				Left = 20,
 				Top = 20,
-				Text = "المبلغ المورد:",
+				Text = "Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…ÙˆØ±Ø¯:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain
 			};
@@ -5332,7 +5334,7 @@ namespace ChickenDist.Forms
 			{
 				Left = 20,
 				Top = 80,
-				Text = "ملاحظات:",
+				Text = "Ù…Ù„Ø§Ø­Ø¸Ø§Øª:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain
 			};
@@ -5348,7 +5350,7 @@ namespace ChickenDist.Forms
 			{
 				Left = 20,
 				Top = 140,
-				Text = "حساب التوريد:",
+				Text = "Ø­Ø³Ø§Ø¨ Ø§Ù„ØªÙˆØ±ÙŠØ¯:",
 				AutoSize = true,
 				ForeColor = Theme.TextMain
 			};
@@ -5421,7 +5423,7 @@ namespace ChickenDist.Forms
 						int fallbackIdx = 0;
 						for (int i = 0; i < cboSafe.Items.Count; i++)
 						{
-							if (cboSafe.Items[i] is ComboItem ci && ci.Text.Contains("درج تلقائي"))
+							if (cboSafe.Items[i] is ComboItem ci && ci.Text.Contains("Ø¯Ø±Ø¬ ØªÙ„Ù‚Ø§Ø¦ÙŠ"))
 							{
 								fallbackIdx = i;
 								break;
@@ -5433,7 +5435,7 @@ namespace ChickenDist.Forms
 			}
 			catch { }
 
-			Button button = Theme.MakeButton("✅ حفظ", 120, 215, 100, 35, Theme.Accent);
+			Button button = Theme.MakeButton("âœ… Ø­ÙØ¸", 120, 215, 100, 35, Theme.Accent);
 			button.Click += delegate
 			{
 				frm.DialogResult = DialogResult.OK;
@@ -5449,7 +5451,7 @@ namespace ChickenDist.Forms
 				}
 				AccountDAL.SaveCashReceipt(comboItem.ID, result, dtpDate.Value, textBox2.Text, targetSafeID);
 				UpdateClientBalanceLabel(comboItem.ID);
-				MessageBox.Show("✅ تم تسجيل التوريد في الخزنة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+				MessageBox.Show("âœ… ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„ØªÙˆØ±ÙŠØ¯ ÙÙŠ Ø§Ù„Ø®Ø²Ù†Ø© Ø¨Ù†Ø¬Ø§Ø­!", "ØªÙ…", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 			}
 		}
 
@@ -5477,11 +5479,11 @@ namespace ChickenDist.Forms
 			}
 			if (saleID == 0)
 			{
-				MessageBox.Show("لا توجد فاتورة محفوظة لإرسالها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØ§ØªÙˆØ±Ø© Ù…Ø­ÙÙˆØ¸Ø© Ù„Ø¥Ø±Ø³Ø§Ù„Ù‡Ø§!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
 
-			// جلب بيانات الفاتورة
+			// Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 			var dt = DbHelper.Query(@"
 				SELECT s.SaleCode, s.SaleDate, s.SaleType, s.TotalAmount,
 				       COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
@@ -5489,13 +5491,13 @@ namespace ChickenDist.Forms
 				       s.CashPaid,
 				       COALESCE(s.CratesOut, 0) AS CratesOut,
 				       COALESCE(s.CratesIn, 0) AS CratesIn,
-				       COALESCE(c.ClientName, N'عميل نقدي') AS ClientName,
+				       COALESCE(c.ClientName, N'Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ') AS ClientName,
 				       COALESCE(c.Phone, '') AS ClientPhone
 				FROM Sales s
 				LEFT JOIN Clients c ON s.ClientID = c.ClientID
 				WHERE s.SaleID = @id", DbHelper.P("@id", saleID));
 
-			if (dt.Rows.Count == 0) { MessageBox.Show("لم يتم العثور على الفاتورة!"); return; }
+			if (dt.Rows.Count == 0) { MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø©!"); return; }
 			var saleRow = dt.Rows[0];
 			string phone = saleRow["ClientPhone"].ToString().Trim();
 
@@ -5503,7 +5505,7 @@ namespace ChickenDist.Forms
 			{
 				using (var frmInput = new Form())
 				{
-					frmInput.Text = "إدخال رقم الهاتف";
+					frmInput.Text = "Ø¥Ø¯Ø®Ø§Ù„ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ";
 					frmInput.Size = new Size(350, 150);
 					frmInput.StartPosition = FormStartPosition.CenterParent;
 					frmInput.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -5514,9 +5516,9 @@ namespace ChickenDist.Forms
 					frmInput.BackColor = Theme.BgMain;
 					frmInput.Font = Theme.FontMain;
 
-					var lbl = new Label { Text = "أدخل رقم هاتف العميل للإرسال:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
+					var lbl = new Label { Text = "Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ù‡Ø§ØªÙ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ù„Ù„Ø¥Ø±Ø³Ø§Ù„:", Location = new Point(20, 20), AutoSize = true, ForeColor = Theme.TextMain };
 					var txt = new TextBox { Location = new Point(20, 45), Width = 290, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-					var btnOk = Theme.MakeButton("✅ موافق", 190, 80, 100, 30, Theme.Success);
+					var btnOk = Theme.MakeButton("âœ… Ù…ÙˆØ§ÙÙ‚", 190, 80, 100, 30, Theme.Success);
 					btnOk.Click += (s, ev) => { phone = txt.Text.Trim(); frmInput.DialogResult = DialogResult.OK; frmInput.Close(); };
 					
 					frmInput.Controls.AddRange(new Control[] { lbl, txt, btnOk });
@@ -5528,29 +5530,29 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// جلب أصناف الفاتورة
+			// Ø¬Ù„Ø¨ Ø£ØµÙ†Ø§Ù Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 			var items = SaleDAL.GetItems(saleID);
 
-			// جلب البيانات المالية للعميل
+			// Ø¬Ù„Ø¨ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ© Ù„Ù„Ø¹Ù…ÙŠÙ„
 			decimal prevBalance = 0m;
 			decimal lastPaymentAmt = 0m;
 			DateTime lastPaymentDate = DateTime.MinValue;
 			decimal todayPayments = 0m;
 			decimal todayReturns = 0m;
-			decimal actualCurrentBalance = 0m; // الرصيد الفعلي الحالي من قاعدة البيانات
+			decimal actualCurrentBalance = 0m; // Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„ÙØ¹Ù„ÙŠ Ø§Ù„Ø­Ø§Ù„ÙŠ Ù…Ù† Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
 
 			if (saleRow["ClientID"] != DBNull.Value)
 			{
 				int clientID = Convert.ToInt32(saleRow["ClientID"]);
 				DateTime saleDate = Convert.ToDateTime(saleRow["SaleDate"]);
 
-				// الرصيد السابق قبل هذه الفاتورة
+				// Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø³Ø§Ø¨Ù‚ Ù‚Ø¨Ù„ Ù‡Ø°Ù‡ Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 				prevBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
 
-				// الرصيد الفعلي الحالي (يشمل كل الحركات بما فيها التوريدات)
+				// Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„ÙØ¹Ù„ÙŠ Ø§Ù„Ø­Ø§Ù„ÙŠ (ÙŠØ´Ù…Ù„ ÙƒÙ„ Ø§Ù„Ø­Ø±ÙƒØ§Øª Ø¨Ù…Ø§ ÙÙŠÙ‡Ø§ Ø§Ù„ØªÙˆØ±ÙŠØ¯Ø§Øª)
 				actualCurrentBalance = ClientDAL.GetClientBalance(clientID);
 
-				// آخر توريد (دفعة)
+				// Ø¢Ø®Ø± ØªÙˆØ±ÙŠØ¯ (Ø¯ÙØ¹Ø©)
 				var lastPayDt = DbHelper.Query(@"
 					SELECT TOP 1 Credit, TransDate 
 					FROM ClientTransactions 
@@ -5563,7 +5565,7 @@ namespace ChickenDist.Forms
 					lastPaymentDate = Convert.ToDateTime(lastPayDt.Rows[0]["TransDate"]);
 				}
 
-				// مجموع المدفوعات والمرتجع في تاريخ الفاتورة
+				// Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„Ù…Ø¯ÙÙˆØ¹Ø§Øª ÙˆØ§Ù„Ù…Ø±ØªØ¬Ø¹ ÙÙŠ ØªØ§Ø±ÙŠØ® Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 				int saleTransID = 0;
 				var dtTrans = DbHelper.Query(@"
 					SELECT TOP 1 TransID 
@@ -5596,21 +5598,21 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// استدعاء شاشة اختيار نموذج الفاتورة والمعاينة التفاعلية
+			// Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ Ø´Ø§Ø´Ø© Ø§Ø®ØªÙŠØ§Ø± Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„ÙØ§ØªÙˆØ±Ø© ÙˆØ§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠØ©
 			ShowWhatsAppTemplateModal(phone, saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, null);
 		}
 
 		private static string BuildWhatsAppTextDetailed(DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance)
 		{
 			var sb = new System.Text.StringBuilder();
-			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
-			sb.AppendLine($"📋 *فاتورة مبيعات رقم #{saleRow["SaleCode"]}*");
-			sb.AppendLine($"🏢 *{shopName}*");
-			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
-			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}");
-			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
-			sb.AppendLine($"💳 نوع البيع: {typeLabel}");
-			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "Ø§Ù„Ù…Ø¤Ø³Ø³Ø© ÙˆØ§Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø¹Ø§Ù…Ø©";
+			sb.AppendLine($"ðŸ“‹ *ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª Ø±Ù‚Ù… #{saleRow["SaleCode"]}*");
+			sb.AppendLine($"ðŸ¢ *{shopName}*");
+			sb.AppendLine($"ðŸ‘¤ Ø§Ù„Ø¹Ù…ÙŠÙ„: {saleRow["ClientName"]}");
+			sb.AppendLine($"ðŸ“… Ø§Ù„ØªØ§Ø±ÙŠØ®: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}");
+			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "Ø¢Ø¬Ù„" : saleRow["SaleType"].ToString() == "Cash" ? "Ù†Ù‚Ø¯ÙŠ" : "ØªØ­Ù…ÙŠÙ„ Ù…Ù†Ø¯ÙˆØ¨";
+			sb.AppendLine($"ðŸ’³ Ù†ÙˆØ¹ Ø§Ù„Ø¨ÙŠØ¹: {typeLabel}");
+			sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
 
 			if (items != null)
 			{
@@ -5620,17 +5622,17 @@ namespace ChickenDist.Forms
 					decimal qty   = Convert.ToDecimal(r["Quantity"]);
 					decimal price = Convert.ToDecimal(r["UnitPrice"]);
 					decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-					sb.AppendLine($"🐥 {name}");
-					sb.AppendLine($"▪ الكمية : {qty:0.##}");
-					sb.AppendLine($"▪ السعر : {price:N2} ج.م");
-					sb.AppendLine($"▪ الإجمالي : {tot:N2} ج.م");
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
+					sb.AppendLine($"ðŸ¥ {name}");
+					sb.AppendLine($"â–ª Ø§Ù„ÙƒÙ…ÙŠØ© : {qty:0.##}");
+					sb.AppendLine($"â–ª Ø§Ù„Ø³Ø¹Ø± : {price:N2} Ø¬.Ù…");
+					sb.AppendLine($"â–ª Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ : {tot:N2} Ø¬.Ù…");
+					sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
 				}
 			}
 
 			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
-			sb.AppendLine($"💰 *صافي الفاتورة: {totalAmount:N2} ج.م*");
-			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			sb.AppendLine($"ðŸ’° *ØµØ§ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©: {totalAmount:N2} Ø¬.Ù…*");
+			sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
 
 			if (AppConfig.EnableCratesTracking)
 			{
@@ -5638,10 +5640,10 @@ namespace ChickenDist.Forms
 				int cratesInValMsg = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 				if (cratesOutValMsg > 0 || cratesInValMsg > 0)
 				{
-					sb.AppendLine("📦 *حركة الفوارغ*");
-					if (cratesOutValMsg > 0) sb.AppendLine($"▪ فوارغ صادرة : {cratesOutValMsg} فارغ");
-					if (cratesInValMsg > 0) sb.AppendLine($"▪ فوارغ واردة : {cratesInValMsg} فارغ");
-					sb.AppendLine("━━━━━━━━━━━━━━━━");
+					sb.AppendLine("ðŸ“¦ *Ø­Ø±ÙƒØ© Ø§Ù„ÙÙˆØ§Ø±Øº*");
+					if (cratesOutValMsg > 0) sb.AppendLine($"â–ª ÙÙˆØ§Ø±Øº ØµØ§Ø¯Ø±Ø© : {cratesOutValMsg} ÙØ§Ø±Øº");
+					if (cratesInValMsg > 0) sb.AppendLine($"â–ª ÙÙˆØ§Ø±Øº ÙˆØ§Ø±Ø¯Ø© : {cratesInValMsg} ÙØ§Ø±Øº");
+					sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
 				}
 			}
 
@@ -5655,56 +5657,56 @@ namespace ChickenDist.Forms
 				decimal totalDue = prevBalance + (isCredit ? totalAmount : remainingFromInvoice);
 				decimal currentDue = actualCurrentBalance;
 
-				sb.AppendLine("📊 *الوضع المالي للحساب*");
-				sb.AppendLine($"▪ الرصيد السابق : {prevBalance:N2} ج.م");
+				sb.AppendLine("ðŸ“Š *Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù…Ø§Ù„ÙŠ Ù„Ù„Ø­Ø³Ø§Ø¨*");
+				sb.AppendLine($"â–ª Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø³Ø§Ø¨Ù‚ : {prevBalance:N2} Ø¬.Ù…");
 				if (isCredit)
 				{
-					sb.AppendLine($"▪ الفاتورة الحالية : {totalAmount:N2} ج.م");
-					sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
+					sb.AppendLine($"â–ª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© : {totalAmount:N2} Ø¬.Ù…");
+					sb.AppendLine($"â–ª Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚ : {totalDue:N2} Ø¬.Ù…");
 				}
 				else
 				{
 					if (remainingFromInvoice > 0)
 					{
-						sb.AppendLine($"▪ متبقي الفاتورة الحالية : {remainingFromInvoice:N2} ج.م");
-						sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
+						sb.AppendLine($"â–ª Ù…ØªØ¨Ù‚ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© : {remainingFromInvoice:N2} Ø¬.Ù…");
+						sb.AppendLine($"â–ª Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚ : {totalDue:N2} Ø¬.Ù…");
 					}
 					else if (remainingFromInvoice < 0)
 					{
-						sb.AppendLine($"▪ زيادة الفاتورة الحالية : {-remainingFromInvoice:N2} ج.م");
-						sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
+						sb.AppendLine($"â–ª Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© : {-remainingFromInvoice:N2} Ø¬.Ù…");
+						sb.AppendLine($"â–ª Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚ : {totalDue:N2} Ø¬.Ù…");
 					}
 				}
-				sb.AppendLine($"▪ مسدد اليوم : {todayPayments:N2} ج.م");
+				sb.AppendLine($"â–ª Ù…Ø³Ø¯Ø¯ Ø§Ù„ÙŠÙˆÙ… : {todayPayments:N2} Ø¬.Ù…");
 				if (todayReturns > 0)
 				{
-					sb.AppendLine($"▪ مرتجع اليوم : {todayReturns:N2} ج.م");
+					sb.AppendLine($"â–ª Ù…Ø±ØªØ¬Ø¹ Ø§Ù„ÙŠÙˆÙ… : {todayReturns:N2} Ø¬.Ù…");
 				}
 				if (lastPaymentAmt > 0)
 				{
-					sb.AppendLine($"📝 آخر توريد سابق : {lastPaymentAmt:N2} ج.م ({lastPaymentDate:dd/MM/yyyy})");
+					sb.AppendLine($"ðŸ“ Ø¢Ø®Ø± ØªÙˆØ±ÙŠØ¯ Ø³Ø§Ø¨Ù‚ : {lastPaymentAmt:N2} Ø¬.Ù… ({lastPaymentDate:dd/MM/yyyy})");
 				}
 				int currentCratesDueMsg = ClientDAL.GetClientCratesBalance(clientIDVal);
-				sb.AppendLine($"▪ فوارغ العميل الحالية : {currentCratesDueMsg} فارغ");
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
-				sb.AppendLine($"🔴 *الرصيد الحالي المستحق: {currentDue:N2} ج.م*");
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
+				sb.AppendLine($"â–ª ÙÙˆØ§Ø±Øº Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„Ø­Ø§Ù„ÙŠØ© : {currentCratesDueMsg} ÙØ§Ø±Øº");
+				sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
+				sb.AppendLine($"ðŸ”´ *Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚: {currentDue:N2} Ø¬.Ù…*");
+				sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
 			}
 
-			sb.AppendLine("🙏 شكراً لتعاملكم معنا ✨");
+			sb.AppendLine("ðŸ™ Ø´ÙƒØ±Ø§Ù‹ Ù„ØªØ¹Ø§Ù…Ù„ÙƒÙ… Ù…Ø¹Ù†Ø§ âœ¨");
 			return sb.ToString();
 		}
 
 		private static string BuildWhatsAppTextSummary(DataRow saleRow, DataTable items, decimal actualCurrentBalance)
 		{
 			var sb = new System.Text.StringBuilder();
-			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
-			sb.AppendLine($"🧾 *فاتورة مبيعات مختصرة* #{saleRow["SaleCode"]}");
-			sb.AppendLine($"🏢 *{shopName}*");
-			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
-			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
-			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
-			sb.AppendLine($"💳 نوع البيع: {typeLabel}");
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "Ø§Ù„Ù…Ø¤Ø³Ø³Ø© ÙˆØ§Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø¹Ø§Ù…Ø©";
+			sb.AppendLine($"ðŸ§¾ *ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª Ù…Ø®ØªØµØ±Ø©* #{saleRow["SaleCode"]}");
+			sb.AppendLine($"ðŸ¢ *{shopName}*");
+			sb.AppendLine($"ðŸ‘¤ Ø§Ù„Ø¹Ù…ÙŠÙ„: {saleRow["ClientName"]}");
+			sb.AppendLine($"ðŸ“… Ø§Ù„ØªØ§Ø±ÙŠØ®: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "Ø¢Ø¬Ù„" : "Ù†Ù‚Ø¯ÙŠ";
+			sb.AppendLine($"ðŸ’³ Ù†ÙˆØ¹ Ø§Ù„Ø¨ÙŠØ¹: {typeLabel}");
 			sb.AppendLine("--------------------------------");
 
 			if (items != null)
@@ -5714,41 +5716,41 @@ namespace ChickenDist.Forms
 				{
 					totalQty += Convert.ToDecimal(r["Quantity"]);
 				}
-				sb.AppendLine($"📦 عدد الأصناف: {items.Rows.Count} | إجمالي الكمية: {totalQty:0.##}");
+				sb.AppendLine($"ðŸ“¦ Ø¹Ø¯Ø¯ Ø§Ù„Ø£ØµÙ†Ø§Ù: {items.Rows.Count} | Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙƒÙ…ÙŠØ©: {totalQty:0.##}");
 			}
 
 			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
-			sb.AppendLine($"💰 *إجمالي الفاتورة: {totalAmount:N2} ج.م*");
+			sb.AppendLine($"ðŸ’° *Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©: {totalAmount:N2} Ø¬.Ù…*");
 
 			if (saleRow["ClientID"] != DBNull.Value)
 			{
 				sb.AppendLine("--------------------------------");
-				sb.AppendLine($"🔴 *الرصيد النهائي المستحق: {actualCurrentBalance:N2} ج.م*");
+				sb.AppendLine($"ðŸ”´ *Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚: {actualCurrentBalance:N2} Ø¬.Ù…*");
 			}
 
-			sb.AppendLine("🙏 شكراً لتعاملكم معنا ✨");
+			sb.AppendLine("ðŸ™ Ø´ÙƒØ±Ø§Ù‹ Ù„ØªØ¹Ø§Ù…Ù„ÙƒÙ… Ù…Ø¹Ù†Ø§ âœ¨");
 			return sb.ToString();
 		}
 
 		private static string BuildWhatsAppTextFinancial(DataRow saleRow, DataTable items, decimal prevBalance, decimal actualCurrentBalance)
 		{
 			var sb = new System.Text.StringBuilder();
-			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
-			sb.AppendLine($"💳 *إشعار فاتورة وكشف حساب عميل*");
-			sb.AppendLine($"🏢 *{shopName}*");
-			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
-			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "Ø§Ù„Ù…Ø¤Ø³Ø³Ø© ÙˆØ§Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø¹Ø§Ù…Ø©";
+			sb.AppendLine($"ðŸ’³ *Ø¥Ø´Ø¹Ø§Ø± ÙØ§ØªÙˆØ±Ø© ÙˆÙƒØ´Ù Ø­Ø³Ø§Ø¨ Ø¹Ù…ÙŠÙ„*");
+			sb.AppendLine($"ðŸ¢ *{shopName}*");
+			sb.AppendLine($"ðŸ‘¤ Ø§Ù„Ø¹Ù…ÙŠÙ„: {saleRow["ClientName"]}");
+			sb.AppendLine($"ðŸ“… Ø§Ù„ØªØ§Ø±ÙŠØ®: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}");
 			sb.AppendLine("--------------------------------");
-			sb.AppendLine($"🏷️ الفاتورة رقم: #{saleRow["SaleCode"]}");
+			sb.AppendLine($"ðŸ·ï¸ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø±Ù‚Ù…: #{saleRow["SaleCode"]}");
 
 			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
 			decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? totalAmount : 0m);
 
-			sb.AppendLine($"💰 قيمة الفاتورة الحالية: {totalAmount:N2} ج.م");
-			sb.AppendLine($"💵 المسدد نقداً: {cashPaid:N2} ج.م");
-			sb.AppendLine($"📜 الرصيد السابق قبل الفاتورة: {prevBalance:N2} ج.م");
+			sb.AppendLine($"ðŸ’° Ù‚ÙŠÙ…Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©: {totalAmount:N2} Ø¬.Ù…");
+			sb.AppendLine($"ðŸ’µ Ø§Ù„Ù…Ø³Ø¯Ø¯ Ù†Ù‚Ø¯Ø§Ù‹: {cashPaid:N2} Ø¬.Ù…");
+			sb.AppendLine($"ðŸ“œ Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø³Ø§Ø¨Ù‚ Ù‚Ø¨Ù„ Ø§Ù„ÙØ§ØªÙˆØ±Ø©: {prevBalance:N2} Ø¬.Ù…");
 			sb.AppendLine("--------------------------------");
-			sb.AppendLine($"✨ *صافي رصيد الحساب المالي المستحق: {actualCurrentBalance:N2} ج.م*");
+			sb.AppendLine($"âœ¨ *ØµØ§ÙÙŠ Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚: {actualCurrentBalance:N2} Ø¬.Ù…*");
 
 			if (saleRow["ClientID"] != DBNull.Value)
 			{
@@ -5756,13 +5758,13 @@ namespace ChickenDist.Forms
 				int cratesDue = ClientDAL.GetClientCratesBalance(clientIDVal);
 				if (cratesDue != 0)
 				{
-					sb.AppendLine($"📦 رصيد الفوارغ المستحق: {cratesDue} فارغ");
+					sb.AppendLine($"ðŸ“¦ Ø±ØµÙŠØ¯ Ø§Ù„ÙÙˆØ§Ø±Øº Ø§Ù„Ù…Ø³ØªØ­Ù‚: {cratesDue} ÙØ§Ø±Øº");
 				}
 			}
 
 			if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
 			{
-				sb.AppendLine($"📱 للتواصل والاستفسار: {AppConfig.CompanyPhone}");
+				sb.AppendLine($"ðŸ“± Ù„Ù„ØªÙˆØ§ØµÙ„ ÙˆØ§Ù„Ø§Ø³ØªÙØ³Ø§Ø±: {AppConfig.CompanyPhone}");
 			}
 			return sb.ToString();
 		}
@@ -5771,7 +5773,7 @@ namespace ChickenDist.Forms
 		{
 			var dlg = new Form
 			{
-				Text = "📱 معاينة وإرسال فاتورة مبيعات عبر واتساب",
+				Text = "ðŸ“± Ù…Ø¹Ø§ÙŠÙ†Ø© ÙˆØ¥Ø±Ø³Ø§Ù„ ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª Ø¹Ø¨Ø± ÙˆØ§ØªØ³Ø§Ø¨",
 				Size = new Size(680, 700),
 				StartPosition = FormStartPosition.CenterParent,
 				FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -5784,7 +5786,7 @@ namespace ChickenDist.Forms
 			};
 
 			var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
-			var lblTpl = new Label { Text = "اختر نموذج رسالة الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
+			var lblTpl = new Label { Text = "Ø§Ø®ØªØ± Ù†Ù…ÙˆØ°Ø¬ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø©:", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
 
 			var cboTpl = new ComboBox
 			{
@@ -5797,14 +5799,14 @@ namespace ChickenDist.Forms
 			};
 			cboTpl.Items.AddRange(new object[]
 			{
-				"🖼️ كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
-				"🖼️ كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
-				"🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
-				"🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
-				"🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
-				"💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
-				"💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-				"💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
+				"ðŸ–¼ï¸ ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„ÙƒÙ„Ø§Ø³ÙŠÙƒÙŠ Ø§Ù„Ù…Ù„ÙƒÙŠ (Royal Navy Card)",
+				"ðŸ–¼ï¸ ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…ÙˆØ¯Ø±Ù† Ø§Ù„ÙØ­Ù…ÙŠ (Modern Charcoal Card)",
+				"ðŸ–¼ï¸ ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø´Ø¨ÙƒÙŠ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ (Commercial Grid Card)",
+				"ðŸ–¼ï¸ ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø²Ù…Ø±Ø¯ÙŠ Ø§Ù„Ø£Ù†ÙŠÙ‚ (Emerald Green Card)",
+				"ðŸ–¼ï¸ ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø°Ù‡Ø¨ÙŠ Ù„Ù„Ø´Ø±ÙƒØ§Øª (Corporate Gold Card)",
+				"ðŸ’¬ Ø§Ù„Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„ØªÙØµÙŠÙ„ÙŠ Ø§Ù„Ø´Ø§Ù…Ù„ (Ø±Ø³Ø§Ù„Ø© Ù†ØµÙŠØ© ØªÙØµÙŠÙ„ÙŠØ©)",
+				"ðŸ’¬ Ø§Ù„Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø³Ø±ÙŠØ¹ Ø§Ù„Ù…ÙˆØ¬Ø² (Ø±Ø³Ø§Ù„Ø© Ù†ØµÙŠØ© Ø³Ø±ÙŠØ¹Ø©)",
+				"ðŸ’¬ Ù†Ù…ÙˆØ°Ø¬ ÙƒØ´Ù Ø§Ù„Ø­Ø³Ø§Ø¨ ÙˆØ§Ù„Ù…Ø§Ù„ÙŠØ© (Ø±Ø³Ø§Ù„Ø© Ù†ØµÙŠØ© Ù…Ø§Ù„ÙŠØ©)"
 			});
 
 			string savedTpl = AppConfig.WhatsAppInvoiceTemplate;
@@ -5886,23 +5888,23 @@ namespace ChickenDist.Forms
 
 			var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 64, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 10, 15, 10) };
 
-			var btnSendText = Theme.MakeButton("💬 إرسال واتساب (نص)", Color.FromArgb(37, 211, 102));
+			var btnSendText = Theme.MakeButton("ðŸ’¬ Ø¥Ø±Ø³Ø§Ù„ ÙˆØ§ØªØ³Ø§Ø¨ (Ù†Øµ)", Color.FromArgb(37, 211, 102));
 			btnSendText.Size = new Size(185, 42);
 			btnSendText.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 			btnSendText.Dock = DockStyle.Left;
 
-			var btnSendImage = Theme.MakeButton("🖼️ إرسال واتساب (صورة)", Color.FromArgb(18, 140, 126));
+			var btnSendImage = Theme.MakeButton("ðŸ–¼ï¸ Ø¥Ø±Ø³Ø§Ù„ ÙˆØ§ØªØ³Ø§Ø¨ (ØµÙˆØ±Ø©)", Color.FromArgb(18, 140, 126));
 			btnSendImage.Size = new Size(185, 42);
 			btnSendImage.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 			btnSendImage.Dock = DockStyle.Left;
 			btnSendImage.Margin = new Padding(8, 0, 0, 0);
 
-			var btnSaveDefault = Theme.MakeButton("⚙️ حفظ كافتراضي", Color.FromArgb(70, 80, 100));
+			var btnSaveDefault = Theme.MakeButton("âš™ï¸ Ø­ÙØ¸ ÙƒØ§ÙØªØ±Ø§Ø¶ÙŠ", Color.FromArgb(70, 80, 100));
 			btnSaveDefault.Size = new Size(130, 42);
 			btnSaveDefault.Dock = DockStyle.Left;
 			btnSaveDefault.Margin = new Padding(8, 0, 0, 0);
 
-			var btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(100, 100, 110));
+			var btnCancel = Theme.MakeButton("Ø¥Ù„ØºØ§Ø¡", Color.FromArgb(100, 100, 110));
 			btnCancel.Size = new Size(80, 42);
 			btnCancel.Dock = DockStyle.Right;
 			btnCancel.Click += (s, e) => dlg.Close();
@@ -5921,7 +5923,7 @@ namespace ChickenDist.Forms
 					_ => "ImageCardNavy"
 				};
 				AppConfig.WhatsAppInvoiceTemplate = tplKey;
-				MessageBox.Show("✅ تم حفظ النموذج المختار كنموذج افتراضي لفواتير الواتساب!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				MessageBox.Show("âœ… ØªÙ… Ø­ÙØ¸ Ø§Ù„Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ù…Ø®ØªØ§Ø± ÙƒÙ†Ù…ÙˆØ°Ø¬ Ø§ÙØªØ±Ø§Ø¶ÙŠ Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨!", "ØªÙ… Ø§Ù„Ø­ÙØ¸", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			};
 
 			btnSendText.Click += (s, e) =>
@@ -5958,15 +5960,15 @@ namespace ChickenDist.Forms
 					{
 						Clipboard.SetImage(cachedBmp);
 					}
-					MessageBox.Show("✅ تم تصميم كارت الفاتورة ونسخ الصورة للحافظة بنجاح!\nسيتم فتح واتساب العميل الآن، فقط اضغط Ctrl+V في مربع الكتابة للصق وإرسال الصورة.",
-						"تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					MessageBox.Show("âœ… ØªÙ… ØªØµÙ…ÙŠÙ… ÙƒØ§Ø±Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø© ÙˆÙ†Ø³Ø® Ø§Ù„ØµÙˆØ±Ø© Ù„Ù„Ø­Ø§ÙØ¸Ø© Ø¨Ù†Ø¬Ø§Ø­!\nØ³ÙŠØªÙ… ÙØªØ­ ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„Ø¢Ù†ØŒ ÙÙ‚Ø· Ø§Ø¶ØºØ· Ctrl+V ÙÙŠ Ù…Ø±Ø¨Ø¹ Ø§Ù„ÙƒØªØ§Ø¨Ø© Ù„Ù„ØµÙ‚ ÙˆØ¥Ø±Ø³Ø§Ù„ Ø§Ù„ØµÙˆØ±Ø©.",
+						"ØªÙ… Ø§Ù„Ù†Ø³Ø® Ù„Ù„Ø­Ø§ÙØ¸Ø©", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
 					WhatsAppSender.OpenWhatsAppChat(phone);
 					dlg.Close();
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show("فشل نسخ صورة الفاتورة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					MessageBox.Show("ÙØ´Ù„ Ù†Ø³Ø® ØµÙˆØ±Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø©: " + ex.Message, "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 			};
 
@@ -5995,13 +5997,13 @@ namespace ChickenDist.Forms
 				{
 					Clipboard.SetText(message);
 					MessageBox.Show(
-						"⚠️ نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
-						"يرجى الضغط على لصق (Ctrl + V) داخل محادثة الواتساب التي ستفتح الآن لإرساله.",
-						"تم نسخ التقرير", MessageBoxButtons.OK, MessageBoxIcon.Information,
+						"âš ï¸ Ù†Ø¸Ø±Ø§Ù‹ Ù„Ø£Ù† Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø·ÙˆÙŠÙ„ Ø¬Ø¯Ø§Ù‹ØŒ ØªÙ… Ù†Ø³Ø®Ù‡ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ Ø¥Ù„Ù‰ Ø§Ù„Ø­Ø§ÙØ¸Ø© (Clipboard) ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹.\n" +
+						"ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ù„ØµÙ‚ (Ctrl + V) Ø¯Ø§Ø®Ù„ Ù…Ø­Ø§Ø¯Ø«Ø© Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„ØªÙŠ Ø³ØªÙØªØ­ Ø§Ù„Ø¢Ù† Ù„Ø¥Ø±Ø³Ø§Ù„Ù‡.",
+						"ØªÙ… Ù†Ø³Ø® Ø§Ù„ØªÙ‚Ø±ÙŠØ±", MessageBoxButtons.OK, MessageBoxIcon.Information,
 						MessageBoxDefaultButton.Button1,
 						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 						
-					encoded = Uri.EscapeDataString("📋 تفاصيل فاتورة المبيعات (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
+					encoded = Uri.EscapeDataString("ðŸ“‹ ØªÙØ§ØµÙŠÙ„ ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª (ØªÙ… Ù†Ø³Ø® Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ù„Ù„Ø­Ø§ÙØ¸Ø©ØŒ ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù„ØµÙ‚ ÙˆØ¥Ø±Ø³Ø§Ù„)");
 				}
 				else
 				{
@@ -6040,7 +6042,7 @@ namespace ChickenDist.Forms
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("تعذر فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show("ØªØ¹Ø°Ø± ÙØªØ­ ÙˆØ§ØªØ³Ø§Ø¨:\n" + ex.Message, "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
@@ -6051,7 +6053,7 @@ namespace ChickenDist.Forms
 				DataTable dtSale = DbHelper.Query("SELECT s.*, c.ClientName, c.Phone AS ClientPhone, c.Phone2 AS ClientPhone2 FROM Sales s LEFT JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID=@id", DbHelper.P("@id", saleID));
 				if (dtSale == null || dtSale.Rows.Count == 0)
 				{
-					MessageBox.Show("لم يتم العثور على الفاتورة المحددة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					return;
 				}
 				DataRow sRow = dtSale.Rows[0];
@@ -6077,7 +6079,7 @@ namespace ChickenDist.Forms
 				{
 					using (var inputDlg = new Form())
 					{
-						inputDlg.Text = "📱 أدخل رقم الواتساب للعميل";
+						inputDlg.Text = "ðŸ“± Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø¹Ù…ÙŠÙ„";
 						inputDlg.Size = new Size(380, 160);
 						inputDlg.StartPosition = FormStartPosition.CenterParent;
 						inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -6086,9 +6088,9 @@ namespace ChickenDist.Forms
 						inputDlg.BackColor = Theme.BgMain;
 						inputDlg.Font = Theme.FontMain;
 
-						var lbl = new Label { Text = $"رقم موبايل/واتساب العميل ({clientName}):", Location = new Point(15, 15), AutoSize = true, ForeColor = Theme.TextMain };
+						var lbl = new Label { Text = $"Ø±Ù‚Ù… Ù…ÙˆØ¨Ø§ÙŠÙ„/ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ø¹Ù…ÙŠÙ„ ({clientName}):", Location = new Point(15, 15), AutoSize = true, ForeColor = Theme.TextMain };
 						var txt = new TextBox { Location = new Point(15, 40), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-						var btn = Theme.MakeButton("إرسال الآن 📱", 200, 75, 145, 30, Theme.Success);
+						var btn = Theme.MakeButton("Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¢Ù† ðŸ“±", 200, 75, 145, 30, Theme.Success);
 						btn.Click += (s, e) => { inputDlg.DialogResult = DialogResult.OK; inputDlg.Close(); };
 
 						inputDlg.Controls.AddRange(new Control[] { lbl, txt, btn });
@@ -6101,23 +6103,23 @@ namespace ChickenDist.Forms
 
 				if (string.IsNullOrWhiteSpace(clientPhone))
 				{
-					MessageBox.Show("لم يتم إدخال رقم واتساب إرسال الفاتورة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					MessageBox.Show("Ù„Ù… ÙŠØªÙ… Ø¥Ø¯Ø®Ø§Ù„ Ø±Ù‚Ù… ÙˆØ§ØªØ³Ø§Ø¨ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ÙØ§ØªÙˆØ±Ø©.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					return;
 				}
 
-				string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+				string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "Ø§Ù„Ù…Ø¤Ø³Ø³Ø© ÙˆØ§Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø¹Ø§Ù…Ø©";
 				string saleCode = sRow["SaleCode"]?.ToString() ?? "";
 				string saleDate = Convert.ToDateTime(sRow["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
 				decimal totalAmount = Convert.ToDecimal(sRow["TotalAmount"]);
 
 				DataTable items = SaleDAL.GetItems(saleID);
 				var sb = new System.Text.StringBuilder();
-				sb.AppendLine($"🧾 *فاتورة مبيعات - {shopName}*");
-				sb.AppendLine($"رقم الفاتورة: #{saleCode}");
-				sb.AppendLine($"التاريخ: {saleDate}");
-				sb.AppendLine($"العميل: {clientName}");
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
-				sb.AppendLine("📦 *الأصناف والمسحوبات:*");
+				sb.AppendLine($"ðŸ§¾ *ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª - {shopName}*");
+				sb.AppendLine($"Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©: #{saleCode}");
+				sb.AppendLine($"Ø§Ù„ØªØ§Ø±ÙŠØ®: {saleDate}");
+				sb.AppendLine($"Ø§Ù„Ø¹Ù…ÙŠÙ„: {clientName}");
+				sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
+				sb.AppendLine("ðŸ“¦ *Ø§Ù„Ø£ØµÙ†Ø§Ù ÙˆØ§Ù„Ù…Ø³Ø­ÙˆØ¨Ø§Øª:*");
 
 				foreach (DataRow item in items.Rows)
 				{
@@ -6125,29 +6127,29 @@ namespace ChickenDist.Forms
 					decimal qty = Convert.ToDecimal(item["Quantity"]);
 					decimal price = Convert.ToDecimal(item["UnitPrice"]);
 					decimal total = Convert.ToDecimal(item["TotalPrice"]);
-					sb.AppendLine($"• {pName} × {qty:0.##} = {total:N2} ج.م");
+					sb.AppendLine($"â€¢ {pName} Ã— {qty:0.##} = {total:N2} Ø¬.Ù…");
 				}
 
-				sb.AppendLine("━━━━━━━━━━━━━━━━");
-				sb.AppendLine($"💰 *إجمالي الفاتورة:* {totalAmount:N2} ج.م");
+				sb.AppendLine("â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”");
+				sb.AppendLine($"ðŸ’° *Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©:* {totalAmount:N2} Ø¬.Ù…");
 
 				if (clientID > 0)
 				{
 					decimal clientBalance = ClientDAL.GetBalance(clientID);
-					sb.AppendLine($"⚖️ *رصيد الحساب الحالي:* {clientBalance:N2} ج.م");
+					sb.AppendLine($"âš–ï¸ *Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø³Ø§Ø¨ Ø§Ù„Ø­Ø§Ù„ÙŠ:* {clientBalance:N2} Ø¬.Ù…");
 				}
-				sb.AppendLine("🙏 شكراً لتعاملكم معنا!");
+				sb.AppendLine("ðŸ™ Ø´ÙƒØ±Ø§Ù‹ Ù„ØªØ¹Ø§Ù…Ù„ÙƒÙ… Ù…Ø¹Ù†Ø§!");
 
 				WhatsAppSender.ShowWhatsAppSendOptionsDialog(
 					parent,
 					clientPhone,
 					sb.ToString(),
 					() => ReceiptImageGenerator.GenerateSaleReceiptImage(saleID),
-					"📱 إرسال فاتورة المبيعات عبر الواتساب");
+					"ðŸ“± Ø¥Ø±Ø³Ø§Ù„ ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª Ø¹Ø¨Ø± Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨");
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show($"❌ فشل إرسال الفاتورة عبر الواتساب: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show($"âŒ ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø¹Ø¨Ø± Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨: {ex.Message}", "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
@@ -6157,7 +6159,7 @@ namespace ChickenDist.Forms
 			bool showFinancial = saleRow["ClientID"] != DBNull.Value;
 			decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
 
-			// حساب الارتفاع المطلوب ديناميكياً
+			// Ø­Ø³Ø§Ø¨ Ø§Ù„Ø§Ø±ØªÙØ§Ø¹ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ§Ù‹
 			int headerH = 110;
 			int metaH = 80;
 			int tableHeaderH = 35;
@@ -6167,25 +6169,25 @@ namespace ChickenDist.Forms
 			int financialLines = 0;
 			if (showFinancial)
 			{
-				financialLines = 2 + 1; // "الوضع المالي للحساب" header + "الرصيد السابق" + "الرصيد الحالي المستحق"
+				financialLines = 2 + 1; // "Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù…Ø§Ù„ÙŠ Ù„Ù„Ø­Ø³Ø§Ø¨" header + "Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø³Ø§Ø¨Ù‚" + "Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚"
 				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
 				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal;
 				decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
 
 				if (isCredit)
 				{
-					financialLines += 2; // "الفاتورة الحالية", "إجمالي المستحق"
+					financialLines += 2; // "Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©", "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚"
 				}
 				else
 				{
-					financialLines += 1; // "المدفوع نقداً"
+					financialLines += 1; // "Ø§Ù„Ù…Ø¯ÙÙˆØ¹ Ù†Ù‚Ø¯Ø§Ù‹"
 					if (remainingFromInvoice != 0)
 					{
-						financialLines += 2; // "متبقي الفاتورة"/"زيادة الفاتورة", "إجمالي المستحق"
+						financialLines += 2; // "Ù…ØªØ¨Ù‚ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©"/"Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø©", "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚"
 					}
 				}
-				financialLines += 1; // "مسدد اليوم"
-				if (todayReturns > 0) financialLines += 1; // "مرتجع اليوم"
+				financialLines += 1; // "Ù…Ø³Ø¯Ø¯ Ø§Ù„ÙŠÙˆÙ…"
+				if (todayReturns > 0) financialLines += 1; // "Ù…Ø±ØªØ¬Ø¹ Ø§Ù„ÙŠÙˆÙ…"
 
 				if (AppConfig.EnableCratesTracking)
 				{
@@ -6193,7 +6195,7 @@ namespace ChickenDist.Forms
 					int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 					if (cratesOutVal > 0) financialLines += 1;
 					if (cratesInVal > 0) financialLines += 1;
-					financialLines += 1; // "رصيد الفوارغ المستحق"
+					financialLines += 1; // "Ø±ØµÙŠØ¯ Ø§Ù„ÙÙˆØ§Ø±Øº Ø§Ù„Ù…Ø³ØªØ­Ù‚"
 				}
 			}
 			int financialH = showFinancial ? (30 + financialLines * 28 + 25) : 0;
@@ -6215,13 +6217,13 @@ namespace ChickenDist.Forms
 				using (var bNavy = new SolidBrush(cNavy))
 				using (var bRed = new SolidBrush(Color.FromArgb(200, 30, 30)))
 				{
-					// رسم الحدود
+					// Ø±Ø³Ù… Ø§Ù„Ø­Ø¯ÙˆØ¯
 					g.DrawRectangle(pNavyThick, 4, 4, w - 8, totalH - 8);
 					g.DrawRectangle(pNavyThin, 9, 9, w - 18, totalH - 18);
 
 					float y = 20;
 
-					// الخطوط
+					// Ø§Ù„Ø®Ø·ÙˆØ·
 					var fTitle = new Font("Arial", 20f, FontStyle.Bold);
 					var fComp = new Font("Arial", 14f, FontStyle.Bold);
 					var fBold = new Font("Arial", 9.5f, FontStyle.Bold);
@@ -6231,43 +6233,43 @@ namespace ChickenDist.Forms
 					var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 					var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
-					g.DrawString("فاتورة مبيعات", fTitle, bNavy, new RectangleF(0, y, w, 32), center);
+					g.DrawString("ÙØ§ØªÙˆØ±Ø© Ù…Ø¨ÙŠØ¹Ø§Øª", fTitle, bNavy, new RectangleF(0, y, w, 32), center);
 					y += 35;
 
 					g.DrawString(AppConfig.CompanyName, fComp, bNavy, new RectangleF(0, y, w, 28), center);
 					
-					// رسم سلتين مشتريات كشعار
+					// Ø±Ø³Ù… Ø³Ù„ØªÙŠÙ† Ù…Ø´ØªØ±ÙŠØ§Øª ÙƒØ´Ø¹Ø§Ø±
 					DrawShoppingCartSilhouette(g, 35, y - 25, 40);
 					DrawShoppingCartSilhouette(g, w - 75, y - 25, 40);
 					y += 40;
 
-					// مربع البيانات الفوقية
+					// Ù…Ø±Ø¨Ø¹ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙÙˆÙ‚ÙŠØ©
 					g.DrawRectangle(pNavyThin, 20, y, w - 40, 75);
 					g.DrawLine(pNavyThin, w / 2, y, w / 2, y + 75);
 
 					float boxY = y + 10;
-					// اليمين
-					g.DrawString($"رقم الفاتورة:  {saleRow["SaleCode"]}", fBold, Brushes.Black, new RectangleF(w / 2 + 10, boxY, w / 2 - 30, 22), rtlNear);
-					g.DrawString($"التاريخ:  {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}", fNormal, Brushes.Black, new RectangleF(w / 2 + 10, boxY + 26, w / 2 - 30, 22), rtlNear);
+					// Ø§Ù„ÙŠÙ…ÙŠÙ†
+					g.DrawString($"Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©:  {saleRow["SaleCode"]}", fBold, Brushes.Black, new RectangleF(w / 2 + 10, boxY, w / 2 - 30, 22), rtlNear);
+					g.DrawString($"Ø§Ù„ØªØ§Ø±ÙŠØ®:  {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy}", fNormal, Brushes.Black, new RectangleF(w / 2 + 10, boxY + 26, w / 2 - 30, 22), rtlNear);
 
-					// اليسار
-					g.DrawString($"العميل:  {saleRow["ClientName"]}", fBold, Brushes.Black, new RectangleF(25, boxY, w / 2 - 35, 22), rtlNear);
-					string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";
-					g.DrawString($"النوع:  {typeLabel}", fNormal, Brushes.Black, new RectangleF(25, boxY + 26, w / 2 - 35, 22), rtlNear);
+					// Ø§Ù„ÙŠØ³Ø§Ø±
+					g.DrawString($"Ø§Ù„Ø¹Ù…ÙŠÙ„:  {saleRow["ClientName"]}", fBold, Brushes.Black, new RectangleF(25, boxY, w / 2 - 35, 22), rtlNear);
+					string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "Ø¢Ø¬Ù„" : saleRow["SaleType"].ToString() == "Cash" ? "Ù†Ù‚Ø¯ÙŠ" : "ØªØ­Ù…ÙŠÙ„ Ù…Ù†Ø¯ÙˆØ¨";
+					g.DrawString($"Ø§Ù„Ù†ÙˆØ¹:  {typeLabel}", fNormal, Brushes.Black, new RectangleF(25, boxY + 26, w / 2 - 35, 22), rtlNear);
 					
 					y += 90;
 
-					// ترويسة جدول الأصناف
+					// ØªØ±ÙˆÙŠØ³Ø© Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø£ØµÙ†Ø§Ù
 					g.FillRectangle(bNavy, 20, y, w - 40, tableHeaderH);
 					
-					g.DrawString("النوع", fBold, Brushes.White, new RectangleF(400, y + 8, 180, tableHeaderH), rtlCenter);
-					g.DrawString("الكمية", fBold, Brushes.White, new RectangleF(290, y + 8, 110, tableHeaderH), rtlCenter);
-					g.DrawString("السعر", fBold, Brushes.White, new RectangleF(180, y + 8, 110, tableHeaderH), rtlCenter);
-					g.DrawString("الإجمالي", fBold, Brushes.White, new RectangleF(20, y + 8, 160, tableHeaderH), rtlCenter);
+					g.DrawString("Ø§Ù„Ù†ÙˆØ¹", fBold, Brushes.White, new RectangleF(400, y + 8, 180, tableHeaderH), rtlCenter);
+					g.DrawString("Ø§Ù„ÙƒÙ…ÙŠØ©", fBold, Brushes.White, new RectangleF(290, y + 8, 110, tableHeaderH), rtlCenter);
+					g.DrawString("Ø§Ù„Ø³Ø¹Ø±", fBold, Brushes.White, new RectangleF(180, y + 8, 110, tableHeaderH), rtlCenter);
+					g.DrawString("Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ", fBold, Brushes.White, new RectangleF(20, y + 8, 160, tableHeaderH), rtlCenter);
 					
 					y += tableHeaderH;
 
-					// سطور الأصناف
+					// Ø³Ø·ÙˆØ± Ø§Ù„Ø£ØµÙ†Ø§Ù
 					if (items != null)
 					{
 						foreach (DataRow r in items.Rows)
@@ -6291,16 +6293,16 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					// إجمالي الفاتورة
+					// Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©
 					g.FillRectangle(bNavy, 320, y, 260, netH);
-					g.DrawString("صافي الفاتورة", fBold, Brushes.White, new RectangleF(320, y + 10, 260, netH), rtlCenter);
+					g.DrawString("ØµØ§ÙÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©", fBold, Brushes.White, new RectangleF(320, y + 10, 260, netH), rtlCenter);
 					
 					g.DrawRectangle(pNavyThin, 20, y, 300, netH);
-					g.DrawString($"{netVal:N2} ج.م", fTitle, bNavy, new RectangleF(20, y + 2, 290, netH), rtlCenter);
+					g.DrawString($"{netVal:N2} Ø¬.Ù…", fTitle, bNavy, new RectangleF(20, y + 2, 290, netH), rtlCenter);
 
 					y += netH + 20;
 
-					// الوضع المالي للحساب
+					// Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù…Ø§Ù„ÙŠ Ù„Ù„Ø­Ø³Ø§Ø¨
 					if (showFinancial)
 					{
 						bool isCredit = saleRow["SaleType"].ToString() == "Credit";
@@ -6308,54 +6310,54 @@ namespace ChickenDist.Forms
 						decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
 
 						decimal totalDue = prevBalance + (isCredit ? netVal : remainingFromInvoice);
-						// استخدام الرصيد الفعلي من قاعدة البيانات لضمان احتساب التوريدات
+						// Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„ÙØ¹Ù„ÙŠ Ù…Ù† Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ø¶Ù…Ø§Ù† Ø§Ø­ØªØ³Ø§Ø¨ Ø§Ù„ØªÙˆØ±ÙŠØ¯Ø§Øª
 						decimal currentDue = actualCurrentBalance;
 
 						g.FillRectangle(bNavy, 20, y, w - 40, 30);
-						g.DrawString("الوضع المالي للحساب", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
+						g.DrawString("Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù…Ø§Ù„ÙŠ Ù„Ù„Ø­Ø³Ø§Ø¨", fBold, Brushes.White, new RectangleF(20, y + 6, w - 40, 30), rtlCenter);
 						y += 30;
 
-						var labelsList = new System.Collections.Generic.List<string> { "الرصيد السابق" };
-						var valsList = new System.Collections.Generic.List<string> { $"{prevBalance:N2} ج.م" };
+						var labelsList = new System.Collections.Generic.List<string> { "Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø³Ø§Ø¨Ù‚" };
+						var valsList = new System.Collections.Generic.List<string> { $"{prevBalance:N2} Ø¬.Ù…" };
 
 						if (isCredit)
 						{
-							labelsList.Add("الفاتورة الحالية");
-							valsList.Add($"{netVal:N2} ج.م");
+							labelsList.Add("Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©");
+							valsList.Add($"{netVal:N2} Ø¬.Ù…");
 
-							labelsList.Add("إجمالي المستحق");
-							valsList.Add($"{totalDue:N2} ج.م");
+							labelsList.Add("Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚");
+							valsList.Add($"{totalDue:N2} Ø¬.Ù…");
 						}
 						else
 						{
-							labelsList.Add("المدفوع نقداً");
-							valsList.Add($"{cashPaid:N2} ج.م");
+							labelsList.Add("Ø§Ù„Ù…Ø¯ÙÙˆØ¹ Ù†Ù‚Ø¯Ø§Ù‹");
+							valsList.Add($"{cashPaid:N2} Ø¬.Ù…");
 
 							if (remainingFromInvoice > 0)
 							{
-								labelsList.Add("متبقي الفاتورة");
-								valsList.Add($"{remainingFromInvoice:N2} ج.م");
+								labelsList.Add("Ù…ØªØ¨Ù‚ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©");
+								valsList.Add($"{remainingFromInvoice:N2} Ø¬.Ù…");
 								
-								labelsList.Add("إجمالي المستحق");
-								valsList.Add($"{totalDue:N2} ج.م");
+								labelsList.Add("Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚");
+								valsList.Add($"{totalDue:N2} Ø¬.Ù…");
 							}
 							else if (remainingFromInvoice < 0)
 							{
-								labelsList.Add("زيادة الفاتورة");
-								valsList.Add($"{-remainingFromInvoice:N2} ج.م");
+								labelsList.Add("Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø©");
+								valsList.Add($"{-remainingFromInvoice:N2} Ø¬.Ù…");
 								
-								labelsList.Add("إجمالي المستحق");
-								valsList.Add($"{totalDue:N2} ج.م");
+								labelsList.Add("Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚");
+								valsList.Add($"{totalDue:N2} Ø¬.Ù…");
 							}
 						}
 
-						labelsList.Add("مسدد اليوم");
-						valsList.Add($"{todayPayments:N2} ج.م");
+						labelsList.Add("Ù…Ø³Ø¯Ø¯ Ø§Ù„ÙŠÙˆÙ…");
+						valsList.Add($"{todayPayments:N2} Ø¬.Ù…");
 
 						if (todayReturns > 0)
 						{
-							labelsList.Add("مرتجع اليوم");
-							valsList.Add($"{todayReturns:N2} ج.م");
+							labelsList.Add("Ù…Ø±ØªØ¬Ø¹ Ø§Ù„ÙŠÙˆÙ…");
+							valsList.Add($"{todayReturns:N2} Ø¬.Ù…");
 						}
 
 						if (AppConfig.EnableCratesTracking)
@@ -6364,22 +6366,22 @@ namespace ChickenDist.Forms
 							int cratesInVal = saleRow.Table.Columns.Contains("CratesIn") && saleRow["CratesIn"] != DBNull.Value ? Convert.ToInt32(saleRow["CratesIn"]) : 0;
 							if (cratesOutVal > 0)
 							{
-								labelsList.Add("فوارغ صادرة بالفاتورة");
-								valsList.Add($"{cratesOutVal} فارغ");
+								labelsList.Add("ÙÙˆØ§Ø±Øº ØµØ§Ø¯Ø±Ø© Ø¨Ø§Ù„ÙØ§ØªÙˆØ±Ø©");
+								valsList.Add($"{cratesOutVal} ÙØ§Ø±Øº");
 							}
 							if (cratesInVal > 0)
 							{
-								labelsList.Add("فوارغ واردة بالفاتورة");
-								valsList.Add($"{cratesInVal} فارغ");
+								labelsList.Add("ÙÙˆØ§Ø±Øº ÙˆØ§Ø±Ø¯Ø© Ø¨Ø§Ù„ÙØ§ØªÙˆØ±Ø©");
+								valsList.Add($"{cratesInVal} ÙØ§Ø±Øº");
 							}
 
 							int currentCratesDue = ClientDAL.GetClientCratesBalance(Convert.ToInt32(saleRow["ClientID"]));
-							labelsList.Add("رصيد الفوارغ المستحق");
-							valsList.Add($"{currentCratesDue} فارغ");
+							labelsList.Add("Ø±ØµÙŠØ¯ Ø§Ù„ÙÙˆØ§Ø±Øº Ø§Ù„Ù…Ø³ØªØ­Ù‚");
+							valsList.Add($"{currentCratesDue} ÙØ§Ø±Øº");
 						}
 
-						labelsList.Add("الرصيد الحالي المستحق");
-						valsList.Add($"{currentDue:N2} ج.م");
+						labelsList.Add("Ø§Ù„Ø±ØµÙŠØ¯ Ø§Ù„Ø­Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚");
+						valsList.Add($"{currentDue:N2} Ø¬.Ù…");
 
 						string[] labels = labelsList.ToArray();
 						string[] vals = valsList.ToArray();
@@ -6400,33 +6402,33 @@ namespace ChickenDist.Forms
 							y += 28;
 						}
 
-						// إضافة سطر إعلامي بآخر توريد سابق تحت الجدول
+						// Ø¥Ø¶Ø§ÙØ© Ø³Ø·Ø± Ø¥Ø¹Ù„Ø§Ù…ÙŠ Ø¨Ø¢Ø®Ø± ØªÙˆØ±ÙŠØ¯ Ø³Ø§Ø¨Ù‚ ØªØ­Øª Ø§Ù„Ø¬Ø¯ÙˆÙ„
 						string lastPayText = "";
 						if (lastPaymentAmt > 0)
 						{
-							lastPayText = $"* آخر توريد سابق للعميل: {lastPaymentAmt:N2} ج.م بتاريخ {lastPaymentDate:dd/MM/yyyy}";
+							lastPayText = $"* Ø¢Ø®Ø± ØªÙˆØ±ÙŠØ¯ Ø³Ø§Ø¨Ù‚ Ù„Ù„Ø¹Ù…ÙŠÙ„: {lastPaymentAmt:N2} Ø¬.Ù… Ø¨ØªØ§Ø±ÙŠØ® {lastPaymentDate:dd/MM/yyyy}";
 						}
 						else
 						{
-							lastPayText = "* آخر توريد سابق للعميل: لا يوجد";
+							lastPayText = "* Ø¢Ø®Ø± ØªÙˆØ±ÙŠØ¯ Ø³Ø§Ø¨Ù‚ Ù„Ù„Ø¹Ù…ÙŠÙ„: Ù„Ø§ ÙŠÙˆØ¬Ø¯";
 						}
 						g.DrawString(lastPayText, fNormal, Brushes.Gray, new RectangleF(20, y + 5, w - 40, 22), rtlNear);
 
 						y += 28 + 15;
 					}
 
-					// التذييل
+					// Ø§Ù„ØªØ°ÙŠÙŠÙ„
 					g.DrawRectangle(pNavyThin, 20, y, w - 40, footerH);
-					g.DrawString("شكراً لتعاملكم معنا", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
+					g.DrawString("Ø´ÙƒØ±Ø§Ù‹ Ù„ØªØ¹Ø§Ù…Ù„ÙƒÙ… Ù…Ø¹Ù†Ø§", fComp, bNavy, new RectangleF(20, y + 14, w - 40, footerH), rtlCenter);
 					
 					DrawShoppingCartSilhouette(g, 100, y + 10, 25);
 					DrawShoppingCartSilhouette(g, w - 125, y + 10, 25);
 
-					// الدعاية للبرنامج
+					// Ø§Ù„Ø¯Ø¹Ø§ÙŠØ© Ù„Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬
 					var fPromo = new Font("Arial", 10f, FontStyle.Bold);
 					using (var bPromo = new SolidBrush(Color.FromArgb(0, 80, 220)))
 					{
-						g.DrawString("✨ تم إصدار هذه الفاتورة بواسطة Pro System لإدارة المبيعات والتوزيع. للاشتراك: 01016517586", fPromo, bPromo, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
+						g.DrawString("âœ¨ ØªÙ… Ø¥ØµØ¯Ø§Ø± Ù‡Ø°Ù‡ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø¨ÙˆØ§Ø³Ø·Ø© Pro System Ù„Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª ÙˆØ§Ù„ØªÙˆØ²ÙŠØ¹. Ù„Ù„Ø§Ø´ØªØ±Ø§Ùƒ: 01016517586", fPromo, bPromo, new RectangleF(20, y + footerH + 10, w - 40, 20), rtlCenter);
 					}
 					fPromo.Dispose();
 
@@ -6483,28 +6485,28 @@ namespace ChickenDist.Forms
 		{
 			_items.Clear();
 			dgItems.Rows.Clear();
-			lblTotalVal.Text = "0.00 ج";
+			lblTotalVal.Text = "0.00 Ø¬";
 			if (txtInvoiceDiscount != null) txtInvoiceDiscount.Text = "0";
 			if (nudShippingCharge != null) nudShippingCharge.Value = 0;
 			if (cboInvoiceDiscountType != null) cboInvoiceDiscountType.SelectedIndex = 0;
-			if (lblNetVal != null) lblNetVal.Text = "0.00 ج";
+			if (lblNetVal != null) lblNetVal.Text = "0.00 Ø¬";
 			txtNotes.Clear();
 			if (txtClientAddress != null) txtClientAddress.Clear();
 			txtPrice.Clear();
 			nudQty.Value = 1m;
 			if (nudCratesOut != null) nudCratesOut.Value = 0;
 			if (nudCratesIn != null) nudCratesIn.Value = 0;
-			SetTierButtons("قطاعي");
+			SetTierButtons("Ù‚Ø·Ø§Ø¹ÙŠ");
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
-			Text = "شاشة المبيعات";
+			Text = "Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª";
 			_editSaleID = 0;
 			_isCopyMode = false;
 			_isDirty = false;
 			_activeDraftID = 0;
 			_activeDraftKey = null;
 
-			// إعادة تحميل الكومبو لإعادة تعيين الفلترة والبحث ومنح تجربة سريعة بين الفواتير
+			// Ø¥Ø¹Ø§Ø¯Ø© ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙƒÙˆÙ…Ø¨Ùˆ Ù„Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† Ø§Ù„ÙÙ„ØªØ±Ø© ÙˆØ§Ù„Ø¨Ø­Ø« ÙˆÙ…Ù†Ø­ ØªØ¬Ø±Ø¨Ø© Ø³Ø±ÙŠØ¹Ø© Ø¨ÙŠÙ† Ø§Ù„ÙÙˆØ§ØªÙŠØ±
 			LoadCombos();
 
 			this.BeginInvoke((MethodInvoker)delegate
@@ -6520,16 +6522,16 @@ namespace ChickenDist.Forms
 			return null;
 		}
 
-        // ══════════════════════════════════════════════════════════════════════
-        // ── تخصيص أعمدة الجدول ────────────────────────────────────────────────
-        // ══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â”€â”€ ØªØ®ØµÙŠØµ Ø£Ø¹Ù…Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙˆÙ„ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-        /// <summary>يفتح نافذة تخصيص الأعمدة (إظهار/إخفاء + ترتيب)</summary>
+        /// <summary>ÙŠÙØªØ­ Ù†Ø§ÙØ°Ø© ØªØ®ØµÙŠØµ Ø§Ù„Ø£Ø¹Ù…Ø¯Ø© (Ø¥Ø¸Ù‡Ø§Ø±/Ø¥Ø®ÙØ§Ø¡ + ØªØ±ØªÙŠØ¨)</summary>
         private void ShowColumnCustomizer()
         {
             var dlg = new Form
             {
-                Text            = "⚙️ تخصيص أعمدة الفاتورة",
+                Text            = "âš™ï¸ ØªØ®ØµÙŠØµ Ø£Ø¹Ù…Ø¯Ø© Ø§Ù„ÙØ§ØªÙˆØ±Ø©",
                 Size            = new Size(360, 480),
                 StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -6543,7 +6545,7 @@ namespace ChickenDist.Forms
 
             var lblHint = new Label
             {
-                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Text      = "âœ… ØªÙØ¹ÙŠÙ„/Ø¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø£Ø¹Ù…Ø¯Ø©  |  â–²â–¼ Ù„ØªØºÙŠÙŠØ± Ø§Ù„ØªØ±ØªÙŠØ¨",
                 Dock      = DockStyle.Top,
                 Height    = 32,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -6562,7 +6564,7 @@ namespace ChickenDist.Forms
                 RightToLeft     = RightToLeft.Yes
             };
 
-            // ملء القائمة بالأعمدة (ما عدا عمود الحذف والأعمدة المعطلة لنوع النشاط)
+            // Ù…Ù„Ø¡ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¨Ø§Ù„Ø£Ø¹Ù…Ø¯Ø© (Ù…Ø§ Ø¹Ø¯Ø§ Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø­Ø°Ù ÙˆØ§Ù„Ø£Ø¹Ù…Ø¯Ø© Ø§Ù„Ù…Ø¹Ø·Ù„Ø© Ù„Ù†ÙˆØ¹ Ø§Ù„Ù†Ø´Ø§Ø·)
             bool isClothingMode = AppConfig.BusinessType == "Clothing";
             foreach (DataGridViewColumn col in dgItems.Columns)
             {
@@ -6571,9 +6573,9 @@ namespace ChickenDist.Forms
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
-            // أزرار ▲▼
-            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            // Ø£Ø²Ø±Ø§Ø± â–²â–¼
+            var btnUp   = new Button { Text = "â–² Ø£Ø¹Ù„Ù‰",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "â–¼ Ø£Ø³ÙÙ„",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
 
             btnUp.Click += (s, e) =>
@@ -6599,8 +6601,8 @@ namespace ChickenDist.Forms
                 clb.SelectedIndex = i + 1;
             };
 
-            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
-            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            var btnOk     = new Button { Text = "âœ… Ø­ÙØ¸",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "âŒ Ø¥Ù„ØºØ§Ø¡", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
             btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
 
             var pnlArrows = new FlowLayoutPanel
@@ -6630,7 +6632,7 @@ namespace ChickenDist.Forms
 
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
-                // تطبيق الترتيب والإظهار على الجدول
+                // ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„ØªØ±ØªÙŠØ¨ ÙˆØ§Ù„Ø¥Ø¸Ù‡Ø§Ø± Ø¹Ù„Ù‰ Ø§Ù„Ø¬Ø¯ÙˆÙ„
                 int displayIndex = 0;
                 var hiddenNames  = new System.Collections.Generic.List<string>();
                 var orderedNames = new System.Collections.Generic.List<string>();
@@ -6648,7 +6650,7 @@ namespace ChickenDist.Forms
                         dgItems.Columns[ce.ColName].DisplayIndex = displayIndex++;
                     }
                 }
-                // عمود الحذف دائماً في الآخر
+                // Ø¹Ù…ÙˆØ¯ Ø§Ù„Ø­Ø°Ù Ø¯Ø§Ø¦Ù…Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¢Ø®Ø±
                 if (dgItems.Columns.Contains("Delete"))
                     dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
 
@@ -6656,7 +6658,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        /// <summary>يحفظ ترتيب الأعمدة وما هو مخفي في Settings.ini</summary>
+        /// <summary>ÙŠØ­ÙØ¸ ØªØ±ØªÙŠØ¨ Ø§Ù„Ø£Ø¹Ù…Ø¯Ø© ÙˆÙ…Ø§ Ù‡Ùˆ Ù…Ø®ÙÙŠ ÙÙŠ Settings.ini</summary>
         private void SaveColumnSettings(
             System.Collections.Generic.List<string> ordered,
             System.Collections.Generic.List<string> hidden)
@@ -6669,7 +6671,7 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        /// <summary>يحمّل ترتيب الأعمدة من Settings.ini عند بداية التشغيل</summary>
+        /// <summary>ÙŠØ­Ù…Ù‘Ù„ ØªØ±ØªÙŠØ¨ Ø§Ù„Ø£Ø¹Ù…Ø¯Ø© Ù…Ù† Settings.ini Ø¹Ù†Ø¯ Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„ØªØ´ØºÙŠÙ„</summary>
         private void LoadColumnSettings()
         {
             try
@@ -6685,7 +6687,7 @@ namespace ChickenDist.Forms
                     string.IsNullOrEmpty(hiddenVal) ? new string[0]
                     : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
 
-                // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها في النهاية
+                // ØªØ£Ù…ÙŠÙ†: Ø£ÙŠ Ø£Ø¹Ù…Ø¯Ø© Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø¨Ø±Ù…Ø¬ÙŠØ§Ù‹ ÙˆØºÙŠØ± Ù…Ø³Ø¬Ù„Ø© ÙÙŠ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª (ØªØ±Ù‚ÙŠØ© Ø¬Ø¯ÙŠØ¯Ø©)ØŒ Ù†Ù‚ÙˆÙ… Ø¨Ø¥Ø¶Ø§ÙØªÙ‡Ø§ ÙÙŠ Ø§Ù„Ù†Ù‡Ø§ÙŠØ©
                 foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)
                 {
                     if (col.Name == "Delete") continue;
@@ -6708,7 +6710,7 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        // مساعد: تمثيل عمود في القائمة
+        // Ù…Ø³Ø§Ø¹Ø¯: ØªÙ…Ø«ÙŠÙ„ Ø¹Ù…ÙˆØ¯ ÙÙŠ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©
         private class ColEntry
         {
             public string ColName    { get; }
@@ -6748,32 +6750,32 @@ namespace ChickenDist.Forms
 		public string ProductCode { get; set; } = "";
 		public string InternationalCode { get; set; } = "";
 		public string ScalePLU { get; set; } = "";
-		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
+		/// <summary>ØµÙ†Ù Ø®Ø¯Ù…Ø© â€” ÙŠÙØ¨Ø§Ø¹ Ø¨Ø§Ù„Ø³Ø§Ù„Ø¨ Ø¯ÙˆÙ† ÙØ­Øµ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†</summary>
 		public bool IsService { get; set; } = false;
 		public bool HasExpiry { get; set; } = false;
 		public int? DefaultExpiryDays { get; set; } = null;
 		public string DefaultSaleUnit { get; set; } = "";
 
-		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
-		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>
+		// â”€â”€â”€ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù…ØªØ¹Ø¯Ø¯Ø© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+		/// <summary>Ø§Ø³Ù… Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© (Unit) â€” Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„ÙƒØ¨Ø±Ù‰ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø¥Ø¶Ø§ÙØ©</summary>
 		public string BaseUnitName { get; set; } = "";
-		/// <summary>اسم الوحدة1 (مثل كرتونة)</summary>
+		/// <summary>Ø§Ø³Ù… Ø§Ù„ÙˆØ­Ø¯Ø©1 (Ù…Ø«Ù„ ÙƒØ±ØªÙˆÙ†Ø©)</summary>
 		public string Unit1Name { get; set; } = null;
-		/// <summary>سعر بيع الوحدة1</summary>
+		/// <summary>Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ÙˆØ­Ø¯Ø©1</summary>
 		public decimal Unit1SalePrice { get; set; } = 0m;
-		/// <summary>سعر شراء الوحدة1</summary>
+		/// <summary>Ø³Ø¹Ø± Ø´Ø±Ø§Ø¡ Ø§Ù„ÙˆØ­Ø¯Ø©1</summary>
 		public decimal Unit1PurchasePrice { get; set; } = 0m;
-		/// <summary>عامل تحويل الوحدة1 (عدد الوحدات الأساسية في الوحدة1)</summary>
+		/// <summary>Ø¹Ø§Ù…Ù„ ØªØ­ÙˆÙŠÙ„ Ø§Ù„ÙˆØ­Ø¯Ø©1 (Ø¹Ø¯Ø¯ Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© ÙÙŠ Ø§Ù„ÙˆØ­Ø¯Ø©1)</summary>
 		public decimal Unit1Factor { get; set; } = 1m;
-		/// <summary>اسم الوحدة2 (مثل علبة)</summary>
+		/// <summary>Ø§Ø³Ù… Ø§Ù„ÙˆØ­Ø¯Ø©2 (Ù…Ø«Ù„ Ø¹Ù„Ø¨Ø©)</summary>
 		public string Unit2Name { get; set; } = null;
-		/// <summary>عامل تحويل الوحدة2</summary>
+		/// <summary>Ø¹Ø§Ù…Ù„ ØªØ­ÙˆÙŠÙ„ Ø§Ù„ÙˆØ­Ø¯Ø©2</summary>
 		public decimal Unit2Factor { get; set; } = 1m;
-		/// <summary>سعر بيع الوحدة2</summary>
+		/// <summary>Ø³Ø¹Ø± Ø¨ÙŠØ¹ Ø§Ù„ÙˆØ­Ø¯Ø©2</summary>
 		public decimal Unit2SalePrice { get; set; } = 0m;
-		/// <summary>سعر شراء الوحدة2</summary>
+		/// <summary>Ø³Ø¹Ø± Ø´Ø±Ø§Ø¡ Ø§Ù„ÙˆØ­Ø¯Ø©2</summary>
 		public decimal Unit2PurchasePrice { get; set; } = 0m;
-		/// <summary>عامل الوحدة3 (الوحدة الأكبر مثل كرتون كبير)</summary>
+		/// <summary>Ø¹Ø§Ù…Ù„ Ø§Ù„ÙˆØ­Ø¯Ø©3 (Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ø£ÙƒØ¨Ø± Ù…Ø«Ù„ ÙƒØ±ØªÙˆÙ† ÙƒØ¨ÙŠØ±)</summary>
 		public decimal Unit3Factor { get; set; } = 1m;
 		public string Unit1Barcode { get; set; } = "";
 		public string Unit2Barcode { get; set; } = "";
@@ -6804,4 +6806,7 @@ namespace ChickenDist.Forms
 		}
 	}
 }
+
+
+
 
