@@ -36,7 +36,6 @@ namespace ChickenDist.Forms
             = new System.Collections.Generic.Dictionary<string, decimal>();
 
         private static string GetRowKey(int pid, bool isPending) => isPending ? $"{pid}_p" : $"{pid}";
-        private static decimal SafeClampDecimal(decimal val, decimal min = -999999999.9999m, decimal max = 999999999.9999m) => Math.Max(min, Math.Min(max, val));
 
         // قائمة الأصناف التي تم إخفاؤها مؤقتاً بالزر الأيمن لربطها بالجرد لاحقاً
         private readonly System.Collections.Generic.HashSet<int> _hiddenProductIDs
@@ -1753,8 +1752,7 @@ namespace ChickenDist.Forms
                                 {
                                     if (Math.Round(mainItem.NewPurchasePrice, 2) != Math.Round(mainItem.OriginalPurchasePrice, 2))
                                     {
-                                        decimal facVal = mainItem.Factor > 0 ? mainItem.Factor : 1.0m;
-                                        decimal basePurPrice = SafeClampDecimal(mainItem.NewPurchasePrice / facVal);
+                                        decimal basePurPrice = mainItem.NewPurchasePrice / mainItem.Factor;
                                         DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid",
                                             DbHelper.P("@pur", basePurPrice),
                                             DbHelper.P("@pid", pid));
@@ -1762,8 +1760,7 @@ namespace ChickenDist.Forms
 
                                     if (Math.Round(mainItem.NewSalePrice, 2) != Math.Round(mainItem.OriginalSalePrice, 2))
                                     {
-                                        decimal facVal = mainItem.Factor > 0 ? mainItem.Factor : 1.0m;
-                                        decimal baseSalePrice = SafeClampDecimal(mainItem.NewSalePrice / facVal);
+                                        decimal baseSalePrice = mainItem.NewSalePrice / mainItem.Factor;
                                         DbHelper.ExecuteTrans(trans, "UPDATE Products SET SalePrice = @sale WHERE ProductID = @pid",
                                             DbHelper.P("@sale", baseSalePrice),
                                             DbHelper.P("@pid", pid));
@@ -1772,7 +1769,7 @@ namespace ChickenDist.Forms
                                             @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
                                               VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, N'تعديل السعر من شاشة جرد وتعديل الأسعار')",
                                             DbHelper.P("@pid", pid),
-                                            DbHelper.P("@old", SafeClampDecimal(mainItem.OriginalSalePrice / facVal)),
+                                            DbHelper.P("@old", mainItem.OriginalSalePrice / mainItem.Factor),
                                             DbHelper.P("@new", baseSalePrice),
                                             DbHelper.P("@uid", Session.EmpID));
                                     }
@@ -1785,18 +1782,15 @@ namespace ChickenDist.Forms
                                     if (pendingItem != null || (mainItem != null && mainItem.PendingSalePrice > 0))
                                     {
                                         // صنف له سعران: احتساب الرصيد الفعلي الإجمالي وضبط السعر المعلق
-                                        decimal actual1 = SafeClampDecimal(mainItem != null ? (mainItem.ActualEntered.HasValue ? mainItem.BaseActual : mainItem.BaseBookQty) : 0m);
-                                        decimal actual2 = SafeClampDecimal(pendingItem != null ? (pendingItem.ActualEntered.HasValue ? pendingItem.BaseActual : pendingItem.BaseBookQty) : 0m);
-                                        decimal totalActual = SafeClampDecimal(actual1 + actual2);
-                                        decimal totalBook = SafeClampDecimal((mainItem != null ? mainItem.BaseBookQty : 0m) + (pendingItem != null ? pendingItem.BaseBookQty : 0m));
+                                        decimal actual1 = mainItem != null ? (mainItem.ActualEntered.HasValue ? mainItem.BaseActual : mainItem.BaseBookQty) : 0m;
+                                        decimal actual2 = pendingItem != null ? (pendingItem.ActualEntered.HasValue ? pendingItem.BaseActual : pendingItem.BaseBookQty) : 0m;
+                                        decimal totalActual = actual1 + actual2;
+                                        decimal totalBook = (mainItem != null ? mainItem.BaseBookQty : 0m) + (pendingItem != null ? pendingItem.BaseBookQty : 0m);
 
                                         if (actual1 <= 0 && actual2 > 0)
                                         {
                                             // نفاد الكمية بالسعر القديم بالكامل -> تفعيل السعر الجديد تلقائياً
-                                            decimal facPending = (pendingItem != null && pendingItem.Factor > 0) ? pendingItem.Factor : 1.0m;
-                                            decimal newPendingPrice = SafeClampDecimal(pendingItem != null ? (pendingItem.PendingSalePrice > 0 ? pendingItem.PendingSalePrice : pendingItem.OriginalSalePrice / facPending) : mainItem.PendingSalePrice);
-                                            decimal oldMainPrice = SafeClampDecimal(mainItem != null ? (mainItem.OriginalSalePrice / (mainItem.Factor > 0 ? mainItem.Factor : 1.0m)) : 0m);
-
+                                            decimal newPendingPrice = pendingItem != null ? (pendingItem.PendingSalePrice > 0 ? pendingItem.PendingSalePrice : pendingItem.OriginalSalePrice / pendingItem.Factor) : mainItem.PendingSalePrice;
                                             DbHelper.ExecuteTrans(trans,
                                                 "UPDATE Products SET SalePrice = COALESCE(NULLIF(PendingSalePrice, 0), SalePrice), PendingSalePrice = NULL, PendingQtyThreshold = NULL WHERE ProductID = @pid",
                                                 DbHelper.P("@pid", pid));
@@ -1804,7 +1798,7 @@ namespace ChickenDist.Forms
                                                 @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
                                                   VALUES (@pid, @old, @new, 'PendingPriceActivation', NULL, @uid, N'تفعيل السعر الجديد بعد جرد واستهلاك الكمية القديمة بالكامل')",
                                                 DbHelper.P("@pid", pid),
-                                                DbHelper.P("@old", oldMainPrice),
+                                                DbHelper.P("@old", mainItem != null ? (mainItem.OriginalSalePrice / mainItem.Factor) : 0),
                                                 DbHelper.P("@new", newPendingPrice),
                                                 DbHelper.P("@uid", Session.EmpID));
                                         }
@@ -1826,7 +1820,7 @@ namespace ChickenDist.Forms
 
                                         // تسجيل حركة التسوية في السجل
                                         string dispUnit = (mainItem ?? pendingItem)?.DisplayUnit ?? "";
-                                        decimal fac = SafeClampDecimal((mainItem ?? pendingItem)?.Factor ?? 1.0m, 0.0001m, 999999999m);
+                                        decimal fac = (mainItem ?? pendingItem)?.Factor ?? 1.0m;
                                         string notes = $"[جرد صنف بسعرين: قديم={actual1:N2}, جديد={actual2:N2}] " + ((mainItem?.Notes ?? "") + " " + (pendingItem?.Notes ?? "")).Trim();
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
@@ -1841,9 +1835,8 @@ namespace ChickenDist.Forms
                                     {
                                         // صنف عادي بسعر واحد
                                         var item = mainItem ?? grp.First();
-                                        decimal baseActual = SafeClampDecimal(item.BaseActual);
-                                        decimal baseBook = SafeClampDecimal(item.BaseBookQty);
-                                        decimal fac = SafeClampDecimal(item.Factor > 0 ? item.Factor : 1.0m, 0.0001m, 999999999m);
+                                        decimal baseActual = item.BaseActual;
+                                        decimal baseBook = item.BaseBookQty;
 
                                         if (item.HasExpiry)
                                         {
@@ -2128,9 +2121,7 @@ namespace ChickenDist.Forms
                         // 1. تسجيل حركة تسوية شاملة لكل صنف كان له رصيد
                         DbHelper.ExecuteTrans(trans, @"
                             INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                            SELECT ps.ProductID, ps.WarehouseID, 
-                                   CASE WHEN ps.Quantity > 999999999.9999 THEN 999999999.9999 WHEN ps.Quantity < -999999999.9999 THEN -999999999.9999 ELSE ps.Quantity END,
-                                   0, N'[تصفير شامل لرصيد المخزن بالكامل]', @uid, p.Unit, 1
+                            SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, 0, N'[تصفير شامل لرصيد المخزن بالكامل]', @uid, p.Unit, 1
                             FROM ProductStock ps
                             JOIN Products p ON ps.ProductID = p.ProductID
                             WHERE ps.WarehouseID = @wid AND ps.Quantity <> 0",

@@ -57,28 +57,28 @@ namespace ChickenDist.Forms
             int y = 15;
 
             // الباركود / الكود
-            pnlForm.Controls.Add(new Label { Text = "الباركود / الكود:", Location = new Point(285, y + 4), Width = 145, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtCode = new TextBox { Location = new Point(15, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "الباركود / الكود:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            txtCode = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(txtCode);
             y += 40;
 
             // اسم الصنف
-            pnlForm.Controls.Add(new Label { Text = "اسم الصنف:", Location = new Point(285, y + 4), Width = 145, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtName = new TextBox { Location = new Point(15, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "اسم الصنف:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            txtName = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(txtName);
             y += 40;
 
             // سعر الشراء
             bool canSeeCost = Session.CanViewCost("Products");
-            var lblPurchase = new Label { Text = "سعر الشراء:", Location = new Point(285, y + 4), Width = 145, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold, Visible = canSeeCost };
-            nudPurchasePrice = new NumericUpDown { Location = new Point(15, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Visible = canSeeCost };
+            var lblPurchase = new Label { Text = "سعر الشراء:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold, Visible = canSeeCost };
+            nudPurchasePrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Visible = canSeeCost };
             pnlForm.Controls.Add(lblPurchase);
             pnlForm.Controls.Add(nudPurchasePrice);
             if (canSeeCost) y += 40;
 
             // سعر البيع
-            pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(285, y + 4), Width = 145, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            nudPrice = new NumericUpDown { Location = new Point(15, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(new Label { Text = "سعر البيع (قطاعي):", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            nudPrice = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(nudPrice);
             y += 40;
 
@@ -86,16 +86,15 @@ namespace ChickenDist.Forms
             chkIsQuickItem = new CheckBox
             {
                 Text = "📌 صنف بيع سريع (شاشة POS)",
-                Location = new Point(15, y),
-                Width = 415,
+                Location = new Point(20, y),
+                Width = 280,
                 Height = 26,
                 ForeColor = Color.FromArgb(0, 120, 180),
                 Checked = false,
                 AutoSize = false,
                 CheckAlign = ContentAlignment.MiddleRight,
                 TextAlign = ContentAlignment.MiddleRight,
-                Font = new Font(Theme.FontMain, FontStyle.Bold),
-                RightToLeft = RightToLeft.Yes
+                Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
             pnlForm.Controls.Add(chkIsQuickItem);
             y += 32;
@@ -104,16 +103,15 @@ namespace ChickenDist.Forms
             chkIsService = new CheckBox
             {
                 Text = "⚡ صنف يباع بالسالب (خدمات / مصروفات)",
-                Location = new Point(15, y),
-                Width = 415,
+                Location = new Point(20, y),
+                Width = 280,
                 Height = 26,
                 ForeColor = Color.FromArgb(180, 120, 0),
                 Checked = false,
                 AutoSize = false,
                 CheckAlign = ContentAlignment.MiddleRight,
                 TextAlign = ContentAlignment.MiddleRight,
-                Font = new Font(Theme.FontMain, FontStyle.Bold),
-                RightToLeft = RightToLeft.Yes
+                Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
             pnlForm.Controls.Add(chkIsService);
 

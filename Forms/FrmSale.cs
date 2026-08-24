@@ -80,7 +80,8 @@ namespace ChickenDist.Forms
 		private Label lblItemCountVal;
 
 		private ComboBox cboProduct;
-		private TextBox txtProductCode;
+		private string _barcodeBuffer = "";
+		private DateTime _barcodeStartTime = DateTime.MinValue;
 
 
 		private NumericUpDown nudQty;
@@ -106,10 +107,9 @@ namespace ChickenDist.Forms
         private int _activeDraftID = 0;
         // ── Auto-barcode detection ─────────────────────────────────────────────
         private System.Windows.Forms.Timer _barcodeTimer;
-        private string _barcodeBuffer = "";
         private DateTime _lastKeyTime = DateTime.MinValue;
-        private const int BARCODE_INTERVAL_MS = 65;
-        private const int BARCODE_MIN_LENGTH = 3;
+        private const int BARCODE_INTERVAL_MS = 50;
+        private const int BARCODE_MIN_LENGTH = 4;
 		private Button btnTierRetail;
 		private Button btnTierSemi;
 		private Button btnTierWholesale;
@@ -157,8 +157,10 @@ namespace ChickenDist.Forms
 			}
 			this.Load += (s, e) =>
 			{
-				this.ActiveControl = dgItems;
-				dgItems.Focus();
+				this.BeginInvoke((MethodInvoker)delegate
+				{
+					AddNewCodeRow();
+				});
 			};
 		}
 
@@ -181,10 +183,9 @@ namespace ChickenDist.Forms
 			Font = Theme.FontMain;
 			KeyPreview = true;
 			this.KeyDown += FrmSale_KeyDown;
-			this.KeyPress += FrmSale_KeyPress;
 			this.FormClosing += FrmSale_FormClosing;
 			
-			_barcodeTimer = new System.Windows.Forms.Timer { Interval = 60 };
+			_barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
 			_barcodeTimer.Tick += BarcodeTimer_Tick;
 
 			// ── 1. رأس الصفحة (Header Panel) ──────────────────────────────────
@@ -785,73 +786,78 @@ namespace ChickenDist.Forms
 			tblHeaderMain.Controls.Add(tblOptions, 1, 0);
 			pnlHeader.Controls.Add(tblHeaderMain);
 
-			// ── 2. شريط أدوات الأصناف والبحث السريع (Product Toolbar) ───────────────
-			var pnlProductBar = new Panel
+			// ── 2. شريط اختيار وإدخال الأصناف (Product Entry Bar) ───────────────
+			// ── 2. شريط أدوات الجدول (Grid Toolbar: بحث سريع + سطر جديد + الأعمدة) ───────────────
+			var pnlGridToolbar = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 36,
+				Height = 34,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(6, 4, 6, 4)
+				Padding = new Padding(4, 2, 4, 2)
 			};
 
-			var flpProductBar = new FlowLayoutPanel
+			var flowToolbar = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Fill,
 				FlowDirection = FlowDirection.RightToLeft,
-				RightToLeft = RightToLeft.Yes,
+				WrapContents = false,
 				BackColor = Color.Transparent,
 				Margin = new Padding(0),
-				Padding = new Padding(0),
-				WrapContents = false
+				Padding = new Padding(0)
 			};
 
 			btnSearchProduct = new Button
 			{
-				Text = "🔍 بحث سريع (F3)",
-				Size = new Size(160, 28),
+				Text = "🔍 بحث سريع عن الأصناف (F3)",
+				Size = new Size(210, 30),
 				BackColor = Theme.Accent,
 				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
 				Cursor = Cursors.Hand,
-				Font = Theme.FontBold,
-				Margin = new Padding(4, 0, 4, 0)
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Margin = new Padding(3, 0, 3, 0)
 			};
 			btnSearchProduct.FlatAppearance.BorderSize = 0;
 			btnSearchProduct.Click += BtnSearchProduct_Click;
 
+			var btnManualAdd = new Button
+			{
+				Text = "➕ سطر إدخال جديد (Ins)",
+				Size = new Size(160, 30),
+				BackColor = Theme.Success,
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Margin = new Padding(3, 0, 3, 0)
+			};
+			btnManualAdd.FlatAppearance.BorderSize = 0;
+			btnManualAdd.Click += BtnManualAdd_Click;
+
 			btnCustomizeCols = new Button
 			{
-				Text = "⚙️ الأعمدة",
-				Size = new Size(95, 28),
+				Text      = "⚙️ تخصيص الأعمدة",
+				Size      = new Size(130, 30),
 				BackColor = Color.FromArgb(55, 65, 81),
 				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
-				Font = Theme.FontBold,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(4, 0, 4, 0)
+				Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Cursor    = Cursors.Hand,
+				Margin    = new Padding(3, 0, 3, 0)
 			};
 			btnCustomizeCols.FlatAppearance.BorderSize = 0;
 			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
 			btnCustomizeCols.Visible = Session.CanOrderColumns("Sales");
 
-			var lblScanHint = new Label
-			{
-				Text = "⚡ الاسكنر جاهز للقراءة المباشرة فوراً دون الحاجة لفتح سطر جديد",
-				AutoSize = true,
-				ForeColor = Color.FromArgb(74, 222, 128),
-				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-				Padding = new Padding(15, 5, 0, 0)
-			};
+			flowToolbar.Controls.Add(btnSearchProduct);
+			flowToolbar.Controls.Add(btnManualAdd);
+			flowToolbar.Controls.Add(btnCustomizeCols);
+			pnlGridToolbar.Controls.Add(flowToolbar);
 
-			flpProductBar.Controls.Add(btnSearchProduct);
-			flpProductBar.Controls.Add(btnCustomizeCols);
-			flpProductBar.Controls.Add(lblScanHint);
-
-			pnlProductBar.Controls.Add(flpProductBar);
-
-			// الحفاظ على الكائنات في الذاكرة لتجنب أي استثناءات في الكود
+			// cboProduct: نُبقي على الـ ComboBox مخفياً فقط كحاوية للكاش
 			cboProduct = new ComboBox { Visible = false, Width = 0 };
-			txtProductCode = new TextBox { Visible = false, Width = 0 };
+
+			// Background initialization to prevent NullReferenceException:
 			nudQty = new NumericUpDown { Value = 1m };
 			txtPrice = new TextBox();
 			btnAddItem = new Button();
@@ -1025,7 +1031,7 @@ namespace ChickenDist.Forms
 
 			pnlItems.Controls.Add(dgItems);
 			pnlItems.Controls.Add(pnlQuickItems);
-			pnlItems.Controls.Add(pnlProductBar);
+			pnlItems.Controls.Add(pnlGridToolbar);
 			LoadColumnSettings();
 			SetupGridContextMenu();
 
@@ -1343,7 +1349,7 @@ namespace ChickenDist.Forms
 			};
 			var lblHotkeys = new Label
 			{
-				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F3] بحث سريع | [Ctrl+1/2/3] تغيير الوحدة | ⚡ الاسكنر جاهز للقراءة المباشرة",
+				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+1/2/3] تغيير الوحدة",
 				ForeColor = Theme.TextSub,
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -1443,151 +1449,88 @@ namespace ChickenDist.Forms
 			if      (e.KeyCode == Keys.F2)  { btnNew.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9)  { PrintPreparationSlip(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F12 || e.KeyCode == Keys.F3) { btnSearchProduct.PerformClick(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F12) { AddNewCodeRow(); e.Handled = true; }
+			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
 
-		private void FrmSale_KeyPress(object sender, KeyPressEventArgs e)
+		protected override void OnKeyPress(KeyPressEventArgs e)
 		{
-			if (_searchSessionActive) return;
-
-			char c = e.KeyChar;
-			if (c == '\r' || c == '\n')
+			if (!char.IsControl(e.KeyChar))
 			{
-				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= BARCODE_MIN_LENGTH)
+				double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
+				if (gap > 120)
 				{
-					string codeToProcess = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
-					_barcodeTimer.Stop();
-					e.Handled = true;
-					ProcessScannedBarcode(codeToProcess);
+					_barcodeStartTime = DateTime.Now;
 				}
-				return;
+				_barcodeBuffer += e.KeyChar;
+				_lastKeyTime = DateTime.Now;
 			}
-
-			Control activeCtrl = this.ActiveControl;
-			bool isInManualText = (activeCtrl == txtNotes || activeCtrl == txtClientAddress || activeCtrl == txtInvoiceDiscount);
-
-			DateTime now = DateTime.Now;
-			double msSinceLast = (now - _lastKeyTime).TotalMilliseconds;
-			_lastKeyTime = now;
-
-			if (msSinceLast < BARCODE_INTERVAL_MS || string.IsNullOrEmpty(_barcodeBuffer))
-			{
-				if (!char.IsControl(c))
-				{
-					_barcodeBuffer += c;
-					_barcodeTimer.Stop();
-					_barcodeTimer.Start();
-
-					if (isInManualText && _barcodeBuffer.Length > 2 && msSinceLast < BARCODE_INTERVAL_MS)
-					{
-						e.Handled = true;
-					}
-				}
-			}
-			else
-			{
-				_barcodeBuffer = char.IsControl(c) ? "" : c.ToString();
-				_barcodeTimer.Stop();
-				if (!char.IsControl(c)) _barcodeTimer.Start();
-			}
-		}
-
-		private void BarcodeTimer_Tick(object sender, EventArgs e)
-		{
-			_barcodeTimer.Stop();
-			if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= BARCODE_MIN_LENGTH)
-			{
-				string candidate = _barcodeBuffer.Trim();
-				_barcodeBuffer = "";
-				
-				var dt = ProductDAL.FindByCode(candidate);
-				if (dt != null && dt.Rows.Count > 0)
-				{
-					ProcessScannedBarcode(candidate);
-				}
-			}
-			else
-			{
-				_barcodeBuffer = "";
-			}
+			base.OnKeyPress(e);
 		}
 
 		private void ProcessScannedBarcode(string code)
 		{
 			if (string.IsNullOrWhiteSpace(code)) return;
-			code = code.Trim();
-
-			DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal weight);
-			if (pRow == null)
+			var dt = ProductDAL.FindByCode(code);
+			if (dt != null && dt.Rows.Count > 0)
 			{
-				var dtCode = ProductDAL.FindByCode(code);
-				if (dtCode != null && dtCode.Rows.Count > 0)
-				{
-					pRow = dtCode.Rows[0];
-					if (pRow.Table.Columns.Contains("ParsedWeight") && pRow["ParsedWeight"] != DBNull.Value)
-					{
-						weight = Convert.ToDecimal(pRow["ParsedWeight"]);
-					}
-				}
-			}
-
-			if (pRow != null)
-			{
-				int pid = Convert.ToInt32(pRow["ProductID"]);
-				int matchedUnit = pRow.Table.Columns.Contains("MatchedUnit") && pRow["MatchedUnit"] != DBNull.Value ? Convert.ToInt32(pRow["MatchedUnit"]) : 0;
-				decimal? price = null;
-				string unitName = null;
-
+				int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+				int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
+				decimal price = 0m;
+				string unitName = "";
 				if (matchedUnit == 1)
 				{
-					price = pRow["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1SalePrice"]) : 0m;
-					unitName = pRow["Unit1Name"]?.ToString();
+					price = dt.Rows[0]["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) : 0m;
+					unitName = dt.Rows[0]["Unit1Name"]?.ToString();
 				}
 				else if (matchedUnit == 2)
 				{
-					price = pRow["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2SalePrice"]) : 0m;
-					unitName = pRow["Unit2Name"]?.ToString();
+					price = dt.Rows[0]["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) : 0m;
+					unitName = dt.Rows[0]["Unit2Name"]?.ToString();
 				}
 				else
 				{
-					price = Convert.ToDecimal(pRow["SalePrice"]);
-					unitName = pRow.Table.Columns.Contains("Unit") && pRow["Unit"] != DBNull.Value ? pRow["Unit"].ToString() : "";
+					price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+					unitName = dt.Rows[0]["Unit"]?.ToString();
 				}
+				if (price <= 0) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+				if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
 
-				_isScanningBarcode = true;
-				try
+				// إزالة السطر المعلق إن وجد
+				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 				{
-					AddOrUpdateProduct(pid, weight > 0 ? weight : 1.00m, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
-
-					try { System.Media.SystemSounds.Beep.Play(); } catch { }
-
-					FocusQtyCellInGrid(pid);
+					dgItems.Rows.RemoveAt(_pendingRowIdx);
+					_pendingRowIdx = -1;
 				}
-				finally
-				{
-					_isScanningBarcode = false;
-				}
+
+				decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
+				AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
+
+				try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+				AddNewCodeRow();
 			}
 			else
 			{
-				MessageBox.Show($"❌ لم يتم العثور على الصنف برقم الباركود أو كود الميزان ({code})!", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			if (keyData == Keys.Enter)
+			// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer)
+			if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
 			{
-				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= BARCODE_MIN_LENGTH)
+				double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+				if (totalMs < _barcodeBuffer.Length * 80 + 250)
 				{
-					string code = _barcodeBuffer.Trim();
+					string scannedCode = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
-					_barcodeTimer.Stop();
-					ProcessScannedBarcode(code);
+					ProcessScannedBarcode(scannedCode);
 					return true;
 				}
+				_barcodeBuffer = "";
 			}
 
 			if (keyData == Keys.Insert || keyData == Keys.Down)
@@ -1654,7 +1597,7 @@ namespace ChickenDist.Forms
 								}
 								else
 								{
-									dgItems.Focus();
+									AddNewCodeRow();
 								}
 							});
 							return true;
@@ -1663,7 +1606,7 @@ namespace ChickenDist.Forms
 						{
 							this.BeginInvoke((MethodInvoker)delegate
 							{
-								dgItems.Focus();
+								AddNewCodeRow();
 							});
 							return true;
 						}
@@ -1673,7 +1616,7 @@ namespace ChickenDist.Forms
 						dgItems.EndEdit();
 						this.BeginInvoke((MethodInvoker)delegate
 						{
-							dgItems.Focus();
+							AddNewCodeRow();
 						});
 						return true;
 					}
@@ -1692,6 +1635,93 @@ namespace ChickenDist.Forms
 					return true;
 			}
 			return false;
+		}
+
+		// ── اكتشاف الباركود التلقائي ───────────────────────────────────────
+		private void CboProduct_KeyPress_BarcodeDetect(object sender, KeyPressEventArgs e)
+		{
+			var now = DateTime.Now;
+			var interval = (now - _lastKeyTime).TotalMilliseconds;
+			_lastKeyTime = now;
+			_barcodeTimer.Stop();
+			if (interval <= BARCODE_INTERVAL_MS || interval == (DateTime.Now - DateTime.MinValue).TotalMilliseconds)
+				_barcodeTimer.Start();
+		}
+
+		private void BarcodeTimer_Tick(object sender, EventArgs e)
+		{
+			_barcodeTimer.Stop();
+			string text = cboProduct.Text?.Trim();
+			if (string.IsNullOrWhiteSpace(text) || text.Length < BARCODE_MIN_LENGTH) return;
+
+			var res = BarcodeParser.Parse(text);
+
+			List<ComboItem> allItems = cboProduct.Tag as List<ComboItem>;
+			if (allItems == null)
+			{
+				allItems = new List<ComboItem>();
+				foreach (var item in cboProduct.Items)
+					if (item is ComboItem ci) allItems.Add(ci);
+			}
+
+			ComboItem foundItem = null;
+
+			if (res.IsScaleBarcode)
+			{
+				_pendingBarcodeWeight = res.WeightOrPrice;
+				foreach (var ci in allItems)
+				{
+					if (ci.ID > 0 && (
+						ci.ID.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode || 
+						ci.PartNumber == res.ItemCode ||
+						(int.TryParse(ci.ProductCode, out int pCodeVal) && pCodeVal.ToString().PadLeft(AppConfig.BarcodeScaleItemCodeLength, '0') == res.ItemCode)
+					))
+					{
+						foundItem = ci;
+						break;
+					}
+				}
+				if (foundItem == null) { _pendingBarcodeWeight = null; return; }
+			}
+			else
+			{
+				foreach (var ci in allItems)
+				{
+					if (ci.ID > 0 &&
+						(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
+						 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
+						 MatchBarcode(ci.InternationalCode, text)))
+					{
+						foundItem = ci;
+						break;
+					}
+				}
+			}
+
+			if (foundItem != null)
+			{
+				decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1.00m);
+				_pendingBarcodeWeight = null;
+				_pendingScaleWeight = null;
+
+				_isScanningBarcode = true;
+				try
+				{
+					AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: text);
+					cboProduct.Text = "";
+					cboProduct.BeginUpdate();
+					cboProduct.Items.Clear();
+					cboProduct.Items.AddRange(allItems.ToArray());
+					cboProduct.SelectedIndex = 0;
+					cboProduct.EndUpdate();
+					// ننقل التركيز لخلية الكمية مباشرة بعد مسح الباركود
+					FocusQtyCellInGrid(foundItem.ID);
+				}
+				finally
+				{
+					_isScanningBarcode = false;
+				}
+			}
 		}
 
 		private Label MakeLabel(string text, int x, int y)
@@ -1799,7 +1829,9 @@ namespace ChickenDist.Forms
 						cboProduct.BeginUpdate();
 						cboProduct.Items.Clear();
 						cboProduct.Items.AddRange(allItems.ToArray());
-						dgItems.Focus();
+						cboProduct.SelectedIndex = 0;
+						cboProduct.EndUpdate();
+						AddNewCodeRow();
 					}
 					finally
 					{
@@ -2607,8 +2639,8 @@ namespace ChickenDist.Forms
 			finally
 			{
 				_searchSessionActive = false;
-				// إرجاع الفوكس للكومبو أو الجدول
-				this.BeginInvoke((MethodInvoker)delegate { dgItems.Focus(); });
+				// إرجاع الفوكس للجدول لسطر الإدخال
+				this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
 			}
 		}
 
@@ -2645,28 +2677,36 @@ namespace ChickenDist.Forms
 		/// <summary>يضيف سطراً فارغاً في الجدول ويضع الكيرسور على عمود كود الصنف مباشرة</summary>
 		private void AddNewCodeRow()
 		{
-			// إزالة سطر الكود المعلق السابق إذا كان فارغاً
-			if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+			this.BeginInvoke((MethodInvoker)delegate
 			{
-				var prevCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
-				if (prevCell.Value == null || string.IsNullOrEmpty(prevCell.Value.ToString()))
-					dgItems.Rows.RemoveAt(_pendingRowIdx);
-			}
+				try
+				{
+					// إذا كان السطر المعلق الحالي موجوداً وفارغاً نكتفي بالتركيز عليه
+					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+					{
+						var prevCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+						if (prevCell.Value == null || string.IsNullOrEmpty(prevCell.Value.ToString()))
+						{
+							dgItems.Focus();
+							dgItems.ClearSelection();
+							dgItems.CurrentCell = prevCell;
+							dgItems.BeginEdit(true);
+							return;
+						}
+					}
 
-			// إضافة سطر فارغ جديد
-			_pendingRowIdx = dgItems.Rows.Add();
-			// تلوين السطر الجديد لتمييزه
-			dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(30, 120, 190, 80);
+					// إضافة سطر فارغ جديد
+					_pendingRowIdx = dgItems.Rows.Add();
+					dgItems.Rows[_pendingRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(235, 245, 255);
 
-			// الانتقال لخلية الكود في السطر الجديد
-			try
-			{
-				dgItems.ClearSelection();
-				dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
-				dgItems.BeginEdit(true);
-				dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
-			}
-			catch { }
+					dgItems.Focus();
+					dgItems.ClearSelection();
+					dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
+					dgItems.BeginEdit(true);
+					dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
+				}
+				catch { }
+			});
 		}
 
 		private void SelectProductByID(int prodID, decimal price)
@@ -2854,6 +2894,24 @@ namespace ChickenDist.Forms
 					comboBox.DroppedDown = true;
 				}
 			}
+			else if (e.Control is TextBox tb)
+			{
+				tb.KeyDown -= CellTextBox_KeyDown;
+				tb.KeyDown += CellTextBox_KeyDown;
+			}
+		}
+
+		private void CellTextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Tab)
+			{
+				if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "CodeEntry")
+				{
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					dgItems.EndEdit();
+				}
+			}
 		}
 
 		private void DgItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -2874,7 +2932,7 @@ namespace ChickenDist.Forms
 						return;
 					}
 					var dt = ProductDAL.FindByCode(code);
-					if (dt.Rows.Count > 0)
+					if (dt != null && dt.Rows.Count > 0)
 					{
 						int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
 						int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
@@ -2904,12 +2962,14 @@ namespace ChickenDist.Forms
 						_pendingRowIdx = -1;
 						decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
 						AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
-						// فتح سطر جديد للإدخال التالي
+
+						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+						// فتح سطر جديد للإدخال أو المسح التالي فوراً
 						AddNewCodeRow();
 					}
 					else
 					{
-						MessageBox.Show("❌ لم يتم العثور على صنف بالكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						// إعادة التركيز على خلية الكود
 						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
 						{
@@ -6449,8 +6509,7 @@ namespace ChickenDist.Forms
 
 			this.BeginInvoke((MethodInvoker)delegate
 			{
-				this.ActiveControl = dgItems;
-				dgItems.Focus();
+				AddNewCodeRow();
 			});
 		}
 

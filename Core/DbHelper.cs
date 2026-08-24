@@ -455,7 +455,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 34;
+        private const int CurrentSchemaVersion = 33;
 
         public static void EnsureAppSettingsTable()
         {
@@ -467,125 +467,6 @@ namespace ChickenDist.Core
                     SettingValue NVARCHAR(500) NULL
                 );
             END");
-        }
-
-        public static void WidenAllNumericPrecisions()
-        {
-            try
-            {
-                SafeMigrate("Global.WidenDecimalPrecision.v34", @"
-                DECLARE @alters TABLE (Tbl NVARCHAR(128), Col NVARCHAR(128), TargetType NVARCHAR(64), IsNull BIT);
-                
-                INSERT INTO @alters VALUES 
-                ('Products', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('Products', 'MinQuantity', 'DECIMAL(18,4)', 0),
-                ('Products', 'MinStockLimit', 'DECIMAL(18,4)', 0),
-                ('Products', 'PurchasePrice', 'DECIMAL(18,4)', 0),
-                ('Products', 'SalePrice', 'DECIMAL(18,4)', 0),
-                ('Products', 'CostPrice', 'DECIMAL(18,4)', 0),
-                ('Products', 'WholesalePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'SemiWholesalePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'PendingSalePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'PendingQtyThreshold', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit1SalePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit1PurchasePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit2Factor', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit2SalePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit2PurchasePrice', 'DECIMAL(18,4)', 1),
-                ('Products', 'Unit3Factor', 'DECIMAL(18,4)', 1),
-                
-                ('ProductStock', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('ProductBatches', 'Quantity', 'DECIMAL(18,4)', 0),
-                
-                ('StockAdjustments', 'BookQty', 'DECIMAL(18,4)', 0),
-                ('StockAdjustments', 'ActualQty', 'DECIMAL(18,4)', 0),
-                ('StockAdjustments', 'Factor', 'DECIMAL(18,4)', 1),
-                
-                ('SaleItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('SaleItems', 'UnitPrice', 'DECIMAL(18,4)', 0),
-                ('SaleItems', 'TotalPrice', 'DECIMAL(18,4)', 0),
-                ('SaleItems', 'CostTotal', 'DECIMAL(18,4)', 1),
-                ('SaleItems', 'Factor', 'DECIMAL(18,4)', 1),
-                ('SaleItems', 'DiscountAmt', 'DECIMAL(18,4)', 0),
-                ('SaleItemsHistory', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('SaleItemsHistory', 'UnitPrice', 'DECIMAL(18,4)', 0),
-                ('SaleItemsHistory', 'TotalPrice', 'DECIMAL(18,4)', 0),
-                ('SaleItemsHistory', 'Factor', 'DECIMAL(18,4)', 1),
-                
-                ('PurchaseItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('PurchaseItems', 'UnitPrice', 'DECIMAL(18,4)', 0),
-                ('PurchaseItems', 'TotalPrice', 'DECIMAL(18,4)', 0),
-                ('PurchaseItems', 'Factor', 'DECIMAL(18,4)', 1),
-                ('PurchaseItems', 'DiscountAmt', 'DECIMAL(18,4)', 0),
-                ('PurchaseItems', 'SuggestedSalePrice', 'DECIMAL(18,4)', 1),
-                
-                ('ReturnItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('ReturnItems', 'UnitPrice', 'DECIMAL(18,4)', 0),
-                ('ReturnItems', 'TotalPrice', 'DECIMAL(18,4)', 0),
-                ('ReturnItems', 'Factor', 'DECIMAL(18,4)', 1),
-                
-                ('PurchaseReturnItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('PurchaseReturnItems', 'UnitPrice', 'DECIMAL(18,4)', 0),
-                ('PurchaseReturnItems', 'TotalPrice', 'DECIMAL(18,4)', 0),
-                ('PurchaseReturnItems', 'Factor', 'DECIMAL(18,4)', 1),
-                
-                ('WarehouseTransferItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('WarehouseTransferItems', 'Factor', 'DECIMAL(18,4)', 1),
-                ('WastageLossItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('WastageLossItems', 'Factor', 'DECIMAL(18,4)', 1),
-                ('DriverLoadItems', 'Quantity', 'DECIMAL(18,4)', 0),
-                ('DriverLoadItems', 'Factor', 'DECIMAL(18,4)', 1),
-                ('HandoverItems', 'ReturnedQty', 'DECIMAL(18,4)', 0),
-                ('HandoverItems', 'Factor', 'DECIMAL(18,4)', 1),
-                
-                ('PriceChangesLog', 'OldPrice', 'DECIMAL(18,4)', 0),
-                ('PriceChangesLog', 'NewPrice', 'DECIMAL(18,4)', 0),
-                
-                ('Clients', 'Balance', 'DECIMAL(18,2)', 0),
-                ('Clients', 'OpeningBalance', 'DECIMAL(18,2)', 0),
-                ('Clients', 'CurrentDebt', 'DECIMAL(18,2)', 0),
-                ('Suppliers', 'Balance', 'DECIMAL(18,2)', 0),
-                ('Suppliers', 'OpeningBalance', 'DECIMAL(18,2)', 0);
-
-                DECLARE @t NVARCHAR(128), @c NVARCHAR(128), @dt NVARCHAR(64), @n BIT;
-                DECLARE cur CURSOR LOCAL FAST_FORWARD FOR SELECT Tbl, Col, TargetType, IsNull FROM @alters;
-                OPEN cur;
-                FETCH NEXT FROM cur INTO @t, @c, @dt, @n;
-                WHILE @@FETCH_STATUS = 0
-                BEGIN
-                    IF OBJECT_ID(@t, 'U') IS NOT NULL AND COL_LENGTH(@t, @c) IS NOT NULL
-                    BEGIN
-                        DECLARE @currPrec INT = 0;
-                        SELECT @currPrec = precision FROM sys.columns WHERE object_id = OBJECT_ID(@t) AND name = @c;
-                        IF @currPrec < 18
-                        BEGIN
-                            BEGIN TRY
-                                DECLARE @dfName NVARCHAR(256) = NULL;
-                                SELECT @dfName = d.name FROM sys.default_constraints d 
-                                WHERE d.parent_object_id = OBJECT_ID(@t) AND d.parent_column_id = COLUMNPROPERTY(OBJECT_ID(@t), @c, 'ColumnId');
-                                IF @dfName IS NOT NULL
-                                    EXEC('ALTER TABLE ' + @t + ' DROP CONSTRAINT ' + @dfName);
-                                
-                                DECLARE @sqlAlt NVARCHAR(MAX) = 'ALTER TABLE ' + @t + ' ALTER COLUMN ' + @c + ' ' + @dt + ' ' + CASE WHEN @n = 1 THEN 'NULL' ELSE 'NOT NULL' END;
-                                EXEC(@sqlAlt);
-                                
-                                IF @n = 0
-                                    EXEC('ALTER TABLE ' + @t + ' ADD CONSTRAINT DF_' + @t + '_' + @c + ' DEFAULT 0 FOR ' + @c);
-                            END TRY
-                            BEGIN CATCH
-                            END CATCH
-                        END
-                    END
-                    FETCH NEXT FROM cur INTO @t, @c, @dt, @n;
-                END
-                CLOSE cur;
-                DEALLOCATE cur;
-                ");
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Error("WidenAllNumericPrecisions failed", ex);
-            }
         }
 
         public static string GetAppSetting(string key, string defaultValue = null)
@@ -630,7 +511,6 @@ namespace ChickenDist.Core
         public static void EnsurePurchaseColumnsExist()
         {
             EnsureAppSettingsTable();
-            WidenAllNumericPrecisions();
 
             SafeMigrate("Sales.IsPosted.Early", @"
             IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
