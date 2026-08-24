@@ -585,12 +585,13 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 11f)
             };
-            cboBarcodeEncoding.Items.AddRange(new object[]
+            var encList = BarcodeEngine.GetAvailableEncodings();
+            foreach (var enc in encList)
             {
-                "Code 128 (موصى به - ثنائي ومدمج وسريع القراءة)",
-                "Code 39 (أحادي عريض)"
-            });
-            cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
+                cboBarcodeEncoding.Items.Add(enc.Item2);
+            }
+            int defEncIdx = encList.FindIndex(x => x.Item1 == AppConfig.BarcodeEncoding);
+            cboBarcodeEncoding.SelectedIndex = defEncIdx >= 0 ? defEncIdx : 0;
             this.Controls.Add(cboBarcodeEncoding);
             y += 40;
 
@@ -1264,7 +1265,14 @@ namespace ChickenDist.Forms
                                           : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
                                           : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
                                           : "Standard";
-                AppConfig.BarcodeEncoding = cboBarcodeEncoding.SelectedIndex == 1 ? "Code39" : "Code128";
+                if (cboBarcodeEncoding.SelectedIndex >= 0)
+                {
+                    var encList = BarcodeEngine.GetAvailableEncodings();
+                    if (cboBarcodeEncoding.SelectedIndex < encList.Count)
+                    {
+                        AppConfig.BarcodeEncoding = encList[cboBarcodeEncoding.SelectedIndex].Item1;
+                    }
+                }
 
                 // حفظ إعدادات الواتساب وتفعيل الفوارغ والباكب عند الإغلاق والمسار السحابي
                 AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();

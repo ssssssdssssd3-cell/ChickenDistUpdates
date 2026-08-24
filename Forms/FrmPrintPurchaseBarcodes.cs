@@ -199,12 +199,13 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(30, 41, 59),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            cboBarcodeEncoding.Items.AddRange(new object[]
+            var encList = BarcodeEngine.GetAvailableEncodings();
+            foreach (var enc in encList)
             {
-                "Code 128 (موصى به - سريع وسهل القراءة)",
-                "Code 39 (أحادي عريض)"
-            });
-            cboBarcodeEncoding.SelectedIndex = AppConfig.BarcodeEncoding == "Code39" ? 1 : 0;
+                cboBarcodeEncoding.Items.Add(enc.Item2);
+            }
+            int defIdx = encList.FindIndex(x => x.Item1 == AppConfig.BarcodeEncoding);
+            cboBarcodeEncoding.SelectedIndex = defIdx >= 0 ? defIdx : 0;
             this.Controls.Add(cboBarcodeEncoding);
 
             chkPrintPrice = new CheckBox
@@ -361,7 +362,7 @@ namespace ChickenDist.Forms
             var g = e.Graphics;
 
             string template = "Standard";
-            bool isCode128 = true;
+            string encoding = "Code128";
             
             if (cboBarcodeTemplate.SelectedItem != null)
             {
@@ -371,10 +372,14 @@ namespace ChickenDist.Forms
                          : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
                          : "Standard";
             }
-            if (cboBarcodeEncoding.SelectedItem != null)
+            if (cboBarcodeEncoding.SelectedIndex >= 0)
             {
-                isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
-                AppConfig.BarcodeEncoding = isCode128 ? "Code128" : "Code39";
+                var encList = BarcodeEngine.GetAvailableEncodings();
+                if (cboBarcodeEncoding.SelectedIndex < encList.Count)
+                {
+                    encoding = encList[cboBarcodeEncoding.SelectedIndex].Item1;
+                    AppConfig.BarcodeEncoding = encoding;
+                }
             }
 
             string labelType = (AppConfig.BarcodeStickerSize == "38x26_double") ? "Split" : "Full";
@@ -449,10 +454,7 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 22 : 32;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    if (isCode128)
-                        DrawCode128(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
-                    else
-                        DrawCode39(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, item.ProductCode, encoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
                     g.DrawString(item.ProductCode, new Font("Courier New", isSmallSticker ? 6f : 6.5f), Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 8 : 10), center);
@@ -475,10 +477,7 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 20 : 30;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    if (isCode128)
-                        DrawCode128(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
-                    else
-                        DrawCode39(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, item.ProductCode, encoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
                     g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(x + 5, y, w / 2 - 5, isSmallSticker ? 10 : 12), leftFormat);
@@ -502,10 +501,7 @@ namespace ChickenDist.Forms
                     // رسم الباركود بدون سعر
                     float barcodeHeight = isSmallSticker ? 26 : 38;
                     float barcodeX = x + (w - (w - 16)) / 2;
-                    if (isCode128)
-                        DrawCode128(g, item.ProductCode, barcodeX, y, w - 16, barcodeHeight);
-                    else
-                        DrawCode39(g, item.ProductCode, barcodeX, y, w - 16, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, item.ProductCode, encoding, barcodeX, y, w - 16, barcodeHeight);
                     y += barcodeHeight + 2;
 
                     // كود الباركود ورقم الرف إن وجد
@@ -531,10 +527,7 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 24 : 36;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    if (isCode128)
-                        DrawCode128(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
-                    else
-                        DrawCode39(g, item.ProductCode, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, item.ProductCode, encoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
                     g.DrawString(item.ProductCode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
