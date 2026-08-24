@@ -424,6 +424,26 @@ namespace ChickenDist.Forms
 		{
 			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
+			var miEdit = new ToolStripMenuItem("✏️ تعديل الفاتورة", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
+				{
+					int pid = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+					if (new FrmPurchase(pid, isCopyMode: false).ShowDialog(this) == DialogResult.OK)
+						LoadPurchases();
+				}
+			});
+
+			var miCopy = new ToolStripMenuItem("📄 نسخ الفاتورة (شراء جديد)", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
+				{
+					int pid = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+					if (new FrmPurchase(pid, isCopyMode: true).ShowDialog(this) == DialogResult.OK)
+						LoadPurchases();
+				}
+			});
+
 			var miPrint = new ToolStripMenuItem("🖨️ طباعة الفاتورة", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0)
@@ -474,6 +494,9 @@ namespace ChickenDist.Forms
 			});
 
 			ctx.Items.AddRange(new ToolStripItem[] {
+				miEdit,
+				miCopy,
+				new ToolStripSeparator(),
 				miPrint,
 				miBarcode,
 				miReturn,
