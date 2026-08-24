@@ -402,7 +402,6 @@ namespace ChickenDist.Forms
                 }
             }
         }
-
         private void BtnPreview_Click(object sender, EventArgs e)
         {
             if (_allLines == null || _allLines.Count <= 1)
@@ -460,21 +459,31 @@ namespace ChickenDist.Forms
                 var partMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 var nameMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-                var dtExist = DbHelper.Query("SELECT ProductID, ProductCode, PartNumber, ProductName FROM Products");
+                // ─── تحميل الأصناف الموجودة مع تصنيفاتها لفحص التعارض ───
+                var dtExist = DbHelper.Query(
+                    @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName,
+                             ISNULL(c.CategoryName,'') AS CategoryName
+                      FROM Products p
+                      LEFT JOIN Categories c ON c.CategoryID = p.CategoryID");
+
+                var existingCatMap = new Dictionary<int, string>(); // ProductID → CategoryName
                 foreach (DataRow r in dtExist.Rows)
                 {
                     string code = r["ProductCode"].ToString().Trim();
                     string part = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString().Trim() : "";
-                    string name = r["ProductName"].ToString().Trim();
+                    string pName = r["ProductName"].ToString().Trim();
+                    int pid = (int)r["ProductID"];
 
                     if (!string.IsNullOrEmpty(code) && !codeMap.ContainsKey(code))
-                        codeMap[code] = (int)r["ProductID"];
+                        codeMap[code] = pid;
                     if (!string.IsNullOrEmpty(part) && !partMap.ContainsKey(part))
-                        partMap[part] = (int)r["ProductID"];
+                        partMap[part] = pid;
                     
-                    string normName = Normalize(name);
+                    string normName = Normalize(pName);
                     if (!string.IsNullOrEmpty(normName) && !nameMap.ContainsKey(normName))
-                        nameMap[normName] = (int)r["ProductID"];
+                        nameMap[normName] = pid;
+
+                    existingCatMap[pid] = r["CategoryName"].ToString().Trim();
                 }
 
                 int newCount = 0;
@@ -529,21 +538,40 @@ namespace ChickenDist.Forms
 
                     int matchedProductID = 0;
                     bool isExisting = false;
+                    string matchReason = "";
 
+                    // ─── المطابقة: الكود أولاً (الأعلى أولوية)، ثم رقم القطعة، ثم الاسم ───
+                    // المطابقة بالكود حاسمة — لو الكود موجود نعدّله حتى لو التصنيف مختلف
                     if (!string.IsNullOrEmpty(code) && code != "AUTO" && codeMap.TryGetValue(code, out int idByCode))
                     {
                         matchedProductID = idByCode;
                         isExisting = true;
+                        matchReason = "الكود";
                     }
                     else if (!string.IsNullOrEmpty(part) && partMap.TryGetValue(part, out int idByPart))
                     {
                         matchedProductID = idByPart;
                         isExisting = true;
+                        matchReason = "رقم القطعة";
                     }
                     else if (nameMap.TryGetValue(Normalize(name), out int idByName))
                     {
                         matchedProductID = idByName;
                         isExisting = true;
+                        matchReason = "الاسم";
+                    }
+
+                    // ─── فحص تعارض التصنيف: لو الصنف موجود وتصنيفه مختلف عن الشيت ───
+                    bool categoryConflict = false;
+                    string existingCatName = "";
+                    if (isExisting && !string.IsNullOrWhiteSpace(category))
+                    {
+                        existingCatMap.TryGetValue(matchedProductID, out existingCatName);
+                        if (!string.IsNullOrEmpty(existingCatName) &&
+                            !string.Equals(existingCatName.Trim(), category.Trim(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            categoryConflict = true;
+                        }
                     }
 
                     decimal currentStock = 0;
@@ -578,7 +606,14 @@ namespace ChickenDist.Forms
 
                     _parsedRows.Add(row);
 
-                    string statusText = isExisting ? "⚠️ تعديل صنف موجود" : "🆕 صنف جديد";
+                    string statusText;
+                    if (!isExisting)
+                        statusText = "🆕 صنف جديد";
+                    else if (categoryConflict)
+                        statusText = $"⚠️ تعديل — تصنيف: [{existingCatName}] → [{category}]";
+                    else
+                        statusText = $"⚠️ تعديل موجود (بـ {matchReason})";
+
                     int gridIdx = dgPreview.Rows.Add(
                         statusText,
                         row.ProductCode,
@@ -594,8 +629,17 @@ namespace ChickenDist.Forms
 
                     if (isExisting)
                     {
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(45, 40, 20);
-                        dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(240, 200, 100);
+                        if (categoryConflict)
+                        {
+                            // لون برتقالي — تنبيه تغيير التصنيف
+                            dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(50, 28, 10);
+                            dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(255, 160, 80);
+                        }
+                        else
+                        {
+                            dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(45, 40, 20);
+                            dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(240, 200, 100);
+                        }
                         updateCount++;
                     }
                     else
@@ -603,6 +647,7 @@ namespace ChickenDist.Forms
                         dgPreview.Rows[gridIdx].DefaultCellStyle.BackColor = Color.FromArgb(20, 40, 30);
                         dgPreview.Rows[gridIdx].DefaultCellStyle.ForeColor = Color.FromArgb(120, 230, 150);
                         newCount++;
+
                     }
                 }
 
