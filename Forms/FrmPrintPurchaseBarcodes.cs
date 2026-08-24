@@ -231,11 +231,17 @@ namespace ChickenDist.Forms
             y += 45;
 
             // أزرار
-            btnPrint = Theme.MakeButton("🖨️ طباعة الملصقات", 20, y, 160, 38, Theme.Success);
-            btnPrint.Click += BtnPrint_Click;
+            btnPrint = Theme.MakeButton("🖨️ طباعة الملصقات", 20, y, 170, 38, Theme.Success);
+            btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnPrint.Click += (s, e) => StartPrintJob(false);
             this.Controls.Add(btnPrint);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 195, y, 110, 38, Color.FromArgb(70, 80, 95));
+            var btnPreview = Theme.MakeButton("🔍 معاينة", 200, y, 100, 38, Theme.Accent);
+            btnPreview.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnPreview.Click += (s, e) => StartPrintJob(true);
+            this.Controls.Add(btnPreview);
+
+            btnCancel = Theme.MakeButton("إلغاء ↩", 310, y, 100, 38, Color.FromArgb(70, 80, 95));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }
@@ -283,7 +289,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void BtnPrint_Click(object sender, EventArgs e)
+        private void StartPrintJob(bool isPreview)
         {
             _printList = new List<BarcodePrintItem>();
 
@@ -334,16 +340,31 @@ namespace ChickenDist.Forms
 
                 AppConfig.SetPaperSize(pd, AppConfig.BarcodeStickerSize);
 
+                pd.BeginPrint += (s, e) =>
+                {
+                    _currentItemIndex = 0;
+                    _currentLabelIndex = 0;
+                };
+
                 pd.PrintPage += Pd_PrintPage;
 
-                var prev = new PrintPreviewDialog
+                if (isPreview)
                 {
-                    Document = pd,
-                    Width = 450,
-                    Height = 400,
-                    Text = "معاينة ملصقات الباركود"
-                };
-                prev.ShowDialog(this);
+                    var prev = new PrintPreviewDialog
+                    {
+                        Document = pd,
+                        Width = 550,
+                        Height = 500,
+                        Text = "معاينة ملصقات الباركود"
+                    };
+                    prev.ShowDialog(this);
+                }
+                else
+                {
+                    AppConfig.PrintInBackground(pd);
+                    MessageBox.Show("✅ تم إرسال أمر طباعة الملصقات إلى الطابعة بنجاح.", "تم الإرسال", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.Close();
+                }
             }
             catch (Exception ex)
             {
