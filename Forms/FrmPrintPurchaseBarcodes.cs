@@ -374,6 +374,7 @@ namespace ChickenDist.Forms
             if (cboBarcodeEncoding.SelectedItem != null)
             {
                 isCode128 = cboBarcodeEncoding.SelectedIndex == 0;
+                AppConfig.BarcodeEncoding = isCode128 ? "Code128" : "Code39";
             }
 
             string labelType = (AppConfig.BarcodeStickerSize == "38x26_double") ? "Split" : "Full";
@@ -580,29 +581,90 @@ namespace ChickenDist.Forms
         {
             try
             {
-                code = code.Trim();
+                code = code?.Trim() ?? "";
                 if (string.IsNullOrEmpty(code)) return;
 
-                // Set GDI+ options for crisp, aliased rendering (perfect for barcodes)
+                // Set GDI+ options for crisp, aliased rendering (perfect for optical barcode scanners)
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 
-                int sum = 104; // Start B
                 var symbolIndices = new List<int>();
-                symbolIndices.Add(104); // Start B
 
-                for (int i = 0; i < code.Length; i++)
+                // Check if the code is entirely numeric
+                bool isAllDigits = true;
+                foreach (char c in code)
                 {
-                    int val = code[i] - 32;
-                    if (val < 0 || val > 102) val = 0; // fallback to Space
-                    symbolIndices.Add(val);
-                    sum += val * (i + 1);
+                    if (c < '0' || c > '9')
+                    {
+                        isAllDigits = false;
+                        break;
+                    }
                 }
 
-                int checksum = sum % 103;
-                symbolIndices.Add(checksum);
-                symbolIndices.Add(106); // Stop
+                if (isAllDigits && code.Length >= 2 && code.Length % 2 == 0)
+                {
+                    // Code 128 Subset C (Optimal 2-digits per symbol for numbers)
+                    symbolIndices.Add(105); // Start C
+                    int sum = 105;
+                    int pos = 1;
+                    for (int i = 0; i < code.Length; i += 2)
+                    {
+                        int val = int.Parse(code.Substring(i, 2));
+                        symbolIndices.Add(val);
+                        sum += val * pos;
+                        pos++;
+                    }
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
+                }
+                else if (isAllDigits && code.Length >= 3 && code.Length % 2 != 0)
+                {
+                    // Odd number of digits: Start C for digit pairs, switch to B for the last digit
+                    symbolIndices.Add(105); // Start C
+                    int sum = 105;
+                    int pos = 1;
+                    for (int i = 0; i < code.Length - 1; i += 2)
+                    {
+                        int val = int.Parse(code.Substring(i, 2));
+                        symbolIndices.Add(val);
+                        sum += val * pos;
+                        pos++;
+                    }
+
+                    // Switch to Code B (Code B in Code C is 100)
+                    symbolIndices.Add(100);
+                    sum += 100 * pos;
+                    pos++;
+
+                    // Last character in Code B
+                    int lastVal = code[code.Length - 1] - 32;
+                    if (lastVal < 0 || lastVal > 95) lastVal = 0;
+                    symbolIndices.Add(lastVal);
+                    sum += lastVal * pos;
+                    pos++;
+
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
+                }
+                else
+                {
+                    // Code 128 Subset B (Alphanumeric)
+                    symbolIndices.Add(104); // Start B
+                    int sum = 104;
+                    for (int i = 0; i < code.Length; i++)
+                    {
+                        int val = code[i] - 32;
+                        if (val < 0 || val > 95) val = 0; // fallback to Space
+                        symbolIndices.Add(val);
+                        sum += val * (i + 1);
+                    }
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
+                }
 
                 int totalModules = 0;
                 foreach (int index in symbolIndices)
@@ -614,19 +676,22 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                float moduleWidth = width / totalModules;
+                // Leave safe quiet zone margins
+                float quietZoneModules = 10f; // 10 modules quiet zone each side
+                float availableWidth = width;
+                float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
                 
-                // Cap module width to prevent extremely fat bleeding bars for short codes
-                float maxModuleWidth = (width < 140f) ? 1.5f : 2.0f; 
+                // Allow readable module width, capped appropriately for sticker size
+                float maxModuleWidth = (availableWidth < 130f) ? 1.5f : 2.0f; 
                 if (moduleWidth > maxModuleWidth)
                 {
                     moduleWidth = maxModuleWidth;
                 }
-                if (moduleWidth < 1.0f) moduleWidth = 1.0f;
+                if (moduleWidth < 0.8f) moduleWidth = 0.8f;
 
-                // Center the barcode
+                // Center the barcode with its quiet zones
                 float actualBarcodeWidth = totalModules * moduleWidth;
-                float curX = x + (width - actualBarcodeWidth) / 2;
+                float curX = x + (width - actualBarcodeWidth) / 2f;
 
                 using (var brush = new SolidBrush(Color.Black))
                 {
@@ -641,9 +706,9 @@ namespace ChickenDist.Forms
 
                             if (isBar)
                             {
-                                int rectX = (int)Math.Round(curX);
-                                int rectW = (int)Math.Round(nextX) - rectX;
-                                g.FillRectangle(brush, rectX, y, rectW, height);
+                                float barX = curX;
+                                float barW = elementWidth;
+                                g.FillRectangle(brush, barX, y, barW, height);
                             }
                             curX = nextX;
                         }

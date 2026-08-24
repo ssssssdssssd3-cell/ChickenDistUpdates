@@ -988,6 +988,7 @@ namespace ChickenDist.Forms
             if (cboBarcodeEncoding.SelectedItem != null)
             {
                 _printIsCode128 = cboBarcodeEncoding.SelectedIndex == 0;
+                AppConfig.BarcodeEncoding = _printIsCode128 ? "Code128" : "Code39";
             }
             _printPriceFlag = chkPrintPrice.Checked;
             _printCompanyNameFlag = chkPrintCompanyName.Checked;
@@ -1239,51 +1240,130 @@ namespace ChickenDist.Forms
         private void DrawCode128(Graphics g, string text, float x, float y, float width, float height)
         {
             if (string.IsNullOrEmpty(text)) return;
-            List<int> pattern = EncodeCode128B(text);
+            text = text.Trim();
+
+            // Set GDI+ options for crisp, aliased rendering
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+            List<int> pattern = EncodeCode128Auto(text);
             if (pattern == null || pattern.Count == 0) return;
 
             int totalModules = 0;
             foreach (int m in pattern) totalModules += m;
 
-            float moduleWidth = width / totalModules;
-            if (moduleWidth < 0.5f) moduleWidth = 0.5f;
+            // Safe quiet zone
+            float quietZoneModules = 10f;
+            float availableWidth = width;
+            float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
+            
+            float maxModuleWidth = (availableWidth < 130f) ? 1.5f : 2.0f;
+            if (moduleWidth > maxModuleWidth) moduleWidth = maxModuleWidth;
+            if (moduleWidth < 0.8f) moduleWidth = 0.8f;
 
-            float curX = x + (width - (totalModules * moduleWidth)) / 2;
+            float actualBarcodeWidth = totalModules * moduleWidth;
+            float curX = x + (width - actualBarcodeWidth) / 2f;
             bool bar = true;
 
-            foreach (int m in pattern)
+            using (var brush = new SolidBrush(Color.Black))
             {
-                float w = m * moduleWidth;
-                if (bar)
+                foreach (int m in pattern)
                 {
-                    g.FillRectangle(Brushes.Black, curX, y, w, height);
+                    float w = m * moduleWidth;
+                    if (bar)
+                    {
+                        g.FillRectangle(brush, curX, y, w, height);
+                    }
+                    curX += w;
+                    bar = !bar;
                 }
-                curX += w;
-                bar = !bar;
             }
         }
 
-        private List<int> EncodeCode128B(string text)
+        private List<int> EncodeCode128Auto(string text)
         {
             var pattern = new List<int>();
             int[][] codeTable = GetCode128Table();
 
-            int checksum = 104;
-            pattern.AddRange(codeTable[104]);
-
-            for (int i = 0; i < text.Length; i++)
+            // Check if the text is entirely numeric
+            bool isAllDigits = true;
+            foreach (char c in text)
             {
-                char c = text[i];
-                int val = c - 32;
-                if (val < 0 || val > 94) val = 0;
-                checksum += val * (i + 1);
-                pattern.AddRange(codeTable[val]);
+                if (c < '0' || c > '9')
+                {
+                    isAllDigits = false;
+                    break;
+                }
             }
 
-            checksum %= 103;
-            pattern.AddRange(codeTable[checksum]);
+            if (isAllDigits && text.Length >= 2 && text.Length % 2 == 0)
+            {
+                // Code 128 Subset C (Numeric pairs)
+                int checksum = 105;
+                pattern.AddRange(codeTable[105]); // Start C
+                int pos = 1;
+                for (int i = 0; i < text.Length; i += 2)
+                {
+                    int val = int.Parse(text.Substring(i, 2));
+                    checksum += val * pos;
+                    pattern.AddRange(codeTable[val]);
+                    pos++;
+                }
+                checksum %= 103;
+                pattern.AddRange(codeTable[checksum]);
+                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
+            }
+            else if (isAllDigits && text.Length >= 3 && text.Length % 2 != 0)
+            {
+                // Odd digits: Start C, switch to B for last char
+                int checksum = 105;
+                pattern.AddRange(codeTable[105]); // Start C
+                int pos = 1;
+                for (int i = 0; i < text.Length - 1; i += 2)
+                {
+                    int val = int.Parse(text.Substring(i, 2));
+                    checksum += val * pos;
+                    pattern.AddRange(codeTable[val]);
+                    pos++;
+                }
 
-            pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 });
+                // Switch to Code B (Code B in Code C table is 100)
+                checksum += 100 * pos;
+                pattern.AddRange(codeTable[100]);
+                pos++;
+
+                // Last char
+                int lastVal = text[text.Length - 1] - 32;
+                if (lastVal < 0 || lastVal > 95) lastVal = 0;
+                checksum += lastVal * pos;
+                pattern.AddRange(codeTable[lastVal]);
+                pos++;
+
+                checksum %= 103;
+                pattern.AddRange(codeTable[checksum]);
+                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
+            }
+            else
+            {
+                // Code 128 Subset B (Alphanumeric)
+                int checksum = 104;
+                pattern.AddRange(codeTable[104]); // Start B
+
+                for (int i = 0; i < text.Length; i++)
+                {
+                    char c = text[i];
+                    int val = c - 32;
+                    if (val < 0 || val > 95) val = 0;
+                    checksum += val * (i + 1);
+                    pattern.AddRange(codeTable[val]);
+                }
+
+                checksum %= 103;
+                pattern.AddRange(codeTable[checksum]);
+                pattern.AddRange(new int[] { 2, 3, 3, 1, 1, 1, 2 }); // Stop
+            }
+
             return pattern;
         }
 
