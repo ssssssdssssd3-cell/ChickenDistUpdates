@@ -398,6 +398,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("Installments", "📜 عقود التقسيط الشرعي", 0),
             new ScreenInfo("Reservations", "📋 حجوزات العملاء", 0),
             new ScreenInfo("ClearanceOffers", "🏷️ الأوكازيون والعروض", 0),
+            new ScreenInfo("PriceChecker", "🏷️ كشك فحص الأسعار والبدائل الذكية", 0),
             new ScreenInfo("SalesList", "📋 سجل الفواتير والمبيعات", 0),
             new ScreenInfo("SalesAudit", "🔍 سجل تعديلات وحذف الفواتير", 0),
             new ScreenInfo("AccountantPortal", "🌐 بوابة المحاسبة الميدانية", 0),
@@ -445,6 +446,8 @@ namespace ChickenDist.Forms
             new ScreenInfo("ActualBalances", "💵 مطابقة الأرصدة الفعلية للنقدية", 3),
             new ScreenInfo("DailyAccounts", "📊 الحسابات والمالية اليومية الشاملة", 3),
             new ScreenInfo("ReceiptVoucher", "📄 إصدار سندات القبض والدفع", 3),
+            new ScreenInfo("Shareholders", "🤝 حسابات الشركاء ورأس المال وتوزيع الأرباح", 3),
+            new ScreenInfo("FixedAssets", "🏢 سجل وإهلاك الأصول الثابتة", 3),
             new ScreenInfo("FinancialPosition", "📊 الموقف المالي الشامل للمكان", 3),
             new ScreenInfo("DailyClosing", "🔒 تقفيل يومية المبيعات", 3),
             new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
@@ -509,8 +512,11 @@ namespace ChickenDist.Forms
             new ScreenInfo("DriverLeaderboard", "🏆 أداء وتقييم المناديب", 5),
             new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 5),
             new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 5),
-            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 5),
+            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والصلاحيات", 5),
             new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 5),
+            new ScreenInfo("EmployeeAttendance", "🕒 الحضور والانصراف والدوام", 5),
+            new ScreenInfo("EmployeeCommissions", "💼 عمولات الموظفين ومسيرات البيع", 5),
+            new ScreenInfo("EmployeePayroll", "📊 مسيرات الرواتب والبدلات", 5),
             new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 5),
             new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 5),
             new ScreenInfo("CloudSync", "☁️ التزامن السحابي والفرعي", 5),
@@ -738,6 +744,8 @@ namespace ChickenDist.Forms
                                                    string.Equals(key, "Installments", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "Maintenance", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "SafeAccounts", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Shareholders", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "FixedAssets", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "Reservations", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "ClearanceOffers", StringComparison.OrdinalIgnoreCase) ||

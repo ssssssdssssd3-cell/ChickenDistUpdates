@@ -561,24 +561,24 @@ namespace ChickenDist.Forms
                     ("🏛️ الحسابات والمالية اليومية الشاملة", "CashBox", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
                     ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),
-                    ("🏢 سجل وإهلاك الأصول الثابتة", "CashBox", (Action)(() => NavigateTo(new FrmFixedAssets()))),
-                    ("🤝 حسابات الشركاء وتوزيع الأرباح", "CashBox", (Action)(() => NavigateTo(new FrmShareholders()))),
+                    ("🏢 سجل وإهلاك الأصول الثابتة", "FixedAssets", (Action)(() => NavigateTo(new FrmFixedAssets()))),
+                    ("🤝 حسابات الشركاء وتوزيع الأرباح", "Shareholders", (Action)(() => NavigateTo(new FrmShareholders()))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
                 ("🏢", "الأصول والشركاء", Color.FromArgb(13, 148, 136), new[] {
-                    ("🏢 سجل وإهلاك الأصول الثابتة", "CashBox", (Action)(() => NavigateTo(new FrmFixedAssets()))),
-                    ("🤝 حسابات الشركاء ورأس المال", "CashBox", (Action)(() => NavigateTo(new FrmShareholders()))),
+                    ("🏢 سجل وإهلاك الأصول الثابتة", "FixedAssets", (Action)(() => NavigateTo(new FrmFixedAssets()))),
+                    ("🤝 حسابات الشركاء ورأس المال", "Shareholders", (Action)(() => NavigateTo(new FrmShareholders()))),
                 }),
 
                 ("👔", "الموظفين", Color.FromArgb(71, 85, 105), new[] {
                     ("👔 إدارة الموظفين والصلاحيات", "Employees", (Action)(() => NavigateTo(new FrmEmployees()))),
                     ("💰 كشف وحسابات الموظفين", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
-                    ("🕒 الحضور والانصراف والدوام", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeAttendance()))),
-                    ("💼 العمولات وشرائح البيع والأصناف", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeCommissions()))),
-                    ("📊 مسيرات الرواتب والبدلات", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeePayroll()))),
+                    ("🕒 الحضور والانصراف والدوام", "EmployeeAttendance", (Action)(() => NavigateTo(new FrmEmployeeAttendance()))),
+                    ("💼 العمولات وشرائح البيع والأصناف", "EmployeeCommissions", (Action)(() => NavigateTo(new FrmEmployeeCommissions()))),
+                    ("📊 مسيرات الرواتب والبدلات", "EmployeePayroll", (Action)(() => NavigateTo(new FrmEmployeePayroll()))),
                 }),
 
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
