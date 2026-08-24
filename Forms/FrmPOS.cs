@@ -342,6 +342,11 @@ namespace ChickenDist.Forms
 
             var cmsPOS = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
             cmsPOS.Items.Add("🔍 كارت الصنف السريع (F4)", null, (s, e) => {
+                if (!Session.IsAdmin && !Session.CanAccess("ProductCard") && !Session.CanAccess("Products") && !Session.CanEdit("Products"))
+                {
+                    MessageBox.Show("❌ عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     int pId = _items[dgItems.SelectedRows[0].Index].ProductID;

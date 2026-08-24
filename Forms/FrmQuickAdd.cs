@@ -214,6 +214,12 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (!Session.IsAdmin && !Session.CanAdd("Products") && !Session.CanAdd("ProductCard"))
+            {
+                ShowStatus("❌ لا تملك صلاحية إضافة أصناف جديدة", Theme.Danger);
+                return;
+            }
+
             string name = txtName.Text.Trim();
             string code = txtCode.Text.Trim();
 

@@ -12,7 +12,8 @@ namespace ChickenDist.Forms
         private TextBox txtCode, txtName, txtEnglishName, txtDescription, txtPartNumber, txtInternationalCode, txtScalePLU;
         private ComboBox txtCarModel, txtBrand, txtProducerCompany, txtShelfLocation, txtProductSize, txtColor;
         private ComboBox cboCategory, cboUnit;
-        private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor;
+        private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor, btnAddCat;
+        private Button btnMultiBarcode, btnResetU1, btnResetU2, btnRecalcAll;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry;
         private NumericUpDown nudDefaultExpiryDays;
@@ -50,6 +51,7 @@ namespace ChickenDist.Forms
             {
                 ClearDetail();
             }
+            ApplyPermissions();
         }
 
         private void InitUI()
@@ -128,7 +130,7 @@ namespace ChickenDist.Forms
             AddField(grpBasic, "الاسم الأجنبي:", 10, ry, out txtEnglishName);
             ry += 32;
 
-            AddLookupComboField(grpBasic, "التصنيف:", 10, ry, out cboCategory, out var btnAddCat);
+            AddLookupComboField(grpBasic, "التصنيف:", 10, ry, out cboCategory, out btnAddCat);
             cboCategory.DropDownStyle = ComboBoxStyle.DropDownList;
             btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
             ry += 32;
@@ -193,7 +195,7 @@ namespace ChickenDist.Forms
 
             grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(10, py + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
             txtInternationalCode = new TextBox { Location = new Point(165, py), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            var btnMultiBarcode = new Button { Text = "➕", Location = new Point(263, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnMultiBarcode = new Button { Text = "➕", Location = new Point(263, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnMultiBarcode.Click += BtnMultiBarcode_Click;
             grpPrice.Controls.AddRange(new Control[] { txtInternationalCode, btnMultiBarcode });
             py += 36;
@@ -240,7 +242,7 @@ namespace ChickenDist.Forms
             if (canSeeCost) u2y += 38;
             AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, u2y, out nudUnit2SalePrice, 2); u2y += 35;
 
-            var btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
             btnResetU2.Click += (s, e) => ResetUnit2SaleOverride();
             grpUnit2.Controls.Add(btnResetU2);
             u2y += 38;
@@ -269,7 +271,7 @@ namespace ChickenDist.Forms
             if (canSeeCost) u1y += 38;
             AddNud(grpUnit1, "بيع قطاعي الصغرى:", 10, u1y, out nudUnit1SalePrice, 2); u1y += 35;
 
-            var btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
             btnResetU1.Click += (s, e) => ResetUnit1SaleOverride();
             grpUnit1.Controls.Add(btnResetU1);
             u1y += 38;
@@ -299,7 +301,7 @@ namespace ChickenDist.Forms
             // --- Footer Panel for Save / Cancel / RecalcAll ---
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgCard };
 
-            var btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
+            btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
             btnRecalcAll.Click += (s, e) =>
             {
                 _unit1SaleOverride = false;
@@ -425,6 +427,152 @@ namespace ChickenDist.Forms
             _unit1SaleOverride = false;
             nudUnit1SalePrice.BackColor = Color.FromArgb(255, 255, 220);
             RecalculateSubUnitPrices();
+        }
+
+        private void ApplyPermissions()
+        {
+            try
+            {
+                bool isAdmin = Session.IsAdmin;
+                bool canEditProducts = isAdmin || Session.CanEdit("Products") || Session.CanEdit("ProductCard");
+                bool canAddProducts = isAdmin || Session.CanAdd("Products") || Session.CanAdd("ProductCard");
+                bool canEditPrice = isAdmin || Session.CanEditPrice("Products") || Session.CanEditPrice("Sales") || Session.CanEditPrice("POS");
+
+                // 1. إذا كان تعديل صنف موجود ولا يملك صلاحية تعديل الأصناف -> وضع العرض فقط بالكامل
+                if (_selectedID > 0 && !canEditProducts)
+                {
+                    this.Text = "🔍 معاينة بيانات الصنف (وضع العرض فقط - لا تملك صلاحية التعديل)";
+                    if (btnSave != null) { btnSave.Enabled = false; btnSave.Visible = false; }
+                    if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
+                    if (btnResetU1 != null) { btnResetU1.Enabled = false; btnResetU1.Visible = false; }
+                    if (btnResetU2 != null) { btnResetU2.Enabled = false; btnResetU2.Visible = false; }
+
+                    // تعطيل أزرار الإضافة
+                    DisableControl(btnAddCat);
+                    DisableControl(btnAddBrand);
+                    DisableControl(btnAddColor);
+                    DisableControl(btnAddProducerCompany);
+                    DisableControl(btnAddUnit);
+                    DisableControl(btnAddShelfLocation);
+                    DisableControl(btnAddProductSize);
+                    DisableControl(btnAddCarModel);
+                    DisableControl(btnMultiBarcode);
+                    DisableControl(btnAddUnit1Name);
+                    DisableControl(btnAddUnit2Name);
+                    DisableControl(btnUnit1MultiBarcode);
+                    DisableControl(btnUnit2MultiBarcode);
+
+                    // قفل الحقول النصية
+                    MakeReadOnly(txtCode);
+                    MakeReadOnly(txtName);
+                    MakeReadOnly(txtEnglishName);
+                    MakeReadOnly(txtDescription);
+                    MakeReadOnly(txtPartNumber);
+                    MakeReadOnly(txtInternationalCode);
+                    MakeReadOnly(txtScalePLU);
+                    MakeReadOnly(txtUnit1Barcode);
+                    MakeReadOnly(txtUnit2Barcode);
+
+                    // تعطيل القوائم والاختيارات
+                    DisableControl(cboCategory);
+                    DisableControl(cboUnit);
+                    DisableControl(txtBrand);
+                    DisableControl(txtColor);
+                    DisableControl(txtProducerCompany);
+                    DisableControl(txtShelfLocation);
+                    DisableControl(txtProductSize);
+                    DisableControl(txtCarModel);
+                    DisableControl(cboUnit1Name);
+                    DisableControl(cboUnit2Name);
+                    DisableControl(cboDefaultSaleUnit);
+                    DisableControl(chkActive);
+                    DisableControl(chkPrintLocalBarcode);
+                    DisableControl(chkIsService);
+                    DisableControl(chkIsQuickItem);
+                    DisableControl(chkHasExpiry);
+
+                    // قفل الأسعار والأرقام
+                    MakeReadOnly(nudPrice);
+                    MakeReadOnly(nudPurchasePrice);
+                    MakeReadOnly(nudWholesalePrice);
+                    MakeReadOnly(nudSemiWholesalePrice);
+                    MakeReadOnly(nudMinStockLimit);
+                    MakeReadOnly(nudDefaultExpiryDays);
+                    MakeReadOnly(nudUnit1SalePrice);
+                    MakeReadOnly(nudUnit1PurchasePrice);
+                    MakeReadOnly(nudUnit2Factor);
+                    MakeReadOnly(nudUnit2SalePrice);
+                    MakeReadOnly(nudUnit2PurchasePrice);
+                    MakeReadOnly(nudUnit3Factor);
+                    return;
+                }
+
+                // 2. إذا كان إضافة صنف جديد ولا يملك صلاحية الإضافة -> منع الحفظ
+                if (_selectedID == 0 && !canAddProducts)
+                {
+                    this.Text = "➕ إضافة صنف (لا تملك صلاحية الإضافة)";
+                    if (btnSave != null) { btnSave.Enabled = false; btnSave.Visible = false; }
+                    if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
+                    return;
+                }
+
+                // 3. إذا كان يملك صلاحية تعديل بيانات الصنف ولكن مقفول عليه تعديل أسعار البيع -> قفل خانات الأسعار تماماً
+                if (!canEditPrice)
+                {
+                    LockPriceField(nudPrice);
+                    LockPriceField(nudWholesalePrice);
+                    LockPriceField(nudSemiWholesalePrice);
+                    LockPriceField(nudUnit1SalePrice);
+                    LockPriceField(nudUnit2SalePrice);
+
+                    if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
+                    if (btnResetU1 != null) { btnResetU1.Enabled = false; btnResetU1.Visible = false; }
+                    if (btnResetU2 != null) { btnResetU2.Enabled = false; btnResetU2.Visible = false; }
+
+                    var tip = new ToolTip();
+                    tip.SetToolTip(nudPrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudWholesalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudSemiWholesalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudUnit1SalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudUnit2SalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ApplyPermissions in FrmProductCard failed", ex);
+            }
+        }
+
+        private void LockPriceField(NumericUpDown nud)
+        {
+            if (nud == null) return;
+            nud.ReadOnly = true;
+            nud.Increment = 0;
+            nud.BackColor = Color.FromArgb(40, 45, 55);
+            nud.ForeColor = Color.FromArgb(200, 200, 200);
+        }
+
+        private void MakeReadOnly(TextBox txt)
+        {
+            if (txt == null) return;
+            txt.ReadOnly = true;
+            txt.BackColor = Color.FromArgb(40, 45, 55);
+            txt.ForeColor = Color.FromArgb(200, 200, 200);
+        }
+
+        private void MakeReadOnly(NumericUpDown nud)
+        {
+            if (nud == null) return;
+            nud.ReadOnly = true;
+            nud.Increment = 0;
+            nud.BackColor = Color.FromArgb(40, 45, 55);
+            nud.ForeColor = Color.FromArgb(200, 200, 200);
+        }
+
+        private void DisableControl(Control ctrl)
+        {
+            if (ctrl == null) return;
+            ctrl.Enabled = false;
         }
 
         private void AddField(Control parent, string label, int x, int y, out TextBox txt)
@@ -724,6 +872,34 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            // ─── التحقق من الصلاحيات الأمنية ───
+            if (_selectedID > 0 && !Session.IsAdmin && !Session.CanEdit("Products") && !Session.CanEdit("ProductCard"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_selectedID == 0 && !Session.IsAdmin && !Session.CanAdd("Products") && !Session.CanAdd("ProductCard"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة صنف جديد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            bool canEditPrice = Session.IsAdmin || Session.CanEditPrice("Products") || Session.CanEditPrice("Sales") || Session.CanEditPrice("POS");
+            if (!canEditPrice && _selectedID > 0)
+            {
+                // إذا لم يكن لديه صلاحية تعديل الأسعار، نعيد استرجاع أسعار البيع الأصلية من قاعدة البيانات منعاً لتمرير أي تعديل عليها
+                var origDr = ProductDAL.GetByID(_selectedID);
+                if (origDr != null)
+                {
+                    nudPrice.Value = Convert.ToDecimal(origDr["SalePrice"]);
+                    nudWholesalePrice.Value = Convert.ToDecimal(origDr.Table.Columns.Contains("WholesalePrice") && origDr["WholesalePrice"] != DBNull.Value ? origDr["WholesalePrice"] : 0);
+                    nudSemiWholesalePrice.Value = Convert.ToDecimal(origDr.Table.Columns.Contains("SemiWholesalePrice") && origDr["SemiWholesalePrice"] != DBNull.Value ? origDr["SemiWholesalePrice"] : 0);
+                    nudUnit1SalePrice.Value = Convert.ToDecimal(origDr.Table.Columns.Contains("Unit1SalePrice") && origDr["Unit1SalePrice"] != DBNull.Value ? origDr["Unit1SalePrice"] : 0);
+                    nudUnit2SalePrice.Value = Convert.ToDecimal(origDr.Table.Columns.Contains("Unit2SalePrice") && origDr["Unit2SalePrice"] != DBNull.Value ? origDr["Unit2SalePrice"] : 0);
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم الصنف"); return; }
 
             if (chkHasExpiry != null && chkHasExpiry.Checked && !_originalHasExpiry && _selectedID > 0)

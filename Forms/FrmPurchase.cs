@@ -1843,6 +1843,11 @@ namespace ChickenDist.Forms
 
             var miCard = new ToolStripMenuItem("🔍 كارت الصنف وتعديل البيانات (F4)", null, (s, e) =>
             {
+                if (!Session.IsAdmin && !Session.CanAccess("ProductCard") && !Session.CanAccess("Products") && !Session.CanEdit("Products"))
+                {
+                    MessageBox.Show("❌ عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
                 {
                     int pid = _items[dgItems.CurrentRow.Index].ProductID;
