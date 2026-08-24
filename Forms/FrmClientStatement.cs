@@ -166,6 +166,24 @@ namespace ChickenDist.Forms
             };
             pnlFilter.Controls.Add(btnCollect);
 
+            var btnScheduleDebt = Theme.MakeButton("💳 تقسيط المديونية", 0, 0, 145, 30, Color.FromArgb(79, 70, 229));
+            btnScheduleDebt.Click += (s, e) =>
+            {
+                if (_clientID <= 0)
+                {
+                    MessageBox.Show("يرجى اختيار العميل أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                using (var dlg = new FrmScheduleClientDebt(_clientID))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        RefreshAllData();
+                    }
+                }
+            };
+            pnlFilter.Controls.Add(btnScheduleDebt);
+
             // TabControl Setup
             tabMain = new TabControl
             {

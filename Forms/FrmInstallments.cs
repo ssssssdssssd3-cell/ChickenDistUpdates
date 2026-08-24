@@ -142,10 +142,21 @@ namespace ChickenDist.Forms
             btnReset = Theme.MakeButton("🔄 إعادة تعيين", 760, 8, 100, 26, Color.FromArgb(100, 100, 100));
             btnReset.Click += BtnReset_Click;
 
-            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 870, 8, 130, 26, Color.FromArgb(120, 120, 80));
+            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 870, 8, 120, 26, Color.FromArgb(120, 120, 80));
             btnTopDebtors.Click += (s, e) => new FrmTopDebtors().ShowDialog();
 
-            pnlFilters.Controls.AddRange(new Control[] { btnSearch, btnReset, btnTopDebtors });
+            var btnNewDebtSchedule = Theme.MakeButton("➕ تقسيط مديونية عميل", 1000, 8, 150, 26, Theme.Success);
+            btnNewDebtSchedule.Click += (s, e) =>
+            {
+                if (new FrmScheduleClientDebt().ShowDialog() == DialogResult.OK)
+                {
+                    _currentPage = 1;
+                    LoadDashboard();
+                    SearchContracts();
+                }
+            };
+
+            pnlFilters.Controls.AddRange(new Control[] { btnSearch, btnReset, btnTopDebtors, btnNewDebtSchedule });
             mainTbl.Controls.Add(pnlFilters, 0, 1);
 
             // 3. Grids & Actions Split Table

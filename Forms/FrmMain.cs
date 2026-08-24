@@ -476,6 +476,7 @@ namespace ChickenDist.Forms
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
+                    ("📝 تقسيط مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
@@ -526,6 +527,7 @@ namespace ChickenDist.Forms
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 إدارة العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
                     ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
+                    ("💳 تقسيط وجدولة مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
                     ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
                     ("📊 تقارير العملاء", "RepClients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),

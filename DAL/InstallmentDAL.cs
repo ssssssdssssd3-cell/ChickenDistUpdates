@@ -541,6 +541,103 @@ namespace ChickenDist.DAL
                 DbHelper.P("@bid", branchID));
         }
 
+        public static string GenerateDebtContractCode()
+        {
+            string prefix = "INST-DB-" + DateTime.Today.ToString("yyMM");
+            var countObj = DbHelper.Scalar("SELECT COUNT(*) FROM InstallmentContracts WHERE ContractCode LIKE @p", DbHelper.P("@p", prefix + "%"));
+            int count = countObj != null ? Convert.ToInt32(countObj) + 1 : 1;
+            return $"{prefix}-{count:D3}";
+        }
+
+        public static int CreateDebtInstallmentContract(int customerID, decimal debtAmount, decimal downPayment, decimal profitAmount, 
+            int installmentCount, decimal installmentValue, DateTime startDate, List<InstallmentScheduleDTO> schedule, 
+            string notes, int safeAccountID, int branchID = 1)
+        {
+            if (customerID <= 0) throw new Exception("يرجى اختيار العميل.");
+            if (debtAmount <= 0) throw new Exception("يجب أن يكون مبلغ المديونية أكبر من صفر.");
+            if (installmentCount <= 0) throw new Exception("يجب تحديد عدد الأقساط.");
+
+            int contractID = 0;
+            string contractCode = GenerateDebtContractCode();
+            decimal totalContractAmount = (debtAmount - downPayment) + profitAmount + downPayment;
+            decimal financedAmount = (debtAmount - downPayment) + profitAmount;
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. إنشاء العقد
+                contractID = DbHelper.ExecuteInsertTrans(trans,
+                    @"INSERT INTO InstallmentContracts (ContractCode, BranchID, InvoiceID, CustomerID, SaleType, ContractAmount, DownPayment, FinancedAmount, InstallmentCount, InstallmentValue, StartDate, Status, Notes, CreatedBy, CreatedDate)
+                      VALUES (@cc, @bid, NULL, @cust, 'DebtReschedule', @tot, @dp, @fa, @ic, @iv, @sd, 'Active', @notes, @uid, GETDATE())",
+                    DbHelper.P("@cc", contractCode),
+                    DbHelper.P("@bid", branchID),
+                    DbHelper.P("@cust", customerID),
+                    DbHelper.P("@tot", totalContractAmount),
+                    DbHelper.P("@dp", downPayment),
+                    DbHelper.P("@fa", financedAmount),
+                    DbHelper.P("@ic", installmentCount),
+                    DbHelper.P("@iv", installmentValue),
+                    DbHelper.P("@sd", startDate),
+                    DbHelper.P("@notes", string.IsNullOrWhiteSpace(notes) ? "تقسيط وجدولة مديونية سابقة" : notes),
+                    DbHelper.P("@uid", Session.EmpID));
+
+                if (contractID <= 0) throw new Exception("فشل إنشاء عقد التقسيط.");
+
+                // 2. إدراج جدول الأقساط
+                if (schedule != null)
+                {
+                    foreach (var s in schedule)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            @"INSERT INTO InstallmentSchedules (ContractID, InstallmentNo, DueDate, Amount, PaidAmount, RemainingAmount, Status)
+                              VALUES (@cid, @no, @dt, @amt, 0, @amt, 'Pending')",
+                            DbHelper.P("@cid", contractID),
+                            DbHelper.P("@no", s.InstallmentNo),
+                            DbHelper.P("@dt", s.DueDate),
+                            DbHelper.P("@amt", s.Amount));
+                    }
+                }
+
+                // 3. قيد أرباح التقسيط في حساب العميل (إن وجدت)
+                if (profitAmount > 0)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO ClientTransactions(ClientID, TransType, Debit, RefID, Notes, CreatedBy, TransDate)
+                          VALUES(@cid, 'Adjustment', @amt, @ref, @notes, @uid, GETDATE())",
+                        DbHelper.P("@cid", customerID),
+                        DbHelper.P("@amt", profitAmount),
+                        DbHelper.P("@ref", contractID),
+                        DbHelper.P("@notes", $"أرباح تقسيط مضافة لجدولة مديونية - عقد #{contractCode}"),
+                        DbHelper.P("@uid", Session.EmpID));
+                }
+
+                // 4. قيد الدفعة المقدمة (إن وجدت) وتوريدها للخزينة
+                if (downPayment > 0)
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO ClientTransactions(ClientID, TransType, Credit, RefID, Notes, CreatedBy, TransDate)
+                          VALUES(@cid, 'Payment', @amt, @ref, @notes, @uid, GETDATE())",
+                        DbHelper.P("@cid", customerID),
+                        DbHelper.P("@amt", downPayment),
+                        DbHelper.P("@ref", contractID),
+                        DbHelper.P("@notes", $"دفعة مقدمة لجدولة تقسيط مديونية - عقد #{contractCode}"),
+                        DbHelper.P("@uid", Session.EmpID));
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, AccountID, TransDate)
+                          VALUES('ClientPayment', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                        DbHelper.P("@amt", downPayment),
+                        DbHelper.P("@ref", contractID),
+                        DbHelper.P("@notes", $"دفعة مقدمة لجدولة مديونية - عقد #{contractCode}"),
+                        DbHelper.P("@uid", Session.EmpID),
+                        DbHelper.P("@accId", safeAccountID > 0 ? safeAccountID : Session.GetDefaultSafeID()));
+                }
+
+                AddAuditLogTrans(trans, "CreateDebtContract", contractID, "", $"إنشاء عقد تقسيط مديونية سابقة للعميل ID:{customerID} بقيمة أصل: {debtAmount:N2} ج وأقساط: {financedAmount:N2} ج");
+            });
+
+            return contractID;
+        }
+
         public static DataTable GetAuditLogs(int contractID)
         {
             return DbHelper.Query(@"
