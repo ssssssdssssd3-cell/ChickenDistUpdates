@@ -228,6 +228,7 @@ namespace ChickenDist.Forms
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",      HeaderText = "البيان",            FillWeight = 150 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID",        Visible = false });
+            dgStatement.CellDoubleClick += DgStatement_CellDoubleClick;
 
             this.Controls.Add(dgStatement);
 
@@ -379,8 +380,8 @@ namespace ChickenDist.Forms
                 int refID = r["RefID"] != DBNull.Value ? Convert.ToInt32(r["RefID"]) : 0;
                 string notes = r["Notes"].ToString();
 
-                if (typeStr == "Purchase") _totalPurchases += cred;
-                else if (typeStr == "Payment") _totalPayments += deb;
+                if (typeStr == "Purchase" || typeStr == "PurchaseCash") _totalPurchases += cred;
+                else if (typeStr == "Payment" || typeStr == "PaymentCash") _totalPayments += deb;
 
                 int rowIdx = dgStatement.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
@@ -393,12 +394,12 @@ namespace ChickenDist.Forms
                     refID);
 
                 var rowStyle = dgStatement.Rows[rowIdx].DefaultCellStyle;
-                if (typeStr == "Purchase")
+                if (typeStr == "Purchase" || typeStr == "PurchaseCash")
                 {
                     rowStyle.BackColor = Color.FromArgb(255, 242, 242);
                     rowStyle.ForeColor = Color.FromArgb(180, 30, 30);
                 }
-                else if (typeStr == "Payment")
+                else if (typeStr == "Payment" || typeStr == "PaymentCash")
                 {
                     rowStyle.BackColor = Color.FromArgb(235, 250, 240);
                     rowStyle.ForeColor = Color.FromArgb(15, 120, 50);
@@ -420,12 +421,28 @@ namespace ChickenDist.Forms
             lblBalance.ForeColor = _runBalance >= 0 ? Color.FromArgb(180, 30, 30) : Color.FromArgb(15, 120, 50);
         }
 
+        private void DgStatement_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var row = dgStatement.Rows[e.RowIndex];
+            string typeRaw = row.Cells["TransTypeRaw"]?.Value?.ToString() ?? "";
+            int refID = row.Cells["RefID"]?.Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
+
+            if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
+            {
+                new FrmPurchase(refID).ShowDialog();
+                LoadStatement();
+            }
+        }
+
         private string TransTypeName(string t)
         {
             switch (t)
             {
-                case "Purchase": return "فاتورة مشتريات";
+                case "Purchase": return "فاتورة مشتريات (آجل)";
+                case "PurchaseCash": return "فاتورة مشتريات (نقدي)";
                 case "Payment":  return "دفعة للمورد";
+                case "PaymentCash": return "سداد نقدي فوري";
                 case "Opening":  return "رصيد افتتاحي";
                 case "Discount": return "تسوية خصم";
                 case "Addition": return "تسوية إضافة";
@@ -509,7 +526,7 @@ namespace ChickenDist.Forms
                     int refID = row.Cells["RefID"]?.Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
 
                     DataTable dtItems = null;
-                    if (typeRaw == "Purchase" && refID > 0)
+                    if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
                     {
                         dtItems = DbHelper.Query(@"
                             SELECT p.ProductName, pi2.Quantity, ISNULL(pi2.UnitName, p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total

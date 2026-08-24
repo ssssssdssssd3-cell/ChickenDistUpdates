@@ -1060,14 +1060,52 @@ namespace ChickenDist.DAL
             return payCode;
         }
 
-        /// <summary>كشف حساب المورد في فترة زمنية</summary>
+        /// <summary>كشف حساب المورد في فترة زمنية شاملاً الفواتير الآجلة والنقدية والمدفوعات</summary>
         public static DataTable GetStatement(int supplierID, DateTime from, DateTime to)
         {
             return DbHelper.Query(
-                @"SELECT TransDate, TransType, ISNULL(Debit,0) AS Debit, ISNULL(Credit,0) AS Credit,
-                         ISNULL(RefID,0) AS RefID, Notes
-                  FROM SupplierTransactions
-                  WHERE SupplierID=@id AND CAST(TransDate AS DATE) BETWEEN @f AND @t
+                @"SELECT st.TransDate, st.TransType, ISNULL(st.Debit,0) AS Debit, ISNULL(st.Credit,0) AS Credit,
+                         ISNULL(st.RefID,0) AS RefID, st.Notes
+                  FROM SupplierTransactions st
+                  WHERE st.SupplierID=@id AND CAST(st.TransDate AS DATE) BETWEEN @f AND @t
+
+                  UNION ALL
+
+                  -- فواتير الشراء النقدي للمورد غير المدرجة كقيود منفصلة
+                  -- سطر 1: استحقاق الفاتورة كمشتريات
+                  SELECT p.PurchaseDate AS TransDate,
+                         'PurchaseCash' AS TransType,
+                         0.00 AS Debit,
+                         p.TotalAmount AS Credit,
+                         p.PurchaseID AS RefID,
+                         N'فاتورة مشتريات نقدي رقم ' + ISNULL(p.PurchaseCode, '') + 
+                         CASE WHEN p.SupplierInvoiceNo IS NOT NULL AND LTRIM(RTRIM(p.SupplierInvoiceNo)) <> '' THEN N' (فاتورة المورد: ' + p.SupplierInvoiceNo + N')' ELSE N'' END +
+                         CASE WHEN p.Notes IS NOT NULL AND LTRIM(RTRIM(p.Notes)) <> '' THEN N' - ' + p.Notes ELSE N'' END AS Notes
+                  FROM Purchases p
+                  WHERE p.SupplierID = @id AND p.PurchaseType = 'Cash' AND p.IsPosted = 1
+                    AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                    AND NOT EXISTS (
+                        SELECT 1 FROM SupplierTransactions st2 
+                        WHERE st2.SupplierID = @id AND st2.RefID = p.PurchaseID AND st2.TransType IN ('Purchase', 'PurchaseCash')
+                    )
+
+                  UNION ALL
+
+                  -- سطر 2: السداد النقدي الفوري للفاتورة
+                  SELECT DATEADD(second, 1, p.PurchaseDate) AS TransDate,
+                         'PaymentCash' AS TransType,
+                         p.TotalAmount AS Debit,
+                         0.00 AS Credit,
+                         p.PurchaseID AS RefID,
+                         N'سداد نقدي فوري لفاتورة مشتريات رقم ' + ISNULL(p.PurchaseCode, '') AS Notes
+                  FROM Purchases p
+                  WHERE p.SupplierID = @id AND p.PurchaseType = 'Cash' AND p.IsPosted = 1
+                    AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                    AND NOT EXISTS (
+                        SELECT 1 FROM SupplierTransactions st2 
+                        WHERE st2.SupplierID = @id AND st2.RefID = p.PurchaseID AND st2.TransType IN ('Payment', 'PaymentCash')
+                    )
+
                   ORDER BY TransDate",
                 DbHelper.P("@id", supplierID),
                 DbHelper.P("@f", from.Date),
