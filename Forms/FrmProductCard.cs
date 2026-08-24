@@ -151,24 +151,24 @@ namespace ChickenDist.Forms
             btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             ry += 32;
 
-            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(10, ry), Width = 290, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, RightToLeft = RightToLeft.Yes };
             grpBasic.Controls.Add(chkActive);
             ry += 24;
 
-            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(10, ry), Width = 290, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, RightToLeft = RightToLeft.Yes };
             grpBasic.Controls.Add(chkPrintLocalBarcode);
             ry += 24;
 
-            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(10, ry), Width = 290, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold), RightToLeft = RightToLeft.Yes };
             grpBasic.Controls.Add(chkIsService);
             ry += 24;
 
-            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(10, ry), Width = 290, Height = 24, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold), RightToLeft = RightToLeft.Yes };
             grpBasic.Controls.Add(chkIsQuickItem);
             ry += 28;
 
-            var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            var lblDesc = new Label { Text = "الوصف:", Location = new Point(145, ry + 3), Width = 155, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtDescription = new TextBox { Location = new Point(10, ry), Width = 135, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
 
 
@@ -193,14 +193,14 @@ namespace ChickenDist.Forms
             btnAddProductSize.Click += (s, e) => { new FrmLookupManager("ProductSizes", "SizeID", "SizeCode", "SizeName", "SIZ", "المقاسات").ShowDialog(); LoadLookupCombos(); };
             py += 38;
 
-            grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(10, py + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtInternationalCode = new TextBox { Location = new Point(165, py), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnMultiBarcode = new Button { Text = "➕", Location = new Point(263, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            var lblIntl = new Label { Text = "الباركود الدولي:", Location = new Point(145, py + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtInternationalCode = new TextBox { Location = new Point(42, py), Width = 103, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            btnMultiBarcode = new Button { Text = "➕", Location = new Point(10, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnMultiBarcode.Click += BtnMultiBarcode_Click;
-            grpPrice.Controls.AddRange(new Control[] { txtInternationalCode, btnMultiBarcode });
+            grpPrice.Controls.AddRange(new Control[] { lblIntl, txtInternationalCode, btnMultiBarcode });
             py += 36;
 
-            AddField(grpPrice, "⚖️ كود كرت الميزان (PLU):", 10, py, out txtScalePLU);
+            AddField(grpPrice, "كود كرت الميزان (PLU):", 10, py, out txtScalePLU);
             txtScalePLU.BackColor = Color.FromArgb(30, 48, 70);
             txtScalePLU.ForeColor = Color.FromArgb(254, 240, 138);
             txtScalePLU.Font = new Font(Theme.FontMain, FontStyle.Bold);
@@ -208,7 +208,7 @@ namespace ChickenDist.Forms
 
             if (bizType == "General" || bizType == "SpareParts" || bizType == "Mobiles" || bizType == "Clothing")
             {
-                chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(10, py), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+                chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(10, py), Width = 290, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, RightToLeft = RightToLeft.Yes };
                 grpPrice.Controls.Add(chkHasExpiry);
                 py += 28;
 
@@ -220,7 +220,7 @@ namespace ChickenDist.Forms
 
             // --- GroupBox 3 Content (الوحدة الوسطى) ---
             int u2y = 25;
-            lblUnit2Header = new Label { Text = "⚙️ خانات الوحدة الوسطى (علبة/دستة):", Location = new Point(10, u2y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            lblUnit2Header = new Label { Text = "⚙️ خانات الوحدة الوسطى (علبة/دستة):", Location = new Point(10, u2y), Width = 295, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
             grpUnit2.Controls.Add(lblUnit2Header);
             u2y += 32;
 
@@ -231,25 +231,25 @@ namespace ChickenDist.Forms
             AddNud(grpUnit2, "الكرتونة تحتوي كم وسطى؟:", 10, u2y, out nudUnit3Factor, 0);
             u2y += 38;
 
-            grpUnit2.Controls.Add(new Label { Text = "باركود الوسطى:", Location = new Point(10, u2y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtUnit2Barcode = new TextBox { Location = new Point(165, u2y), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnUnit2MultiBarcode = new Button { Text = "➕", Location = new Point(263, u2y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            var lblU2Bar = new Label { Text = "باركود الوسطى:", Location = new Point(145, u2y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtUnit2Barcode = new TextBox { Location = new Point(42, u2y), Width = 103, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            btnUnit2MultiBarcode = new Button { Text = "➕", Location = new Point(10, u2y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnUnit2MultiBarcode.Click += BtnUnit2MultiBarcode_Click;
-            grpUnit2.Controls.AddRange(new Control[] { txtUnit2Barcode, btnUnit2MultiBarcode });
+            grpUnit2.Controls.AddRange(new Control[] { lblU2Bar, txtUnit2Barcode, btnUnit2MultiBarcode });
             u2y += 38;
 
             AddNud(grpUnit2, "شراء الوسطى (محسوب):", 10, u2y, out nudUnit2PurchasePrice, 2, canSeeCost);
             if (canSeeCost) u2y += 38;
             AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, u2y, out nudUnit2SalePrice, 2); u2y += 35;
 
-            btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 295, 30, Color.FromArgb(60, 130, 200));
             btnResetU2.Click += (s, e) => ResetUnit2SaleOverride();
             grpUnit2.Controls.Add(btnResetU2);
             u2y += 38;
 
             // --- GroupBox 4 Content (الوحدة الصغرى) ---
             int u1y = 25;
-            lblUnit1Header = new Label { Text = "⚙️ خانات الوحدة الصغرى (تجزئة/قطعة):", Location = new Point(10, u1y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            lblUnit1Header = new Label { Text = "⚙️ خانات الوحدة الصغرى (تجزئة/قطعة):", Location = new Point(10, u1y), Width = 295, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
             grpUnit1.Controls.Add(lblUnit1Header);
             u1y += 32;
 
@@ -260,24 +260,24 @@ namespace ChickenDist.Forms
             AddNud(grpUnit1, "الوسطى/الكبرى فيها كم صغرى؟:", 10, u1y, out nudUnit2Factor, 0);
             u1y += 38;
 
-            grpUnit1.Controls.Add(new Label { Text = "باركود الصغرى:", Location = new Point(10, u1y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtUnit1Barcode = new TextBox { Location = new Point(165, u1y), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnUnit1MultiBarcode = new Button { Text = "➕", Location = new Point(263, u1y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            var lblU1Bar = new Label { Text = "باركود الصغرى:", Location = new Point(145, u1y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            txtUnit1Barcode = new TextBox { Location = new Point(42, u1y), Width = 103, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            btnUnit1MultiBarcode = new Button { Text = "➕", Location = new Point(10, u1y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnUnit1MultiBarcode.Click += BtnUnit1MultiBarcode_Click;
-            grpUnit1.Controls.AddRange(new Control[] { txtUnit1Barcode, btnUnit1MultiBarcode });
+            grpUnit1.Controls.AddRange(new Control[] { lblU1Bar, txtUnit1Barcode, btnUnit1MultiBarcode });
             u1y += 38;
 
             AddNud(grpUnit1, "شراء الصغرى (محسوب):", 10, u1y, out nudUnit1PurchasePrice, 2, canSeeCost);
             if (canSeeCost) u1y += 38;
             AddNud(grpUnit1, "بيع قطاعي الصغرى:", 10, u1y, out nudUnit1SalePrice, 2); u1y += 35;
 
-            btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 295, 30, Color.FromArgb(60, 130, 200));
             btnResetU1.Click += (s, e) => ResetUnit1SaleOverride();
             grpUnit1.Controls.Add(btnResetU1);
             u1y += 38;
 
-            var lblDefaultSaleUnit = new Label { Text = "وحدة البيع الافتراضية:", Location = new Point(10, u1y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            cboDefaultSaleUnit = new ComboBox { Location = new Point(165, u1y), Width = 125, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            var lblDefaultSaleUnit = new Label { Text = "وحدة البيع الافتراضية:", Location = new Point(145, u1y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboDefaultSaleUnit = new ComboBox { Location = new Point(10, u1y), Width = 135, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
             cboDefaultSaleUnit.Items.AddRange(new string[] { "الكبرى", "الوسطى", "الصغرى" });
             cboDefaultSaleUnit.SelectedIndex = 0;
             grpUnit1.Controls.AddRange(new Control[] { lblDefaultSaleUnit, cboDefaultSaleUnit });
@@ -299,9 +299,26 @@ namespace ChickenDist.Forms
             toolTip.SetToolTip(nudUnit1SalePrice, "يُحسب تلقائياً من سعر الكبرى - يمكنك تعديله يدوياً");
 
             // --- Footer Panel for Save / Cancel / RecalcAll ---
-            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgCard };
+            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 58, BackColor = Theme.BgCard };
+            var flpFooter = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                Padding = new Padding(15, 10, 15, 10),
+                WrapContents = false
+            };
 
-            btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
+            btnSave = Theme.MakeButton("💾 حفظ الصنف", Theme.Accent);
+            btnSave.Size = new Size(160, 36);
+            btnSave.Click += BtnSave_Click;
+
+            btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(100, 110, 120));
+            btnCancel.Size = new Size(130, 36);
+            btnCancel.Click += (s, e) => this.Close();
+
+            btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", Color.FromArgb(30, 120, 190));
+            btnRecalcAll.Size = new Size(330, 36);
             btnRecalcAll.Click += (s, e) =>
             {
                 _unit1SaleOverride = false;
@@ -312,13 +329,11 @@ namespace ChickenDist.Forms
                 MessageBox.Show("✅ تم إعادة حساب أسعار وتقسيمات الوحدة الوسطى والصغرى تلقائياً بناءً على سعر الكبرى ومعدلات التجميع.", "تم الحساب التلقائي", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الصنف", 510, 14, 180, 38, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 350, 14, 150, 38, Color.FromArgb(100, 110, 120));
+            flpFooter.Controls.Add(btnSave);
+            flpFooter.Controls.Add(btnCancel);
+            flpFooter.Controls.Add(btnRecalcAll);
 
-            btnSave.Click += BtnSave_Click;
-            btnCancel.Click += (s, e) => this.Close();
-
-            pnlFooter.Controls.AddRange(new Control[] { btnRecalcAll, btnSave, btnCancel });
+            pnlFooter.Controls.Add(flpFooter);
             this.Controls.Add(pnlFooter);
 
             // Bind Combo events to update Headers
@@ -577,24 +592,24 @@ namespace ChickenDist.Forms
 
         private void AddField(Control parent, string label, int x, int y, out TextBox txt)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 115, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txt = new TextBox { Location = new Point(x + 130, y), Width = 160, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(145, y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            txt = new TextBox { Location = new Point(10, y), Width = 135, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             parent.Controls.Add(txt);
         }
 
         private void AddUnitComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 125, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 140, y), Width = 120, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 263, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(145, y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            cbo = new ComboBox { Location = new Point(42, y), Width = 103, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            btnAdd = new Button { Text = "➕", Location = new Point(10, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             parent.Controls.AddRange(new Control[] { cbo, btnAdd });
         }
 
         private void AddLookupComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 125, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 140, y), Width = 120, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 263, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            parent.Controls.Add(new Label { Text = label, Location = new Point(145, y + 3), Width = 155, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
+            cbo = new ComboBox { Location = new Point(42, y), Width = 103, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
+            btnAdd = new Button { Text = "➕", Location = new Point(10, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             parent.Controls.AddRange(new Control[] { cbo, btnAdd });
         }
 
@@ -708,9 +723,9 @@ namespace ChickenDist.Forms
 
         private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals, bool visible = true)
         {
-            var lbl = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
+            var lbl = new Label { Text = label, Location = new Point(125, y + 3), Width = 175, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
             parent.Controls.Add(lbl);
-            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
+            nud = new NumericUpDown { Location = new Point(10, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
             parent.Controls.Add(nud);
         }
 
