@@ -850,8 +850,23 @@ namespace ChickenDist.Forms
 			btnCustomizeCols.Click += (s, e) => ShowColumnCustomizer();
 			btnCustomizeCols.Visible = Session.CanOrderColumns("Sales");
 
+			var btnPriceChecker = new Button
+			{
+				Text = "🏷️ فحص السعر والبدائل (F7)",
+				Size = new Size(180, 30),
+				BackColor = Color.FromArgb(14, 116, 144),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Cursor = Cursors.Hand,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Margin = new Padding(3, 0, 3, 0)
+			};
+			btnPriceChecker.FlatAppearance.BorderSize = 0;
+			btnPriceChecker.Click += (s, e) => new FrmPriceChecker(false).ShowDialog(this);
+
 			flowToolbar.Controls.Add(btnSearchProduct);
 			flowToolbar.Controls.Add(btnManualAdd);
+			flowToolbar.Controls.Add(btnPriceChecker);
 			flowToolbar.Controls.Add(btnCustomizeCols);
 			pnlGridToolbar.Controls.Add(flowToolbar);
 
@@ -1452,6 +1467,7 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F9)  { PrintPreparationSlip(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { AddNewCodeRow(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
+			else if (e.KeyCode == Keys.F7)  { new FrmPriceChecker(false).ShowDialog(this); e.Handled = true; } // F7 = كشك فحص الأسعار والبدائل
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
 

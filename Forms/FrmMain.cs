@@ -330,6 +330,7 @@ namespace ChickenDist.Forms
                 case "FrmWarehouseTransfersList":
                 case "FrmPriceChanges":
                 case "FrmPricePoster":
+                case "FrmPriceChecker":
                 case "FrmBulkPrintBarcodes":
                 case "FrmMinStockEdit":
                 case "FrmShortageNotebook":
@@ -445,6 +446,7 @@ namespace ChickenDist.Forms
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
+                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
@@ -472,6 +474,7 @@ namespace ChickenDist.Forms
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
+                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
@@ -506,6 +509,7 @@ namespace ChickenDist.Forms
                 ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
                     ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
                     ("📋 لستة الأصناف",      "PricePoster",       (Action)(() => NavigateTo(new FrmPricePoster()))),
+                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
                     ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => { if (FrmProducts.PromptImportPassword(this)) NavigateTo(new FrmImportProducts()); })),
