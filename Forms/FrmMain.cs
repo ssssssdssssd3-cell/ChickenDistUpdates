@@ -556,9 +556,16 @@ namespace ChickenDist.Forms
                     ("🏛️ الحسابات والمالية اليومية الشاملة", "CashBox", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
                     ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
                     ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),
+                    ("🏢 سجل وإهلاك الأصول الثابتة", "CashBox", (Action)(() => NavigateTo(new FrmFixedAssets()))),
+                    ("🤝 حسابات الشركاء وتوزيع الأرباح", "CashBox", (Action)(() => NavigateTo(new FrmShareholders()))),
                     ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
                     ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
+                }),
+
+                ("🏢", "الأصول والشركاء", Color.FromArgb(13, 148, 136), new[] {
+                    ("🏢 سجل وإهلاك الأصول الثابتة", "CashBox", (Action)(() => NavigateTo(new FrmFixedAssets()))),
+                    ("🤝 حسابات الشركاء ورأس المال", "CashBox", (Action)(() => NavigateTo(new FrmShareholders()))),
                 }),
 
                 ("👔", "الموظفين", Color.FromArgb(71, 85, 105), new[] {

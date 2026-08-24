@@ -3786,6 +3786,173 @@ namespace ChickenDist.Core
             {
                 AppLogger.Error("DbHelper.EnsureShiftSchema", ex);
             }
+
+            EnsureFixedAssetsAndShareholdersSchema();
+        }
+
+        public static void EnsureFixedAssetsAndShareholdersSchema()
+        {
+            try
+            {
+                Execute(@"
+                    -- 1. تصنيفات الأصول الثابتة
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FixedAssetCategories')
+                    BEGIN
+                        CREATE TABLE FixedAssetCategories (
+                            CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+                            CategoryName NVARCHAR(150) NOT NULL,
+                            DefaultDepreciationRate DECIMAL(5,2) DEFAULT 10.0,
+                            DepreciationMethod NVARCHAR(50) DEFAULT 'StraightLine',
+                            Notes NVARCHAR(500) NULL,
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+
+                        INSERT INTO FixedAssetCategories (CategoryName, DefaultDepreciationRate, DepreciationMethod, Notes)
+                        VALUES 
+                        (N'أراضي ومواقع', 0.0, 'StraightLine', N'لا تخضع للإهلاك'),
+                        (N'مباني وإنشاءات', 5.0, 'StraightLine', N'إهلاك 5% سنوياً'),
+                        (N'آلات ومعدات وماكينات', 10.0, 'StraightLine', N'إهلاك 10% سنوياً'),
+                        (N'سيارات ومركبات نقل', 20.0, 'StraightLine', N'إهلاك 20% سنوياً'),
+                        (N'أجهزة حاسب آلي وطابعات', 25.0, 'StraightLine', N'إهلاك 25% سنوياً'),
+                        (N'أثاث وديكور وتجهيزات', 10.0, 'StraightLine', N'إهلاك 10% سنوياً'),
+                        (N'أصول غير ملموسة (برمجيات وتراخيص)', 20.0, 'StraightLine', N'إطفاء سنوي');
+                    END
+
+                    -- 2. سجل الأصول الثابتة
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FixedAssets')
+                    BEGIN
+                        CREATE TABLE FixedAssets (
+                            AssetID INT IDENTITY(1,1) PRIMARY KEY,
+                            AssetCode NVARCHAR(50) NOT NULL UNIQUE,
+                            AssetName NVARCHAR(200) NOT NULL,
+                            CategoryID INT NULL REFERENCES FixedAssetCategories(CategoryID),
+                            PurchaseDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            PurchaseCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            SalvageValue DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            UsefulLifeMonths INT NOT NULL DEFAULT 60,
+                            DepreciationRate DECIMAL(5,2) NOT NULL DEFAULT 10.0,
+                            DepreciationMethod NVARCHAR(50) NOT NULL DEFAULT 'StraightLine',
+                            Location NVARCHAR(200) NULL,
+                            AssignedToEmpID INT NULL REFERENCES Employees(EmpID),
+                            CurrentBookValue DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            TotalAccumulatedDepreciation DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            Status NVARCHAR(50) NOT NULL DEFAULT 'Active',
+                            Notes NVARCHAR(MAX) NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 3. سجل قيود وأقساط الإهلاك الدورية
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FixedAssetDepreciations')
+                    BEGIN
+                        CREATE TABLE FixedAssetDepreciations (
+                            DepreciationID INT IDENTITY(1,1) PRIMARY KEY,
+                            AssetID INT NOT NULL REFERENCES FixedAssets(AssetID) ON DELETE CASCADE,
+                            DepreciationDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            PeriodMonth NVARCHAR(10) NOT NULL,
+                            Amount DECIMAL(18,4) NOT NULL,
+                            BookValueAfter DECIMAL(18,4) NOT NULL,
+                            AccumulatedAfter DECIMAL(18,4) NOT NULL,
+                            Notes NVARCHAR(500) NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 4. عمليات الأصول (صيانة، بيع، تخريد، إعادة تقييم)
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'FixedAssetOperations')
+                    BEGIN
+                        CREATE TABLE FixedAssetOperations (
+                            OperationID INT IDENTITY(1,1) PRIMARY KEY,
+                            AssetID INT NOT NULL REFERENCES FixedAssets(AssetID) ON DELETE CASCADE,
+                            OpType NVARCHAR(50) NOT NULL,
+                            OpDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            Amount DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            PaidFromSafeID INT NULL,
+                            GainLossAmount DECIMAL(18,4) DEFAULT 0,
+                            Notes NVARCHAR(MAX) NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 5. جدول الشركاء والمساهمين
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Partners')
+                    BEGIN
+                        CREATE TABLE Partners (
+                            PartnerID INT IDENTITY(1,1) PRIMARY KEY,
+                            PartnerCode NVARCHAR(50) NOT NULL UNIQUE,
+                            PartnerName NVARCHAR(200) NOT NULL,
+                            Phone NVARCHAR(50) NULL,
+                            NationalID NVARCHAR(50) NULL,
+                            SharePercentage DECIMAL(6,3) NOT NULL DEFAULT 0.0,
+                            CapitalContribution DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            CurrentBalance DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            JoinDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            IsActive BIT NOT NULL DEFAULT 1,
+                            Notes NVARCHAR(MAX) NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 6. حركات وكشف حساب الشركاء
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PartnerTransactions')
+                    BEGIN
+                        CREATE TABLE PartnerTransactions (
+                            TransID INT IDENTITY(1,1) PRIMARY KEY,
+                            PartnerID INT NOT NULL REFERENCES Partners(PartnerID) ON DELETE CASCADE,
+                            TransDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            TransType NVARCHAR(50) NOT NULL,
+                            Debit DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            Credit DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            Notes NVARCHAR(500) NULL,
+                            SafeID INT NULL,
+                            RefID INT NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 7. جلسات توزيع الأرباح الدورية
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DividendDistributions')
+                    BEGIN
+                        CREATE TABLE DividendDistributions (
+                            DistributionID INT IDENTITY(1,1) PRIMARY KEY,
+                            DistributionDate DATETIME NOT NULL DEFAULT GETDATE(),
+                            PeriodFrom DATETIME NOT NULL,
+                            PeriodTo DATETIME NOT NULL,
+                            NetBusinessProfit DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            RetainedProfitPct DECIMAL(5,2) NOT NULL DEFAULT 0.0,
+                            DistributedProfitAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            Notes NVARCHAR(MAX) NULL,
+                            CreatedBy INT NULL REFERENCES Employees(EmpID),
+                            CreatedDate DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    -- 8. تفاصيل توزيع الأرباح لكل شريك
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DividendDistributionLines')
+                    BEGIN
+                        CREATE TABLE DividendDistributionLines (
+                            LineID INT IDENTITY(1,1) PRIMARY KEY,
+                            DistributionID INT NOT NULL REFERENCES DividendDistributions(DistributionID) ON DELETE CASCADE,
+                            PartnerID INT NOT NULL REFERENCES Partners(PartnerID),
+                            SharePercentage DECIMAL(6,3) NOT NULL,
+                            CalculatedProfit DECIMAL(18,4) NOT NULL,
+                            IsPaid BIT NOT NULL DEFAULT 0,
+                            PaidAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0,
+                            PaidDate DATETIME NULL,
+                            PaidSafeID INT NULL
+                        );
+                    END
+                ");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureFixedAssetsAndShareholdersSchema", ex);
+            }
         }
     }
 }
