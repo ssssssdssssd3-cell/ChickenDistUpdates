@@ -60,13 +60,17 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnBrowse = Theme.MakeButton("📂 اختيار ملف Excel", 835, 12, 190, 36, Theme.Accent);
+            btnBrowse = Theme.MakeButton("📂 اختيار ملف Excel", 860, 12, 175, 36, Theme.Accent);
             btnBrowse.Click += BtnBrowse_Click;
             pnlTopControls.Controls.Add(btnBrowse);
 
-            btnCopyTemplate = Theme.MakeButton("📋 نسخ قالب Excel", 665, 12, 160, 36, Color.FromArgb(70, 80, 95));
+            btnCopyTemplate = Theme.MakeButton("📋 نسخ قالب Excel", 705, 12, 150, 36, Color.FromArgb(70, 80, 95));
             btnCopyTemplate.Click += BtnCopyTemplate_Click;
             pnlTopControls.Controls.Add(btnCopyTemplate);
+
+            var btnFixDuplicatesInDb = Theme.MakeButton("🛠️ الأكواد المكررة", 540, 12, 160, 36, Color.FromArgb(180, 83, 9));
+            btnFixDuplicatesInDb.Click += (s, e) => new FrmDuplicateCodesResolver().ShowDialog();
+            pnlTopControls.Controls.Add(btnFixDuplicatesInDb);
 
             var lblPolicy = new Label
             {

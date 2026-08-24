@@ -397,12 +397,21 @@ namespace ChickenDist.Forms
             btnAddToShortages.Width = 140;
             btnAddToShortages.Click += (s, e) => AddSelectedToShortages();
 
+            var btnFixDuplicates = Theme.MakeButton("🔍 الأكواد المكررة", Color.FromArgb(180, 83, 9));
+            btnFixDuplicates.Width = 135;
+            btnFixDuplicates.Click += (s, e) => {
+                new FrmDuplicateCodesResolver().ShowDialog();
+                ProductCache.Refresh();
+                LoadProducts();
+            };
+
             pnlFooter.Controls.AddRange(new Control[] { 
                 btnNew, 
                 btnEdit, 
                 btnMovement,
                 btnDelete, 
                 btnQuickAdd, 
+                btnFixDuplicates,
                 btnAddToShortages,
                 btnMinStock, 
                 btnImportExcel, 

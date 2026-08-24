@@ -509,6 +509,7 @@ namespace ChickenDist.Forms
                     ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
                     ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
                     ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => { if (FrmProducts.PromptImportPassword(this)) NavigateTo(new FrmImportProducts()); })),
+                    ("🔍 فحص وحل الأكواد المكررة", "Products", (Action)(() => new FrmDuplicateCodesResolver().ShowDialog())),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
                     ("🎯 تعديل حد طلب الأصناف", "MinStockEdit",     (Action)(() => NavigateTo(new FrmMinStockEdit()))),
