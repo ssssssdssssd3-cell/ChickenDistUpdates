@@ -346,6 +346,7 @@ namespace ChickenDist.Forms
         private DataGridView dgPurchases;
         private DataGridView dgInventory;
         private DataGridView dgFinance;
+        private DataGridView dgReports;
         private DataGridView dgAdmin;
         private TextBox txtSearch;
         private Label lblCounter;
@@ -355,7 +356,7 @@ namespace ChickenDist.Forms
         {
             public string Key;
             public string Name;
-            public int TabIndex; // 0: Sales & Clients, 1: Purchases & Suppliers, 2: Inventory & Products, 3: Finance & Safes, 4: Drivers, Maintenance & Admin
+            public int TabIndex; // 0: Sales & Clients, 1: Purchases & Suppliers, 2: Inventory & Products, 3: Finance & Safes, 4: Detailed Reports, 5: Drivers, Maintenance & Admin
             public ScreenInfo(string key, string name, int tabIndex)
             {
                 Key = key;
@@ -381,6 +382,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("ClientStatement", "📄 كشف حساب العميل التفصيلي", 0),
             new ScreenInfo("InactiveClients", "💤 تنشيط العملاء الراكدين", 0),
             new ScreenInfo("Vehicles", "🚚 إدارة المركبات والسيارات", 0),
+            new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 0),
 
             // ── Tab 1: Purchases & Suppliers (المشتريات والموردين) ─────────────────
             new ScreenInfo("Purchases", "📥 شاشة المشتريات الرئيسية (فاتورة شراء)", 1),
@@ -412,6 +414,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("ClothingMatrix", "👔 مصفوفة مقاسات وألوان الملابس", 2),
             new ScreenInfo("ModelLookup", "🔍 دليل الموديلات والأجهزة", 2),
             new ScreenInfo("MultiBarcodes", "🔢 إدارة الباركودات المتعددة", 2),
+            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 2),
 
             // ── Tab 3: Finance, Safes & Shifts (المالية والخزائن والورديات) ────────
             new ScreenInfo("CashBox", "💰 الخزنة والمصروفات والوارد", 3),
@@ -419,32 +422,77 @@ namespace ChickenDist.Forms
             new ScreenInfo("ActualBalances", "💵 مطابقة الأرصدة الفعلية للنقدية", 3),
             new ScreenInfo("DailyAccounts", "📊 الحسابات والمالية اليومية الشاملة", 3),
             new ScreenInfo("ReceiptVoucher", "📄 إصدار سندات القبض والدفع", 3),
-            new ScreenInfo("Reports", "📊 التقارير والإحصائيات العامة", 3),
-            new ScreenInfo("Financials", "📈 التقارير المالية وقائمة الدخل", 3),
+            new ScreenInfo("FinancialPosition", "📊 الموقف المالي الشامل للمكان", 3),
             new ScreenInfo("DailyClosing", "🔒 تقفيل يومية المبيعات", 3),
             new ScreenInfo("ShiftClose", "🔄 شاشة إدارة وإغلاق الوردية", 3),
             new ScreenInfo("ShiftsHistory", "📊 تقرير وسجل الورديات السابقة", 3),
             new ScreenInfo("DashTreasury", "🏠 لوحة التحكم: رصيد الخزنة الحالي", 3),
-            new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 3),
 
-            // ── Tab 4: Drivers, Maintenance & Administration (المناديب والصيانة والإدارة) ──
-            new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 4),
-            new ScreenInfo("DriverPortal", "📱 بوابة المندوب الميداني", 4),
-            new ScreenInfo("DriverSales", "📱 مبيعات المندوب الميداني", 4),
-            new ScreenInfo("ImportPreview", "📥 استيراد مبيعات المناديب", 4),
-            new ScreenInfo("DriversMonitor", "📡 شاشة مراقبة السائقين", 4),
-            new ScreenInfo("DriverCustody", "💼 عهدة المناديب المالية", 4),
-            new ScreenInfo("DriverLeaderboard", "🏆 أداء وتقييم المناديب", 4),
-            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 4),
-            new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 4),
-            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 4),
-            new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 4),
-            new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 4),
-            new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 4),
-            new ScreenInfo("CloudSync", "☁️ التزامن السحابي والفرعي", 4),
-            new ScreenInfo("LookupManager", "📚 إدارة الجداول المرجعية", 4),
-            new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 4),
-            new ScreenInfo("DashBelowMin", "🏠 لوحة التحكم: الأصناف تحت حد الطلب", 4)
+            // ── Tab 4: Detailed Reports (التقارير التفصيلية الشاملة) ───────────────
+            new ScreenInfo("Reports", "📊 التقارير والإحصائيات العامة (كل التقارير)", 4),
+            new ScreenInfo("RepDailySales", "📅 تقرير المبيعات اليومية", 4),
+            new ScreenInfo("RepSalesByPeriod", "📈 تقرير المبيعات خلال فترة", 4),
+            new ScreenInfo("RepDetailedSales", "🧾 سجل فواتير المبيعات التفصيلي", 4),
+            new ScreenInfo("RepDetailedSaleItems", "📦 تفاصيل سطور وأصناف المبيعات", 4),
+            new ScreenInfo("RepSalesByProduct", "📊 تقرير مبيعات الأصناف والربحية", 4),
+            new ScreenInfo("RepSalesByCategory", "🏢 تقرير مبيعات المجموعات والأقسام", 4),
+            new ScreenInfo("RepSalesByClient", "👥 تقرير مبيعات العملاء والمسدد", 4),
+            new ScreenInfo("RepSalesByUser", "👔 تقرير مبيعات المستخدمين والكاشير", 4),
+            new ScreenInfo("RepSalesByPayment", "💳 تقرير طرق الدفع والتحصيل", 4),
+            new ScreenInfo("RepSalesDiscounts", "🏷️ تقرير الخصومات والتخفيضات", 4),
+            new ScreenInfo("RepDetailedReturns", "🔄 تقرير مرتجعات المبيعات", 4),
+            new ScreenInfo("RepSalesProfit", "💰 تقرير أرباح وهامش المبيعات", 4),
+            new ScreenInfo("RepStagnantProducts", "💤 تقرير الأصناف الراكدة", 4),
+            new ScreenInfo("RepPurchases", "📊 تقارير وإحصائيات المشتريات الشاملة", 4),
+            new ScreenInfo("RepDailyPurchases", "📅 تقرير المشتريات اليومية", 4),
+            new ScreenInfo("RepPurchasesByPeriod", "📈 تقرير المشتريات خلال فترة", 4),
+            new ScreenInfo("RepDetailedPurchases", "🧾 سجل فواتير المشتريات التفصيلي", 4),
+            new ScreenInfo("RepDetailedPurchaseItems", "📦 تفاصيل سطور وأصناف المشتريات", 4),
+            new ScreenInfo("RepPurchasesBySupplier", "🤝 مشتريات الموردين والمسدد", 4),
+            new ScreenInfo("RepPurchasesByProduct", "📊 مشتريات الأصناف ومتوسط التكلفة", 4),
+            new ScreenInfo("RepPurchasesByCategory", "🏢 مشتريات الأقسام والتصنيفات", 4),
+            new ScreenInfo("RepPurchaseReturns", "🔄 مرتجعات المشتريات التفصيلي", 4),
+            new ScreenInfo("RepSupplierPayments", "💵 المدفوعات للموردين والتسويات", 4),
+            new ScreenInfo("RepPurchasePrices", "📈 أسعار الشراء وتتبع التغيرات", 4),
+            new ScreenInfo("RepCreditPurchases", "⏳ المشتريات الآجلة والمديونيات", 4),
+            new ScreenInfo("RepStores", "📊 تقارير المخازن وحركة الأرصدة الشاملة", 4),
+            new ScreenInfo("RepProductQtyDetail", "📊 تقرير كميات الأصناف التفصيلي", 4),
+            new ScreenInfo("RepWastageLoss", "🚨 تقرير الهالك والتالف", 4),
+            new ScreenInfo("RepInventoryValuation", "📦 تقييم المخزن التفصيلي بالتكلفة", 4),
+            new ScreenInfo("RepSupplierItemActivity", "📊 حركة أصناف الموردين", 4),
+            new ScreenInfo("RepExpiryReport", "⚠️ تقرير انتهاء الصلاحية", 4),
+            new ScreenInfo("RepInventoryVariance", "📊 تقرير فروق الجرد والعجز", 4),
+            new ScreenInfo("RepClients", "👥 تقارير العملاء الشاملة", 4),
+            new ScreenInfo("RepClientBalances", "⚖️ أرصدة وبيانات العملاء", 4),
+            new ScreenInfo("RepDebtAging", "⏳ أعمار الديون والديون الراكدة", 4),
+            new ScreenInfo("RepClientProductSales", "📑 مبيعات عميل تفصيلي", 4),
+            new ScreenInfo("RepSuppliers", "🤝 تقارير الموردين الشاملة", 4),
+            new ScreenInfo("RepDrivers", "🚚 تقارير المناديب والتوزيع الشاملة", 4),
+            new ScreenInfo("RepSalesByDriver", "🚚 مبيعات المناديب التفصيلية", 4),
+            new ScreenInfo("RepHandovers", "📋 سجل تقفيل المناديب والحمولات", 4),
+            new ScreenInfo("Financials", "📈 التقارير المالية وقائمة الدخل والأرباح", 4),
+            new ScreenInfo("RepDailyClosing", "📑 تقرير التقفيل اليومي", 4),
+            new ScreenInfo("RepIncomeStatement", "📊 قائمة الدخل والربحية", 4),
+            new ScreenInfo("RepFinancialSummary", "📈 ملخص الحسابات والمالية", 4),
+            new ScreenInfo("RepShiftComparison", "⚖️ مقارنة الورديات بالأيام التقويمية", 4),
+
+            // ── Tab 5: Drivers, Maintenance & Administration (المناديب والصيانة والإدارة) ──
+            new ScreenInfo("DriverHandover", "📦 تسليم وحمولة المندوب", 5),
+            new ScreenInfo("DriverPortal", "📱 بوابة المندوب الميداني", 5),
+            new ScreenInfo("DriverSales", "📱 مبيعات المندوب الميداني", 5),
+            new ScreenInfo("ImportPreview", "📥 استيراد مبيعات المناديب من السحاب", 5),
+            new ScreenInfo("DriversMonitor", "📡 شاشة مراقبة السائقين", 5),
+            new ScreenInfo("DriverCustody", "💼 عهدة المناديب المالية", 5),
+            new ScreenInfo("DriverLeaderboard", "🏆 أداء وتقييم المناديب", 5),
+            new ScreenInfo("DashLoads", "🏠 لوحة التحكم: الحمولات المفتوحة", 5),
+            new ScreenInfo("Maintenance", "🔧 تذاكر الصيانة وإدارة الأجهزة", 5),
+            new ScreenInfo("Employees", "👨‍💼 إدارة الموظفين والرواتب", 5),
+            new ScreenInfo("EmployeeTransactions", "💳 حسابات وحركات الموظفين", 5),
+            new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 5),
+            new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 5),
+            new ScreenInfo("CloudSync", "☁️ التزامن السحابي والفرعي", 5),
+            new ScreenInfo("LookupManager", "📚 إدارة الجداول المرجعية", 5),
+            new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 5)
         };
 
         public FrmPermissions(int empID, string empName)
@@ -469,7 +517,7 @@ namespace ChickenDist.Forms
 
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 65, BackColor = Color.FromArgb(24, 32, 47), Padding = new Padding(15, 10, 15, 10) };
             var lblTitleHeader = new Label { Text = $"🔐 صلاحيات الموظف: {_empName}", Font = new Font("Segoe UI", 12.5f, FontStyle.Bold), ForeColor = Color.White, AutoSize = true, Location = new Point(15, 8) };
-            var lblSubHeader = new Label { Text = "حدد العمليات والصلاحيات التفصيلية المسموح لهذا الموظف بإجرائها في شاشات المبيعات والمشتريات والأصناف والعملاء والمالية والإدارة.", Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(180, 195, 215), AutoSize = true, Location = new Point(15, 36) };
+            var lblSubHeader = new Label { Text = "حدد العمليات والصلاحيات والتقارير التفصيلية المسموح لهذا الموظف بإجرائها والاطلاع عليها في كافة شاشات وأقسام البرنامج.", Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(180, 195, 215), AutoSize = true, Location = new Point(15, 36) };
             pnlTop.Controls.Add(lblTitleHeader); pnlTop.Controls.Add(lblSubHeader);
 
             var pnlControlBar = new Panel { Dock = DockStyle.Top, Height = 85, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
@@ -490,7 +538,8 @@ namespace ChickenDist.Forms
             tcPerms.TabPages.Add(BuildTabPage("📥 المشتريات والموردين", out dgPurchases, 1));
             tcPerms.TabPages.Add(BuildTabPage("📦 المخازن والأصناف", out dgInventory, 2));
             tcPerms.TabPages.Add(BuildTabPage("💰 المالية والخزائن والورديات", out dgFinance, 3));
-            tcPerms.TabPages.Add(BuildTabPage("🚚 المناديب والصيانة والإدارة", out dgAdmin, 4));
+            tcPerms.TabPages.Add(BuildTabPage("📊 التقارير التفصيلية الشاملة", out dgReports, 4));
+            tcPerms.TabPages.Add(BuildTabPage("🚚 المناديب والصيانة والإدارة", out dgAdmin, 5));
 
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Color.FromArgb(24, 32, 47), Padding = new Padding(15, 8, 15, 8) };
             lblCounter = new Label { Text = "📊 الصلاحيات المفعلة: 0 / 0", Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(46, 204, 113), AutoSize = true };
@@ -533,18 +582,18 @@ namespace ChickenDist.Forms
 
         private Button CreatePresetButton(string text, Color bg, EventHandler onClick) { var btn = new Button { Text = text, Font = new Font("Segoe UI", 9f, FontStyle.Bold), Size = new Size(125, 30), FlatStyle = FlatStyle.Flat, BackColor = bg, ForeColor = Color.White, Cursor = Cursors.Hand }; btn.FlatAppearance.BorderSize = 0; btn.Click += onClick; return btn; }
 
-        private void ToggleAllPermissions(bool check) { foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) { if (grid == null) continue; foreach (DataGridViewRow row in grid.Rows) { for (int i = 2; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cell && !row.Cells[i].ReadOnly) cell.Value = check; } } UpdateLiveCounter(); }
+        private void ToggleAllPermissions(bool check) { foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin }) { if (grid == null) continue; foreach (DataGridViewRow row in grid.Rows) { for (int i = 2; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cell && !row.Cells[i].ReadOnly) cell.Value = check; } } UpdateLiveCounter(); }
         
-        private void ToggleTabPermissions(int tabIndex, bool check) { DataGridView grid = tabIndex == 0 ? dgSales : tabIndex == 1 ? dgPurchases : tabIndex == 2 ? dgInventory : tabIndex == 3 ? dgFinance : dgAdmin; if (grid != null) { foreach (DataGridViewRow row in grid.Rows) { foreach (DataGridViewCell cell in row.Cells) if (cell.ColumnIndex >= 2 && cell is DataGridViewCheckBoxCell && !cell.ReadOnly) cell.Value = check; } UpdateLiveCounter(); } }
+        private void ToggleTabPermissions(int tabIndex, bool check) { DataGridView grid = tabIndex == 0 ? dgSales : tabIndex == 1 ? dgPurchases : tabIndex == 2 ? dgInventory : tabIndex == 3 ? dgFinance : tabIndex == 4 ? dgReports : dgAdmin; if (grid != null) { foreach (DataGridViewRow row in grid.Rows) { foreach (DataGridViewCell cell in row.Cells) if (cell.ColumnIndex >= 2 && cell is DataGridViewCheckBoxCell && !cell.ReadOnly) cell.Value = check; } UpdateLiveCounter(); } }
 
         private void ApplyRolePreset(string role)
         {
             ToggleAllPermissions(false);
-            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "Clients", "ClientStatement", "InactiveClients", "Vehicles", "DashSales" };
-            var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
-            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "ClothingMatrix", "ModelLookup", "MultiBarcodes", "DashBelowMin" };
-            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "ClientStatement", "DashTreasury", "SalesAudit" };
-            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin })
+            var salesKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "ProductSearch", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "Clients", "ClientStatement", "InactiveClients", "Vehicles", "DashSales", "RepDailySales", "RepSalesByPeriod", "RepDetailedSales", "RepDetailedSaleItems", "RepSalesByProduct", "RepSalesByCategory", "RepSalesByClient", "RepSalesByUser", "RepSalesByPayment", "RepSalesDiscounts", "RepDetailedReturns", "RepStagnantProducts" };
+            var purchaseKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment", "RepPurchases", "RepDailyPurchases", "RepPurchasesByPeriod", "RepDetailedPurchases", "RepDetailedPurchaseItems", "RepPurchasesBySupplier", "RepPurchasesByProduct", "RepPurchasesByCategory", "RepPurchaseReturns", "RepSupplierPayments", "RepPurchasePrices", "RepCreditPurchases" };
+            var inventoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage", "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "ClothingMatrix", "ModelLookup", "MultiBarcodes", "DashBelowMin", "RepStores", "RepProductQtyDetail", "RepWastageLoss", "RepInventoryValuation", "RepSupplierItemActivity", "RepExpiryReport", "RepInventoryVariance" };
+            var accountantKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "FinancialPosition", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory", "EmployeeTransactions", "DriverCustody", "SupplierStatement", "ClientStatement", "DashTreasury", "SalesAudit", "RepDailySales", "RepSalesByPeriod", "RepDetailedSales", "RepDetailedSaleItems", "RepSalesByProduct", "RepSalesByCategory", "RepSalesByClient", "RepSalesByUser", "RepSalesByPayment", "RepSalesDiscounts", "RepDetailedReturns", "RepSalesProfit", "RepStagnantProducts", "RepPurchases", "RepDailyPurchases", "RepPurchasesByPeriod", "RepDetailedPurchases", "RepDetailedPurchaseItems", "RepPurchasesBySupplier", "RepPurchasesByProduct", "RepPurchasesByCategory", "RepPurchaseReturns", "RepSupplierPayments", "RepPurchasePrices", "RepCreditPurchases", "RepStores", "RepProductQtyDetail", "RepWastageLoss", "RepInventoryValuation", "RepSupplierItemActivity", "RepExpiryReport", "RepInventoryVariance", "RepClients", "RepClientBalances", "RepDebtAging", "RepClientProductSales", "RepSuppliers", "RepDrivers", "RepSalesByDriver", "RepHandovers", "RepDailyClosing", "RepIncomeStatement", "RepFinancialSummary", "RepShiftComparison" };
+            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin })
             {
                 if (grid == null) continue;
                 foreach (DataGridViewRow row in grid.Rows)
@@ -558,12 +607,19 @@ namespace ChickenDist.Forms
             UpdateLiveCounter();
         }
 
-        private void ApplySearchFilter() { string q = txtSearch.Text.Trim(); foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) if (grid != null) foreach (DataGridViewRow r in grid.Rows) r.Visible = string.IsNullOrEmpty(q) || r.Cells["ScreenName"].Value.ToString().Contains(q) || r.Cells["Screen"].Value.ToString().Contains(q); }
+        private void ApplySearchFilter() 
+        { 
+            string q = txtSearch.Text.Trim(); 
+            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin }) 
+                if (grid != null) 
+                    foreach (DataGridViewRow r in grid.Rows) 
+                        r.Visible = string.IsNullOrEmpty(q) || r.Cells["ScreenName"].Value.ToString().Contains(q) || r.Cells["Screen"].Value.ToString().Contains(q); 
+        }
 
         private void UpdateLiveCounter()
         {
             int total = 0, access = 0, special = 0;
-            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin })
+            foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin })
             {
                 if (grid == null) continue;
                 foreach (DataGridViewRow r in grid.Rows)
@@ -581,7 +637,7 @@ namespace ChickenDist.Forms
             try
             {
                 var dt = EmployeeDAL.GetPermissions(_empID);
-                foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin }) grid.Rows.Clear();
+                foreach (var grid in new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin }) grid.Rows.Clear();
 
                 foreach (var screen in ScreensList)
                 {
@@ -619,7 +675,8 @@ namespace ChickenDist.Forms
                         else if (screen.TabIndex == 1) targetGrid = dgPurchases;
                         else if (screen.TabIndex == 2) targetGrid = dgInventory;
                         else if (screen.TabIndex == 3) targetGrid = dgFinance;
-                        else if (screen.TabIndex == 4) targetGrid = dgAdmin;
+                        else if (screen.TabIndex == 4) targetGrid = dgReports;
+                        else if (screen.TabIndex == 5) targetGrid = dgAdmin;
 
                         if (targetGrid != null)
                         {
@@ -638,8 +695,8 @@ namespace ChickenDist.Forms
                                 orderColumns, 
                                 viewDetails, 
                                 viewBalance, 
-                                changeSafe,
-                                viewSalesTotals,
+                                changeSafe, 
+                                viewSalesTotals, 
                                 viewQuickItems
                             );
                             
@@ -706,7 +763,12 @@ namespace ChickenDist.Forms
                                                         string.Equals(key, "Reports", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "Financials", StringComparison.OrdinalIgnoreCase) ||
                                                         string.Equals(key, "Inventory", StringComparison.OrdinalIgnoreCase) ||
-                                                        string.Equals(key, "ProductMovement", StringComparison.OrdinalIgnoreCase);
+                                                        string.Equals(key, "ProductMovement", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "RepSalesProfit", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "RepIncomeStatement", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "RepInventoryValuation", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "RepPurchasesByProduct", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(key, "RepFinancials", StringComparison.OrdinalIgnoreCase);
                             if (!isCostViewableScreen)
                             {
                                 DisableGridCell(targetGrid.Rows[ri], 10); // ViewCost
@@ -805,7 +867,7 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            var grids = new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgAdmin };
+            var grids = new[] { dgSales, dgPurchases, dgInventory, dgFinance, dgReports, dgAdmin };
             foreach (var grid in grids)
             {
                 if (grid == null) continue;

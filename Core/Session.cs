@@ -178,6 +178,15 @@ namespace ChickenDist.Core
             // Synonym mapping for backwards-compatibility or UI mismatches
             if (screen == "DriverSales" && _perms.ContainsKey("DriverPortal") && _perms["DriverPortal"].CanAccess) return true;
             if (screen == "DriverPortal" && _perms.ContainsKey("DriverSales") && _perms["DriverSales"].CanAccess) return true;
+            if (screen == "FinancialPosition" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
+            if (screen == "RepFinancials" && _perms.ContainsKey("Financials") && _perms["Financials"].CanAccess) return true;
+
+            // Fallback for detailed reports: If a specific report key (starting with Rep) is not configured in _perms, fall back to "Reports"
+            if (screen.StartsWith("Rep") || screen.StartsWith("Reports_"))
+            {
+                if (_perms.ContainsKey(screen)) return _perms[screen].CanAccess;
+                if (_perms.ContainsKey("Reports")) return _perms["Reports"].CanAccess;
+            }
 
             return false;
         }
@@ -376,16 +385,37 @@ namespace ChickenDist.Core
 
 
         public static readonly string[] AllScreens = {
-            "Sales", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
-            "Clients", "InactiveClients", "Vehicles",
+            // Sales & POS
+            "Sales", "POS", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
+            "Clients", "ClientStatement", "InactiveClients", "Vehicles",
+            
+            // Purchases & Suppliers
             "Purchases", "PurchaseReturn", "PurchasesList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
-            "Products", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage",
-            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes",
-            "CashBox", "Reports", "Financials", "DailyClosing", "Employees", "EmployeeTransactions",
+            
+            // Inventory & Products
+            "Products", "ProductCard", "Categories", "Units", "ImportProducts", "Warehouses", "Inventory", "MinStockEdit", "ShortageNotebook", "InventoryVarianceReport", "Wastage",
+            "WarehouseTransfer", "WarehouseTransfersList", "PriceChanges", "PricePoster", "ProductMovement", "BulkPrintBarcodes", "ClothingMatrix", "ModelLookup", "MultiBarcodes",
+            
+            // Finance, Safes & Shifts
+            "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "FinancialPosition", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory",
+            
+            // Detailed Reports
+            "RepDailySales", "RepSalesByPeriod", "RepDetailedSales", "RepDetailedSaleItems", "RepSalesByProduct", "RepSalesByCategory", "RepSalesByClient", "RepSalesByUser",
+            "RepSalesByPayment", "RepSalesDiscounts", "RepDetailedReturns", "RepSalesProfit", "RepStagnantProducts",
+            "RepPurchases", "RepDailyPurchases", "RepPurchasesByPeriod", "RepDetailedPurchases", "RepDetailedPurchaseItems", "RepPurchasesBySupplier", "RepPurchasesByProduct", "RepPurchasesByCategory", "RepPurchaseReturns", "RepSupplierPayments", "RepPurchasePrices", "RepCreditPurchases",
+            "RepStores", "RepProductQtyDetail", "RepWastageLoss", "RepInventoryValuation", "RepSupplierItemActivity", "RepExpiryReport", "RepInventoryVariance",
+            "RepClients", "RepClientBalances", "RepDebtAging", "RepClientProductSales",
+            "RepSuppliers",
+            "RepDrivers", "RepSalesByDriver", "RepHandovers",
+            "RepFinancials", "RepDailyClosing", "RepIncomeStatement", "RepFinancialSummary", "RepShiftComparison",
+
+            // Drivers & Administration
             "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
-            "Settings", "BotManager", "EditInvoiceDate",
-            "POS", "ShiftClose",
+            "Employees", "EmployeeTransactions",
+            "Settings", "BotManager", "CloudSync", "LookupManager", "EditInvoiceDate",
+            
+            // Dashboards
             "DashTreasury", "DashSales", "DashLoads", "DashBelowMin"
         };
     }

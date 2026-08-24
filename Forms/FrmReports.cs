@@ -616,60 +616,62 @@ namespace ChickenDist.Forms
 			};
 
 			var filteredReports = new List<(string name, string tag)>();
-			if (string.IsNullOrEmpty(_targetModule))
+			foreach (var report in allReports)
 			{
-				filteredReports = allReports;
-			}
-			else
-			{
-				foreach (var report in allReports)
+				bool keep = false;
+				if (string.IsNullOrEmpty(_targetModule))
 				{
-					bool keep = false;
-					if (_targetModule == "Sales")
-					{
-						keep = (report.tag == "DailySalesSummary" || report.tag == "SalesByPeriod" || report.tag == "DetailedSales" || report.tag == "DetailedSaleItems" || report.tag == "SalesByProduct" || report.tag == "SalesByCategory" || report.tag == "SalesByClient" || report.tag == "SalesByUser" || report.tag == "SalesByPaymentMethod" || report.tag == "SalesDiscounts" || report.tag == "DetailedReturns" || report.tag == "SalesProfitability" || report.tag == "StagnantProducts");
-					}
-					else if (_targetModule == "Purchases")
-					{
-						keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases" || report.tag == "StagnantProducts");
-					}
-					else if (_targetModule == "Stores")
-					{
-						keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct" || report.tag == "StagnantProducts");
-					}
-					else if (_targetModule == "Clients")
-					{
-						keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales" || report.tag == "DebtAging");
-					}
-					else if (_targetModule == "Suppliers")
-					{
-						keep = (report.tag == "PurchasesBySupplier" || report.tag == "SupplierPayments" || report.tag == "SupplierItemActivity" || report.tag == "CreditPurchases" || report.tag == "PurchasePricesTracking");
-					}
-					else if (_targetModule == "Drivers")
-					{
-						keep = (report.tag == "SalesByDriver" || report.tag == "Handovers");
-					}
-					else if (_targetModule == "Financials")
-					{
-						keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DailySalesSummary" || report.tag == "SalesProfitability");
-					}
-					else if (_targetModule == "Shifts" || _targetModule == "ShiftsHistory")
-					{
-						keep = (report.tag == "ShiftsHistory" || report.tag == "ShiftVsCalendarComparison");
-					}
+					keep = true;
+				}
+				else if (_targetModule == "Sales")
+				{
+					keep = (report.tag == "DailySalesSummary" || report.tag == "SalesByPeriod" || report.tag == "DetailedSales" || report.tag == "DetailedSaleItems" || report.tag == "SalesByProduct" || report.tag == "SalesByCategory" || report.tag == "SalesByClient" || report.tag == "SalesByUser" || report.tag == "SalesByPaymentMethod" || report.tag == "SalesDiscounts" || report.tag == "DetailedReturns" || report.tag == "SalesProfitability" || report.tag == "StagnantProducts");
+				}
+				else if (_targetModule == "Purchases")
+				{
+					keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases" || report.tag == "StagnantProducts");
+				}
+				else if (_targetModule == "Stores")
+				{
+					keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct" || report.tag == "StagnantProducts");
+				}
+				else if (_targetModule == "Clients")
+				{
+					keep = (report.tag == "SalesByClient" || report.tag == "ClientBalances" || report.tag == "ClientProductSales" || report.tag == "DebtAging");
+				}
+				else if (_targetModule == "Suppliers")
+				{
+					keep = (report.tag == "PurchasesBySupplier" || report.tag == "SupplierPayments" || report.tag == "SupplierItemActivity" || report.tag == "CreditPurchases" || report.tag == "PurchasePricesTracking");
+				}
+				else if (_targetModule == "Drivers")
+				{
+					keep = (report.tag == "SalesByDriver" || report.tag == "Handovers");
+				}
+				else if (_targetModule == "Financials")
+				{
+					keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DailySalesSummary" || report.tag == "SalesProfitability");
+				}
+				else if (_targetModule == "Shifts" || _targetModule == "ShiftsHistory")
+				{
+					keep = (report.tag == "ShiftsHistory" || report.tag == "ShiftVsCalendarComparison");
+				}
 
-					if (keep && !Session.CanViewCost("Reports"))
-					{
-						if (report.tag == "SalesProfitability" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DetailedInventoryValuation")
-						{
-							keep = false;
-						}
-					}
+				if (keep && !Session.CanAccess(GetReportPermissionKey(report.tag)))
+				{
+					keep = false;
+				}
 
-					if (keep)
+				if (keep && !Session.CanViewCost("Reports"))
+				{
+					if (report.tag == "SalesProfitability" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DetailedInventoryValuation")
 					{
-						filteredReports.Add(report);
+						keep = false;
 					}
+				}
+
+				if (keep)
+				{
+					filteredReports.Add(report);
 				}
 			}
 
@@ -4239,6 +4241,54 @@ namespace ChickenDist.Forms
 				if (found != null) return found;
 			}
 			return null;
+		}
+
+		private static string GetReportPermissionKey(string tag)
+		{
+			switch (tag)
+			{
+				case "DailySalesSummary": return "RepDailySales";
+				case "SalesByPeriod": return "RepSalesByPeriod";
+				case "DetailedSales": return "RepDetailedSales";
+				case "DetailedSaleItems": return "RepDetailedSaleItems";
+				case "SalesByProduct": return "RepSalesByProduct";
+				case "SalesByCategory": return "RepSalesByCategory";
+				case "SalesByClient": return "RepSalesByClient";
+				case "SalesByUser": return "RepSalesByUser";
+				case "SalesByPaymentMethod": return "RepSalesByPayment";
+				case "SalesDiscounts": return "RepSalesDiscounts";
+				case "DetailedReturns": return "RepDetailedReturns";
+				case "SalesProfitability": return "RepSalesProfit";
+				case "StagnantProducts": return "RepStagnantProducts";
+				case "DailyPurchasesSummary": return "RepDailyPurchases";
+				case "PurchasesByPeriod": return "RepPurchasesByPeriod";
+				case "DetailedPurchases": return "RepDetailedPurchases";
+				case "DetailedPurchaseItems": return "RepDetailedPurchaseItems";
+				case "PurchasesBySupplier": return "RepPurchasesBySupplier";
+				case "PurchasesByProduct": return "RepPurchasesByProduct";
+				case "PurchasesByCategory": return "RepPurchasesByCategory";
+				case "DetailedPurchaseReturns": return "RepPurchaseReturns";
+				case "SupplierPayments": return "RepSupplierPayments";
+				case "PurchasePricesTracking": return "RepPurchasePrices";
+				case "CreditPurchases": return "RepCreditPurchases";
+				case "ProductQtyDetail": return "RepProductQtyDetail";
+				case "WastageLoss": return "RepWastageLoss";
+				case "DetailedInventoryValuation": return "RepInventoryValuation";
+				case "SupplierItemActivity": return "RepSupplierItemActivity";
+				case "ExpiryReport": return "RepExpiryReport";
+				case "InventoryVariance": return "RepInventoryVariance";
+				case "ClientBalances": return "RepClientBalances";
+				case "DebtAging": return "RepDebtAging";
+				case "ClientProductSales": return "RepClientProductSales";
+				case "SalesByDriver": return "RepSalesByDriver";
+				case "Handovers": return "RepHandovers";
+				case "DailyClosing": return "RepDailyClosing";
+				case "IncomeStatementAndProfitability": return "RepIncomeStatement";
+				case "FinancialSummary": return "RepFinancialSummary";
+				case "ShiftsHistory": return "ShiftsHistory";
+				case "ShiftVsCalendarComparison": return "RepShiftComparison";
+				default: return "Reports";
+			}
 		}
 	}
 }
