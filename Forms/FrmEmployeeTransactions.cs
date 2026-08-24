@@ -8,7 +8,9 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>شاشة حسابات الموظفين والمناديب — رواتب وسلف ومستحقات</summary>
+    /// <summary>
+    /// شاشة حسابات الموظفين والمناديب — كشف حساب وسلف ومستحقات ورواتب
+    /// </summary>
     public class FrmEmployeeTransactions : Form
     {
         private ComboBox cboEmployee;
@@ -21,7 +23,11 @@ namespace ChickenDist.Forms
         private ComboBox cboNewType;
         private TextBox txtNewAmount, txtNewNotes;
         private DateTimePicker dtpNewDate;
+        private CheckBox chkAffectCash;
         private Button btnSaveTrans, btnPrint;
+
+        // بطاقات إحصائيات علوية
+        private Label lblTotalDebit, lblTotalCredit, lblTransCount;
 
         private int _selectedEmpID = 0;
         private string _selectedEmpName = "";
@@ -34,54 +40,84 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "حسابات الموظفين والمناديب";
-            this.Size = new Size(1150, 680);
+            this.Text = "💰 كشف وحسابات الموظفين والمناديب";
+            this.Size = new Size(1220, 740);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // ══════ الهيكل الرئيسي: جدول عمودين ══════
-            var tblMain = new TableLayoutPanel
+            // الشريط العلوي مع أزرار الانتقال السريع للشاشات المرتبطة
+            var pnlTop = new Panel
             {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-                Padding = new Padding(6)
+                Dock = DockStyle.Top,
+                Height = 55,
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(15, 8, 15, 8)
             };
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // اليسار: جدول الحركات (توسيع تلقائي)
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 310f)); // اليمين: الاختيار + البطاقة + إضافة حركة (عرض ثابت)
 
-            // ══════ العمود الأيمن: الاختيار والبطاقات والادخال ══════
+            var lblTitle = new Label
+            {
+                Text = "💰 حسابات الموظفين والمناديب (كشف حساب تفصيلي + سلف ومستحقات)",
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = true,
+                Location = new Point(15, 14)
+            };
+
+            var btnGoAttendance = Theme.MakeButton("🕒 الحضور والانصراف", 0, 0, 150, 36, Color.FromArgb(30, 41, 59));
+            btnGoAttendance.Click += (s, e) => new FrmEmployeeAttendance().ShowDialog(this);
+
+            var btnGoPayroll = Theme.MakeButton("📊 مسيرات الرواتب", 0, 0, 140, 36, Color.FromArgb(19, 78, 74));
+            btnGoPayroll.Click += (s, e) => new FrmEmployeePayroll().ShowDialog(this);
+
+            var btnGoCommissions = Theme.MakeButton("💼 عمولات المبيعات", 0, 0, 150, 36, Color.FromArgb(14, 116, 144));
+            btnGoCommissions.Click += (s, e) => new FrmEmployeeCommissions().ShowDialog(this);
+
+            var flowShortcuts = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(0, 2, 0, 0)
+            };
+            flowShortcuts.Controls.AddRange(new Control[] { btnGoAttendance, btnGoPayroll, btnGoCommissions });
+
+            pnlTop.Controls.Add(flowShortcuts);
+            pnlTop.Controls.Add(lblTitle);
+
+            // ══════ لوحة الإدخال والبطاقة الجانبية (يمين الشاشة - 330px) ══════
             var pnlRight = new Panel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Right,
+                Width = 340,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12),
+                Padding = new Padding(14),
                 AutoScroll = true
             };
 
-            var lblSelectEmp = new Label { Text = "👤 اختر الموظف أو المندوب:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(0, 0, 0, 5) };
+            var lblSelectEmp = new Label { Text = "👤 اختر الموظف أو المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Location = new Point(15, 12) };
             cboEmployee = new ComboBox
             {
-                Width = 260,
+                Location = new Point(15, 36),
+                Width = 295,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold)
             };
             cboEmployee.SelectedIndexChanged += CboEmployee_SelectedIndexChanged;
 
             // بطاقة الرصيد
             var pnlBalanceCard = new Panel
             {
-                Width = 260,
+                Location = new Point(15, 78),
+                Width = 295,
                 Height = 85,
                 BackColor = Theme.BgMain,
-                Margin = new Padding(0, 15, 0, 15),
                 BorderStyle = BorderStyle.FixedSingle
             };
             pnlBalanceCard.Paint += (s, e) =>
@@ -91,9 +127,9 @@ namespace ChickenDist.Forms
 
             lblBalanceTitle = new Label
             {
-                Text = "صافي المديونية / السلفة على الموظف:",
+                Text = "صافي حساب الموظف:",
                 Location = new Point(12, 10),
-                Width = 230,
+                Width = 270,
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Theme.TextSub
             };
@@ -101,7 +137,7 @@ namespace ChickenDist.Forms
             {
                 Text = "0.00 ج",
                 Location = new Point(12, 38),
-                Width = 230,
+                Width = 270,
                 Font = new Font("Segoe UI", 18f, FontStyle.Bold),
                 ForeColor = Theme.Success,
                 TextAlign = ContentAlignment.MiddleLeft
@@ -112,71 +148,78 @@ namespace ChickenDist.Forms
             var lblNewTransTitle = new Label
             {
                 Text = "⚡ تسجيل حركة مالية جديدة",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
-                Margin = new Padding(0, 15, 0, 8)
+                Location = new Point(15, 178),
+                AutoSize = true
             };
 
-            var lblNewType = new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextSub };
+            var lblNewType = new Label { Text = "نوع الحركة:", Location = new Point(15, 210), AutoSize = true, ForeColor = Theme.TextSub };
             cboNewType = new ComboBox
             {
-                Width = 260,
+                Location = new Point(15, 230),
+                Width = 295,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f)
             };
-            cboNewType.Items.Add("سلفة نقدية (من الخزينة)");
+            cboNewType.Items.Add("سلفة نقدية (صرف من الخزينة)");
             cboNewType.Items.Add("استحقاق راتب (قيد مستحقات)");
             cboNewType.Items.Add("صرف نقدية / دفعة راتب");
             cboNewType.Items.Add("تحصيل نقدي من موظف (سداد سلفة)");
             cboNewType.Items.Add("خصم / عجز (تسوية مديونية)");
+            cboNewType.Items.Add("مكافأة / حافز (استحقاق)");
             cboNewType.SelectedIndex = 0;
 
-            var lblNewDate = new Label { Text = "التاريخ:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(0, 10, 0, 2) };
+            var lblNewDate = new Label { Text = "التاريخ:", Location = new Point(15, 268), AutoSize = true, ForeColor = Theme.TextSub };
             dtpNewDate = new DateTimePicker
             {
-                Width = 260,
+                Location = new Point(15, 288),
+                Width = 295,
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                Font = new Font("Segoe UI", 10f)
             };
 
-            var lblNewAmount = new Label { Text = "المبلغ (ج.م):", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(0, 10, 0, 2) };
+            var lblNewAmount = new Label { Text = "المبلغ (ج.م):", Location = new Point(15, 326), AutoSize = true, ForeColor = Theme.TextSub, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtNewAmount = new TextBox
             {
-                Width = 260,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Location = new Point(15, 348),
+                Width = 295,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle
+                ForeColor = Color.DarkBlue,
+                TextAlign = HorizontalAlignment.Center,
+                Text = "0"
             };
 
-            var lblNewNotes = new Label { Text = "ملاحظات وتفاصيل الحركة:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(0, 10, 0, 2) };
+            var lblNewNotes = new Label { Text = "ملاحظات وتفاصيل الحركة:", Location = new Point(15, 388), AutoSize = true, ForeColor = Theme.TextSub };
             txtNewNotes = new TextBox
             {
-                Width = 260,
+                Location = new Point(15, 408),
+                Width = 295,
                 Multiline = true,
-                Height = 65,
+                Height = 60,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle
+                Font = new Font("Segoe UI", 9.5f)
             };
 
-            btnSaveTrans = Theme.MakeButton("💾 حفظ وتأثير المالية", Theme.Accent);
-            btnSaveTrans.Size = new Size(260, 36);
+            chkAffectCash = new CheckBox
+            {
+                Text = "التأثير على الخزينة النقدية فوراً",
+                Location = new Point(15, 478),
+                Width = 295,
+                Checked = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Theme.Primary
+            };
+
+            btnSaveTrans = Theme.MakeButton("💾 حفظ وتأثير المالية", 15, 510, 295, 38, Theme.Accent);
             btnSaveTrans.Click += BtnSaveTrans_Click;
 
-            // ترتيب عناصر العمود الأيمن عمودياً
-            var flowRight = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(5),
-                AutoScroll = true
-            };
-            flowRight.Controls.AddRange(new Control[] {
+            pnlRight.Controls.AddRange(new Control[] {
                 lblSelectEmp, cboEmployee,
                 pnlBalanceCard,
                 lblNewTransTitle,
@@ -184,44 +227,57 @@ namespace ChickenDist.Forms
                 lblNewDate, dtpNewDate,
                 lblNewAmount, txtNewAmount,
                 lblNewNotes, txtNewNotes,
-                new Panel { Height = 10 },
+                chkAffectCash,
                 btnSaveTrans
             });
-            pnlRight.Controls.Add(flowRight);
 
-            // ══════ العمود الأيسر: شريط الفلترة وجدول الحركات ══════
-            var pnlLeft = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
+            // ══════ لوحة الجدول والفلترة (اليسار - Fill) ══════
+            var pnlLeft = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
 
             // شريط الفلاتر
             var pnlFilters = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 46,
+                Height = 50,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8),
-                FlowDirection = FlowDirection.RightToLeft
+                RightToLeft = RightToLeft.Yes
             };
 
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 5, 0, 0) };
-            dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
+            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 6, 0, 0) };
+            dtpFrom = new DateTimePicker { Width = 140, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(-3) };
             dtpFrom.ValueChanged += (s, e) => LoadTransactions();
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 6, 0, 0) };
+            dtpTo = new DateTimePicker { Width = 140, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
             dtpTo.ValueChanged += (s, e) => LoadTransactions();
 
-            var lblType = new Label { Text = "النوع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 5, 0, 0) };
-            cboTypeFilter = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            var lblType = new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 6, 0, 0) };
+            cboTypeFilter = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             cboTypeFilter.Items.AddRange(new object[] { "الكل", "سلفة", "استحقاق راتب", "صرف نقدية", "تحصيل سداد", "خصم / عجز" });
             cboTypeFilter.SelectedIndex = 0;
             cboTypeFilter.SelectedIndexChanged += (s, e) => LoadTransactions();
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة كشف حساب", Theme.Primary);
-            btnPrint.Size = new Size(160, 26);
-            btnPrint.Margin = new Padding(30, 0, 0, 0);
+            btnPrint = Theme.MakeButton("🖨️ طباعة كشف حساب", 0, 0, 160, 32, Theme.Primary);
             btnPrint.Click += BtnPrint_Click;
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblType, cboTypeFilter, btnPrint });
+
+            // شريط الإحصائيات أسفل الجدول
+            var pnlBottomStats = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 44,
+                BackColor = Color.FromArgb(241, 245, 249),
+                Padding = new Padding(15, 8, 15, 8),
+                RightToLeft = RightToLeft.Yes
+            };
+
+            lblTransCount = new Label { Text = "📊 عدد الحركات: 0", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalDebit = new Label { Text = "🔴 إجمالي المدين (عليه/سلف): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkRed, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalCredit = new Label { Text = "🟢 إجمالي الدائن (له/رواتب ومكافآت): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
+
+            pnlBottomStats.Controls.AddRange(new Control[] { lblTransCount, lblTotalDebit, lblTotalCredit });
 
             // جدول الحركات
             dgTrans = new DataGridView
@@ -251,16 +307,17 @@ namespace ChickenDist.Forms
                 },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowTemplate = { Height = 28 }
+                RowTemplate = { Height = 30 }
             };
 
             dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransID", Visible = false });
-            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ", FillWeight = 50 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ والوقت", FillWeight = 60 });
             dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "نوع الحركة", FillWeight = 60 });
-            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين (عليه)", FillWeight = 40 });
-            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن (له)", FillWeight = 40 });
-            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات والتفاصيل", FillWeight = 130 });
-            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "بواسطة", FillWeight = 50 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين (عليه/سلف)", FillWeight = 50 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن (له/مستحقات)", FillWeight = 50 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "RunningBalance", HeaderText = "الرصيد التراكمي", FillWeight = 55 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات والتفاصيل", FillWeight = 120 });
+            dgTrans.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "المسجل", FillWeight = 50 });
 
             // عمود الحذف
             DataGridViewButtonColumn btnDelCol = new DataGridViewButtonColumn
@@ -269,20 +326,18 @@ namespace ChickenDist.Forms
                 HeaderText = "",
                 Text = "🗑",
                 UseColumnTextForButtonValue = true,
-                FillWeight = 20f
+                FillWeight = 22f
             };
             dgTrans.Columns.Add(btnDelCol);
             dgTrans.CellClick += DgTrans_CellClick;
 
             pnlLeft.Controls.Add(dgTrans);
+            pnlLeft.Controls.Add(pnlBottomStats);
             pnlLeft.Controls.Add(pnlFilters);
 
-            // تجميع المكونات
-            tblMain.Controls.Add(pnlLeft, 0, 0);  // اليسار
-            tblMain.Controls.Add(pnlRight, 1, 0); // اليمين
-            this.Controls.Add(tblMain);
-
-            Theme.ApplyFormRTL(this);
+            this.Controls.Add(pnlLeft);
+            this.Controls.Add(pnlRight);
+            this.Controls.Add(pnlTop);
         }
 
         private void LoadEmployees()
@@ -312,6 +367,9 @@ namespace ChickenDist.Forms
                 _selectedEmpID = 0;
                 _selectedEmpName = "";
                 lblBalanceVal.Text = "0.00 ج";
+                lblTransCount.Text = "📊 عدد الحركات: 0";
+                lblTotalDebit.Text = "🔴 إجمالي المدين: 0.00 ج";
+                lblTotalCredit.Text = "🟢 إجمالي الدائن: 0.00 ج";
                 dgTrans.Rows.Clear();
             }
         }
@@ -324,12 +382,12 @@ namespace ChickenDist.Forms
 
             if (bal > 0)
             {
-                lblBalanceVal.ForeColor = Color.Tomato;
+                lblBalanceVal.ForeColor = Color.DarkRed;
                 lblBalanceTitle.Text = "صافي المديونية / السلفة على الموظف (مدين):";
             }
             else if (bal < 0)
             {
-                lblBalanceVal.ForeColor = Color.LightGreen;
+                lblBalanceVal.ForeColor = Color.DarkGreen;
                 lblBalanceTitle.Text = "مستحقات الموظف غير المصروفة (دائن):";
                 lblBalanceVal.Text = $"{Math.Abs(bal):N2} ج";
             }
@@ -354,7 +412,14 @@ namespace ChickenDist.Forms
             var dt = EmployeeDAL.GetTransactions(_selectedEmpID, dtpFrom.Value, dtpTo.Value, filterType);
             dgTrans.Rows.Clear();
 
-            foreach (DataRow r in dt.Rows)
+            decimal totalDebit = 0m;
+            decimal totalCredit = 0m;
+            decimal runningBalance = 0m;
+
+            // ترتيب زمني لحساب الرصيد التراكمي
+            var rows = dt.Select("", "TransDate ASC, TransID ASC");
+
+            foreach (DataRow r in rows)
             {
                 string rawType = r["TransType"].ToString();
                 string typeArabic = rawType;
@@ -363,32 +428,45 @@ namespace ChickenDist.Forms
                 else if (rawType == "SalaryPayment") typeArabic = "صرف نقدية/راتب";
                 else if (rawType == "Repayment") typeArabic = "تحصيل سداد";
                 else if (rawType == "Deduction") typeArabic = "خصم / عجز";
-                else if (rawType == "DeficitCharge") typeArabic = "مديونية عجز حمولة";
+                else if (rawType == "Commission") typeArabic = "عمولة مبيعات";
+                else if (rawType == "Bonus") typeArabic = "مكافأة / حافز";
 
                 decimal debit = Convert.ToDecimal(r["Debit"]);
                 decimal credit = Convert.ToDecimal(r["Credit"]);
 
-                dgTrans.Rows.Add(
+                totalDebit += debit;
+                totalCredit += credit;
+                runningBalance += (debit - credit);
+
+                dgTrans.Rows.Insert(0,
                     r["TransID"],
-                    Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
+                    Convert.ToDateTime(r["TransDate"]).ToString("yyyy/MM/dd hh:mm tt"),
                     typeArabic,
                     debit > 0 ? debit.ToString("N2") : "—",
                     credit > 0 ? credit.ToString("N2") : "—",
+                    runningBalance.ToString("N2") + " ج",
                     r["Notes"].ToString(),
                     r["CreatedByName"].ToString()
                 );
+
+                var row = dgTrans.Rows[0];
+                if (debit > 0) row.Cells["Debit"].Style.ForeColor = Color.DarkRed;
+                if (credit > 0) row.Cells["Credit"].Style.ForeColor = Color.DarkGreen;
             }
+
+            lblTransCount.Text = $"📊 عدد الحركات: {dgTrans.Rows.Count:N0}";
+            lblTotalDebit.Text = $"🔴 إجمالي المدين: {totalDebit:N2} ج";
+            lblTotalCredit.Text = $"🟢 إجمالي الدائن: {totalCredit:N2} ج";
         }
 
-        // Map combobox index → internal type key
-        private static readonly string[] _transTypeKeys = { "Advance", "Salary", "SalaryPayment", "Repayment", "Deduction" };
-        private static readonly string[] _transTypeArabic = { "سلفة نقدية", "استحقاق راتب", "صرف نقدية/راتب", "تحصيل سداد", "خصم / عجز" };
+        private static readonly string[] _transTypeKeys = { "Advance", "Salary", "SalaryPayment", "Repayment", "Deduction", "Bonus" };
+        private static readonly string[] _transTypeArabic = { "سلفة نقدية", "استحقاق راتب", "صرف نقدية/راتب", "تحصيل سداد", "خصم / عجز", "مكافأة / حافز" };
 
         private void BtnSaveTrans_Click(object sender, EventArgs e)
         {
             if (_selectedEmpID <= 0) { MessageBox.Show("يرجى اختيار الموظف أولاً."); return; }
             if (cboNewType.SelectedIndex < 0) return;
-            if (!decimal.TryParse(txtNewAmount.Text, out decimal amt) || amt <= 0)
+            if (!decimal.TryParse(txtNewAmount.Text.Trim(), out decimal amt) || amt <= 0)
             {
                 MessageBox.Show("يرجى إدخال مبلغ صحيح أكبر من صفر.");
                 return;
@@ -399,32 +477,19 @@ namespace ChickenDist.Forms
 
             decimal debit = 0;
             decimal credit = 0;
-            bool affectCash = false;
+            bool affectCash = chkAffectCash.Checked;
 
-            if (transType == "Advance")
+            if (transType == "Advance" || transType == "SalaryPayment")
             {
                 debit = amt;
-                affectCash = true;
             }
-            else if (transType == "Salary")
+            else if (transType == "Salary" || transType == "Repayment" || transType == "Bonus")
             {
                 credit = amt;
-                affectCash = false;
-            }
-            else if (transType == "SalaryPayment")
-            {
-                debit = amt;
-                affectCash = true;
-            }
-            else if (transType == "Repayment")
-            {
-                credit = amt;
-                affectCash = true;
             }
             else if (transType == "Deduction")
             {
-                credit = amt; // Deduction reduces driver debt balance, which is Debit - Credit, so Credit increases to reduce balance
-                affectCash = false;
+                credit = amt;
             }
 
             try
@@ -438,8 +503,8 @@ namespace ChickenDist.Forms
                 int id = EmployeeDAL.SaveTransaction(_selectedEmpID, dtpNewDate.Value, transType, debit, credit, note, affectCash);
                 if (id > 0)
                 {
-                    MessageBox.Show("✅ تم تسجيل الحركة بنجاح وتأثير الخزينة إذا تطلب ذلك.");
-                    txtNewAmount.Clear();
+                    MessageBox.Show("✅ تم تسجيل الحركة بنجاح وتأثير الخزينة.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    txtNewAmount.Text = "0";
                     txtNewNotes.Clear();
                     LoadEmployeeBalance();
                     LoadTransactions();
@@ -448,170 +513,94 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ خطأ أثناء حفظ الحركة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("حدث خطأ أثناء حفظ الحركة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void DgTrans_Click(object sender, EventArgs e)
-        {
         }
 
         private void DgTrans_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (e.RowIndex < 0) return;
             if (dgTrans.Columns[e.ColumnIndex].Name == "Delete")
             {
-                if (MessageBox.Show("هل أنت متأكد من حذف هذه الحركة؟\nسيتم عكس أثرها وحذف القيد المالي المقابل من الخزينة أيضاً.", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                int transId = Convert.ToInt32(dgTrans.Rows[e.RowIndex].Cells["TransID"].Value);
+                string dtStr = dgTrans.Rows[e.RowIndex].Cells["TransDate"].Value?.ToString() ?? "";
+                string type = dgTrans.Rows[e.RowIndex].Cells["TransType"].Value?.ToString() ?? "";
+
+                if (MessageBox.Show($"هل تريد بالتأكيد حذف هذه الحركة ({type}) المسجلة بتاريخ {dtStr}؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    try
+                    if (EmployeeDAL.DeleteTransaction(transId))
                     {
-                        int transID = Convert.ToInt32(dgTrans.Rows[e.RowIndex].Cells["TransID"].Value);
-                        EmployeeDAL.DeleteTransaction(transID);
-                        MessageBox.Show("✅ تم حذف الحركة بنجاح وتحديث الحسابات والخزينة.");
+                        MessageBox.Show("✅ تم حذف الحركة بنجاح.");
                         LoadEmployeeBalance();
                         LoadTransactions();
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("❌ خطأ أثناء حذف الحركة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
                 }
             }
         }
-
-        // =====================================================================
-        // منطق طباعة كشف حساب موظف
-        // =====================================================================
-        private int _printRowIndex = 0;
 
         private void BtnPrint_Click(object sender, EventArgs e)
         {
-            if (_selectedEmpID <= 0) { MessageBox.Show("اختر موظفاً أولاً"); return; }
-            if (dgTrans.Rows.Count == 0) { MessageBox.Show("لا توجد حركات لطباعتها"); return; }
-
-            _printRowIndex = 0;
-
-            var pd = new PrintDocument();
-            pd.PrintController = new StandardPrintController();
-            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
-            pd.DefaultPageSettings.Margins = new Margins(40, 40, 40, 40);
-            pd.PrintPage += Pd_PrintPage;
-
-            var ppd = new PrintPreviewDialog
+            if (_selectedEmpID <= 0 || dgTrans.Rows.Count == 0)
             {
-                Document = pd,
-                Width = 1100,
-                Height = 750,
-                WindowState = FormWindowState.Maximized,
-                RightToLeft = RightToLeft.Yes
-            };
-            ppd.ShowDialog(this);
-        }
+                MessageBox.Show("لا توجد حركات لطباعة كشف الحساب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-        private void Pd_PrintPage(object sender, PrintPageEventArgs ev)
-        {
-            var g = ev.Graphics;
-            int margin = 40;
-            int printW = ev.PageBounds.Width - (margin * 2);
-            int y = margin;
-
-            var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold);
-            var fSub = new Font("Segoe UI", 10f, FontStyle.Bold);
-            var fHeader = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            var fData = new Font("Segoe UI", 9f);
-            var fTotal = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-
-            // ─── الصفحة الأولى ───
-            if (_printRowIndex == 0)
+            PrintDocument doc = new PrintDocument();
+            doc.PrintPage += (s, ev) =>
             {
-                // شعار ورأس الكشف
-                g.DrawString("🐣 " + AppConfig.CompanyName, fSub, Brushes.DimGray, margin, y);
-                y += 20;
-                g.DrawString("كشف حساب موظف / مندوب تفصيلي", fTitle, Brushes.MidnightBlue, margin, y);
+                var g = ev.Graphics;
+                float y = 40;
+                var fontTitle = new Font("Segoe UI", 16f, FontStyle.Bold);
+                var fontHeader = new Font("Segoe UI", 10f, FontStyle.Bold);
+                var fontBody = new Font("Segoe UI", 9f);
+                var fontBold = new Font("Segoe UI", 10f, FontStyle.Bold);
+
+                g.DrawString($"كشف حساب الموظف / المندوب: {_selectedEmpName}", fontTitle, Brushes.Black, new PointF(ev.PageBounds.Width / 2 - 160, y));
+                y += 35;
+                g.DrawString($"الفترة من: {dtpFrom.Value:yyyy/MM/dd} إلى: {dtpTo.Value:yyyy/MM/dd}   |   {lblBalanceTitle.Text} {lblBalanceVal.Text}", fontBody, Brushes.DarkBlue, new PointF(ev.PageBounds.Width / 2 - 180, y));
                 y += 35;
 
-                g.DrawLine(new Pen(Color.MidnightBlue, 2f), margin, y, printW + margin, y);
-                y += 10;
+                float[] colWidths = { 130, 90, 80, 80, 90, 200 };
+                string[] headers = { "التاريخ والوقت", "نوع الحركة", "مدين (عليه)", "دائن (له)", "الرصيد", "الملاحظات" };
 
-                // بيانات الموظف
-                g.DrawString($"الاسم: {_selectedEmpName}", fSub, Brushes.Black, margin, y);
-                g.DrawString($"تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", fSub, Brushes.Black, margin + 450, y);
-                y += 20;
-                g.DrawString($"الفترة: من {dtpFrom.Value:dd/MM/yyyy} إلى {dtpTo.Value:dd/MM/yyyy}", fSub, Brushes.Black, margin, y);
-                g.DrawString($"الرصيد الحالي: {EmployeeDAL.GetBalance(_selectedEmpID):N2} ج.م", fSub, Brushes.DarkRed, margin + 450, y);
-                y += 25;
-
-                g.DrawLine(Pens.Gray, margin, y, printW + margin, y);
-                y += 10;
-
-                // جدول الحركات
-                int x = margin;
-                string[] headers = { "التاريخ", "النوع", "مدين (عليه)", "دائن (له)", "ملاحظات" };
-                int[] widths = { 110, 100, 80, 80, 400 };
-
+                float x = 40;
                 for (int i = 0; i < headers.Length; i++)
                 {
-                    g.DrawString(headers[i], fHeader, Brushes.MidnightBlue, x, y);
-                    x += widths[i];
+                    g.FillRectangle(Brushes.LightGray, x, y, colWidths[i], 26);
+                    g.DrawRectangle(Pens.Gray, x, y, colWidths[i], 26);
+                    g.DrawString(headers[i], fontHeader, Brushes.Black, x + 4, y + 4);
+                    x += colWidths[i];
                 }
-                y += 22;
-                g.DrawLine(Pens.DarkBlue, margin, y, printW + margin, y);
-                y += 8;
-            }
+                y += 26;
 
-            int[] colW = { 110, 100, 80, 80, 400 };
-
-            // رسم الصفوف
-            while (_printRowIndex < dgTrans.Rows.Count)
-            {
-                var row = dgTrans.Rows[dgTrans.Rows.Count - 1 - _printRowIndex]; // ترتيب تصاعدي تاريخياً للطباعة
-                int x = margin;
-
-                string dateStr = row.Cells["TransDate"].Value?.ToString() ?? "";
-                string typeStr = row.Cells["TransType"].Value?.ToString() ?? "";
-                string debitStr = row.Cells["Debit"].Value?.ToString() ?? "";
-                string creditStr = row.Cells["Credit"].Value?.ToString() ?? "";
-                string noteStr = row.Cells["Notes"].Value?.ToString() ?? "";
-
-                // رسم حقول الصف
-                g.DrawString(dateStr, fData, Brushes.Black, x, y); x += colW[0];
-                g.DrawString(typeStr, fData, Brushes.Black, x, y); x += colW[1];
-                g.DrawString(debitStr, fData, Brushes.Black, x, y); x += colW[2];
-                g.DrawString(creditStr, fData, Brushes.Black, x, y); x += colW[3];
-
-                // التفاف الملاحظات
-                var rectNote = new RectangleF(x, y, colW[4], 32);
-                g.DrawString(noteStr, fData, Brushes.Black, rectNote, new StringFormat { Trimming = StringTrimming.EllipsisCharacter });
-
-                y += 20;
-                _printRowIndex++;
-
-                // التحقق من نهاية الصفحة
-                if (y > ev.PageBounds.Height - margin - 40)
+                foreach (DataGridViewRow r in dgTrans.Rows)
                 {
-                    ev.HasMorePages = true;
-                    return;
+                    if (y > ev.PageBounds.Height - 60) break;
+                    x = 40;
+                    string[] vals = {
+                        r.Cells["TransDate"].Value?.ToString() ?? "",
+                        r.Cells["TransType"].Value?.ToString() ?? "",
+                        r.Cells["Debit"].Value?.ToString() ?? "",
+                        r.Cells["Credit"].Value?.ToString() ?? "",
+                        r.Cells["RunningBalance"].Value?.ToString() ?? "",
+                        r.Cells["Notes"].Value?.ToString() ?? ""
+                    };
+
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        g.DrawRectangle(Pens.LightGray, x, y, colWidths[i], 24);
+                        g.DrawString(vals[i], fontBody, Brushes.Black, x + 3, y + 4);
+                        x += colWidths[i];
+                    }
+                    y += 24;
                 }
-            }
+            };
 
-            // رسم الإجمالي في نهاية الكشف
-            y += 10;
-            g.DrawLine(new Pen(Color.MidnightBlue, 1.5f), margin, y, printW + margin, y);
-            y += 8;
-
-            decimal totalDebit = 0, totalCredit = 0;
-            foreach (DataGridViewRow r in dgTrans.Rows)
+            using (var dlg = new PrintPreviewDialog { Document = doc, Width = 950, Height = 650 })
             {
-                if (decimal.TryParse(r.Cells["Debit"].Value?.ToString()?.Replace(" ج", ""), out decimal d)) totalDebit += d;
-                if (decimal.TryParse(r.Cells["Credit"].Value?.ToString()?.Replace(" ج", ""), out decimal c)) totalCredit += c;
+                dlg.ShowDialog(this);
             }
-
-            g.DrawString("الإجماليات الكلية للفترة:", fTotal, Brushes.MidnightBlue, margin, y);
-            g.DrawString($"إجمالي المدين: {totalDebit:N2} ج", fTotal, Brushes.DarkRed, margin + 200, y);
-            g.DrawString($"إجمالي الدائن: {totalCredit:N2} ج", fTotal, Brushes.DarkGreen, margin + 400, y);
-            
-            _printRowIndex = 0; // تصفير للمرة القادمة
-            ev.HasMorePages = false;
         }
     }
 }

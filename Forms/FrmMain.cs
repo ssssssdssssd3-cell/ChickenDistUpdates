@@ -559,9 +559,15 @@ namespace ChickenDist.Forms
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
+                ("👔", "الموظفين", Color.FromArgb(71, 85, 105), new[] {
+                    ("👔 إدارة الموظفين والصلاحيات", "Employees", (Action)(() => NavigateTo(new FrmEmployees()))),
+                    ("💰 كشف وحسابات الموظفين", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
+                    ("🕒 الحضور والانصراف والدوام", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeAttendance()))),
+                    ("💼 العمولات وشرائح البيع والأصناف", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeCommissions()))),
+                    ("📊 مسيرات الرواتب والبدلات", "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeePayroll()))),
+                }),
+
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
-                    ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
-                    ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "",        (Action)(() => new FrmActivation("").ShowDialog())),
                     ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),

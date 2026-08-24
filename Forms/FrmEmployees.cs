@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgEmployees;
         private TextBox txtName, txtUsername, txtPassword, txtPhone;
+        private TextBox txtJobTitle, txtSalary, txtDailyHours, txtCommissionRate, txtTarget, txtNationalID;
         private ComboBox cboRole;
         private CheckBox chkDriver, chkActive;
         private Button btnNew, btnSave, btnDelete, btnPerms;
@@ -105,9 +106,13 @@ namespace ChickenDist.Forms
             AddField(pnlDetails, "الاسم:", ref y, out txtName);
             AddField(pnlDetails, "اسم المستخدم:", ref y, out txtUsername);
             AddField(pnlDetails, "كلمة المرور:", ref y, out txtPassword);
-            // كلمة المرور ظاهرة للأدمن (لاسترجاعها عند النسيان)
-            // txtPassword.PasswordChar = '●';  // تم إلغاء الإخفاء بناءً على طلب المدير
             AddField(pnlDetails, "الهاتف:", ref y, out txtPhone);
+            AddField(pnlDetails, "المسمى الوظيفي:", ref y, out txtJobTitle);
+            AddField(pnlDetails, "الراتب الأساسي (ج.م):", ref y, out txtSalary);
+            AddField(pnlDetails, "ساعات العمل اليومية:", ref y, out txtDailyHours);
+            AddField(pnlDetails, "نسبة عمولة المبيعات (%):", ref y, out txtCommissionRate);
+            AddField(pnlDetails, "تارجت المبيعات (ج.م):", ref y, out txtTarget);
+            AddField(pnlDetails, "الرقم القومي:", ref y, out txtNationalID);
 
             pnlDetails.Controls.Add(new Label { Text = "الدور:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
             cboRole = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput };
@@ -196,6 +201,12 @@ namespace ChickenDist.Forms
             // تفريغ حقل كلمة المرور للأمان؛ يمكن كتابة كلمة مرور جديدة أو تركها فارغة للحفاظ على الحالية
             txtPassword.Clear();
             txtPhone.Text = dr["Phone"].ToString();
+            txtJobTitle.Text = dr.Table.Columns.Contains("JobTitle") && dr["JobTitle"] != DBNull.Value ? dr["JobTitle"].ToString() : "";
+            txtSalary.Text = dr.Table.Columns.Contains("Salary") && dr["Salary"] != DBNull.Value ? Convert.ToDecimal(dr["Salary"]).ToString("N2") : "0.00";
+            txtDailyHours.Text = dr.Table.Columns.Contains("DailyWorkHours") && dr["DailyWorkHours"] != DBNull.Value ? Convert.ToDecimal(dr["DailyWorkHours"]).ToString("N1") : "8.0";
+            txtCommissionRate.Text = dr.Table.Columns.Contains("SalesCommissionRate") && dr["SalesCommissionRate"] != DBNull.Value ? Convert.ToDecimal(dr["SalesCommissionRate"]).ToString("N1") : "0.0";
+            txtTarget.Text = dr.Table.Columns.Contains("TargetAmount") && dr["TargetAmount"] != DBNull.Value ? Convert.ToDecimal(dr["TargetAmount"]).ToString("N2") : "0.00";
+            txtNationalID.Text = dr.Table.Columns.Contains("NationalID") && dr["NationalID"] != DBNull.Value ? dr["NationalID"].ToString() : "";
             cboRole.Text = dr["Role"].ToString();
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
@@ -238,6 +249,8 @@ namespace ChickenDist.Forms
         {
             _selectedID = 0;
             txtName.Clear(); txtUsername.Clear(); txtPassword.Clear(); txtPhone.Clear();
+            txtJobTitle.Clear(); txtSalary.Text = "0.00"; txtDailyHours.Text = "8.0";
+            txtCommissionRate.Text = "0.0"; txtTarget.Text = "0.00"; txtNationalID.Clear();
             cboRole.SelectedIndex = 4;
             chkDriver.Checked = false; chkActive.Checked = true;
 
@@ -277,13 +290,23 @@ namespace ChickenDist.Forms
             }
             string allowedSafeIDs = string.Join(",", allowedList);
 
+            decimal.TryParse(txtSalary.Text.Trim(), out decimal sal);
+            decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
+            if (dwh <= 0) dwh = 8;
+            decimal.TryParse(txtCommissionRate.Text.Trim(), out decimal crate);
+            decimal.TryParse(txtTarget.Text.Trim(), out decimal target);
+            decimal hourlyRate = (sal > 0 && dwh > 0) ? (sal / 30m / dwh) : 0m;
+            string jobTitle = txtJobTitle.Text.Trim();
+            string nationalID = txtNationalID.Text.Trim();
+
             try
             {
                 int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
                     txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
                     defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
                     chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked,
-                    chkCanSelectDriver.Checked, chkCanSellVisa.Checked);
+                    chkCanSelectDriver.Checked, chkCanSellVisa.Checked,
+                    sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID);
                 if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
                 else MessageBox.Show("❌ فشل الحفظ");
             }

@@ -617,6 +617,121 @@ namespace ChickenDist.Core
                     ALTER TABLE PurchaseReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
             END");
 
+            SafeMigrate("HR.CompleteModule", @"
+            -- 1. تحديث جدول الموظفين بإضافة حقول الراتب وساعات العمل والعمولات
+            IF OBJECT_ID('Employees', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Employees', 'Salary') IS NULL
+                    ALTER TABLE Employees ADD Salary DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Employees', 'DailyWorkHours') IS NULL
+                    ALTER TABLE Employees ADD DailyWorkHours DECIMAL(5, 2) NOT NULL DEFAULT 8;
+                IF COL_LENGTH('Employees', 'HourlyRate') IS NULL
+                    ALTER TABLE Employees ADD HourlyRate DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Employees', 'SalesCommissionRate') IS NULL
+                    ALTER TABLE Employees ADD SalesCommissionRate DECIMAL(5, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Employees', 'TargetAmount') IS NULL
+                    ALTER TABLE Employees ADD TargetAmount DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Employees', 'JobTitle') IS NULL
+                    ALTER TABLE Employees ADD JobTitle NVARCHAR(100) NULL;
+                IF COL_LENGTH('Employees', 'HireDate') IS NULL
+                    ALTER TABLE Employees ADD HireDate DATE NULL;
+                IF COL_LENGTH('Employees', 'NationalID') IS NULL
+                    ALTER TABLE Employees ADD NationalID NVARCHAR(50) NULL;
+            END
+
+            -- 2. جدول الحضور والانصراف اليومي
+            IF OBJECT_ID('EmployeeAttendance', 'U') IS NULL
+            BEGIN
+                CREATE TABLE EmployeeAttendance (
+                    AttendanceID   INT IDENTITY(1,1) PRIMARY KEY,
+                    EmpID          INT NOT NULL REFERENCES Employees(EmpID),
+                    AttendDate     DATE NOT NULL,
+                    CheckInTime    DATETIME NULL,
+                    CheckOutTime   DATETIME NULL,
+                    Status         NVARCHAR(50) NOT NULL DEFAULT N'حاضر',
+                    WorkHours      DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                    OvertimeHours  DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                    LateMinutes    INT NOT NULL DEFAULT 0,
+                    Notes          NVARCHAR(500) NULL,
+                    CreatedBy      INT NULL,
+                    CreatedAt      DATETIME NOT NULL DEFAULT GETDATE()
+                );
+                CREATE INDEX IX_EmpAttendance_EmpDate ON EmployeeAttendance(EmpID, AttendDate);
+            END
+
+            -- 3. جدول بنود البدلات والمكافآت والخصومات والسلف
+            IF OBJECT_ID('EmployeeSalaryItems', 'U') IS NULL
+            BEGIN
+                CREATE TABLE EmployeeSalaryItems (
+                    ItemID         INT IDENTITY(1,1) PRIMARY KEY,
+                    EmpID          INT NOT NULL REFERENCES Employees(EmpID),
+                    ItemDate       DATE NOT NULL,
+                    ItemType       NVARCHAR(50) NOT NULL,
+                    Amount         DECIMAL(18, 2) NOT NULL,
+                    Reason         NVARCHAR(500) NULL,
+                    IsSettled      BIT NOT NULL DEFAULT 0,
+                    PayrollMonth   NVARCHAR(20) NULL,
+                    CreatedBy      INT NULL,
+                    CreatedAt      DATETIME NOT NULL DEFAULT GETDATE()
+                );
+                CREATE INDEX IX_EmpSalaryItems_EmpMonth ON EmployeeSalaryItems(EmpID, PayrollMonth, IsSettled);
+            END
+
+            -- 4. جدول عمولات الأصناف المحددة للموظفين والمناديب
+            IF OBJECT_ID('EmployeeProductCommissions', 'U') IS NULL
+            BEGIN
+                CREATE TABLE EmployeeProductCommissions (
+                    RuleID          INT IDENTITY(1,1) PRIMARY KEY,
+                    EmpID           INT NOT NULL REFERENCES Employees(EmpID),
+                    ProductID       INT NOT NULL REFERENCES Products(ProductID),
+                    CommissionType  NVARCHAR(20) NOT NULL DEFAULT 'Fixed',
+                    CommissionValue DECIMAL(18, 2) NOT NULL,
+                    IsActive        BIT NOT NULL DEFAULT 1,
+                    Notes           NVARCHAR(255) NULL
+                );
+                CREATE INDEX IX_EmpProdComm_EmpProd ON EmployeeProductCommissions(EmpID, ProductID);
+            END
+
+            -- 5. جدول شرائح عمولة المبيعات والتارجت
+            IF OBJECT_ID('EmployeeCommissionTiers', 'U') IS NULL
+            BEGIN
+                CREATE TABLE EmployeeCommissionTiers (
+                    TierID          INT IDENTITY(1,1) PRIMARY KEY,
+                    EmpID           INT NULL,
+                    MinTarget       DECIMAL(18, 2) NOT NULL,
+                    MaxTarget       DECIMAL(18, 2) NOT NULL,
+                    CommissionRate  DECIMAL(10, 2) NOT NULL,
+                    BonusAmount     DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    IsActive        BIT NOT NULL DEFAULT 1
+                );
+            END
+
+            -- 6. جدول مسير الرواتب الشهري المعتمد
+            IF OBJECT_ID('EmployeeMonthlyPayroll', 'U') IS NULL
+            BEGIN
+                CREATE TABLE EmployeeMonthlyPayroll (
+                    PayrollID          INT IDENTITY(1,1) PRIMARY KEY,
+                    EmpID              INT NOT NULL REFERENCES Employees(EmpID),
+                    MonthYear          NVARCHAR(20) NOT NULL,
+                    BasicSalary        DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    TotalAllowances    DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    TotalBonuses       DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    TotalCommissions   DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    OvertimeAmount     DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    TotalDeductions    DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    AbsenceDeductions  DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    AdvancesDeductions DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    NetSalary          DECIMAL(18, 2) NOT NULL DEFAULT 0,
+                    PaymentDate        DATETIME NULL,
+                    IsPaid             BIT NOT NULL DEFAULT 0,
+                    PaidFromSafeID     INT NULL,
+                    Notes              NVARCHAR(500) NULL,
+                    ApprovedBy         INT NULL,
+                    CreatedAt          DATETIME NOT NULL DEFAULT GETDATE()
+                );
+                CREATE INDEX IX_EmpPayroll_Month ON EmployeeMonthlyPayroll(MonthYear, EmpID);
+            END");
+
             SafeMigrate("Sales.IsPosted.Early", @"
             IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
             BEGIN

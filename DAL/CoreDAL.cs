@@ -54,7 +54,10 @@ namespace ChickenDist.DAL
         }
 
         public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive,
-            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment, bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true)
+            int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment,
+            bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true,
+            decimal salary = 0, decimal dailyWorkHours = 8, decimal hourlyRate = 0, decimal commissionRate = 0, decimal targetAmount = 0,
+            string jobTitle = null, DateTime? hireDate = null, string nationalID = null)
         {
             // التحقق من عدم تكرار اسم المستخدم
             if (!string.IsNullOrWhiteSpace(username))
@@ -76,8 +79,8 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa) " +
-                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
@@ -85,7 +88,15 @@ namespace ChickenDist.DAL
                     DbHelper.P("@csc", canSellCash), DbHelper.P("@ccr", canSellCredit),
                     DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment),
                     DbHelper.P("@cesc", canEditShippingCharge), DbHelper.P("@csd", canSelectDriver),
-                    DbHelper.P("@csv", canSellVisa));
+                    DbHelper.P("@csv", canSellVisa),
+                    DbHelper.P("@sal", salary),
+                    DbHelper.P("@dwh", dailyWorkHours),
+                    DbHelper.P("@hrate", hourlyRate),
+                    DbHelper.P("@crate", commissionRate),
+                    DbHelper.P("@target", targetAmount),
+                    DbHelper.P("@jtitle", (object)jobTitle ?? DBNull.Value),
+                    DbHelper.P("@hdate", hireDate.HasValue ? (object)hireDate.Value : DBNull.Value),
+                    DbHelper.P("@nid", (object)nationalID ?? DBNull.Value));
             else
             {
                 var prmsList = new System.Collections.Generic.List<SqlParameter>
@@ -105,11 +116,20 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cesc", canEditShippingCharge),
                     DbHelper.P("@csd", canSelectDriver),
                     DbHelper.P("@csv", canSellVisa),
+                    DbHelper.P("@sal", salary),
+                    DbHelper.P("@dwh", dailyWorkHours),
+                    DbHelper.P("@hrate", hourlyRate),
+                    DbHelper.P("@crate", commissionRate),
+                    DbHelper.P("@target", targetAmount),
+                    DbHelper.P("@jtitle", (object)jobTitle ?? DBNull.Value),
+                    DbHelper.P("@hdate", hireDate.HasValue ? (object)hireDate.Value : DBNull.Value),
+                    DbHelper.P("@nid", (object)nationalID ?? DBNull.Value),
                     DbHelper.P("@id", id)
                 };
 
                 string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
-                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv";
+                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv," +
+                                   "Salary=@sal,DailyWorkHours=@dwh,HourlyRate=@hrate,SalesCommissionRate=@crate,TargetAmount=@target,JobTitle=@jtitle,HireDate=@hdate,NationalID=@nid";
 
                 if (hashedPassword != null)
                 {
@@ -310,8 +330,9 @@ namespace ChickenDist.DAL
             return transID;
         }
 
-        public static void DeleteTransaction(int transID)
+        public static bool DeleteTransaction(int transID)
         {
+            bool success = false;
             DbHelper.RunInTransaction((con, trans) =>
             {
                 // 1. Delete from CashBox first
@@ -323,7 +344,10 @@ namespace ChickenDist.DAL
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM EmployeeTransactions WHERE TransID=@id",
                     DbHelper.P("@id", transID));
+
+                success = true;
             });
+            return success;
         }
     }
 
