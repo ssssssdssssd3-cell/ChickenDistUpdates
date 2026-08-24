@@ -512,6 +512,111 @@ namespace ChickenDist.Core
         {
             EnsureAppSettingsTable();
 
+            SafeMigrate("DecimalExpansion.Safety", @"
+            IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE StockAdjustments ALTER COLUMN BookQty DECIMAL(18, 4) NOT NULL;
+                ALTER TABLE StockAdjustments ALTER COLUMN ActualQty DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('StockAdjustments', 'Factor') IS NOT NULL
+                    ALTER TABLE StockAdjustments ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('ProductStock', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE ProductStock ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+            END
+
+            IF OBJECT_ID('ProductBatches', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE ProductBatches ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+            END
+
+            IF OBJECT_ID('Products', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Products', 'PurchasePrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN PurchasePrice DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'SalePrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN SalePrice DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'WholesalePrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN WholesalePrice DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'SemiWholesalePrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN SemiWholesalePrice DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'MinStockLimit') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN MinStockLimit DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'CostPrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN CostPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('Products', 'PendingSalePrice') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN PendingSalePrice DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'PendingQtyThreshold') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN PendingQtyThreshold DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'Unit2Factor') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN Unit2Factor DECIMAL(18, 4) NULL;
+                IF COL_LENGTH('Products', 'Unit3Factor') IS NOT NULL
+                    ALTER TABLE Products ALTER COLUMN Unit3Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE PurchaseItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE PurchaseItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE PurchaseItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseItems', 'Factor') IS NOT NULL
+                    ALTER TABLE PurchaseItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE SaleItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('SaleItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE SaleItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('SaleItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE SaleItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('SaleItems', 'Factor') IS NOT NULL
+                    ALTER TABLE SaleItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE WastageLossItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('WastageLossItems', 'CostPrice') IS NOT NULL
+                    ALTER TABLE WastageLossItems ALTER COLUMN CostPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('WastageLossItems', 'TotalCost') IS NOT NULL
+                    ALTER TABLE WastageLossItems ALTER COLUMN TotalCost DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('WastageLossItems', 'Factor') IS NOT NULL
+                    ALTER TABLE WastageLossItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('WarehouseTransferItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE WarehouseTransferItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('WarehouseTransferItems', 'Factor') IS NOT NULL
+                    ALTER TABLE WarehouseTransferItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE ReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'Factor') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE PurchaseReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'Factor') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END");
+
             SafeMigrate("Sales.IsPosted.Early", @"
             IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
             BEGIN

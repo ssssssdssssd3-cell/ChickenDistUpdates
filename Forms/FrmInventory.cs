@@ -517,10 +517,13 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var itemFixStock = new ToolStripMenuItem("🛠️ تصفير / تصحيح رصيد هذا الصنف فوراً");
+            itemFixStock.Click += (s, e) => FixSelectedProductStockDirectly();
+
             var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
             itemCard.Click += (s, e) => OpenSelectedProductCard();
 
-            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemCard });
+            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemFixStock, itemCard });
             dgStock.ContextMenuStrip = ctxStock;
 
             dgStock.CellMouseDown += (s, e) =>
@@ -2228,12 +2231,12 @@ namespace ChickenDist.Forms
                            p.SalePrice >= 5000 
                         OR p.PurchasePrice >= 5000 
                         OR ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) >= 5000
-                        OR (p.SalePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) >= 500000
-                        OR (p.PurchasePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) >= 500000
+                        OR (CAST(ISNULL(p.SalePrice, 0) AS FLOAT) * CAST(ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) AS FLOAT)) >= 500000
+                        OR (CAST(ISNULL(p.PurchasePrice, 0) AS FLOAT) * CAST(ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) AS FLOAT)) >= 500000
                         OR p.SalePrice < 0
                         OR p.PurchasePrice < 0
                       )
-                    ORDER BY (p.SalePrice * ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0)) DESC";
+                    ORDER BY (CAST(ISNULL(p.SalePrice, 0) AS FLOAT) * CAST(ISNULL((SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = p.ProductID), 0) AS FLOAT)) DESC";
 
                 var dtOut = DbHelper.Query(sql);
                 foreach (DataRow r in dtOut.Rows)
@@ -2271,11 +2274,35 @@ namespace ChickenDist.Forms
                 if (dg.SelectedRows.Count == 0) return;
                 int pid = Convert.ToInt32(dg.SelectedRows[0].Cells["ProductID"].Value);
                 string pName = dg.SelectedRows[0].Cells["ProductName"].Value?.ToString() ?? "";
-                if (MessageBox.Show($"هل تريد تصفير رصيد الصنف '{pName}' وجعل كميته = 0 في كافة المخازن؟", "تأكيد تصفير الرصيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (MessageBox.Show($"هل تريد تصفير رصيد الصنف '{pName}' وجعل كميته = 0 في كافة المخازن وتصحيح الحركات السابقة؟", "تأكيد تصفير الرصيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    DbHelper.Execute("UPDATE ProductStock SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
-                    DbHelper.Execute("UPDATE ProductBatches SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
-                    loadOutliers();
+                    try
+                    {
+                        DbHelper.RunInTransaction((con, trans) =>
+                        {
+                            // 1. تسجيل تسوية جردية لتصفير الصنف
+                            DbHelper.ExecuteTrans(trans, @"
+                                INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, 0, N'[تصفير وتصحيح رصيد شاذ]', @uid, p.Unit, 1
+                                FROM ProductStock ps
+                                JOIN Products p ON ps.ProductID = p.ProductID
+                                WHERE ps.ProductID = @pid",
+                                DbHelper.P("@pid", pid), DbHelper.P("@uid", Session.EmpID));
+
+                            // 2. تصفير ProductStock و ProductBatches
+                            DbHelper.ExecuteTrans(trans, "UPDATE ProductStock SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                            DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = 0 WHERE ProductID = @pid", DbHelper.P("@pid", pid));
+                        });
+
+                        ProductCache.Invalidate();
+                        MessageBox.Show($"✅ تم تصفير رصيد الصنف '{pName}' بنجاح.", "تم التصفير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        loadOutliers();
+                        LoadStock();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("حدث خطأ أثناء تصفير الصنف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             };
 
@@ -2297,6 +2324,12 @@ namespace ChickenDist.Forms
                             {
                                 DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pp, SalePrice = @sp WHERE ProductID = @pid",
                                     DbHelper.P("@pp", newPP), DbHelper.P("@sp", newSP), DbHelper.P("@pid", pid));
+
+                                // تسجيل تسوية جردية بالرصيد المصحح
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                    VALUES (@pid, 1, (SELECT COALESCE(SUM(Quantity), 0) FROM ProductStock WHERE ProductID = @pid), @q, N'[تصحيح رصيد وسعر شاذ من شاشة الفحص]', @uid, (SELECT TOP 1 Unit FROM Products WHERE ProductID = @pid), 1)",
+                                    DbHelper.P("@pid", pid), DbHelper.P("@q", newStock), DbHelper.P("@uid", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans, @"
                                     IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = 1)
@@ -2407,6 +2440,119 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("تعذر فتح كارت الصنف:\n" + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void FixSelectedProductStockDirectly()
+        {
+            if (dgStock.SelectedRows.Count == 0) return;
+            var r = dgStock.SelectedRows[0];
+            if (r.Cells["ProductID"].Value == null) return;
+
+            int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
+            string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
+            string curBook = r.Cells["BookQty"].Value?.ToString() ?? "0";
+
+            var promptDlg = new Form
+            {
+                Text = "🛠️ تصحيح / تصفير رصيد الصنف المباشر",
+                Size = new Size(460, 240),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
+                BackColor = Theme.BgMain, Font = Theme.FontMain
+            };
+
+            var lbl = new Label
+            {
+                Text = $"الصنف: [{pName}]\nالرصيد الدفتري المسجل حالياً: {curBook}\n\nأدخل الرصيد الفعلي الحقيقي للصنف في المخزن:",
+                Location = new Point(15, 12),
+                Size = new Size(415, 65),
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+
+            var txtQty = new TextBox
+            {
+                Location = new Point(15, 85),
+                Size = new Size(415, 30),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Color.DarkBlue,
+                TextAlign = HorizontalAlignment.Center,
+                Text = "0"
+            };
+
+            var btnSave = Theme.MakeButton("💾 اعتماد وتصحيح الرصيد", 230, 135, 200, 36, Theme.Success);
+            var btnCancel = Theme.MakeButton("إلغاء", 15, 135, 100, 36, Color.FromArgb(100, 110, 120));
+
+            btnSave.Click += (s2, e2) =>
+            {
+                if (decimal.TryParse(txtQty.Text.Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal correctQty))
+                {
+                    promptDlg.DialogResult = DialogResult.OK;
+                    promptDlg.Close();
+                }
+                else
+                {
+                    MessageBox.Show("يرجى إدخال قيمة رقمية صحيحة للكمية.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            btnCancel.Click += (s2, e2) =>
+            {
+                promptDlg.DialogResult = DialogResult.Cancel;
+                promptDlg.Close();
+            };
+
+            promptDlg.Controls.AddRange(new Control[] { lbl, txtQty, btnSave, btnCancel });
+            txtQty.SelectAll();
+            txtQty.Focus();
+
+            if (promptDlg.ShowDialog(this) == DialogResult.OK)
+            {
+                decimal correctQty = Convert.ToDecimal(txtQty.Text.Trim(), System.Globalization.CultureInfo.InvariantCulture);
+                try
+                {
+                    int wid = 1;
+                    if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                    {
+                        wid = ci.ID;
+                    }
+
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        // 1. تسجيل تسوية جردية لتصحيح الصنف
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                            SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, @q, N'[تصحيح رصيد يدوي مباشر]', @uid, p.Unit, 1
+                            FROM ProductStock ps
+                            JOIN Products p ON ps.ProductID = p.ProductID
+                            WHERE ps.ProductID = @pid AND ps.WarehouseID = @wid",
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty), DbHelper.P("@uid", Session.EmpID));
+
+                        // 2. تحديث ProductStock
+                        DbHelper.ExecuteTrans(trans, @"
+                            IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
+                                UPDATE ProductStock SET Quantity = @q WHERE ProductID = @pid AND WarehouseID = @wid
+                            ELSE
+                                INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @q)",
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty));
+
+                        // 3. تحديث ProductBatches
+                        DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = @q WHERE ProductID = @pid AND WarehouseID = @wid",
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty));
+                    });
+
+                    ProductCache.Invalidate();
+                    MessageBox.Show($"✅ تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadStock();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء تصحيح الرصيد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
