@@ -741,7 +741,7 @@ namespace ChickenDist.Core
                         "Mobiles"   => "كود الموديل",
                         "Clothing"  => "كود الموديل",
                         "SpareParts" => "رقم القطعة",
-                        _           => "كود الصنف"
+                        _           => "رقم القطعة"
                     };
                 }
                 else if (col.Name == "CarModel")
