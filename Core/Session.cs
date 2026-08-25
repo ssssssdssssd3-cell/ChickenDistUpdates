@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace ChickenDist.Core
 {
@@ -10,7 +13,11 @@ namespace ChickenDist.Core
         public static string EmpName { get; set; }
         public static string UserName { get; set; }
         public static string Role { get; set; }
-        public static bool IsAdmin => !string.IsNullOrWhiteSpace(Role) && string.Equals(Role.Trim(), "Admin", StringComparison.OrdinalIgnoreCase);
+        public static bool IsAdmin => !string.IsNullOrWhiteSpace(Role) && 
+            (string.Equals(Role.Trim(), "Admin", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "مدير", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "مدير النظام", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "administrator", StringComparison.OrdinalIgnoreCase));
         public static bool IsDriver { get; set; }
 
         public static int? DefaultSafeID { get; set; }
@@ -306,6 +313,176 @@ namespace ChickenDist.Core
         {
             if (IsAdmin) return true;
             return _perms.ContainsKey(screen) && _perms[screen].CanOrderColumns;
+        }
+
+        /// <summary>
+        /// يتحقق مما إذا كانت كلمة المرور تخص أحد المسؤولين (Role='مدير' أو 'Admin' أو الماستر باسورد)
+        /// </summary>
+        public static bool VerifyAdminPassword(string inputPassword)
+        {
+            if (string.IsNullOrWhiteSpace(inputPassword)) return false;
+
+            // كلمة المرور الرئيسية للطوارئ
+            if (inputPassword == "Pro@soft2026" || inputPassword == "admin2026") return true;
+
+            try
+            {
+                // فحص جميع المديرين النشطين في قاعدة البيانات
+                var dtAdmins = DbHelper.Query(
+                    "SELECT Password FROM Employees WHERE (Role = N'مدير' OR Role = 'Admin' OR Role = 'Administrator' OR Role = N'مدير النظام') AND IsActive = 1");
+
+                foreach (DataRow row in dtAdmins.Rows)
+                {
+                    string stored = row["Password"]?.ToString();
+                    if (!string.IsNullOrEmpty(stored) && PasswordHelper.Verify(inputPassword, stored))
+                        return true;
+                }
+
+                // فحص المستخدم الحالي إذا كان مديراً
+                if (IsAdmin && EmpID > 0)
+                {
+                    var dt = DbHelper.Query("SELECT Password FROM Employees WHERE EmpID = @id", DbHelper.P("@id", EmpID));
+                    if (dt.Rows.Count > 0)
+                    {
+                        string stored = dt.Rows[0]["Password"]?.ToString();
+                        if (!string.IsNullOrEmpty(stored) && PasswordHelper.Verify(inputPassword, stored))
+                            return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("خطأ في التحقق من كلمة مرور المسؤول", ex, "Session.VerifyAdminPassword");
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// يفتح نافذة أنيقة لطلب وتأكيد كلمة مرور المسؤول للمتابعة
+        /// </summary>
+        public static bool PromptAdminPassword(IWin32Window owner = null, string reason = "")
+        {
+            using (var passForm = new Form())
+            {
+                passForm.Text = "🔒 تأكيد بصلاحية المسؤول (Admin)";
+                passForm.Size = new Size(380, 210);
+                passForm.StartPosition = FormStartPosition.CenterParent;
+                passForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                passForm.MaximizeBox = false;
+                passForm.MinimizeBox = false;
+                passForm.RightToLeft = RightToLeft.Yes;
+                passForm.RightToLeftLayout = true;
+                passForm.BackColor = Color.FromArgb(24, 28, 38);
+                passForm.Font = new Font("Segoe UI", 10f);
+
+                var pnlHeader = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 45,
+                    BackColor = Color.FromArgb(35, 40, 55),
+                    Padding = new Padding(12, 10, 12, 10)
+                };
+                var lblHeader = new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(reason) ? "🔒 يرجى إدخال كلمة مرور المسؤول:" : $"🔒 {reason}:",
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(250, 204, 21), // Gold
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                pnlHeader.Controls.Add(lblHeader);
+
+                var pnlBody = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(20, 15, 20, 10),
+                    BackColor = Color.Transparent
+                };
+
+                var lblDesc = new Label
+                {
+                    Text = "كلمة مرور المدير:",
+                    Dock = DockStyle.Top,
+                    Height = 24,
+                    ForeColor = Color.FromArgb(220, 225, 235),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
+                };
+
+                var txtPass = new TextBox
+                {
+                    Dock = DockStyle.Top,
+                    PasswordChar = '●',
+                    Height = 32,
+                    Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                    BackColor = Color.FromArgb(40, 45, 60),
+                    ForeColor = Color.White,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    RightToLeft = RightToLeft.No,
+                    TextAlign = HorizontalAlignment.Center
+                };
+
+                pnlBody.Controls.Add(txtPass);
+                pnlBody.Controls.Add(lblDesc);
+
+                var pnlFooter = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 50,
+                    BackColor = Color.FromArgb(18, 22, 30),
+                    Padding = new Padding(12, 8, 12, 8)
+                };
+
+                var btnOk = new Button
+                {
+                    Text = "✅ تأكيد",
+                    Size = new Size(100, 34),
+                    Dock = DockStyle.Left,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(16, 185, 129),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    DialogResult = DialogResult.OK
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text = "❌ إلغاء",
+                    Size = new Size(90, 34),
+                    Dock = DockStyle.Right,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(239, 68, 68),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    DialogResult = DialogResult.Cancel
+                };
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                pnlFooter.Controls.Add(btnOk);
+                pnlFooter.Controls.Add(btnCancel);
+
+                passForm.Controls.Add(pnlBody);
+                passForm.Controls.Add(pnlHeader);
+                passForm.Controls.Add(pnlFooter);
+                passForm.AcceptButton = btnOk;
+                passForm.CancelButton = btnCancel;
+
+                passForm.Shown += (s, e) => txtPass.Focus();
+
+                if (passForm.ShowDialog(owner) == DialogResult.OK)
+                {
+                    string input = txtPass.Text.Trim();
+                    if (VerifyAdminPassword(input))
+                    {
+                        return true;
+                    }
+                    MessageBox.Show(owner, "❌ كلمة المرور غير صحيحة! لا يمكنك تعديل أو تخصيص ترتيب الأعمدة.", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                return false;
+            }
         }
 
         public static bool CanViewSalesTotals(string screen = "SalesList")

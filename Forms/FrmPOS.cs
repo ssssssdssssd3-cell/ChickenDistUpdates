@@ -3109,6 +3109,9 @@ namespace ChickenDist.Forms
 
         private void ShowColumnCustomizer()
         {
+            if (!Session.PromptAdminPassword(this, "لتخصيص وترتيب أعمدة نقطة البيع POS"))
+                return;
+
             var dlg = new Form
             {
                 Text            = "⚙️ تخصيص أعمدة المبيعات السريعة",

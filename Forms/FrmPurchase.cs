@@ -3235,6 +3235,9 @@ namespace ChickenDist.Forms
         /// <summary>يفتح نافذة تخصيص الأعمدة (إظهار/إخفاء + ترتيب)</summary>
         private void ShowColumnCustomizer()
         {
+            if (!Session.PromptAdminPassword(this, "لتخصيص وترتيب أعمدة جدول المشتريات"))
+                return;
+
             var dlg = new Form
             {
                 Text            = "⚙️ تخصيص أعمدة الفاتورة",
