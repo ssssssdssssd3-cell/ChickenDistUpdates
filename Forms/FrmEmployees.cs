@@ -607,7 +607,26 @@ namespace ChickenDist.Forms
             dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter };
             dg.ColumnHeadersHeight = 42;
             dg.Columns.AddRange(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false }, new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260 }, new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 80 }, new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 }, new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 }, new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
-            dg.CellValueChanged += (s, e) => UpdateLiveCounter();
+            dg.CellValueChanged += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                {
+                    var row = dg.Rows[e.RowIndex];
+                    string colName = dg.Columns[e.ColumnIndex].Name;
+                    if (colName == "CanAccess")
+                    {
+                        bool access = ToBool(row.Cells["CanAccess"].Value);
+                        if (access)
+                        {
+                            if (row.Cells["CanAdd"] is DataGridViewCheckBoxCell cAdd && !row.Cells["CanAdd"].ReadOnly && (cAdd.Value == null || !ToBool(cAdd.Value)))
+                                cAdd.Value = true;
+                            if (row.Cells["CanEdit"] is DataGridViewCheckBoxCell cEdit && !row.Cells["CanEdit"].ReadOnly && (cEdit.Value == null || !ToBool(cEdit.Value)))
+                                cEdit.Value = true;
+                        }
+                    }
+                }
+                UpdateLiveCounter();
+            };
             dg.CurrentCellDirtyStateChanged += (s, e) => { if (dg.IsCurrentCellDirty) dg.CommitEdit(DataGridViewDataErrorContexts.Commit); };
             return dg;
         }
@@ -633,7 +652,13 @@ namespace ChickenDist.Forms
                     string screen = row.Cells["Screen"].Value?.ToString();
                     bool isAdminRole = string.Equals(role?.Trim(), "Admin", StringComparison.OrdinalIgnoreCase);
                     bool enable = isAdminRole || (role == "Sales" && salesKeys.Contains(screen)) || (role == "Purchases" && purchaseKeys.Contains(screen)) || (role == "Inventory" && inventoryKeys.Contains(screen)) || (role == "Accountant" && accountantKeys.Contains(screen));
-                    if (enable) { if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true; if (isAdminRole) for (int i = 3; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cOpt && !row.Cells[i].ReadOnly) cOpt.Value = true; }
+                    if (enable)
+                    {
+                        if (row.Cells["CanAccess"] is DataGridViewCheckBoxCell cAcc) cAcc.Value = true;
+                        if (row.Cells["CanAdd"] is DataGridViewCheckBoxCell cAdd && !row.Cells["CanAdd"].ReadOnly) cAdd.Value = true;
+                        if (row.Cells["CanEdit"] is DataGridViewCheckBoxCell cEdit && !row.Cells["CanEdit"].ReadOnly) cEdit.Value = true;
+                        if (isAdminRole) for (int i = 3; i < grid.Columns.Count; i++) if (row.Cells[i] is DataGridViewCheckBoxCell cOpt && !row.Cells[i].ReadOnly) cOpt.Value = true;
+                    }
                 }
             }
             UpdateLiveCounter();

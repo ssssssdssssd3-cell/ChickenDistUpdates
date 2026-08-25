@@ -379,7 +379,7 @@ namespace ChickenDist.Forms
 
         private void ShowIssueVoucherModal(bool isDeposit, int defaultPartyType = 0)
         {
-            if (!Session.CanAdd("CashBox") && !Session.CanAdd("ReceiptVoucher"))
+            if (!Session.CanAdd("ReceiptVoucher") && !Session.CanAdd("CashBox") && !Session.CanAccess("ReceiptVoucher") && !Session.CanAccess("CashBox"))
             {
                 MessageBox.Show("⛔ ليس لديك صلاحية إصدار سندات نقدية.", "تنفيذي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -1083,7 +1083,7 @@ namespace ChickenDist.Forms
 
         private void BtnTransfer_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox") && !Session.CanAdd("ReceiptVoucher"))
+            if (!Session.CanAdd("ReceiptVoucher") && !Session.CanAdd("CashBox") && !Session.CanAccess("ReceiptVoucher") && !Session.CanAccess("CashBox"))
             {
                 MessageBox.Show("⛔ ليس لديك صلاحية التحويل بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;

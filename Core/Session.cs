@@ -265,18 +265,49 @@ namespace ChickenDist.Core
         public static bool CanAdd(string screen)
         {
             if (IsAdmin) return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanAdd;
+            if (string.IsNullOrEmpty(screen)) return true;
+
+            if (_perms.ContainsKey(screen) && _perms[screen].CanAdd) return true;
+
+            if (screen == "ReceiptVoucher")
+            {
+                if (_perms.ContainsKey("ReceiptVoucher") && _perms["ReceiptVoucher"].CanAccess) return true;
+                if (_perms.ContainsKey("CashBox") && (_perms["CashBox"].CanAdd || _perms["CashBox"].CanAccess)) return true;
+                if (_perms.ContainsKey("DailyAccounts") && (_perms["DailyAccounts"].CanAdd || _perms["DailyAccounts"].CanAccess)) return true;
+                if (_perms.ContainsKey("SafeAccounts") && (_perms["SafeAccounts"].CanAdd || _perms["SafeAccounts"].CanAccess)) return true;
+            }
+            if (screen == "CashBox")
+            {
+                if (_perms.ContainsKey("ReceiptVoucher") && (_perms["ReceiptVoucher"].CanAdd || _perms["ReceiptVoucher"].CanAccess)) return true;
+                if (_perms.ContainsKey("DailyAccounts") && (_perms["DailyAccounts"].CanAdd || _perms["DailyAccounts"].CanAccess)) return true;
+                if (_perms.ContainsKey("SafeAccounts") && (_perms["SafeAccounts"].CanAdd || _perms["SafeAccounts"].CanAccess)) return true;
+            }
+
+            return false;
         }
 
         public static bool CanEdit(string screen)
         {
             if (IsAdmin) return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanEdit;
+            if (string.IsNullOrEmpty(screen)) return true;
+
+            if (_perms.ContainsKey(screen) && _perms[screen].CanEdit) return true;
+
+            if (screen == "ReceiptVoucher" || screen == "CashBox")
+            {
+                if (_perms.ContainsKey("ReceiptVoucher") && _perms["ReceiptVoucher"].CanAccess) return true;
+                if (_perms.ContainsKey("CashBox") && (_perms["CashBox"].CanEdit || _perms["CashBox"].CanAccess)) return true;
+                if (_perms.ContainsKey("DailyAccounts") && (_perms["DailyAccounts"].CanEdit || _perms["DailyAccounts"].CanAccess)) return true;
+            }
+
+            return false;
         }
 
         public static bool CanDelete(string screen)
         {
             if (IsAdmin) return true;
+            if (string.IsNullOrEmpty(screen)) return true;
+
             return _perms.ContainsKey(screen) && _perms[screen].CanDelete;
         }
 
