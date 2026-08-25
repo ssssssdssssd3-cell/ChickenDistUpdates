@@ -279,6 +279,10 @@ namespace ChickenDist.Forms
             btnAddGenItem.Margin = new Padding(10, 1, 0, 0);
             btnAddGenItem.Click += BtnAddGenItem_Click;
 
+            txtGenQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; BtnAddGenItem_Click(s, e); } };
+            txtGenPrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; BtnAddGenItem_Click(s, e); } };
+            cboAllProducts.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; BtnAddGenItem_Click(s, e); } };
+
             pnlGeneralItemBar.Controls.AddRange(new Control[] {
                 btnSearchProd,
                 lblGenProd, cboAllProducts,
@@ -472,13 +476,6 @@ namespace ChickenDist.Forms
                 if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
                     txtGenPrice.Text = ci.Extra.ToString("N2");
-                    decimal.TryParse(txtGenQty.Text, out decimal q);
-                    if (q <= 0) q = 1m;
-                    AddGeneralProductByID(ci.ID, q, ci.Extra);
-                    this.BeginInvoke(new Action(() =>
-                    {
-                        cboAllProducts.SelectedIndex = 0;
-                    }));
                 }
             };
         }
@@ -654,11 +651,17 @@ namespace ChickenDist.Forms
 
         private void AddGeneralProductByID(int productID, decimal defaultQty = 1m, decimal? customPrice = null)
         {
-            var dtP = DbHelper.Query("SELECT ProductID, ProductName, COALESCE(PurchasePrice, 0) AS PurchasePrice, COALESCE(UnitName, '') AS UnitName FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
+            var dtP = DbHelper.Query(@"
+                SELECT ProductID, ProductName, 
+                       COALESCE(PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
+                       COALESCE(Unit, Unit1Name, DefaultPurchaseUnit, '') AS UnitName 
+                FROM Products 
+                WHERE ProductID=@id", DbHelper.P("@id", productID));
             if (dtP == null || dtP.Rows.Count == 0) return;
 
             var r = dtP.Rows[0];
             string name = r["ProductName"].ToString();
+            string unitName = r["UnitName"]?.ToString() ?? "";
             decimal price = 0m;
             if (customPrice.HasValue && customPrice.Value > 0)
             {
@@ -702,7 +705,7 @@ namespace ChickenDist.Forms
             newRow.Cells["NetUnitPrice"].Value    = price.ToString("N2");
             newRow.Cells["NewReturnedQty"].Value  = defaultQty;
             newRow.Cells["TotalPrice"].Value      = (defaultQty * price).ToString("N2");
-            newRow.Cells["UnitName"].Value        = r["UnitName"]?.ToString() ?? "";
+            newRow.Cells["UnitName"].Value        = unitName;
             newRow.Cells["Factor"].Value          = 1.0m;
 
             RecalcTotal();
@@ -735,6 +738,9 @@ namespace ChickenDist.Forms
             }
 
             AddGeneralProductByID(ci.ID, qty, price);
+            cboAllProducts.SelectedIndex = 0;
+            txtGenQty.Text = "1";
+            txtGenPrice.Text = "0";
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
