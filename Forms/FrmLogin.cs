@@ -14,8 +14,6 @@ namespace ChickenDist.Forms
         private Label lblError;
         private ProgressBar pbUpdate;
         private Label lblUpdateStatus;
-        private bool _hasRequiredUpdate = false;
-        private string _latestRemoteVer = "";
 
         public FrmLogin()
         {
@@ -181,14 +179,14 @@ namespace ChickenDist.Forms
                 Location = new Point(0, 520)
             };
 
-            // ── شريط تقدم التحديث ─────────────────────────────────────
+            // ── شريط عرض الإصدار الحالي ─────────────────────────────────────
             lblUpdateStatus = new Label
             {
-                Text = $"⟳  جاري فحص التحديثات...   |   الإصدار الحالي: v{UpdateManager.CurrentVersion}",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Text = $"🎯 إصدار البرنامج: v{UpdateManager.CurrentVersion}",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(160, 210, 255),
                 AutoSize = false,
-                Size = new Size(480, 22),
+                Size = new Size(480, 24),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Location = new Point(0, 546),
                 Cursor = Cursors.Hand
@@ -197,115 +195,12 @@ namespace ChickenDist.Forms
 
             pbUpdate = new ProgressBar
             {
-                Location = new Point(0, 569),
-                Size = new Size(480, 7),
-                Style = ProgressBarStyle.Marquee,
-                MarqueeAnimationSpeed = 25,
-                ForeColor = Color.FromArgb(100, 180, 255)
+                Location = new Point(0, 570),
+                Size = new Size(480, 4),
+                Visible = false
             };
 
             this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, pbUpdate });
-
-            this.Shown += FrmLogin_Shown;
-        }
-
-        // ── فحص التحديثات في الخلفية عند فتح الشاشة ───────────────────
-        private void FrmLogin_Shown(object sender, EventArgs e)
-        {
-            var bw = new BackgroundWorker();
-            bw.DoWork += (s, ev) =>
-            {
-                try
-                {
-                    System.Threading.Thread.Sleep(400);
-                    System.Net.ServicePointManager.SecurityProtocol =
-                        System.Net.SecurityProtocolType.Tls12 |
-                        System.Net.SecurityProtocolType.Tls11 |
-                        System.Net.SecurityProtocolType.Tls |
-                        (System.Net.SecurityProtocolType)12288;
-
-                    using (var client = new System.Net.WebClient())
-                    {
-                        client.Encoding = System.Text.Encoding.UTF8;
-                        client.Headers.Add("User-Agent", "ChickenDist/" + UpdateManager.CurrentVersion);
-                        string cacheBusted = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt"
-                                           + "?t=" + DateTime.Now.Ticks;
-                        string raw = client.DownloadString(cacheBusted).TrimStart('\uFEFF');
-                        string remoteVer = "";
-                        foreach (var line in raw.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries))
-                        {
-                            int idx = line.IndexOf('=');
-                            if (idx > 0 && line.Substring(0, idx).Trim().ToLower() == "version")
-                            {
-                                remoteVer = line.Substring(idx + 1).Trim();
-                                break;
-                            }
-                        }
-                        ev.Result = remoteVer;
-                    }
-                }
-                catch { ev.Result = ""; }
-            };
-
-            bw.RunWorkerCompleted += (s, ev) =>
-            {
-                if (this.IsDisposed) return;
-                pbUpdate.Style = ProgressBarStyle.Continuous;
-                pbUpdate.Value = 100;
-
-                string remoteVer = ev.Result as string ?? "";
-                if (!string.IsNullOrEmpty(remoteVer))
-                {
-                    try
-                    {
-                        var local  = new Version(UpdateManager.CurrentVersion);
-                        var remote = new Version(remoteVer);
-                        if (remote > local)
-                        {
-                            _hasRequiredUpdate = true;
-                            _latestRemoteVer = remoteVer;
-
-                            // قفل تسجيل الدخول تماماً لمنع الدخول بنسخة قديمة
-                            txtUser.Enabled = false;
-                            txtPass.Enabled = false;
-                            btnLogin.Enabled = false;
-                            btnLogin.BackColor = Color.FromArgb(75, 85, 99);
-                            btnLogin.Text = "⛔ يلزم التحديث للمتابعة";
-
-                            lblError.Text = $"⚠️ يتوفر إصدار جديد (v{remoteVer}) - يجب التحديث أولاً";
-                            lblError.ForeColor = Color.FromArgb(239, 68, 68);
-
-                            lblUpdateStatus.Text = $"🚀 تحديث إجباري متاح: v{remoteVer} (اضغط هنا للتحديث فوراً)";
-                            lblUpdateStatus.ForeColor = Color.FromArgb(255, 220, 80);
-                            pbUpdate.ForeColor = Color.FromArgb(239, 68, 68);
-
-                            // تنبيه المستخدم مباشرة
-                            var res = MessageBox.Show(
-                                $"🚀 يتوفر إصدار جديد ومحدث للبرنامج (v{remoteVer})!\n\n" +
-                                $"• الإصدار الحالي لديك: [ v{UpdateManager.CurrentVersion} ]\n" +
-                                $"• الإصدار الأخير المتاح: [ v{remoteVer} ]\n\n" +
-                                "تم قفل تسجيل الدخول لضمان تطابق وتكامل قاعدة البيانات والسيرفر.\n\n" +
-                                "هل تريد تحميل وتثبيت التحديث وإعادة التشغيل تلقائياً الآن؟",
-                                "⚠️ تحديث إجباري مطلوب",
-                                MessageBoxButtons.YesNo,
-                                MessageBoxIcon.Warning,
-                                MessageBoxDefaultButton.Button1,
-                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-
-                            if (res == DialogResult.Yes)
-                            {
-                                UpdateManager.CheckForUpdates(showNoUpdateMsg: false);
-                            }
-                            return;
-                        }
-                    }
-                    catch { }
-                }
-                lblUpdateStatus.Text = $"✅  أحدث إصدار مثبت: v{UpdateManager.CurrentVersion}";
-                lblUpdateStatus.ForeColor = Color.FromArgb(100, 230, 150);
-            };
-
-            bw.RunWorkerAsync();
         }
 
         private int _failedAttempts = 0;
@@ -315,18 +210,6 @@ namespace ChickenDist.Forms
 
         private void BtnLogin_Click(object sender, EventArgs e)
         {
-            if (_hasRequiredUpdate)
-            {
-                MessageBox.Show(
-                    $"⛔ لا يمكن تسجيل الدخول بإصدار قديم (v{UpdateManager.CurrentVersion})!\n\n" +
-                    $"يجب تحديث البرنامج إلى الإصدار الأخير (v{_latestRemoteVer}) أولاً للمتابعة.",
-                    "تحديث إجباري مطلوب",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button1,
-                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                return;
-            }
 
             if (!btnLogin.Enabled) return;
 

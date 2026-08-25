@@ -3630,22 +3630,31 @@ namespace ChickenDist.Core
         {
             try
             {
-                // التأكد من وجود جدول version
+                // التأكد من وجود جدول versions في قاعدة البيانات
                 Execute(@"
-                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='version')
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='versions')
                     BEGIN
-                        CREATE TABLE [version] (
-                            [version] NVARCHAR(50) NOT NULL,
-                            [UpdatedAt] DATETIME DEFAULT GETDATE()
-                        );
+                        IF EXISTS (SELECT * FROM sys.tables WHERE name='version')
+                        BEGIN
+                            EXEC sp_rename 'version', 'versions';
+                        END
+                        ELSE
+                        BEGIN
+                            CREATE TABLE [versions] (
+                                [version] NVARCHAR(50) NOT NULL,
+                                [UpdatedAt] DATETIME DEFAULT GETDATE(),
+                                [UpdatedBy] NVARCHAR(100) NULL
+                            );
+                        END
                     END");
 
-                // قراءة الإصدار الحالي من جدول version
-                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [version] ORDER BY [UpdatedAt] DESC");
+                // قراءة الإصدار المسجل في السيكول من جدول versions
+                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [versions] ORDER BY [UpdatedAt] DESC");
                 if (dbVerObj == null || dbVerObj == DBNull.Value || string.IsNullOrWhiteSpace(dbVerObj.ToString()))
                 {
-                    // إذا كان الجدول فارغاً، نسجل الإصدار الحالي ونسمح بالدخول
-                    Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
+                    // إذا كان الجدول فارغاً، نسجل الإصدار الحالي كإصدار رئيسي معتمد
+                    Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
+                        P("@ver", currentAppVersion), P("@by", Environment.MachineName));
                     return true;
                 }
 
@@ -3662,26 +3671,27 @@ namespace ChickenDist.Core
                 {
                     if (appVer >= dbVer)
                     {
-                        // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات
+                        // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات كجهاز رئيسي
                         if (appVer > dbVer)
                         {
-                            Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
+                            Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
+                                P("@ver", currentAppVersion), P("@by", Environment.MachineName));
                         }
                         return true;
                     }
                     else
                     {
-                        // إذا كان إصدار البرنامج الحالي أقدم من قاعدة البيانات (مثل جهاز فرعي غير محدث)
-                        string errorMsg = $"⚠️ تنبيه هام: إصدار البرنامج على هذا الجهاز قديم وغير متوافق مع قاعدة البيانات المحدثة!\n\n" +
-                                          $"• إصدار هذا الجهاز الحالي:       [ v{currentAppVersion} ]\n" +
-                                          $"• إصدار قاعدة البيانات (السيرفر): [ v{dbVersionStr} ]\n\n" +
-                                          $"تم تحديث النظام وترقية قاعدة البيانات من جهاز رئيسي.\n" +
-                                          $"لا يمكن فتح البرنامج بهذا الإصدار القديم منعاً لتلف البيانات أو حدوث أخطاء.\n\n" +
-                                          $"هل ترغب في فحص وتنزيل التحديث الجديد [ v{dbVersionStr} ] الآن؟";
+                        // إذا كان إصدار البرنامج الحالي أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه)
+                        string errorMsg = $"⛔ تنبيه هام: عدم تطابق إصدار البرنامج مع السيرفر الرئيسي!\n\n" +
+                                          $"• إصدار هذا الجهاز (الفرعي):           [ v{currentAppVersion} ]\n" +
+                                          $"• إصدار السيرفر الرئيسي وقاعدة البيانات: [ v{dbVersionStr} ]\n\n" +
+                                          $"تم تحديث السيرفر الرئيسي إلى إصدار أحدث (v{dbVersionStr}).\n" +
+                                          $"لا يمكن فتح البرنامج من هذا الجهاز الفرعي إلا بعد تحديثه لنفس إصدار السيرفر الرئيسي منعاً لتلف البيانات وتضارب الفواتير.\n\n" +
+                                          $"هل ترغب في فحص وتنزيل التحديث (v{dbVersionStr}) الآن؟";
 
-                        var result = MessageBox.Show(errorMsg, "⚠️ تنبيه عدم تطابق إصدار قاعدة البيانات",
+                        var result = MessageBox.Show(errorMsg, "⛔ تنبيه عدم تطابق إصدار قاعدة البيانات",
                             MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Warning,
+                            MessageBoxIcon.Stop,
                             MessageBoxDefaultButton.Button1,
                             MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 
@@ -3697,8 +3707,8 @@ namespace ChickenDist.Core
                 {
                     if (string.Compare(cleanAppVer, cleanDbVer, StringComparison.OrdinalIgnoreCase) < 0)
                     {
-                        MessageBox.Show($"⚠️ إصدار البرنامج الحالي ({currentAppVersion}) أقدم من قاعدة البيانات ({dbVersionStr}). يرجى تحديث البرنامج أولاً.",
-                            "تنبيه التحديث", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        MessageBox.Show($"⛔ إصدار هذا الجهاز ({currentAppVersion}) أقدم من إصدار السيرفر الرئيسي ({dbVersionStr}). يرجى تحديث هذا الجهاز أولاً.",
+                            "تنبيه عدم تطابق الإصدار", MessageBoxButtons.OK, MessageBoxIcon.Stop, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                         return false;
                     }
                     return true;
