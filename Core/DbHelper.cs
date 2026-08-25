@@ -3612,50 +3612,89 @@ namespace ChickenDist.Core
 
         /// <summary>
         /// يتحقق من توافق إصدار التطبيق الحالي مع إصدار قاعدة البيانات.
-        /// ويمنع التشغيل إذا كانت قاعدة البيانات قد تم ترقيتها بإصدار أحدث.
+        /// ويمنع التشغيل إذا كانت قاعدة البيانات قد تم ترقيتها بإصدار أحدث من جهاز رئيسي.
         /// </summary>
         public static bool CheckAndEnforceVersion(string currentAppVersion)
         {
             try
             {
+                // التأكد من وجود جدول version
+                Execute(@"
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='version')
+                    BEGIN
+                        CREATE TABLE [version] (
+                            [version] NVARCHAR(50) NOT NULL,
+                            [UpdatedAt] DATETIME DEFAULT GETDATE()
+                        );
+                    END");
+
                 // قراءة الإصدار الحالي من جدول version
-                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [version]");
-                if (dbVerObj == null || dbVerObj == DBNull.Value)
+                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [version] ORDER BY [UpdatedAt] DESC");
+                if (dbVerObj == null || dbVerObj == DBNull.Value || string.IsNullOrWhiteSpace(dbVerObj.ToString()))
                 {
-                    // إذا كان الجدول فارغاً لسبب ما، نضع الإصدار الحالي ونسمح بالدخول
+                    // إذا كان الجدول فارغاً، نسجل الإصدار الحالي ونسمح بالدخول
                     Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
                     return true;
                 }
 
                 string dbVersionStr = dbVerObj.ToString().Trim();
-                Version appVer = new Version(currentAppVersion);
-                Version dbVer = new Version(dbVersionStr);
 
-                if (appVer >= dbVer)
+                // تنظيف نصوص الإصدار للتأكد من المقارنة السليمة
+                string cleanAppVer = currentAppVersion.TrimStart('v', 'V');
+                string cleanDbVer  = dbVersionStr.TrimStart('v', 'V');
+
+                bool parsedApp = Version.TryParse(cleanAppVer, out Version appVer);
+                bool parsedDb  = Version.TryParse(cleanDbVer, out Version dbVer);
+
+                if (parsedApp && parsedDb)
                 {
-                    // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات
-                    if (appVer > dbVer)
+                    if (appVer >= dbVer)
                     {
-                        Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
+                        // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات
+                        if (appVer > dbVer)
+                        {
+                            Execute("DELETE FROM [version]; INSERT INTO [version] ([version], [UpdatedAt]) VALUES (@ver, GETDATE())", P("@ver", currentAppVersion));
+                        }
+                        return true;
                     }
-                    return true;
+                    else
+                    {
+                        // إذا كان إصدار البرنامج الحالي أقدم من قاعدة البيانات (مثل جهاز فرعي غير محدث)
+                        string errorMsg = $"⚠️ تنبيه هام: إصدار البرنامج على هذا الجهاز قديم وغير متوافق مع قاعدة البيانات المحدثة!\n\n" +
+                                          $"• إصدار هذا الجهاز الحالي:       [ v{currentAppVersion} ]\n" +
+                                          $"• إصدار قاعدة البيانات (السيرفر): [ v{dbVersionStr} ]\n\n" +
+                                          $"تم تحديث النظام وترقية قاعدة البيانات من جهاز رئيسي.\n" +
+                                          $"لا يمكن فتح البرنامج بهذا الإصدار القديم منعاً لتلف البيانات أو حدوث أخطاء.\n\n" +
+                                          $"هل ترغب في فحص وتنزيل التحديث الجديد [ v{dbVersionStr} ] الآن؟";
+
+                        var result = MessageBox.Show(errorMsg, "⚠️ تنبيه عدم تطابق إصدار قاعدة البيانات",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Warning,
+                            MessageBoxDefaultButton.Button1,
+                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
+                        }
+
+                        return false;
+                    }
                 }
                 else
                 {
-                    // إذا كان إصدار البرنامج الحالي أقدم من قاعدة البيانات
-                    string errorMsg = $"⚠️ هذا الإصدار من البرنامج قديم جداً وغير متوافق مع قاعدة البيانات الحالية المحدثة.\n\n" +
-                                      $"إصدار البرنامج الحالي: {currentAppVersion}\n" +
-                                      $"إصدار قاعدة البيانات المحدث: {dbVersionStr}\n\n" +
-                                      $"لقد تم تحديث البرنامج سابقاً. يرجى فتح البرنامج من الأيقونة الجديدة المحدثة (في مجلد Updates أو الاختصار الجديد).";
-
-                    System.Diagnostics.Debug.WriteLine(errorMsg);
-                    return false;
+                    if (string.Compare(cleanAppVer, cleanDbVer, StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        MessageBox.Show($"⚠️ إصدار البرنامج الحالي ({currentAppVersion}) أقدم من قاعدة البيانات ({dbVersionStr}). يرجى تحديث البرنامج أولاً.",
+                            "تنبيه التحديث", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                        return false;
+                    }
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("CheckAndEnforceVersion failed", ex, "DbHelper");
-                // في حالة حدوث خطأ غير متوقع في المقارنة، نسمح بالمرور منعاً لتعطيل العمل
                 return true;
             }
         }

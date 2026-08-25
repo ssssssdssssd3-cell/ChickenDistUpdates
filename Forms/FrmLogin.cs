@@ -183,13 +183,15 @@ namespace ChickenDist.Forms
             lblUpdateStatus = new Label
             {
                 Text = $"⟳  جاري فحص التحديثات...   |   الإصدار الحالي: v{UpdateManager.CurrentVersion}",
-                Font = new Font("Segoe UI", 8f),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(160, 210, 255),
                 AutoSize = false,
-                Size = new Size(480, 20),
+                Size = new Size(480, 22),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(0, 548)
+                Location = new Point(0, 546),
+                Cursor = Cursors.Hand
             };
+            lblUpdateStatus.Click += delegate { UpdateManager.CheckForUpdates(showNoUpdateMsg: true); };
 
             pbUpdate = new ProgressBar
             {
@@ -213,7 +215,7 @@ namespace ChickenDist.Forms
             {
                 try
                 {
-                    System.Threading.Thread.Sleep(600);
+                    System.Threading.Thread.Sleep(400);
                     System.Net.ServicePointManager.SecurityProtocol =
                         System.Net.SecurityProtocolType.Tls12 |
                         System.Net.SecurityProtocolType.Tls11 |
@@ -258,7 +260,7 @@ namespace ChickenDist.Forms
                         var remote = new Version(remoteVer);
                         if (remote > local)
                         {
-                            lblUpdateStatus.Text = $"🔄  تحديث جديد متاح: v{remoteVer}  — سيظهر بعد تسجيل الدخول";
+                            lblUpdateStatus.Text = $"🔄  تحديث جديد متاح: v{remoteVer}  (اضغط هنا للتحديث الفوري)";
                             lblUpdateStatus.ForeColor = Color.FromArgb(255, 220, 80);
                             pbUpdate.ForeColor = Color.FromArgb(255, 200, 50);
                             return;

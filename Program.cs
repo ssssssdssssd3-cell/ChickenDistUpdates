@@ -22,6 +22,12 @@ namespace ChickenDist
             // تطبيق RTL على كل الشاشات التي ستُفتح
             Application.AddMessageFilter(new RtlMessageFilter());
 
+            // فحص تطابق إصدار البرنامج الحالي مع قاعدة البيانات المحدثة
+            if (!ChickenDist.Core.DbHelper.CheckAndEnforceVersion(ChickenDist.Core.UpdateManager.CurrentVersion))
+            {
+                return;
+            }
+
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
