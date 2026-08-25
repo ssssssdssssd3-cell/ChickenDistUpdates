@@ -453,7 +453,8 @@ namespace ChickenDist.Forms
             var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
-                    ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
+                    ("🏠 لوحة التحكم الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard()))),
+                    ("📊 التفاصيل والإحصائيات السريعة", "QuickDetails", (Action)(() => new FrmQuickDetails((f) => NavigateTo(f)).ShowDialog())),
                 }),
 
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
@@ -462,12 +463,14 @@ namespace ChickenDist.Forms
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
+                    ("📋 سجل عروض الأسعار وبيان التسعير", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuotesList()))),
                     ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
                     ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
                     ("📝 تقسيط وجدولة مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
+                    ("⏳ الفواتير المعلقة", "Sales",    (Action)(() => new FrmIncompleteInvoices().ShowDialog())),
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
@@ -549,6 +552,7 @@ namespace ChickenDist.Forms
                     ("📄 إصدار سندات الصرف والتوريد", "ReceiptVoucher", (Action)(() => NavigateTo(new FrmReceiptVoucher()))),
                     ("🏛️ الحسابات والمالية اليومية الشاملة", "DailyAccounts", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
                     ("💰 الخزنة والمصروفات والوارد", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("🏦 إدارة الخزن والحسابات البنكية", "SafeAccounts", (Action)(() => new FrmSafeAccounts().ShowDialog())),
                     ("💵 النقدية والأرصدة الفعلية المتاحة", "ActualBalances", (Action)(() => NavigateTo(new FrmActualBalances()))),
                     ("🏢 سجل وإهلاك الأصول الثابتة", "FixedAssets", (Action)(() => NavigateTo(new FrmFixedAssets()))),
                     ("🤝 حسابات الشركاء وتوزيع الأرباح", "Shareholders", (Action)(() => NavigateTo(new FrmShareholders()))),
@@ -571,12 +575,13 @@ namespace ChickenDist.Forms
                 }),
 
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
-                    ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
+                    ("⚙️ الإعدادات العامة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
-                    ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("☁️ التزامن السحابي والفرعي", "CloudSync",      (Action)(() => NavigateTo(new FrmCloudSync()))),
-                    ("📚 إدارة الجداول المرجعية", "LookupManager",     (Action)(() => NavigateTo(new FrmLookupManager()))),
-                    ("🔄 تحديث البرنامج",   "Settings",             (Action)(() => UpdateManager.CheckForUpdates(true))),
+                    ("🤖 إدارة بوت الواتساب", "BotManager", (Action)(() => new FrmBotManager().ShowDialog())),
+                    ("🤖 الدعم الفني والمساعد الذكي", "SupportBot", (Action)(() => new FrmSupportBot().ShowDialog())),
+                    ("📱 ربط الموبايل والتزامن السحابي", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
+                    ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
+                    ("🔄 تحديث البرنامج", "Settings", (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
 
@@ -1203,7 +1208,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                pnlNavBar.Visible = false;
+                pnlNavBar.Visible = true;
                 pnlTopBar.Visible = false;
                 pnlTabBar.Visible = true;
             }
