@@ -936,27 +936,90 @@ namespace ChickenDist.Forms
             flowTabs.SuspendLayout();
             flowTabs.Controls.Clear();
 
-            // 1. زر الرئيسية الدائم (Home Dashboard Tab)
-            bool isDashboardActive = (_currentChild == null || _currentChild is FrmDashboard);
-            var btnHomeTab = new Button
+            string currentScreenType = _currentChild?.GetType().Name ?? "";
+
+            // 1. أزرار الأقسام والشاشات العلوية المدمجة في الشريط الأسود العلوي
+            var groups = GetNavigationGroups();
+            foreach (var group in groups)
             {
-                Text = "🏠 الرئيسية",
-                Height = 34,
-                AutoSize = true,
-                MinimumSize = new Size(95, 34),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = isDashboardActive ? Color.FromArgb(16, 185, 129) : Color.FromArgb(37, 45, 61),
-                ForeColor = isDashboardActive ? Color.White : Color.FromArgb(203, 213, 225),
-                Font = new Font("Segoe UI", 9.5f, isDashboardActive ? FontStyle.Bold : FontStyle.Regular),
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(3, 1, 3, 1)
-            };
-            btnHomeTab.FlatAppearance.BorderSize = isDashboardActive ? 0 : 1;
-            btnHomeTab.FlatAppearance.BorderColor = Color.FromArgb(55, 65, 81);
-            btnHomeTab.FlatAppearance.MouseOverBackColor = isDashboardActive ? Color.FromArgb(5, 150, 105) : Color.FromArgb(55, 65, 81);
-            btnHomeTab.Click += (s, e) => NavigateTo(new FrmDashboard());
-            flowTabs.Controls.Add(btnHomeTab);
+                bool hasAnyAccess = false;
+                bool isGroupActive = false;
+                foreach (var item in group.items)
+                {
+                    if (UserCanAccess(item.screen))
+                    {
+                        hasAnyAccess = true;
+                    }
+                    if (!string.IsNullOrEmpty(currentScreenType))
+                    {
+                        if (item.screen == currentScreenType ||
+                            (currentScreenType.StartsWith("Frm") && currentScreenType.Substring(3) == item.screen) ||
+                            (currentScreenType == "FrmSale" && item.screen == "Sales") ||
+                            (currentScreenType == "FrmPurchase" && item.screen == "Purchases") ||
+                            (currentScreenType == "FrmReturn" && item.screen == "Returns") ||
+                            (currentScreenType == "FrmPriceQuote" && item.screen == "PriceQuote") ||
+                            (currentScreenType == "FrmProducts" && item.screen == "Products") ||
+                            (currentScreenType == "FrmClients" && item.screen == "Clients") ||
+                            (currentScreenType == "FrmSuppliers" && item.screen == "Suppliers") ||
+                            (currentScreenType == "FrmCashBox" && item.screen == "CashBox") ||
+                            (currentScreenType == "FrmEmployees" && item.screen == "Employees") ||
+                            (currentScreenType == "FrmSettings" && item.screen == "Settings"))
+                        {
+                            isGroupActive = true;
+                        }
+                    }
+                }
+                if (!hasAnyAccess) continue;
+
+                var menu = CreateCategoryMenu(group.icon, group.label, group.color, group.items);
+
+                bool isHome = (group.label == "الرئيسية" || group.label == "🏠 الرئيسية");
+                bool isHomeActive = isHome && (_currentChild == null || _currentChild is FrmDashboard);
+                bool isActive = isHome ? isHomeActive : isGroupActive;
+
+                var btnCat = new Button
+                {
+                    Text = isHome ? "🏠 الرئيسية" : $"{group.icon} {group.label} ▾",
+                    Height = 32,
+                    AutoSize = true,
+                    MinimumSize = new Size(80, 32),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = isActive ? group.color : Color.FromArgb(37, 45, 61),
+                    ForeColor = isActive ? Color.White : Color.FromArgb(226, 232, 240),
+                    Font = new Font("Segoe UI", 9f, isActive ? FontStyle.Bold : FontStyle.Regular),
+                    Cursor = Cursors.Hand,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Margin = new Padding(2, 2, 2, 2),
+                    Padding = new Padding(6, 1, 6, 1)
+                };
+                btnCat.FlatAppearance.BorderSize = isActive ? 1 : 0;
+                btnCat.FlatAppearance.BorderColor = isActive ? Color.FromArgb(250, 204, 21) : Color.FromArgb(55, 65, 81);
+                btnCat.FlatAppearance.MouseOverBackColor = ControlPaint.Light(group.color, 0.2f);
+
+                if (isHome)
+                {
+                    btnCat.Click += (s, e) => NavigateTo(new FrmDashboard());
+                }
+                else
+                {
+                    btnCat.Click += (s, e) => menu.Show(btnCat, new Point(0, btnCat.Height));
+                }
+
+                flowTabs.Controls.Add(btnCat);
+            }
+
+            // فاصل إن كانت هناك شاشات مفتوحة
+            if (_openTabs.Count > 0)
+            {
+                var pnlSep = new Panel
+                {
+                    Width = 2,
+                    Height = 26,
+                    BackColor = Color.FromArgb(75, 85, 99),
+                    Margin = new Padding(6, 3, 6, 3)
+                };
+                flowTabs.Controls.Add(pnlSep);
+            }
 
             // 2. تبويبات الشاشات المفتوحة
             for (int i = 0; i < _openTabs.Count; i++)
@@ -972,12 +1035,12 @@ namespace ChickenDist.Forms
 
                 var pnlTab = new Panel
                 {
-                    Height = 34,
+                    Height = 32,
                     AutoSize = true,
-                    MinimumSize = new Size(130, 34),
-                    MaximumSize = new Size(230, 34),
-                    BackColor = isActive ? Color.FromArgb(37, 99, 235) : Color.FromArgb(37, 45, 61),
-                    Margin = new Padding(3, 1, 3, 1),
+                    MinimumSize = new Size(110, 32),
+                    MaximumSize = new Size(200, 32),
+                    BackColor = isActive ? Color.FromArgb(37, 99, 235) : Color.FromArgb(30, 35, 48),
+                    Margin = new Padding(2, 2, 2, 2),
                     Cursor = Cursors.Hand,
                     Padding = new Padding(4, 0, 4, 0)
                 };
@@ -986,8 +1049,8 @@ namespace ChickenDist.Forms
                 {
                     Text = $"{emoji} {title}",
                     Dock = DockStyle.Fill,
-                    ForeColor = isActive ? Color.White : Color.FromArgb(226, 232, 240),
-                    Font = new Font("Segoe UI", 9.5f, isActive ? FontStyle.Bold : FontStyle.Regular),
+                    ForeColor = isActive ? Color.White : Color.FromArgb(203, 213, 225),
+                    Font = new Font("Segoe UI", 9f, isActive ? FontStyle.Bold : FontStyle.Regular),
                     TextAlign = ContentAlignment.MiddleRight,
                     Cursor = Cursors.Hand,
                     AutoEllipsis = true
@@ -997,12 +1060,12 @@ namespace ChickenDist.Forms
                 {
                     Text = "✕",
                     Dock = DockStyle.Left,
-                    Width = 24,
-                    Height = 34,
+                    Width = 22,
+                    Height = 32,
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.Transparent,
                     ForeColor = isActive ? Color.FromArgb(254, 202, 202) : Color.FromArgb(156, 163, 175),
-                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 btnClose.FlatAppearance.BorderSize = 0;
@@ -1208,7 +1271,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                pnlNavBar.Visible = true;
+                pnlNavBar.Visible = false;
                 pnlTopBar.Visible = false;
                 pnlTabBar.Visible = true;
             }

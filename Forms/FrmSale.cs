@@ -1083,29 +1083,29 @@ namespace ChickenDist.Forms
 				AutoScroll = true
 			};
 
-			// 1. بطاقة صافي الفاتورة المميزة والبارزة جداً (Super Prominent Net Total Card)
+			// 1. بطاقة صافي الفاتورة المميزة والبارزة جداً على الشمال (Super Prominent Net Total Card on Left)
 			var pnlNetGrp = new Panel
 			{
-				Height = 38,
-				Width = 240,
-				BackColor = Color.FromArgb(6, 78, 59), // Deep rich Emerald
-				Margin = new Padding(4, 0, 4, 0),
+				Height = 40,
+				Width = 260,
+				BackColor = Color.FromArgb(6, 95, 70), // Rich Glowing Emerald
+				Margin = new Padding(6, 0, 4, 0),
 				Padding = new Padding(6, 1, 6, 1)
 			};
 			Label lblNetTitle = new Label
 			{
 				Text = "الصافي:",
 				ForeColor = Color.FromArgb(167, 243, 208), // Light Emerald
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 12f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 62,
+				Width = 65,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			lblNetVal = new Label
 			{
 				Text = "0.00 ج",
 				ForeColor = Color.FromArgb(250, 204, 21), // Glowing Gold
-				Font = new Font("Segoe UI", 15.5f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 17f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
 				TextAlign = ContentAlignment.MiddleCenter
 			};
@@ -1317,13 +1317,14 @@ namespace ChickenDist.Forms
 			pnlTotalGrp.Controls.Add(lblTotalVal);
 			pnlTotalGrp.Controls.Add(lblTotalTitle);
 
-			pnlSummaryFlow.Controls.Add(pnlNetGrp);
-			pnlSummaryFlow.Controls.Add(pnlCountGrp);
-			if (pnlProfitGrp != null) pnlSummaryFlow.Controls.Add(pnlProfitGrp);
-			if (pnlCostGrp != null) pnlSummaryFlow.Controls.Add(pnlCostGrp);
-			pnlSummaryFlow.Controls.Add(pnlShipGrp);
-			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
+			// ترتيب العناصر في شريط الإجماليات (الصافي على أقصى الشمال في الاتجاه من اليمين لليسار)
 			pnlSummaryFlow.Controls.Add(pnlTotalGrp);
+			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
+			pnlSummaryFlow.Controls.Add(pnlShipGrp);
+			if (pnlCostGrp != null) pnlSummaryFlow.Controls.Add(pnlCostGrp);
+			if (pnlProfitGrp != null) pnlSummaryFlow.Controls.Add(pnlProfitGrp);
+			pnlSummaryFlow.Controls.Add(pnlCountGrp);
+			pnlSummaryFlow.Controls.Add(pnlNetGrp);
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 180, 28, Theme.Accent);
