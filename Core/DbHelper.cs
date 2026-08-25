@@ -1655,6 +1655,13 @@ namespace ChickenDist.Core
                 END";
                 Execute(sqlCategoriesTable);
 
+                string sqlCategoriesCode = @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Categories') AND name = 'CategoryCode')
+                BEGIN
+                    ALTER TABLE Categories ADD CategoryCode NVARCHAR(50) NULL;
+                END";
+                Execute(sqlCategoriesCode);
+
                 // 4. إضافة حقول قطع الغيار لجدول الأصناف Products
                 string sqlProductsPartsFields = @"
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PartNumber')

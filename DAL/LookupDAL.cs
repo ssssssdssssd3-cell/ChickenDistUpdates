@@ -9,7 +9,14 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(string tableName, string orderCol)
         {
-            return DbHelper.Query($"SELECT * FROM {tableName} ORDER BY {orderCol}");
+            try
+            {
+                return DbHelper.Query($"SELECT * FROM {tableName} ORDER BY {orderCol}");
+            }
+            catch
+            {
+                return DbHelper.Query($"SELECT * FROM {tableName}");
+            }
         }
 
         public static int Save(string tableName, string idCol, string codeCol, string nameCol, string prefix, int id, string name)
@@ -28,9 +35,28 @@ namespace ChickenDist.DAL
                 int nextId = maxIdVal != null ? Convert.ToInt32(maxIdVal) : 1;
                 string code = $"{prefix}-{nextId:D4}";
 
-                return DbHelper.ExecuteInsert(
-                    $"INSERT INTO {tableName} ({codeCol}, {nameCol}) VALUES (@code, @name)",
-                    DbHelper.P("@code", code), DbHelper.P("@name", name));
+                try
+                {
+                    var colExists = DbHelper.Scalar($"SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('{tableName}') AND name = '{codeCol}'");
+                    if (Convert.ToInt32(colExists) > 0)
+                    {
+                        return DbHelper.ExecuteInsert(
+                            $"INSERT INTO {tableName} ({codeCol}, {nameCol}) VALUES (@code, @name)",
+                            DbHelper.P("@code", code), DbHelper.P("@name", name));
+                    }
+                    else
+                    {
+                        return DbHelper.ExecuteInsert(
+                            $"INSERT INTO {tableName} ({nameCol}) VALUES (@name)",
+                            DbHelper.P("@name", name));
+                    }
+                }
+                catch
+                {
+                    return DbHelper.ExecuteInsert(
+                        $"INSERT INTO {tableName} ({nameCol}) VALUES (@name)",
+                        DbHelper.P("@name", name));
+                }
             }
             else
             {

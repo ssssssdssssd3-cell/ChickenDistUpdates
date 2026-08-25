@@ -158,9 +158,21 @@ namespace ChickenDist.Forms
         {
             dgItems.Rows.Clear();
             DataTable dt = LookupDAL.GetAll(_tableName, _nameCol);
+            if (dt == null) return;
+
+            bool hasCode = dt.Columns.Contains(_codeCol);
+            bool hasId = dt.Columns.Contains(_idCol);
+            bool hasName = dt.Columns.Contains(_nameCol);
+
             foreach (DataRow r in dt.Rows)
             {
-                dgItems.Rows.Add(r[_idCol], r[_codeCol], r[_nameCol]);
+                object idVal = hasId ? r[_idCol] : 0;
+                string codeVal = hasCode && r[_codeCol] != DBNull.Value && !string.IsNullOrWhiteSpace(r[_codeCol].ToString())
+                    ? r[_codeCol].ToString()
+                    : $"{_prefix}{idVal}";
+                string nameVal = hasName ? (r[_nameCol]?.ToString() ?? "") : "";
+
+                dgItems.Rows.Add(idVal, codeVal, nameVal);
             }
         }
 
