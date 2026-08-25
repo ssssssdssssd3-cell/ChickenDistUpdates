@@ -515,10 +515,22 @@ namespace ChickenDist.Core
             SafeMigrate("DecimalExpansion.Safety", @"
             IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
             BEGIN
+                DECLARE @hadDiffQty BIT = 0;
+                IF EXISTS (SELECT 1 FROM sys.computed_columns WHERE object_id = OBJECT_ID('StockAdjustments') AND name = 'DiffQty')
+                BEGIN
+                    ALTER TABLE StockAdjustments DROP COLUMN DiffQty;
+                    SET @hadDiffQty = 1;
+                END
+
                 ALTER TABLE StockAdjustments ALTER COLUMN BookQty DECIMAL(18, 4) NOT NULL;
                 ALTER TABLE StockAdjustments ALTER COLUMN ActualQty DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('StockAdjustments', 'Factor') IS NOT NULL
                     ALTER TABLE StockAdjustments ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+
+                IF @hadDiffQty = 1 OR COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL
+                BEGIN
+                    ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);
+                END
             END
 
             IF OBJECT_ID('ProductStock', 'U') IS NOT NULL
