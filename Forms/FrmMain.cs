@@ -86,10 +86,19 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = Theme.FontBold,
                 Cursor = Cursors.Hand,
-                Margin = new Padding(5, 0, 0, 0)
+                Margin = new Padding(5, 0, 0, 0),
+                Visible = Session.CanAccess("BotManager") || Session.CanAccess("SupportBot")
             };
             btnHelpTop.FlatAppearance.BorderSize = 0;
-            btnHelpTop.Click += (s, e) => new FrmSupportBot().ShowDialog();
+            btnHelpTop.Click += (s, e) =>
+            {
+                if (!Session.CanAccess("BotManager") && !Session.CanAccess("SupportBot"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لهذه الشاشة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                new FrmSupportBot().ShowDialog();
+            };
 
             var btnMobileSync = new Button
             {
@@ -101,10 +110,19 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = Theme.FontBold,
                 Cursor = Cursors.Hand,
-                Margin = new Padding(5, 0, 5, 0)
+                Margin = new Padding(5, 0, 5, 0),
+                Visible = Session.CanAccess("CloudSync")
             };
             btnMobileSync.FlatAppearance.BorderSize = 0;
-            btnMobileSync.Click += (s, e) => NavigateTo(new FrmCloudSync());
+            btnMobileSync.Click += (s, e) =>
+            {
+                if (!Session.CanAccess("CloudSync"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لهذه الشاشة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                NavigateTo(new FrmCloudSync());
+            };
 
             this.lblUserInfo = new Label
             {
@@ -430,17 +448,15 @@ namespace ChickenDist.Forms
             return true;
         }
 
-        private void BuildNavBar(FlowLayoutPanel pnlNavBar)
+        private System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)> GetNavigationGroups()
         {
-            pnlNavBar.Controls.Clear();
-
             var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
             {
                 ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
                     ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
                 }),
 
-                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), AppConfig.IsRestaurant ? new[] {
+                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
@@ -451,35 +467,7 @@ namespace ChickenDist.Forms
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
-                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
-                    ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
-                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
-                    ("📅 تقرير المبيعات اليومية", "RepDailySales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
-                    ("📈 تقرير المبيعات خلال فترة", "RepSalesByPeriod", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPeriod")))),
-                    ("🧾 سجل فواتير المبيعات", "RepDetailedSales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSales")))),
-                    ("📦 تفاصيل سطور وأصناف المبيعات", "RepDetailedSaleItems", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSaleItems")))),
-                    ("📊 مبيعات الأصناف والربحية", "RepSalesByProduct", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByProduct")))),
-                    ("🏢 مبيعات المجموعات والأقسام", "RepSalesByCategory", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByCategory")))),
-                    ("👥 مبيعات العملاء والمسدد", "RepSalesByClient", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByClient")))),
-                    ("👔 مبيعات المستخدمين والكاشير", "RepSalesByUser", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByUser")))),
-                    ("💳 طرق الدفع والتحصيل", "RepSalesByPayment", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPaymentMethod")))),
-                    ("🏷️ الخصومات والتخفيضات", "RepSalesDiscounts", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesDiscounts")))),
-                    ("🔄 مرتجعات المبيعات", "RepDetailedReturns", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedReturns")))),
-                    ("💰 أرباح وهامش المبيعات", "RepSalesProfit", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesProfitability")))),
-                    ("💤 الأصناف الراكدة", "RepStagnantProducts", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "StagnantProducts")))),
-                    ("📊 كل تقارير المبيعات الشاملة", "Reports", (Action)(() => NavigateTo(new FrmReports("Sales")))),
-                } : new[] {
-                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
-                    ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
-                    ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
-                    ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
-                    ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
-                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
-                    ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
-                    ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
-                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
-                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
-                    ("📝 تقسيط مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
+                    ("📝 تقسيط وجدولة مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
                     ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
@@ -516,6 +504,7 @@ namespace ChickenDist.Forms
                     ("🔍 فحص وحل الأكواد المكررة", "Products", (Action)(() => new FrmDuplicateCodesResolver().ShowDialog())),
                     ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
                     ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("📦 جلسات الجرد المخزني", "InventorySessions", (Action)(() => NavigateTo(new FrmInventorySessions()))),
                     ("🎯 تعديل حد طلب الأصناف", "MinStockEdit",     (Action)(() => NavigateTo(new FrmMinStockEdit()))),
                     ("📓 كشكول النواقص والطلبات", "ShortageNotebook", (Action)(() => NavigateTo(new FrmShortageNotebook()))),
                     ("📊 تقرير فروق وعجز الجرد الشامل", "InventoryVarianceReport", (Action)(() => new FrmInventoryVarianceReport().ShowDialog())),
@@ -548,23 +537,23 @@ namespace ChickenDist.Forms
 
                 ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
                     ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
-                    ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
+                    ("📡 بوابة ومبيعات المندوب", "DriverPortal", (Action)(() => NavigateTo(new FrmDriverPortal()))),
                     ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
                     ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
                     ("📋 عهدة المناديب",   "DriverCustody",  (Action)(() => NavigateTo(new FrmDriverCustody()))),
                     ("🏆 أداء المناديب",   "DriverLeaderboard", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
-                    ("📊 تقارير المناديب", "Reports,DriverHandover",         (Action)(() => NavigateTo(new FrmReports("Drivers")))),
+                    ("📊 تقارير المناديب", "RepDrivers",         (Action)(() => NavigateTo(new FrmReports("Drivers")))),
                 }),
 
                 ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
-                    ("📄 إصدار سندات الصرف والتوريد", "CashBox", (Action)(() => NavigateTo(new FrmReceiptVoucher()))),
-                    ("🏛️ الحسابات والمالية اليومية الشاملة", "CashBox", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
-                    ("💰 الخزنة والمصروفات", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
-                    ("💵 النقدية والأرصدة الفعلية المتاحة", "CashBox", (Action)(() => NavigateTo(new FrmActualBalances()))),
+                    ("📄 إصدار سندات الصرف والتوريد", "ReceiptVoucher", (Action)(() => NavigateTo(new FrmReceiptVoucher()))),
+                    ("🏛️ الحسابات والمالية اليومية الشاملة", "DailyAccounts", (Action)(() => NavigateTo(new FrmDailyAccounts()))),
+                    ("💰 الخزنة والمصروفات والوارد", "CashBox", (Action)(() => NavigateTo(new FrmCashBox()))),
+                    ("💵 النقدية والأرصدة الفعلية المتاحة", "ActualBalances", (Action)(() => NavigateTo(new FrmActualBalances()))),
                     ("🏢 سجل وإهلاك الأصول الثابتة", "FixedAssets", (Action)(() => NavigateTo(new FrmFixedAssets()))),
                     ("🤝 حسابات الشركاء وتوزيع الأرباح", "Shareholders", (Action)(() => NavigateTo(new FrmShareholders()))),
-                    ("📊 الموقف المالي للمكان", "Reports", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
-                    ("📈 قائمة الدخل والتقارير المالية", "Reports,Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
+                    ("📊 الموقف المالي للمكان", "FinancialPosition", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
+                    ("📈 قائمة الدخل والتقارير المالية", "Financials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
                     ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
                 }),
 
@@ -583,9 +572,11 @@ namespace ChickenDist.Forms
 
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
                     ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
-                    ("🔑 تفعيل الترخيص (سيريال العميل)", "",        (Action)(() => new FrmActivation("").ShowDialog())),
+                    ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
+                    ("☁️ التزامن السحابي والفرعي", "CloudSync",      (Action)(() => NavigateTo(new FrmCloudSync()))),
+                    ("📚 إدارة الجداول المرجعية", "LookupManager",     (Action)(() => NavigateTo(new FrmLookupManager()))),
+                    ("🔄 تحديث البرنامج",   "Settings",             (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
             };
 
@@ -593,9 +584,17 @@ namespace ChickenDist.Forms
             {
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
                     ("🔧 تذاكر وشاشة الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
-                    ("📋 كرت صيانة جديد",       "Maintenance", (Action)(() => NavigateTo(new FrmMaintenanceCard(0)))),
+                    ("📋 كرت صيانة جديد",       "MaintenanceCard", (Action)(() => NavigateTo(new FrmMaintenanceCard(0)))),
                 }));
             }
+
+            return groups;
+        }
+
+        private void BuildNavBar(FlowLayoutPanel pnlNavBar)
+        {
+            pnlNavBar.Controls.Clear();
+            var groups = GetNavigationGroups();
 
             foreach (var group in groups)
             {
@@ -679,118 +678,7 @@ namespace ChickenDist.Forms
         private void BuildTopNavBar(FlowLayoutPanel pnlHeaderRight)
         {
             pnlHeaderRight.Controls.Clear();
-
-            var groups = new System.Collections.Generic.List<(string icon, string label, Color color, (string text, string screen, Action action)[] items)>
-            {
-                ("🏠", "الرئيسية", Color.FromArgb(55, 65, 81), new[] {
-                    ("🏠 الرئيسية", "", (Action)(() => NavigateTo(new FrmDashboard())))
-                }),
-
-                ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
-                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
-                    ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
-                    ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
-                    ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
-                    ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
-                    ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
-                    ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
-                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
-                    ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
-                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
-                    ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
-                    ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
-                    ("📅 تقرير المبيعات اليومية", "RepDailySales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
-                    ("📈 تقرير المبيعات خلال فترة", "RepSalesByPeriod", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPeriod")))),
-                    ("🧾 سجل فواتير المبيعات", "RepDetailedSales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSales")))),
-                    ("📦 تفاصيل سطور وأصناف المبيعات", "RepDetailedSaleItems", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedSaleItems")))),
-                    ("📊 مبيعات الأصناف والربحية", "RepSalesByProduct", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByProduct")))),
-                    ("🏢 مبيعات المجموعات والأقسام", "RepSalesByCategory", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByCategory")))),
-                    ("👥 مبيعات العملاء والمسدد", "RepSalesByClient", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByClient")))),
-                    ("👔 مبيعات المستخدمين والكاشير", "RepSalesByUser", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByUser")))),
-                    ("💳 طرق الدفع والتحصيل", "RepSalesByPayment", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesByPaymentMethod")))),
-                    ("🏷️ الخصومات والتخفيضات", "RepSalesDiscounts", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesDiscounts")))),
-                    ("🔄 مرتجعات المبيعات", "RepDetailedReturns", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DetailedReturns")))),
-                    ("💰 أرباح وهامش المبيعات", "RepSalesProfit", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "SalesProfitability")))),
-                    ("💤 الأصناف الراكدة", "RepStagnantProducts", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "StagnantProducts")))),
-                    ("📊 كل تقارير المبيعات الشاملة", "Reports", (Action)(() => NavigateTo(new FrmReports("Sales")))),
-                }),
-
-                ("📥", "المشتريات", Color.FromArgb(120, 53, 15), new[] {
-                    ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
-                    ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
-                    ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
-                    ("📊 تقارير المشتريات", "RepPurchases",      (Action)(() => NavigateTo(new FrmReports("Purchases")))),
-                }),
-
-                ("📦", "المخازن", Color.FromArgb(17, 94, 89), new[] {
-                    ("📦 الأصناف",          "Products",          (Action)(() => NavigateTo(new FrmProducts()))),
-                    ("📋 لستة الأصناف",      "PricePoster",       (Action)(() => NavigateTo(new FrmPricePoster()))),
-                    ("🏢 التصنيفات والأقسام", "Categories",        (Action)(() => NavigateTo(new FrmCategories()))),
-                    ("📏 إدارة الوحدات",      "Units",             (Action)(() => NavigateTo(new FrmUnits()))),
-                    ("📥 استيراد الأصناف",   "ImportProducts",    (Action)(() => { if (FrmProducts.PromptImportPassword(this)) NavigateTo(new FrmImportProducts()); })),
-                    ("🏢 المخازن",          "Warehouses",        (Action)(() => NavigateTo(new FrmWarehouses()))),
-                    ("⚖️ جرد وتعديل الأسعار",      "Inventory",         (Action)(() => NavigateTo(new FrmInventory()))),
-                    ("🎯 تعديل حد طلب الأصناف", "MinStockEdit",     (Action)(() => NavigateTo(new FrmMinStockEdit()))),
-                    ("📓 كشكول النواقص والطلبات", "ShortageNotebook", (Action)(() => NavigateTo(new FrmShortageNotebook()))),
-                    ("📊 تقرير فروق وعجز الجرد الشامل", "InventoryVarianceReport", (Action)(() => new FrmInventoryVarianceReport().ShowDialog())),
-                    ("🗑️ الهوالك والتالف",  "Wastage",           (Action)(() => NavigateTo(new FrmWastage()))),
-                    ("🔄 تحويل مخزني",     "WarehouseTransfer", (Action)(() => NavigateTo(new FrmWarehouseTransfer()))),
-                    ("📋 سجل التحويلات",   "WarehouseTransfersList",(Action)(() => NavigateTo(new FrmWarehouseTransfersList()))),
-                    ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
-                    ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
-                    ("🔍 دليل الموديلات والأجهزة", "ModelLookup", (Action)(() => new FrmModelLookup().ShowDialog())),
-                    ("👗 مصفوفة المقاسات والألوان", "ClothingMatrix", (Action)(() => NavigateTo(new FrmClothingMatrix()))),
-                    ("📊 تقارير المخازن",   "RepStores",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
-                }),
-
-                ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
-                    ("👥 إدارة العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
-                    ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
-                    ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
-                    ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
-                    ("📊 تقارير العملاء", "RepClients",   (Action)(() => NavigateTo(new FrmReports("Clients")))),
-                }),
-
-                                ("🤝", "الموردين", Color.FromArgb(194, 120, 3), new[] {
-                    ("🤝 إدارة الموردين",        "Suppliers",          (Action)(() => NavigateTo(new FrmSuppliers()))),
-                    ("📊 كشف حساب مورد",     "SupplierStatement",  (Action)(() => OpenSupplierStatementSelector())),
-                    ("💸 صرف نقدي لمورد",     "SupplierPayment",    (Action)(() => OpenSupplierPaymentSelector())),
-                    ("⚖️ تسوية أرصدة الموردين", "SupplierAdjustment", (Action)(() => OpenSupplierAdjustmentSelector())),
-                    ("📊 تقارير الموردين",      "RepSuppliers",  (Action)(() => NavigateTo(new FrmReports("Suppliers")))),
-                }),
-
-                ("🚚", "المناديب", Color.FromArgb(109, 40, 217), new[] {
-                    ("🚚 حمولة مندوب",      "DriverHandover", (Action)(() => NavigateTo(new FrmDriverHandover()))),
-                    ("📡 بوابة المندوب",    "DriverSales",    (Action)(() => NavigateTo(new FrmDriverPortal()))),
-                    ("☁️ استيراد من السحاب", "ImportPreview",  (Action)(() => OpenCloudImportDialog())),
-                    ("🖥️ مراقبة المناديب", "DriversMonitor", (Action)(() => NavigateTo(new FrmDriversMonitor()))),
-                    ("📋 عهدة المناديب",   "DriverCustody",  (Action)(() => NavigateTo(new FrmDriverCustody()))),
-                    ("🏆 أداء المناديب",   "DriverLeaderboard", (Action)(() => NavigateTo(new FrmDriverLeaderboard()))),
-                    ("📊 تقارير المناديب", "RepDrivers",         (Action)(() => NavigateTo(new FrmReports("Drivers")))),
-                }),
-
-                ("💰", "المالية", Color.FromArgb(159, 18, 57), new[] {
-                    ("💰 الخزنة",       "CashBox",      (Action)(() => NavigateTo(new FrmCashBox()))),
-                    ("📊 الموقف المالي للمكان", "FinancialPosition", (Action)(() => NavigateTo(new FrmFinancialPosition()))),
-                    ("📈 قائمة الدخل والتقارير المالية", "RepFinancials", (Action)(() => NavigateTo(new FrmReports("Financials")))),
-                    ("📑 تقفيل يومية", "DailyClosing", (Action)(() => NavigateTo(new FrmDailyClosing()))),
-                }),
-
-                ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
-                    ("👔 الموظفين",          "Employees",            (Action)(() => NavigateTo(new FrmEmployees()))),
-                    ("💰 حسابات الموظفين",  "EmployeeTransactions", (Action)(() => NavigateTo(new FrmEmployeeTransactions()))),
-                    ("⚙️ الإعدادات",        "Settings",             (Action)(() => new FrmSettings().ShowDialog())),
-                    ("🤖 إدارة بوت الواتساب", "BotManager",           (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("🔄 تحديث البرنامج",   "",                     (Action)(() => UpdateManager.CheckForUpdates(true))),
-                }),
-            };
-
-            if (AppConfig.BusinessType == "Mobiles")
-            {
-                groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
-                    ("🔧 تذاكر الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
-                }));
-            }
+            var groups = GetNavigationGroups();
 
             foreach (var group in groups)
             {
@@ -1929,11 +1817,17 @@ namespace ChickenDist.Forms
                 BackColor = Theme.Primary,
                 ForeColor = Color.White,
                 Cursor = Cursors.Hand,
-                Location = new Point(pnlShowcase.Width - 240, 12)
+                Location = new Point(pnlShowcase.Width - 240, 12),
+                Visible = Session.CanAccess("QuickDetails") || Session.CanAccess("Reports") || Session.CanAccess("DashSales") || Session.CanAccess("FinancialPosition")
             };
             btnQuickDetails.FlatAppearance.BorderSize = 0;
             btnQuickDetails.Click += (s, e) =>
             {
+                if (!Session.CanAccess("QuickDetails") && !Session.CanAccess("Reports") && !Session.CanAccess("DashSales") && !Session.CanAccess("FinancialPosition"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لهذه الشاشة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 var frmDetails = new FrmQuickDetails((frm) => NavigateMain(frm));
                 frmDetails.ShowDialog(this);
             };

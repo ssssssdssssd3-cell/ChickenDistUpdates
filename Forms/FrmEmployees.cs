@@ -407,6 +407,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("InactiveClients", "💤 تنشيط العملاء الراكدين", 0),
             new ScreenInfo("Vehicles", "🚚 إدارة المركبات والسيارات", 0),
             new ScreenInfo("DashSales", "🏠 لوحة التحكم: مبيعات اليوم", 0),
+            new ScreenInfo("QuickDetails", "📊 لوحة التحكم: التفاصيل والإحصائيات السريعة", 0),
 
             // ── Tab 1: Purchases & Suppliers (المشتريات والموردين) ─────────────────
             new ScreenInfo("Purchases", "📥 شاشة المشتريات الرئيسية (فاتورة شراء)", 1),
@@ -425,6 +426,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("ImportProducts", "📊 استيراد الأصناف من إكسيل", 2),
             new ScreenInfo("Warehouses", "🏭 إدارة المخازن والمستودعات", 2),
             new ScreenInfo("Inventory", "📦 جرد وتعديل رصيد المخزن", 2),
+            new ScreenInfo("InventorySessions", "📦 جلسات الجرد المخزني المفتوحة والسابقة", 2),
             new ScreenInfo("MinStockEdit", "🎯 تعديل حد طلب الأصناف والنواقص", 2),
             new ScreenInfo("ShortageNotebook", "📓 كشكول النواقص والطلبات الخاصة", 2),
             new ScreenInfo("InventoryVarianceReport", "📊 تقرير فروق وعجز الجرد الشامل", 2),
@@ -519,6 +521,7 @@ namespace ChickenDist.Forms
             new ScreenInfo("EmployeePayroll", "📊 مسيرات الرواتب والبدلات", 5),
             new ScreenInfo("Settings", "⚙️ إعدادات النظام العامة", 5),
             new ScreenInfo("BotManager", "🤖 إدارة بوت الواتساب التلقائي", 5),
+            new ScreenInfo("SupportBot", "🤖 بوت الدعم الفني الذكي", 5),
             new ScreenInfo("CloudSync", "☁️ التزامن السحابي والفرعي", 5),
             new ScreenInfo("LookupManager", "📚 إدارة الجداول المرجعية", 5),
             new ScreenInfo("EditInvoiceDate", "🔒 تغيير تاريخ فاتورة المبيعات/المشتريات", 5)

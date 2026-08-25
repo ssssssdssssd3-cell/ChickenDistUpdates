@@ -180,6 +180,13 @@ namespace ChickenDist.Core
             if (screen == "DriverPortal" && _perms.ContainsKey("DriverSales") && _perms["DriverSales"].CanAccess) return true;
             if (screen == "FinancialPosition" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
             if (screen == "RepFinancials" && _perms.ContainsKey("Financials") && _perms["Financials"].CanAccess) return true;
+            if (screen == "Financials" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
+            if (screen == "ScheduleClientDebt" && _perms.ContainsKey("Installments") && _perms["Installments"].CanAccess) return true;
+            if (screen == "DuplicateCodesResolver" && _perms.ContainsKey("Products") && _perms["Products"].CanAccess) return true;
+            if (screen == "MaintenanceCard" && _perms.ContainsKey("Maintenance") && _perms["Maintenance"].CanAccess) return true;
+            if (screen == "QuickDetails" && (_perms.ContainsKey("DashSales") && _perms["DashSales"].CanAccess || _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess)) return true;
+            if (screen == "SupportBot" && _perms.ContainsKey("BotManager") && _perms["BotManager"].CanAccess) return true;
+            if (screen == "InventorySessions" && _perms.ContainsKey("Inventory") && _perms["Inventory"].CanAccess) return true;
 
             // Fallback for detailed reports: If a specific report key (starting with Rep) is not configured in _perms, fall back to "Reports"
             if (screen.StartsWith("Rep") || screen.StartsWith("Reports_"))

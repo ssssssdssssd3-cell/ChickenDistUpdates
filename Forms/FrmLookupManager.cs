@@ -22,6 +22,10 @@ namespace ChickenDist.Forms
         private Button btnNew, btnSave, btnDelete;
         private int _selectedID = 0;
 
+        public FrmLookupManager() : this("Categories", "CategoryID", "CategoryCode", "CategoryName", "CAT-", "الأقسام والتصنيفات")
+        {
+        }
+
         public FrmLookupManager(string tableName, string idCol, string codeCol, string nameCol, string prefix, string title)
         {
             _tableName = tableName;
