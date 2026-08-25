@@ -334,10 +334,20 @@ namespace ChickenDist.Core
             return _perms.ContainsKey(screen) && _perms[screen].CanViewBalance;
         }
 
-        public static bool CanChangeSafe(string screen = "Sales")
+        public static bool CanChangeSafe(string screen = "ReceiptVoucher")
         {
             if (IsAdmin) return true;
-            return _perms.ContainsKey(screen) && _perms[screen].CanChangeSafe;
+
+            if (!string.IsNullOrEmpty(screen) && _perms.ContainsKey(screen))
+                return _perms[screen].CanChangeSafe;
+
+            if (_perms.ContainsKey("ReceiptVoucher")) return _perms["ReceiptVoucher"].CanChangeSafe;
+            if (_perms.ContainsKey("CashBox")) return _perms["CashBox"].CanChangeSafe;
+            if (_perms.ContainsKey("DailyAccounts")) return _perms["DailyAccounts"].CanChangeSafe;
+            if (_perms.ContainsKey("POS")) return _perms["POS"].CanChangeSafe;
+            if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanChangeSafe;
+
+            return false;
         }
 
         public static bool CanOrderColumns(string screen)
@@ -649,7 +659,7 @@ namespace ChickenDist.Core
         public bool CanOrderColumns { get; set; }
         public bool CanViewDetails { get; set; } = true;
         public bool CanViewBalance { get; set; } = true;
-        public bool CanChangeSafe { get; set; } = true;
+        public bool CanChangeSafe { get; set; } = false;
         public bool CanViewSalesTotals { get; set; } = true;
         public bool CanViewQuickItems { get; set; } = true;
     }

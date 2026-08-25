@@ -243,7 +243,9 @@ namespace ChickenDist.Forms
                 cboSafeFilter.Items.Clear();
                 DataTable safes = AccountDAL.GetAllowedSafeAccounts();
 
-                if (Session.IsAdmin || (Session.CanChangeSafe("CashBox") && safes.Rows.Count > 1))
+                bool canSwitch = Session.IsAdmin || (Session.CanChangeSafe("ReceiptVoucher") && safes.Rows.Count > 1);
+
+                if (canSwitch)
                 {
                     cboSafeFilter.Items.Add(new ComboItem(0, "-- كل الحسابات --"));
                 }
@@ -269,7 +271,7 @@ namespace ChickenDist.Forms
                 }
                 if (cboSafeFilter.Items.Count > 0) cboSafeFilter.SelectedIndex = selectIdx;
 
-                if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
+                if (!canSwitch)
                 {
                     cboSafeFilter.Enabled = false;
                 }
@@ -291,8 +293,9 @@ namespace ChickenDist.Forms
 
                 if (!Session.IsAdmin)
                 {
+                    bool canSwitch = Session.CanChangeSafe("ReceiptVoucher");
                     var allowed = Session.GetAllowedSafeIDSet();
-                    if (accId == null || accId == 0 || (allowed != null && !allowed.Contains(accId.Value)))
+                    if (!canSwitch || accId == null || accId == 0 || (allowed != null && !allowed.Contains(accId.Value)))
                     {
                         accId = Session.GetPrimaryAllowedSafeID();
                     }
@@ -465,7 +468,7 @@ namespace ChickenDist.Forms
                 }
                 if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = selectIdx;
 
-                if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("ReceiptVoucher") || safes.Rows.Count <= 1))
                 {
                     cboSafe.Enabled = false;
                 }
