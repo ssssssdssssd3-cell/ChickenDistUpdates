@@ -12,7 +12,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "2.0.583";
+        public const string CurrentVersion = "2.0.584";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -326,21 +326,45 @@ namespace ChickenDist.Core
             try
             {
                 MessageBox.Show(
-                    "✅ تم تحميل التحديث بنجاح!\n\n" +
-                    $"📝 تم حفظ ملف البرنامج الجديد باسم {versionedExeName} داخل مجلد (Updates).\n\n" +
-                    "سيتم الآن تحديد الملف الجديد تلقائياً وإغلاق البرنامج الحالي.",
+                    $"✅ تم تحميل التحديث (v{remoteVersion}) بنجاح!\n\n" +
+                    "سيتم الآن تحديث ملفات البرنامج وإعادة التشغيل تلقائياً.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 
-                Process.Start("explorer.exe", $"/select,\"{newExePath}\"");
-                Application.Exit();
+                string batPath = Path.Combine(currentDir, "apply_update.bat");
+                string bat = $@"@echo off
+chcp 65001 > nul
+timeout /t 1 /nobreak > nul
+:waitloop
+tasklist /fi ""pid eq {Process.GetCurrentProcess().Id}"" | find /i ""{Process.GetCurrentProcess().Id}"" > nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak > nul
+    goto waitloop
+)
+copy /y ""{newExePath}"" ""{currentExePath}"" > nul
+start """" ""{currentExePath}""
+del ""%~f0""
+";
+                File.WriteAllText(batPath, bat, Encoding.UTF8);
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"{batPath}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                Process.Start(psi);
+                Environment.Exit(0);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("فشل فتح مجلد التحديثات:\n" + ex.Message,
-                    "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                AppLogger.Error("Auto apply update failed", ex, "UpdateManager");
+                try { Process.Start("explorer.exe", $"/select,\"{newExePath}\""); } catch { }
+                Application.Exit();
             }
         }
     }

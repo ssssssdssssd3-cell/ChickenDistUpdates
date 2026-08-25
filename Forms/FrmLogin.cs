@@ -14,6 +14,8 @@ namespace ChickenDist.Forms
         private Label lblError;
         private ProgressBar pbUpdate;
         private Label lblUpdateStatus;
+        private bool _hasRequiredUpdate = false;
+        private string _latestRemoteVer = "";
 
         public FrmLogin()
         {
@@ -260,9 +262,40 @@ namespace ChickenDist.Forms
                         var remote = new Version(remoteVer);
                         if (remote > local)
                         {
-                            lblUpdateStatus.Text = $"🔄  تحديث جديد متاح: v{remoteVer}  (اضغط هنا للتحديث الفوري)";
+                            _hasRequiredUpdate = true;
+                            _latestRemoteVer = remoteVer;
+
+                            // قفل تسجيل الدخول تماماً لمنع الدخول بنسخة قديمة
+                            txtUser.Enabled = false;
+                            txtPass.Enabled = false;
+                            btnLogin.Enabled = false;
+                            btnLogin.BackColor = Color.FromArgb(75, 85, 99);
+                            btnLogin.Text = "⛔ يلزم التحديث للمتابعة";
+
+                            lblError.Text = $"⚠️ يتوفر إصدار جديد (v{remoteVer}) - يجب التحديث أولاً";
+                            lblError.ForeColor = Color.FromArgb(239, 68, 68);
+
+                            lblUpdateStatus.Text = $"🚀 تحديث إجباري متاح: v{remoteVer} (اضغط هنا للتحديث فوراً)";
                             lblUpdateStatus.ForeColor = Color.FromArgb(255, 220, 80);
-                            pbUpdate.ForeColor = Color.FromArgb(255, 200, 50);
+                            pbUpdate.ForeColor = Color.FromArgb(239, 68, 68);
+
+                            // تنبيه المستخدم مباشرة
+                            var res = MessageBox.Show(
+                                $"🚀 يتوفر إصدار جديد ومحدث للبرنامج (v{remoteVer})!\n\n" +
+                                $"• الإصدار الحالي لديك: [ v{UpdateManager.CurrentVersion} ]\n" +
+                                $"• الإصدار الأخير المتاح: [ v{remoteVer} ]\n\n" +
+                                "تم قفل تسجيل الدخول لضمان تطابق وتكامل قاعدة البيانات والسيرفر.\n\n" +
+                                "هل تريد تحميل وتثبيت التحديث وإعادة التشغيل تلقائياً الآن؟",
+                                "⚠️ تحديث إجباري مطلوب",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Warning,
+                                MessageBoxDefaultButton.Button1,
+                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                            if (res == DialogResult.Yes)
+                            {
+                                UpdateManager.CheckForUpdates(showNoUpdateMsg: false);
+                            }
                             return;
                         }
                     }
@@ -282,6 +315,19 @@ namespace ChickenDist.Forms
 
         private void BtnLogin_Click(object sender, EventArgs e)
         {
+            if (_hasRequiredUpdate)
+            {
+                MessageBox.Show(
+                    $"⛔ لا يمكن تسجيل الدخول بإصدار قديم (v{UpdateManager.CurrentVersion})!\n\n" +
+                    $"يجب تحديث البرنامج إلى الإصدار الأخير (v{_latestRemoteVer}) أولاً للمتابعة.",
+                    "تحديث إجباري مطلوب",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                return;
+            }
+
             if (!btnLogin.Enabled) return;
 
             if (string.IsNullOrWhiteSpace(txtUser.Text) || string.IsNullOrWhiteSpace(txtPass.Text))
