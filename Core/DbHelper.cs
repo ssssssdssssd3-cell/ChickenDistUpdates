@@ -738,6 +738,20 @@ namespace ChickenDist.Core
                 ALTER TABLE Sales ADD IsPosted BIT NOT NULL DEFAULT 1;
             END");
 
+            SafeMigrate("Sales.CustomClientName.Column", @"
+            IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'CustomClientName') IS NULL
+            BEGIN
+                ALTER TABLE Sales ADD CustomClientName NVARCHAR(150) NULL;
+            END
+            IF OBJECT_ID('DraftSales', 'U') IS NOT NULL AND COL_LENGTH('DraftSales', 'CustomClientName') IS NULL
+            BEGIN
+                ALTER TABLE DraftSales ADD CustomClientName NVARCHAR(150) NULL;
+            END
+            IF OBJECT_ID('PriceQuotes', 'U') IS NOT NULL AND COL_LENGTH('PriceQuotes', 'CustomClientName') IS NULL
+            BEGIN
+                ALTER TABLE PriceQuotes ADD CustomClientName NVARCHAR(150) NULL;
+            END");
+
             SafeMigrate("Sales.VisaAndPaymentColumns.Early", @"
             IF OBJECT_ID('Sales', 'U') IS NOT NULL
             BEGIN

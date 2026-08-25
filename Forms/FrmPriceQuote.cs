@@ -907,10 +907,14 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var res = MessageBox.Show("هل تريد طباعة إذن التحضير على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع الطباعة", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-            if (res == DialogResult.Cancel) return;
-
-            bool isReceipt = (res == DialogResult.Yes);
+            bool isReceipt = false;
+            bool isA5 = false;
+            using (var dlg = new FrmPrintChoiceDialog("هل تريد طباعة إذن التحضير؟ يرجى اختيار نوع وحجم الطباعة المطلوب:", allowPrep: false))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK || string.IsNullOrEmpty(dlg.SelectedChoice)) return;
+                isReceipt = (dlg.SelectedChoice == "Receipt");
+                isA5 = (dlg.SelectedChoice == "A5");
+            }
 
             var pd = new PrintDocument();
             if (isReceipt)
@@ -918,6 +922,12 @@ namespace ChickenDist.Forms
                 pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
                 pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+            }
+            else if (isA5)
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
+                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else
             {
@@ -1177,10 +1187,21 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var res = MessageBox.Show("هل تريد طباعة عرض الأسعار كفاتورة بيع تقديرية على طابعة ريسيت (80mm)؟\nاضغط (Yes) للـ Receipt أو (No) للـ A4/A5.", "اختيار نوع الطباعة", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-            if (res == DialogResult.Cancel) return;
+            bool isReceipt = false;
+            bool isA5 = false;
+            using (var dlg = new FrmPrintChoiceDialog("هل تريد طباعة بيان التسعير الآن؟ يرجى اختيار نوع وحجم الطباعة المطلوب:", allowPrep: true))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK || string.IsNullOrEmpty(dlg.SelectedChoice)) return;
 
-            bool isReceipt = (res == DialogResult.Yes);
+                if (dlg.SelectedChoice == "Prep")
+                {
+                    PrintPreparationSlip();
+                    return;
+                }
+
+                isReceipt = (dlg.SelectedChoice == "Receipt");
+                isA5 = (dlg.SelectedChoice == "A5");
+            }
 
             var pd = new PrintDocument();
             if (isReceipt)
@@ -1188,6 +1209,12 @@ namespace ChickenDist.Forms
                 pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
                 pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+            }
+            else if (isA5)
+            {
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
+                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else
             {

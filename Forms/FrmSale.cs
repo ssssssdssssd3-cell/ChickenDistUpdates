@@ -4184,10 +4184,23 @@ namespace ChickenDist.Forms
 			int saleType = _invoiceType == "Credit" ? 0 : _invoiceType == "DriverLoad" ? 1 : _invoiceType == "Installment" ? 3 : _invoiceType == "Visa" ? 4 : _invoiceType == "Mixed" ? 5 : 2;
 			int? clientID = null;
 			int? driverID = null;
+			string customClientName = null;
+
 			if (_invoiceType == "Credit" || _invoiceType == "Cash" || _invoiceType == "Installment" || _invoiceType == "Visa" || _invoiceType == "Mixed")
 			{
-				if (!(cboClient.SelectedItem is ComboItem comboItem) || comboItem.ID == 0)
+				if (cboClient.SelectedItem is ComboItem comboItem && comboItem.ID > 0)
 				{
+					clientID = comboItem.ID;
+					customClientName = comboItem.Text;
+				}
+				else
+				{
+					string cText = cboClient.Text.Trim();
+					if (!string.IsNullOrEmpty(cText) && !cText.StartsWith("--") && !cText.Contains("اختر"))
+					{
+						customClientName = cText;
+					}
+
 					if (_invoiceType == "Cash" || _invoiceType == "Visa" || _invoiceType == "Mixed")
 					{
 						clientID = null;
@@ -4197,10 +4210,6 @@ namespace ChickenDist.Forms
 						MessageBox.Show("اختر العميل");
 						return;
 					}
-				}
-				else
-				{
-					clientID = comboItem.ID;
 				}
 				if (cboDriver.SelectedItem is ComboItem comboItem2 && comboItem2.ID > 0)
 					driverID = comboItem2.ID;
@@ -4215,6 +4224,62 @@ namespace ChickenDist.Forms
 				driverID = comboItem3.ID;
 			}
 
+			// إذا كانت الفاتورة معلقة ولم يُكتب اسم العميل، نطلب من المستخدم إدخال اسم العميل
+			if (isDraft && clientID == null && string.IsNullOrEmpty(customClientName))
+			{
+				using (var inputForm = new Form())
+				{
+					inputForm.Text = "📝 اسم العميل للفاتورة المعلقة";
+					inputForm.Size = new Size(440, 200);
+					inputForm.StartPosition = FormStartPosition.CenterParent;
+					inputForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+					inputForm.MaximizeBox = false; inputForm.MinimizeBox = false;
+					inputForm.RightToLeft = RightToLeft.Yes;
+					inputForm.RightToLeftLayout = true;
+					inputForm.BackColor = Theme.BgCard;
+
+					var lblPrompt = new Label
+					{
+						Text = "يرجى كتابة اسم العميل لتمييز الفاتورة المعلقة وسهولة استدعائها:",
+						Location = new Point(15, 15),
+						Size = new Size(395, 40),
+						Font = Theme.FontBold,
+						ForeColor = Theme.TextMain
+					};
+
+					var txtCust = new TextBox
+					{
+						Location = new Point(15, 60),
+						Size = new Size(395, 28),
+						Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+						BackColor = Theme.BgInput,
+						ForeColor = Theme.TextMain,
+						BorderStyle = BorderStyle.FixedSingle
+					};
+
+					var btnOk = Theme.MakeButton("✅ متابعة التعليق", Theme.Success);
+					btnOk.Location = new Point(230, 105);
+					btnOk.Size = new Size(180, 36);
+					btnOk.Click += (so, eo) => inputForm.DialogResult = DialogResult.OK;
+
+					var btnSkip = Theme.MakeButton("تخطي بدون اسم", Color.FromArgb(90, 90, 100));
+					btnSkip.Location = new Point(50, 105);
+					btnSkip.Size = new Size(160, 36);
+					btnSkip.Click += (so, eo) => inputForm.DialogResult = DialogResult.Ignore;
+
+					inputForm.Controls.AddRange(new Control[] { lblPrompt, txtCust, btnOk, btnSkip });
+					inputForm.AcceptButton = btnOk;
+
+					var dr = inputForm.ShowDialog(this);
+					if (dr == DialogResult.Cancel) return;
+					if (!string.IsNullOrWhiteSpace(txtCust.Text))
+					{
+						customClientName = txtCust.Text.Trim();
+						cboClient.Text = customClientName;
+					}
+				}
+			}
+
 			decimal gross = 0m;
 			foreach (SaleItemDTO item2 in _items) gross += item2.TotalPrice;
 
@@ -4222,7 +4287,8 @@ namespace ChickenDist.Forms
 			decimal discountPct = 0m;
 			if (txtInvoiceDiscount != null && decimal.TryParse(txtInvoiceDiscount.Text, out decimal discount) && discount > 0)
 			{
-				if (cboInvoiceDiscountType != null && cboInvoiceDiscountType.SelectedIndex == 0) // %
+				bool isPct = cboInvoiceDiscountType != null && (cboInvoiceDiscountType.SelectedIndex == 1 || cboInvoiceDiscountType.Text.Contains("%"));
+				if (isPct) // %
 				{
 					discountPct = discount;
 					discountAmount = Math.Round(gross * (discount / 100m), 2);
@@ -4366,14 +4432,12 @@ namespace ChickenDist.Forms
 						cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
 						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 						visaAccountID: visaAccountID, 
-						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)));
+						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
+						customClientName: customClientName);
 					if (updated)
 					{
 						_isDirty = false;
-						DialogResult pr = MessageBox.Show(
-							$"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!\n\nهل تريد طباعة الفاتورة المعدّلة؟",
-							"تعديل ناجح", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-						if (pr == DialogResult.Yes) new FrmPrintSale(_editSaleID, showPreview: false);
+						FrmPrintChoiceDialog.PromptAndPrintSale(this, _editSaleID, $"✅ تم تعديل الفاتورة رقم [{_editSaleID}] بنجاح!");
 
 						try
 						{
@@ -4456,7 +4520,8 @@ namespace ChickenDist.Forms
 					cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
 					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 					visaAccountID: visaAccountID, 
-					visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)));
+					visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
+					customClientName: customClientName);
 				if (num3 > 0)
 				{
 					_lastSaleID = num3;
@@ -4486,10 +4551,7 @@ namespace ChickenDist.Forms
 						_activeDraftID = 0;
 						_activeDraftKey = null;
 
-						DialogResult printResult = MessageBox.Show(
-							$"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!\n\nهل تريد طباعة الفاتورة الآن؟",
-							"نجاح الحفظ والطباعة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-						if (printResult == DialogResult.Yes) new FrmPrintSale(num3, showPreview: false);
+						FrmPrintChoiceDialog.PromptAndPrintSale(this, num3, $"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!");
 
 						try
 						{

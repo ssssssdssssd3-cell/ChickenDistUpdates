@@ -2521,13 +2521,12 @@ namespace ChickenDist.Forms
             {
                 if (askFirst)
                 {
-                    var ans = MessageBox.Show("هل تريد طباعة الإيصال؟", "طباعة",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1,
-                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                    if (ans != DialogResult.Yes) return;
+                    FrmPrintChoiceDialog.PromptAndPrintSale(this, saleID);
                 }
-                // طباعة مباشرة بدون معاينة
-                new FrmPrintSale(saleID, "Receipt", false);
+                else
+                {
+                    new FrmPrintSale(saleID, "Receipt", false);
+                }
             }
             catch (Exception ex) { AppLogger.Error("FrmPOS.PrintReceipt", ex); }
         }

@@ -79,14 +79,15 @@ namespace ChickenDist.DAL
 
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
-                         ISNULL(c.ClientName,N'---') AS ClientName,
+                         COALESCE(NULLIF(s.CustomClientName, N''), c.ClientName, N'عميل نقدي') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
-                         (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit
+                         (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit,
+                         s.CustomClientName
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -156,7 +157,7 @@ namespace ChickenDist.DAL
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
             int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
-            int? visaAccountID = null, decimal? visaPaid = null)
+            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null)
         {
             int? activeShiftID = ShiftDAL.GetActiveShiftID();
             if (!activeShiftID.HasValue && !isDraft)
@@ -176,7 +177,7 @@ namespace ChickenDist.DAL
                 decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
-                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,VisaPaid,VisaAccountID,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@vp,@vaid,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid)",
+                    "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,VisaPaid,VisaAccountID,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID,CustomClientName) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@vp,@vaid,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid,@custName)",
                     DbHelper.P("@code", code), DbHelper.P("@dt", DateTime.Now), DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                     DbHelper.P("@did", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
@@ -189,7 +190,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                     DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
-                    DbHelper.P("@sid", activeShiftID.HasValue ? (object)activeShiftID.Value : DBNull.Value));
+                    DbHelper.P("@sid", activeShiftID.HasValue ? (object)activeShiftID.Value : DBNull.Value),
+                    DbHelper.P("@custName", string.IsNullOrWhiteSpace(customClientName) ? DBNull.Value : (object)customClientName.Trim()));
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
@@ -524,11 +526,12 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
-                         ISNULL(c.ClientName,N'---') AS ClientName,
+                         COALESCE(NULLIF(s.CustomClientName, N''), c.ClientName, N'عميل نقدي') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount, s.Notes, s.ClientID, s.DriverID,
                          COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
-                         COALESCE(s.DiscountPct, 0) AS DiscountPct
+                         COALESCE(s.DiscountPct, 0) AS DiscountPct,
+                         s.CustomClientName
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
@@ -748,7 +751,7 @@ namespace ChickenDist.DAL
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
             int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
-            int? visaAccountID = null, decimal? visaPaid = null)
+            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null)
         {
             bool success = false;
 
@@ -858,7 +861,7 @@ namespace ChickenDist.DAL
                       SET SaleType=@typ, ClientID=@cid, DriverID=@did, TotalAmount=@tot, Notes=@n, 
                           DiscountAmount=@discAmt, DiscountPct=@discPct, IsPosted=@ip, WarehouseID=@wid, PriceTier=@pt,
                           CashPaid=@cp, VisaPaid=@vp, VisaAccountID=@vaid, CratesOut=@co, CratesIn=@ci, LastModifiedDate=GETDATE(), ShippingCharge=@shipping,
-                          OrderType=@ot, TableNumber=@tn
+                          OrderType=@ot, TableNumber=@tn, CustomClientName=@custName
                       WHERE SaleID=@id",
                     DbHelper.P("@typ", typeStr),
                     DbHelper.P("@cid", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
@@ -878,6 +881,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@shipping", shippingCharge),
                     DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                     DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
+                    DbHelper.P("@custName", string.IsNullOrWhiteSpace(customClientName) ? DBNull.Value : (object)customClientName.Trim()),
                     DbHelper.P("@id", saleID));
 
                 // 7. إدخال البنود الجديدة

@@ -101,6 +101,12 @@ namespace ChickenDist.Core
             set => Set("DefaultInvoiceFormat", value);
         }
 
+        public static string DefaultReportFormat
+        {
+            get => Get("DefaultReportFormat", "A4");
+            set => Set("DefaultReportFormat", value);
+        }
+
         public static string ReceiptTemplate
         {
             get => Get("ReceiptTemplate", "Standard");

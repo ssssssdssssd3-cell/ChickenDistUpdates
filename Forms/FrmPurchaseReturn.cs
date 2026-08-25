@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
                 Height = 85,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(10, 8, 10, 8),
                 WrapContents = true
@@ -247,7 +247,7 @@ namespace ChickenDist.Forms
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
                 Height = 42,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(5, 5, 5, 5),
                 Visible = false
@@ -468,12 +468,16 @@ namespace ChickenDist.Forms
             if (cboAllProducts.Items.Count > 0) cboAllProducts.SelectedIndex = 0;
             cboAllProducts.SelectedIndexChanged += (s, e) =>
             {
-                if (cboAllProducts.Focused && cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
+                if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
                     txtGenPrice.Text = ci.Extra.ToString("N2");
                     decimal.TryParse(txtGenQty.Text, out decimal q);
                     if (q <= 0) q = 1m;
                     AddGeneralProductByID(ci.ID, q, ci.Extra);
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        cboAllProducts.SelectedIndex = 0;
+                    }));
                 }
             };
         }
@@ -633,15 +637,20 @@ namespace ChickenDist.Forms
 
         private void OpenQuickSearch()
         {
+            int? whId = null;
+            if (cboWarehouse.SelectedItem is ComboItem w && w.ID > 0) whId = w.ID;
+
             string lastSearchText = "";
             while (true)
             {
-                using (var dlg = new FrmProductSearch(initialSearchText: lastSearchText))
+                using (var dlg = new FrmProductSearch(whId, isPurchaseMode: true, defaultShowZeroStock: true, initialSearchText: lastSearchText))
                 {
                     if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
                     {
                         lastSearchText = dlg.SearchText;
-                        AddGeneralProductByID(dlg.SelectedProductID);
+                        decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
+                        decimal price = dlg.SelectedPurchasePrice > 0 ? dlg.SelectedPurchasePrice : dlg.SelectedPrice;
+                        AddGeneralProductByID(dlg.SelectedProductID, qty, price > 0 ? price : (decimal?)null);
                         continue;
                     }
                     else

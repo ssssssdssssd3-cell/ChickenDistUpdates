@@ -21,6 +21,7 @@ namespace ChickenDist.Forms
         private ComboBox cboA4Printer;
         private ComboBox cboBarcodePrinter;
         private ComboBox cboInvoiceFormat;
+        private ComboBox cboReportFormat;
         private ComboBox cboReceiptTemplate;
         private ComboBox cboA4Template;
         private ComboBox cboBarcodeTemplate;
@@ -317,6 +318,27 @@ namespace ChickenDist.Forms
             });
             cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : (AppConfig.DefaultInvoiceFormat == "A5" ? 2 : 1);
             this.Controls.Add(cboInvoiceFormat);
+            y += 40;
+
+            // ── الحجم الافتراضي لطباعة التقارير ───────────────────
+            AddLabel("حجم طباعة التقارير الافتراضي (حتى لو الفواتير A5):", 20, ref y, 10);
+            cboReportFormat = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboReportFormat.Items.AddRange(new object[]
+            {
+                "ورق A4 كامل (A4 Sheet - الافتراضي والموصى به)",
+                "ورق A5 نصف صفحة (A5 Sheet)",
+                "ريسيت حراري (Receipt 80mm)"
+            });
+            cboReportFormat.SelectedIndex = AppConfig.DefaultReportFormat == "A5" ? 1 : (AppConfig.DefaultReportFormat == "Receipt" ? 2 : 0);
+            this.Controls.Add(cboReportFormat);
             y += 40;
 
             // ── قالب طباعة الريسيت ───────────────────
@@ -1233,6 +1255,7 @@ namespace ChickenDist.Forms
                                              : cboBarcodeStickerSize.SelectedIndex == 1 ? "38x26"
                                              : "50x30";
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : (cboInvoiceFormat.SelectedIndex == 2 ? "A5" : "A4");
+                AppConfig.DefaultReportFormat = cboReportFormat.SelectedIndex == 1 ? "A5" : (cboReportFormat.SelectedIndex == 2 ? "Receipt" : "A4");
 
                 // Save Templates Settings
                 AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
