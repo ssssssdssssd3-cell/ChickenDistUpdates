@@ -29,6 +29,8 @@ namespace ChickenDist.Forms
 		private Button btnCopy;
 		private Button btnNewSale;
 
+		private Label lblTotalBeforeDiscountSummary;
+		private Label lblDiscountSummary;
 		private Label lblTotalSummary;
 		private Label lblReturnSummary;
 		private Label lblNetSummary;
@@ -39,6 +41,7 @@ namespace ChickenDist.Forms
 		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
 		private ComboBox cboProductFilter;
+		private ComboBox cboUserFilter;
 		private DataTable _allSalesDt;
 
 		public FrmSalesList()
@@ -259,6 +262,28 @@ namespace ChickenDist.Forms
 			};
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", cboProductFilter, 140, btnProductSearchDlg));
 
+			// ─── فلترة الموظف / القائم بالحركة ───
+			cboUserFilter = new ComboBox
+			{
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			cboUserFilter.Items.Add(new ComboItem(0, "الكل"));
+			try
+			{
+				foreach (DataRow row in EmployeeDAL.GetAll().Rows)
+				{
+					cboUserFilter.Items.Add(new ComboItem(Convert.ToInt32(row["EmpID"]), row["EmpName"].ToString()));
+				}
+			}
+			catch { }
+			cboUserFilter.DisplayMember = "Text";
+			cboUserFilter.SelectedIndex = 0;
+			cboUserFilter.SelectedIndexChanged += delegate { LoadSales(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("الموظف:", cboUserFilter, 130));
+
 			// بحث سريع (فلترة محلية)
 			txtSearch = new TextBox
 			{
@@ -331,63 +356,79 @@ namespace ChickenDist.Forms
 			{
 				Name = "SaleCode",
 				HeaderText = "رقم الفاتورة",
-				FillWeight = 50f
+				FillWeight = 40f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "SaleDate",
 				HeaderText = "التاريخ والوقت",
-				FillWeight = 70f
+				FillWeight = 55f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "SaleType",
 				HeaderText = "نوع الفاتورة",
-				FillWeight = 45f
+				FillWeight = 42f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ClientName",
 				HeaderText = "العميل / المندوب",
-				FillWeight = 110f
+				FillWeight = 85f
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "TotalBeforeDiscount",
+				HeaderText = "قبل الخصم",
+				FillWeight = 45f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "DiscountAmount",
+				HeaderText = "الخصم ✂",
+				FillWeight = 40f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(249, 115, 22), Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "TotalAmount",
-				HeaderText = "قيمة الفاتورة",
-				FillWeight = 55f
+				HeaderText = "بعد الخصم (قبل المرتجع)",
+				FillWeight = 52f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ShippingCharge",
 				HeaderText = "خدمة شحن",
-				FillWeight = 50f
+				FillWeight = 38f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ReturnAmount",
 				HeaderText = "المرتجع ↩",
-				FillWeight = 50f,
+				FillWeight = 40f,
 				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "NetAmount",
-				HeaderText = "الصافي ✔",
-				FillWeight = 50f,
-				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
+				HeaderText = "الصافي النهائي ✔",
+				FillWeight = 48f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "CreatedByName",
 				HeaderText = "القائم بالحركة",
-				FillWeight = 65f
+				FillWeight = 50f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "Notes",
 				HeaderText = "الملاحظات",
-				FillWeight = 100f
+				FillWeight = 70f
 			});
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
 			SetupSalesGridContextMenu();
@@ -515,28 +556,30 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Bottom,
 				Height = 70,
-				ColumnCount = 7,
+				ColumnCount = 8,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(10, 5, 10, 5),
+				Padding = new Padding(6, 4, 6, 4),
 				Visible = Session.CanViewSalesTotals("SalesList")
 			};
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-			lblTotalSummary  = AddDashboardCard(tableLayoutPanel, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                  0);
-			lblReturnSummary = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات: ↩",   "0.00 ج", Color.FromArgb(231, 76, 60),   1);
-			lblNetSummary    = AddDashboardCard(tableLayoutPanel, "الصافي بعد المرتجع: ✔", "0.00 ج", Color.FromArgb(46, 204, 113),  2);
-			lblCashSummary   = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:",       "0.00 ج", Theme.Success,                 3);
-			lblCreditSummary = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:",       "0.00 ج", Color.FromArgb(52, 152, 219),  4);
-			lblDriverSummary = AddDashboardCard(tableLayoutPanel, "حمولات المناديب:",        "0.00 ج", Color.FromArgb(155, 89, 182), 5);
-			lblShippingSummary = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:",         "0.00 ج", Color.FromArgb(243, 156, 18), 6);
+			lblTotalBeforeDiscountSummary = AddDashboardCard(tableLayoutPanel, "إجمالي قبل الخصم:", "0.00 ج", Color.FromArgb(160, 175, 200), 0);
+			lblDiscountSummary             = AddDashboardCard(tableLayoutPanel, "إجمالي الخصومات: ✂", "0.00 ج", Color.FromArgb(249, 115, 22), 1);
+			lblTotalSummary               = AddDashboardCard(tableLayoutPanel, "بعد الخصم (قبل المرتجع):", "0.00 ج", Theme.Accent, 2);
+			lblReturnSummary              = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات: ↩", "0.00 ج", Color.FromArgb(231, 76, 60), 3);
+			lblNetSummary                 = AddDashboardCard(tableLayoutPanel, "الصافي النهائي: ✔", "0.00 ج", Color.FromArgb(46, 204, 113), 4);
+			lblCashSummary                = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:", "0.00 ج", Theme.Success, 5);
+			lblCreditSummary              = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 6);
+			lblShippingSummary            = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:", "0.00 ج", Color.FromArgb(243, 156, 18), 7);
 
 			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون في مقدمة Z-order حتى يحسب التخطيط بعد الفلتر وشريط الإجمالي)
 			base.Controls.Clear();
@@ -677,7 +720,12 @@ namespace ChickenDist.Forms
 					productSearch = cboProductFilter.Text.Trim();
 				}
 			}
-			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch);
+			int? empID = null;
+			if (cboUserFilter != null && cboUserFilter.SelectedItem is ComboItem uci && uci.ID > 0)
+			{
+				empID = uci.ID;
+			}
+			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, null, null, empID);
 			FilterData();
 		}
 
@@ -687,17 +735,19 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (_allSalesDt == null || _allSalesDt.Rows.Count == 0)
 			{
-				UpdateSummary(0m, 0m, 0m, 0m, 0m, 0m);
+				UpdateSummary(0m, 0m, 0m, 0m, 0m, 0m, 0m, 0m);
 				return;
 			}
 			string value = txtSearch.Text.Trim().ToLower();
 			string text = cboTypeFilter.SelectedItem?.ToString() ?? "الكل";
-			decimal tot    = 0m;
-			decimal ret    = 0m;
-			decimal cash   = 0m;
-			decimal credit = 0m;
-			decimal driver = 0m;
-			decimal shipping = 0m;
+			decimal totBeforeDisc = 0m;
+			decimal totDisc       = 0m;
+			decimal totAfterDisc  = 0m;
+			decimal ret           = 0m;
+			decimal cash          = 0m;
+			decimal credit        = 0m;
+			decimal driver        = 0m;
+			decimal shipping      = 0m;
 
 			// تعطيل AutoSize أثناء التحميل لتسريع عرض البيانات الكثيرة
 			dgSales.SuspendLayout();
@@ -731,14 +781,22 @@ namespace ChickenDist.Forms
 
 				if (typeMatch && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
-					decimal num = Convert.ToDecimal(row["TotalAmount"]);
+					decimal discAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value
+					                ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+					decimal num = Convert.ToDecimal(row["TotalAmount"]); // بعد الخصم قبل المرتجع
+					decimal beforeDiscAmt = row.Table.Columns.Contains("TotalBeforeDiscount") && row["TotalBeforeDiscount"] != DBNull.Value
+					                      ? Convert.ToDecimal(row["TotalBeforeDiscount"])
+					                      : num + discAmt;
 					decimal returnAmt = row.Table.Columns.Contains("ReturnAmount") && row["ReturnAmount"] != DBNull.Value
 					                    ? Convert.ToDecimal(row["ReturnAmount"]) : 0m;
-					decimal netAmt = num - returnAmt;
+					decimal netAmt = num + shippingAmt - returnAmt; // الصافي النهائي
 
-					tot += num;
+					totBeforeDisc += beforeDiscAmt;
+					totDisc += discAmt;
+					totAfterDisc += num;
 					ret += returnAmt;
 					shipping += shippingAmt;
+
 					switch (text5)
 					{
 						case "Cash":        cash   += num; break;
@@ -751,15 +809,23 @@ namespace ChickenDist.Forms
 					               (text5 == "Visa") ? "فيزا / شبكة" :
 					               (text5 == "Mixed") ? "مختلط (كاش + فيزا)" :
 					               (text5 == "Installment") ? "تقسيط شرعي" : "تحميل مندوب";
+					string beforeDiscStr = beforeDiscAmt.ToString("N2") + " ج";
+					string discStr = discAmt > 0 ? discAmt.ToString("N2") + " ج" : "-";
+					string afterDiscStr = num.ToString("N2") + " ج";
+					string shippingStr = shippingAmt > 0 ? shippingAmt.ToString("N2") + " ج" : "-";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
+					string netStr = netAmt.ToString("N2") + " ج";
+
 					int addedIdx = dgSales.Rows.Add(
 						row["SaleID"], row["SaleCode"],
 						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
 						text8, text7,
-						num.ToString("N2") + " ج",
-						shippingAmt > 0 ? shippingAmt.ToString("N2") + " ج" : "-",
+						beforeDiscStr,
+						discStr,
+						afterDiscStr,
+						shippingStr,
 						retStr,
-						netAmt.ToString("N2") + " ج",
+						netStr,
 						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
 
@@ -778,21 +844,22 @@ namespace ChickenDist.Forms
 			dgSales.AutoSizeColumnsMode = oldMode;
 			dgSales.ResumeLayout();
 
-			UpdateSummary(tot, ret, cash, credit, driver, shipping);
+			UpdateSummary(totBeforeDisc, totDisc, totAfterDisc, ret, cash, credit, driver, shipping);
 		}
 
-		private void UpdateSummary(decimal tot, decimal ret, decimal cash, decimal credit, decimal driver, decimal shipping)
+		private void UpdateSummary(decimal totBeforeDisc, decimal totDisc, decimal totAfterDisc, decimal ret, decimal cash, decimal credit, decimal driver, decimal shipping)
 		{
-			lblTotalSummary.Text  = tot.ToString("N2")         + " ج";
+			if (lblTotalBeforeDiscountSummary != null)
+				lblTotalBeforeDiscountSummary.Text = totBeforeDisc.ToString("N2") + " ج";
+			if (lblDiscountSummary != null)
+				lblDiscountSummary.Text = totDisc.ToString("N2") + " ج";
+			lblTotalSummary.Text  = totAfterDisc.ToString("N2") + " ج";
 			lblReturnSummary.Text = ret.ToString("N2")         + " ج";
-			lblNetSummary.Text    = (tot - ret).ToString("N2") + " ج";
-			lblCashSummary.Text   = cash.ToString("N2")        + " ج";
-			lblCreditSummary.Text = credit.ToString("N2")      + " ج";
-			lblDriverSummary.Text = driver.ToString("N2")      + " ج";
-			if (lblShippingSummary != null)
-			{
-				lblShippingSummary.Text = shipping.ToString("N2") + " ج";
-			}
+			lblNetSummary.Text    = (totAfterDisc + shipping - ret).ToString("N2") + " ج";
+			if (lblCashSummary != null) lblCashSummary.Text = cash.ToString("N2") + " ج";
+			if (lblCreditSummary != null) lblCreditSummary.Text = credit.ToString("N2") + " ج";
+			if (lblDriverSummary != null) lblDriverSummary.Text = driver.ToString("N2") + " ج";
+			if (lblShippingSummary != null) lblShippingSummary.Text = shipping.ToString("N2") + " ج";
 		}
 
 		private void DgSales_SelectionChanged(object sender, EventArgs e)

@@ -66,7 +66,7 @@ namespace ChickenDist.DAL
             return GetAll(from, to, null, null, warehouseID);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null)
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null, int? empID = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             string saleTypeFilter = string.IsNullOrWhiteSpace(saleType) || saleType == "الكل" ? null : saleType.Trim();
@@ -81,7 +81,12 @@ namespace ChickenDist.DAL
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
                          COALESCE(NULLIF(s.CustomClientName, N''), c.ClientName, N'عميل نقدي') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
-                         s.TotalAmount, s.Notes,
+                         s.TotalAmount,
+                         COALESCE(s.DiscountAmount, 0) AS DiscountAmount,
+                         COALESCE(s.DiscountPct, 0) AS DiscountPct,
+                         (s.TotalAmount + COALESCE(s.DiscountAmount, 0)) AS TotalBeforeDiscount,
+                         s.Notes,
+                         s.CreatedBy,
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
@@ -112,6 +117,7 @@ namespace ChickenDist.DAL
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     AND (@saleType IS NULL OR s.SaleType = @saleType)
+                    AND (@empID IS NULL OR s.CreatedBy = @empID)
                     AND (@product IS NULL OR EXISTS (
                         SELECT 1 FROM SaleItems si2
                         JOIN Products pr ON si2.ProductID = pr.ProductID
@@ -124,7 +130,8 @@ namespace ChickenDist.DAL
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                 DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
-                DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value));
+                DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value),
+                DbHelper.P("@empID", empID.HasValue ? (object)empID.Value : DBNull.Value));
         }
 
         public static DataTable GetItems(int saleID)
