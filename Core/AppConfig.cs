@@ -107,6 +107,12 @@ namespace ChickenDist.Core
             set => Set("DefaultReportFormat", value);
         }
 
+        public static string PrintBehaviorOnSave
+        {
+            get => Get("PrintBehaviorOnSave", "Prompt"); // "Prompt" (سؤال واختيار), "Direct" (طباعة مباشرة فورية), "None" (عدم الطباعة تلقائياً)
+            set => Set("PrintBehaviorOnSave", value);
+        }
+
         public static string ReceiptTemplate
         {
             get => Get("ReceiptTemplate", "Standard");

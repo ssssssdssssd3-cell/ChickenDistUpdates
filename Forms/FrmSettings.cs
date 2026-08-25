@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodePrinter;
         private ComboBox cboInvoiceFormat;
         private ComboBox cboReportFormat;
+        private ComboBox cboPrintBehavior;
         private ComboBox cboReceiptTemplate;
         private ComboBox cboA4Template;
         private ComboBox cboBarcodeTemplate;
@@ -339,6 +340,28 @@ namespace ChickenDist.Forms
             });
             cboReportFormat.SelectedIndex = AppConfig.DefaultReportFormat == "A5" ? 1 : (AppConfig.DefaultReportFormat == "Receipt" ? 2 : 0);
             this.Controls.Add(cboReportFormat);
+            y += 40;
+
+            // ── سلوك وسؤال الطباعة عند الحفظ ───────────────────
+            AddLabel("سلوك وسؤال الطباعة عند حفظ الفاتورة (بيع / بيان تسعير / POS):", 20, ref y, 10);
+            cboPrintBehavior = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboPrintBehavior.Items.AddRange(new object[]
+            {
+                "سؤال واختيار نوع ومقاس الطباعة في كل مرة (نافذة الحوار)",
+                "طباعة مباشرة وفورية بالمقاس الافتراضي فور الحفظ (بدون سؤال)",
+                "عدم الطباعة تلقائياً (الطباعة يدوياً عند الحاجة)"
+            });
+            cboPrintBehavior.SelectedIndex = AppConfig.PrintBehaviorOnSave == "Direct" ? 1
+                                           : (AppConfig.PrintBehaviorOnSave == "None" ? 2 : 0);
+            this.Controls.Add(cboPrintBehavior);
             y += 40;
 
             // ── قالب طباعة الريسيت ───────────────────
@@ -1256,6 +1279,7 @@ namespace ChickenDist.Forms
                                              : "50x30";
                 AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : (cboInvoiceFormat.SelectedIndex == 2 ? "A5" : "A4");
                 AppConfig.DefaultReportFormat = cboReportFormat.SelectedIndex == 1 ? "A5" : (cboReportFormat.SelectedIndex == 2 ? "Receipt" : "A4");
+                AppConfig.PrintBehaviorOnSave = cboPrintBehavior.SelectedIndex == 1 ? "Direct" : (cboPrintBehavior.SelectedIndex == 2 ? "None" : "Prompt");
 
                 // Save Templates Settings
                 AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex == 1 ? "Modern"
