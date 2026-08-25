@@ -3633,6 +3633,33 @@ namespace ChickenDist.Core
         /// يتحقق من توافق إصدار التطبيق الحالي مع إصدار قاعدة البيانات.
         /// ويمنع التشغيل إذا كانت قاعدة البيانات قد تم ترقيتها بإصدار أحدث من جهاز رئيسي.
         /// </summary>
+        public static int CompareVersions(string v1, string v2)
+        {
+            if (string.IsNullOrWhiteSpace(v1) && string.IsNullOrWhiteSpace(v2)) return 0;
+            if (string.IsNullOrWhiteSpace(v1)) return -1;
+            if (string.IsNullOrWhiteSpace(v2)) return 1;
+
+            string c1 = v1.Trim().TrimStart('v', 'V');
+            string c2 = v2.Trim().TrimStart('v', 'V');
+
+            if (Version.TryParse(c1, out Version ver1) && Version.TryParse(c2, out Version ver2))
+            {
+                return ver1.CompareTo(ver2);
+            }
+
+            var parts1 = c1.Split('.');
+            var parts2 = c2.Split('.');
+            int maxLen = Math.Max(parts1.Length, parts2.Length);
+            for (int i = 0; i < maxLen; i++)
+            {
+                int p1 = i < parts1.Length && int.TryParse(parts1[i], out int n1) ? n1 : 0;
+                int p2 = i < parts2.Length && int.TryParse(parts2[i], out int n2) ? n2 : 0;
+                if (p1 != p2) return p1.CompareTo(p2);
+            }
+
+            return string.Compare(c1, c2, StringComparison.OrdinalIgnoreCase);
+        }
+
         public static bool CheckAndEnforceVersion(string currentAppVersion)
         {
             try
@@ -3655,6 +3682,20 @@ namespace ChickenDist.Core
                         END
                     END");
 
+                // التأكد من وجود الأعمدة بصورة منفصلة
+                Execute(@"
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name='versions')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'UpdatedBy')
+                        BEGIN
+                            ALTER TABLE [versions] ADD [UpdatedBy] NVARCHAR(100) NULL;
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'UpdatedAt')
+                        BEGIN
+                            ALTER TABLE [versions] ADD [UpdatedAt] DATETIME DEFAULT GETDATE();
+                        END
+                    END");
+
                 // قراءة الإصدار المسجل في السيكول من جدول versions
                 object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [versions] ORDER BY [UpdatedAt] DESC");
                 if (dbVerObj == null || dbVerObj == DBNull.Value || string.IsNullOrWhiteSpace(dbVerObj.ToString()))
@@ -3666,59 +3707,40 @@ namespace ChickenDist.Core
                 }
 
                 string dbVersionStr = dbVerObj.ToString().Trim();
+                int cmp = CompareVersions(currentAppVersion, dbVersionStr);
 
-                // تنظيف نصوص الإصدار للتأكد من المقارنة السليمة
-                string cleanAppVer = currentAppVersion.TrimStart('v', 'V');
-                string cleanDbVer  = dbVersionStr.TrimStart('v', 'V');
-
-                bool parsedApp = Version.TryParse(cleanAppVer, out Version appVer);
-                bool parsedDb  = Version.TryParse(cleanDbVer, out Version dbVer);
-
-                if (parsedApp && parsedDb)
+                if (cmp >= 0)
                 {
-                    if (appVer >= dbVer)
+                    // إذا كان هذا الجهاز أحدث، نحدث جدول versions برقم الإصدار الجديد
+                    if (cmp > 0)
                     {
-                        // إذا كان إصدار البرنامج الحالي أحدث، نقوم بتحديث رقم الإصدار في قاعدة البيانات كجهاز رئيسي
-                        if (appVer > dbVer)
-                        {
-                            Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
-                                P("@ver", currentAppVersion), P("@by", Environment.MachineName));
-                        }
-                        return true;
+                        Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
+                            P("@ver", currentAppVersion), P("@by", Environment.MachineName));
                     }
-                    else
-                    {
-                        // إذا كان إصدار البرنامج الحالي أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه)
-                        string errorMsg = $"⛔ تنبيه هام: عدم تطابق إصدار البرنامج مع السيرفر الرئيسي!\n\n" +
-                                          $"• إصدار هذا الجهاز (الفرعي):           [ v{currentAppVersion} ]\n" +
-                                          $"• إصدار السيرفر الرئيسي وقاعدة البيانات: [ v{dbVersionStr} ]\n\n" +
-                                          $"تم تحديث السيرفر الرئيسي إلى إصدار أحدث (v{dbVersionStr}).\n" +
-                                          $"لا يمكن فتح البرنامج من هذا الجهاز الفرعي إلا بعد تحديثه لنفس إصدار السيرفر الرئيسي منعاً لتلف البيانات وتضارب الفواتير.\n\n" +
-                                          $"هل ترغب في فحص وتنزيل التحديث (v{dbVersionStr}) الآن؟";
-
-                        var result = MessageBox.Show(errorMsg, "⛔ تنبيه عدم تطابق إصدار قاعدة البيانات",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Stop,
-                            MessageBoxDefaultButton.Button1,
-                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-
-                        if (result == DialogResult.Yes)
-                        {
-                            UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
-                        }
-
-                        return false;
-                    }
+                    return true;
                 }
                 else
                 {
-                    if (string.Compare(cleanAppVer, cleanDbVer, StringComparison.OrdinalIgnoreCase) < 0)
+                    // إذا كان إصدار البرنامج الحالي أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه)
+                    string errorMsg = $"⛔ تنبيه هام: عدم تطابق إصدار البرنامج مع السيرفر الرئيسي!\n\n" +
+                                      $"• إصدار هذا الجهاز (الفرعي):           [ v{currentAppVersion} ]\n" +
+                                      $"• إصدار السيرفر الرئيسي وقاعدة البيانات: [ v{dbVersionStr} ]\n\n" +
+                                      $"تم تحديث السيرفر الرئيسي إلى إصدار أحدث (v{dbVersionStr}).\n" +
+                                      $"لا يمكن فتح البرنامج من هذا الجهاز الفرعي إلا بعد تحديثه لنفس إصدار السيرفر الرئيسي منعاً لتلف البيانات وتضارب الفواتير.\n\n" +
+                                      $"هل ترغب في فحص وتنزيل التحديث (v{dbVersionStr}) الآن؟";
+
+                    var result = MessageBox.Show(errorMsg, "⛔ تنبيه عدم تطابق إصدار قاعدة البيانات",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Stop,
+                        MessageBoxDefaultButton.Button1,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                    if (result == DialogResult.Yes)
                     {
-                        MessageBox.Show($"⛔ إصدار هذا الجهاز ({currentAppVersion}) أقدم من إصدار السيرفر الرئيسي ({dbVersionStr}). يرجى تحديث هذا الجهاز أولاً.",
-                            "تنبيه عدم تطابق الإصدار", MessageBoxButtons.OK, MessageBoxIcon.Stop, MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                        return false;
+                        UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
                     }
-                    return true;
+
+                    return false;
                 }
             }
             catch (Exception ex)

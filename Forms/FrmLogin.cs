@@ -213,6 +213,13 @@ namespace ChickenDist.Forms
 
             if (!btnLogin.Enabled) return;
 
+            if (!DbHelper.CheckAndEnforceVersion(UpdateManager.CurrentVersion))
+            {
+                btnLogin.Enabled = true;
+                btnLogin.Text = "تسجيل الدخول";
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(txtUser.Text) || string.IsNullOrWhiteSpace(txtPass.Text))
             {
                 lblError.Text = "يرجى إدخال اسم المستخدم وكلمة المرور";
