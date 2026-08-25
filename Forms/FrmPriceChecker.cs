@@ -45,11 +45,13 @@ namespace ChickenDist.Forms
         private Label lblCountdownText;
         private Button btnScanAnother;
 
-        // Timers
+        // Timers & Scanner buffer
         private System.Windows.Forms.Timer _clockTimer;
         private System.Windows.Forms.Timer _resetCountdownTimer;
         private int _countdownSeconds = 10;
         private bool _isFullscreen = false;
+        private System.Text.StringBuilder _scannerBuffer = new System.Text.StringBuilder();
+        private DateTime _lastScannerChar = DateTime.MinValue;
 
         public FrmPriceChecker(bool startFullscreen = false)
         {
@@ -898,6 +900,41 @@ namespace ChickenDist.Forms
                 this.CenterToScreen();
                 btnToggleFullscreen.Text = "🗖 ملء الشاشة";
             }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Enter && _scannerBuffer.Length > 0)
+            {
+                string scanned = _scannerBuffer.ToString().Trim();
+                _scannerBuffer.Clear();
+                if (!string.IsNullOrEmpty(scanned))
+                {
+                    ProcessBarcodeSearch(scanned);
+                    return true;
+                }
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar))
+            {
+                double ms = (DateTime.Now - _lastScannerChar).TotalMilliseconds;
+                _lastScannerChar = DateTime.Now;
+
+                if (ms > 150 && !(this.ActiveControl == txtManualSearch))
+                {
+                    _scannerBuffer.Clear();
+                }
+
+                if (!(this.ActiveControl == txtManualSearch))
+                {
+                    _scannerBuffer.Append(e.KeyChar);
+                }
+            }
+            base.OnKeyPress(e);
         }
 
         private void FrmPriceChecker_KeyDown(object sender, KeyEventArgs e)

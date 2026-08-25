@@ -1253,6 +1253,13 @@ namespace ChickenDist.Forms
             form.RightToLeft = RightToLeft.Yes;
 
             var tab = _AddTab(form);
+            if (tab != null && !(form is FrmDashboard))
+            {
+                form.FormClosed += (s, e) =>
+                {
+                    CloseTab(form, tab);
+                };
+            }
             SwitchToTab(form, tab);
         }
 

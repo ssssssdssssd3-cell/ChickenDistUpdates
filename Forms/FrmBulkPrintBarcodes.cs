@@ -1037,7 +1037,6 @@ namespace ChickenDist.Forms
                 {
                     AppConfig.PrintInBackground(pd);
                     MessageBox.Show("تم إرسال أمر الطباعة في الخلفية بنجاح، يمكنك متابعة العمل بحرية دون أي انتظار.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    CloseOrNavigateBack();
                 }
             }
             catch (Exception ex)
