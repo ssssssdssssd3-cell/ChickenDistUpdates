@@ -456,80 +456,176 @@ namespace ChickenDist.Forms
             }
 
             string supplierName = txtName.Text;
-            string balText = lblBalance.Text;
+            decimal currentBal = 0m;
+            try { currentBal = SupplierDAL.GetBalance(_selectedID); } catch { }
 
             // نافذة الصرف
             var dlg = new Form
             {
-                Text = "💸 صرف نقدي للمورد - " + supplierName,
-                Size = new Size(420, 300),
+                Text = "💸 صرف نقدي وسداد دفعة للمورد - " + supplierName,
+                Size = new Size(420, 380),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false, MinimizeBox = false,
+                MaximizeBox = false,
+                MinimizeBox = false,
                 RightToLeft = RightToLeft.Yes,
                 RightToLeftLayout = true,
-                BackColor = Theme.BgMain,
+                BackColor = Theme.BgCard,
                 Font = Theme.FontMain
             };
 
-            int dy = 18;
-            dlg.Controls.Add(new Label
-            {
-                Text = "المورد: " + supplierName,
-                Location = new Point(10, dy), Width = 380,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            }); dy += 30;
+            int dy = 15;
 
-            dlg.Controls.Add(new Label
+            // بطاقة معاينة الأرصدة
+            var pnlBalPreview = new Panel
             {
-                Text = balText,
-                Location = new Point(10, dy), Width = 380,
-                ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            }); dy += 36;
-
-            dlg.Controls.Add(new Label { Text = "المبلغ المصروف (ج):", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
-            var nudAmt = new NumericUpDown
-            {
-                Location = new Point(10, dy), Width = 185,
-                Minimum = 0.01m, Maximum = 9999999, DecimalPlaces = 2,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                Location = new Point(15, dy),
+                Size = new Size(375, 75),
+                BackColor = Color.FromArgb(20, 26, 38),
+                Padding = new Padding(10, 8, 10, 8)
             };
-            dlg.Controls.Add(nudAmt); dy += 40;
 
-            dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(200, dy + 5), Width = 180, ForeColor = Theme.TextMain });
+            var lblCurTitle = new Label
+            {
+                Text = "الرصيد الحالي:",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(245, 10),
+                AutoSize = true
+            };
+            var lblCurBalVal = new Label
+            {
+                Text = currentBal.ToString("N2") + " ج",
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = currentBal > 0 ? Color.FromArgb(248, 113, 113) : (currentBal < 0 ? Color.FromArgb(74, 222, 128) : Color.White),
+                Location = new Point(10, 8),
+                Width = 230,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            var lblNewTitle = new Label
+            {
+                Text = "الرصيد بعد السداد:",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(250, 204, 21),
+                Location = new Point(240, 42),
+                AutoSize = true
+            };
+            var lblNewBalVal = new Label
+            {
+                Text = currentBal.ToString("N2") + " ج",
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(250, 204, 21),
+                Location = new Point(10, 38),
+                Width = 225,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            pnlBalPreview.Controls.AddRange(new Control[] { lblCurTitle, lblCurBalVal, lblNewTitle, lblNewBalVal });
+            dlg.Controls.Add(pnlBalPreview);
+            dy += 85;
+
+            // اسم المورد
+            dlg.Controls.Add(new Label
+            {
+                Text = "🏢 المورد: " + supplierName,
+                Location = new Point(15, dy),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
+            });
+            dy += 30;
+
+            // المبلغ (يدوي بدون أسهم)
+            dlg.Controls.Add(new Label { 
+                Text = "المبلغ المصروف (ج):", 
+                Location = new Point(15, dy + 6), 
+                AutoSize = true, 
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            });
+            var txtAmount = new TextBox
+            {
+                Location = new Point(150, dy),
+                Width = 240,
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Color.FromArgb(250, 204, 21),
+                TextAlign = HorizontalAlignment.Center
+            };
+            txtAmount.KeyPress += (s, e) =>
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
+                    e.Handled = true;
+                if (e.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                    e.Handled = true;
+            };
+            txtAmount.TextChanged += (s, e) =>
+            {
+                decimal amt = 0m;
+                decimal.TryParse(txtAmount.Text.Trim(), out amt);
+                decimal newBal = currentBal - amt;
+                lblNewBalVal.Text = newBal.ToString("N2") + " ج";
+                lblNewBalVal.ForeColor = newBal > 0 ? Color.FromArgb(248, 113, 113) : (newBal < 0 ? Color.FromArgb(74, 222, 128) : Color.FromArgb(250, 204, 21));
+            };
+            txtAmount.Enter += (s, e) => txtAmount.SelectAll();
+            dlg.Controls.Add(txtAmount);
+            dy += 45;
+
+            // ملاحظات
+            dlg.Controls.Add(new Label { 
+                Text = "ملاحظات / البيان:", 
+                Location = new Point(15, dy + 4), 
+                AutoSize = true, 
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f)
+            });
             var txtNote = new TextBox
             {
-                Location = new Point(10, dy), Width = 185,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                Text = "سداد جزء من المديونية"
+                Location = new Point(150, dy),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f),
+                RightToLeft = RightToLeft.Yes,
+                Text = "سداد جزء من مستحقات المورد"
             };
-            dlg.Controls.Add(txtNote); dy += 40;
+            dlg.Controls.Add(txtNote);
+            dy += 50;
 
-            var btnOk     = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 175, 38, Color.FromArgb(140, 80, 0));
-            var btnCancel = Theme.MakeButton("❌ إلغاء",        10,  dy, 120, 38, Color.FromArgb(100, 40, 40));
-            btnOk.Font    = new Font("Segoe UI", 10, FontStyle.Bold);
+            var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 215, dy, 175, 38, Color.FromArgb(180, 83, 9));
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 115, dy, 90, 38, Color.FromArgb(90, 90, 90));
+            btnOk.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 
             btnOk.Click += (s2, e2) =>
             {
-                if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                if (!decimal.TryParse(txtAmount.Text.Trim(), out decimal amt) || amt <= 0)
+                {
+                    MessageBox.Show("يرجى إدخال مبلغ صحيح أكبر من صفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtAmount.Focus();
+                    return;
+                }
                 try
                 {
-                    string code = SupplierDAL.AddSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim());
+                    string code = SupplierDAL.AddSupplierPayment(_selectedID, amt, txtNote.Text.Trim());
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                     LoadSuppliers();
 
                     // Open print & WhatsApp options dialog for supplier payment
-                    new FrmPrintSupplierPayment(_selectedID, nudAmt.Value, txtNote.Text.Trim(), supplierName: supplierName).ShowOptionsDialog(this);
+                    new FrmPrintSupplierPayment(_selectedID, amt, txtNote.Text.Trim(), supplierName: supplierName).ShowOptionsDialog(this);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("فشل تسجيل الصرف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             };
             btnCancel.Click += (s2, e2) => dlg.Close();
 
             dlg.Controls.Add(btnOk);
             dlg.Controls.Add(btnCancel);
+
+            dlg.Shown += (s, e) => txtAmount.Focus();
             dlg.ShowDialog(this);
         }
 

@@ -577,28 +577,173 @@ namespace ChickenDist.Forms
 
         private void BtnPayment_Click(object sender, EventArgs e)
         {
-            if (_selectedID == 0) { MessageBox.Show("اختر عميلاً أولاً"); return; }
+            if (_selectedID == 0) { MessageBox.Show("اختر عميلاً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            
+            decimal currentBal = 0m;
+            try { currentBal = ClientDAL.GetClientBalance(_selectedID); } catch { }
+
             var dlg = new Form
             {
-                Width = 380, Height = 230,
-                Text = "تحصيل نقدية من العميل",
+                Width = 420,
+                Height = 370,
+                Text = "💵 تحصيل نقدية وسند قبض من العميل",
                 StartPosition = FormStartPosition.CenterParent,
-                RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
-                BackColor = Theme.BgCard, Font = Theme.FontMain
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Theme.BgCard,
+                Font = Theme.FontMain
             };
-            var lbl = new Label { Text = $"👤 العميل: {txtName.Text}\n💰 أدخل المبلغ المحصل (ج.م):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
-            var nud = new NumericUpDown { Location = new Point(15, 55), Width = 330, Minimum = 0.01m, Maximum = 9999999m, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f) };
-            var txtNotes = new TextBox { Location = new Point(15, 95), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 185, 135, 160, 36, Theme.Success);
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 15, 135, 150, 36, Theme.Danger);
-            btnSave.Click += (s2, e2) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
-            btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
-            dlg.Controls.AddRange(new Control[] { lbl, nud, txtNotes, btnSave, btnCancel });
 
-            if (dlg.ShowDialog(this) == DialogResult.OK && nud.Value > 0)
+            int y = 15;
+
+            // بطاقة معاينة الأرصدة
+            var pnlBalPreview = new Panel
             {
-                ClientDAL.AddPayment(_selectedID, nud.Value, txtNotes.Text.Trim());
-                new FrmPrintClientPayment(_selectedID, nud.Value, txtNotes.Text.Trim(), null, txtName.Text);
+                Location = new Point(15, y),
+                Size = new Size(375, 75),
+                BackColor = Color.FromArgb(20, 26, 38),
+                Padding = new Padding(10, 8, 10, 8)
+            };
+
+            var lblCurTitle = new Label
+            {
+                Text = "الرصيد الحالي:",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(245, 10),
+                AutoSize = true
+            };
+            var lblCurBalVal = new Label
+            {
+                Text = currentBal.ToString("N2") + " ج",
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = currentBal < 0 ? Color.FromArgb(248, 113, 113) : (currentBal > 0 ? Color.FromArgb(74, 222, 128) : Color.White),
+                Location = new Point(10, 8),
+                Width = 230,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            var lblNewTitle = new Label
+            {
+                Text = "الرصيد بعد التحصيل:",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(250, 204, 21),
+                Location = new Point(230, 42),
+                AutoSize = true
+            };
+            var lblNewBalVal = new Label
+            {
+                Text = currentBal.ToString("N2") + " ج",
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(250, 204, 21),
+                Location = new Point(10, 38),
+                Width = 215,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            pnlBalPreview.Controls.AddRange(new Control[] { lblCurTitle, lblCurBalVal, lblNewTitle, lblNewBalVal });
+            dlg.Controls.Add(pnlBalPreview);
+            y += 85;
+
+            // اسم العميل
+            var lblClient = new Label
+            {
+                Text = $"👤 العميل: {txtName.Text}",
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                Location = new Point(15, y),
+                AutoSize = true
+            };
+            dlg.Controls.Add(lblClient);
+            y += 30;
+
+            // المبلغ (يدوي بدون أسهم)
+            var lblAmtTitle = new Label
+            {
+                Text = "المبلغ المحصل (ج):",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                Location = new Point(15, y + 6),
+                AutoSize = true
+            };
+            var txtAmount = new TextBox
+            {
+                Location = new Point(150, y),
+                Width = 240,
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Color.FromArgb(250, 204, 21),
+                TextAlign = HorizontalAlignment.Center
+            };
+            txtAmount.KeyPress += (s, e) =>
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
+                    e.Handled = true;
+                if (e.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                    e.Handled = true;
+            };
+            txtAmount.TextChanged += (s, e) =>
+            {
+                decimal amt = 0m;
+                decimal.TryParse(txtAmount.Text.Trim(), out amt);
+                decimal newBal = currentBal - amt;
+                lblNewBalVal.Text = newBal.ToString("N2") + " ج";
+                lblNewBalVal.ForeColor = newBal < 0 ? Color.FromArgb(248, 113, 113) : (newBal > 0 ? Color.FromArgb(74, 222, 128) : Color.FromArgb(250, 204, 21));
+            };
+            txtAmount.Enter += (s, e) => txtAmount.SelectAll();
+            dlg.Controls.AddRange(new Control[] { lblAmtTitle, txtAmount });
+            y += 45;
+
+            // ملاحظات
+            var lblNoteTitle = new Label
+            {
+                Text = "ملاحظات / البيان:",
+                Font = new Font("Segoe UI", 9.5f),
+                ForeColor = Theme.TextMain,
+                Location = new Point(15, y + 4),
+                AutoSize = true
+            };
+            var txtNotes = new TextBox
+            {
+                Location = new Point(150, y),
+                Width = 240,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f),
+                RightToLeft = RightToLeft.Yes,
+                Text = "سداد نقدية من العميل"
+            };
+            dlg.Controls.AddRange(new Control[] { lblNoteTitle, txtNotes });
+            y += 50;
+
+            // أزرار
+            var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 215, y, 175, 38, Theme.Success);
+            var btnCancel = Theme.MakeButton("❌ إلغاء", 115, y, 90, 38, Theme.Danger);
+            btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+
+            btnSave.Click += (s2, e2) =>
+            {
+                if (!decimal.TryParse(txtAmount.Text.Trim(), out decimal amt) || amt <= 0)
+                {
+                    MessageBox.Show("يرجى إدخال مبلغ محصل صحيح أكبر من صفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtAmount.Focus();
+                    return;
+                }
+                dlg.DialogResult = DialogResult.OK;
+                dlg.Close();
+            };
+            btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
+            dlg.Controls.AddRange(new Control[] { btnSave, btnCancel });
+
+            dlg.Shown += (s, e) => txtAmount.Focus();
+
+            if (dlg.ShowDialog(this) == DialogResult.OK && decimal.TryParse(txtAmount.Text.Trim(), out decimal paidAmt) && paidAmt > 0)
+            {
+                ClientDAL.AddPayment(_selectedID, paidAmt, txtNotes.Text.Trim());
+                new FrmPrintClientPayment(_selectedID, paidAmt, txtNotes.Text.Trim(), null, txtName.Text);
                 LoadClients();
             }
         }

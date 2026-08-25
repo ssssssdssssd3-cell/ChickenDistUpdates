@@ -31,7 +31,7 @@ namespace ChickenDist.Forms
         private ComboBox cboExpVehicleFilter;
         private ComboBox cboExpSafeAccount;
         private TextBox txtExpNotes;
-        private NumericUpDown nudExpAmount;
+        private TextBox txtExpAmount;
         private DateTimePicker dtpExpDate;
         private int _selectedExpID = 0;
         private int _selectedSupplierForExpense = 0;
@@ -372,18 +372,25 @@ namespace ChickenDist.Forms
 
             // Row 2: Amount
             var lblAmountVal = new Label { Text = "المبلغ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            nudExpAmount = new NumericUpDown 
+            txtExpAmount = new TextBox 
             { 
                 Dock = DockStyle.Fill, 
-                Minimum = 0, 
-                Maximum = 9999999, 
-                DecimalPlaces = 2, 
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 BackColor = Theme.BgInput, 
-                ForeColor = Theme.TextMain,
-                Margin = new Padding(0, 5, 0, 5)
+                ForeColor = Color.FromArgb(250, 204, 21),
+                Margin = new Padding(0, 5, 0, 5),
+                TextAlign = HorizontalAlignment.Center
             };
+            txtExpAmount.KeyPress += (s, e) =>
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
+                    e.Handled = true;
+                if (e.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                    e.Handled = true;
+            };
+            txtExpAmount.Enter += (s, e) => txtExpAmount.SelectAll();
             tblFields.Controls.Add(lblAmountVal, 0, 2);
-            tblFields.Controls.Add(nudExpAmount, 1, 2);
+            tblFields.Controls.Add(txtExpAmount, 1, 2);
 
             // Row 3: Vehicle (optional)
             var lblVehicle = new Label { Text = "العربية / المركبة (اختياري):", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(0, 10, 0, 0), Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -695,8 +702,8 @@ namespace ChickenDist.Forms
             }
             var dlg = new Form
             {
-                Text = "🔄 تحويل نقدية بين الحسابات",
-                Size = new Size(400, 360),
+                Text = "🔄 تحويل نقدية بين الحسابات والخزن",
+                Size = new Size(420, 470),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -707,22 +714,39 @@ namespace ChickenDist.Forms
                 RightToLeftLayout = true
             };
 
-            var lblSource = new Label { Text = "الحساب المصدر (من):", Location = new Point(30, 15), AutoSize = true, ForeColor = Theme.TextMain };
+            // بطاقة معاينة الأرصدة
+            var pnlBalPreview = new Panel
+            {
+                Location = new Point(25, 12),
+                Size = new Size(355, 80),
+                BackColor = Color.FromArgb(20, 26, 38),
+                Padding = new Padding(8)
+            };
+            var lblSrcBalTitle = new Label { Text = "المصدر بعد التحويل:", Location = new Point(210, 10), AutoSize = true, ForeColor = Color.FromArgb(148, 163, 184), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var lblSrcBalVal = new Label { Text = "0.00 ج", Location = new Point(10, 8), Width = 195, ForeColor = Color.FromArgb(248, 113, 113), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft };
+            var lblDestBalTitle = new Label { Text = "المستهدف بعد التحويل:", Location = new Point(200, 45), AutoSize = true, ForeColor = Color.FromArgb(148, 163, 184), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var lblDestBalVal = new Label { Text = "0.00 ج", Location = new Point(10, 43), Width = 185, ForeColor = Color.FromArgb(74, 222, 128), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft };
+            pnlBalPreview.Controls.AddRange(new Control[] { lblSrcBalTitle, lblSrcBalVal, lblDestBalTitle, lblDestBalVal });
+            dlg.Controls.Add(pnlBalPreview);
+
+            int currentY = 100;
+            var lblSource = new Label { Text = "الحساب المصدر (من):", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
             var cboSource = new ComboBox
             {
-                Location = new Point(30, 38),
-                Width = 320,
+                Location = new Point(25, currentY + 22),
+                Width = 355,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
 
-            var lblDest = new Label { Text = "الحساب المستهدف (إلى):", Location = new Point(30, 75), AutoSize = true, ForeColor = Theme.TextMain };
+            currentY += 55;
+            var lblDest = new Label { Text = "الحساب المستهدف (إلى):", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
             var cboDest = new ComboBox
             {
-                Location = new Point(30, 98),
-                Width = 320,
+                Location = new Point(25, currentY + 22),
+                Width = 355,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -757,32 +781,61 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            var lblAmt = new Label { Text = "المبلغ المراد تحويله (ج):", Location = new Point(30, 135), AutoSize = true, ForeColor = Theme.TextMain };
-            var nudAmt = new NumericUpDown
+            currentY += 55;
+            var lblAmt = new Label { Text = "المبلغ المراد تحويله (ج):", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            var txtAmount = new TextBox
             {
-                Location = new Point(30, 158),
-                Width = 320,
-                Minimum = 0.00m,
-                Maximum = 9999999,
-                DecimalPlaces = 2,
+                Location = new Point(25, currentY + 22),
+                Width = 355,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Value = 0.00m
+                ForeColor = Color.FromArgb(250, 204, 21),
+                TextAlign = HorizontalAlignment.Center
             };
+            txtAmount.KeyPress += (s, e2) =>
+            {
+                if (!char.IsControl(e2.KeyChar) && !char.IsDigit(e2.KeyChar) && e2.KeyChar != '.')
+                    e2.Handled = true;
+                if (e2.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                    e2.Handled = true;
+            };
+            txtAmount.Enter += (s, e2) => txtAmount.SelectAll();
 
-            var lblNotes = new Label { Text = "ملاحظات:", Location = new Point(30, 195), AutoSize = true, ForeColor = Theme.TextMain };
+            void UpdateTransferPreview()
+            {
+                decimal amt = 0m;
+                decimal.TryParse(txtAmount.Text.Trim(), out amt);
+                if (cboSource.SelectedItem is ComboItem sItem && cboDest.SelectedItem is ComboItem dItem)
+                {
+                    decimal sBal = AccountDAL.GetCashBalance(sItem.ID);
+                    decimal dBal = AccountDAL.GetCashBalance(dItem.ID);
+                    lblSrcBalVal.Text = $"{sBal - amt:N2} ج  (الحالي: {sBal:N2} ج)";
+                    lblDestBalVal.Text = $"{dBal + amt:N2} ج  (الحالي: {dBal:N2} ج)";
+                }
+            }
+
+            cboSource.SelectedIndexChanged += (s, ev) => UpdateTransferPreview();
+            cboDest.SelectedIndexChanged += (s, ev) => UpdateTransferPreview();
+            txtAmount.TextChanged += (s, ev) => UpdateTransferPreview();
+
+            currentY += 55;
+            var lblNotes = new Label { Text = "ملاحظات:", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
             var txtNotes = new TextBox
             {
-                Location = new Point(30, 218),
-                Width = 320,
+                Location = new Point(25, currentY + 22),
+                Width = 355,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f),
+                Text = "تحويل نقدية بين الخزن"
             };
 
+            currentY += 60;
             var btnSave = Theme.MakeButton("✅ إتمـام التحويل", Theme.Accent);
-            btnSave.Location = new Point(30, 270);
-            btnSave.Size = new Size(320, 38);
+            btnSave.Location = new Point(25, currentY);
+            btnSave.Size = new Size(355, 38);
+            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 
             btnSave.Click += (s, ev) =>
             {
@@ -796,15 +849,16 @@ namespace ChickenDist.Forms
                     MessageBox.Show("لا يمكن التحويل لنفس الحساب المختار كأصل!");
                     return;
                 }
-                if (nudAmt.Value <= 0)
+                if (!decimal.TryParse(txtAmount.Text.Trim(), out decimal amt) || amt <= 0)
                 {
-                    MessageBox.Show("يرجى إدخال مبلغ أكبر من الصفر");
+                    MessageBox.Show("يرجى إدخال مبلغ صحيح أكبر من الصفر");
+                    txtAmount.Focus();
                     return;
                 }
 
                 try
                 {
-                    AccountDAL.TransferFunds(srcItem.ID, destItem.ID, nudAmt.Value, txtNotes.Text.Trim());
+                    AccountDAL.TransferFunds(srcItem.ID, destItem.ID, amt, txtNotes.Text.Trim());
                     MessageBox.Show("✅ تم التحويل بنجاح!");
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
@@ -815,8 +869,10 @@ namespace ChickenDist.Forms
                 }
             };
 
-            dlg.Controls.AddRange(new Control[] { lblSource, cboSource, lblDest, cboDest, lblAmt, nudAmt, lblNotes, txtNotes, btnSave });
+            dlg.Controls.AddRange(new Control[] { lblSource, cboSource, lblDest, cboDest, lblAmt, txtAmount, lblNotes, txtNotes, btnSave });
             Theme.ApplyRTL(dlg.Controls);
+
+            dlg.Shown += (s, ev) => { UpdateTransferPreview(); txtAmount.Focus(); };
 
             if (dlg.ShowDialog() == DialogResult.OK)
             {
@@ -829,7 +885,7 @@ namespace ChickenDist.Forms
             var dlg = new Form
             {
                 Text = title,
-                Size = new Size(400, 360),
+                Size = new Size(420, 480),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -840,9 +896,25 @@ namespace ChickenDist.Forms
                 RightToLeftLayout = true
             };
 
+            // بطاقة معاينة الأرصدة
+            var pnlBalPreview = new Panel
+            {
+                Location = new Point(25, 12),
+                Size = new Size(355, 75),
+                BackColor = Color.FromArgb(20, 26, 38),
+                Padding = new Padding(8)
+            };
+            var lblCurTitle = new Label { Text = "الرصيد الحالي للحساب:", Location = new Point(215, 10), AutoSize = true, ForeColor = Color.FromArgb(148, 163, 184), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var lblCurVal = new Label { Text = "0.00 ج", Location = new Point(10, 8), Width = 200, ForeColor = Color.White, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft };
+            var lblNewTitle = new Label { Text = "الرصيد بعد الحركة:", Location = new Point(230, 42), AutoSize = true, ForeColor = Color.FromArgb(250, 204, 21), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            var lblNewVal = new Label { Text = "0.00 ج", Location = new Point(10, 39), Width = 215, ForeColor = Color.FromArgb(250, 204, 21), Font = new Font("Segoe UI", 12f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft };
+            pnlBalPreview.Controls.AddRange(new Control[] { lblCurTitle, lblCurVal, lblNewTitle, lblNewVal });
+            dlg.Controls.Add(pnlBalPreview);
+
+            int currentY = 95;
             var cboSafe = new ComboBox
             {
-                Width = 320,
+                Width = 355,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -886,61 +958,89 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            var nudAmt = new NumericUpDown 
+            var txtAmount = new TextBox 
             { 
-                Width = 320, 
-                Minimum = 0.00m, 
-                Maximum = 999999999m, 
-                DecimalPlaces = 2,
+                Width = 355, 
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Value = 0.00m
+                ForeColor = Color.FromArgb(250, 204, 21),
+                TextAlign = HorizontalAlignment.Center
             };
+            txtAmount.KeyPress += (s, e2) =>
+            {
+                if (!char.IsControl(e2.KeyChar) && !char.IsDigit(e2.KeyChar) && e2.KeyChar != '.')
+                    e2.Handled = true;
+                if (e2.KeyChar == '.' && (s as TextBox).Text.IndexOf('.') > -1)
+                    e2.Handled = true;
+            };
+            txtAmount.Enter += (s, e2) => txtAmount.SelectAll();
+
+            void UpdateActionPreview()
+            {
+                if (cboSafe.SelectedItem is ComboItem safeItem)
+                {
+                    decimal cur = AccountDAL.GetCashBalance(safeItem.ID);
+                    lblCurVal.Text = cur.ToString("N2") + " ج";
+
+                    decimal amt = 0m;
+                    decimal.TryParse(txtAmount.Text.Trim(), out amt);
+
+                    decimal newBal = cur;
+                    if (type == "Deposit") newBal = cur + amt;
+                    else if (type == "Withdraw") newBal = cur - amt;
+                    else if (type == "Reconcile") newBal = amt;
+
+                    lblNewVal.Text = newBal.ToString("N2") + " ج";
+                    lblNewVal.ForeColor = newBal < 0 ? Color.FromArgb(248, 113, 113) : (newBal > 0 ? Color.FromArgb(74, 222, 128) : Color.FromArgb(250, 204, 21));
+                }
+            }
 
             // Set initial balance for Reconcile
             if (type == "Reconcile" && cboSafe.SelectedItem is ComboItem initialSafe)
             {
-                nudAmt.Value = AccountDAL.GetCashBalance(initialSafe.ID);
+                txtAmount.Text = AccountDAL.GetCashBalance(initialSafe.ID).ToString("N2");
             }
 
             cboSafe.SelectedIndexChanged += (s, ev) =>
             {
                 if (type == "Reconcile" && cboSafe.SelectedItem is ComboItem selectedSafe)
                 {
-                    nudAmt.Value = AccountDAL.GetCashBalance(selectedSafe.ID);
+                    txtAmount.Text = AccountDAL.GetCashBalance(selectedSafe.ID).ToString("N2");
                 }
+                UpdateActionPreview();
             };
+            txtAmount.TextChanged += (s, ev) => UpdateActionPreview();
 
             var txtNotes = new TextBox 
             { 
-                Width = 320, 
+                Width = 355, 
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f)
             };
 
-            var btnSave = Theme.MakeButton("💾 حفظ الحركة", Theme.Accent);
-            btnSave.Size = new Size(320, 38);
+            var btnSave = Theme.MakeButton("💾 حفظ الحركة المالية", Theme.Accent);
+            btnSave.Size = new Size(355, 38);
+            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 
             // Lay out controls dynamically
-            int currentY = 15;
-            
-            var lblSafe = new Label { Text = "الحساب المالي المعني:", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
-            cboSafe.Location = new Point(30, currentY + 23);
+            var lblSafe = new Label { Text = "الحساب المالي المعني:", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+            cboSafe.Location = new Point(25, currentY + 22);
             dlg.Controls.Add(lblSafe);
             dlg.Controls.Add(cboSafe);
             
-            currentY += 60; // Y = 75
+            currentY += 55;
             
             Label lblClassification = null;
             ComboBox cboClassification = null;
             if (type == "Deposit" || type == "Withdraw")
             {
-                lblClassification = new Label { Text = "التصنيف المحاسبي للمقابلة:", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+                lblClassification = new Label { Text = "التصنيف المحاسبي للمقابلة:", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
                 cboClassification = new ComboBox
                 {
-                    Location = new Point(30, currentY + 23),
-                    Width = 320,
+                    Location = new Point(25, currentY + 22),
+                    Width = 355,
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     BackColor = Theme.BgInput,
                     ForeColor = Theme.TextMain,
@@ -966,33 +1066,34 @@ namespace ChickenDist.Forms
                 dlg.Controls.Add(lblClassification);
                 dlg.Controls.Add(cboClassification);
                 
-                currentY += 60; // Y = 135
+                currentY += 55;
             }
             
             var lblAmt = new Label { 
-                Text = type == "Reconcile" ? "الرصيد الفعلي الحالي في الحساب:" : "المبلغ:", 
-                Location = new Point(30, currentY), 
+                Text = type == "Reconcile" ? "الرصيد الفعلي الحالي في الحساب:" : "المبلغ (ج):", 
+                Location = new Point(25, currentY), 
                 AutoSize = true, 
-                ForeColor = Theme.TextMain 
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            nudAmt.Location = new Point(30, currentY + 23);
+            txtAmount.Location = new Point(25, currentY + 22);
             dlg.Controls.Add(lblAmt);
-            dlg.Controls.Add(nudAmt);
+            dlg.Controls.Add(txtAmount);
             
-            currentY += 60; // Y = 195 (or 135 if Reconcile)
+            currentY += 55;
             
-            var lblNotes = new Label { Text = "البيان المحاسبي التفصيلي (إجباري):", Location = new Point(30, currentY), AutoSize = true, ForeColor = Theme.TextMain };
-            txtNotes.Location = new Point(30, currentY + 23);
+            var lblNotes = new Label { Text = "البيان المحاسبي التفصيلي (إجباري):", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain };
+            txtNotes.Location = new Point(25, currentY + 22);
             dlg.Controls.Add(lblNotes);
             dlg.Controls.Add(txtNotes);
             
-            currentY += 65; // Y = 260 (or 200 if Reconcile)
+            currentY += 60;
             
-            btnSave.Location = new Point(30, currentY);
-            btnSave.Size = new Size(320, 38);
+            btnSave.Location = new Point(25, currentY);
+            btnSave.Size = new Size(355, 38);
             dlg.Controls.Add(btnSave);
             
-            dlg.Size = new Size(400, currentY + 90);
+            dlg.Size = new Size(420, currentY + 90);
 
             btnSave.Click += (s, ev) =>
             {
@@ -1001,18 +1102,19 @@ namespace ChickenDist.Forms
                     MessageBox.Show("يرجى اختيار الحساب");
                     return;
                 }
-                if (type != "Reconcile" && nudAmt.Value <= 0)
+                if (!decimal.TryParse(txtAmount.Text.Trim(), out decimal amount) || (type != "Reconcile" && amount <= 0))
                 {
-                    MessageBox.Show("يرجى إدخال مبلغ أكبر من الصفر");
+                    MessageBox.Show("يرجى إدخال مبلغ صحيح أكبر من الصفر");
+                    txtAmount.Focus();
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(txtNotes.Text))
                 {
                     MessageBox.Show("يرجى كتابة بيان محاسبي أو سبب تفصيلي للحركة");
+                    txtNotes.Focus();
                     return;
                 }
 
-                decimal amount = nudAmt.Value;
                 string notes = txtNotes.Text.Trim();
                 int targetSafeID = safeItem.ID;
                 decimal currentBalance = AccountDAL.GetCashBalance(targetSafeID);
@@ -1114,6 +1216,8 @@ namespace ChickenDist.Forms
 
             Theme.ApplyRTL(dlg.Controls);
 
+            dlg.Shown += (s, ev) => { UpdateActionPreview(); txtAmount.Focus(); };
+
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 LoadCashBox();
@@ -1160,7 +1264,7 @@ namespace ChickenDist.Forms
             _selectedExpID = Convert.ToInt32(row.Cells["ExpenseID"].Value);
             if (DateTime.TryParse(row.Cells["ExpenseDate"].Value?.ToString(), out DateTime d)) dtpExpDate.Value = d;
             cboExpType.Text = row.Cells["ExpenseType"].Value?.ToString();
-            if (decimal.TryParse(row.Cells["Amount"].Value?.ToString(), out decimal amt)) nudExpAmount.Value = amt;
+            if (decimal.TryParse(row.Cells["Amount"].Value?.ToString(), out decimal amt)) txtExpAmount.Text = amt.ToString("N2");
             txtExpNotes.Text = row.Cells["Notes"].Value?.ToString();
             
             // select vehicle if present
@@ -1203,7 +1307,7 @@ namespace ChickenDist.Forms
             _selectedExpID = 0;
             dtpExpDate.Value = DateTime.Today;
             cboExpType.Text = "";
-            nudExpAmount.Value = 0;
+            txtExpAmount.Text = "";
             txtExpNotes.Clear();
             if (cboExpVehicle.Items.Count > 0) cboExpVehicle.SelectedIndex = 0;
             if (cboExpSafeAccount != null && cboExpSafeAccount.Items.Count > 0)
@@ -1226,7 +1330,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (string.IsNullOrWhiteSpace(cboExpType.Text)) { MessageBox.Show("اختر نوع المصروف"); return; }
-            if (nudExpAmount.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر"); return; }
+            if (!decimal.TryParse(txtExpAmount.Text.Trim(), out decimal expAmt) || expAmt <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر"); return; }
             int? supplierID = null;
             int? vehicleID = null;
             if (cboExpVehicle.SelectedItem != null && cboExpVehicle.SelectedValue != null && int.TryParse(cboExpVehicle.SelectedValue.ToString(), out int vid) && vid > 0)
@@ -1243,15 +1347,15 @@ namespace ChickenDist.Forms
 
             int targetSafeID = safeAccountID ?? Session.GetPrimaryAllowedSafeID();
             decimal currentBal = AccountDAL.GetCashBalance(targetSafeID);
-            if (nudExpAmount.Value > currentBal && _selectedExpID == 0)
+            if (expAmt > currentBal && _selectedExpID == 0)
             {
-                MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المالي المختار هو ({currentBal:N2} ج) فقط، بينما مبلغ المصروف المطلوب تسجيله هو ({nudExpAmount.Value:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المالي المختار هو ({currentBal:N2} ج) فقط، بينما مبلغ المصروف المطلوب تسجيله هو ({expAmt:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
-                int id = AccountDAL.SaveExpense(_selectedExpID, dtpExpDate.Value, cboExpType.Text, nudExpAmount.Value, txtExpNotes.Text, supplierID, vehicleID, safeAccountID);
+                int id = AccountDAL.SaveExpense(_selectedExpID, dtpExpDate.Value, cboExpType.Text, expAmt, txtExpNotes.Text, supplierID, vehicleID, safeAccountID);
                 if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedExpID = id; LoadExpenses(); LoadCashBox(); }
                 else MessageBox.Show("❌ فشل الحفظ");
             }
