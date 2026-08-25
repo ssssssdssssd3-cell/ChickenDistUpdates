@@ -501,8 +501,67 @@ namespace ChickenDist.Forms
             var pnlPartyContainer = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 2) };
 
             var txtGeneralPartyName = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Visible = false };
-            var cboClientSelect = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = true };
-            var cboSupplierSelect = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
+
+            // ── Client Search (TextBox + Search Button) ─────────────────────────
+            int selectedClientID = 0;
+            var pnlClientSearch = new Panel { Dock = DockStyle.Fill, Visible = true };
+            var txtClientName = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                ReadOnly = true,
+                Text = "-- اضغط 🔍 للبحث عن عميل --",
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            var btnClientSearchPick = new Button
+            {
+                Text = "🔍",
+                Width = 38,
+                Dock = DockStyle.Left,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            btnClientSearchPick.FlatAppearance.BorderSize = 0;
+            pnlClientSearch.Controls.Add(txtClientName);
+            pnlClientSearch.Controls.Add(btnClientSearchPick);
+            txtClientName.Click += (s, e) => btnClientSearchPick.PerformClick();
+
+            // ── Supplier Search (TextBox + Search Button) ────────────────────────
+            int selectedSupplierID = 0;
+            var pnlSupplierSearch = new Panel { Dock = DockStyle.Fill, Visible = false };
+            var txtSupplierName = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                ReadOnly = true,
+                Text = "-- اضغط 🔍 للبحث عن مورد --",
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            var btnSupplierSearchPick = new Button
+            {
+                Text = "🔍",
+                Width = 38,
+                Dock = DockStyle.Left,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = Theme.FontBold
+            };
+            btnSupplierSearchPick.FlatAppearance.BorderSize = 0;
+            pnlSupplierSearch.Controls.Add(txtSupplierName);
+            pnlSupplierSearch.Controls.Add(btnSupplierSearchPick);
+            txtSupplierName.Click += (s, e) => btnSupplierSearchPick.PerformClick();
+
             var cboExpenseType = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
             var cboTargetSafe = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Visible = false };
 
@@ -541,33 +600,11 @@ namespace ChickenDist.Forms
             };
             reloadTargetSafes();
 
-            // Load Clients
-            try
-            {
-                DataTable dtClients = ClientDAL.GetAll(true);
-                cboClientSelect.DataSource = dtClients;
-                cboClientSelect.DisplayMember = "ClientName";
-                cboClientSelect.ValueMember = "ClientID";
-                cboClientSelect.AutoCompleteSource = AutoCompleteSource.ListItems;
-                cboClientSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            }
-            catch { }
-
-            // Load Suppliers
-            try
-            {
-                DataTable dtSuppliers = SupplierDAL.GetAll(true);
-                cboSupplierSelect.DataSource = dtSuppliers;
-                cboSupplierSelect.DisplayMember = "SupplierName";
-                cboSupplierSelect.ValueMember = "SupplierID";
-                cboSupplierSelect.AutoCompleteSource = AutoCompleteSource.ListItems;
-                cboSupplierSelect.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            }
-            catch { }
+            // (Wire-up for client/supplier search buttons is done below, after updatePartyBalance is declared)
 
             pnlPartyContainer.Controls.Add(txtGeneralPartyName);
-            pnlPartyContainer.Controls.Add(cboClientSelect);
-            pnlPartyContainer.Controls.Add(cboSupplierSelect);
+            pnlPartyContainer.Controls.Add(pnlClientSearch);
+            pnlPartyContainer.Controls.Add(pnlSupplierSearch);
             pnlPartyContainer.Controls.Add(cboExpenseType);
             pnlPartyContainer.Controls.Add(cboTargetSafe);
             tblFields.Controls.Add(pnlPartyContainer, 1, 3);
@@ -649,18 +686,6 @@ namespace ChickenDist.Forms
             };
             tblFields.Controls.Add(txtNotes, 1, 7);
 
-            // Row 8: Print Checkbox
-            var chkPrint = new CheckBox
-            {
-                Text = "🖨️ معاينة وطباعة السند فور الحفظ",
-                Checked = true,
-                AutoSize = true,
-                ForeColor = Theme.Accent,
-                Font = Theme.FontBold,
-                Dock = DockStyle.Fill
-            };
-            tblFields.Controls.Add(chkPrint, 1, 8);
-
             // ── Multi-Balance Updating Action ──
             Action updatePartyBalance = () =>
             {
@@ -673,9 +698,9 @@ namespace ChickenDist.Forms
 
                     int pIdx = cboPartyType.SelectedIndex;
 
-                    if (pIdx == 0 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int cid))
+                    if (pIdx == 0 && selectedClientID > 0)
                     {
-                        decimal curBal = ClientDAL.GetFinancialStatus(cid).Balance;
+                        decimal curBal = ClientDAL.GetFinancialStatus(selectedClientID).Balance;
                         string curState = curBal > 0 ? "عليه (مدين)" : (curBal < 0 ? "له (دائن)" : "خالص (0.00 ج)");
                         decimal afterBal = isDeposit ? (curBal - amt) : (curBal + amt);
                         string afterState = afterBal > 0 ? "عليه (مدين)" : (afterBal < 0 ? "له (دائن)" : "خالص (0.00 ج)");
@@ -683,9 +708,9 @@ namespace ChickenDist.Forms
                         lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n👤 رصيد العميل الحالي: {Math.Abs(curBal):N2} ج ({curState}) ➔ المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
                         lblPartyBalance.ForeColor = Color.Gold;
                     }
-                    else if (pIdx == 1 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int sid))
+                    else if (pIdx == 1 && selectedSupplierID > 0)
                     {
-                        decimal curBal = SupplierDAL.GetBalance(sid);
+                        decimal curBal = SupplierDAL.GetBalance(selectedSupplierID);
                         string curState = curBal > 0 ? "له للمورد (دائن)" : (curBal < 0 ? "عليه للمورد (مدين)" : "خالص (0.00 ج)");
                         decimal afterBal = isDeposit ? (curBal + amt) : (curBal - amt);
                         string afterState = afterBal > 0 ? "له للمورد (دائن)" : (afterBal < 0 ? "عليه للمورد (مدين)" : "خالص (0.00 ج)");
@@ -713,7 +738,7 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nجهة تعامل عامة / لا يوجد كشف حساب مالي حي";
+                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nيرجى تحديد جهة التعامل لعرض تفاصيل الرصيد";
                         lblPartyBalance.ForeColor = Color.White;
                     }
                 }
@@ -729,13 +754,45 @@ namespace ChickenDist.Forms
                 updatePartyBalance();
             };
 
+            // Wire client search button (after updatePartyBalance is declared)
+            btnClientSearchPick.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        selectedClientID = frm.SelectedClientID;
+                        var dt = DbHelper.Query("SELECT ClientName FROM Clients WHERE ClientID=@id", DbHelper.P("@id", selectedClientID));
+                        txtClientName.Text = dt.Rows.Count > 0 ? dt.Rows[0]["ClientName"].ToString() : "---";
+                        txtClientName.ForeColor = Theme.TextMain;
+                        updatePartyBalance();
+                    }
+                }
+            };
+
+            // Wire supplier search button (after updatePartyBalance is declared)
+            btnSupplierSearchPick.Click += (s, e) =>
+            {
+                using (var frm = new FrmSupplierSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedSupplierID > 0)
+                    {
+                        selectedSupplierID = frm.SelectedSupplierID;
+                        var dt = DbHelper.Query("SELECT SupplierName FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", selectedSupplierID));
+                        txtSupplierName.Text = dt.Rows.Count > 0 ? dt.Rows[0]["SupplierName"].ToString() : "---";
+                        txtSupplierName.ForeColor = Theme.TextMain;
+                        updatePartyBalance();
+                    }
+                }
+            };
+
             cboPartyType.SelectedIndexChanged += (s, e) =>
             {
                 int idx = cboPartyType.SelectedIndex;
-                cboClientSelect.Visible = (idx == 0);
-                cboSupplierSelect.Visible = (idx == 1);
-                cboExpenseType.Visible = (idx == 2);
-                cboTargetSafe.Visible = (idx == 3);
+                pnlClientSearch.Visible   = (idx == 0);
+                pnlSupplierSearch.Visible = (idx == 1);
+                cboExpenseType.Visible    = (idx == 2);
+                cboTargetSafe.Visible     = (idx == 3);
                 txtGeneralPartyName.Visible = (idx == 4);
 
                 if (idx == 0) lblPartyNameLbl.Text = "اختر العميل:";
@@ -747,8 +804,6 @@ namespace ChickenDist.Forms
                 updatePartyBalance();
             };
 
-            cboClientSelect.SelectedIndexChanged += (s, e) => updatePartyBalance();
-            cboSupplierSelect.SelectedIndexChanged += (s, e) => updatePartyBalance();
             cboTargetSafe.SelectedIndexChanged += (s, e) => updatePartyBalance();
             cboExpenseType.TextChanged += (s, e) => updatePartyBalance();
             nudAmount.ValueChanged += (s, e) => updatePartyBalance();
@@ -784,6 +839,18 @@ namespace ChickenDist.Forms
                     MessageBox.Show("⚠️ يرجى اختيار الحساب المالي / الخزنة المصدر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+                // Validate party selection
+                int partyIdx0 = cboPartyType.SelectedIndex;
+                if (partyIdx0 == 0 && selectedClientID <= 0)
+                {
+                    MessageBox.Show("⚠️ يرجى البحث عن عميل واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (partyIdx0 == 1 && selectedSupplierID <= 0)
+                {
+                    MessageBox.Show("⚠️ يرجى البحث عن مورد واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
                 try
                 {
@@ -806,15 +873,15 @@ namespace ChickenDist.Forms
                     int newTransID = 0;
 
                     // 0: Client
-                    if (partyIdx == 0 && cboClientSelect.SelectedValue != null && int.TryParse(cboClientSelect.SelectedValue.ToString(), out int clientID))
+                    if (partyIdx == 0 && selectedClientID > 0)
                     {
-                        string clientName = cboClientSelect.Text;
-                        decimal curBal = ClientDAL.GetFinancialStatus(clientID).Balance;
+                        string clientName = txtClientName.Text;
+                        decimal curBal = ClientDAL.GetFinancialStatus(selectedClientID).Balance;
                         string curState = curBal > 0 ? "عليه" : (curBal < 0 ? "له" : "خالص");
 
                         if (isDeposit)
                         {
-                            ClientDAL.AddPayment(clientID, amount, $"{userNotes} (رصيد العميل قبل: {Math.Abs(curBal):N2} ج {curState})", safeID);
+                            ClientDAL.AddPayment(selectedClientID, amount, $"{userNotes} (رصيد العميل قبل: {Math.Abs(curBal):N2} ج {curState})", safeID);
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                         else
@@ -825,7 +892,7 @@ namespace ChickenDist.Forms
 
                                 DbHelper.ExecuteTrans(trans,
                                     "INSERT INTO ClientTransactions(ClientID,TransType,Debit,Notes,CreatedBy) VALUES(@id,'Withdraw',@amt,@n,@by)",
-                                    DbHelper.P("@id", clientID), DbHelper.P("@amt", amount),
+                                    DbHelper.P("@id", selectedClientID), DbHelper.P("@amt", amount),
                                     DbHelper.P("@n", "سند صرف - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
@@ -839,15 +906,15 @@ namespace ChickenDist.Forms
                         }
                     }
                     // 1: Supplier
-                    else if (partyIdx == 1 && cboSupplierSelect.SelectedValue != null && int.TryParse(cboSupplierSelect.SelectedValue.ToString(), out int supplierID))
+                    else if (partyIdx == 1 && selectedSupplierID > 0)
                     {
-                        string supplierName = cboSupplierSelect.Text;
-                        decimal curBal = SupplierDAL.GetBalance(supplierID);
+                        string supplierName = txtSupplierName.Text;
+                        decimal curBal = SupplierDAL.GetBalance(selectedSupplierID);
                         string curState = curBal > 0 ? "له للمورد" : (curBal < 0 ? "عليه للمورد" : "خالص");
 
                         if (!isDeposit)
                         {
-                            SupplierDAL.AddSupplierPayment(supplierID, amount, $"{userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})", safeAccountID: safeID);
+                            SupplierDAL.AddSupplierPayment(selectedSupplierID, amount, $"{userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})", safeAccountID: safeID);
                             newTransID = Convert.ToInt32(DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC"));
                         }
                         else
@@ -856,7 +923,7 @@ namespace ChickenDist.Forms
                             {
                                 DbHelper.ExecuteTrans(trans,
                                     "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Refund',@amt,@n,@by)",
-                                    DbHelper.P("@id", supplierID), DbHelper.P("@amt", amount),
+                                    DbHelper.P("@id", selectedSupplierID), DbHelper.P("@amt", amount),
                                     DbHelper.P("@n", "سند توريد - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
@@ -925,15 +992,79 @@ namespace ChickenDist.Forms
                         }
                     }
 
-                    MessageBox.Show($"✅ تم إصدار السند بنجاح! رقم السند: #{newTransID}", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // ── Close dialog first ──────────────────────────────────────
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
-
                     LoadVouchers();
 
-                    if (chkPrint.Checked && newTransID > 0)
+                    MessageBox.Show($"✅ تم إصدار السند بنجاح! رقم السند: #{newTransID}", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // ── سؤال الطباعة ────────────────────────────────────────────
+                    if (newTransID > 0)
                     {
-                        new FrmPrintPayment(newTransID, "AlTarekVoucher", true);
+                        var printResult = MessageBox.Show(
+                            $"🖨️ هل تريد طباعة السند رقم #{newTransID} الآن؟",
+                            "طباعة السند",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question,
+                            MessageBoxDefaultButton.Button1);
+
+                        if (printResult == DialogResult.Yes)
+                        {
+                            new FrmPrintPayment(newTransID, "AlTarekVoucher", true);
+                        }
+
+                        // ── سؤال الإرسال عبر الواتساب ───────────────────────────
+                        var waResult = MessageBox.Show(
+                            $"📱 هل تريد إرسال السند رقم #{newTransID} عبر الواتساب؟",
+                            "إرسال الواتساب",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question,
+                            MessageBoxDefaultButton.Button2);
+
+                        if (waResult == DialogResult.Yes)
+                        {
+                            try
+                            {
+                                // Get phone based on party type
+                                string phone = "";
+                                if (partyIdx == 0 && selectedClientID > 0)
+                                {
+                                    var cRow = DbHelper.Query("SELECT Phone FROM Clients WHERE ClientID=@id", DbHelper.P("@id", selectedClientID));
+                                    if (cRow.Rows.Count > 0) phone = cRow.Rows[0]["Phone"]?.ToString() ?? "";
+                                }
+                                else if (partyIdx == 1 && selectedSupplierID > 0)
+                                {
+                                    var sRow = DbHelper.Query("SELECT Phone FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", selectedSupplierID));
+                                    if (sRow.Rows.Count > 0) phone = sRow.Rows[0]["Phone"]?.ToString() ?? "";
+                                }
+
+                                string partyName = partyIdx == 0 ? txtClientName.Text
+                                                 : partyIdx == 1 ? txtSupplierName.Text
+                                                 : partyIdx == 4 ? txtGeneralPartyName.Text
+                                                 : "جهة تعامل";
+
+                                string voucherLabel = isDeposit ? "سند توريد (قبض)" : "سند صرف (دفع)";
+                                string msg = $"📄 *{voucherLabel} رقم: #{newTransID}*\n"
+                                           + $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n"
+                                           + $"👤 *الجهة:* {partyName}\n"
+                                           + $"💵 *المبلغ:* {amount:N2} ج\n"
+                                           + (!string.IsNullOrWhiteSpace(userNotes) ? $"📝 *البيان:* {userNotes}\n" : "")
+                                           + $"\nشكراً لتعاملكم معنا! 🙏";
+
+                                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                                    this,
+                                    phone,
+                                    msg,
+                                    () => ReceiptImageGenerator.GenerateVoucherReceiptImage(newTransID),
+                                    "📱 إرسال السند عبر الواتساب");
+                            }
+                            catch (Exception waEx)
+                            {
+                                AppLogger.Error("FrmReceiptVoucher.SaveVoucher.WhatsApp", waEx);
+                                MessageBox.Show("فشل تجهيز الواتساب: " + waEx.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
