@@ -964,7 +964,19 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CarModel", HeaderText = "الموديل", ReadOnly = true, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الماركة", ReadOnly = true, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "مكان العرض", ReadOnly = true, FillWeight = 30f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", ReadOnly = true, FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+			{ 
+				Name = "StockQty", 
+				HeaderText = "الرصيد الفعلي", 
+				ReadOnly = true, 
+				FillWeight = 45f,
+				DefaultCellStyle = new DataGridViewCellStyle 
+				{ 
+					Alignment = DataGridViewContentAlignment.MiddleCenter, 
+					Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), 
+					ForeColor = Color.FromArgb(46, 204, 113) 
+				} 
+			});
 			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
@@ -1938,11 +1950,13 @@ namespace ChickenDist.Forms
 			_productCache.Clear();
 			cboDriver.Tag = null;
 
-			// FIX: تحميل كل أرصدة المخزون مرة واحدة بدلاً من رحلة DB لكل صنف
+			// تحميل كل أرصدة المخزون بالكامل للمخزن المختار
 			_stockCache.Clear();
-			var stockTable = InventoryDAL.GetStock();
-			foreach (DataRow sRow in stockTable.Rows)
-				_stockCache[(int)sRow["ProductID"]] = sRow["BookQty"] == DBNull.Value ? 0m : Convert.ToDecimal(sRow["BookQty"]);
+			try
+			{
+				_stockCache = InventoryDAL.GetStockSummary(GetSelectedWarehouseID());
+			}
+			catch { }
 			
 			DataTable all = ClientCache.GetActive();
 			cboClient.BeginUpdate();
@@ -3241,6 +3255,20 @@ namespace ChickenDist.Forms
 				decimal? lastPrice = (clientID > 0) ? SaleDAL.GetLastPriceForClient(item.ProductID, clientID) : null;
 				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") : "-";
 
+				if (item.StockQty <= 0)
+				{
+					if (_stockCache.TryGetValue(item.ProductID, out decimal cachedStock))
+					{
+						item.StockQty = cachedStock;
+					}
+					else
+					{
+						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
+						_stockCache[item.ProductID] = item.StockQty;
+					}
+				}
+				string stockStr = (item.StockQty == Math.Floor(item.StockQty)) ? item.StockQty.ToString("N0") : item.StockQty.ToString("N2");
+
 				int rIndex = dgItems.Rows.Add(
 					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
 					item.ProductName,
@@ -3250,7 +3278,7 @@ namespace ChickenDist.Forms
 					item.CarModel,
 					item.Brand,
 					item.ShelfLocation,
-					item.StockQty.ToString("F2"),
+					stockStr,
 					null,              // UnitName - سيُعيَّن بالكود أدناه
 					item.Quantity.ToString("F2"),
 					item.UnitPrice.ToString("F2"),
@@ -3337,17 +3365,25 @@ namespace ChickenDist.Forms
 				}
 
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
-                if (item.MinStockLimit > 0)
+                if (cell != null)
                 {
-                    if (item.StockQty <= item.MinStockLimit / 2m)
+                    if (item.StockQty <= 0)
                     {
-                        cell.Style.BackColor = Color.FromArgb(255, 100, 100); // Red
-                        cell.Style.ForeColor = Color.White;
+                        cell.Style.ForeColor = Color.FromArgb(231, 76, 60); // Red
+                        cell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                     }
-                    else if (item.StockQty <= item.MinStockLimit)
+                    else if (item.MinStockLimit > 0 && item.StockQty <= item.MinStockLimit)
                     {
-                        cell.Style.BackColor = Color.FromArgb(255, 165, 0); // Orange
-                        cell.Style.ForeColor = Color.White;
+                        cell.Style.ForeColor = Color.FromArgb(230, 126, 34); // Orange
+                        cell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                    }
+                    else
+                    {
+                        cell.Style.ForeColor = Color.FromArgb(46, 204, 113); // Green
+                        cell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                     }
                 }
                 // تعيين Tag للسطر لضمان عمل FocusQtyCellInGrid بشكل صحيح
@@ -4015,6 +4051,11 @@ namespace ChickenDist.Forms
 			// البنود
 			var dtItems = SaleDAL.GetItems(saleID);
 			_items.Clear();
+			try
+			{
+				_stockCache = InventoryDAL.GetStockSummary(GetSelectedWarehouseID());
+			}
+			catch { }
 			foreach (DataRow iRow in dtItems.Rows)
 			{
 				int pid = Convert.ToInt32(iRow["ProductID"]);
@@ -4028,7 +4069,7 @@ namespace ChickenDist.Forms
 						_stockCache[pid] = qty;
 				}
 
-				decimal stock = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
+				decimal stock = _stockCache.TryGetValue(pid, out var st) ? st : InventoryDAL.GetProductStock(pid, GetSelectedWarehouseID());
 				_items.Add(new SaleItemDTO
 				{
 					ProductID   = pid,
