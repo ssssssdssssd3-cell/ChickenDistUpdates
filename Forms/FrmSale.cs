@@ -1067,53 +1067,195 @@ namespace ChickenDist.Forms
 			pnlFooter = new Panel
 			{
 				Dock = DockStyle.Bottom,
-				Height = 84,
+				Height = 96,
 				Width = 1024,
 				BackColor = Theme.BgCard
 			};
 
 			var pnlSummaryFlow = new FlowLayoutPanel
 			{
-				Dock = DockStyle.Top,
-				Height = 34,
-				FlowDirection = FlowDirection.LeftToRight,
-				WrapContents = true,
-				BackColor = Color.Transparent,
-				Padding = new Padding(5, 2, 5, 2),
+				Dock = DockStyle.Fill,
+				FlowDirection = FlowDirection.RightToLeft,
+				WrapContents = false,
+				BackColor = Color.FromArgb(18, 22, 31),
+				Padding = new Padding(6, 3, 6, 3),
 				RightToLeft = RightToLeft.Yes,
 				AutoScroll = true
 			};
 
-			// 1. إجمالي الأصناف
-			Label lblTotalTitle = MakeLabel("إجمالي الأصناف:", 0, 0);
-			lblTotalTitle.AutoSize = true;
-			lblTotalTitle.ForeColor = Theme.TextSub;
-			lblTotalVal = new Label
+			// 1. بطاقة صافي الفاتورة المميزة والبارزة جداً (Super Prominent Net Total Card)
+			var pnlNetGrp = new Panel
+			{
+				Height = 38,
+				Width = 240,
+				BackColor = Color.FromArgb(6, 78, 59), // Deep rich Emerald
+				Margin = new Padding(4, 0, 4, 0),
+				Padding = new Padding(6, 1, 6, 1)
+			};
+			Label lblNetTitle = new Label
+			{
+				Text = "الصافي:",
+				ForeColor = Color.FromArgb(167, 243, 208), // Light Emerald
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 62,
+				TextAlign = ContentAlignment.MiddleRight
+			};
+			lblNetVal = new Label
 			{
 				Text = "0.00 ج",
-				ForeColor = Theme.TextMain,
-				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-				AutoSize = false
+				ForeColor = Color.FromArgb(250, 204, 21), // Glowing Gold
+				Font = new Font("Segoe UI", 15.5f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter
 			};
-			var pnlTotalGrp = new Panel
-			{
-				Height = 32,
-				Width = 175,
-				BackColor = Color.Transparent,
-				Margin = new Padding(3, 1, 3, 1),
-				RightToLeft = RightToLeft.No
-			};
-			lblTotalTitle.Location = new Point(86, 6);
-			lblTotalVal.Location = new Point(0, 4);
-			lblTotalVal.Width = 84;
-			lblTotalVal.TextAlign = ContentAlignment.MiddleLeft;
-			pnlTotalGrp.Controls.Add(lblTotalVal);
-			pnlTotalGrp.Controls.Add(lblTotalTitle);
+			pnlNetGrp.Controls.Add(lblNetVal);
+			pnlNetGrp.Controls.Add(lblNetTitle);
 
-			// 2. الخصم
-			Label lblDiscType = MakeLabel("الخصم:", 0, 0);
-			lblDiscType.AutoSize = true;
-			lblDiscType.ForeColor = Theme.TextSub;
+			// 2. عدد الأصناف
+			var pnlCountGrp = new Panel
+			{
+				Height = 38,
+				Width = 105,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 1, 4, 1)
+			};
+			lblItemCountTitle = new Label
+			{
+				Text = "الأصناف:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 58,
+				TextAlign = ContentAlignment.MiddleRight
+			};
+			lblItemCountVal = new Label
+			{
+				Text = "0",
+				ForeColor = Color.FromArgb(56, 189, 248),
+				Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter
+			};
+			pnlCountGrp.Controls.Add(lblItemCountVal);
+			pnlCountGrp.Controls.Add(lblItemCountTitle);
+
+			// 3. التكلفة والربح (إن وجدت الصلاحية)
+			Panel pnlCostGrp = null;
+			Panel pnlProfitGrp = null;
+			if (Session.CanViewCost("Sales"))
+			{
+				pnlProfitGrp = new Panel
+				{
+					Height = 38,
+					Width = 135,
+					BackColor = Color.FromArgb(28, 33, 46),
+					Margin = new Padding(3, 0, 3, 0),
+					Padding = new Padding(4, 1, 4, 1)
+				};
+				lblProfitTitle = new Label
+				{
+					Text = "الربح:",
+					ForeColor = Color.FromArgb(148, 163, 184),
+					Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+					Dock = DockStyle.Right,
+					Width = 45,
+					TextAlign = ContentAlignment.MiddleRight
+				};
+				lblProfitVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Theme.Success,
+					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleCenter
+				};
+				pnlProfitGrp.Controls.Add(lblProfitVal);
+				pnlProfitGrp.Controls.Add(lblProfitTitle);
+
+				pnlCostGrp = new Panel
+				{
+					Height = 38,
+					Width = 140,
+					BackColor = Color.FromArgb(28, 33, 46),
+					Margin = new Padding(3, 0, 3, 0),
+					Padding = new Padding(4, 1, 4, 1)
+				};
+				lblCostTitle = new Label
+				{
+					Text = "التكلفة:",
+					ForeColor = Color.FromArgb(148, 163, 184),
+					Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+					Dock = DockStyle.Right,
+					Width = 50,
+					TextAlign = ContentAlignment.MiddleRight
+				};
+				lblCostVal = new Label
+				{
+					Text = "0.00 ج",
+					ForeColor = Color.FromArgb(226, 232, 240),
+					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleCenter
+				};
+				pnlCostGrp.Controls.Add(lblCostVal);
+				pnlCostGrp.Controls.Add(lblCostTitle);
+			}
+
+			// 4. شحن / تحميل
+			var pnlShipGrp = new Panel
+			{
+				Height = 38,
+				Width = 145,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 4, 4, 4)
+			};
+			lblShippingChargeTitle = new Label
+			{
+				Text = "شحن:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 45,
+				TextAlign = ContentAlignment.MiddleRight
+			};
+			nudShippingCharge = new NumericUpDown
+			{
+				Minimum = 0,
+				Maximum = 1000000,
+				DecimalPlaces = 2,
+				Value = 0,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.Yes,
+				Dock = DockStyle.Fill,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+			};
+			nudShippingCharge.ValueChanged += (s, e) => CalculateNet();
+			pnlShipGrp.Controls.Add(nudShippingCharge);
+			pnlShipGrp.Controls.Add(lblShippingChargeTitle);
+
+			// 5. الخصم
+			var pnlDiscGrp = new Panel
+			{
+				Height = 38,
+				Width = 220,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 4, 4, 4)
+			};
+			Label lblDiscType = new Label
+			{
+				Text = "الخصم:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 50,
+				TextAlign = ContentAlignment.MiddleRight
+			};
 			cboInvoiceDiscountType = new ComboBox
 			{
 				DropDownStyle = ComboBoxStyle.DropDownList,
@@ -1121,7 +1263,9 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
-				Width = 66
+				Dock = DockStyle.Right,
+				Width = 72,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold)
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
 			cboInvoiceDiscountType.SelectedIndex = 0;
@@ -1134,177 +1278,52 @@ namespace ChickenDist.Forms
 				ForeColor = Theme.TextMain,
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
-				Width = 74
+				Dock = DockStyle.Fill,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				TextAlign = HorizontalAlignment.Center
 			};
 			txtInvoiceDiscount.TextChanged += (s, e) => CalculateNet();
 
-			var pnlDiscGrp = new Panel
-			{
-				Height = 32,
-				Width = 195,
-				BackColor = Color.Transparent,
-				Margin = new Padding(3, 1, 3, 1),
-				RightToLeft = RightToLeft.No
-			};
-			lblDiscType.Location = new Point(148, 6);
-			cboInvoiceDiscountType.Location = new Point(78, 3);
-			txtInvoiceDiscount.Location = new Point(0, 4);
 			pnlDiscGrp.Controls.Add(txtInvoiceDiscount);
 			pnlDiscGrp.Controls.Add(cboInvoiceDiscountType);
 			pnlDiscGrp.Controls.Add(lblDiscType);
 
-			// 3. شحن / تحميل
-			lblShippingChargeTitle = MakeLabel("شحن:", 0, 0);
-			lblShippingChargeTitle.AutoSize = true;
-			lblShippingChargeTitle.ForeColor = Theme.TextSub;
-
-			nudShippingCharge = new NumericUpDown
+			// 6. إجمالي الأصناف
+			var pnlTotalGrp = new Panel
 			{
-				Minimum = 0,
-				Maximum = 1000000,
-				DecimalPlaces = 2,
-				Value = 0,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
-				BorderStyle = BorderStyle.FixedSingle,
-				RightToLeft = RightToLeft.Yes,
-				Width = 70
+				Height = 38,
+				Width = 200,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 1, 4, 1)
 			};
-			nudShippingCharge.ValueChanged += (s, e) => CalculateNet();
-
-			var pnlShipGrp = new Panel
+			Label lblTotalTitle = new Label
 			{
-				Height = 32,
-				Width = 135,
-				BackColor = Color.Transparent,
-				Margin = new Padding(3, 1, 3, 1),
-				RightToLeft = RightToLeft.No
+				Text = "إجمالي الأصناف:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 100,
+				TextAlign = ContentAlignment.MiddleRight
 			};
-			lblShippingChargeTitle.Location = new Point(74, 6);
-			nudShippingCharge.Location = new Point(0, 4);
-			pnlShipGrp.Controls.Add(nudShippingCharge);
-			pnlShipGrp.Controls.Add(lblShippingChargeTitle);
-
-			pnlSummaryFlow.Controls.Add(pnlTotalGrp);
-			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
-			pnlSummaryFlow.Controls.Add(pnlShipGrp);
-
-			// 4. التكلفة والربح (إن وجدت الصلاحية)
-			if (Session.CanViewCost("Sales"))
-			{
-				lblCostTitle = MakeLabel("التكلفة:", 0, 0);
-				lblCostTitle.AutoSize = true;
-				lblCostTitle.ForeColor = Theme.TextSub;
-
-				lblCostVal = new Label
-				{
-					Text = "0.00 ج",
-					ForeColor = Theme.TextMain,
-					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-					AutoSize = false
-				};
-
-				var pnlCostGrp = new Panel
-				{
-					Height = 32,
-					Width = 125,
-					BackColor = Color.Transparent,
-					Margin = new Padding(3, 1, 3, 1),
-					RightToLeft = RightToLeft.No
-				};
-				lblCostTitle.Location = new Point(76, 6);
-				lblCostVal.Location = new Point(0, 5);
-				lblCostVal.Width = 74;
-				lblCostVal.TextAlign = ContentAlignment.MiddleLeft;
-				pnlCostGrp.Controls.Add(lblCostVal);
-				pnlCostGrp.Controls.Add(lblCostTitle);
-
-				lblProfitTitle = MakeLabel("الربح:", 0, 0);
-				lblProfitTitle.AutoSize = true;
-				lblProfitTitle.ForeColor = Theme.TextSub;
-
-				lblProfitVal = new Label
-				{
-					Text = "0.00 ج",
-					ForeColor = Theme.Success,
-					Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-					AutoSize = false
-				};
-
-				var pnlProfitGrp = new Panel
-				{
-					Height = 32,
-					Width = 125,
-					BackColor = Color.Transparent,
-					Margin = new Padding(3, 1, 3, 1),
-					RightToLeft = RightToLeft.No
-				};
-				lblProfitTitle.Location = new Point(76, 6);
-				lblProfitVal.Location = new Point(0, 5);
-				lblProfitVal.Width = 74;
-				lblProfitVal.TextAlign = ContentAlignment.MiddleLeft;
-				pnlProfitGrp.Controls.Add(lblProfitVal);
-				pnlProfitGrp.Controls.Add(lblProfitTitle);
-
-				pnlSummaryFlow.Controls.Add(pnlCostGrp);
-				pnlSummaryFlow.Controls.Add(pnlProfitGrp);
-			}
-
-			// 5. عدد الأصناف
-			lblItemCountTitle = MakeLabel("الأصناف:", 0, 0);
-			lblItemCountTitle.AutoSize = true;
-			lblItemCountTitle.ForeColor = Theme.TextSub;
-
-			lblItemCountVal = MakeLabel("0", 0, 0);
-			lblItemCountVal.AutoSize = false;
-			lblItemCountVal.ForeColor = Theme.Accent;
-			lblItemCountVal.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
-
-			var pnlCountGrp = new Panel
-			{
-				Height = 32,
-				Width = 95,
-				BackColor = Color.Transparent,
-				Margin = new Padding(3, 1, 3, 1),
-				RightToLeft = RightToLeft.No
-			};
-			lblItemCountTitle.Location = new Point(40, 6);
-			lblItemCountVal.Location = new Point(0, 5);
-			lblItemCountVal.Width = 38;
-			lblItemCountVal.TextAlign = ContentAlignment.MiddleLeft;
-			pnlCountGrp.Controls.Add(lblItemCountVal);
-			pnlCountGrp.Controls.Add(lblItemCountTitle);
-
-			// 6. صافي الفاتورة
-			Label lblNetTitle = MakeLabel("صافي الفاتورة:", 0, 0);
-			lblNetTitle.AutoSize = true;
-			lblNetTitle.ForeColor = Theme.TextSub;
-
-			lblNetVal = new Label
+			lblTotalVal = new Label
 			{
 				Text = "0.00 ج",
-				ForeColor = Theme.Accent,
-				Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
-				AutoSize = false
+				ForeColor = Color.FromArgb(241, 245, 249),
+				Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter
 			};
+			pnlTotalGrp.Controls.Add(lblTotalVal);
+			pnlTotalGrp.Controls.Add(lblTotalTitle);
 
-			var pnlNetGrp = new Panel
-			{
-				Height = 32,
-				Width = 190,
-				BackColor = Color.Transparent,
-				Margin = new Padding(3, 1, 3, 1),
-				RightToLeft = RightToLeft.No
-			};
-			lblNetTitle.Location = new Point(106, 6);
-			lblNetVal.Location = new Point(0, 3);
-			lblNetVal.Width = 102;
-			lblNetVal.TextAlign = ContentAlignment.MiddleLeft;
-			pnlNetGrp.Controls.Add(lblNetVal);
-			pnlNetGrp.Controls.Add(lblNetTitle);
-
-			pnlSummaryFlow.Controls.Add(pnlCountGrp);
 			pnlSummaryFlow.Controls.Add(pnlNetGrp);
+			pnlSummaryFlow.Controls.Add(pnlCountGrp);
+			if (pnlProfitGrp != null) pnlSummaryFlow.Controls.Add(pnlProfitGrp);
+			if (pnlCostGrp != null) pnlSummaryFlow.Controls.Add(pnlCostGrp);
+			pnlSummaryFlow.Controls.Add(pnlShipGrp);
+			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
+			pnlSummaryFlow.Controls.Add(pnlTotalGrp);
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 180, 28, Theme.Accent);
