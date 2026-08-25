@@ -337,6 +337,7 @@ namespace ChickenDist.Forms
 
             dgItems.CellValidating += DgItems_CellValidating;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
+            dgItems.DataError += (s, e) => { e.ThrowException = false; };
 
             pnlBottom.Controls.Add(dgItems);
             pnlBottom.Controls.Add(pnlGeneralItemBar);
@@ -640,23 +641,13 @@ namespace ChickenDist.Forms
             int? whId = null;
             if (cboWarehouse.SelectedItem is ComboItem w && w.ID > 0) whId = w.ID;
 
-            string lastSearchText = "";
-            while (true)
+            using (var dlg = new FrmProductSearch(whId, isPurchaseMode: true, defaultShowZeroStock: true))
             {
-                using (var dlg = new FrmProductSearch(whId, isPurchaseMode: true, defaultShowZeroStock: true, initialSearchText: lastSearchText))
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
                 {
-                    if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
-                    {
-                        lastSearchText = dlg.SearchText;
-                        decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
-                        decimal price = dlg.SelectedPurchasePrice > 0 ? dlg.SelectedPurchasePrice : dlg.SelectedPrice;
-                        AddGeneralProductByID(dlg.SelectedProductID, qty, price > 0 ? price : (decimal?)null);
-                        continue;
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
+                    decimal price = dlg.SelectedPurchasePrice > 0 ? dlg.SelectedPurchasePrice : dlg.SelectedPrice;
+                    AddGeneralProductByID(dlg.SelectedProductID, qty, price > 0 ? price : (decimal?)null);
                 }
             }
         }
@@ -668,7 +659,15 @@ namespace ChickenDist.Forms
 
             var r = dtP.Rows[0];
             string name = r["ProductName"].ToString();
-            decimal price = customPrice ?? Convert.ToDecimal(r["PurchasePrice"]);
+            decimal price = 0m;
+            if (customPrice.HasValue && customPrice.Value > 0)
+            {
+                price = customPrice.Value;
+            }
+            else if (r["PurchasePrice"] != DBNull.Value)
+            {
+                price = Convert.ToDecimal(r["PurchasePrice"]);
+            }
 
             // Check if already in dgItems
             foreach (DataGridViewRow row in dgItems.Rows)
@@ -678,6 +677,12 @@ namespace ChickenDist.Forms
                     decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal curQty);
                     decimal newQty = curQty + defaultQty;
                     row.Cells["NewReturnedQty"].Value = newQty;
+
+                    if (price > 0 && (row.Cells["NetUnitPrice"].Value == null || Convert.ToDecimal(row.Cells["NetUnitPrice"].Value) == 0))
+                    {
+                        row.Cells["GrossUnitPrice"].Value = price.ToString("N2");
+                        row.Cells["NetUnitPrice"].Value = price.ToString("N2");
+                    }
 
                     decimal.TryParse(row.Cells["NetUnitPrice"].Value?.ToString(), out decimal curPrice);
                     row.Cells["TotalPrice"].Value = (newQty * curPrice).ToString("N2");
@@ -692,15 +697,21 @@ namespace ChickenDist.Forms
             newRow.Cells["ProductName"].Value     = name;
             newRow.Cells["PurchasedQty"].Value    = "عام";
             newRow.Cells["PrevReturnedQty"].Value = "0";
-            newRow.Cells["NewReturnedQty"].Value  = defaultQty;
             newRow.Cells["GrossUnitPrice"].Value  = price.ToString("N2");
             newRow.Cells["DiscountPct"].Value     = "0%";
             newRow.Cells["NetUnitPrice"].Value    = price.ToString("N2");
+            newRow.Cells["NewReturnedQty"].Value  = defaultQty;
             newRow.Cells["TotalPrice"].Value      = (defaultQty * price).ToString("N2");
             newRow.Cells["UnitName"].Value        = r["UnitName"]?.ToString() ?? "";
             newRow.Cells["Factor"].Value          = 1.0m;
 
             RecalcTotal();
+
+            if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+            {
+                dgItems.CurrentCell = newRow.Cells["NewReturnedQty"];
+                dgItems.FirstDisplayedScrollingRowIndex = rowIdx;
+            }
         }
 
         private void BtnAddGenItem_Click(object sender, EventArgs e)

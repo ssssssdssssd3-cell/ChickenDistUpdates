@@ -781,8 +781,18 @@ namespace ChickenDist.Forms
 
         private void SelectAndClose()
         {
-            if (dgProducts.SelectedRows.Count == 0) return;
-            SelectedProductID = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
+            DataGridViewRow row = null;
+            if (dgProducts.SelectedRows.Count > 0)
+                row = dgProducts.SelectedRows[0];
+            else if (dgProducts.CurrentRow != null)
+                row = dgProducts.CurrentRow;
+            else if (dgProducts.Rows.Count > 0)
+                row = dgProducts.Rows[0];
+
+            if (row == null || row.Cells["ProductID"].Value == null || Convert.ToInt32(row.Cells["ProductID"].Value) <= 0)
+                return;
+
+            SelectedProductID = Convert.ToInt32(row.Cells["ProductID"].Value);
 
             SelectedBatchID = null;
             SelectedExpiryDate = null;
@@ -796,8 +806,9 @@ namespace ChickenDist.Forms
             }
             else
             {
-                SelectedPrice = Convert.ToDecimal(dgProducts.SelectedRows[0].Cells["SalePrice"].Value);
-                SelectedUnitName = dgProducts.SelectedRows[0].Cells["Unit"].Value?.ToString() ?? "";
+                decimal.TryParse(row.Cells["SalePrice"].Value?.ToString(), out decimal sp);
+                SelectedPrice = sp;
+                SelectedUnitName = row.Cells["Unit"].Value?.ToString() ?? "";
             }
 
             if (txtSelectedQty != null && decimal.TryParse(txtSelectedQty.Text.Trim(), out decimal q) && q > 0)
@@ -805,7 +816,7 @@ namespace ChickenDist.Forms
             else
                 SelectedQuantity = 1m;
 
-            if (txtSelectedPurchasePrice != null && decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal ppVal) && ppVal >= 0)
+            if (txtSelectedPurchasePrice != null && decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal ppVal) && ppVal > 0)
             {
                 SelectedPurchasePrice = ppVal;
                 if (_isPurchaseMode) SelectedPrice = ppVal;
@@ -813,7 +824,7 @@ namespace ChickenDist.Forms
             else
                 SelectedPurchasePrice = SelectedPrice;
 
-            if (txtSelectedSalePrice != null && decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal spVal) && spVal >= 0)
+            if (txtSelectedSalePrice != null && decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal spVal) && spVal > 0)
             {
                 SelectedSalePrice = spVal;
                 if (!_isPurchaseMode) SelectedPrice = spVal;
