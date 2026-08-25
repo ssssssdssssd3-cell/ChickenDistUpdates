@@ -353,6 +353,25 @@ namespace ChickenDist.Forms
             if (_dg.CurrentRow != null && _dg.CurrentRow.Cells["AccountID"].Value != null)
             {
                 int accID = Convert.ToInt32(_dg.CurrentRow.Cells["AccountID"].Value);
+
+                if (!Session.IsAdmin)
+                {
+                    if (!Session.CanAccess("CashBox") || !Session.CanViewBalance("CashBox") || !Session.CanViewDetails("CashBox"))
+                    {
+                        if (!Session.PromptAdminPassword(this, "عرض كشف تفاصيل وحركات الخزينة"))
+                        {
+                            return;
+                        }
+                    }
+                    else if (!Session.CanChangeSafe("CashBox") && !Session.IsSafeAllowed(accID))
+                    {
+                        if (!Session.PromptAdminPassword(this, "عرض حركات خزينة أو درج آخر"))
+                        {
+                            return;
+                        }
+                    }
+                }
+
                 var f = new FrmCashBox();
                 f.ShowDialog(this);
                 LoadData();
