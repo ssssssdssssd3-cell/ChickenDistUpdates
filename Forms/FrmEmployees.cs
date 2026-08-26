@@ -605,8 +605,7 @@ namespace ChickenDist.Forms
         {
             var dg = new DataGridView { Dock = DockStyle.Fill, BackgroundColor = Theme.BgCard, BorderStyle = BorderStyle.None, RowHeadersVisible = false, AllowUserToAddRows = false, RightToLeft = RightToLeft.Yes, GridColor = Theme.BorderColor, EnableHeadersVisualStyles = false };
             dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter };
-            dg.ColumnHeadersHeight = 42;
-            dg.Columns.AddRange(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false }, new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260 }, new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 80 }, new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 }, new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 }, new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
+            dg.Columns.AddRange(new DataGridViewTextBoxColumn { Name = "Screen", Visible = false }, new DataGridViewTextBoxColumn { Name = "ScreenName", HeaderText = "اسم الشاشة / الوظيفة", ReadOnly = true, Width = 260 }, new DataGridViewCheckBoxColumn { Name = "CanAccess", HeaderText = "👁️ دخول", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanAdd", HeaderText = "➕ إضافة/حفظ", Width = 95 }, new DataGridViewCheckBoxColumn { Name = "CanEdit", HeaderText = "✏️ تعديل", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanDelete", HeaderText = "🗑️ حذف", Width = 80 }, new DataGridViewCheckBoxColumn { Name = "CanEditPrice", HeaderText = "🏷️ السعر", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanEditSalesInvoice", HeaderText = "📝 تعديل/إرجاع فواتير الغير", Width = 140 }, new DataGridViewCheckBoxColumn { Name = "CanDeleteSalesInvoice", HeaderText = "❌ حذف فاتورة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanCopySalesInvoice", HeaderText = "📋 نسخ/طباعة", Width = 120 }, new DataGridViewCheckBoxColumn { Name = "CanViewCost", HeaderText = "💲 التكلفة", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanOrderColumns", HeaderText = "↕️ ترتيب", Width = 85 }, new DataGridViewCheckBoxColumn { Name = "CanViewDetails", HeaderText = "📄 التقفيل", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanViewBalance", HeaderText = "💰 الرصيد", Width = 90 }, new DataGridViewCheckBoxColumn { Name = "CanChangeSafe", HeaderText = "🔄 تغيير خزنة", Width = 115 }, new DataGridViewCheckBoxColumn { Name = "CanViewSalesTotals", HeaderText = "📊 إجماليات السجل", Width = 135 }, new DataGridViewCheckBoxColumn { Name = "CanViewQuickItems", HeaderText = "⚡ أصناف سريعة", Width = 115 });
             dg.CellValueChanged += (s, e) =>
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
@@ -777,7 +776,17 @@ namespace ChickenDist.Forms
                                                    string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "Reservations", StringComparison.OrdinalIgnoreCase) ||
                                                    string.Equals(key, "ClearanceOffers", StringComparison.OrdinalIgnoreCase) ||
-                                                   string.Equals(key, "LookupManager", StringComparison.OrdinalIgnoreCase);
+                                                   string.Equals(key, "LookupManager", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Returns", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "PurchaseReturn", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Sales", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "POS", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "CashBox", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "ReceiptVoucher", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "SupplierPayment", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "WarehouseTransfer", StringComparison.OrdinalIgnoreCase) ||
+                                                   string.Equals(key, "Wastage", StringComparison.OrdinalIgnoreCase);
 
                             if (!isEntityScreen)
                             {
@@ -791,7 +800,9 @@ namespace ChickenDist.Forms
                                                          string.Equals(key, "Purchases", StringComparison.OrdinalIgnoreCase) ||
                                                          string.Equals(key, "ProductSearch", StringComparison.OrdinalIgnoreCase) ||
                                                          string.Equals(key, "Products", StringComparison.OrdinalIgnoreCase) ||
-                                                         string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase);
+                                                         string.Equals(key, "PriceQuote", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "Returns", StringComparison.OrdinalIgnoreCase) ||
+                                                         string.Equals(key, "PurchaseReturn", StringComparison.OrdinalIgnoreCase);
                             if (!isPriceEditableScreen)
                             {
                                 DisableGridCell(targetGrid.Rows[ri], 6); // CanEditPrice

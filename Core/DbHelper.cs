@@ -3397,6 +3397,13 @@ namespace ChickenDist.Core
                         ALTER TABLE Permissions ADD CanViewSalesTotals BIT DEFAULT 1;
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewQuickItems')
                         ALTER TABLE Permissions ADD CanViewQuickItems BIT DEFAULT 1;
+
+                    -- تصحيح تلقائي لصلاحية CanAdd للشاشات التشغيلية التي تم قفلها سابقاً بالخطأ
+                    UPDATE Permissions 
+                    SET CanAdd = 1 
+                    WHERE ScreenName IN ('Returns', 'PurchaseReturn', 'Sales', 'Purchases', 'POS') 
+                      AND CanAccess = 1 
+                      AND (CanAdd = 0 OR CanAdd IS NULL);
                 ");
             }
             catch (Exception ex)

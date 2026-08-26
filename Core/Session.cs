@@ -269,6 +269,13 @@ namespace ChickenDist.Core
 
             if (_perms.ContainsKey(screen) && _perms[screen].CanAdd) return true;
 
+            if (screen == "Returns" || screen == "PurchaseReturn")
+            {
+                if (_perms.ContainsKey(screen))
+                    return _perms[screen].CanAdd;
+                return CanAccess(screen);
+            }
+
             if (screen == "ReceiptVoucher")
             {
                 if (_perms.ContainsKey("ReceiptVoucher") && _perms["ReceiptVoucher"].CanAccess) return true;
@@ -283,6 +290,17 @@ namespace ChickenDist.Core
                 if (_perms.ContainsKey("SafeAccounts") && (_perms["SafeAccounts"].CanAdd || _perms["SafeAccounts"].CanAccess)) return true;
             }
 
+            return false;
+        }
+
+        /// <summary>
+        /// هل يحق للموظف عمل مرتجع لجميع فواتير المبيعات (حتى فواتير الموظفين الآخرين) أم مبيعاته هو فقط؟
+        /// </summary>
+        public static bool CanReturnAllSales()
+        {
+            if (IsAdmin) return true;
+            if (_perms.ContainsKey("Returns"))
+                return _perms["Returns"].CanEditSalesInvoice;
             return false;
         }
 

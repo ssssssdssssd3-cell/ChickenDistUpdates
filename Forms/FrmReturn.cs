@@ -29,6 +29,15 @@ namespace ChickenDist.Forms
 
         public FrmReturn()
         {
+            if (!Session.CanAccess("Returns"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بالوصول لشاشة مرتجع المبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
             DbHelper.EnsureShiftSchema();
             InitUI();
             LoadCombos();
@@ -103,18 +112,45 @@ namespace ChickenDist.Forms
             {
                 cboEmployeeFilter.SelectedIndexChanged -= (s, e) => LoadSales();
                 cboEmployeeFilter.Items.Clear();
-                cboEmployeeFilter.Items.Add(new ComboItem(0, "الكل (جميع الموظفين)"));
+
+                bool canReturnAll = Session.IsAdmin || Session.CanReturnAllSales();
+                if (canReturnAll)
+                {
+                    cboEmployeeFilter.Items.Add(new ComboItem(0, "الكل (جميع الموظفين)"));
+                }
+
                 try
                 {
                     DataTable dtEmp = EmployeeDAL.GetAll();
                     foreach (DataRow r in dtEmp.Rows)
                     {
-                        cboEmployeeFilter.Items.Add(new ComboItem(Convert.ToInt32(r["EmpID"]), r["EmpName"].ToString()));
+                        int eid = Convert.ToInt32(r["EmpID"]);
+                        if (canReturnAll || eid == Session.EmpID)
+                        {
+                            cboEmployeeFilter.Items.Add(new ComboItem(eid, r["EmpName"].ToString()));
+                        }
                     }
                 }
                 catch { }
                 cboEmployeeFilter.DisplayMember = "Text";
-                if (cboEmployeeFilter.Items.Count > 0) cboEmployeeFilter.SelectedIndex = 0;
+
+                if (!canReturnAll)
+                {
+                    for (int i = 0; i < cboEmployeeFilter.Items.Count; i++)
+                    {
+                        if (cboEmployeeFilter.Items[i] is ComboItem ci && ci.ID == Session.EmpID)
+                        {
+                            cboEmployeeFilter.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                    cboEmployeeFilter.Enabled = false;
+                }
+                else
+                {
+                    if (cboEmployeeFilter.Items.Count > 0) cboEmployeeFilter.SelectedIndex = 0;
+                    cboEmployeeFilter.Enabled = true;
+                }
                 cboEmployeeFilter.SelectedIndexChanged += (s, e) => LoadSales();
             }
         }
@@ -454,7 +490,7 @@ namespace ChickenDist.Forms
             var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             
             btnAddGenItem = Theme.MakeButton("🔍 بحث (F2)", Color.FromArgb(40, 110, 160));
             btnAddGenItem.Size = new Size(110, 28);
@@ -494,7 +530,7 @@ namespace ChickenDist.Forms
             var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
             var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             btnAddNewGenItem = Theme.MakeButton("➕ إضافة بديل", Color.FromArgb(50, 140, 70));
             btnAddNewGenItem.Size = new Size(110, 26);
             btnAddNewGenItem.Margin = new Padding(10, 0, 0, 0);
@@ -516,6 +552,7 @@ namespace ChickenDist.Forms
             dgSales = MakeGrid();
             dgSales.AutoGenerateColumns = false;
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleID", DataPropertyName = "SaleID", Visible = false });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", DataPropertyName = "CreatedBy", Visible = false });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", DataPropertyName = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", DataPropertyName = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 75f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd HH:mm" } });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", DataPropertyName = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 50f });
@@ -635,7 +672,7 @@ namespace ChickenDist.Forms
             {
                 Name = "UnitPrice",
                 HeaderText = "سعر المرتجع",
-                ReadOnly = false,
+                ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns"),
                 FillWeight = 50
             };
             colUnitPrice.DefaultCellStyle.BackColor = Color.FromArgb(40, 55, 45);
@@ -1024,13 +1061,21 @@ namespace ChickenDist.Forms
                     else if (sel.Contains("DriverLoad") || sel.Contains("حمولة") || sel.Contains("تحميل")) saleType = "DriverLoad";
                 }
 
+                bool canReturnAll = Session.IsAdmin || Session.CanReturnAllSales();
                 int? empID = null;
-                if (cboEmployeeFilter != null && cboEmployeeFilter.SelectedItem is ComboItem cei && cei.ID > 0)
-                    empID = cei.ID;
-                else if (cboEmployeeFilter != null && !string.IsNullOrWhiteSpace(cboEmployeeFilter.Text) && cboEmployeeFilter.Text.Trim() != "الكل" && !cboEmployeeFilter.Text.Trim().StartsWith("الكل"))
+                if (!canReturnAll)
                 {
-                    if (cboEmployeeFilter.SelectedItem is ComboItem cItem && cItem.ID > 0)
-                        empID = cItem.ID;
+                    empID = Session.EmpID;
+                }
+                else
+                {
+                    if (cboEmployeeFilter != null && cboEmployeeFilter.SelectedItem is ComboItem cei && cei.ID > 0)
+                        empID = cei.ID;
+                    else if (cboEmployeeFilter != null && !string.IsNullOrWhiteSpace(cboEmployeeFilter.Text) && cboEmployeeFilter.Text.Trim() != "الكل" && !cboEmployeeFilter.Text.Trim().StartsWith("الكل"))
+                    {
+                        if (cboEmployeeFilter.SelectedItem is ComboItem cItem && cItem.ID > 0)
+                            empID = cItem.ID;
+                    }
                 }
 
                 _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID);
@@ -1285,8 +1330,13 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("Returns")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ مرتجعات المبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Returns")) 
+            { 
+                MessageBox.Show("⛔ ليس لديك صلاحية حفظ مرتجعات المبيعات.\nيرجى مراجعة إدارة النظام لتفعيل صلاحية حفظ المرتجع لحسابك.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); 
+                return; 
+            }
 
+            bool canReturnAll = Session.IsAdmin || Session.CanReturnAllSales();
             int mode = cboMode.SelectedIndex;
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
             
@@ -1311,6 +1361,19 @@ namespace ChickenDist.Forms
                 {
                     MessageBox.Show("يرجى اختيار الفاتورة المراد الإرجاع منها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
+                }
+
+                if (!canReturnAll)
+                {
+                    if (dgSales.CurrentRow.Cells["CreatedBy"] != null && dgSales.CurrentRow.Cells["CreatedBy"].Value != null && dgSales.CurrentRow.Cells["CreatedBy"].Value != DBNull.Value)
+                    {
+                        int creatorId = Convert.ToInt32(dgSales.CurrentRow.Cells["CreatedBy"].Value);
+                        if (creatorId > 0 && creatorId != Session.EmpID)
+                        {
+                            MessageBox.Show("⛔ غير مصرح لك بعمل مرتجع لفواتير الموظفين الآخرين.\nصلاحية حسابك مقصورة على عمل مرتجع لمبيعاتك الشخصية فقط.", "صلاحية محددة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                    }
                 }
 
                 int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
