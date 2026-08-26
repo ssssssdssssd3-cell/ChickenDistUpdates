@@ -545,6 +545,23 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('Products', 'U') IS NOT NULL
             BEGIN
+                -- Drop dependent indexes before altering column data types
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
+                    DROP INDEX IX_Products_Search ON Products;
+
+                DECLARE @dropIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropIdxSql = @dropIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
+                FROM sys.indexes i
+                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                WHERE i.object_id = OBJECT_ID('Products')
+                  AND i.is_primary_key = 0 
+                  AND i.is_unique_constraint = 0
+                  AND c.name IN ('SalePrice', 'PurchasePrice', 'WholesalePrice', 'SemiWholesalePrice', 'CostPrice', 'PendingSalePrice', 'MinStockLimit', 'PendingQtyThreshold', 'Unit2Factor', 'Unit3Factor');
+
+                IF LEN(@dropIdxSql) > 0
+                    EXEC sp_executesql @dropIdxSql;
+
                 IF COL_LENGTH('Products', 'PurchasePrice') IS NOT NULL
                     ALTER TABLE Products ALTER COLUMN PurchasePrice DECIMAL(18, 4) NULL;
                 IF COL_LENGTH('Products', 'SalePrice') IS NOT NULL
@@ -627,6 +644,14 @@ namespace ChickenDist.Core
                     ALTER TABLE PurchaseReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('PurchaseReturnItems', 'Factor') IS NOT NULL
                     ALTER TABLE PurchaseReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('Products', 'U') IS NOT NULL
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice, Quantity);
+                END
             END");
 
             SafeMigrate("HR.CompleteModule", @"
