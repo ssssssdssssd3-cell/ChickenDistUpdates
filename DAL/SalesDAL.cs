@@ -79,6 +79,12 @@ namespace ChickenDist.DAL
 
             return DbHelper.Query(
                 @"SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType,
+                         s.ClientID,
+                         CASE 
+                             WHEN s.ClientID IS NOT NULL AND s.ClientID > 0 
+                             THEN COALESCE(NULLIF(c.ClientCode, N''), CAST(c.ClientID AS NVARCHAR(50)))
+                             ELSE N'0'
+                         END AS ClientCode,
                          COALESCE(NULLIF(s.CustomClientName, N''), c.ClientName, N'عميل نقدي') AS ClientName,
                          ISNULL(e.EmpName,N'---') AS DriverName,
                          s.TotalAmount,
@@ -117,7 +123,7 @@ namespace ChickenDist.DAL
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     AND (@saleType IS NULL OR s.SaleType = @saleType)
-                    AND (@empID IS NULL OR s.CreatedBy = @empID)
+                    AND (@empID IS NULL OR s.CreatedBy = @empID OR s.DriverID = @empID)
                     AND (@product IS NULL OR EXISTS (
                         SELECT 1 FROM SaleItems si2
                         JOIN Products pr ON si2.ProductID = pr.ProductID

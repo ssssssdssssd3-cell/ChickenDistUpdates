@@ -14,13 +14,13 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgSales, dgItems, dgExchangeNewItems;
         private TextBox txtSearch, txtInvoiceBarcode, txtNotes, txtGenQty, txtGenPrice, txtNewGenQty, txtNewGenPrice;
-        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter;
+        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter, cboEmployeeFilter;
         private DateTimePicker dtpFrom, dtpTo;
         private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
         private Label lblTotal, lblExchangeSummary;
         private SplitContainer _mainSplit;
         private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
-        private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode;
+        private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode, _pnlEmp;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
         private decimal _selectedSaleTotalAmount = 0m;
@@ -96,6 +96,26 @@ namespace ChickenDist.Forms
                 cboNewExchangeProducts.DisplayMember = "Text";
                 if (cboNewExchangeProducts.Items.Count > 0) cboNewExchangeProducts.SelectedIndex = 0;
                 cboNewExchangeProducts.SelectedIndexChanged += CboNewExchangeProducts_SelectedIndexChanged;
+            }
+
+            // الموظفون (فلتر البحث بالموظف)
+            if (cboEmployeeFilter != null)
+            {
+                cboEmployeeFilter.SelectedIndexChanged -= (s, e) => LoadSales();
+                cboEmployeeFilter.Items.Clear();
+                cboEmployeeFilter.Items.Add(new ComboItem(0, "الكل (جميع الموظفين)"));
+                try
+                {
+                    DataTable dtEmp = EmployeeDAL.GetAll();
+                    foreach (DataRow r in dtEmp.Rows)
+                    {
+                        cboEmployeeFilter.Items.Add(new ComboItem(Convert.ToInt32(r["EmpID"]), r["EmpName"].ToString()));
+                    }
+                }
+                catch { }
+                cboEmployeeFilter.DisplayMember = "Text";
+                if (cboEmployeeFilter.Items.Count > 0) cboEmployeeFilter.SelectedIndex = 0;
+                cboEmployeeFilter.SelectedIndexChanged += (s, e) => LoadSales();
             }
         }
 
@@ -324,14 +344,25 @@ namespace ChickenDist.Forms
 
             cboProductFilter = new ComboBox
             {
-                Width = 160, Height = 26,
+                Width = 150, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems
             };
             StyleSearchInput(cboProductFilter);
             SetupSearchableCombo(cboProductFilter);
-            var pnlProduct = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 160);
+            var pnlProduct = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 150);
+
+            cboEmployeeFilter = new ComboBox
+            {
+                Width = 140, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
+            };
+            StyleSearchInput(cboEmployeeFilter);
+            SetupSearchableCombo(cboEmployeeFilter);
+            _pnlEmp = MakeFilterPanel("الموظف:", cboEmployeeFilter, 140);
 
             cboReturnType = new ComboBox
             {
@@ -390,6 +421,7 @@ namespace ChickenDist.Forms
                 pnlClient, 
                 pnlSaleType, 
                 pnlProduct, 
+                _pnlEmp,
                 pnlRetType, 
                 pnlWh, 
                 _pnlFrom, 
@@ -487,12 +519,20 @@ namespace ChickenDist.Forms
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", DataPropertyName = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", DataPropertyName = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 75f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd HH:mm" } });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", DataPropertyName = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 50f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 110f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "اسم المندوب", FillWeight = 80f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ClientCode", 
+                DataPropertyName = "ClientCode", 
+                HeaderText = "كود العميل", 
+                FillWeight = 45f,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 105f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "اسم المندوب", FillWeight = 75f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", DataPropertyName = "TotalAmount", HeaderText = "إجمالي الفاتورة", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", DataPropertyName = "ReturnAmount", HeaderText = "المسترجع سابقاً", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "المستخدم", FillWeight = 85f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "الملاحظات", FillWeight = 120f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "المستخدم", FillWeight = 80f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "الملاحظات", FillWeight = 110f });
 
             dgSales.CellFormatting += (s, e) =>
             {
@@ -501,10 +541,25 @@ namespace ChickenDist.Forms
                     var row = dgSales.Rows[e.RowIndex];
                     if (row.Cells["ReturnAmount"].Value != null && decimal.TryParse(row.Cells["ReturnAmount"].Value.ToString(), out decimal retAmt) && retAmt > 0)
                     {
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصغر واضح للفواتير المرتجعة
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصفر واضح للفواتير المرتجعة
                         row.DefaultCellStyle.ForeColor = Color.Black;
                         row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
                         row.DefaultCellStyle.SelectionForeColor = Color.Black;
+                    }
+
+                    if (dgSales.Columns[e.ColumnIndex].Name == "ClientCode" && e.Value != null)
+                    {
+                        string cCode = e.Value.ToString();
+                        if (cCode == "0")
+                        {
+                            e.CellStyle.ForeColor = Color.FromArgb(160, 160, 160);
+                            e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+                        }
+                        else
+                        {
+                            e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153);
+                            e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                        }
                     }
 
                     if (dgSales.Columns[e.ColumnIndex].Name == "SaleType" && e.Value != null)
@@ -749,6 +804,7 @@ namespace ChickenDist.Forms
 
             if (_pnlFrom != null) _pnlFrom.Visible = isInvoice;
             if (_pnlTo != null) _pnlTo.Visible = isInvoice;
+            if (_pnlEmp != null) _pnlEmp.Visible = isInvoice;
             if (_pnlSearch != null) _pnlSearch.Visible = isInvoice;
             if (_pnlBarcode != null) _pnlBarcode.Visible = isInvoice;
             if (btnSearch != null) btnSearch.Visible = isInvoice;
@@ -968,7 +1024,16 @@ namespace ChickenDist.Forms
                     else if (sel.Contains("DriverLoad") || sel.Contains("حمولة") || sel.Contains("تحميل")) saleType = "DriverLoad";
                 }
 
-                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType);
+                int? empID = null;
+                if (cboEmployeeFilter != null && cboEmployeeFilter.SelectedItem is ComboItem cei && cei.ID > 0)
+                    empID = cei.ID;
+                else if (cboEmployeeFilter != null && !string.IsNullOrWhiteSpace(cboEmployeeFilter.Text) && cboEmployeeFilter.Text.Trim() != "الكل" && !cboEmployeeFilter.Text.Trim().StartsWith("الكل"))
+                {
+                    if (cboEmployeeFilter.SelectedItem is ComboItem cItem && cItem.ID > 0)
+                        empID = cItem.ID;
+                }
+
+                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID);
                 dgSales.DataSource = _salesDt;
             }
             catch (Exception ex)
