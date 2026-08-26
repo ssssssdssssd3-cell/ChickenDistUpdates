@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.1.2"
+$VERSION   = "2.1.3"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -132,8 +132,9 @@ foreach ($dest in $releaseDestinations) {
 }
 
 $botPublicMobile = Join-Path $REPO_ROOT "bot\public\mobile.html"
-Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\index.html") -Destination $botPublicMobile -Force
-Write-OK "Synced MobileApp/index.html to $botPublicMobile"
+# NOTE: bot/public/mobile.html is maintained independently (real-time Firebase version)
+# We do NOT overwrite it with MobileApp/index.html anymore
+Write-OK "bot/public/mobile.html is kept as-is (real-time Firebase owner app)"
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
