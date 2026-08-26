@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         private ComboBox cboPrintBehavior;
         private ComboBox cboReceiptTemplate;
         private ComboBox cboA4Template;
+        private ComboBox cboPrepTemplate;
+        private ComboBox cboPrepPaperSize;
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
@@ -589,6 +591,89 @@ namespace ChickenDist.Forms
                 }
             };
             this.Controls.Add(btnPreviewA4);
+            y += 45;
+
+            // ── نماذج إذن التحضير وصرف البضاعة بالمخزن ───────────────────
+            AddLabel("نموذج إذن التحضير وصرف البضاعة بالمخزن:", 20, ref y, 10);
+            cboPrepTemplate = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboPrepTemplate.Items.AddRange(new object[]
+            {
+                "نموذج إذن صرف بضاعة مع خانة الملاحظات (Disbursement Slip A4/A5)",
+                "النموذج القياسي مع موقع الرف والتخزين (Standard Preparation Grid)",
+                "النموذج العصري الحديث (Modern Dark Preparation)"
+            });
+            cboPrepTemplate.SelectedItem = AppConfig.PreparationSlipTemplate == "Standard" ? "النموذج القياسي مع موقع الرف والتخزين (Standard Preparation Grid)"
+                                         : AppConfig.PreparationSlipTemplate == "Modern" ? "النموذج العصري الحديث (Modern Dark Preparation)"
+                                         : "نموذج إذن صرف بضاعة مع خانة الملاحظات (Disbursement Slip A4/A5)";
+            if (cboPrepTemplate.SelectedIndex == -1) cboPrepTemplate.SelectedIndex = 0;
+            this.Controls.Add(cboPrepTemplate);
+            y += 35;
+
+            AddLabel("مقاس ورق إذن التحضير الافتراضي:", 20, ref y, 10);
+            cboPrepPaperSize = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 500,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 11f)
+            };
+            cboPrepPaperSize.Items.AddRange(new object[]
+            {
+                "ورق كامل A4 (210 x 297 mm)",
+                "نصف صفحة A5 (148 x 210 mm)",
+                "بون حراري Receipt (80 mm)"
+            });
+            cboPrepPaperSize.SelectedItem = AppConfig.PreparationPaperSize == "A5" ? "نصف صفحة A5 (148 x 210 mm)"
+                                          : AppConfig.PreparationPaperSize == "Receipt" ? "بون حراري Receipt (80 mm)"
+                                          : "ورق كامل A4 (210 x 297 mm)";
+            if (cboPrepPaperSize.SelectedIndex == -1) cboPrepPaperSize.SelectedIndex = 0;
+            this.Controls.Add(cboPrepPaperSize);
+            y += 35;
+
+            // زر معاينة إذن التحضير وصرف البضاعة
+            var btnPreviewPrep = Theme.MakeButton("📋 معاينة إذن التحضير وصرف البضاعة", 20, y, 260, 36, Color.FromArgb(34, 153, 84));
+            btnPreviewPrep.Click += (s, e) =>
+            {
+                AppConfig.PreparationSlipTemplate = cboPrepTemplate.SelectedIndex switch
+                {
+                    1 => "Standard",
+                    2 => "Modern",
+                    _ => "Disbursement"
+                };
+                AppConfig.PreparationPaperSize = cboPrepPaperSize.SelectedIndex switch
+                {
+                    1 => "A5",
+                    2 => "Receipt",
+                    _ => "A4"
+                };
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
+
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview != null && dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    FrmPrintSale.PrintPreparationSlip(previewSaleID, AppConfig.PreparationPaperSize, true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير مبيعات مسجلة حالياً لمعاينة إذن التحضير.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewPrep);
             y += 50;
 
             // ── قالب الباركود الافتراضي ───────────────────
@@ -1307,6 +1392,24 @@ namespace ChickenDist.Forms
                     11 => "CorporateModern",
                     _ => "AlTarekGrid"
                 };
+                if (cboPrepTemplate != null)
+                {
+                    AppConfig.PreparationSlipTemplate = cboPrepTemplate.SelectedIndex switch
+                    {
+                        1 => "Standard",
+                        2 => "Modern",
+                        _ => "Disbursement"
+                    };
+                }
+                if (cboPrepPaperSize != null)
+                {
+                    AppConfig.PreparationPaperSize = cboPrepPaperSize.SelectedIndex switch
+                    {
+                        1 => "A5",
+                        2 => "Receipt",
+                        _ => "A4"
+                    };
+                }
                 AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
                                           : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
                                           : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"

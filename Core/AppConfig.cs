@@ -131,6 +131,18 @@ namespace ChickenDist.Core
             set => Set("VoucherTemplate", value);
         }
 
+        public static string PreparationSlipTemplate
+        {
+            get => Get("PreparationSlipTemplate", "Disbursement"); // "Disbursement", "Standard", "Modern"
+            set => Set("PreparationSlipTemplate", value);
+        }
+
+        public static string PreparationPaperSize
+        {
+            get => Get("PreparationPaperSize", "A4"); // "A4", "A5", "Receipt"
+            set => Set("PreparationPaperSize", value);
+        }
+
         public static string BarcodeTemplate
         {
             get => Get("BarcodeTemplate", "Standard");
