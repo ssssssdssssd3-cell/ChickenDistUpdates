@@ -100,7 +100,7 @@ namespace ChickenDist.Forms
                 else
                 {
                     pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                    pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                    pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 }
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
@@ -130,8 +130,8 @@ namespace ChickenDist.Forms
                 var g = e.Graphics;
                 int pageW = e.PageBounds.Width;
                 bool isA4Page = !isReceipt && pageW > 700;
-                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 20);
-                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 20);
+                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 28);
+                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 28);
                 int printableW = pageW - lMargin - rMargin;
                 int margin = lMargin;
                 int y = isReceipt ? 5 : (isA4Page ? 20 : 15);
@@ -2132,7 +2132,7 @@ namespace ChickenDist.Forms
             else if (isA5)
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else

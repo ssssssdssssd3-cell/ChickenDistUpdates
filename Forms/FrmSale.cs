@@ -5108,7 +5108,7 @@ namespace ChickenDist.Forms
 			else if (isA5)
 			{
 				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A5", 583, 827);
-				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(20, 20, 20, 20);
+				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(28, 28, 28, 28);
 				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 			}
 			else

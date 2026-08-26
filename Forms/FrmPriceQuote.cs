@@ -926,13 +926,13 @@ namespace ChickenDist.Forms
             else if (isA5)
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
-                pd.DefaultPageSettings.Margins = new Margins(30, 30, 30, 30);
+                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
 
@@ -958,11 +958,11 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                float titleSize  = isReceipt ? 12f : 16f;
-                float headerSize = isReceipt ? 9f  : 11f;
-                float bodySize   = isReceipt ? 8.5f: 10f;
+                float titleSize  = isReceipt ? 12f : (isA5 ? 13f : 16f);
+                float headerSize = isReceipt ? 9f  : (isA5 ? 9.5f : 11f);
+                float bodySize   = isReceipt ? 8.5f: (isA5 ? 8.5f : 10f);
 
-                var fontCompany = new Font("Arial", isReceipt ? 11f : 14f, FontStyle.Bold);
+                var fontCompany = new Font("Arial", isReceipt ? 11f : (isA5 ? 12f : 15f), FontStyle.Bold);
                 var fontTitle  = new Font("Arial", titleSize,  FontStyle.Bold);
                 var fontHeader = new Font("Arial", headerSize, FontStyle.Bold);
                 var fontBody   = new Font("Arial", bodySize,   FontStyle.Regular);
@@ -979,28 +979,32 @@ namespace ChickenDist.Forms
                 int rght = e.MarginBounds.Right;
                 int w    = e.MarginBounds.Width;
 
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var sfLeft   = new StringFormat { Alignment = StringAlignment.Near,   LineAlignment = StringAlignment.Center };
+
                 // ── Header: Logo, Company Name & Title ─────────
                 if (logoImg != null && !isReceipt)
                 {
-                    g.DrawImage(logoImg, rght - 70, y, 65, 50);
+                    int lW = isA5 ? 55 : 65;
+                    int lH = isA5 ? 42 : 50;
+                    g.DrawImage(logoImg, rght - lW, y, lW, lH);
                 }
 
                 SizeF szComp = g.MeasureString(companyName, fontCompany);
-                g.DrawString(companyName, fontCompany, brushDarkBlue, left + (w - szComp.Width) / 2, y);
-                y += (int)szComp.Height + 2;
+                g.DrawString(companyName, fontCompany, brushDarkBlue, new RectangleF(left, y, w, isA5 ? 22 : 26), sfCenter);
+                y += isA5 ? 22 : 26;
 
                 if (!string.IsNullOrWhiteSpace(companyPhone))
                 {
                     string phStr = $"تليفون: {companyPhone}" + (!string.IsNullOrWhiteSpace(companyAddress) ? $" | {companyAddress}" : "");
-                    SizeF szPh = g.MeasureString(phStr, fontBody);
-                    g.DrawString(phStr, fontBody, Brushes.DarkGray, left + (w - szPh.Width) / 2, y);
-                    y += (int)szPh.Height + 4;
+                    g.DrawString(phStr, fontBody, Brushes.DarkGray, new RectangleF(left, y, w, 18), sfCenter);
+                    y += 20;
                 }
 
                 string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
-                SizeF szT  = g.MeasureString(tit, fontTitle);
-                g.DrawString(tit, fontTitle, Brushes.Black, left + (w - szT.Width) / 2, y);
-                y += (int)szT.Height + (isReceipt ? 4 : 6);
+                g.DrawString(tit, fontTitle, Brushes.Black, new RectangleF(left, y, w, isA5 ? 24 : 28), sfCenter);
+                y += isA5 ? 26 : 30;
 
                 g.DrawLine(penDark, left, y, rght, y);
                 y += (isReceipt ? 4 : 8);
@@ -1009,13 +1013,14 @@ namespace ChickenDist.Forms
                 string dateStr = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
                 if (!isReceipt)
                 {
-                    g.DrawString($"المخزن المصدر: {whName}", fontHeader, Brushes.Black, rght - g.MeasureString($"المخزن المصدر: {whName}", fontHeader).Width, y);
-                    g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
-                    y += 20;
+                    int halfW = w / 2;
+                    g.DrawString($"المخزن المصدر: {whName}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 20 : 22);
 
-                    g.DrawString($"الموظف المسؤول: {empName}", fontHeader, Brushes.Black, rght - g.MeasureString($"الموظف المسؤول: {empName}", fontHeader).Width, y);
-                    g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, left, y);
-                    y += 22;
+                    g.DrawString($"الموظف المسؤول: {empName}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 22 : 24);
                 }
                 else
                 {
@@ -1030,14 +1035,11 @@ namespace ChickenDist.Forms
                 // ── Table Grid Setup ────────────────────────
                 int colNumW  = isReceipt ? 18 : (int)(w * 0.05);
                 int colCodeW = isReceipt ? 35 : (int)(w * 0.13);
-                int colLocW  = isReceipt ? 45 : (int)(w * 0.22);
-                int colUnitW = isReceipt ? 30 : (int)(w * 0.12);
-                int colQtyW  = isReceipt ? 30 : (int)(w * 0.14);
+                int colLocW  = isReceipt ? 45 : (int)(w * 0.20);
+                int colUnitW = isReceipt ? 30 : (int)(w * 0.11);
+                int colQtyW  = isReceipt ? 30 : (int)(w * 0.13);
                 int colProdW = w - colNumW - colCodeW - colLocW - colUnitW - colQtyW;
-                int rowH     = isReceipt ? 20 : 25;
-
-                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
-                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
+                int rowH     = isReceipt ? 20 : (isA5 ? 24 : 26);
 
                 // Header Row with Full Borders
                 if (!isReceipt)
@@ -1213,13 +1215,13 @@ namespace ChickenDist.Forms
             else if (isA5)
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
+                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else
             {
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
-                pd.DefaultPageSettings.Margins = new Margins(25, 25, 25, 25);
+                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
 
@@ -1246,11 +1248,11 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                float titleSize  = isReceipt ? 12f : 16f;
-                float headerSize = isReceipt ? 9f  : 11f;
-                float bodySize   = isReceipt ? 8.5f: 10f;
+                float titleSize  = isReceipt ? 12f : (isA5 ? 13f : 16f);
+                float headerSize = isReceipt ? 9f  : (isA5 ? 9.5f : 11f);
+                float bodySize   = isReceipt ? 8.5f: (isA5 ? 8.5f : 10f);
 
-                var fontCompany = new Font("Arial", isReceipt ? 11f : 14f, FontStyle.Bold);
+                var fontCompany = new Font("Arial", isReceipt ? 11f : (isA5 ? 12f : 15f), FontStyle.Bold);
                 var fontTitle   = new Font("Arial", titleSize,  FontStyle.Bold);
                 var fontHeader  = new Font("Arial", headerSize, FontStyle.Bold);
                 var fontBody    = new Font("Arial", bodySize,   FontStyle.Regular);
@@ -1268,28 +1270,33 @@ namespace ChickenDist.Forms
                 int right = e.MarginBounds.Right;
                 int width = e.MarginBounds.Width;
 
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var sfLeft   = new StringFormat { Alignment = StringAlignment.Near,   LineAlignment = StringAlignment.Center };
+                var sfProd   = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
                 // ── Header: Logo, Company Name & Title ─────────
                 if (logoImg != null && !isReceipt)
                 {
-                    g.DrawImage(logoImg, right - 70, y, 65, 50);
+                    int lW = isA5 ? 55 : 65;
+                    int lH = isA5 ? 42 : 50;
+                    g.DrawImage(logoImg, right - lW, y, lW, lH);
                 }
 
                 SizeF szComp = g.MeasureString(companyName, fontCompany);
-                g.DrawString(companyName, fontCompany, brushDarkBlue, (pageW(e) - szComp.Width) / 2, y);
-                y += (int)szComp.Height + 2;
+                g.DrawString(companyName, fontCompany, brushDarkBlue, new RectangleF(left, y, width, isA5 ? 22 : 26), sfCenter);
+                y += isA5 ? 22 : 26;
 
                 if (!string.IsNullOrWhiteSpace(companyPhone))
                 {
                     string phStr = $"تليفون: {companyPhone}" + (!string.IsNullOrWhiteSpace(companyAddress) ? $" | {companyAddress}" : "");
-                    SizeF szPh = g.MeasureString(phStr, fontBody);
-                    g.DrawString(phStr, fontBody, Brushes.DarkGray, (pageW(e) - szPh.Width) / 2, y);
-                    y += (int)szPh.Height + 4;
+                    g.DrawString(phStr, fontBody, Brushes.DarkGray, new RectangleF(left, y, width, 18), sfCenter);
+                    y += 20;
                 }
 
                 string title = "🧾 فاتورة بيع تقديرية (عرض أسعار)";
-                SizeF szTitle = g.MeasureString(title, fontTitle);
-                g.DrawString(title, fontTitle, Brushes.Black, (pageW(e) - szTitle.Width) / 2, y);
-                y += (int)szTitle.Height + 6;
+                g.DrawString(title, fontTitle, Brushes.Black, new RectangleF(left, y, width, isA5 ? 24 : 28), sfCenter);
+                y += isA5 ? 26 : 30;
 
                 g.DrawLine(penDark, left, y, right, y);
                 y += (isReceipt ? 4 : 8);
@@ -1300,17 +1307,18 @@ namespace ChickenDist.Forms
 
                 if (!isReceipt)
                 {
-                    g.DrawString($"رقم البيان: {codeStr}", fontHeader, Brushes.Black, right - g.MeasureString($"رقم البيان: {codeStr}", fontHeader).Width, y);
-                    g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
-                    y += 20;
+                    int halfW = width / 2;
+                    g.DrawString($"رقم البيان: {codeStr}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 20 : 22);
 
-                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
-                    g.DrawString($"المخزن: {whName}", fontBody, Brushes.Black, left, y);
-                    y += 20;
+                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"المخزن: {whName}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 20 : 22);
 
-                    g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف: {empName}", fontBody).Width, y);
-                    g.DrawString($"فئة السعر: {_selectedTier}", fontBody, Brushes.Black, left, y);
-                    y += 22;
+                    g.DrawString($"الموظف: {empName}", fontBody, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"فئة السعر: {_selectedTier}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 22 : 24);
                 }
                 else
                 {
@@ -1328,17 +1336,13 @@ namespace ChickenDist.Forms
 
                 // ── Table Column Headers & Grid Borders ──────
                 int colNumW   = isReceipt ? 16 : (int)(width * 0.05);
-                int colCodeW  = isReceipt ? 35 : (int)(width * 0.14);
+                int colCodeW  = isReceipt ? 35 : (int)(width * 0.13);
                 int colUnitW  = isReceipt ? 25 : (int)(width * 0.10);
                 int colQtyW   = isReceipt ? 25 : (int)(width * 0.10);
-                int colPriceW = isReceipt ? 35 : (int)(width * 0.13);
-                int colTotW   = isReceipt ? 40 : (int)(width * 0.14);
+                int colPriceW = isReceipt ? 35 : (int)(width * 0.14);
+                int colTotW   = isReceipt ? 40 : (int)(width * 0.15);
                 int colProdW  = width - colNumW - colCodeW - colUnitW - colQtyW - colPriceW - colTotW;
-                int headerRowH = isReceipt ? 20 : 25;
-
-                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center };
-                var sfProd   = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                int headerRowH = isReceipt ? 20 : (isA5 ? 24 : 26);
 
                 if (!isReceipt)
                 {
@@ -1410,8 +1414,8 @@ namespace ChickenDist.Forms
 
                     // حساب ارتفاع السطر ديناميكياً لاسم الصنف ليتسع لسطرين بدون قص
                     SizeF nameSize = g.MeasureString(item.ProductName, fontBody, colProdW - 8);
-                    int baseH = isReceipt ? 20 : 26;
-                    int actualRowH = Math.Max(baseH, (int)Math.Ceiling(nameSize.Height) + (isReceipt ? 4 : 8));
+                    int baseH = isReceipt ? 20 : (isA5 ? 24 : 26);
+                    int actualRowH = Math.Max(baseH, (int)Math.Ceiling(nameSize.Height) + (isReceipt ? 4 : (isA5 ? 6 : 8)));
                     if (actualRowH > 65) actualRowH = 65;
 
                     if (!isReceipt)
@@ -1498,19 +1502,20 @@ namespace ChickenDist.Forms
 
                 if (!isReceipt)
                 {
-                    g.FillRectangle(brushTotBg, left, y, width, 34);
-                    g.DrawRectangle(penDark, left, y, width, 34);
+                    int totH = isA5 ? 28 : 34;
+                    g.FillRectangle(brushTotBg, left, y, width, totH);
+                    g.DrawRectangle(penDark, left, y, width, totH);
 
                     string totStr = $"إجمالي البضاعة: {gross:N2} ج" + (disc > 0 ? $"   |   الخصم: {disc:N2} ج" : "") + $"   |   الصافي النهائي للمطالبة: {net:N2} ج";
-                    g.DrawString(totStr, fontBold, Brushes.DarkGreen, new RectangleF(left + 5, y + 7, width - 10, 20), sfCenter);
-                    y += 40;
+                    g.DrawString(totStr, fontBold, Brushes.DarkGreen, new RectangleF(left + 2, y + (isA5 ? 4 : 7), width - 4, 20), sfCenter);
+                    y += totH + (isA5 ? 6 : 10);
 
                     // لو عميل مسجل يظهر فقط المديونية الحالية أسفل الإجمالي
                     if (hasRegisteredClient)
                     {
                         string debtStr = $"المديونية الحالية على العميل: {clientCurrentDebt:N2} ج";
-                        g.DrawString(debtStr, fontBold, Brushes.DarkRed, new RectangleF(left + 10, y, width - 20, 22), sfRight);
-                        y += 26;
+                        g.DrawString(debtStr, fontBold, Brushes.DarkRed, new RectangleF(left + 5, y, width - 10, 22), sfRight);
+                        y += 24;
                     }
                 }
                 else
@@ -1535,7 +1540,7 @@ namespace ChickenDist.Forms
                 g.DrawLine(penGrid, left, y, right, y);
                 y += 6;
                 string noteStr = "* ملاحظة هامة: تعتبر هذه الفاتورة بياناً تقديرياً وعرض أسعار استرشادي للعميل، ولا خصم للمخزون إلا بعد الاعتماد وإصدار إذن التحضير.";
-                g.DrawString(noteStr, fontBody, Brushes.DarkSlateGray, left, y);
+                g.DrawString(noteStr, fontBody, Brushes.DarkSlateGray, new RectangleF(left, y, width, isA5 ? 34 : 24), sfRight);
 
                 brushDarkBlue.Dispose(); brushHeaderBg.Dispose();
                 brushRowAlt.Dispose(); brushTotBg.Dispose(); penGrid.Dispose(); penDark.Dispose();
