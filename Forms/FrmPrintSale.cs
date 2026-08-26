@@ -1372,7 +1372,7 @@ namespace ChickenDist.Forms
                             {
                                 SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWName - 4));
                                 int minRowH = isA4Page ? 28 : 22;
-                                int maxRowH = isA4Page ? 56 : 46;
+                                int maxRowH = isA4Page ? 65 : 55;
                                 int rowHeight = Math.Max(minRowH, (int)Math.Ceiling(nameSize.Height) + (isA4Page ? 6 : 4));
                                 if (rowHeight > maxRowH) rowHeight = maxRowH;
 
@@ -1407,7 +1407,7 @@ namespace ChickenDist.Forms
                                 {
                                     Alignment = StringAlignment.Far,
                                     LineAlignment = StringAlignment.Center,
-                                    FormatFlags = StringFormatFlags.FitBlackBox
+                                    FormatFlags = StringFormatFlags.DirectionRightToLeft
                                 };
                                 g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xName + 2, y + 1, colWName - 4, rowHeight - 2), nameSf);
 
@@ -1432,7 +1432,7 @@ namespace ChickenDist.Forms
                             {
                                 SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWProduct - 4));
                                 int rowHeight = Math.Max(18, (int)Math.Ceiling(nameSize.Height) + 4);
-                                if (rowHeight > 42) rowHeight = 42;
+                                if (rowHeight > 60) rowHeight = 60;
 
                                 if (y + rowHeight + 120 > e.PageBounds.Height)
                                 {
@@ -1458,7 +1458,7 @@ namespace ChickenDist.Forms
                                 DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y, rowHeight, center);
                                 DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y, rowHeight, center);
 
-                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.FitBlackBox };
+                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                                 g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xProduct + 2, y + 1, colWProduct - 4, rowHeight - 2), prodSf);
                                 y += rowHeight;
                             }
@@ -1466,7 +1466,7 @@ namespace ChickenDist.Forms
                             {
                                 SizeF nameSize = g.MeasureString(prodName, normal, Math.Max(10, colWProduct - 4));
                                 int rowHeight = Math.Max(18, (int)Math.Ceiling(nameSize.Height) + 4);
-                                if (rowHeight > 42) rowHeight = 42;
+                                if (rowHeight > 60) rowHeight = 60;
 
                                 if (y + rowHeight + 120 > e.PageBounds.Height)
                                 {
@@ -1488,7 +1488,7 @@ namespace ChickenDist.Forms
                                 DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y, rowHeight, center);
                                 DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y, rowHeight, center);
 
-                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.FitBlackBox };
+                                var prodSf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                                 g.DrawString(prodName, normal, Brushes.Black, new RectangleF(xProduct + 2, y + 1, colWProduct - 4, rowHeight - 2), prodSf);
                                 y += rowHeight;
                             }
@@ -2224,24 +2224,25 @@ namespace ChickenDist.Forms
                 int colUnitW = isReceipt ? 30 : (int)(width * 0.12);
                 int colQtyW  = isReceipt ? 30 : (int)(width * 0.14);
                 int colProdW = width - colNumW - colCodeW - colLocW - colUnitW - colQtyW;
-                int rowH     = isReceipt ? 20 : 25;
+                int headerRowH = isReceipt ? 20 : 25;
 
-                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
-                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft };
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center };
+                var sfProd   = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
                 if (!isReceipt)
                 {
-                    g.FillRectangle(brushHeaderBg, left, y, width, rowH);
-                    g.DrawRectangle(penDark, left, y, width, rowH);
+                    g.FillRectangle(brushHeaderBg, left, y, width, headerRowH);
+                    g.DrawRectangle(penDark, left, y, width, headerRowH);
 
                     int curX = right;
-                    curX -= colNumW;  g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, rowH), sfCenter);
-                    curX -= colCodeW; g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
-                    curX -= colProdW; g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, rowH), sfCenter);
-                    curX -= colQtyW;  g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
-                    curX -= colUnitW; g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
-                    curX -= colLocW;  g.DrawString("موقع الرف / التخزين", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, rowH), sfCenter);
-                    y += rowH;
+                    curX -= colNumW;  g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, headerRowH), sfCenter);
+                    curX -= colCodeW; g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
+                    curX -= colProdW; g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
+                    curX -= colQtyW;  g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
+                    curX -= colUnitW; g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
+                    curX -= colLocW;  g.DrawString("موقع الرف / التخزين", fontHeader, Brushes.White, new RectangleF(curX, y, colLocW, headerRowH), sfCenter);
+                    y += headerRowH;
                 }
                 else
                 {
@@ -2249,7 +2250,7 @@ namespace ChickenDist.Forms
                     g.DrawString("الكمية", fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
                     g.DrawString("الوحدة", fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW, y);
                     g.DrawString("الرف", fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW - colLocW, y);
-                    y += rowH;
+                    y += headerRowH;
                     g.DrawLine(penGrid, left, y, right, y);
                     y += 4;
                 }
@@ -2267,30 +2268,36 @@ namespace ChickenDist.Forms
                         string pName = row["ProductName"]?.ToString() ?? "";
                         rowNum++;
 
+                        // حساب ارتفاع السطر ديناميكياً لاسم الصنف ليتسع لسطرين بدون قص
+                        SizeF nameSize = g.MeasureString(pName, fontBody, colProdW - 8);
+                        int baseH = isReceipt ? 20 : 26;
+                        int actualRowH = Math.Max(baseH, (int)Math.Ceiling(nameSize.Height) + (isReceipt ? 4 : 8));
+                        if (actualRowH > 65) actualRowH = 65;
+
                         if (!isReceipt)
                         {
-                            if (rowNum % 2 == 0) g.FillRectangle(brushRowAlt, left, y, width, rowH);
-                            g.DrawRectangle(penGrid, left, y, width, rowH);
+                            if (rowNum % 2 == 0) g.FillRectangle(brushRowAlt, left, y, width, actualRowH);
+                            g.DrawRectangle(penGrid, left, y, width, actualRowH);
 
                             int curX = right;
-                            curX -= colNumW;  g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, new RectangleF(curX, y, colNumW, rowH), sfCenter);
-                            curX -= colCodeW; g.DrawString(code, fontBody, Brushes.Gray, new RectangleF(curX, y, colCodeW, rowH), sfCenter);
-                            curX -= colProdW; g.DrawString(pName, fontBody, Brushes.Black, new RectangleF(curX + 4, y, colProdW - 8, rowH), sfRight);
-                            curX -= colQtyW;  g.DrawString(qtyStr, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, rowH), sfCenter);
-                            curX -= colUnitW; g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, rowH), sfCenter);
-                            curX -= colLocW;  g.DrawString(loc, fontBold, brushDarkBlue, new RectangleF(curX, y, colLocW, rowH), sfCenter);
+                            curX -= colNumW;  g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, new RectangleF(curX, y, colNumW, actualRowH), sfCenter);
+                            curX -= colCodeW; g.DrawString(code, fontBody, Brushes.Gray, new RectangleF(curX, y, colCodeW, actualRowH), sfCenter);
+                            curX -= colProdW; g.DrawString(pName, fontBody, Brushes.Black, new RectangleF(curX + 4, y + 1, colProdW - 8, actualRowH - 2), sfProd);
+                            curX -= colQtyW;  g.DrawString(qtyStr, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, actualRowH), sfCenter);
+                            curX -= colUnitW; g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, actualRowH), sfCenter);
+                            curX -= colLocW;  g.DrawString(loc, fontBold, brushDarkBlue, new RectangleF(curX, y, colLocW, actualRowH), sfCenter);
                         }
                         else
                         {
-                            g.DrawString(pName, fontBody, Brushes.Black, right - colNumW - colProdW, y);
+                            g.DrawString(pName, fontBody, Brushes.Black, new RectangleF(right - colNumW - colProdW, y, colProdW, actualRowH), sfProd);
                             g.DrawString(qtyStr, fontBold, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
                             g.DrawString(unit, fontBody, brushDarkBlue, right - colNumW - colProdW - colQtyW - colUnitW, y);
                             g.DrawString(loc, fontBold, brushDarkBlue, right - colNumW - colProdW - colQtyW - colUnitW - colLocW, y);
                             g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, left, y);
-                            g.DrawLine(penGrid, left, y + rowH, right, y + rowH);
+                            g.DrawLine(penGrid, left, y + actualRowH, right, y + actualRowH);
                         }
 
-                        y += rowH;
+                        y += actualRowH;
                         itemIdx++;
 
                         if (y > e.MarginBounds.Bottom - (isReceipt ? 30 : 60))
