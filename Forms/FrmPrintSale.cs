@@ -2395,14 +2395,23 @@ namespace ChickenDist.Forms
                         decimal qVal = Convert.ToDecimal(row["Quantity"]);
                         string qtyStr = qVal % 1 == 0 ? qVal.ToString("N0") : qVal.ToString("N2");
                         string pName = row["ProductName"]?.ToString() ?? "";
-                        totalQty += qVal;
-                        rowNum++;
 
                         // حساب ارتفاع السطر ديناميكياً لاسم الصنف ليتسع لسطرين بدون قص
                         SizeF nameSize = g.MeasureString(pName, fontBody, colProdW - 8);
                         int baseH = isReceipt ? 20 : (isA4Page ? 30 : 26);
                         int actualRowH = Math.Max(baseH, (int)Math.Ceiling(nameSize.Height) + (isReceipt ? 4 : 8));
                         if (actualRowH > 65) actualRowH = 65;
+
+                        // ── التحقق من المساحة قبل رسم السطر (مش بعده) ──
+                        int footerReserve = isReceipt ? 30 : 90; // مساحة محجوزة للإجماليات والتوقيعات
+                        if (y + actualRowH > e.MarginBounds.Bottom - footerReserve)
+                        {
+                            e.HasMorePages = true;
+                            return;
+                        }
+
+                        totalQty += qVal;
+                        rowNum++;
 
                         if (isDisbursement || isModern)
                         {
@@ -2455,12 +2464,6 @@ namespace ChickenDist.Forms
 
                         y += actualRowH;
                         itemIdx++;
-
-                        if (y > e.MarginBounds.Bottom - (isReceipt ? 30 : 70) && itemIdx < _items.Rows.Count)
-                        {
-                            e.HasMorePages = true;
-                            return;
-                        }
                     }
                 }
 
