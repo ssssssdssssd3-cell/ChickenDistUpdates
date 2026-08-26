@@ -2238,7 +2238,7 @@ namespace ChickenDist.Forms
                         g.FillRectangle(brushHeaderBg, left, y, width, bannerH);
                         g.DrawRectangle(penDark, left, y, width, bannerH);
 
-                        string tit = $"📋 إذن تحضير وصرف بضاعة  -  {compName}";
+                        string tit = $"اذن تحضير وصرف بضاعة  -  {compName}";
                         var sfBanner = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
                         g.DrawString(tit, fontTitle, Brushes.White, new RectangleF(left, y, width, bannerH), sfBanner);
                         y += bannerH + 8;
@@ -2270,7 +2270,7 @@ namespace ChickenDist.Forms
                             y += (int)szPh.Height + 4;
                         }
 
-                        string title = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
+                        string title = "اذن تحضير وتجميع بضاعة (من المخزن)";
                         SizeF szTitle = g.MeasureString(title, fontTitle);
                         g.DrawString(title, fontTitle, Brushes.Black, left + (width - szTitle.Width) / 2, y);
                         y += (int)szTitle.Height + (isReceipt ? 4 : 6);
@@ -2280,13 +2280,18 @@ namespace ChickenDist.Forms
 
                         if (!isReceipt)
                         {
-                            g.DrawString($"المرجع: {codeStr}", fontHeader, Brushes.Black, right - g.MeasureString($"المرجع: {codeStr}", fontHeader).Width, y);
-                            g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, left, y);
-                            y += 20;
-
-                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y);
-                            g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}", fontBody, Brushes.Black, left, y);
+                            // السطر الأول: التاريخ (يسار) | المرجع (يمين)
+                            string refStr = $"المرجع: {codeStr}";
+                            g.DrawString(refStr, fontHeader, Brushes.Black, right - g.MeasureString(refStr, fontHeader).Width, y);
+                            g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, left, y);
                             y += 22;
+
+                            // السطر الثاني: عدد الأصناف (يسار) | اسم العميل بارز (يمين)
+                            string clientLabel = $"العميل: {clientName}";
+                            using var fontClientBig = new Font("Arial", isA4Page ? 12f : 10f, FontStyle.Bold);
+                            g.DrawString(clientLabel, fontClientBig, Brushes.Black, right - g.MeasureString(clientLabel, fontClientBig).Width, y);
+                            g.DrawString($"عدد الاصناف: {(_items != null ? _items.Rows.Count : 0)}", fontBody, Brushes.Black, left, y);
+                            y += isA4Page ? 26 : 22;
                         }
                         else
                         {
